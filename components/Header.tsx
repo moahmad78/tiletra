@@ -43,6 +43,7 @@ export default function Header() {
     { name: "Services", href: "#services", id: "services" },
     { name: "Projects", href: "#projects", id: "projects" },
     { name: "FAQ", href: "#faq", id: "faq" },
+    { name: "All Services", href: "http://localhost:3001", id: "all-services", isExternal: true },
     { name: "Contact", href: "#contact", id: "contact" },
   ];
 
@@ -104,6 +105,7 @@ export default function Header() {
               <a
                 key={link.name}
                 href={link.href}
+                {...(link.isExternal ? { target: "_self", rel: "noopener" } : {})}
                 className={cn(
                   "text-[15px] font-bold transition-colors",
                   activeSection === link.id ? "text-[#F26522]" : "text-[#052a51] hover:text-[#F26522]"
@@ -142,6 +144,7 @@ export default function Header() {
             <a
               key={link.name}
               href={link.href}
+              {...(link.isExternal ? { target: "_self", rel: "noopener" } : {})}
               className={cn(
                 "text-lg font-bold px-4 py-2 rounded-lg transition-colors",
                 activeSection === link.id ? "text-[#F26522] bg-gray-50" : "text-[#052a51] hover:text-[#F26522] hover:bg-gray-50"

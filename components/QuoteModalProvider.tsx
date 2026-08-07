@@ -48,9 +48,44 @@ export function QuoteModalProvider({ children }: { children: React.ReactNode }) 
     };
   }, [isOpen]);
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
-    // Validate if needed, then show success
+    
+    const formData = new FormData(e.currentTarget);
+    const fullName = formData.get("fullName");
+    const phone = formData.get("phone");
+    const email = formData.get("email") || "Not provided";
+    const location = formData.get("location");
+    const service = formData.get("service");
+    const projectType = formData.get("projectType");
+    const area = formData.get("area");
+    const date = formData.get("date") || "Not specified";
+    const requirements = formData.get("requirements") || "None";
+
+    const subject = `New Inquiry from ${fullName}`;
+    const body = `Hello,
+
+Here are the details for a new quote request:
+
+Name: ${fullName}
+Phone: ${phone}
+Email: ${email}
+Location: ${location}
+Service Needed: ${service}
+Project Type: ${projectType}
+Approx Area: ${area}
+Preferred Site Visit Date: ${date}
+
+Additional Requirements:
+${requirements}
+
+Best regards,
+${fullName}`;
+
+    // Open mail client
+    window.location.href = `mailto:vishalpoddar393@gmail.com?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`;
+    
+    // Also give them an option to use WhatsApp or Call directly on the success screen
     setIsSuccess(true);
   };
 
@@ -107,7 +142,7 @@ export function QuoteModalProvider({ children }: { children: React.ReactNode }) 
                       <CheckCircle2 size={40} />
                     </motion.div>
                     <h3 className="text-3xl font-bold text-[#052a51] mb-2">Thank you!</h3>
-                    <p className="text-gray-600 mb-8 text-lg">Our team will contact you shortly.</p>
+                    <p className="text-gray-600 mb-8 text-lg">Your email client has been opened to send the inquiry. Our team will contact you shortly.</p>
                     <div className="flex gap-4">
                       <a href="tel:+917870935277" className="w-full">
                         <Button className="w-full px-6 h-12 bg-[#052a51] hover:bg-[#031b36] text-white rounded-xl font-bold">
@@ -129,14 +164,14 @@ export function QuoteModalProvider({ children }: { children: React.ReactNode }) 
                         <label className="block text-sm font-semibold text-gray-900 mb-2">Full Name *</label>
                         <div className="relative">
                           <User className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-gray-400" />
-                          <input required type="text" placeholder="Your Name" className="w-full h-12 pl-10 pr-4 rounded-xl border border-gray-200 focus:border-[#F26522] focus:ring-1 focus:ring-[#F26522] outline-none transition-colors" />
+                          <input name="fullName" required type="text" placeholder="Your Name" className="w-full h-12 pl-10 pr-4 rounded-xl border border-gray-200 focus:border-[#F26522] focus:ring-1 focus:ring-[#F26522] outline-none transition-colors" />
                         </div>
                       </div>
                       <div className="relative">
                         <label className="block text-sm font-semibold text-gray-900 mb-2">Phone Number *</label>
                         <div className="relative">
                           <Phone className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-gray-400" />
-                          <input required type="tel" pattern="[0-9]{10}" placeholder="10-digit mobile number" className="w-full h-12 pl-10 pr-4 rounded-xl border border-gray-200 focus:border-[#F26522] focus:ring-1 focus:ring-[#F26522] outline-none transition-colors" />
+                          <input name="phone" required type="tel" pattern="[0-9]{10}" placeholder="10-digit mobile number" className="w-full h-12 pl-10 pr-4 rounded-xl border border-gray-200 focus:border-[#F26522] focus:ring-1 focus:ring-[#F26522] outline-none transition-colors" />
                         </div>
                       </div>
                     </div>
@@ -147,14 +182,14 @@ export function QuoteModalProvider({ children }: { children: React.ReactNode }) 
                         <label className="block text-sm font-semibold text-gray-900 mb-2">Email Address</label>
                         <div className="relative">
                           <Mail className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-gray-400" />
-                          <input type="email" placeholder="Optional" className="w-full h-12 pl-10 pr-4 rounded-xl border border-gray-200 focus:border-[#F26522] focus:ring-1 focus:ring-[#F26522] outline-none transition-colors" />
+                          <input name="email" type="email" placeholder="Optional" className="w-full h-12 pl-10 pr-4 rounded-xl border border-gray-200 focus:border-[#F26522] focus:ring-1 focus:ring-[#F26522] outline-none transition-colors" />
                         </div>
                       </div>
                       <div className="relative">
                         <label className="block text-sm font-semibold text-gray-900 mb-2">Location *</label>
                         <div className="relative">
                           <MapPin className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-gray-400" />
-                          <input required type="text" placeholder="Area in Bangalore" className="w-full h-12 pl-10 pr-4 rounded-xl border border-gray-200 focus:border-[#F26522] focus:ring-1 focus:ring-[#F26522] outline-none transition-colors" />
+                          <input name="location" required type="text" placeholder="Area in Bangalore" className="w-full h-12 pl-10 pr-4 rounded-xl border border-gray-200 focus:border-[#F26522] focus:ring-1 focus:ring-[#F26522] outline-none transition-colors" />
                         </div>
                       </div>
                     </div>
@@ -164,7 +199,7 @@ export function QuoteModalProvider({ children }: { children: React.ReactNode }) 
                       <label className="block text-sm font-semibold text-gray-900 mb-2">Select Service *</label>
                       <div className="relative">
                         <Wrench className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-gray-400" />
-                        <select required defaultValue="" className="w-full h-12 pl-10 pr-4 rounded-xl border border-gray-200 focus:border-[#F26522] focus:ring-1 focus:ring-[#F26522] outline-none transition-colors appearance-none bg-white">
+                        <select name="service" required defaultValue="" className="w-full h-12 pl-10 pr-4 rounded-xl border border-gray-200 focus:border-[#F26522] focus:ring-1 focus:ring-[#F26522] outline-none transition-colors appearance-none bg-white">
                           <option value="" disabled>Choose a service...</option>
                           <option value="floor">Floor Tile Installation</option>
                           <option value="wall">Wall Tile Installation</option>
@@ -185,7 +220,7 @@ export function QuoteModalProvider({ children }: { children: React.ReactNode }) 
                         <label className="block text-sm font-semibold text-gray-900 mb-2">Project Type *</label>
                         <div className="relative">
                           <Building2 className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-gray-400" />
-                          <select required defaultValue="" className="w-full h-12 pl-10 pr-4 rounded-xl border border-gray-200 focus:border-[#F26522] focus:ring-1 focus:ring-[#F26522] outline-none transition-colors appearance-none bg-white">
+                          <select name="projectType" required defaultValue="" className="w-full h-12 pl-10 pr-4 rounded-xl border border-gray-200 focus:border-[#F26522] focus:ring-1 focus:ring-[#F26522] outline-none transition-colors appearance-none bg-white">
                             <option value="" disabled>Select Type...</option>
                             <option value="residential">Residential</option>
                             <option value="commercial">Commercial</option>
@@ -201,7 +236,7 @@ export function QuoteModalProvider({ children }: { children: React.ReactNode }) 
                         <label className="block text-sm font-semibold text-gray-900 mb-2">Approx Area *</label>
                         <div className="relative">
                           <Ruler className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-gray-400" />
-                          <select required defaultValue="" className="w-full h-12 pl-10 pr-4 rounded-xl border border-gray-200 focus:border-[#F26522] focus:ring-1 focus:ring-[#F26522] outline-none transition-colors appearance-none bg-white">
+                          <select name="area" required defaultValue="" className="w-full h-12 pl-10 pr-4 rounded-xl border border-gray-200 focus:border-[#F26522] focus:ring-1 focus:ring-[#F26522] outline-none transition-colors appearance-none bg-white">
                             <option value="" disabled>Select Area...</option>
                             <option value="500">Upto 500 Sqft</option>
                             <option value="1000">500 - 1000 Sqft</option>
@@ -218,7 +253,7 @@ export function QuoteModalProvider({ children }: { children: React.ReactNode }) 
                       <label className="block text-sm font-semibold text-gray-900 mb-2">Preferred Site Visit Date</label>
                       <div className="relative">
                         <Calendar className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-gray-400" />
-                        <input type="date" className="w-full h-12 pl-10 pr-4 rounded-xl border border-gray-200 focus:border-[#F26522] focus:ring-1 focus:ring-[#F26522] outline-none transition-colors bg-white" />
+                        <input name="date" type="date" className="w-full h-12 pl-10 pr-4 rounded-xl border border-gray-200 focus:border-[#F26522] focus:ring-1 focus:ring-[#F26522] outline-none transition-colors bg-white" />
                       </div>
                     </div>
 
@@ -227,7 +262,7 @@ export function QuoteModalProvider({ children }: { children: React.ReactNode }) 
                       <label className="block text-sm font-semibold text-gray-900 mb-2">Additional Requirements</label>
                       <div className="relative">
                         <ClipboardList className="absolute left-3 top-3 h-5 w-5 text-gray-400" />
-                        <textarea placeholder="Tell us more about your project..." className="w-full h-24 pl-10 pr-4 pt-3 rounded-xl border border-gray-200 focus:border-[#F26522] focus:ring-1 focus:ring-[#F26522] outline-none transition-colors resize-none" />
+                        <textarea name="requirements" placeholder="Tell us more about your project..." className="w-full h-24 pl-10 pr-4 pt-3 rounded-xl border border-gray-200 focus:border-[#F26522] focus:ring-1 focus:ring-[#F26522] outline-none transition-colors resize-none" />
                       </div>
                     </div>
 
