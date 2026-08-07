@@ -42,7 +42,7 @@ export default function Header() {
     { name: "Home", href: "/#home", id: "home" },
     { name: "Services", href: "/#services", id: "services" },
     { name: "Projects", href: "/#projects", id: "projects" },
-    { name: "Designs", href: "/designs", id: "designs" },
+    { name: "Tile Catalog", href: "/designs", id: "designs" },
     { name: "FAQ", href: "/#faq", id: "faq" },
     { name: "Contact", href: "/#contact", id: "contact" },
   ];
