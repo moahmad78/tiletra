@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { ArrowRight, MessageCircle, Phone, Maximize2, Tag } from "lucide-react";
+import { ArrowRight, MessageCircle, Phone, Maximize2, Tag, X, ChevronLeft, ChevronRight } from "lucide-react";
 import Header from "@/components/Header";
 import Footer from "@/components/Footer";
 import { QuoteModalProvider } from "@/components/QuoteModalProvider";
@@ -28,6 +28,11 @@ const designs = [
     name: "Statuario White Marble",
     category: "Marble",
     image: "https://images.unsplash.com/photo-1600607688969-a5bfcd646154?auto=format&fit=crop&q=80&w=800",
+    images: [
+      "https://images.unsplash.com/photo-1600607688969-a5bfcd646154?auto=format&fit=crop&q=80&w=1200",
+      "https://images.unsplash.com/photo-1572297120612-421b44ec652b?auto=format&fit=crop&q=80&w=1200",
+      "https://images.unsplash.com/photo-1618219908412-a29a1bb7b86e?auto=format&fit=crop&q=80&w=1200"
+    ],
     price: "₹180 - ₹350 / sq.ft",
     dimension: "Custom Slab"
   },
@@ -36,6 +41,11 @@ const designs = [
     name: "Italian Onyx Blue",
     category: "Marble",
     image: "https://images.unsplash.com/photo-1620626011761-996317b8d101?auto=format&fit=crop&q=80&w=800",
+    images: [
+      "https://images.unsplash.com/photo-1620626011761-996317b8d101?auto=format&fit=crop&q=80&w=1200",
+      "https://images.unsplash.com/photo-1572297120612-421b44ec652b?auto=format&fit=crop&q=80&w=1200",
+      "https://images.unsplash.com/photo-1588824345437-080bc2b6f131?auto=format&fit=crop&q=80&w=1200"
+    ],
     price: "₹450 / sq.ft",
     dimension: "Custom Slab"
   },
@@ -44,6 +54,11 @@ const designs = [
     name: "PGVT Calacatta Gold",
     category: "Vitrified Tiles",
     image: "https://images.unsplash.com/photo-1600566753190-17f0baa2a6c3?auto=format&fit=crop&q=80&w=800",
+    images: [
+      "https://images.unsplash.com/photo-1600566753190-17f0baa2a6c3?auto=format&fit=crop&q=80&w=1200",
+      "https://images.unsplash.com/photo-1600585154340-be6161a56a0c?auto=format&fit=crop&q=80&w=1200",
+      "https://images.unsplash.com/photo-1502005229762-cf1b2da7c5d6?auto=format&fit=crop&q=80&w=1200"
+    ],
     price: "₹55 - ₹85 / sq.ft",
     dimension: "800x1600 mm"
   },
@@ -52,6 +67,10 @@ const designs = [
     name: "Double Charge Ivory",
     category: "Vitrified Tiles",
     image: "https://images.unsplash.com/photo-1502005229762-cf1b2da7c5d6?auto=format&fit=crop&q=80&w=800",
+    images: [
+      "https://images.unsplash.com/photo-1502005229762-cf1b2da7c5d6?auto=format&fit=crop&q=80&w=1200",
+      "https://images.unsplash.com/photo-1600566753190-17f0baa2a6c3?auto=format&fit=crop&q=80&w=1200"
+    ],
     price: "₹45 - ₹60 / sq.ft",
     dimension: "600x600 mm"
   },
@@ -60,6 +79,10 @@ const designs = [
     name: "Rustic Pine Wood",
     category: "Wooden Planks",
     image: "https://images.unsplash.com/photo-1581858726788-75bc0f6a952d?auto=format&fit=crop&q=80&w=800",
+    images: [
+      "https://images.unsplash.com/photo-1581858726788-75bc0f6a952d?auto=format&fit=crop&q=80&w=1200",
+      "https://images.unsplash.com/photo-1516455590571-18256e5bb9ff?auto=format&fit=crop&q=80&w=1200"
+    ],
     price: "₹50 - ₹75 / sq.ft",
     dimension: "200x1200 mm"
   },
@@ -68,6 +91,10 @@ const designs = [
     name: "Teak Wood Finish",
     category: "Wooden Planks",
     image: "https://images.unsplash.com/photo-1516455590571-18256e5bb9ff?auto=format&fit=crop&q=80&w=800",
+    images: [
+      "https://images.unsplash.com/photo-1516455590571-18256e5bb9ff?auto=format&fit=crop&q=80&w=1200",
+      "https://images.unsplash.com/photo-1581858726788-75bc0f6a952d?auto=format&fit=crop&q=80&w=1200"
+    ],
     price: "₹55 / sq.ft",
     dimension: "200x1000 mm"
   },
@@ -76,6 +103,10 @@ const designs = [
     name: "Ceramic Wall Flora",
     category: "Ceramic Tiles",
     image: "https://images.unsplash.com/photo-1615873968403-89e068629265?auto=format&fit=crop&q=80&w=800",
+    images: [
+      "https://images.unsplash.com/photo-1615873968403-89e068629265?auto=format&fit=crop&q=80&w=1200",
+      "https://images.unsplash.com/photo-1584622781564-1d987f7333c1?auto=format&fit=crop&q=80&w=1200"
+    ],
     price: "₹35 / sq.ft",
     dimension: "300x450 mm"
   },
@@ -84,6 +115,10 @@ const designs = [
     name: "Anti-Skid Bathroom Floor",
     category: "Ceramic Tiles",
     image: "https://images.unsplash.com/photo-1584622781564-1d987f7333c1?auto=format&fit=crop&q=80&w=800",
+    images: [
+      "https://images.unsplash.com/photo-1584622781564-1d987f7333c1?auto=format&fit=crop&q=80&w=1200",
+      "https://images.unsplash.com/photo-1615873968403-89e068629265?auto=format&fit=crop&q=80&w=1200"
+    ],
     price: "₹40 / sq.ft",
     dimension: "300x300 mm"
   },
@@ -92,6 +127,10 @@ const designs = [
     name: "Black Galaxy",
     category: "Granite",
     image: "https://images.unsplash.com/photo-1588824345437-080bc2b6f131?auto=format&fit=crop&q=80&w=800",
+    images: [
+      "https://images.unsplash.com/photo-1588824345437-080bc2b6f131?auto=format&fit=crop&q=80&w=1200",
+      "https://images.unsplash.com/photo-1600607687920-4e2a09cf159d?auto=format&fit=crop&q=80&w=1200"
+    ],
     price: "₹120 - ₹160 / sq.ft",
     dimension: "Custom Size"
   },
@@ -100,6 +139,10 @@ const designs = [
     name: "Rajasthan Red",
     category: "Granite",
     image: "https://images.unsplash.com/photo-1600607687920-4e2a09cf159d?auto=format&fit=crop&q=80&w=800",
+    images: [
+      "https://images.unsplash.com/photo-1600607687920-4e2a09cf159d?auto=format&fit=crop&q=80&w=1200",
+      "https://images.unsplash.com/photo-1588824345437-080bc2b6f131?auto=format&fit=crop&q=80&w=1200"
+    ],
     price: "₹85 / sq.ft",
     dimension: "Custom Size"
   },
@@ -108,6 +151,10 @@ const designs = [
     name: "Natural Stone Cladding",
     category: "Elevation Tiles",
     image: "https://images.unsplash.com/photo-1600585154340-be6161a56a0c?auto=format&fit=crop&q=80&w=800",
+    images: [
+      "https://images.unsplash.com/photo-1600585154340-be6161a56a0c?auto=format&fit=crop&q=80&w=1200",
+      "https://images.unsplash.com/photo-1600566753190-17f0baa2a6c3?auto=format&fit=crop&q=80&w=1200"
+    ],
     price: "₹65 - ₹90 / sq.ft",
     dimension: "300x600 mm"
   },
@@ -116,6 +163,9 @@ const designs = [
     name: "Heavy Duty Chequered",
     category: "Parking Tiles",
     image: "https://images.unsplash.com/photo-1590209210985-263a0333250b?auto=format&fit=crop&q=80&w=800",
+    images: [
+      "https://images.unsplash.com/photo-1590209210985-263a0333250b?auto=format&fit=crop&q=80&w=1200"
+    ],
     price: "₹35 - ₹50 / sq.ft",
     dimension: "400x400 mm"
   },
@@ -124,6 +174,10 @@ const designs = [
     name: "Moroccan Art Pattern",
     category: "Moroccan Tiles",
     image: "https://images.unsplash.com/photo-1584622650111-993a426fbf0a?auto=format&fit=crop&q=80&w=800",
+    images: [
+      "https://images.unsplash.com/photo-1584622650111-993a426fbf0a?auto=format&fit=crop&q=80&w=1200",
+      "https://images.unsplash.com/photo-1615873968403-89e068629265?auto=format&fit=crop&q=80&w=1200"
+    ],
     price: "₹70 / sq.ft",
     dimension: "600x600 mm"
   },
@@ -132,6 +186,9 @@ const designs = [
     name: "Ocean Wave 3D",
     category: "3D Tiles",
     image: "https://images.unsplash.com/photo-1528308358245-c472f7ed9302?auto=format&fit=crop&q=80&w=800",
+    images: [
+      "https://images.unsplash.com/photo-1528308358245-c472f7ed9302?auto=format&fit=crop&q=80&w=1200"
+    ],
     price: "₹120 / sq.ft",
     dimension: "600x1200 mm"
   },
@@ -140,6 +197,10 @@ const designs = [
     name: "Sintered Stone Slab",
     category: "Porcelain Tiles",
     image: "https://images.unsplash.com/photo-1600573472591-ee6981cf35b6?auto=format&fit=crop&q=80&w=800",
+    images: [
+      "https://images.unsplash.com/photo-1600573472591-ee6981cf35b6?auto=format&fit=crop&q=80&w=1200",
+      "https://images.unsplash.com/photo-1600607688969-a5bfcd646154?auto=format&fit=crop&q=80&w=1200"
+    ],
     price: "₹150 - ₹250 / sq.ft",
     dimension: "1200x2400 mm"
   }
@@ -147,10 +208,24 @@ const designs = [
 
 export default function DesignsCatalog() {
   const [selectedCategory, setSelectedCategory] = useState("All");
+  const [selectedTile, setSelectedTile] = useState<typeof designs[0] | null>(null);
+  const [currentImageIndex, setCurrentImageIndex] = useState(0);
 
   const filteredDesigns = selectedCategory === "All" 
     ? designs 
     : designs.filter(d => d.category === selectedCategory);
+
+  const nextImage = () => {
+    if (selectedTile) {
+      setCurrentImageIndex((prev) => (prev + 1) % selectedTile.images.length);
+    }
+  };
+
+  const prevImage = () => {
+    if (selectedTile) {
+      setCurrentImageIndex((prev) => (prev - 1 + selectedTile.images.length) % selectedTile.images.length);
+    }
+  };
 
   return (
     <QuoteModalProvider>
@@ -238,13 +313,24 @@ export default function DesignsCatalog() {
                         className="bg-white rounded-3xl overflow-hidden shadow-[0_4px_20px_rgba(0,0,0,0.06)] border border-gray-100 group hover:-translate-y-2 transition-all duration-300 flex flex-col"
                       >
                         {/* Image */}
-                        <div className="relative h-64 w-full overflow-hidden shrink-0">
+                        <div 
+                          className="relative h-64 w-full overflow-hidden shrink-0 cursor-pointer"
+                          onClick={() => {
+                            setSelectedTile(tile);
+                            setCurrentImageIndex(0);
+                          }}
+                        >
                           {/* eslint-disable-next-line @next/next/no-img-element */}
                           <img 
                             src={tile.image} 
                             alt={tile.name}
                             className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-110"
                           />
+                          <div className="absolute inset-0 bg-black/20 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
+                            <span className="bg-white/90 text-[#052a51] font-bold text-sm px-4 py-2 rounded-full shadow-lg flex items-center gap-2">
+                              <Maximize2 size={16} /> View Gallery
+                            </span>
+                          </div>
                           <div className="absolute top-4 left-4 bg-white/95 backdrop-blur-sm px-3 py-1 rounded-full text-xs font-bold text-[#052a51] shadow-sm">
                             {tile.category}
                           </div>
@@ -318,6 +404,76 @@ export default function DesignsCatalog() {
         </div>
 
         <Footer />
+        
+        {/* Gallery Lightbox Modal */}
+        <AnimatePresence>
+          {selectedTile && (
+            <motion.div 
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              className="fixed inset-0 z-[100] bg-black/90 backdrop-blur-sm flex flex-col items-center justify-center p-4 md:p-8"
+              onClick={() => setSelectedTile(null)}
+            >
+              <button 
+                onClick={() => setSelectedTile(null)}
+                className="absolute top-6 right-6 text-white/70 hover:text-white bg-black/50 hover:bg-black/80 rounded-full p-2 transition-all"
+              >
+                <X size={28} />
+              </button>
+              
+              <div 
+                className="relative w-full max-w-5xl h-full max-h-[75vh] flex items-center justify-center"
+                onClick={(e) => e.stopPropagation()}
+              >
+                {/* eslint-disable-next-line @next/next/no-img-element */}
+                <img 
+                  src={selectedTile.images[currentImageIndex]} 
+                  alt={`${selectedTile.name} - View ${currentImageIndex + 1}`}
+                  className="max-w-full max-h-full object-contain rounded-lg shadow-2xl"
+                />
+                
+                {selectedTile.images.length > 1 && (
+                  <>
+                    <button 
+                      onClick={(e) => { e.stopPropagation(); prevImage(); }}
+                      className="absolute left-0 md:-left-12 top-1/2 -translate-y-1/2 text-white/70 hover:text-white bg-black/50 hover:bg-black/80 rounded-full p-3 transition-all"
+                    >
+                      <ChevronLeft size={32} />
+                    </button>
+                    <button 
+                      onClick={(e) => { e.stopPropagation(); nextImage(); }}
+                      className="absolute right-0 md:-right-12 top-1/2 -translate-y-1/2 text-white/70 hover:text-white bg-black/50 hover:bg-black/80 rounded-full p-3 transition-all"
+                    >
+                      <ChevronRight size={32} />
+                    </button>
+                  </>
+                )}
+              </div>
+              
+              <div 
+                className="mt-6 flex flex-col items-center gap-4"
+                onClick={(e) => e.stopPropagation()}
+              >
+                <h3 className="text-white font-bold text-2xl">{selectedTile.name}</h3>
+                
+                {selectedTile.images.length > 1 && (
+                  <div className="flex gap-2">
+                    {selectedTile.images.map((_, idx) => (
+                      <button
+                        key={idx}
+                        onClick={() => setCurrentImageIndex(idx)}
+                        className={`w-2.5 h-2.5 rounded-full transition-all ${
+                          currentImageIndex === idx ? "bg-[#F26522] scale-125" : "bg-white/30 hover:bg-white/50"
+                        }`}
+                      />
+                    ))}
+                  </div>
+                )}
+              </div>
+            </motion.div>
+          )}
+        </AnimatePresence>
       </main>
     </QuoteModalProvider>
   );
