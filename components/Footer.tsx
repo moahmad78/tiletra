@@ -1,10 +1,26 @@
 "use client";
 
+import { useState, useEffect } from "react";
 import { MapPin, Phone, Mail } from "lucide-react";
 import { useQuoteModal } from "@/components/QuoteModalProvider";
 
 export default function Footer() {
   const { openModal } = useQuoteModal();
+  const [showWhatsApp, setShowWhatsApp] = useState(false);
+
+  useEffect(() => {
+    const handleScroll = () => {
+      if (window.scrollY > 400) {
+        setShowWhatsApp(true);
+      } else {
+        setShowWhatsApp(false);
+      }
+    };
+
+    handleScroll();
+    window.addEventListener("scroll", handleScroll, { passive: true });
+    return () => window.removeEventListener("scroll", handleScroll);
+  }, []);
   return (
     <>
       <footer className="bg-[#02152b] text-white/70 pt-[60px] pb-[30px] border-t border-white/10">
@@ -114,7 +130,9 @@ export default function Footer() {
         href="https://wa.me/917870935277" 
         target="_blank" 
         rel="noopener noreferrer"
-        className="fixed bottom-6 right-6 z-50 w-[50px] h-[50px] md:w-[60px] md:h-[60px] rounded-full bg-[#25D366] text-white flex items-center justify-center shadow-lg hover:scale-110 transition-transform duration-300 group"
+        className={`fixed bottom-6 right-6 z-50 w-[50px] h-[50px] md:w-[60px] md:h-[60px] rounded-full bg-[#25D366] text-white flex items-center justify-center shadow-lg hover:scale-110 transition-all duration-300 group ${
+          showWhatsApp ? "translate-y-0 opacity-100 pointer-events-auto" : "translate-y-20 opacity-0 pointer-events-none md:translate-y-0 md:opacity-100 md:pointer-events-auto"
+        }`}
         aria-label="Chat on WhatsApp"
       >
         <svg viewBox="0 0 24 24" fill="currentColor" className="w-6 h-6 md:w-8 md:h-8">
