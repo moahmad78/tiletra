@@ -100,14 +100,14 @@ export default function Header() {
           </div>
 
           {/* Desktop Nav */}
-          <nav className="hidden md:flex items-center gap-8">
+          <nav className="hidden md:flex items-center gap-4 lg:gap-8">
             {navLinks.map((link) => (
               <a
                 key={link.name}
                 href={link.href}
                 {...(link.isExternal ? { target: "_self", rel: "noopener" } : {})}
                 className={cn(
-                  "text-[15px] font-bold transition-colors",
+                  "text-[14px] lg:text-[15px] font-bold transition-colors whitespace-nowrap",
                   activeSection === link.id ? "text-[#F26522]" : "text-[#052a51] hover:text-[#F26522]"
                 )}
               >
@@ -116,13 +116,13 @@ export default function Header() {
             ))}
           </nav>
 
-          <div className="hidden md:flex items-center gap-4">
+          <div className="hidden md:flex items-center gap-2 lg:gap-4">
             <a href="tel:+917870935277">
-              <Button variant="outline" className="rounded-xl px-6 h-[46px] font-bold text-[#052a51] border-gray-200 hover:border-[#F26522] hover:bg-[#F26522]/5 hover:text-[#F26522] transition-all shadow-sm">
+              <Button variant="outline" className="rounded-xl px-4 lg:px-6 h-[40px] lg:h-[46px] font-bold text-[#052a51] border-gray-200 hover:border-[#F26522] hover:bg-[#F26522]/5 hover:text-[#F26522] transition-all shadow-sm whitespace-nowrap">
                 Call Now
               </Button>
             </a>
-            <Button onClick={openModal} className="rounded-xl px-8 h-[46px] font-bold text-white bg-[#F26522] hover:bg-[#d95a1e] shadow-md hover:shadow-lg hover:-translate-y-0.5 transition-all">
+            <Button onClick={openModal} className="rounded-xl px-4 lg:px-8 h-[40px] lg:h-[46px] font-bold text-white bg-[#F26522] hover:bg-[#d95a1e] shadow-md hover:shadow-lg hover:-translate-y-0.5 transition-all whitespace-nowrap">
               Get Free Quote
             </Button>
           </div>
