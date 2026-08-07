@@ -158,7 +158,7 @@ export default function DesignsCatalog() {
         <Header />
         
         {/* Page Hero */}
-        <div className="pt-32 pb-16 bg-[#052a51] relative overflow-hidden">
+        <div className="pt-48 pb-16 bg-[#052a51] relative overflow-hidden">
           <div className="absolute inset-0 opacity-10 bg-[url('https://images.unsplash.com/photo-1600585154340-be6161a56a0c?auto=format&fit=crop&q=80&w=2000')] bg-cover bg-center mix-blend-overlay"></div>
           <div className="w-full max-w-[1400px] mx-auto px-[20px] md:px-[24px] lg:px-[32px] relative z-10">
             <motion.h1 
