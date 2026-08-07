@@ -60,6 +60,7 @@ export default function Footer() {
               <ul className="space-y-3 text-sm font-medium">
                 <li><a href="#" className="hover:text-[#F26522] transition-colors flex items-center gap-2"><span className="w-1.5 h-1.5 rounded-full bg-[#F26522]/50"></span> Home</a></li>
                 <li><a href="#gallery" className="hover:text-[#F26522] transition-colors flex items-center gap-2"><span className="w-1.5 h-1.5 rounded-full bg-[#F26522]/50"></span> Project Portfolio</a></li>
+                <li><a href="/designs" className="hover:text-[#F26522] transition-colors flex items-center gap-2"><span className="w-1.5 h-1.5 rounded-full bg-[#F26522]/50"></span> Shop</a></li>
                 <li><a href="#faq" className="hover:text-[#F26522] transition-colors flex items-center gap-2"><span className="w-1.5 h-1.5 rounded-full bg-[#F26522]/50"></span> FAQ</a></li>
                 <li><button onClick={openModal} className="hover:text-[#F26522] transition-colors flex items-center gap-2"><span className="w-1.5 h-1.5 rounded-full bg-[#F26522]/50"></span> Book Free Site Visit</button></li>
               </ul>
