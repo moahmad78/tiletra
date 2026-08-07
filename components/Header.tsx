@@ -82,20 +82,12 @@ export default function Header() {
         <div className="w-full max-w-[1400px] mx-auto px-[20px] md:px-[24px] lg:px-[32px] h-full flex items-center justify-between">
           
           <div className="flex-shrink-0">
-            <a href="#" className="flex items-center gap-3 group">
-              <img 
-                src="/Tiletra/logo/icon.png" 
-                alt="Tiletra Icon" 
-                className="h-8 md:hidden transition-transform group-hover:scale-105"
-              />
+            <a href="/" className="flex items-center gap-3 group">
               <img 
                 src="/Tiletra/logo/web-logo.png" 
                 alt="Tiletra" 
-                className="hidden md:block h-[45px] lg:h-[55px] w-auto object-contain transition-all duration-300 group-hover:opacity-90"
+                className="h-[35px] md:h-[45px] lg:h-[55px] w-auto object-contain transition-all duration-300 group-hover:opacity-90"
               />
-              <span className="md:hidden text-2xl font-bold tracking-tight text-[#052a51]">
-                Tiletra
-              </span>
             </a>
           </div>
 
