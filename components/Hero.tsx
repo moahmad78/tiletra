@@ -132,18 +132,18 @@ export default function Hero() {
             </motion.div>
 
             {/* CTA Buttons */}
-            <motion.div variants={itemVariants} className="flex flex-wrap gap-5">
+            <motion.div variants={itemVariants} className="flex flex-row gap-3 sm:gap-5 w-full">
               <Button
                 onClick={openModal}
                 size="lg"
-                className="w-full sm:w-auto sm:px-8 bg-[#F26522] hover:bg-[#d95a1e] text-white rounded-[14px] h-[56px] font-bold text-lg shadow-[0_8px_20px_rgba(242,101,34,0.3)] hover:-translate-y-1 transition-all"
+                className="flex-1 sm:flex-none sm:w-auto px-2 sm:px-8 bg-[#F26522] hover:bg-[#d95a1e] text-white rounded-[14px] h-[50px] sm:h-[56px] font-bold text-[14px] sm:text-lg shadow-[0_8px_20px_rgba(242,101,34,0.3)] hover:-translate-y-1 transition-all whitespace-nowrap"
               >
-                Get Free Quote <ArrowRight className="ml-2 w-5 h-5" />
+                Get Free Quote <ArrowRight className="ml-1 sm:ml-2 w-4 h-4 sm:w-5 sm:h-5 hidden sm:inline-block" />
               </Button>
-              <a href="tel:+917870935277" className="w-full sm:w-auto">
+              <a href="tel:+917870935277" className="flex-1 sm:flex-none sm:w-auto">
                 <Button
                   size="lg"
-                  className="w-full sm:px-8 bg-[#052a51]/80 hover:bg-[#031b36] backdrop-blur-md text-white rounded-[14px] h-[56px] font-bold text-lg border border-white/10 hover:-translate-y-1 transition-all"
+                  className="w-full sm:px-8 bg-[#052a51]/80 hover:bg-[#031b36] backdrop-blur-md text-white rounded-[14px] h-[50px] sm:h-[56px] font-bold text-[14px] sm:text-lg border border-white/10 hover:-translate-y-1 transition-all whitespace-nowrap"
                 >
                   Call Now
                 </Button>
