@@ -7,15 +7,19 @@ import Header from "@/components/Header";
 import Footer from "@/components/Footer";
 import { QuoteModalProvider } from "@/components/QuoteModalProvider";
 
-// Define categories
+// Define categories based on Indian market
 const CATEGORIES = [
   "All",
-  "Matte Tile",
-  "Glossy Tile",
+  "Vitrified Tiles",
+  "Ceramic Tiles",
+  "Porcelain Tiles",
   "Marble",
   "Granite",
-  "Bathroom Tile",
-  "Bedroom Tile",
+  "Wooden Planks",
+  "Elevation Tiles",
+  "Parking Tiles",
+  "Moroccan Tiles",
+  "3D Tiles"
 ];
 
 const designs = [
@@ -24,65 +28,121 @@ const designs = [
     name: "Statuario White Marble",
     category: "Marble",
     image: "https://images.unsplash.com/photo-1600607688969-a5bfcd646154?auto=format&fit=crop&q=80&w=800",
-    price: "₹120 / sq.ft",
-    dimension: "800x1600 mm"
+    price: "₹180 - ₹350 / sq.ft",
+    dimension: "Custom Slab"
   },
   {
     id: 2,
-    name: "Onyx Blue Glossy",
-    category: "Glossy Tile",
+    name: "Italian Onyx Blue",
+    category: "Marble",
     image: "https://images.unsplash.com/photo-1620626011761-996317b8d101?auto=format&fit=crop&q=80&w=800",
-    price: "₹65 / sq.ft",
-    dimension: "600x1200 mm"
+    price: "₹450 / sq.ft",
+    dimension: "Custom Slab"
   },
   {
     id: 3,
-    name: "Rustic Wood Finish",
-    category: "Bedroom Tile",
-    image: "https://images.unsplash.com/photo-1581858726788-75bc0f6a952d?auto=format&fit=crop&q=80&w=800",
-    price: "₹55 / sq.ft",
-    dimension: "200x1200 mm"
+    name: "PGVT Calacatta Gold",
+    category: "Vitrified Tiles",
+    image: "https://images.unsplash.com/photo-1600566753190-17f0baa2a6c3?auto=format&fit=crop&q=80&w=800",
+    price: "₹55 - ₹85 / sq.ft",
+    dimension: "800x1600 mm"
   },
   {
     id: 4,
-    name: "Cement Concrete Matte",
-    category: "Matte Tile",
+    name: "Double Charge Ivory",
+    category: "Vitrified Tiles",
     image: "https://images.unsplash.com/photo-1502005229762-cf1b2da7c5d6?auto=format&fit=crop&q=80&w=800",
-    price: "₹45 / sq.ft",
+    price: "₹45 - ₹60 / sq.ft",
     dimension: "600x600 mm"
   },
   {
     id: 5,
-    name: "Moroccan Art Pattern",
-    category: "Bathroom Tile",
-    image: "https://images.unsplash.com/photo-1584622650111-993a426fbf0a?auto=format&fit=crop&q=80&w=800",
-    price: "₹75 / sq.ft",
-    dimension: "300x300 mm"
+    name: "Rustic Pine Wood",
+    category: "Wooden Planks",
+    image: "https://images.unsplash.com/photo-1581858726788-75bc0f6a952d?auto=format&fit=crop&q=80&w=800",
+    price: "₹50 - ₹75 / sq.ft",
+    dimension: "200x1200 mm"
   },
   {
     id: 6,
-    name: "Black Galaxy Granite",
-    category: "Granite",
-    image: "https://images.unsplash.com/photo-1588824345437-080bc2b6f131?auto=format&fit=crop&q=80&w=800",
-    price: "₹150 / sq.ft",
-    dimension: "Custom Size"
+    name: "Teak Wood Finish",
+    category: "Wooden Planks",
+    image: "https://images.unsplash.com/photo-1516455590571-18256e5bb9ff?auto=format&fit=crop&q=80&w=800",
+    price: "₹55 / sq.ft",
+    dimension: "200x1000 mm"
   },
   {
     id: 7,
-    name: "Travertine Beige",
-    category: "Matte Tile",
-    image: "https://images.unsplash.com/photo-1600566753190-17f0baa2a6c3?auto=format&fit=crop&q=80&w=800",
-    price: "₹60 / sq.ft",
-    dimension: "600x1200 mm"
+    name: "Ceramic Wall Flora",
+    category: "Ceramic Tiles",
+    image: "https://images.unsplash.com/photo-1615873968403-89e068629265?auto=format&fit=crop&q=80&w=800",
+    price: "₹35 / sq.ft",
+    dimension: "300x450 mm"
   },
   {
     id: 8,
-    name: "Aqua Blue Mosaic",
-    category: "Bathroom Tile",
+    name: "Anti-Skid Bathroom Floor",
+    category: "Ceramic Tiles",
     image: "https://images.unsplash.com/photo-1584622781564-1d987f7333c1?auto=format&fit=crop&q=80&w=800",
-    price: "₹85 / sq.ft",
-    dimension: "300x450 mm"
+    price: "₹40 / sq.ft",
+    dimension: "300x300 mm"
   },
+  {
+    id: 9,
+    name: "Black Galaxy",
+    category: "Granite",
+    image: "https://images.unsplash.com/photo-1588824345437-080bc2b6f131?auto=format&fit=crop&q=80&w=800",
+    price: "₹120 - ₹160 / sq.ft",
+    dimension: "Custom Size"
+  },
+  {
+    id: 10,
+    name: "Rajasthan Red",
+    category: "Granite",
+    image: "https://images.unsplash.com/photo-1600607687920-4e2a09cf159d?auto=format&fit=crop&q=80&w=800",
+    price: "₹85 / sq.ft",
+    dimension: "Custom Size"
+  },
+  {
+    id: 11,
+    name: "Natural Stone Cladding",
+    category: "Elevation Tiles",
+    image: "https://images.unsplash.com/photo-1600585154340-be6161a56a0c?auto=format&fit=crop&q=80&w=800",
+    price: "₹65 - ₹90 / sq.ft",
+    dimension: "300x600 mm"
+  },
+  {
+    id: 12,
+    name: "Heavy Duty Chequered",
+    category: "Parking Tiles",
+    image: "https://images.unsplash.com/photo-1590209210985-263a0333250b?auto=format&fit=crop&q=80&w=800",
+    price: "₹35 - ₹50 / sq.ft",
+    dimension: "400x400 mm"
+  },
+  {
+    id: 13,
+    name: "Moroccan Art Pattern",
+    category: "Moroccan Tiles",
+    image: "https://images.unsplash.com/photo-1584622650111-993a426fbf0a?auto=format&fit=crop&q=80&w=800",
+    price: "₹70 / sq.ft",
+    dimension: "600x600 mm"
+  },
+  {
+    id: 14,
+    name: "Ocean Wave 3D",
+    category: "3D Tiles",
+    image: "https://images.unsplash.com/photo-1528308358245-c472f7ed9302?auto=format&fit=crop&q=80&w=800",
+    price: "₹120 / sq.ft",
+    dimension: "600x1200 mm"
+  },
+  {
+    id: 15,
+    name: "Sintered Stone Slab",
+    category: "Porcelain Tiles",
+    image: "https://images.unsplash.com/photo-1600573472591-ee6981cf35b6?auto=format&fit=crop&q=80&w=800",
+    price: "₹150 - ₹250 / sq.ft",
+    dimension: "1200x2400 mm"
+  }
 ];
 
 export default function DesignsCatalog() {
