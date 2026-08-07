@@ -44,7 +44,7 @@ export default function Header() {
     { name: "Projects", href: "/#projects", id: "projects" },
     { name: "Shop", href: "/designs", id: "designs" },
     { name: "FAQ", href: "/#faq", id: "faq" },
-    { name: "Contact", href: "/#contact", id: "contact" },
+    { name: "Contact", href: "/contact", id: "contact" },
   ];
 
   return (

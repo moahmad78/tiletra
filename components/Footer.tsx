@@ -62,6 +62,7 @@ export default function Footer() {
                 <li><a href="#gallery" className="hover:text-[#F26522] transition-colors flex items-center gap-2"><span className="w-1.5 h-1.5 rounded-full bg-[#F26522]/50"></span> Project Portfolio</a></li>
                 <li><a href="/designs" className="hover:text-[#F26522] transition-colors flex items-center gap-2"><span className="w-1.5 h-1.5 rounded-full bg-[#F26522]/50"></span> Shop</a></li>
                 <li><a href="#faq" className="hover:text-[#F26522] transition-colors flex items-center gap-2"><span className="w-1.5 h-1.5 rounded-full bg-[#F26522]/50"></span> FAQ</a></li>
+                <li><a href="/contact" className="hover:text-[#F26522] transition-colors flex items-center gap-2"><span className="w-1.5 h-1.5 rounded-full bg-[#F26522]/50"></span> Contact Us</a></li>
                 <li><button onClick={openModal} className="hover:text-[#F26522] transition-colors flex items-center gap-2"><span className="w-1.5 h-1.5 rounded-full bg-[#F26522]/50"></span> Book Free Site Visit</button></li>
               </ul>
             </div>
