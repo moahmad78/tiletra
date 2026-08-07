@@ -17,6 +17,7 @@ function Counter({ from, to, duration = 2 }: { from: number; to: number; duratio
   useEffect(() => {
     if (inView && !hasAnimated) {
       spring.set(to);
+      // eslint-disable-next-line react-hooks/set-state-in-effect
       setHasAnimated(true);
     }
   }, [inView, spring, to, hasAnimated]);

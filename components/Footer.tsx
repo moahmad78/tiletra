@@ -20,7 +20,7 @@ export default function Footer() {
                 />
               </div>
               <p className="mb-8 leading-relaxed text-sm">
-                Bangalore's premium tile contractor. We specialize in flawless floor, wall, bathroom, and kitchen tile installations as well as luxury marble and granite flooring.
+                Bangalore&apos;s premium tile contractor. We specialize in flawless floor, wall, bathroom, and kitchen tile installations as well as luxury marble and granite flooring.
               </p>
               <div className="flex gap-4">
                 <a href="https://www.instagram.com/sahil_sheikh78/" target="_blank" rel="noopener noreferrer" className="w-10 h-10 rounded-full bg-white/10 flex items-center justify-center hover:bg-[#F26522] hover:text-white text-white transition-all duration-300 hover:scale-110">

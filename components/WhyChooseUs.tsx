@@ -1,7 +1,7 @@
 "use client";
 
 import { motion } from "framer-motion";
-import { CheckCircle2, ShieldCheck, Gem, IndianRupee, Clock, Sparkles, Target, Droplets, Smile } from "lucide-react";
+import { ShieldCheck, Gem, IndianRupee, Clock, Sparkles, Target, Droplets, Smile } from "lucide-react";
 import SectionHeader from "./SectionHeader";
 
 export default function WhyChooseUs() {
@@ -37,6 +37,7 @@ export default function WhyChooseUs() {
             viewport={{ once: true }}
             className="w-full lg:w-[45%] h-[420px] lg:h-[480px] rounded-[20px] overflow-hidden relative group shadow-[0_20px_40px_rgba(0,0,0,0.1)]"
           >
+            {/* eslint-disable-next-line @next/next/no-img-element */}
             <img 
               src="https://images.unsplash.com/photo-1600585154340-be6161a56a0c?auto=format&fit=crop&q=80&w=1000" 
               alt="Premium tile installation craftsmanship"
