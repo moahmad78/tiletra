@@ -12,7 +12,7 @@ export default function WhyChooseUs() {
     { title: "On-Time Delivery", icon: Clock },
     { title: "Clean Workmanship", icon: Sparkles },
     { title: "Attention to Detail", icon: Target },
-    { title: "Waterproof Install", icon: Droplets },
+    { title: "Expert Tile Laying", icon: Droplets },
     { title: "100% Satisfaction", icon: Smile }
   ];
 

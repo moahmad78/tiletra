@@ -2,6 +2,10 @@ import type { Metadata } from "next";
 import { Plus_Jakarta_Sans } from "next/font/google";
 import "./globals.css";
 import { QuoteModalProvider } from "@/components/QuoteModalProvider";
+import CartDrawer from "@/components/cart/CartDrawer";
+import BottomTabBar from "@/components/BottomTabBar";
+import LoginModal from "@/components/auth/LoginModal";
+import { Toaster } from "sonner";
 
 const jakarta = Plus_Jakarta_Sans({
   variable: "--font-jakarta",
@@ -9,20 +13,21 @@ const jakarta = Plus_Jakarta_Sans({
 });
 
 export const metadata: Metadata = {
-  title: "Tiletra | Premium Tile Contractor in Bangalore",
-  description: "Tiletra is a professional tile contractor in Bangalore offering floor tile installation, wall tile installation, bathroom tiles, kitchen tiles, marble, granite, and commercial tile solutions. Contact us today for a free site visit and quotation.",
+  title: "Tiletra | Quality Tiles for Strong Spaces",
+  description: "Tiletra — India's premium tile store. Shop floor tiles, wall tiles, bathroom tiles, kitchen tiles, outdoor & designer tiles. Free delivery on orders above ₹15,000. Browse 200+ curated tiles online.",
   openGraph: {
-    title: "Tiletra | Premium Tile Contractor in Bangalore",
-    description: "Tiletra is a professional tile contractor in Bangalore offering floor tile installation, wall tile installation, bathroom tiles, kitchen tiles, marble, granite, and commercial tile solutions. Contact us today for a free site visit and quotation.",
+    title: "Tiletra | Quality Tiles for Strong Spaces",
+    description: "Shop premium floor, wall, bathroom, kitchen & outdoor tiles at Tiletra. Free delivery above ₹15,000. 200+ curated tiles, expert advice.",
     type: "website",
     images: ["/Tiletra/logo/logo.png"],
   },
   twitter: {
     card: "summary_large_image",
-    title: "Tiletra | Premium Tile Contractor in Bangalore",
-    description: "Tiletra is a professional tile contractor in Bangalore offering floor tile installation, wall tile installation, bathroom tiles, kitchen tiles, marble, granite, and commercial tile solutions. Contact us today for a free site visit and quotation.",
+    title: "Tiletra | Quality Tiles for Strong Spaces",
+    description: "Shop premium floor, wall, bathroom & kitchen tiles at Tiletra. Free delivery above ₹15,000.",
   },
 };
+
 
 export default function RootLayout({
   children,
@@ -37,13 +42,13 @@ export default function RootLayout({
       <head>
         <link rel="icon" href="/Tiletra/logo/icon.png" sizes="any" />
       </head>
-      <body className="min-h-full flex flex-col font-sans bg-white text-gray-900">
+      <body className="min-h-full flex flex-col font-sans bg-white text-gray-900 pb-[60px] md:pb-0">
         <script
           type="application/ld+json"
           dangerouslySetInnerHTML={{
             __html: JSON.stringify({
               "@context": "https://schema.org",
-              "@type": "LocalBusiness",
+              "@type": "Store",
               "name": "Tiletra",
               "image": "https://images.unsplash.com/photo-1581094794329-c8112a89af12?q=80&w=2070&auto=format&fit=crop",
               "@id": "",
@@ -77,6 +82,10 @@ export default function RootLayout({
         />
         <QuoteModalProvider>
           {children}
+          <CartDrawer />
+          <BottomTabBar />
+          <LoginModal />
+          <Toaster position="top-center" richColors />
         </QuoteModalProvider>
       </body>
     </html>

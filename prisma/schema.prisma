@@ -1,0 +1,201 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model Category {
+  id              String    @id @default(cuid())
+  name            String
+  slug            String    @unique
+  icon            String    @default("Grid")
+  description     String    @default("")
+  image           String    @default("")
+  popularFinishes String[]  @default([])
+  popularSizes    String[]  @default([])
+  order           Int       @default(0)
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+  products        Product[]
+}
+
+model Product {
+  id           String           @id @default(cuid())
+  name         String
+  slug         String           @unique
+  categoryId   String?
+  categorySlug String           @default("floor-tiles")
+  categoryName String           @default("Floor Tiles")
+  subcategory  String?
+  material     String           @default("Vitrified")
+  finish       String           @default("Glossy")
+  size         String           @default("600x600mm")
+  pricePerSqft Float            @default(45)
+  thickness    String           @default("9mm")
+  usage        String           @default("Indoor / Floor")
+  look         String           @default("Marble Look")
+  isTrending   Boolean          @default(false)
+  isBestseller Boolean          @default(false)
+  isNewArrival Boolean          @default(false)
+  inStock      Boolean          @default(true)
+  images       String[]         @default([])
+  description  String           @default("")
+  rating       Float            @default(4.8)
+  reviewCount  Int              @default(12)
+  specs        Json?
+  createdAt    DateTime         @default(now())
+  updatedAt    DateTime         @updatedAt
+
+  category     Category?        @relation(fields: [categoryId], references: [id], onDelete: SetNull)
+  variants     ProductVariant[]
+  reviews      Review[]
+
+  @@index([categorySlug])
+  @@index([isTrending])
+  @@index([isBestseller])
+}
+
+model ProductVariant {
+  id           String   @id @default(cuid())
+  productId    String
+  size         String
+  finish       String
+  color        String
+  pricePerSqft Float
+  pricePerBox  Float
+  sqftPerBox   Float
+  piecesPerBox Int      @default(4)
+  inStock      Boolean  @default(true)
+  stockBoxes   Int      @default(50)
+
+  product      Product  @relation(fields: [productId], references: [id], onDelete: Cascade)
+
+  @@index([productId])
+}
+
+model Order {
+  id                String      @id
+  customerName      String
+  customerPhone     String
+  customerEmail     String      @default("customer@tiletra.in")
+  shippingAddress   Json
+  subtotal          Float
+  deliveryFee       Float       @default(0)
+  discount          Float       @default(0)
+  total             Float
+  paymentStatus     String      @default("Pending") // Paid | Pending | Refunded
+  paymentMethod     String      @default("Online")  // Online | COD | UPI | Card | NetBanking
+  paymentCollected  Boolean     @default(false)
+  paymentId         String?
+  orderStatus       String      @default("Processing") // Processing | Confirmed | Dispatched | Out for Delivery | Delivered | Cancelled
+  courierName       String?
+  trackingNumber    String?
+  internalNotes     String?
+  createdAt         DateTime    @default(now())
+  estimatedDelivery String      @default("3–5 Business Days")
+  updatedAt         DateTime    @updatedAt
+
+  items             OrderItem[]
+
+  @@index([customerPhone])
+  @@index([orderStatus])
+}
+
+model OrderItem {
+  id             String  @id @default(cuid())
+  orderId        String
+  productId      String
+  productName    String
+  variantId      String
+  variantDetails String
+  boxQuantity    Int
+  pricePerBox    Float
+  totalPrice     Float
+  image          String  @default("")
+
+  order          Order   @relation(fields: [orderId], references: [id], onDelete: Cascade)
+
+  @@index([orderId])
+}
+
+model Customer {
+  id          String   @id @default(cuid())
+  name        String
+  phone       String   @unique
+  email       String?
+  city        String   @default("Bangalore")
+  totalOrders Int      @default(0)
+  totalSpent  Float    @default(0)
+  status      String   @default("Active") // Active | Blocked
+  notes       String?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+}
+
+model Review {
+  id          String   @id @default(cuid())
+  productId   String
+  productName String
+  author      String
+  city        String   @default("Bangalore")
+  rating      Int      @default(5)
+  comment     String
+  date        String
+  status      String   @default("approved") // pending | approved | rejected
+  photos      String[] @default([])
+  createdAt   DateTime @default(now())
+
+  product     Product? @relation(fields: [productId], references: [id], onDelete: Cascade)
+
+  @@index([productId])
+  @@index([status])
+}
+
+model Coupon {
+  id             String   @id @default(cuid())
+  code           String   @unique
+  discountType   String   @default("percentage") // percentage | flat
+  value          Float
+  minOrderValue  Float    @default(0)
+  maxDiscountCap Float?
+  usageLimit     Int?
+  usedCount      Int      @default(0)
+  validFrom      String   @default("2026-01-01")
+  validTill      String   @default("2026-12-31")
+  isActive       Boolean  @default(true)
+  createdAt      DateTime @default(now())
+}
+
+model OfferBanner {
+  id         String   @id @default(cuid())
+  badge      String   @default("Special Offer")
+  title      String
+  subtitle   String   @default("")
+  cta        String   @default("Shop Now")
+  href       String   @default("/shop")
+  image      String   @default("")
+  bgGradient String   @default("from-[#052a51]/95 via-[#052a51]/80 to-transparent")
+  isActive   Boolean  @default(true)
+  order      Int      @default(0)
+  createdAt  DateTime @default(now())
+}
+
+model StoreSettings {
+  id                    String   @id @default("default-settings")
+  storeName             String   @default("Tiletra India")
+  contactPhone          String   @default("+91 78709 35277")
+  whatsappNumber        String   @default("+91 78709 35277")
+  email                 String   @default("hello@tiletra.in")
+  address               String   @default("41, 10th A Cross Rd, Janapriya Layout, Begur, Bengaluru, Karnataka 560114")
+  freeDeliveryThreshold Float    @default(15000)
+  standardDeliveryFee   Float    @default(999)
+  autoAcceptOrders      Boolean  @default(true)
+  lowStockThreshold     Int      @default(10)
+  codEnabled            Boolean  @default(true)
+  codMaxLimit           Float    @default(25000)
+  codBlockedPincodes    String[] @default(["560099"])
+  updatedAt             DateTime @updatedAt
+}

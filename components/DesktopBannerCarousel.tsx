@@ -1,0 +1,183 @@
+"use client";
+
+import { useState, useEffect } from "react";
+import Image from "next/image";
+import Link from "next/link";
+import { ChevronLeft, ChevronRight, Sparkles, ArrowRight, ShieldCheck, Truck } from "lucide-react";
+
+interface BannerSlide {
+  id: string;
+  badge: string;
+  headline: string;
+  subtext: string;
+  ctaText: string;
+  ctaHref: string;
+  image: string;
+  accentColor: string;
+}
+
+const DESKTOP_SLIDES: BannerSlide[] = [
+  {
+    id: "slide-1",
+    badge: "Special Seasonal Offer",
+    headline: "Grand Italian Marble Floor Collection",
+    subtext: "Mirror-polished seamless 800x800mm vitrified tiles starting at ₹72/sq.ft. Safe doorstep crate delivery.",
+    ctaText: "Explore Floor Tiles",
+    ctaHref: "/shop/floor-tiles",
+    image: "https://images.unsplash.com/photo-1600585154340-be6161a56a0c?w=1400&q=85",
+    accentColor: "#F26522",
+  },
+  {
+    id: "slide-2",
+    badge: "Kitchen Renovation Picks",
+    headline: "Nordic Subway & Artisan Splashbacks",
+    subtext: "Beveled glossy subway tiles and textured ceramic walls. Wipe-clean and heat resistant.",
+    ctaText: "Shop Kitchen Tiles",
+    ctaHref: "/shop/kitchen-tiles",
+    image: "https://images.unsplash.com/photo-1556911220-e15b29be8c8f?w=1400&q=85",
+    accentColor: "#052a51",
+  },
+  {
+    id: "slide-3",
+    badge: "Monsoon Proof & Heavy Duty",
+    headline: "Outdoor Balcony & Patio Pavers",
+    subtext: "R11 anti-slip textured porcelain pavers designed for heavy Bangalore rains and garden terraces.",
+    ctaText: "Browse Outdoor Tiles",
+    ctaHref: "/shop/outdoor-tiles",
+    image: "https://images.unsplash.com/photo-1558618666-fcd25c85cd64?w=1400&q=85",
+    accentColor: "#2F7A4F",
+  },
+  {
+    id: "slide-4",
+    badge: "Fast Freight Across Bangalore",
+    headline: "Direct Factory Pricing. Zero Middlemen.",
+    subtext: "Free specialized freight delivery on all orders above ₹15,000 with 100% breakage protection.",
+    ctaText: "Calculate Room Sq.Ft",
+    ctaHref: "/shop",
+    image: "https://images.unsplash.com/photo-1616486338812-3dadae4b4ace?w=1400&q=85",
+    accentColor: "#F26522",
+  },
+];
+
+export default function DesktopBannerCarousel() {
+  const [current, setCurrent] = useState(0);
+  const [isPaused, setIsPaused] = useState(false);
+
+  useEffect(() => {
+    if (isPaused) return;
+    const interval = setInterval(() => {
+      setCurrent((prev) => (prev + 1) % DESKTOP_SLIDES.length);
+    }, 5000);
+    return () => clearInterval(interval);
+  }, [isPaused]);
+
+  const prevSlide = () => {
+    setCurrent((prev) => (prev === 0 ? DESKTOP_SLIDES.length - 1 : prev - 1));
+  };
+
+  const nextSlide = () => {
+    setCurrent((prev) => (prev + 1) % DESKTOP_SLIDES.length);
+  };
+
+  return (
+    <div
+      className="hidden md:block w-full max-w-[1400px] mx-auto px-[20px] md:px-[24px] lg:px-[32px] pt-4 pb-2"
+      onMouseEnter={() => setIsPaused(true)}
+      onMouseLeave={() => setIsPaused(false)}
+    >
+      <div className="relative h-[320px] lg:h-[350px] rounded-3xl overflow-hidden shadow-sm border border-gray-100 bg-[#052a51]">
+        {/* Slides Track */}
+        {DESKTOP_SLIDES.map((slide, index) => {
+          const isActive = index === current;
+          return (
+            <div
+              key={slide.id}
+              className={`absolute inset-0 transition-opacity duration-700 ease-in-out ${
+                isActive ? "opacity-100 z-10" : "opacity-0 z-0 pointer-events-none"
+              }`}
+            >
+              {/* Background Photo */}
+              <Image
+                src={slide.image}
+                alt={slide.headline}
+                fill
+                priority={index === 0}
+                className="object-cover"
+                sizes="1400px"
+              />
+
+              {/* Gradient Scrim for Readability */}
+              <div className="absolute inset-0 bg-gradient-to-r from-[#052a51]/95 via-[#052a51]/75 to-transparent w-full md:w-[65%]" />
+
+              {/* Slide Content */}
+              <div className="relative z-20 h-full flex flex-col justify-center max-w-xl pl-8 lg:pl-12 pr-6 text-white">
+                <span
+                  className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-black uppercase tracking-wider mb-3 w-fit shadow-xs"
+                  style={{ backgroundColor: `${slide.accentColor}33`, color: "#FFF", border: `1px solid ${slide.accentColor}88` }}
+                >
+                  <Sparkles size={13} className="text-[#F26522]" />
+                  {slide.badge}
+                </span>
+
+                <h2 className="text-2xl lg:text-3xl xl:text-4xl font-black leading-tight tracking-tight text-white drop-shadow-sm">
+                  {slide.headline}
+                </h2>
+
+                <p className="text-xs lg:text-sm text-gray-200 mt-2.5 leading-relaxed max-w-md font-medium">
+                  {slide.subtext}
+                </p>
+
+                <div className="flex items-center gap-4 mt-6">
+                  <Link
+                    href={slide.ctaHref}
+                    className="inline-flex items-center gap-2 px-6 py-3 bg-[#F26522] hover:bg-[#d95a1e] text-white text-xs font-black rounded-xl shadow-md transition-all hover:scale-105 active:scale-95"
+                  >
+                    <span>{slide.ctaText}</span>
+                    <ArrowRight size={15} />
+                  </Link>
+
+                  <div className="hidden sm:flex items-center gap-1.5 text-xs text-white/80 font-bold">
+                    <Truck size={14} className="text-[#F26522]" />
+                    <span>Doorstep Delivery</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+          );
+        })}
+
+        {/* Left Arrow Button */}
+        <button
+          onClick={prevSlide}
+          aria-label="Previous Banner"
+          className="absolute left-4 top-1/2 -translate-y-1/2 z-30 w-10 h-10 rounded-full bg-black/40 hover:bg-black/70 text-white backdrop-blur-xs flex items-center justify-center transition-all hover:scale-110 shadow-md"
+        >
+          <ChevronLeft size={22} />
+        </button>
+
+        {/* Right Arrow Button */}
+        <button
+          onClick={nextSlide}
+          aria-label="Next Banner"
+          className="absolute right-4 top-1/2 -translate-y-1/2 z-30 w-10 h-10 rounded-full bg-black/40 hover:bg-black/70 text-white backdrop-blur-xs flex items-center justify-center transition-all hover:scale-110 shadow-md"
+        >
+          <ChevronRight size={22} />
+        </button>
+
+        {/* Dot Indicators */}
+        <div className="absolute bottom-4 left-1/2 -translate-x-1/2 z-30 flex items-center gap-2">
+          {DESKTOP_SLIDES.map((_, i) => (
+            <button
+              key={i}
+              onClick={() => setCurrent(i)}
+              aria-label={`Go to slide ${i + 1}`}
+              className={`h-2 rounded-full transition-all duration-300 ${
+                i === current ? "w-7 bg-[#F26522]" : "w-2 bg-white/50 hover:bg-white"
+              }`}
+            />
+          ))}
+        </div>
+      </div>
+    </div>
+  );
+}
