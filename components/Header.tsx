@@ -11,6 +11,7 @@ import { useAuthStore } from "@/lib/auth-store";
 import SearchModal from "@/components/SearchModal";
 import NotificationCenter from "@/components/notifications/NotificationCenter";
 import CategoryNavBar from "@/components/CategoryNavBar";
+import RotatingHeaderContact from "@/components/RotatingHeaderContact";
 
 export default function Header() {
   const [isScrolled, setIsScrolled] = useState(false);
@@ -67,12 +68,7 @@ export default function Header() {
               <div className="flex items-center gap-4">
                 <span className="text-[#F26522] font-bold">✨ Everything for Every Space</span>
                 <span className="text-white/30">|</span>
-                <a
-                  href="tel:+917870935277"
-                  className="flex items-center gap-1.5 hover:text-[#F26522] transition-colors font-bold tracking-wide"
-                >
-                  <Phone size={13} className="text-[#F26522]" /> +91 78709 35277
-                </a>
+                <RotatingHeaderContact />
               </div>
             </div>
           </div>
