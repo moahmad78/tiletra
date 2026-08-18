@@ -233,9 +233,9 @@ export default function CheckoutPage() {
             </h1>
           </div>
 
-          {/* User badge */}
+          {/* User badge (Hidden on mobile) */}
           {isAuthenticated && user && (
-            <div className="flex items-center gap-2 bg-white border border-gray-200 px-3.5 py-2 rounded-2xl shadow-2xs">
+            <div className="hidden sm:flex items-center gap-2 bg-white border border-gray-200 px-3.5 py-2 rounded-2xl shadow-2xs">
               <div className="w-7 h-7 rounded-full bg-[#052a51] text-white flex items-center justify-center text-xs font-black">
                 {user.name ? user.name[0].toUpperCase() : "U"}
               </div>
@@ -247,39 +247,41 @@ export default function CheckoutPage() {
           )}
         </div>
 
-        {/* Step Stepper Indicator */}
-        <div className="flex items-center justify-between mb-10 max-w-2xl bg-white p-4 rounded-3xl border border-gray-200/80 shadow-2xs">
-          {STEPS.map((s, i) => (
-            <div key={s} className="flex items-center flex-1">
-              <div className="flex items-center gap-2.5">
-                <div
-                  className={`w-9 h-9 rounded-2xl flex items-center justify-center font-black text-xs transition-colors shadow-2xs ${
-                    i < stepIndex
-                      ? "bg-[#2F7A4F] text-white"
-                      : i === stepIndex
-                      ? "bg-[#F26522] text-white"
-                      : "bg-gray-100 text-gray-400"
-                  }`}
-                >
-                  {i < stepIndex ? <Check size={16} /> : i + 1}
+        {/* Step Stepper Indicator (Fully Responsive on Mobile & Desktop) */}
+        <div className="w-full max-w-2xl bg-white px-3 py-2.5 sm:p-4 rounded-2xl sm:rounded-3xl border border-gray-200/80 shadow-2xs mb-6 sm:mb-10">
+          <div className="flex items-center justify-between">
+            {STEPS.map((s, i) => (
+              <div key={s} className={`flex items-center ${i < STEPS.length - 1 ? "flex-1" : ""}`}>
+                <div className="flex items-center gap-1.5 sm:gap-2.5 shrink-0">
+                  <div
+                    className={`w-7 h-7 sm:w-8 sm:h-8 md:w-9 md:h-9 rounded-xl sm:rounded-2xl flex items-center justify-center font-black text-[11px] sm:text-xs transition-colors shadow-2xs shrink-0 ${
+                      i < stepIndex
+                        ? "bg-[#2F7A4F] text-white"
+                        : i === stepIndex
+                        ? "bg-[#F26522] text-white"
+                        : "bg-gray-100 text-gray-400"
+                    }`}
+                  >
+                    {i < stepIndex ? <Check size={14} className="sm:w-4 sm:h-4 stroke-[2.5]" /> : i + 1}
+                  </div>
+                  <span
+                    className={`text-[11px] sm:text-xs font-bold whitespace-nowrap ${
+                      i === stepIndex ? "text-[#052a51]" : i < stepIndex ? "text-[#2F7A4F]" : "text-gray-400"
+                    }`}
+                  >
+                    {s}
+                  </span>
                 </div>
-                <span
-                  className={`text-xs font-bold ${
-                    i === stepIndex ? "text-[#052a51]" : i < stepIndex ? "text-[#2F7A4F]" : "text-gray-400"
-                  }`}
-                >
-                  {s}
-                </span>
+                {i < STEPS.length - 1 && (
+                  <div
+                    className={`flex-1 h-0.5 mx-1.5 sm:mx-3 md:mx-4 min-w-[8px] sm:min-w-[16px] ${
+                      i < stepIndex ? "bg-[#2F7A4F]" : "bg-gray-200"
+                    }`}
+                  />
+                )}
               </div>
-              {i < STEPS.length - 1 && (
-                <div
-                  className={`flex-1 h-0.5 mx-4 ${
-                    i < stepIndex ? "bg-[#2F7A4F]" : "bg-gray-200"
-                  }`}
-                />
-              )}
-            </div>
-          ))}
+            ))}
+          </div>
         </div>
 
         {/* Main Grid */}
