@@ -36,6 +36,7 @@ import ProductCard from "@/components/ProductCard";
 import ReviewSection from "@/components/reviews/ReviewSection";
 import FrequentlyBoughtTogether from "@/components/suggestions/FrequentlyBoughtTogether";
 import RecentlyViewedSlider from "@/components/suggestions/RecentlyViewedSlider";
+import SuggestedItemsSection from "@/components/suggestions/SuggestedItemsSection";
 import { showCartToast } from "@/lib/cart-toast-store";
 import { toast } from "sonner";
 
@@ -702,8 +703,13 @@ export default function ProductDetailsClient({
         )}
 
         {/* ── Recently Viewed Slider ── */}
-        <div className="mt-12 mb-8">
+        <div className="mt-12 mb-6">
           <RecentlyViewedSlider currentProductId={definedProduct.id} />
+        </div>
+
+        {/* ── Suggested Items Mix (Flipkart Style) ── */}
+        <div className="mb-10">
+          <SuggestedItemsSection currentProductId={definedProduct.id} />
         </div>
       </div>
 
