@@ -648,28 +648,6 @@ export default function ProductDetailsClient({
           <FrequentlyBoughtTogether product={definedProduct} />
         </div>
 
-        {/* ── Customer Reviews (Hidden if 0 approved reviews exist) ── */}
-        {definedProduct.reviewCount > 0 && (
-          <div className="mt-14">
-            <div className="flex items-center gap-2 mb-6">
-              <MessageSquare size={22} className="text-[#F26522]" />
-              <div>
-                <h2 className="text-2xl sm:text-3xl font-black text-[#052a51]">
-                  Customer Reviews & Photos
-                </h2>
-                <p className="text-xs text-gray-500">
-                  Real photos & ratings from verified tile buyers
-                </p>
-              </div>
-            </div>
-
-            <ReviewSection
-              productId={definedProduct.id}
-              productName={definedProduct.name}
-            />
-          </div>
-        )}
-
         {/* ── Related Products ── */}
         {relatedProducts.length > 0 && (
           <div className="mt-16 mb-8">
