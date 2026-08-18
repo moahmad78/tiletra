@@ -194,7 +194,7 @@ export default function ProductDetailsClient({
     <main className="min-h-screen flex flex-col bg-[#F8F9FA]">
       <Header />
 
-      <div className="w-full max-w-[1400px] mx-auto px-3 sm:px-4 md:px-6 lg:px-8 pt-4 md:pt-[130px] pb-16 flex-1">
+      <div className="w-full max-w-[1400px] mx-auto px-3 sm:px-4 md:px-6 lg:px-8 pt-[76px] sm:pt-[84px] md:pt-[148px] lg:pt-[155px] pb-16 flex-1">
         {/* ── Main PDP Grid: Gallery (Left) + Buy Box (Right) ── */}
         <div className="grid grid-cols-1 lg:grid-cols-[460px_1fr] xl:grid-cols-[500px_1fr] gap-6 lg:gap-10 items-start">
           {/* Gallery Column (Compact Flipkart Pattern) */}
