@@ -189,12 +189,12 @@ export default function Footer() {
             <p className="flex items-center gap-1">
               Made with ❤️ by{" "}
               <a
-                href="https://instagram.com/sahil_sheikh"
+                href="https://www.instagram.com/sahil_sheikh78/"
                 target="_blank"
                 rel="noopener noreferrer"
                 className="text-white/80 hover:text-[#F26522] font-semibold transition-colors underline underline-offset-2"
               >
-                sahil_sheikh
+                sahil_sheikh78
               </a>
             </p>
           </div>
