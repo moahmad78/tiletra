@@ -179,7 +179,15 @@ export default function Footer() {
               <Link href="/shipping-policy" className="hover:text-white transition-colors">Shipping</Link>
             </div>
             <p className="flex items-center gap-1">
-              Made with ❤️ in Bangalore
+              Made with ❤️ by{" "}
+              <a
+                href="https://instagram.com/sahil_sheikh"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="text-white/80 hover:text-[#F26522] font-semibold transition-colors underline underline-offset-2"
+              >
+                sahil_sheikh
+              </a>
             </p>
           </div>
         </div>
