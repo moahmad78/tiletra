@@ -26,26 +26,66 @@ import {
   Edit2,
   Check,
   X,
+  Plus,
+  Trash2,
+  CreditCard,
+  Building2,
+  ChevronRight,
   Loader2,
+  CheckCircle2,
+  AlertCircle,
 } from "lucide-react";
 import Header from "@/components/Header";
 import Footer from "@/components/Footer";
 import { useWishlistStore } from "@/lib/wishlist-store";
-import { useAuthStore } from "@/lib/auth-store";
+import { useAuthStore, type CustomerAddress } from "@/lib/auth-store";
 import { toast } from "sonner";
+
+type TabType = "profile" | "addresses" | "gst" | "payments";
 
 export default function AccountPage() {
   const [mounted, setMounted] = useState(false);
   const wishlistCount = useWishlistStore((s) => s.items.length);
-  const { user, isAuthenticated, logout, openLoginModal, updateProfile } = useAuthStore();
+  const {
+    user,
+    isAuthenticated,
+    logout,
+    openLoginModal,
+    updateProfile,
+    addAddress,
+    updateAddress,
+    deleteAddress,
+    setDefaultAddress,
+  } = useAuthStore();
+
+  const [activeTab, setActiveTab] = useState<TabType>("profile");
 
   // Profile Edit State
   const [isEditingProfile, setIsEditingProfile] = useState(false);
   const [editName, setEditName] = useState("");
   const [editEmail, setEditEmail] = useState("");
+  const [editGender, setEditGender] = useState<"Male" | "Female" | "Other">("Male");
   const [editAvatar, setEditAvatar] = useState<string | null>(null);
   const [isSaving, setIsSaving] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
+
+  // Address Management Form State
+  const [isAddingAddress, setIsAddingAddress] = useState(false);
+  const [editingAddressId, setEditingAddressId] = useState<string | null>(null);
+  const [addrName, setAddrName] = useState("");
+  const [addrPhone, setAddrPhone] = useState("");
+  const [addrPincode, setAddrPincode] = useState("");
+  const [addrLine1, setAddrLine1] = useState("");
+  const [addrLine2, setAddrLine2] = useState("");
+  const [addrCity, setAddrCity] = useState("Bangalore");
+  const [addrState, setAddrState] = useState("Karnataka");
+  const [addrLandmark, setAddrLandmark] = useState("");
+  const [addrLabel, setAddrLabel] = useState<"Home" | "Work" | "Other">("Home");
+
+  // GST / Business Details State (Flipkart B2B pattern)
+  const [gstNumber, setGstNumber] = useState("");
+  const [businessName, setBusinessName] = useState("");
+  const [isSavingGst, setIsSavingGst] = useState(false);
 
   useEffect(() => {
     setMounted(true);
@@ -83,7 +123,7 @@ export default function AccountPage() {
 
   const handleSaveProfile = async () => {
     if (!editName.trim()) {
-      toast.error("Please enter your name");
+      toast.error("Please enter your full name");
       return;
     }
 
@@ -96,7 +136,7 @@ export default function AccountPage() {
       });
 
       if (res.success) {
-        toast.success("Profile updated successfully!");
+        toast.success("Profile details updated successfully!");
         setIsEditingProfile(false);
       } else {
         toast.error(res.message || "Failed to update profile");
@@ -108,134 +148,570 @@ export default function AccountPage() {
     }
   };
 
+  const resetAddressForm = () => {
+    setAddrName(user?.name || "");
+    setAddrPhone(user?.phone || "");
+    setAddrPincode("");
+    setAddrLine1("");
+    setAddrLine2("");
+    setAddrCity("Bangalore");
+    setAddrState("Karnataka");
+    setAddrLandmark("");
+    setAddrLabel("Home");
+    setIsAddingAddress(false);
+    setEditingAddressId(null);
+  };
+
+  const handleStartEditAddress = (addr: CustomerAddress) => {
+    setEditingAddressId(addr.id);
+    setAddrName(addr.name);
+    setAddrPhone(addr.phone);
+    setAddrPincode(addr.pincode);
+    setAddrLine1(addr.line1);
+    setAddrLine2(addr.line2 || "");
+    setAddrCity(addr.city);
+    setAddrState(addr.state);
+    setAddrLandmark(addr.landmark || "");
+    setAddrLabel(addr.label);
+    setIsAddingAddress(true);
+  };
+
+  const handleSaveAddress = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!addrName.trim() || !addrPhone.trim() || !addrPincode.trim() || !addrLine1.trim()) {
+      toast.error("Please fill in all required fields (Name, Phone, Pincode, Address).");
+      return;
+    }
+
+    if (editingAddressId) {
+      updateAddress(editingAddressId, {
+        name: addrName.trim(),
+        phone: addrPhone.trim(),
+        pincode: addrPincode.trim(),
+        line1: addrLine1.trim(),
+        line2: addrLine2.trim() || undefined,
+        city: addrCity.trim(),
+        state: addrState.trim(),
+        landmark: addrLandmark.trim() || undefined,
+        label: addrLabel,
+      });
+      toast.success("Address updated successfully!");
+    } else {
+      addAddress({
+        name: addrName.trim(),
+        phone: addrPhone.trim(),
+        pincode: addrPincode.trim(),
+        line1: addrLine1.trim(),
+        line2: addrLine2.trim() || undefined,
+        city: addrCity.trim(),
+        state: addrState.trim(),
+        landmark: addrLandmark.trim() || undefined,
+        label: addrLabel,
+        isDefault: (user?.addresses?.length || 0) === 0,
+      });
+      toast.success("New delivery address added!");
+    }
+
+    resetAddressForm();
+  };
+
+  const handleSaveGst = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!gstNumber.trim()) {
+      toast.error("Please enter a valid GSTIN number.");
+      return;
+    }
+    setIsSavingGst(true);
+    setTimeout(() => {
+      setIsSavingGst(false);
+      toast.success("GST & Business credentials saved for B2B tax invoicing!");
+    }, 600);
+  };
+
+  const savedAddresses = user?.addresses || [];
+
   return (
-    <main className="min-h-screen flex flex-col bg-[#F3F4F5]">
+    <main className="min-h-screen flex flex-col bg-[#F1F3F6]">
       <Header />
 
-      <div className="w-full max-w-[900px] mx-auto px-[20px] md:px-[24px] lg:px-[32px] pt-[110px] md:pt-[168px] pb-6 md:pb-10 flex-1">
-        {/* Profile Card */}
-        <div className="bg-white rounded-3xl p-6 md:p-8 shadow-xs border border-gray-100 mb-6 flex flex-col sm:flex-row items-center sm:items-start gap-5 text-center sm:text-left">
-          {/* Avatar with Upload Trigger */}
-          <div className="relative group shrink-0">
-            {mounted && isAuthenticated && user?.avatar ? (
-              // eslint-disable-next-line @next/next/no-img-element
-              <img
-                src={user.avatar}
-                alt={user.name || "Customer"}
-                className="w-20 h-20 rounded-full object-cover border-2 border-[#052a51]/20 shadow-md"
-              />
-            ) : (
-              <div className="w-20 h-20 rounded-full bg-[#052a51] text-white flex items-center justify-center text-2xl font-black shadow-md">
-                {mounted && isAuthenticated && user?.name ? (
-                  user.name[0].toUpperCase()
+      <div className="w-full max-w-[1340px] mx-auto px-3 sm:px-6 lg:px-8 pt-[76px] sm:pt-[84px] md:pt-[175px] lg:pt-[180px] pb-14 flex-1">
+        {/* ══════════════════════════════════════════════════════════════
+            MOBILE FLIPKART-STYLE ACCOUNT VIEW (Hidden on md & lg)
+        ══════════════════════════════════════════════════════════════ */}
+        <div className="block md:hidden space-y-4">
+          {/* Top Flipkart Blue Profile Hero */}
+          <div className="bg-gradient-to-r from-[#052a51] to-[#0a3e74] text-white rounded-3xl p-5 shadow-sm">
+            <div className="flex items-center gap-3.5">
+              {/* Avatar */}
+              <div className="relative shrink-0">
+                {mounted && isAuthenticated && user?.avatar ? (
+                  // eslint-disable-next-line @next/next/no-img-element
+                  <img
+                    src={user.avatar}
+                    alt={user.name || "Customer"}
+                    className="w-16 h-16 rounded-full object-cover border-2 border-white/40 shadow-md"
+                  />
                 ) : (
-                  <User size={36} />
+                  <div className="w-16 h-16 rounded-full bg-white/10 text-white flex items-center justify-center text-xl font-black border border-white/20 shadow-md">
+                    {mounted && isAuthenticated && user?.name ? (
+                      user.name[0].toUpperCase()
+                    ) : (
+                      <User size={28} />
+                    )}
+                  </div>
+                )}
+                {mounted && isAuthenticated && (
+                  <button
+                    onClick={() => {
+                      setActiveTab("profile");
+                      setIsEditingProfile(true);
+                      fileInputRef.current?.click();
+                    }}
+                    className="absolute -bottom-1 -right-1 w-6 h-6 rounded-full bg-[#F26522] text-white flex items-center justify-center shadow-md active:scale-95 transition-transform"
+                    aria-label="Upload photo"
+                  >
+                    <Camera size={12} />
+                  </button>
                 )}
               </div>
-            )}
 
-            {mounted && isAuthenticated && (
-              <button
-                onClick={() => {
-                  setIsEditingProfile(true);
-                  fileInputRef.current?.click();
-                }}
-                className="absolute -bottom-1 -right-1 w-7 h-7 rounded-full bg-[#F26522] text-white flex items-center justify-center shadow-md hover:bg-[#d95a1e] active:scale-95 transition-all"
-                title="Change profile photo"
-                aria-label="Change profile photo"
-              >
-                <Camera size={14} />
-              </button>
-            )}
-          </div>
-
-          <div className="flex-1">
-            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
-              <div>
-                <div className="flex items-center justify-center sm:justify-start gap-2">
-                  <h1 className="text-2xl font-black text-[#052a51]">
-                    {mounted && isAuthenticated && user ? user.name || "Customer" : "Guest Customer"}
-                  </h1>
-                  {mounted && isAuthenticated && (
-                    <button
-                      onClick={() => setIsEditingProfile(!isEditingProfile)}
-                      className="p-1.5 text-gray-400 hover:text-[#F26522] rounded-lg hover:bg-gray-50 transition-colors"
-                      title="Edit Profile"
-                      aria-label="Edit Profile"
-                    >
-                      <Edit2 size={16} />
-                    </button>
-                  )}
-                </div>
-
-                <p className="text-xs text-gray-500 mt-0.5">
+              {/* Details */}
+              <div className="flex-1 min-w-0">
+                <p className="text-[11px] text-blue-200 font-semibold uppercase tracking-wider">Hello,</p>
+                <h1 className="text-lg font-black truncate leading-tight">
+                  {mounted && isAuthenticated && user ? user.name || "Customer" : "Guest Customer"}
+                </h1>
+                <p className="text-xs text-blue-100/90 mt-0.5 truncate">
                   {mounted && isAuthenticated && user
-                    ? `Registered Phone: +91 ${user.phone}${user.email ? ` · ${user.email}` : ""}`
-                    : "Login with your mobile number to view saved addresses and orders"}
+                    ? `+91 ${user.phone}`
+                    : "Log in for orders & fast checkout"}
                 </p>
               </div>
 
+              {/* Login / Edit action */}
               {mounted && isAuthenticated ? (
-                <div className="flex items-center justify-center sm:justify-start gap-2">
-                  <button
-                    onClick={() => setIsEditingProfile(!isEditingProfile)}
-                    className="inline-flex items-center gap-1 px-3 py-1.5 bg-orange-50 text-[#F26522] text-xs font-bold rounded-xl hover:bg-orange-100 transition-colors"
-                  >
-                    <Edit2 size={13} />
-                    <span>{isEditingProfile ? "Close Edit" : "Edit Profile"}</span>
-                  </button>
-
-                  <button
-                    onClick={handleLogout}
-                    className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-gray-100 hover:bg-red-50 hover:text-red-700 text-gray-600 text-xs font-bold rounded-xl transition-colors"
-                  >
-                    <LogOut size={13} />
-                    <span>Logout</span>
-                  </button>
-                </div>
+                <button
+                  onClick={() => setIsEditingProfile(!isEditingProfile)}
+                  className="px-3 py-1.5 bg-white/15 hover:bg-white/25 rounded-xl text-xs font-bold text-white shrink-0 active:scale-95 transition-all flex items-center gap-1"
+                >
+                  <Edit2 size={12} />
+                  <span>Edit</span>
+                </button>
               ) : (
                 <button
                   onClick={() => openLoginModal()}
-                  className="inline-flex items-center gap-1.5 px-4 py-2 bg-[#F26522] hover:bg-[#d95a1e] text-white text-xs font-bold rounded-xl shadow-xs transition-all active:scale-95 self-center sm:self-auto"
+                  className="px-3.5 py-2 bg-[#F26522] hover:bg-[#d95a1e] text-white text-xs font-black rounded-xl shadow-xs active:scale-95 transition-all shrink-0"
                 >
-                  <LogIn size={14} />
-                  <span>Login / Register</span>
+                  Log In
                 </button>
               )}
             </div>
 
-            <div className="flex flex-wrap items-center justify-center sm:justify-start gap-4 mt-4 text-xs text-gray-500 font-medium">
-              <span className="flex items-center gap-1.5">
-                <MapPin size={14} className="text-[#F26522]" /> Bangalore, Karnataka
+            {/* Quick Badges */}
+            <div className="flex items-center gap-4 mt-3.5 pt-3 border-t border-white/15 text-[11px] text-blue-100 font-medium">
+              <span className="flex items-center gap-1">
+                <MapPin size={12} className="text-[#F26522]" /> Bangalore
               </span>
-              <span className="flex items-center gap-1.5">
-                <ShieldCheck size={14} className="text-[#F26522]" /> Verified Buyer
+              <span className="flex items-center gap-1">
+                <ShieldCheck size={12} className="text-emerald-400" /> Verified Account
               </span>
-              {mounted && isAuthenticated && user?.addresses && (
-                <span className="flex items-center gap-1.5">
-                  <Sparkles size={14} className="text-[#F26522]" /> {user.addresses.length} Saved Address(es)
-                </span>
-              )}
+              <span className="flex items-center gap-1 ml-auto">
+                <Truck size={12} className="text-[#F26522]" /> Direct Freight
+              </span>
             </div>
           </div>
+
+          {/* Flipkart 2x2 Feature Grid */}
+          <div className="grid grid-cols-2 gap-2.5">
+            <Link
+              href="/account/orders"
+              className="bg-white p-3.5 rounded-2xl border border-gray-200/90 shadow-2xs flex items-center gap-3 active:scale-98 transition-transform group"
+            >
+              <div className="w-10 h-10 rounded-xl bg-blue-50 text-[#052a51] flex items-center justify-center shrink-0 group-hover:bg-[#F26522]/10 group-hover:text-[#F26522] transition-colors">
+                <Package size={20} />
+              </div>
+              <div className="min-w-0">
+                <p className="text-xs font-black text-[#052a51] group-hover:text-[#F26522] transition-colors">
+                  Orders
+                </p>
+                <p className="text-[10px] text-gray-400 font-semibold truncate">Check status & track</p>
+              </div>
+            </Link>
+
+            <Link
+              href="/wishlist"
+              className="bg-white p-3.5 rounded-2xl border border-gray-200/90 shadow-2xs flex items-center gap-3 active:scale-98 transition-transform group"
+            >
+              <div className="w-10 h-10 rounded-xl bg-red-50 text-red-500 flex items-center justify-center shrink-0">
+                <Heart size={20} />
+              </div>
+              <div className="min-w-0">
+                <p className="text-xs font-black text-[#052a51] group-hover:text-[#F26522] transition-colors">
+                  Wishlist
+                </p>
+                <p className="text-[10px] text-gray-400 font-semibold truncate">
+                  {mounted ? wishlistCount : 0} saved items
+                </p>
+              </div>
+            </Link>
+
+            <Link
+              href="/account/reviews"
+              className="bg-white p-3.5 rounded-2xl border border-gray-200/90 shadow-2xs flex items-center gap-3 active:scale-98 transition-transform group"
+            >
+              <div className="w-10 h-10 rounded-xl bg-amber-50 text-amber-600 flex items-center justify-center shrink-0">
+                <Star size={20} />
+              </div>
+              <div className="min-w-0">
+                <p className="text-xs font-black text-[#052a51] group-hover:text-[#F26522] transition-colors">
+                  Reviews
+                </p>
+                <p className="text-[10px] text-gray-400 font-semibold truncate">Ratings & photos</p>
+              </div>
+            </Link>
+
+            <Link
+              href="/account/notifications"
+              className="bg-white p-3.5 rounded-2xl border border-gray-200/90 shadow-2xs flex items-center gap-3 active:scale-98 transition-transform group"
+            >
+              <div className="w-10 h-10 rounded-xl bg-purple-50 text-purple-600 flex items-center justify-center shrink-0">
+                <Bell size={20} />
+              </div>
+              <div className="min-w-0">
+                <p className="text-xs font-black text-[#052a51] group-hover:text-[#F26522] transition-colors">
+                  Alerts
+                </p>
+                <p className="text-[10px] text-gray-400 font-semibold truncate">Offers & updates</p>
+              </div>
+            </Link>
+          </div>
+
+          {/* Account Settings List Card */}
+          <div className="bg-white rounded-3xl p-4 border border-gray-200/90 shadow-2xs space-y-1">
+            <h3 className="text-[11px] font-black text-gray-400 uppercase tracking-wider px-2 py-1">
+              Account Settings
+            </h3>
+
+            <button
+              onClick={() => {
+                setActiveTab("profile");
+                setIsEditingProfile(true);
+              }}
+              className="w-full flex items-center justify-between p-3 rounded-2xl hover:bg-gray-50 active:bg-gray-100 transition-colors text-left"
+            >
+              <div className="flex items-center gap-3">
+                <User size={18} className="text-[#052a51]" />
+                <div>
+                  <p className="text-xs font-bold text-[#052a51]">Edit Profile Information</p>
+                  <p className="text-[10px] text-gray-400">Name, email, avatar</p>
+                </div>
+              </div>
+              <ChevronRight size={16} className="text-gray-400" />
+            </button>
+
+            <button
+              onClick={() => {
+                setActiveTab("addresses");
+                setIsAddingAddress(true);
+              }}
+              className="w-full flex items-center justify-between p-3 rounded-2xl hover:bg-gray-50 active:bg-gray-100 transition-colors text-left"
+            >
+              <div className="flex items-center gap-3">
+                <MapPin size={18} className="text-[#F26522]" />
+                <div>
+                  <p className="text-xs font-bold text-[#052a51]">Saved Addresses ({savedAddresses.length})</p>
+                  <p className="text-[10px] text-gray-400">Manage delivery locations</p>
+                </div>
+              </div>
+              <ChevronRight size={16} className="text-gray-400" />
+            </button>
+
+            <button
+              onClick={() => setActiveTab("gst")}
+              className="w-full flex items-center justify-between p-3 rounded-2xl hover:bg-gray-50 active:bg-gray-100 transition-colors text-left"
+            >
+              <div className="flex items-center gap-3">
+                <Building2 size={18} className="text-emerald-600" />
+                <div>
+                  <p className="text-xs font-bold text-[#052a51]">PAN Card & GST Information</p>
+                  <p className="text-[10px] text-gray-400">For B2B tax invoicing</p>
+                </div>
+              </div>
+              <ChevronRight size={16} className="text-gray-400" />
+            </button>
+          </div>
+
+          {/* Help & Support List */}
+          <div className="bg-white rounded-3xl p-4 border border-gray-200/90 shadow-2xs space-y-1">
+            <h3 className="text-[11px] font-black text-gray-400 uppercase tracking-wider px-2 py-1">
+              Help & Policies
+            </h3>
+
+            <a
+              href="https://wa.me/919198035803?text=Hi%20Gulshan,%20I%20need%20assistance%20with%20my%20Intrihub%20account"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="w-full flex items-center justify-between p-3 rounded-2xl hover:bg-gray-50 active:bg-gray-100 transition-colors"
+            >
+              <div className="flex items-center gap-3">
+                <MessageCircle size={18} className="text-[#25D366]" />
+                <div>
+                  <p className="text-xs font-bold text-[#052a51]">WhatsApp Support (Gulshan Ali)</p>
+                  <p className="text-[10px] text-gray-400">+91 91980 35803 · Instant response</p>
+                </div>
+              </div>
+              <ArrowRight size={14} className="text-gray-400" />
+            </a>
+
+            <Link
+              href="/faq"
+              className="w-full flex items-center justify-between p-3 rounded-2xl hover:bg-gray-50 active:bg-gray-100 transition-colors"
+            >
+              <div className="flex items-center gap-3">
+                <HelpCircle size={18} className="text-amber-500" />
+                <div>
+                  <p className="text-xs font-bold text-[#052a51]">Frequently Asked Questions</p>
+                  <p className="text-[10px] text-gray-400">Shipping, returns & installation</p>
+                </div>
+              </div>
+              <ChevronRight size={16} className="text-gray-400" />
+            </Link>
+
+            <Link
+              href="/shipping-policy"
+              className="w-full flex items-center justify-between p-3 rounded-2xl hover:bg-gray-50 active:bg-gray-100 transition-colors"
+            >
+              <div className="flex items-center gap-3">
+                <Truck size={18} className="text-blue-500" />
+                <p className="text-xs font-bold text-[#052a51]">Shipping & Delivery Policy</p>
+              </div>
+              <ChevronRight size={16} className="text-gray-400" />
+            </Link>
+
+            <Link
+              href="/returns-policy"
+              className="w-full flex items-center justify-between p-3 rounded-2xl hover:bg-gray-50 active:bg-gray-100 transition-colors"
+            >
+              <div className="flex items-center gap-3">
+                <RotateCcw size={18} className="text-[#F26522]" />
+                <p className="text-xs font-bold text-[#052a51]">Returns & Refund Policy</p>
+              </div>
+              <ChevronRight size={16} className="text-gray-400" />
+            </Link>
+          </div>
+
+          {/* Logout button */}
+          {mounted && isAuthenticated && (
+            <button
+              onClick={handleLogout}
+              className="w-full py-3.5 bg-white rounded-2xl border border-red-200 text-red-600 font-black text-xs flex items-center justify-center gap-2 shadow-2xs active:scale-98 transition-all"
+            >
+              <LogOut size={15} />
+              <span>Log Out of Intrihub</span>
+            </button>
+          )}
         </div>
 
-        {/* Inline Profile Edit Panel */}
-        {mounted && isAuthenticated && isEditingProfile && (
-          <div className="bg-white rounded-3xl p-6 md:p-7 shadow-xs border border-orange-200 mb-6 animate-in fade-in zoom-in-95 duration-150">
-            <div className="flex items-center justify-between border-b border-gray-100 pb-3 mb-5">
-              <h2 className="text-base font-black text-[#052a51] flex items-center gap-2">
-                <Edit2 size={18} className="text-[#F26522]" />
-                <span>Edit Profile Details</span>
-              </h2>
-              <button
-                onClick={() => setIsEditingProfile(false)}
-                className="p-1 rounded-lg text-gray-400 hover:text-gray-600 hover:bg-gray-100"
-              >
-                <X size={18} />
-              </button>
+        {/* ══════════════════════════════════════════════════════════════
+            DESKTOP FLIPKART-STYLE 2-COLUMN DASHBOARD (Hidden on mobile)
+        ══════════════════════════════════════════════════════════════ */}
+        <div className="hidden md:grid grid-cols-[280px_1fr] lg:grid-cols-[300px_1fr] gap-6 items-start">
+          {/* ── LEFT SIDEBAR (Flipkart Navigation Panel) ── */}
+          <aside className="space-y-4 sticky top-[160px]">
+            {/* User Greeting Card */}
+            <div className="bg-white rounded-2xl p-4 border border-gray-200/90 shadow-2xs flex items-center gap-3.5">
+              <div className="relative shrink-0">
+                {mounted && isAuthenticated && user?.avatar ? (
+                  // eslint-disable-next-line @next/next/no-img-element
+                  <img
+                    src={user.avatar}
+                    alt={user.name || "Customer"}
+                    className="w-14 h-14 rounded-full object-cover border-2 border-[#052a51]/20 shadow-xs"
+                  />
+                ) : (
+                  <div className="w-14 h-14 rounded-full bg-[#052a51] text-white flex items-center justify-center text-xl font-black shadow-xs">
+                    {mounted && isAuthenticated && user?.name ? (
+                      user.name[0].toUpperCase()
+                    ) : (
+                      <User size={24} />
+                    )}
+                  </div>
+                )}
+                {mounted && isAuthenticated && (
+                  <button
+                    onClick={() => {
+                      setActiveTab("profile");
+                      setIsEditingProfile(true);
+                      fileInputRef.current?.click();
+                    }}
+                    className="absolute -bottom-1 -right-1 w-6 h-6 rounded-full bg-[#F26522] text-white flex items-center justify-center shadow-md hover:scale-110 active:scale-95 transition-all"
+                    title="Change Avatar"
+                  >
+                    <Camera size={12} />
+                  </button>
+                )}
+              </div>
+
+              <div className="min-w-0">
+                <span className="text-[11px] text-gray-400 font-semibold uppercase">Hello,</span>
+                <h2 className="text-base font-black text-[#052a51] truncate">
+                  {mounted && isAuthenticated && user ? user.name || "Customer" : "Guest Customer"}
+                </h2>
+                <p className="text-xs text-gray-500 font-medium truncate">
+                  {mounted && isAuthenticated && user ? `+91 ${user.phone}` : "Not logged in"}
+                </p>
+              </div>
             </div>
 
+            {/* Navigation Menu (Flipkart Sidebar Structure) */}
+            <div className="bg-white rounded-2xl border border-gray-200/90 shadow-2xs overflow-hidden divide-y divide-gray-100">
+              {/* MY ORDERS */}
+              <div className="p-3">
+                <Link
+                  href="/account/orders"
+                  className="flex items-center justify-between p-2.5 rounded-xl hover:bg-gray-50 transition-colors group"
+                >
+                  <div className="flex items-center gap-3">
+                    <Package size={18} className="text-[#052a51] group-hover:text-[#F26522] transition-colors" />
+                    <span className="text-xs font-black text-[#052a51] uppercase tracking-wider group-hover:text-[#F26522] transition-colors">
+                      My Orders
+                    </span>
+                  </div>
+                  <ChevronRight size={16} className="text-gray-400 group-hover:translate-x-0.5 transition-transform" />
+                </Link>
+              </div>
+
+              {/* ACCOUNT SETTINGS */}
+              <div className="p-3 space-y-1">
+                <div className="flex items-center gap-2.5 px-2.5 py-1.5 text-[11px] font-black text-gray-400 uppercase tracking-wider">
+                  <User size={14} className="text-[#F26522]" />
+                  <span>Account Settings</span>
+                </div>
+
+                <button
+                  type="button"
+                  onClick={() => setActiveTab("profile")}
+                  className={`w-full flex items-center justify-between px-3 py-2 rounded-xl text-xs font-bold transition-colors text-left ${
+                    activeTab === "profile"
+                      ? "bg-[#052a51] text-white shadow-2xs"
+                      : "text-gray-700 hover:bg-gray-50"
+                  }`}
+                >
+                  <span>Profile Information</span>
+                  <ChevronRight size={14} className={activeTab === "profile" ? "text-white" : "text-gray-400"} />
+                </button>
+
+                <button
+                  type="button"
+                  onClick={() => setActiveTab("addresses")}
+                  className={`w-full flex items-center justify-between px-3 py-2 rounded-xl text-xs font-bold transition-colors text-left ${
+                    activeTab === "addresses"
+                      ? "bg-[#052a51] text-white shadow-2xs"
+                      : "text-gray-700 hover:bg-gray-50"
+                  }`}
+                >
+                  <span>Manage Addresses ({savedAddresses.length})</span>
+                  <ChevronRight size={14} className={activeTab === "addresses" ? "text-white" : "text-gray-400"} />
+                </button>
+
+                <button
+                  type="button"
+                  onClick={() => setActiveTab("gst")}
+                  className={`w-full flex items-center justify-between px-3 py-2 rounded-xl text-xs font-bold transition-colors text-left ${
+                    activeTab === "gst"
+                      ? "bg-[#052a51] text-white shadow-2xs"
+                      : "text-gray-700 hover:bg-gray-50"
+                  }`}
+                >
+                  <span>PAN & GST Information</span>
+                  <ChevronRight size={14} className={activeTab === "gst" ? "text-white" : "text-gray-400"} />
+                </button>
+              </div>
+
+              {/* MY STUFF */}
+              <div className="p-3 space-y-1">
+                <div className="flex items-center gap-2.5 px-2.5 py-1.5 text-[11px] font-black text-gray-400 uppercase tracking-wider">
+                  <Sparkles size={14} className="text-[#F26522]" />
+                  <span>My Stuff</span>
+                </div>
+
+                <Link
+                  href="/wishlist"
+                  className="flex items-center justify-between px-3 py-2 rounded-xl text-xs font-bold text-gray-700 hover:bg-gray-50 transition-colors group"
+                >
+                  <span className="group-hover:text-[#F26522] transition-colors">My Wishlist</span>
+                  <span className="text-[10px] font-black bg-red-50 text-red-600 px-2 py-0.5 rounded-full">
+                    {mounted ? wishlistCount : 0}
+                  </span>
+                </Link>
+
+                <Link
+                  href="/account/reviews"
+                  className="flex items-center justify-between px-3 py-2 rounded-xl text-xs font-bold text-gray-700 hover:bg-gray-50 transition-colors group"
+                >
+                  <span className="group-hover:text-[#F26522] transition-colors">My Reviews & Ratings</span>
+                  <ChevronRight size={14} className="text-gray-400" />
+                </Link>
+
+                <Link
+                  href="/account/notifications"
+                  className="flex items-center justify-between px-3 py-2 rounded-xl text-xs font-bold text-gray-700 hover:bg-gray-50 transition-colors group"
+                >
+                  <span className="group-hover:text-[#F26522] transition-colors">Notifications</span>
+                  <ChevronRight size={14} className="text-gray-400" />
+                </Link>
+              </div>
+
+              {/* LOGOUT BUTTON */}
+              <div className="p-3">
+                {mounted && isAuthenticated ? (
+                  <button
+                    type="button"
+                    onClick={handleLogout}
+                    className="w-full flex items-center justify-between px-3 py-2.5 rounded-xl text-xs font-black text-red-600 hover:bg-red-50 transition-colors cursor-pointer"
+                  >
+                    <div className="flex items-center gap-2.5">
+                      <LogOut size={16} />
+                      <span>Logout</span>
+                    </div>
+                  </button>
+                ) : (
+                  <button
+                    type="button"
+                    onClick={() => openLoginModal()}
+                    className="w-full flex items-center justify-center gap-2 px-3 py-2.5 rounded-xl text-xs font-black bg-[#F26522] hover:bg-[#d95a1e] text-white shadow-2xs transition-all active:scale-95 cursor-pointer"
+                  >
+                    <LogIn size={15} />
+                    <span>Log In to Account</span>
+                  </button>
+                )}
+              </div>
+            </div>
+
+            {/* Quick Helpline Widget */}
+            <div className="bg-emerald-50 rounded-2xl p-4 border border-emerald-200/80 shadow-2xs space-y-2">
+              <div className="flex items-center gap-2 text-emerald-900 font-black text-xs">
+                <MessageCircle size={16} className="text-[#25D366]" />
+                <span>Dedicated Expert Helpline</span>
+              </div>
+              <p className="text-[11px] text-emerald-800 leading-relaxed">
+                Need product advice or order dispatch updates? Connect with Gulshan Ali Sheikh:
+              </p>
+              <a
+                href="https://wa.me/919198035803?text=Hi%20Gulshan,%20I%20need%20help%20with%20my%20order"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="inline-flex items-center gap-1.5 text-xs font-extrabold text-[#25D366] hover:underline"
+              >
+                <span>WhatsApp: +91 91980 35803</span>
+                <ArrowRight size={12} />
+              </a>
+            </div>
+          </aside>
+
+          {/* ── RIGHT MAIN CONTENT AREA (Interactive Flipkart Panels) ── */}
+          <section className="space-y-6">
+            {/* Hidden File Input for Avatar Upload */}
             <input
               type="file"
               ref={fileInputRef}
@@ -244,253 +720,504 @@ export default function AccountPage() {
               className="hidden"
             />
 
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-              <div>
-                <label className="block text-xs font-bold text-gray-700 mb-1">
-                  Full Display Name *
-                </label>
-                <input
-                  type="text"
-                  value={editName}
-                  onChange={(e) => setEditName(e.target.value)}
-                  placeholder="Your Full Name"
-                  className="w-full h-11 px-3.5 rounded-xl border border-gray-200 text-sm font-semibold text-[#052a51] focus:outline-none focus:border-[#F26522]"
-                />
-              </div>
-
-              <div>
-                <label className="block text-xs font-bold text-gray-700 mb-1">
-                  Email Address
-                </label>
-                <input
-                  type="email"
-                  value={editEmail}
-                  onChange={(e) => setEditEmail(e.target.value)}
-                  placeholder="your.email@example.com"
-                  className="w-full h-11 px-3.5 rounded-xl border border-gray-200 text-sm font-semibold text-[#052a51] focus:outline-none focus:border-[#F26522]"
-                />
-              </div>
-            </div>
-
-            {/* Profile Photo Controls */}
-            <div className="mt-4 pt-4 border-t border-gray-100 flex flex-wrap items-center justify-between gap-3">
-              <div className="flex items-center gap-3">
-                {editAvatar ? (
-                  // eslint-disable-next-line @next/next/no-img-element
-                  <img
-                    src={editAvatar}
-                    alt="Preview"
-                    className="w-12 h-12 rounded-full object-cover border border-gray-200 shadow-2xs"
-                  />
-                ) : (
-                  <div className="w-12 h-12 rounded-full bg-gray-100 text-gray-400 flex items-center justify-center font-bold">
-                    <User size={20} />
-                  </div>
-                )}
+            {/* ────────────────────────────────────────────────────────────
+                PANEL 1: PROFILE INFORMATION (Flipkart Personal Info)
+            ──────────────────────────────────────────────────────────── */}
+            {activeTab === "profile" && (
+              <div className="bg-white rounded-3xl p-6 lg:p-8 border border-gray-200/90 shadow-2xs space-y-8">
+                {/* 1. Personal Information */}
                 <div>
-                  <button
-                    type="button"
-                    onClick={() => fileInputRef.current?.click()}
-                    className="text-xs font-bold text-[#F26522] hover:underline block"
-                  >
-                    Upload Custom Photo
-                  </button>
-                  {editAvatar && (
+                  <div className="flex items-center justify-between border-b border-gray-100 pb-4 mb-6">
+                    <h2 className="text-lg font-black text-[#052a51] flex items-center gap-2">
+                      <span>Personal Information</span>
+                    </h2>
+                    {mounted && isAuthenticated && (
+                      <button
+                        type="button"
+                        onClick={() => setIsEditingProfile(!isEditingProfile)}
+                        className="text-xs font-black text-[#F26522] hover:underline flex items-center gap-1"
+                      >
+                        <Edit2 size={13} />
+                        <span>{isEditingProfile ? "Cancel" : "Edit"}</span>
+                      </button>
+                    )}
+                  </div>
+
+                  {isEditingProfile ? (
+                    <div className="space-y-5">
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                        <div>
+                          <label className="block text-xs font-bold text-gray-600 mb-1.5">
+                            Full Name *
+                          </label>
+                          <input
+                            type="text"
+                            value={editName}
+                            onChange={(e) => setEditName(e.target.value)}
+                            placeholder="Enter your name"
+                            className="w-full h-11 px-3.5 bg-gray-50 border border-gray-200 rounded-xl text-sm font-bold text-[#052a51] focus:bg-white focus:outline-none focus:border-[#F26522]"
+                          />
+                        </div>
+
+                        <div>
+                          <label className="block text-xs font-bold text-gray-600 mb-1.5">
+                            Your Gender
+                          </label>
+                          <div className="flex items-center gap-4 h-11">
+                            {(["Male", "Female", "Other"] as const).map((g) => (
+                              <label key={g} className="flex items-center gap-2 text-xs font-bold text-[#052a51] cursor-pointer">
+                                <input
+                                  type="radio"
+                                  name="gender"
+                                  checked={editGender === g}
+                                  onChange={() => setEditGender(g)}
+                                  className="w-4 h-4 accent-[#F26522]"
+                                />
+                                <span>{g}</span>
+                              </label>
+                            ))}
+                          </div>
+                        </div>
+                      </div>
+
+                      {/* Photo selector */}
+                      <div className="flex items-center gap-3 pt-2">
+                        {editAvatar ? (
+                          // eslint-disable-next-line @next/next/no-img-element
+                          <img
+                            src={editAvatar}
+                            alt="Avatar"
+                            className="w-12 h-12 rounded-full object-cover border border-gray-200"
+                          />
+                        ) : (
+                          <div className="w-12 h-12 rounded-full bg-gray-100 text-gray-400 flex items-center justify-center font-black">
+                            <User size={20} />
+                          </div>
+                        )}
+                        <div>
+                          <button
+                            type="button"
+                            onClick={() => fileInputRef.current?.click()}
+                            className="text-xs font-bold text-[#F26522] hover:underline block"
+                          >
+                            Upload Custom Photo
+                          </button>
+                          {editAvatar && (
+                            <button
+                              type="button"
+                              onClick={() => setEditAvatar(null)}
+                              className="text-[11px] font-semibold text-red-500 hover:underline block mt-0.5"
+                            >
+                              Remove Photo
+                            </button>
+                          )}
+                        </div>
+                      </div>
+
+                      <div className="flex gap-3 pt-2">
+                        <button
+                          type="button"
+                          onClick={handleSaveProfile}
+                          disabled={isSaving}
+                          className="px-6 h-11 bg-[#052a51] hover:bg-[#0b3b6d] text-white text-xs font-black rounded-xl shadow-xs transition-all flex items-center gap-2 disabled:opacity-50 cursor-pointer active:scale-95"
+                        >
+                          {isSaving ? <Loader2 size={14} className="animate-spin" /> : <Check size={14} />}
+                          <span>Save Changes</span>
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => setIsEditingProfile(false)}
+                          className="px-5 h-11 border border-gray-200 hover:bg-gray-50 text-gray-600 text-xs font-bold rounded-xl transition-colors cursor-pointer"
+                        >
+                          Cancel
+                        </button>
+                      </div>
+                    </div>
+                  ) : (
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
+                      <div>
+                        <span className="text-xs font-semibold text-gray-400 block mb-1">Full Name</span>
+                        <p className="text-sm font-black text-[#052a51]">
+                          {mounted && isAuthenticated && user ? user.name || "Customer" : "Not Set"}
+                        </p>
+                      </div>
+                      <div>
+                        <span className="text-xs font-semibold text-gray-400 block mb-1">Your Gender</span>
+                        <p className="text-sm font-black text-[#052a51]">{editGender}</p>
+                      </div>
+                    </div>
+                  )}
+                </div>
+
+                {/* 2. Email Address */}
+                <div className="pt-6 border-t border-gray-100">
+                  <div className="flex items-center justify-between mb-3">
+                    <h3 className="text-base font-black text-[#052a51]">Email Address</h3>
+                    {mounted && isAuthenticated && user?.email && (
+                      <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full bg-emerald-50 text-emerald-700 text-[10px] font-black uppercase">
+                        <CheckCircle2 size={12} /> Verified
+                      </span>
+                    )}
+                  </div>
+                  <div className="max-w-md">
+                    <input
+                      type="email"
+                      value={editEmail}
+                      disabled={!isEditingProfile}
+                      onChange={(e) => setEditEmail(e.target.value)}
+                      placeholder="name@example.com"
+                      className="w-full h-11 px-3.5 bg-gray-50 border border-gray-200 rounded-xl text-sm font-bold text-[#052a51] disabled:opacity-75 disabled:bg-gray-50"
+                    />
+                  </div>
+                </div>
+
+                {/* 3. Mobile Number */}
+                <div className="pt-6 border-t border-gray-100">
+                  <div className="flex items-center justify-between mb-3">
+                    <h3 className="text-base font-black text-[#052a51]">Mobile Number</h3>
+                    {mounted && isAuthenticated && (
+                      <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full bg-emerald-50 text-emerald-700 text-[10px] font-black uppercase">
+                        <CheckCircle2 size={12} /> Verified
+                      </span>
+                    )}
+                  </div>
+                  <div className="max-w-md">
+                    <input
+                      type="text"
+                      value={mounted && isAuthenticated && user ? `+91 ${user.phone}` : "+91 Not logged in"}
+                      disabled
+                      className="w-full h-11 px-3.5 bg-gray-50 border border-gray-200 rounded-xl text-sm font-bold text-[#052a51] opacity-75"
+                    />
+                  </div>
+                </div>
+
+                {/* 4. Flipkart-Style Account FAQs */}
+                <div className="pt-6 border-t border-gray-100 space-y-4">
+                  <h4 className="text-xs font-black text-gray-400 uppercase tracking-wider">
+                    Frequently Asked Questions
+                  </h4>
+
+                  <div className="space-y-3 text-xs">
+                    <div>
+                      <p className="font-bold text-[#052a51]">What happens when I update my email address or mobile?</p>
+                      <p className="text-gray-500 mt-0.5 leading-relaxed">
+                        Your login credentials will be updated immediately. All future order confirmations, wooden crate freight dispatch alerts, and digital tax invoices will be sent to the updated details.
+                      </p>
+                    </div>
+
+                    <div>
+                      <p className="font-bold text-[#052a51]">What happens to my past orders and saved addresses?</p>
+                      <p className="text-gray-500 mt-0.5 leading-relaxed">
+                        All your previous order history, live tracking tokens, and saved delivery locations in Bangalore remain completely intact.
+                      </p>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {/* ────────────────────────────────────────────────────────────
+                PANEL 2: MANAGE ADDRESSES (Flipkart Saved Addresses)
+            ──────────────────────────────────────────────────────────── */}
+            {activeTab === "addresses" && (
+              <div className="bg-white rounded-3xl p-6 lg:p-8 border border-gray-200/90 shadow-2xs space-y-6">
+                <div className="flex items-center justify-between border-b border-gray-100 pb-4">
+                  <div>
+                    <h2 className="text-lg font-black text-[#052a51]">Manage Delivery Addresses</h2>
+                    <p className="text-xs text-gray-500 mt-0.5">Saved locations for crate freight and rapid building supply dispatch</p>
+                  </div>
+
+                  {!isAddingAddress && (
                     <button
                       type="button"
-                      onClick={() => setEditAvatar(null)}
-                      className="text-[11px] font-semibold text-red-500 hover:underline block mt-0.5"
+                      onClick={() => {
+                        resetAddressForm();
+                        setIsAddingAddress(true);
+                      }}
+                      className="px-4 py-2 bg-[#F26522] hover:bg-[#d95a1e] text-white text-xs font-black rounded-xl shadow-xs transition-all flex items-center gap-1.5 cursor-pointer active:scale-95"
                     >
-                      Remove Photo
+                      <Plus size={14} />
+                      <span>Add New Address</span>
                     </button>
                   )}
                 </div>
-              </div>
 
-              <div className="flex items-center gap-2">
-                <button
-                  type="button"
-                  onClick={() => setIsEditingProfile(false)}
-                  className="px-4 py-2 rounded-xl border border-gray-200 text-xs font-bold text-gray-600 hover:bg-gray-50 transition-colors"
-                >
-                  Cancel
-                </button>
+                {/* Add / Edit Address Form */}
+                {isAddingAddress && (
+                  <form onSubmit={handleSaveAddress} className="p-5 bg-orange-50/50 rounded-2xl border-2 border-[#F26522]/30 space-y-4 animate-in fade-in duration-150">
+                    <div className="flex items-center justify-between">
+                      <h3 className="text-xs font-black text-[#052a51] uppercase tracking-wider">
+                        {editingAddressId ? "Edit Address" : "Add New Delivery Address"}
+                      </h3>
+                      <button
+                        type="button"
+                        onClick={resetAddressForm}
+                        className="text-xs font-bold text-gray-400 hover:text-gray-600"
+                      >
+                        Cancel
+                      </button>
+                    </div>
 
-                <button
-                  type="button"
-                  onClick={handleSaveProfile}
-                  disabled={isSaving}
-                  className="inline-flex items-center gap-1.5 px-5 py-2 rounded-xl bg-[#052a51] hover:bg-[#083a6f] text-white text-xs font-bold transition-all shadow-xs disabled:opacity-50"
-                >
-                  {isSaving ? <Loader2 size={14} className="animate-spin" /> : <Check size={14} />}
-                  <span>Save Changes</span>
-                </button>
-              </div>
-            </div>
-          </div>
-        )}
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                      <div>
+                        <label className="block text-xs font-bold text-gray-700 mb-1">Full Name *</label>
+                        <input
+                          type="text"
+                          required
+                          value={addrName}
+                          onChange={(e) => setAddrName(e.target.value)}
+                          placeholder="Contact person"
+                          className="w-full h-10 px-3 bg-white border border-gray-200 rounded-xl text-xs font-bold text-[#052a51] focus:outline-none focus:border-[#F26522]"
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-xs font-bold text-gray-700 mb-1">10-Digit Mobile Number *</label>
+                        <input
+                          type="tel"
+                          required
+                          value={addrPhone}
+                          onChange={(e) => setAddrPhone(e.target.value)}
+                          placeholder="9876543210"
+                          className="w-full h-10 px-3 bg-white border border-gray-200 rounded-xl text-xs font-bold text-[#052a51] focus:outline-none focus:border-[#F26522]"
+                        />
+                      </div>
+                    </div>
 
-        {/* Quick Menu Options */}
-        <div className="space-y-3 mb-8">
-          <Link
-            href="/account/orders"
-            className="flex items-center justify-between p-4 sm:p-5 bg-white rounded-2xl border border-gray-100 shadow-2xs hover:border-[#F26522] active:scale-98 transition-all group"
-          >
-            <div className="flex items-center gap-4">
-              <div className="w-11 h-11 rounded-xl bg-[#052a51]/10 text-[#052a51] flex items-center justify-center group-hover:bg-[#F26522]/10 group-hover:text-[#F26522] transition-colors">
-                <Package size={20} />
-              </div>
-              <div>
-                <h2 className="font-bold text-[#052a51] text-sm sm:text-base group-hover:text-[#F26522] transition-colors">
-                  My Orders & Tracking
-                </h2>
-                <p className="text-xs text-gray-500">Track shipments, view past tile orders & invoices</p>
-              </div>
-            </div>
-            <ArrowRight size={18} className="text-gray-400 group-hover:text-[#F26522] transition-colors" />
-          </Link>
+                    <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                      <div>
+                        <label className="block text-xs font-bold text-gray-700 mb-1">Pincode *</label>
+                        <input
+                          type="text"
+                          required
+                          maxLength={6}
+                          value={addrPincode}
+                          onChange={(e) => setAddrPincode(e.target.value)}
+                          placeholder="560034"
+                          className="w-full h-10 px-3 bg-white border border-gray-200 rounded-xl text-xs font-bold text-[#052a51] focus:outline-none focus:border-[#F26522]"
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-xs font-bold text-gray-700 mb-1">City *</label>
+                        <input
+                          type="text"
+                          required
+                          value={addrCity}
+                          onChange={(e) => setAddrCity(e.target.value)}
+                          className="w-full h-10 px-3 bg-white border border-gray-200 rounded-xl text-xs font-bold text-[#052a51] focus:outline-none focus:border-[#F26522]"
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-xs font-bold text-gray-700 mb-1">State *</label>
+                        <input
+                          type="text"
+                          required
+                          value={addrState}
+                          onChange={(e) => setAddrState(e.target.value)}
+                          className="w-full h-10 px-3 bg-white border border-gray-200 rounded-xl text-xs font-bold text-[#052a51] focus:outline-none focus:border-[#F26522]"
+                        />
+                      </div>
+                    </div>
 
-          <Link
-            href="/account/reviews"
-            className="flex items-center justify-between p-4 sm:p-5 bg-white rounded-2xl border border-gray-100 shadow-2xs hover:border-[#F26522] active:scale-98 transition-all group"
-          >
-            <div className="flex items-center gap-4">
-              <div className="w-11 h-11 rounded-xl bg-amber-50 text-amber-600 flex items-center justify-center">
-                <Star size={20} />
-              </div>
-              <div>
-                <h2 className="font-bold text-[#052a51] text-sm sm:text-base group-hover:text-[#F26522] transition-colors">
-                  My Tile Reviews
-                </h2>
-                <p className="text-xs text-gray-500">View and edit your product ratings & photos</p>
-              </div>
-            </div>
-            <ArrowRight size={18} className="text-gray-400 group-hover:text-[#F26522] transition-colors" />
-          </Link>
+                    <div>
+                      <label className="block text-xs font-bold text-gray-700 mb-1">
+                        Flat / House No., Building Name, Street *
+                      </label>
+                      <input
+                        type="text"
+                        required
+                        value={addrLine1}
+                        onChange={(e) => setAddrLine1(e.target.value)}
+                        placeholder="e.g. #42, 3rd Cross, Koramangala 4th Block"
+                        className="w-full h-10 px-3 bg-white border border-gray-200 rounded-xl text-xs font-bold text-[#052a51] focus:outline-none focus:border-[#F26522]"
+                      />
+                    </div>
 
-          <Link
-            href="/account/notifications"
-            className="flex items-center justify-between p-4 sm:p-5 bg-white rounded-2xl border border-gray-100 shadow-2xs hover:border-[#F26522] active:scale-98 transition-all group"
-          >
-            <div className="flex items-center gap-4">
-              <div className="w-11 h-11 rounded-xl bg-purple-50 text-purple-600 flex items-center justify-center">
-                <Bell size={20} />
-              </div>
-              <div>
-                <h2 className="font-bold text-[#052a51] text-sm sm:text-base group-hover:text-[#F26522] transition-colors">
-                  Notification Settings
-                </h2>
-                <p className="text-xs text-gray-500">Manage delivery alerts, price drops & promos</p>
-              </div>
-            </div>
-            <ArrowRight size={18} className="text-gray-400 group-hover:text-[#F26522] transition-colors" />
-          </Link>
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                      <div>
+                        <label className="block text-xs font-bold text-gray-700 mb-1">
+                          Area / Landmark (Optional)
+                        </label>
+                        <input
+                          type="text"
+                          value={addrLandmark}
+                          onChange={(e) => setAddrLandmark(e.target.value)}
+                          placeholder="e.g. Near Sony World Signal"
+                          className="w-full h-10 px-3 bg-white border border-gray-200 rounded-xl text-xs font-bold text-[#052a51] focus:outline-none focus:border-[#F26522]"
+                        />
+                      </div>
 
-          <Link
-            href="/wishlist"
-            className="flex items-center justify-between p-4 sm:p-5 bg-white rounded-2xl border border-gray-100 shadow-2xs hover:border-[#F26522] active:scale-98 transition-all group"
-          >
-            <div className="flex items-center gap-4">
-              <div className="w-11 h-11 rounded-xl bg-red-50 text-red-500 flex items-center justify-center">
-                <Heart size={20} />
+                      <div>
+                        <label className="block text-xs font-bold text-gray-700 mb-1">Address Type</label>
+                        <div className="flex items-center gap-4 h-10">
+                          {(["Home", "Work", "Other"] as const).map((lbl) => (
+                            <label key={lbl} className="flex items-center gap-1.5 text-xs font-bold text-[#052a51] cursor-pointer">
+                              <input
+                                type="radio"
+                                name="addr-label"
+                                checked={addrLabel === lbl}
+                                onChange={() => setAddrLabel(lbl)}
+                                className="w-3.5 h-3.5 accent-[#F26522]"
+                              />
+                              <span>{lbl}</span>
+                            </label>
+                          ))}
+                        </div>
+                      </div>
+                    </div>
+
+                    <div className="flex gap-3 pt-2">
+                      <button
+                        type="submit"
+                        className="px-6 h-10 bg-[#052a51] hover:bg-[#0b3b6d] text-white text-xs font-black rounded-xl shadow-xs transition-all cursor-pointer active:scale-95"
+                      >
+                        Save Address
+                      </button>
+                      <button
+                        type="button"
+                        onClick={resetAddressForm}
+                        className="px-5 h-10 border border-gray-200 hover:bg-white text-gray-600 text-xs font-bold rounded-xl transition-colors cursor-pointer"
+                      >
+                        Cancel
+                      </button>
+                    </div>
+                  </form>
+                )}
+
+                {/* Saved Address Cards */}
+                <div className="space-y-3.5">
+                  {savedAddresses.length === 0 ? (
+                    <div className="p-8 text-center bg-gray-50 rounded-2xl border border-dashed border-gray-300 space-y-2">
+                      <MapPin size={28} className="mx-auto text-gray-400" />
+                      <p className="text-sm font-bold text-[#052a51]">No Saved Addresses Found</p>
+                      <p className="text-xs text-gray-500">Add your Bangalore building site or residence for direct crate delivery</p>
+                    </div>
+                  ) : (
+                    savedAddresses.map((addr) => (
+                      <div
+                        key={addr.id}
+                        className="p-5 rounded-2xl border border-gray-200/90 hover:border-[#F26522]/60 transition-all bg-white shadow-2xs flex flex-col sm:flex-row sm:items-start justify-between gap-4"
+                      >
+                        <div className="space-y-1.5">
+                          <div className="flex items-center gap-2">
+                            <span className="text-[10px] font-black uppercase px-2 py-0.5 rounded bg-gray-100 text-gray-600">
+                              {addr.label}
+                            </span>
+                            <h3 className="text-sm font-black text-[#052a51]">{addr.name}</h3>
+                            <span className="text-xs font-bold text-gray-500">+91 {addr.phone}</span>
+                            {addr.isDefault && (
+                              <span className="text-[10px] font-black uppercase px-2 py-0.5 rounded bg-emerald-50 text-emerald-700">
+                                Default
+                              </span>
+                            )}
+                          </div>
+
+                          <p className="text-xs text-gray-600 leading-relaxed">
+                            {addr.line1}
+                            {addr.line2 ? `, ${addr.line2}` : ""}
+                            {addr.landmark ? `, Landmark: ${addr.landmark}` : ""}, {addr.city} — {addr.pincode},{" "}
+                            {addr.state}
+                          </p>
+                        </div>
+
+                        <div className="flex items-center gap-2 shrink-0">
+                          {!addr.isDefault && (
+                            <button
+                              type="button"
+                              onClick={() => setDefaultAddress(addr.id)}
+                              className="px-3 py-1.5 border border-gray-200 hover:border-gray-300 text-gray-600 text-xs font-bold rounded-lg transition-colors cursor-pointer"
+                            >
+                              Make Default
+                            </button>
+                          )}
+                          <button
+                            type="button"
+                            onClick={() => handleStartEditAddress(addr)}
+                            className="p-1.5 text-gray-500 hover:text-[#F26522] rounded-lg hover:bg-gray-50 transition-colors cursor-pointer"
+                            title="Edit Address"
+                          >
+                            <Edit2 size={16} />
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => {
+                              deleteAddress(addr.id);
+                              toast.success("Address removed");
+                            }}
+                            className="p-1.5 text-gray-400 hover:text-red-600 rounded-lg hover:bg-red-50 transition-colors cursor-pointer"
+                            title="Delete Address"
+                          >
+                            <Trash2 size={16} />
+                          </button>
+                        </div>
+                      </div>
+                    ))
+                  )}
+                </div>
               </div>
-              <div>
-                <h2 className="font-bold text-[#052a51] text-sm sm:text-base group-hover:text-[#F26522] transition-colors">
-                  Saved Wishlist
-                </h2>
-                <p className="text-xs text-gray-500">{mounted ? wishlistCount : 0} saved tile designs</p>
+            )}
+
+            {/* ────────────────────────────────────────────────────────────
+                PANEL 3: PAN & GST INFORMATION (Flipkart B2B Billing)
+            ──────────────────────────────────────────────────────────── */}
+            {activeTab === "gst" && (
+              <div className="bg-white rounded-3xl p-6 lg:p-8 border border-gray-200/90 shadow-2xs space-y-6">
+                <div className="border-b border-gray-100 pb-4">
+                  <h2 className="text-lg font-black text-[#052a51] flex items-center gap-2">
+                    <Building2 size={20} className="text-[#F26522]" />
+                    <span>PAN & GST Information</span>
+                  </h2>
+                  <p className="text-xs text-gray-500 mt-0.5">
+                    Add your business GSTIN to receive input tax credit (ITC) and official commercial invoices.
+                  </p>
+                </div>
+
+                <form onSubmit={handleSaveGst} className="max-w-xl space-y-4">
+                  <div>
+                    <label className="block text-xs font-bold text-gray-700 mb-1.5">
+                      Registered Business / Firm Name
+                    </label>
+                    <input
+                      type="text"
+                      value={businessName}
+                      onChange={(e) => setBusinessName(e.target.value)}
+                      placeholder="e.g. Sheikh Construction & Interiors Pvt Ltd"
+                      className="w-full h-11 px-3.5 bg-gray-50 border border-gray-200 rounded-xl text-sm font-bold text-[#052a51] focus:bg-white focus:outline-none focus:border-[#F26522]"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block text-xs font-bold text-gray-700 mb-1.5">
+                      GSTIN Number (15 Digits) *
+                    </label>
+                    <input
+                      type="text"
+                      maxLength={15}
+                      value={gstNumber}
+                      onChange={(e) => setGstNumber(e.target.value.toUpperCase())}
+                      placeholder="29AAAAA0000A1Z5"
+                      className="w-full h-11 px-3.5 bg-gray-50 border border-gray-200 rounded-xl text-sm font-bold text-[#052a51] uppercase focus:bg-white focus:outline-none focus:border-[#F26522]"
+                    />
+                  </div>
+
+                  <div className="p-4 bg-blue-50/70 rounded-2xl border border-blue-100 flex items-start gap-3 text-xs text-blue-900 leading-relaxed">
+                    <AlertCircle size={18} className="text-blue-600 shrink-0 mt-0.5" />
+                    <span>
+                      GST invoices will be generated automatically upon crate freight checkout and emailed directly with 18% / 28% GST input credit breakdown.
+                    </span>
+                  </div>
+
+                  <button
+                    type="submit"
+                    disabled={isSavingGst}
+                    className="px-6 h-11 bg-[#052a51] hover:bg-[#0b3b6d] text-white text-xs font-black rounded-xl shadow-xs transition-all flex items-center gap-2 cursor-pointer active:scale-95 disabled:opacity-50"
+                  >
+                    {isSavingGst ? <Loader2 size={14} className="animate-spin" /> : <Check size={14} />}
+                    <span>Save Business Details</span>
+                  </button>
+                </form>
               </div>
-            </div>
-            <ArrowRight size={18} className="text-gray-400 group-hover:text-[#F26522] transition-colors" />
-          </Link>
-
-          <Link
-            href="/faq"
-            className="flex items-center justify-between p-4 sm:p-5 bg-white rounded-2xl border border-gray-100 shadow-2xs hover:border-[#F26522] active:scale-98 transition-all group"
-          >
-            <div className="flex items-center gap-4">
-              <div className="w-11 h-11 rounded-xl bg-amber-50 text-amber-600 flex items-center justify-center">
-                <HelpCircle size={20} />
-              </div>
-              <div>
-                <h2 className="font-bold text-[#052a51] text-sm sm:text-base group-hover:text-[#F26522] transition-colors">
-                  Help & FAQs
-                </h2>
-                <p className="text-xs text-gray-500">Shipping, returns, and tile installation guidelines</p>
-              </div>
-            </div>
-            <ArrowRight size={18} className="text-gray-400 group-hover:text-[#F26522] transition-colors" />
-          </Link>
-
-          <Link
-            href="/contact"
-            className="flex items-center justify-between p-4 sm:p-5 bg-white rounded-2xl border border-gray-100 shadow-2xs hover:border-[#F26522] active:scale-98 transition-all group"
-          >
-            <div className="flex items-center gap-4">
-              <div className="w-11 h-11 rounded-xl bg-blue-50 text-blue-600 flex items-center justify-center">
-                <Phone size={20} />
-              </div>
-              <div>
-                <h2 className="font-bold text-[#052a51] text-sm sm:text-base group-hover:text-[#F26522] transition-colors">
-                  Contact Support
-                </h2>
-                <p className="text-xs text-gray-500">Call +91 78709 35277 or email hello@intrihub.com</p>
-              </div>
-            </div>
-            <ArrowRight size={18} className="text-gray-400 group-hover:text-[#F26522] transition-colors" />
-          </Link>
-        </div>
-
-        {/* Essential Legal & Policies Section */}
-        <div className="bg-white rounded-3xl p-5 md:p-6 shadow-xs border border-gray-100 mb-6">
-          <h3 className="text-xs font-black text-[#052a51] uppercase tracking-[2px] mb-3">
-            Policies & Information
-          </h3>
-          <div className="divide-y divide-gray-100">
-            <Link
-              href="/shipping-policy"
-              className="flex items-center justify-between py-3 text-sm font-semibold text-[#052a51] hover:text-[#F26522] transition-colors"
-            >
-              <span className="flex items-center gap-2.5">
-                <Truck size={16} className="text-[#F26522]" /> Shipping & Delivery Policy
-              </span>
-              <ArrowRight size={14} className="text-gray-400" />
-            </Link>
-
-            <Link
-              href="/returns-policy"
-              className="flex items-center justify-between py-3 text-sm font-semibold text-[#052a51] hover:text-[#F26522] transition-colors"
-            >
-              <span className="flex items-center gap-2.5">
-                <RotateCcw size={16} className="text-[#F26522]" /> Returns & Refund Policy
-              </span>
-              <ArrowRight size={14} className="text-gray-400" />
-            </Link>
-
-            <Link
-              href="/terms"
-              className="flex items-center justify-between py-3 text-sm font-semibold text-[#052a51] hover:text-[#F26522] transition-colors"
-            >
-              <span className="flex items-center gap-2.5">
-                <FileText size={16} className="text-[#F26522]" /> Terms of Service
-              </span>
-              <ArrowRight size={14} className="text-gray-400" />
-            </Link>
-
-            <Link
-              href="/privacy-policy"
-              className="flex items-center justify-between py-3 text-sm font-semibold text-[#052a51] hover:text-[#F26522] transition-colors"
-            >
-              <span className="flex items-center gap-2.5">
-                <Shield size={16} className="text-[#F26522]" /> Privacy Policy
-              </span>
-              <ArrowRight size={14} className="text-gray-400" />
-            </Link>
-          </div>
-
-          <div className="mt-4 pt-4 border-t border-gray-100 text-center text-xs text-gray-400">
-            Intrihub India · Bangalore, Karnataka · +91 78709 35277
-          </div>
+            )}
+          </section>
         </div>
       </div>
 
