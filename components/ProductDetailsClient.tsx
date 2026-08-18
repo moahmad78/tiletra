@@ -194,20 +194,7 @@ export default function ProductDetailsClient({
     <main className="min-h-screen flex flex-col bg-[#F8F9FA]">
       <Header />
 
-      <div className="w-full max-w-[1400px] mx-auto px-3 sm:px-4 md:px-6 lg:px-8 pt-[70px] md:pt-[135px] pb-16 flex-1">
-        {/* Breadcrumb */}
-        <nav className="flex items-center gap-2 text-xs text-gray-500 mb-6 flex-wrap">
-          <Link href="/" className="hover:text-[#F26522] transition-colors">Home</Link>
-          <span>/</span>
-          <Link href="/shop" className="hover:text-[#F26522] transition-colors">Shop</Link>
-          <span>/</span>
-          <Link href={`/shop/${definedProduct.categorySlug}`} className="hover:text-[#F26522] transition-colors">
-            {definedProduct.categoryName}
-          </Link>
-          <span>/</span>
-          <span className="text-[#052a51] font-semibold truncate max-w-[200px]">{definedProduct.name}</span>
-        </nav>
-
+      <div className="w-full max-w-[1400px] mx-auto px-3 sm:px-4 md:px-6 lg:px-8 pt-4 md:pt-[130px] pb-16 flex-1">
         {/* ── Main PDP Grid: Gallery (Left) + Buy Box (Right) ── */}
         <div className="grid grid-cols-1 lg:grid-cols-[460px_1fr] xl:grid-cols-[500px_1fr] gap-6 lg:gap-10 items-start">
           {/* Gallery Column (Compact Flipkart Pattern) */}
