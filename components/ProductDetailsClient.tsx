@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import Link from "next/link";
 import Image from "next/image";
 import { useRouter } from "next/navigation";
@@ -76,11 +76,33 @@ export default function ProductDetailsClient({
   const [reviewsOpen, setReviewsOpen] = useState(false);
   const [mounted, setMounted] = useState(false);
 
-  // Touch swipe support for mobile gallery
+  const allGalleryImages = useMemo(() => {
+    const raw =
+      definedProduct.images && definedProduct.images.length > 0
+        ? definedProduct.images.filter(Boolean)
+        : [];
+
+    if (raw.length > 1) return raw;
+
+    const base =
+      raw[0] ||
+      "https://images.unsplash.com/photo-1616486338812-3dadae4b4ace?w=800&q=80";
+
+    // Provide high-res multi-angle / contextual mockup perspectives for Flipkart experience
+    return [
+      base,
+      "https://images.unsplash.com/photo-1600585154340-be6161a56a0c?w=800&q=80",
+      "https://images.unsplash.com/photo-1618221195710-dd6b41faaea6?w=800&q=80",
+      "https://images.unsplash.com/photo-1513694203232-719a280e022f?w=800&q=80",
+    ];
+  }, [definedProduct.images]);
+
+  // Touch & Drag swipe support for gallery
   const [touchStartX, setTouchStartX] = useState<number | null>(null);
   const [touchEndX, setTouchEndX] = useState<number | null>(null);
+  const [mouseStartX, setMouseStartX] = useState<number | null>(null);
 
-  const minSwipeDistance = 45;
+  const minSwipeDistance = 35;
 
   const handleTouchStart = (e: React.TouchEvent) => {
     setTouchEndX(null);
@@ -92,17 +114,30 @@ export default function ProductDetailsClient({
   };
 
   const handleTouchEnd = () => {
-    if (!touchStartX || !touchEndX) return;
+    if (touchStartX === null || touchEndX === null) return;
     const distance = touchStartX - touchEndX;
-    const isLeftSwipe = distance > minSwipeDistance;
-    const isRightSwipe = distance < -minSwipeDistance;
+    if (distance > minSwipeDistance && allGalleryImages.length > 1) {
+      setActiveImage((prev) => (prev + 1) % allGalleryImages.length);
+    } else if (distance < -minSwipeDistance && allGalleryImages.length > 1) {
+      setActiveImage((prev) => (prev - 1 + allGalleryImages.length) % allGalleryImages.length);
+    }
+    setTouchStartX(null);
+    setTouchEndX(null);
+  };
 
-    if (isLeftSwipe && definedProduct.images.length > 1) {
-      setActiveImage((prev) => (prev + 1) % definedProduct.images.length);
+  const handleMouseDown = (e: React.MouseEvent) => {
+    setMouseStartX(e.clientX);
+  };
+
+  const handleMouseUp = (e: React.MouseEvent) => {
+    if (mouseStartX === null) return;
+    const distance = mouseStartX - e.clientX;
+    if (distance > minSwipeDistance && allGalleryImages.length > 1) {
+      setActiveImage((prev) => (prev + 1) % allGalleryImages.length);
+    } else if (distance < -minSwipeDistance && allGalleryImages.length > 1) {
+      setActiveImage((prev) => (prev - 1 + allGalleryImages.length) % allGalleryImages.length);
     }
-    if (isRightSwipe && definedProduct.images.length > 1) {
-      setActiveImage((prev) => (prev - 1 + definedProduct.images.length) % definedProduct.images.length);
-    }
+    setMouseStartX(null);
   };
 
   const isOutOfStock = selectedVariant.stockBoxes <= 0;
@@ -181,19 +216,17 @@ export default function ProductDetailsClient({
               onTouchStart={handleTouchStart}
               onTouchMove={handleTouchMove}
               onTouchEnd={handleTouchEnd}
+              onMouseDown={handleMouseDown}
+              onMouseUp={handleMouseUp}
               className="relative w-full h-[340px] sm:h-[380px] lg:h-[400px] rounded-2xl overflow-hidden bg-white border border-gray-200 shadow-2xs group select-none cursor-grab active:cursor-grabbing p-2 flex items-center justify-center"
             >
               <div className="relative w-full h-full rounded-xl overflow-hidden bg-gray-50">
                 <Image
-                  src={
-                    (definedProduct.images && definedProduct.images[activeImage]) ||
-                    definedProduct.images?.[0] ||
-                    "https://images.unsplash.com/photo-1616486338812-3dadae4b4ace?w=800&q=80"
-                  }
+                  src={allGalleryImages[activeImage] || allGalleryImages[0]}
                   alt={definedProduct.name}
                   fill
                   priority
-                  className="object-cover transition-transform duration-500 group-hover:scale-105"
+                  className="object-cover transition-transform duration-300 group-hover:scale-105"
                   sizes="(max-width: 1024px) 100vw, 500px"
                 />
               </div>
@@ -225,83 +258,59 @@ export default function ProductDetailsClient({
               </button>
 
               {/* Prev / Next Chevrons */}
-              {(() => {
-                const totalImgs =
-                  definedProduct.images && definedProduct.images.length > 0
-                    ? definedProduct.images.length
-                    : 1;
-                if (totalImgs <= 1) return null;
-                return (
-                  <>
-                    <button
-                      type="button"
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        setActiveImage((prev) => (prev - 1 + totalImgs) % totalImgs);
-                      }}
-                      aria-label="Previous image"
-                      className="absolute left-3 top-1/2 -translate-y-1/2 z-20 w-8 h-8 rounded-full bg-white/90 backdrop-blur-sm shadow-md flex items-center justify-center text-[#052a51] hover:bg-white active:scale-95 transition-all cursor-pointer"
-                    >
-                      <ChevronLeft size={18} />
-                    </button>
-                    <button
-                      type="button"
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        setActiveImage((prev) => (prev + 1) % totalImgs);
-                      }}
-                      aria-label="Next image"
-                      className="absolute right-3 top-1/2 -translate-y-1/2 z-20 w-8 h-8 rounded-full bg-white/90 backdrop-blur-sm shadow-md flex items-center justify-center text-[#052a51] hover:bg-white active:scale-95 transition-all cursor-pointer"
-                    >
-                      <ChevronRight size={18} />
-                    </button>
-                  </>
-                );
-              })()}
+              {allGalleryImages.length > 1 && (
+                <>
+                  <button
+                    type="button"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      setActiveImage((prev) => (prev - 1 + allGalleryImages.length) % allGalleryImages.length);
+                    }}
+                    aria-label="Previous image"
+                    className="absolute left-3 top-1/2 -translate-y-1/2 z-20 w-8 h-8 rounded-full bg-white/90 backdrop-blur-sm shadow-md flex items-center justify-center text-[#052a51] hover:bg-white active:scale-95 transition-all cursor-pointer"
+                  >
+                    <ChevronLeft size={18} />
+                  </button>
+                  <button
+                    type="button"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      setActiveImage((prev) => (prev + 1) % allGalleryImages.length);
+                    }}
+                    aria-label="Next image"
+                    className="absolute right-3 top-1/2 -translate-y-1/2 z-20 w-8 h-8 rounded-full bg-white/90 backdrop-blur-sm shadow-md flex items-center justify-center text-[#052a51] hover:bg-white active:scale-95 transition-all cursor-pointer"
+                  >
+                    <ChevronRight size={18} />
+                  </button>
+                </>
+              )}
             </div>
 
             {/* Flipkart-Style Thumbnails Strip Below Main Image */}
-            {(() => {
-              // Ensure at least 4 preview images for the Flipkart thumbnail experience
-              let galleryImages = definedProduct.images && definedProduct.images.length > 0
-                ? [...definedProduct.images]
-                : ["https://images.unsplash.com/photo-1616486338812-3dadae4b4ace?w=800&q=80"];
-
-              if (galleryImages.length === 1) {
-                const primary = galleryImages[0];
-                galleryImages = [
-                  primary,
-                  "https://images.unsplash.com/photo-1600585154340-be6161a56a0c?w=800&q=80",
-                  "https://images.unsplash.com/photo-1618221195710-dd6b41faaea6?w=800&q=80",
-                  "https://images.unsplash.com/photo-1513694203232-719a280e022f?w=800&q=80",
-                ];
-              }
-
-              return (
-                <div className="flex items-center gap-2.5 overflow-x-auto py-1 scrollbar-none justify-start sm:justify-center">
-                  {galleryImages.map((img, i) => {
-                    const isSelected = activeImage === i;
-                    return (
-                      <button
-                        key={i}
-                        type="button"
-                        onClick={() => setActiveImage(i)}
-                        onMouseEnter={() => setActiveImage(i)}
-                        className={`relative w-[64px] h-[64px] sm:w-[72px] sm:h-[72px] rounded-xl overflow-hidden border-2 transition-all active:scale-95 cursor-pointer shrink-0 p-0.5 bg-white ${
-                          isSelected
-                            ? "border-[#F26522] ring-2 ring-[#F26522]/30 shadow-xs scale-105"
-                            : "border-gray-200 opacity-75 hover:opacity-100 hover:border-gray-400"
-                        }`}
-                      >
-                        <div className="relative w-full h-full rounded-lg overflow-hidden bg-gray-50">
-                          <Image src={img} alt="" fill className="object-cover" sizes="72px" />
-                        </div>
-                      </button>
-                    );
-                  })}
-                </div>
-              );
-            })()}
+            {allGalleryImages.length > 1 && (
+              <div className="flex items-center gap-2.5 overflow-x-auto py-1 scrollbar-none justify-start sm:justify-center">
+                {allGalleryImages.map((img, i) => {
+                  const isSelected = activeImage === i;
+                  return (
+                    <button
+                      key={i}
+                      type="button"
+                      onClick={() => setActiveImage(i)}
+                      onMouseEnter={() => setActiveImage(i)}
+                      className={`relative w-[64px] h-[64px] sm:w-[72px] sm:h-[72px] rounded-xl overflow-hidden border-2 transition-all active:scale-95 cursor-pointer shrink-0 p-0.5 bg-white ${
+                        isSelected
+                          ? "border-[#F26522] ring-2 ring-[#F26522]/30 shadow-xs scale-105"
+                          : "border-gray-200 opacity-75 hover:opacity-100 hover:border-gray-400"
+                      }`}
+                    >
+                      <div className="relative w-full h-full rounded-lg overflow-hidden bg-gray-50">
+                        <Image src={img} alt={`Thumbnail ${i + 1}`} fill className="object-cover" sizes="72px" />
+                      </div>
+                    </button>
+                  );
+                })}
+              </div>
+            )}
           </div>
 
           {/* ── Consolidated Buy Box (Flipkart Pattern) ── */}
