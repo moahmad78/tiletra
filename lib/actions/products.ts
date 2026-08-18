@@ -31,6 +31,8 @@ export type CreateProductInput = {
   specs?: any;
 };
 
+import { products as defaultProducts } from "@/lib/data/products";
+
 export async function getProducts(options?: {
   categorySlug?: string;
   isTrending?: boolean;
@@ -44,7 +46,22 @@ export async function getProducts(options?: {
     const where: any = {};
 
     if (options?.categorySlug && options.categorySlug !== "all") {
-      where.categorySlug = options.categorySlug;
+      const slug = options.categorySlug;
+      // Find category and its nested children if any
+      const cat = await prisma.category.findUnique({
+        where: { slug },
+        include: { children: true },
+      });
+
+      const matchingSlugs = cat
+        ? [cat.slug, ...cat.children.map((c) => c.slug)]
+        : [slug];
+
+      where.OR = [
+        { categorySlug: { in: matchingSlugs } },
+        { category: { slug: { in: matchingSlugs } } },
+        { category: { parent: { slug } } },
+      ];
     }
     if (options?.isTrending) {
       where.isTrending = true;
@@ -59,11 +76,16 @@ export async function getProducts(options?: {
       where.inStock = true;
     }
     if (options?.search) {
-      where.OR = [
-        { name: { contains: options.search, mode: "insensitive" } },
-        { description: { contains: options.search, mode: "insensitive" } },
-        { categoryName: { contains: options.search, mode: "insensitive" } },
-        { material: { contains: options.search, mode: "insensitive" } },
+      const term = options.search.trim();
+      where.AND = [
+        {
+          OR: [
+            { name: { contains: term, mode: "insensitive" } },
+            { description: { contains: term, mode: "insensitive" } },
+            { categoryName: { contains: term, mode: "insensitive" } },
+            { material: { contains: term, mode: "insensitive" } },
+          ],
+        },
       ];
     }
 
@@ -77,11 +99,46 @@ export async function getProducts(options?: {
       take: options?.limit,
     });
 
-    return dbProducts.map(formatProduct);
+    if (dbProducts.length > 0) {
+      return dbProducts.map(formatProduct);
+    }
   } catch (error) {
-    console.error("Error fetching products:", error);
-    return [];
+    console.error("Error fetching products from DB, falling back to static products:", error);
   }
+
+  // Fallback to static products dataset
+  let result = [...defaultProducts];
+  if (options?.categorySlug && options.categorySlug !== "all") {
+    result = result.filter(
+      (p) =>
+        p.categorySlug === options.categorySlug ||
+        (options.categorySlug === "tiles-stone" &&
+          ["floor-tiles", "wall-tiles", "bathroom-tiles", "kitchen-tiles", "outdoor-tiles", "designer-tiles", "granite"].includes(p.categorySlug))
+    );
+  }
+  if (options?.isTrending) {
+    result = result.filter((p) => p.tags?.includes("Trending") || p.isBestseller);
+  }
+  if (options?.isBestseller) {
+    result = result.filter((p) => p.isBestseller);
+  }
+  if (options?.isNewArrival) {
+    result = result.filter((p) => p.isNew);
+  }
+  if (options?.search) {
+    const q = options.search.toLowerCase();
+    result = result.filter(
+      (p) =>
+        p.name.toLowerCase().includes(q) ||
+        p.description.toLowerCase().includes(q) ||
+        p.categoryName.toLowerCase().includes(q)
+    );
+  }
+  if (options?.limit) {
+    result = result.slice(0, options.limit);
+  }
+
+  return result;
 }
 
 export async function getProductBySlug(slug: string): Promise<Product | null> {
@@ -94,12 +151,14 @@ export async function getProductBySlug(slug: string): Promise<Product | null> {
       },
     });
 
-    if (!dbProduct) return null;
-    return formatProduct(dbProduct);
+    if (dbProduct) return formatProduct(dbProduct);
   } catch (error) {
-    console.error(`Error fetching product by slug ${slug}:`, error);
-    return null;
+    console.error(`Error fetching product by slug ${slug} from DB:`, error);
   }
+
+  // Fallback to static catalog
+  const staticProduct = defaultProducts.find((p) => p.slug === slug);
+  return staticProduct || null;
 }
 
 export async function getProductById(id: string): Promise<Product | null> {

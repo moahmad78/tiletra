@@ -2,7 +2,7 @@
 
 import { prisma } from "@/lib/prisma";
 import { safeRevalidate } from "@/lib/formatters";
-import type { Category } from "@/lib/data/categories";
+import { categories as defaultCategories, getCategoryBySlug as getStaticCategoryBySlug, type Category } from "@/lib/data/categories";
 
 export async function getCategories(): Promise<Category[]> {
   try {
@@ -15,19 +15,24 @@ export async function getCategories(): Promise<Category[]> {
       orderBy: { order: "asc" },
     });
 
-    return dbCategories.map((c) => ({
-      id: c.id,
-      name: c.name,
-      slug: c.slug,
-      description: c.description || "",
-      image: c.image || "https://images.unsplash.com/photo-1616486338812-3dadae4b4ace?w=800&q=80",
-      productCount: c._count.products,
-      featured: true,
-    }));
+    if (dbCategories.length > 0) {
+      return dbCategories.map((c) => ({
+        id: c.id,
+        name: c.name,
+        slug: c.slug,
+        description: c.description || "",
+        image: c.image || "https://images.unsplash.com/photo-1616486338812-3dadae4b4ace?w=800&q=80",
+        productCount: c._count.products,
+        featured: true,
+        parentId: c.parentId || null,
+        icon: c.icon || "Grid",
+      }));
+    }
   } catch (error) {
-    console.error("Error fetching categories:", error);
-    return [];
+    console.error("Error fetching categories from DB, falling back to static catalog:", error);
   }
+
+  return defaultCategories;
 }
 
 export async function getCategoryBySlug(slug: string): Promise<Category | null> {
@@ -41,21 +46,26 @@ export async function getCategoryBySlug(slug: string): Promise<Category | null> 
       },
     });
 
-    if (!c) return null;
-
-    return {
-      id: c.id,
-      name: c.name,
-      slug: c.slug,
-      description: c.description || "",
-      image: c.image || "https://images.unsplash.com/photo-1616486338812-3dadae4b4ace?w=800&q=80",
-      productCount: c._count.products,
-      featured: true,
-    };
+    if (c) {
+      return {
+        id: c.id,
+        name: c.name,
+        slug: c.slug,
+        description: c.description || "",
+        image: c.image || "https://images.unsplash.com/photo-1616486338812-3dadae4b4ace?w=800&q=80",
+        productCount: c._count.products,
+        featured: true,
+        parentId: c.parentId || null,
+        icon: c.icon || "Grid",
+      };
+    }
   } catch (error) {
-    console.error(`Error fetching category by slug ${slug}:`, error);
-    return null;
+    console.error(`Error fetching category by slug ${slug} from DB:`, error);
   }
+
+  // Fallback to static category helper (resolves aliases like floor-tiles -> tiles-stone)
+  const staticCat = getStaticCategoryBySlug(slug);
+  return staticCat || null;
 }
 
 export async function createCategory(data: {
@@ -63,6 +73,7 @@ export async function createCategory(data: {
   slug?: string;
   description?: string;
   image?: string;
+  parentId?: string | null;
 }) {
   try {
     const slug = data.slug || data.name.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-+|-+$/g, "");
@@ -75,6 +86,7 @@ export async function createCategory(data: {
         description: data.description || "",
         image: data.image || "https://images.unsplash.com/photo-1616486338812-3dadae4b4ace?w=800&q=80",
         order: count,
+        parentId: data.parentId || null,
       },
     });
 
@@ -93,6 +105,7 @@ export async function updateCategory(id: string, data: {
   name?: string;
   description?: string;
   image?: string;
+  parentId?: string | null;
 }) {
   try {
     const category = await prisma.category.update({
