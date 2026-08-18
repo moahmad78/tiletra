@@ -9,8 +9,9 @@ import { getLowestPrice, getLowestBoxPrice } from "@/lib/data/products";
 import { showCartToast } from "@/lib/cart-toast-store";
 import { useState } from "react";
 
-function formatPrice(n: number) {
-  return "₹" + n.toLocaleString("en-IN");
+function formatPrice(n: number | string): string {
+  const num = typeof n === "number" ? n : Number(n) || 0;
+  return "₹" + num.toLocaleString("en-IN");
 }
 
 export default function CartAddons() {

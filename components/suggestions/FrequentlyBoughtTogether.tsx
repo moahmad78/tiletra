@@ -10,8 +10,9 @@ import { getFrequentlyBoughtTogether, type FrequentPair } from "@/lib/recommenda
 import { showCartToast } from "@/lib/cart-toast-store";
 import { toast } from "sonner";
 
-function formatPrice(n: number) {
-  return "₹" + n.toLocaleString("en-IN");
+function formatPrice(n: number | string): string {
+  const num = typeof n === "number" ? n : Number(n) || 0;
+  return "₹" + num.toLocaleString("en-IN");
 }
 
 export default function FrequentlyBoughtTogether({ product }: { product: Product }) {

@@ -9,6 +9,12 @@ export function safeRevalidate(path: string) {
   }
 }
 
+export function formatPrice(n: number | string): string {
+  const num = typeof n === "number" ? n : Number(n) || 0;
+  return "₹" + num.toLocaleString("en-IN");
+}
+
+
 // Helper to convert Prisma product with variants to UI Product type
 export function formatProduct(dbProduct: any): Product {
   const variants: ProductVariant[] = (dbProduct.variants || []).map((v: any) => ({

@@ -562,7 +562,7 @@ export default function ProductDetailsClient({
                   <span>Need expert guidance or project quote?</span>
                 </div>
                 <span className="text-[#25D366] group-hover:translate-x-0.5 transition-transform font-bold flex items-center gap-1">
-                  <span>Chat with Gulshan</span>
+                  <span>Connect with Expert</span>
                   <ArrowRight size={14} />
                 </span>
               </a>
