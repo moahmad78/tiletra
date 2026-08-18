@@ -27,6 +27,7 @@ import ProductSlider from "@/components/ProductSlider";
 import RecentlyViewedSlider from "@/components/suggestions/RecentlyViewedSlider";
 import DesktopBannerCarousel, { type BannerSlide } from "@/components/DesktopBannerCarousel";
 import DesktopProductRow from "@/components/DesktopProductRow";
+import DesktopCategoryRow from "@/components/DesktopCategoryRow";
 
 const roomInspirations = [
   {
@@ -240,34 +241,8 @@ export default function HomeClient({
         {/* 1. Desktop Banner Carousel */}
         <DesktopBannerCarousel slides={desktopBannerSlides} />
 
-        {/* 2. Category Shortcuts Grid (6 Columns) */}
-        <section id="categories" className="py-6">
-          <div className="w-full max-w-[1400px] mx-auto px-[20px] md:px-[24px] lg:px-[32px]">
-            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-7 2xl:grid-cols-10 gap-3">
-              {categories.filter((c) => !c.parentId).map((cat) => (
-                <Link key={cat.id} href={`/shop/${cat.slug}`}>
-                  <div className="group bg-white rounded-2xl p-2.5 sm:p-3 border border-gray-200/80 shadow-2xs hover:shadow-xs hover:border-[#F26522] transition-all text-center flex flex-col items-center h-full justify-between">
-                    <div className="relative w-14 h-14 sm:w-16 sm:h-16 rounded-xl overflow-hidden mb-2 bg-gray-100 border border-gray-100 shrink-0">
-                      <Image
-                        src={cat.image || "https://images.unsplash.com/photo-1616486338812-3dadae4b4ace?w=800&q=80"}
-                        alt={cat.name}
-                        fill
-                        className="object-cover group-hover:scale-110 transition-transform duration-300"
-                        sizes="64px"
-                      />
-                    </div>
-                    <p className="text-xs font-bold text-[#052a51] group-hover:text-[#F26522] transition-colors leading-tight line-clamp-2">
-                      {cat.name}
-                    </p>
-                    <span className="text-[10px] text-gray-400 font-medium mt-1">
-                      {cat.productCount > 0 ? `${cat.productCount} Items` : "Available"}
-                    </span>
-                  </div>
-                </Link>
-              ))}
-            </div>
-          </div>
-        </section>
+        {/* 2. Continuous Auto-Scrolling Category Row (Desktop Only) */}
+        <DesktopCategoryRow categories={categories} />
 
         {/* 3. Trending Tiles Product Row */}
         <DesktopProductRow
