@@ -2,10 +2,13 @@
 
 import { useState } from "react";
 import Link from "next/link";
-import { ChevronDown, Sparkles, ArrowRight, Flame } from "lucide-react";
+import { ChevronDown, Sparkles, ArrowRight, Flame, LayoutGrid } from "lucide-react";
 import { categories } from "@/lib/data/categories";
 
 const TOP_CATEGORIES = categories.filter((c) => !c.parentId);
+const PRIMARY_COUNT = 8;
+const PRIMARY_CATEGORIES = TOP_CATEGORIES.slice(0, PRIMARY_COUNT);
+const MORE_CATEGORIES = TOP_CATEGORIES.slice(PRIMARY_COUNT);
 
 const CATEGORY_SUBCATS: Record<string, { name: string; slug: string; desc: string }[]> = {
   "electrical": [
@@ -137,9 +140,10 @@ export default function CategoryNavBar() {
     <div className="hidden md:block bg-white border-b border-gray-200 shadow-2xs relative z-40">
       <div className="w-full max-w-[1400px] mx-auto px-3 sm:px-4 md:px-6 lg:px-8">
         <div className="flex items-center justify-between h-[44px] text-xs font-bold text-[#052a51]">
-          {/* Categories List */}
-          <nav className="flex items-center gap-0.5 lg:gap-1 overflow-x-auto scrollbar-none py-1">
-            {TOP_CATEGORIES.map((cat) => {
+          {/* Main Category Navigation Bar */}
+          <nav className="flex items-center gap-0.5 lg:gap-1 flex-1 min-w-0">
+            {/* Primary Category Links */}
+            {PRIMARY_CATEGORIES.map((cat) => {
               const subcats = CATEGORY_SUBCATS[cat.slug] || [];
               return (
                 <div
@@ -155,13 +159,13 @@ export default function CategoryNavBar() {
                     <span>{cat.name}</span>
                     <ChevronDown
                       size={12}
-                      className="text-gray-400 group-hover:text-[#F26522] transition-transform group-hover:rotate-180"
+                      className="text-gray-400 group-hover:text-[#F26522] transition-transform group-hover:rotate-180 shrink-0"
                     />
                   </Link>
 
                   {/* Mega-menu Dropdown on Hover */}
                   {activeMenu === cat.slug && (
-                    <div className="absolute top-full left-0 w-[380px] bg-white rounded-2xl shadow-xl border border-gray-100 p-4 z-50 animate-in fade-in zoom-in-95 duration-150">
+                    <div className="absolute top-full left-0 w-[360px] bg-white rounded-2xl shadow-xl border border-gray-100 p-4 z-50 animate-in fade-in zoom-in-95 duration-150">
                       <div className="flex items-center justify-between pb-2.5 border-b border-gray-100 mb-2.5">
                         <div>
                           <h4 className="font-black text-[#052a51] text-sm">{cat.name}</h4>
@@ -179,7 +183,7 @@ export default function CategoryNavBar() {
                         {subcats.map((sub, idx) => (
                           <Link
                             key={idx}
-                            href={`/shop/${cat.slug}`}
+                            href={`/shop/${sub.slug}`}
                             className="block p-2 rounded-xl hover:bg-[#F26522]/5 transition-colors group/item"
                           >
                             <p className="text-xs font-bold text-[#052a51] group-hover/item:text-[#F26522]">
@@ -195,25 +199,94 @@ export default function CategoryNavBar() {
               );
             })}
 
+            {/* "More Categories" Dropdown */}
+            <div
+              className="relative group"
+              onMouseEnter={() => setActiveMenu("more-categories")}
+              onMouseLeave={() => setActiveMenu(null)}
+            >
+              <button
+                className={`flex items-center gap-1 px-2.5 py-1.5 rounded-lg transition-colors whitespace-nowrap text-[12px] cursor-pointer ${
+                  activeMenu === "more-categories"
+                    ? "text-[#F26522] bg-[#F26522]/10 font-black"
+                    : "hover:text-[#F26522] hover:bg-gray-50 text-[#052a51]"
+                }`}
+              >
+                <LayoutGrid size={13} className="text-[#F26522] shrink-0" />
+                <span>More Categories</span>
+                <ChevronDown
+                  size={12}
+                  className={`transition-transform shrink-0 ${
+                    activeMenu === "more-categories" ? "rotate-180 text-[#F26522]" : "text-gray-400"
+                  }`}
+                />
+              </button>
+
+              {/* Mega-menu with all 12 remaining categories in a structured 3-column grid */}
+              {activeMenu === "more-categories" && (
+                <div className="absolute top-full left-0 w-[680px] bg-white rounded-2xl shadow-2xl border border-gray-100 p-5 z-50 animate-in fade-in zoom-in-95 duration-150">
+                  <div className="flex items-center justify-between pb-3 border-b border-gray-100 mb-3.5">
+                    <div>
+                      <h4 className="font-black text-[#052a51] text-sm flex items-center gap-2">
+                        <LayoutGrid size={15} className="text-[#F26522]" />
+                        <span>All Interior & Construction Categories</span>
+                      </h4>
+                      <p className="text-[11px] text-gray-500 mt-0.5">
+                        Explore all 20 curated construction and interior categories
+                      </p>
+                    </div>
+                    <Link
+                      href="/shop"
+                      className="text-xs font-bold text-[#F26522] hover:underline flex items-center gap-1 bg-[#F26522]/10 px-3 py-1.5 rounded-lg shrink-0"
+                    >
+                      View All Catalog <ArrowRight size={12} />
+                    </Link>
+                  </div>
+
+                  <div className="grid grid-cols-3 gap-2.5 max-h-[380px] overflow-y-auto pr-1">
+                    {MORE_CATEGORIES.map((cat) => (
+                      <Link
+                        key={cat.slug}
+                        href={`/shop/${cat.slug}`}
+                        className="p-2.5 rounded-xl border border-gray-100 hover:border-[#F26522]/30 hover:bg-[#F26522]/5 transition-all group/item flex flex-col justify-between"
+                      >
+                        <div>
+                          <p className="text-xs font-black text-[#052a51] group-hover/item:text-[#F26522] transition-colors leading-tight">
+                            {cat.name}
+                          </p>
+                          <p className="text-[10px] text-gray-400 line-clamp-2 mt-1 leading-snug">
+                            {cat.description}
+                          </p>
+                        </div>
+                        <span className="text-[10px] font-bold text-[#F26522] mt-2 inline-flex items-center gap-0.5 opacity-0 group-hover/item:opacity-100 transition-opacity">
+                          Explore <ArrowRight size={10} />
+                        </span>
+                      </Link>
+                    ))}
+                  </div>
+                </div>
+              )}
+            </div>
+
             {/* Room Inspiration Link */}
             <Link
               href="/inspiration"
-              className="flex items-center gap-1 px-2.5 py-1.5 rounded-lg text-[#F26522] hover:bg-[#F26522]/10 transition-colors whitespace-nowrap font-black text-[12px]"
+              className="flex items-center gap-1 px-2.5 py-1.5 rounded-lg text-[#F26522] hover:bg-[#F26522]/10 transition-colors whitespace-nowrap font-black text-[12px] ml-1 shrink-0"
             >
-              <Sparkles size={13} />
+              <Sparkles size={13} className="shrink-0" />
               <span>Inspiration</span>
             </Link>
           </nav>
 
-          {/* Right Highlights */}
-          <div className="hidden xl:flex items-center gap-3 text-xs font-semibold text-gray-500">
-            <span className="text-emerald-700 font-bold">✨ Everything for Every Space</span>
-            <span className="text-gray-300">|</span>
+          {/* Right Highlights: Dedicated "Explore All Supplies" CTA */}
+          <div className="flex items-center pl-4 shrink-0">
             <Link
               href="/shop"
-              className="hover:text-[#052a51] transition-colors flex items-center gap-1"
+              className="flex items-center gap-1.5 px-3.5 py-1.5 rounded-full bg-[#052a51] hover:bg-[#F26522] text-white transition-all text-xs font-bold shadow-xs active:scale-95 cursor-pointer whitespace-nowrap"
             >
-              <Flame size={13} className="text-[#F26522]" /> Explore All Supplies
+              <Flame size={13} className="text-[#F26522] group-hover:text-white" />
+              <span>Explore All Supplies</span>
+              <ArrowRight size={12} className="ml-0.5" />
             </Link>
           </div>
         </div>
