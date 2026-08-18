@@ -3,8 +3,9 @@
 import { useState, useEffect, useRef } from "react";
 import Link from "next/link";
 import Image from "next/image";
-import { Search, X, ArrowRight, Tag } from "lucide-react";
-import { products, getLowestPrice } from "@/lib/data/products";
+import { Search, X, ArrowRight, Tag, Loader2 } from "lucide-react";
+import { searchProducts } from "@/lib/actions/products";
+import { getLowestPrice } from "@/lib/data/products";
 import type { Product } from "@/lib/data/products";
 
 function formatPrice(n: number) {
@@ -19,6 +20,8 @@ export default function SearchModal({
   onClose: () => void;
 }) {
   const [query, setQuery] = useState("");
+  const [results, setResults] = useState<Product[]>([]);
+  const [loading, setLoading] = useState(false);
   const inputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
@@ -27,6 +30,7 @@ export default function SearchModal({
       document.body.style.overflow = "hidden";
     } else {
       setQuery("");
+      setResults([]);
       document.body.style.overflow = "";
     }
     return () => {
@@ -43,18 +47,30 @@ export default function SearchModal({
     return () => window.removeEventListener("keydown", handleKeyDown);
   }, [onClose]);
 
-  if (!isOpen) return null;
+  // Search when query changes
+  useEffect(() => {
+    if (!query.trim()) {
+      setResults([]);
+      setLoading(false);
+      return;
+    }
 
-  const results: Product[] = query.trim()
-    ? products.filter(
-        (p) =>
-          p.name.toLowerCase().includes(query.toLowerCase()) ||
-          p.categoryName.toLowerCase().includes(query.toLowerCase()) ||
-          p.material.toLowerCase().includes(query.toLowerCase()) ||
-          p.tags.some((t) => t.toLowerCase().includes(query.toLowerCase())) ||
-          p.variants.some((v) => v.finish.toLowerCase().includes(query.toLowerCase()))
-      )
-    : [];
+    setLoading(true);
+    const timer = setTimeout(async () => {
+      try {
+        const res = await searchProducts(query);
+        setResults(res);
+      } catch (err) {
+        console.error("Search error:", err);
+      } finally {
+        setLoading(false);
+      }
+    }, 200);
+
+    return () => clearTimeout(timer);
+  }, [query]);
+
+  if (!isOpen) return null;
 
   const popularSearches = ["Marble", "Subway", "Bathroom", "Matte finish", "Kitchen backsplash", "Porcelain"];
 
@@ -70,7 +86,11 @@ export default function SearchModal({
       <div className="relative z-10 w-full max-w-2xl bg-white rounded-3xl shadow-2xl overflow-hidden border border-gray-100 mt-6 sm:mt-12 flex flex-col max-h-[80vh]">
         {/* Search Input Bar */}
         <div className="p-4 sm:p-5 border-b border-gray-100 flex items-center gap-3">
-          <Search size={22} className="text-[#F26522] shrink-0" />
+          {loading ? (
+            <Loader2 size={22} className="text-[#F26522] animate-spin shrink-0" />
+          ) : (
+            <Search size={22} className="text-[#F26522] shrink-0" />
+          )}
           <input
             ref={inputRef}
             type="text"
@@ -82,14 +102,14 @@ export default function SearchModal({
           {query && (
             <button
               onClick={() => setQuery("")}
-              className="p-1 rounded-full text-gray-400 hover:text-gray-600"
+              className="p-1 rounded-full text-gray-400 hover:text-gray-600 cursor-pointer"
             >
               <X size={18} />
             </button>
           )}
           <button
             onClick={onClose}
-            className="px-3 py-1.5 bg-gray-100 hover:bg-gray-200 text-[#052a51] text-xs font-bold rounded-xl transition-colors"
+            className="px-3 py-1.5 bg-gray-100 hover:bg-gray-200 text-[#052a51] text-xs font-bold rounded-xl transition-colors cursor-pointer"
           >
             Esc
           </button>
@@ -107,13 +127,18 @@ export default function SearchModal({
                   <button
                     key={term}
                     onClick={() => setQuery(term)}
-                    className="px-3.5 py-1.5 bg-gray-100 hover:bg-gray-200 text-[#052a51] text-xs font-bold rounded-full transition-colors flex items-center gap-1.5"
+                    className="px-3.5 py-1.5 bg-gray-100 hover:bg-gray-200 text-[#052a51] text-xs font-bold rounded-full transition-colors flex items-center gap-1.5 cursor-pointer"
                   >
                     <Tag size={12} className="text-[#F26522]" />
                     <span>{term}</span>
                   </button>
                 ))}
               </div>
+            </div>
+          ) : loading ? (
+            <div className="text-center py-10 text-gray-400 text-sm">
+              <Loader2 className="animate-spin inline-block mr-2" size={16} />
+              Searching live tile catalog...
             </div>
           ) : results.length === 0 ? (
             <div className="text-center py-10 text-gray-500">
@@ -136,7 +161,7 @@ export default function SearchModal({
                 >
                   <div className="relative w-14 h-14 rounded-xl overflow-hidden bg-gray-100 shrink-0">
                     <Image
-                      src={product.images[0]}
+                      src={product.images[0] || "https://images.unsplash.com/photo-1615529182904-14819c35db37?w=800&q=80"}
                       alt={product.name}
                       fill
                       className="object-cover group-hover:scale-105 transition-transform"
@@ -175,7 +200,7 @@ export default function SearchModal({
             onClick={onClose}
             className="text-xs font-bold text-[#F26522] hover:underline"
           >
-            View All {products.length} Tiles in Catalog →
+            View Full Catalog in Shop →
           </Link>
         </div>
       </div>

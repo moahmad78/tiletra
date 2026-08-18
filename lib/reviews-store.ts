@@ -215,10 +215,10 @@ export const useReviewsStore = create<ReviewsStore>()(
 
         if (prodReviews.length === 0) {
           return {
-            averageRating: 4.8,
+            averageRating: 0,
             totalReviews: 0,
             distribution: { 5: 0, 4: 0, 3: 0, 2: 0, 1: 0 },
-            recommendPercent: 96,
+            recommendPercent: 0,
           };
         }
 

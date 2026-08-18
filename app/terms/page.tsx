@@ -24,14 +24,14 @@ export default function TermsPage() {
           <section className="space-y-2">
             <h2 className="text-lg font-black text-[#052a51]">1. Agreement to Terms</h2>
             <p>
-              By accessing or purchasing from Tiletra (tiletra.in), you agree to comply with and be bound by these Terms of Service. If you disagree with any portion, please refrain from using the platform.
+              By accessing or purchasing from Intrihub (intrihub.com), you agree to comply with and be bound by these Terms of Service. If you disagree with any portion, please refrain from using the platform.
             </p>
           </section>
 
-          <section className="space-y-2">
-            <h2 className="text-lg font-black text-[#052a51]">2. Product Information & Pricing</h2>
+          <section>
+            <h2 className="text-xl font-bold text-[#052a51] mb-2">2. Products and Pricing</h2>
             <p>
-              All prices listed on Tiletra are inclusive of applicable GST unless stated otherwise. Prices and stock availability are subject to change without prior notice. Tile images on screen may have minor color variations compared to physical tiles due to monitor calibration and ambient lighting.
+              All prices listed on Intrihub are inclusive of applicable GST unless stated otherwise. Prices and stock availability are subject to change without prior notice. Tile images on screen may have minor color variations compared to physical tiles due to monitor calibration and ambient lighting.
             </p>
           </section>
 

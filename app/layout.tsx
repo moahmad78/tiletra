@@ -1,10 +1,13 @@
 import type { Metadata } from "next";
 import { Plus_Jakarta_Sans } from "next/font/google";
+import { Suspense } from "react";
 import "./globals.css";
 import { QuoteModalProvider } from "@/components/QuoteModalProvider";
 import CartDrawer from "@/components/cart/CartDrawer";
 import BottomTabBar from "@/components/BottomTabBar";
 import LoginModal from "@/components/auth/LoginModal";
+import GoogleSessionHydrator from "@/components/auth/GoogleSessionHydrator";
+import AddToCartToast from "@/components/cart/AddToCartToast";
 import { Toaster } from "sonner";
 
 const jakarta = Plus_Jakarta_Sans({
@@ -13,18 +16,30 @@ const jakarta = Plus_Jakarta_Sans({
 });
 
 export const metadata: Metadata = {
-  title: "Tiletra | Quality Tiles for Strong Spaces",
-  description: "Tiletra — India's premium tile store. Shop floor tiles, wall tiles, bathroom tiles, kitchen tiles, outdoor & designer tiles. Free delivery on orders above ₹15,000. Browse 200+ curated tiles online.",
+  title: "Intrihub | Everything for Every Space.",
+  description: "Intrihub — Everything for Every Space. Shop tiles, electricals, plumbing, hardware, plywood, granite, aluminum doors, and wallpaper online. Delivery across Bangalore & Pan-India.",
+  icons: {
+    icon: [
+      { url: "/favicon.ico" },
+      { url: "/favicon-32x32.png", sizes: "32x32", type: "image/png" },
+      { url: "/favicon-16x16.png", sizes: "16x16", type: "image/png" },
+    ],
+    apple: [
+      { url: "/apple-touch-icon.png", sizes: "180x180", type: "image/png" },
+    ],
+    shortcut: ["/favicon.ico"],
+  },
+  manifest: "/site.webmanifest",
   openGraph: {
-    title: "Tiletra | Quality Tiles for Strong Spaces",
-    description: "Shop premium floor, wall, bathroom, kitchen & outdoor tiles at Tiletra. Free delivery above ₹15,000. 200+ curated tiles, expert advice.",
+    title: "Intrihub | Everything for Every Space.",
+    description: "Intrihub — Everything for Every Space. End-to-end interior and construction supplies: tiles, electrical, plumbing, hardware, plywood, granite & more.",
     type: "website",
-    images: ["/Tiletra/logo/logo.png"],
+    images: ["/logo/intri-web-logo.png"],
   },
   twitter: {
     card: "summary_large_image",
-    title: "Tiletra | Quality Tiles for Strong Spaces",
-    description: "Shop premium floor, wall, bathroom & kitchen tiles at Tiletra. Free delivery above ₹15,000.",
+    title: "Intrihub | Everything for Every Space.",
+    description: "Intrihub — Everything for Every Space. End-to-end interior and construction supplies.",
   },
 };
 
@@ -40,7 +55,11 @@ export default function RootLayout({
       className={`${jakarta.variable} h-full antialiased scroll-smooth`}
     >
       <head>
-        <link rel="icon" href="/Tiletra/logo/icon.png" sizes="any" />
+        <link rel="icon" href="/favicon.ico" sizes="any" />
+        <link rel="icon" type="image/png" sizes="32x32" href="/favicon-32x32.png" />
+        <link rel="icon" type="image/png" sizes="16x16" href="/favicon-16x16.png" />
+        <link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png" />
+        <link rel="manifest" href="/site.webmanifest" />
       </head>
       <body className="min-h-full flex flex-col font-sans bg-white text-gray-900 pb-[60px] md:pb-0">
         <script
@@ -49,12 +68,12 @@ export default function RootLayout({
             __html: JSON.stringify({
               "@context": "https://schema.org",
               "@type": "Store",
-              "name": "Tiletra",
+              "name": "Intrihub",
               "image": "https://images.unsplash.com/photo-1581094794329-c8112a89af12?q=80&w=2070&auto=format&fit=crop",
               "@id": "",
-              "url": "https://tiletra.in",
+              "url": "https://intrihub.com",
               "telephone": "+917870935277",
-              "email": "vishalpoddar393@gmail.com",
+              "email": "hello@intrihub.com",
               "address": {
                 "@type": "PostalAddress",
                 "streetAddress": "41, 10th A Cross Rd, Janapriya Layout, Classic Paradise Layout, Begur",
@@ -83,9 +102,13 @@ export default function RootLayout({
         <QuoteModalProvider>
           {children}
           <CartDrawer />
+          <AddToCartToast />
           <BottomTabBar />
           <LoginModal />
           <Toaster position="top-center" richColors />
+          <Suspense fallback={null}>
+            <GoogleSessionHydrator />
+          </Suspense>
         </QuoteModalProvider>
       </body>
     </html>

@@ -23,8 +23,8 @@ export default function WhyChooseUs() {
         {/* TOP SECTION: Heading & Paragraph */}
         <SectionHeader
           label="WHY CHOOSE US"
-          heading={<>Why Choose <span className="text-[#F26522]">Tiletra</span></>}
-          caption="Flawless craftsmanship, transparent pricing, and punctual delivery for a premium finish."
+          heading={<>Why Choose <span className="text-[#F26522]">Intrihub</span></>}
+          caption="Everything for every space — verified materials, direct site delivery, and transparent pricing."
         />
 
         {/* BOTTOM SECTION: Image & Grid */}

@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, use } from "react";
+import { useState, useEffect, use } from "react";
 import Link from "next/link";
 import Image from "next/image";
 import {
@@ -11,15 +11,16 @@ import {
   Phone,
   Mail,
   MapPin,
-  Clock,
-  Save,
   MessageSquare,
-  ShieldCheck,
-  ExternalLink,
-  Package,
+  Loader2,
 } from "lucide-react";
-import { useAdminStore, type OrderStatus } from "@/lib/admin-store";
-import { useNotificationsStore } from "@/lib/notifications-store";
+import {
+  getOrderById,
+  updateOrderStatus,
+  updateOrderTracking,
+  updateOrderNotes,
+  updatePaymentCollected,
+} from "@/lib/actions/orders";
 import InvoiceModal from "@/components/admin/InvoiceModal";
 import { toast } from "sonner";
 
@@ -27,7 +28,7 @@ function formatPrice(n: number) {
   return "₹" + n.toLocaleString("en-IN");
 }
 
-const STEPS: OrderStatus[] = [
+const STEPS = [
   "Processing",
   "Confirmed",
   "Dispatched",
@@ -41,17 +42,45 @@ export default function OrderDetailPage({
   params: Promise<{ id: string }>;
 }) {
   const { id } = use(params);
-  const orders = useAdminStore((s) => s.orders);
-  const updateOrderStatus = useAdminStore((s) => s.updateOrderStatus);
-  const updateOrderTracking = useAdminStore((s) => s.updateOrderTracking);
-  const updateOrderNotes = useAdminStore((s) => s.updateOrderNotes);
-
-  const order = orders.find((o) => o.id === id);
+  const [order, setOrder] = useState<any>(null);
+  const [loading, setLoading] = useState(true);
 
   const [invoiceOpen, setInvoiceOpen] = useState(false);
-  const [courier, setCourier] = useState(order?.courierName || "Delhivery Freight");
-  const [tracking, setTracking] = useState(order?.trackingNumber || "");
-  const [notes, setNotes] = useState(order?.internalNotes || "");
+  const [courier, setCourier] = useState("Delhivery Freight");
+  const [tracking, setTracking] = useState("");
+  const [notes, setNotes] = useState("");
+
+  const loadOrder = async () => {
+    try {
+      setLoading(true);
+      const data = await getOrderById(id);
+      setOrder(data);
+      if (data) {
+        setCourier(data.courierName || "Delhivery Freight");
+        setTracking(data.trackingNumber || "");
+        setNotes(data.internalNotes || "");
+      }
+    } catch (err) {
+      console.error("Error loading order:", err);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    loadOrder();
+  }, [id]);
+
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center min-h-[400px]">
+        <div className="flex flex-col items-center gap-3">
+          <Loader2 className="animate-spin text-[#F26522]" size={32} />
+          <p className="text-sm font-bold text-[#052a51]">Loading order #{id} from Neon DB...</p>
+        </div>
+      </div>
+    );
+  }
 
   if (!order) {
     return (
@@ -66,42 +95,50 @@ export default function OrderDetailPage({
 
   const currentStepIdx = STEPS.indexOf(order.orderStatus);
 
-  const handleStatusClick = (status: OrderStatus) => {
-    updateOrderStatus(order.id, status);
-
-    // Also dispatch in-app notification to customer
-    const { addNotification } = useNotificationsStore.getState();
-    addNotification({
-      type: "order_status",
-      title: `Order ${order.id} is now ${status}!`,
-      body:
-        status === "Delivered"
-          ? `Your tile shipment for ${order.id} has been delivered successfully. Please inspect the boxes and write a quick review!`
-          : status === "Dispatched"
-          ? `Your tile shipment for ${order.id} is on the way via ${order.courierName || "freight"}.`
-          : `Status for order ${order.id} updated to ${status}.`,
-      link: "/account/orders",
-    });
-
-    toast.success(`Order marked as ${status}`);
+  const handleStatusClick = async (status: string) => {
+    const res = await updateOrderStatus(order.id, status);
+    if (res.success) {
+      setOrder((prev: any) => ({ ...prev, orderStatus: status }));
+      toast.success(`Order marked as ${status}`);
+    } else {
+      toast.error("Failed to update status");
+    }
   };
 
-  const handleSaveTracking = (e: React.FormEvent) => {
+  const handleSaveTracking = async (e: React.FormEvent) => {
     e.preventDefault();
-    updateOrderTracking(order.id, courier, tracking);
-    toast.success("Courier & tracking updated!");
+    const res = await updateOrderTracking(order.id, { courierName: courier, trackingNumber: tracking });
+    if (res.success) {
+      setOrder((prev: any) => ({ ...prev, courierName: courier, trackingNumber: tracking, orderStatus: "Dispatched" }));
+      toast.success("Courier & tracking updated in Neon DB!");
+    } else {
+      toast.error(res.error || "Failed to update tracking");
+    }
   };
 
-  const handleSaveNotes = (e: React.FormEvent) => {
+  const handleSaveNotes = async (e: React.FormEvent) => {
     e.preventDefault();
-    updateOrderNotes(order.id, notes);
-    toast.success("Internal notes saved!");
+    const res = await updateOrderNotes(order.id, notes);
+    if (res.success) {
+      toast.success("Internal notes saved!");
+    } else {
+      toast.error("Failed to save notes");
+    }
   };
 
-  // WhatsApp click to chat URL
-  const cleanPhone = order.customerPhone.replace(/[^0-9]/g, "");
+  const handleCollectCash = async () => {
+    const res = await updatePaymentCollected(order.id, true);
+    if (res.success) {
+      setOrder((prev: any) => ({ ...prev, paymentCollected: true, paymentStatus: "Paid" }));
+      toast.success(`Payment of ${formatPrice(order.total)} marked as collected!`);
+    } else {
+      toast.error("Failed to update payment status");
+    }
+  };
+
+  const cleanPhone = (order.customerPhone || "").replace(/[^0-9]/g, "");
   const whatsappUrl = `https://wa.me/${cleanPhone}?text=${encodeURIComponent(
-    `Hello ${order.customerName}, regarding your Tiletra order ${order.id}...`
+    `Hello ${order.customerName}, regarding your Intrihub order ${order.id}...`
   )}`;
 
   return (
@@ -117,7 +154,7 @@ export default function OrderDetailPage({
           </Link>
           <div>
             <div className="flex items-center gap-2">
-              <h2 className="text-xl font-black text-[#052a51]">Order {order.id}</h2>
+              <h2 className="text-xl font-black text-[#052a51]">Order #{order.id}</h2>
               <span className="px-2.5 py-0.5 rounded-full text-xs font-extrabold bg-[#F26522]/10 text-[#F26522]">
                 {order.orderStatus}
               </span>
@@ -141,7 +178,7 @@ export default function OrderDetailPage({
 
           <button
             onClick={() => setInvoiceOpen(true)}
-            className="inline-flex items-center gap-1.5 px-3.5 py-2 bg-[#052a51] hover:bg-[#041f3d] text-white text-xs font-bold rounded-xl transition-colors shadow-2xs"
+            className="inline-flex items-center gap-1.5 px-3.5 py-2 bg-[#052a51] hover:bg-[#041f3d] text-white text-xs font-bold rounded-xl transition-colors shadow-2xs cursor-pointer"
           >
             <Printer size={14} />
             <span>Tax Invoice</span>
@@ -162,7 +199,7 @@ export default function OrderDetailPage({
               <button
                 key={s}
                 onClick={() => handleStatusClick(s)}
-                className={`p-3 rounded-xl border text-left transition-all active:scale-95 ${
+                className={`p-3 rounded-xl border text-left transition-all active:scale-95 cursor-pointer ${
                   isCurrent
                     ? "bg-[#052a51] text-white border-[#052a51] shadow-sm"
                     : isCompleted
@@ -187,14 +224,20 @@ export default function OrderDetailPage({
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         {/* Items List */}
         <div className="lg:col-span-2 bg-white p-6 rounded-2xl border border-gray-200/80 shadow-2xs space-y-4">
-          <h3 className="text-base font-black text-[#052a51]">Order Items ({order.items.length})</h3>
+          <h3 className="text-base font-black text-[#052a51]">Order Items ({order.items?.length || 0})</h3>
 
           <div className="divide-y divide-gray-100">
-            {order.items.map((item, idx) => (
+            {order.items?.map((item: any, idx: number) => (
               <div key={idx} className="py-4 first:pt-0 last:pb-0 flex items-center justify-between gap-4">
                 <div className="flex items-center gap-3.5">
                   <div className="relative w-16 h-16 rounded-xl overflow-hidden bg-gray-100 shrink-0 border border-gray-200">
-                    <Image src={item.image} alt={item.productName} fill className="object-cover" sizes="64px" />
+                    <Image
+                      src={item.image || "https://images.unsplash.com/photo-1615529182904-14819c35db37?w=800&q=80"}
+                      alt={item.productName}
+                      fill
+                      className="object-cover"
+                      sizes="64px"
+                    />
                   </div>
                   <div>
                     <h4 className="text-sm font-bold text-[#052a51]">{item.productName}</h4>
@@ -268,10 +311,10 @@ export default function OrderDetailPage({
                 <MapPin size={14} className="text-[#F26522]" /> Delivery Address
               </span>
               <p className="leading-relaxed pl-5">
-                {order.shippingAddress.line1}
-                {order.shippingAddress.line2 ? `, ${order.shippingAddress.line2}` : ""}
+                {order.shippingAddress?.street || order.shippingAddress?.line1}
+                {order.shippingAddress?.landmark ? `, near ${order.shippingAddress.landmark}` : ""}
                 <br />
-                {order.shippingAddress.city}, {order.shippingAddress.pincode}
+                {order.shippingAddress?.city || "Bangalore"}, {order.shippingAddress?.state || "Karnataka"} - {order.shippingAddress?.pincode || ""}
               </p>
             </div>
           </div>
@@ -318,12 +361,8 @@ export default function OrderDetailPage({
                 {order.paymentStatus !== "Paid" ? (
                   <button
                     type="button"
-                    onClick={() => {
-                      const { markPaymentCollected } = useAdminStore.getState();
-                      markPaymentCollected(order.id);
-                      toast.success(`Payment of ${formatPrice(order.total)} marked as collected in cash!`);
-                    }}
-                    className="w-full py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white font-bold rounded-xl text-xs flex items-center justify-center gap-1.5 transition-all shadow-2xs active:scale-95"
+                    onClick={handleCollectCash}
+                    className="w-full py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white font-bold rounded-xl text-xs flex items-center justify-center gap-1.5 transition-all shadow-2xs active:scale-95 cursor-pointer"
                   >
                     <CheckCircle size={14} />
                     <span>Mark Cash Collected ({formatPrice(order.total)})</span>
@@ -377,7 +416,7 @@ export default function OrderDetailPage({
 
           <button
             type="submit"
-            className="w-full py-2 bg-[#052a51] hover:bg-[#041f3d] text-white text-xs font-bold rounded-xl shadow-xs transition-colors mt-2"
+            className="w-full py-2 bg-[#052a51] hover:bg-[#041f3d] text-white text-xs font-bold rounded-xl shadow-xs transition-colors mt-2 cursor-pointer"
           >
             Update Tracking Info
           </button>
@@ -397,7 +436,7 @@ export default function OrderDetailPage({
 
           <button
             type="submit"
-            className="w-full py-2 bg-[#052a51] hover:bg-[#041f3d] text-white text-xs font-bold rounded-xl shadow-xs transition-colors"
+            className="w-full py-2 bg-[#052a51] hover:bg-[#041f3d] text-white text-xs font-bold rounded-xl shadow-xs transition-colors cursor-pointer"
           >
             Save Internal Note
           </button>

@@ -30,25 +30,9 @@ export default function BottomTabBar() {
   const cartCount = useCartStore((s) => s.getTotalBoxes());
   const wishlistCount = useWishlistStore((s) => s.items.length);
 
-  // Hide on scroll down, show on scroll up
-  const [visible, setVisible] = useState(true);
-  const [lastY, setLastY] = useState(0);
-
   useEffect(() => {
     setMounted(true);
-    const onScroll = () => {
-      const currentY = window.scrollY;
-      if (currentY < 60) {
-        setVisible(true);
-        setLastY(currentY);
-        return;
-      }
-      setVisible(currentY < lastY);
-      setLastY(currentY);
-    };
-    window.addEventListener("scroll", onScroll, { passive: true });
-    return () => window.removeEventListener("scroll", onScroll);
-  }, [lastY]);
+  }, []);
 
   // Hide completely on all admin routes
   if (pathname?.startsWith("/admin")) {
@@ -61,10 +45,7 @@ export default function BottomTabBar() {
         "md:hidden fixed bottom-0 left-0 right-0 z-50",
         "bg-white border-t border-gray-200 shadow-[0_-4px_20px_rgba(0,0,0,0.08)]",
         // Safe area for iPhone notch
-        "pb-safe",
-        // Slide hide/show
-        "transition-transform duration-300",
-        visible ? "translate-y-0" : "translate-y-full"
+        "pb-safe"
       )}
       style={{ paddingBottom: "env(safe-area-inset-bottom)" }}
     >

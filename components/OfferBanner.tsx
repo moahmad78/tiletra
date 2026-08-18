@@ -5,10 +5,9 @@ import Link from "next/link";
 import Image from "next/image";
 import { Sparkles, ArrowRight, Truck, Package } from "lucide-react";
 
-interface BannerSlide {
+export interface MobileBannerSlide {
   id: string;
   badge: string;
-  badgeIcon: typeof Sparkles;
   title: string;
   subtitle: string;
   cta: string;
@@ -17,11 +16,10 @@ interface BannerSlide {
   image: string;
 }
 
-const slides: BannerSlide[] = [
+const DEFAULT_SLIDES: MobileBannerSlide[] = [
   {
     id: "slide-1",
     badge: "Special Offer",
-    badgeIcon: Sparkles,
     title: "Flat 20% Off Vitrified Tiles",
     subtitle: "Premium Italian marble & concrete looks",
     cta: "Shop Now",
@@ -32,7 +30,6 @@ const slides: BannerSlide[] = [
   {
     id: "slide-2",
     badge: "Zero Shipping Cost",
-    badgeIcon: Truck,
     title: "Free Delivery Above ₹15,000",
     subtitle: "Safe box packing & direct doorstep transit",
     cta: "Explore Tiles",
@@ -43,7 +40,6 @@ const slides: BannerSlide[] = [
   {
     id: "slide-3",
     badge: "Confidence First",
-    badgeIcon: Package,
     title: "Order a Tile Sample Box",
     subtitle: "Check finish & light in your home before buying",
     cta: "Get Samples",
@@ -53,7 +49,8 @@ const slides: BannerSlide[] = [
   },
 ];
 
-export default function OfferBanner() {
+export default function OfferBanner({ slides }: { slides?: MobileBannerSlide[] }) {
+  const bannerSlides = slides && slides.length > 0 ? slides : DEFAULT_SLIDES;
   const [current, setCurrent] = useState(0);
   const [touchStart, setTouchStart] = useState<number | null>(null);
   const [touchEnd, setTouchEnd] = useState<number | null>(null);
@@ -62,12 +59,12 @@ export default function OfferBanner() {
   // Auto-advance
   useEffect(() => {
     timerRef.current = setInterval(() => {
-      setCurrent((prev) => (prev + 1) % slides.length);
+      setCurrent((prev) => (prev + 1) % bannerSlides.length);
     }, 4500);
     return () => {
       if (timerRef.current) clearInterval(timerRef.current);
     };
-  }, []);
+  }, [bannerSlides.length]);
 
   const handleTouchStart = (e: React.TouchEvent) => {
     setTouchStart(e.targetTouches[0].clientX);
@@ -84,9 +81,9 @@ export default function OfferBanner() {
     const isRightSwipe = distance < -50;
 
     if (isLeftSwipe) {
-      setCurrent((prev) => (prev + 1) % slides.length);
+      setCurrent((prev) => (prev + 1) % bannerSlides.length);
     } else if (isRightSwipe) {
-      setCurrent((prev) => (prev - 1 + slides.length) % slides.length);
+      setCurrent((prev) => (prev - 1 + bannerSlides.length) % bannerSlides.length);
     }
 
     setTouchStart(null);
@@ -101,9 +98,8 @@ export default function OfferBanner() {
         onTouchMove={handleTouchMove}
         onTouchEnd={handleTouchEnd}
       >
-        {slides.map((slide, index) => {
+        {bannerSlides.map((slide, index) => {
           const isActive = index === current;
-          const BadgeIcon = slide.badgeIcon;
 
           return (
             <div
@@ -112,10 +108,10 @@ export default function OfferBanner() {
                 isActive ? "opacity-100 pointer-events-auto z-10" : "opacity-0 pointer-events-none z-0"
               }`}
             >
-              <Link href={slide.href} className="block w-full h-full relative">
+              <Link href={slide.href || "/shop"} className="block w-full h-full relative">
                 {/* Background Image */}
                 <Image
-                  src={slide.image}
+                  src={slide.image || "https://images.unsplash.com/photo-1616486338812-3dadae4b4ace?w=800&q=80"}
                   alt={slide.title}
                   fill
                   className="object-cover"
@@ -124,13 +120,13 @@ export default function OfferBanner() {
                 />
 
                 {/* Gradient overlay */}
-                <div className={`absolute inset-0 bg-gradient-to-r ${slide.bgGradient}`} />
+                <div className={`absolute inset-0 bg-gradient-to-r ${slide.bgGradient || "from-[#052a51]/95 via-[#052a51]/80 to-transparent"}`} />
 
                 {/* Content */}
                 <div className="relative z-10 h-full flex flex-col justify-center px-4 max-w-[75%]">
                   <div className="inline-flex items-center gap-1 px-2 py-0.5 bg-[#F26522] text-white text-[9px] font-extrabold rounded-full w-fit mb-1 shadow-xs">
-                    <BadgeIcon size={10} />
-                    <span>{slide.badge}</span>
+                    <Sparkles size={10} />
+                    <span>{slide.badge || "Special Offer"}</span>
                   </div>
 
                   <h3 className="text-[15px] font-black text-white leading-tight tracking-tight drop-shadow-xs">
@@ -142,7 +138,7 @@ export default function OfferBanner() {
                   </p>
 
                   <div className="mt-2 inline-flex items-center gap-1 text-[11px] font-extrabold text-[#F26522] bg-white/95 px-2.5 py-1 rounded-lg w-fit shadow-xs active:scale-95 transition-transform">
-                    <span>{slide.cta}</span>
+                    <span>{slide.cta || "Shop Now"}</span>
                     <ArrowRight size={11} />
                   </div>
                 </div>
@@ -153,12 +149,12 @@ export default function OfferBanner() {
 
         {/* Dot Indicators */}
         <div className="absolute bottom-2 right-3 z-20 flex items-center gap-1.5 bg-black/30 backdrop-blur-xs px-2 py-0.5 rounded-full">
-          {slides.map((_, i) => (
+          {bannerSlides.map((_, i) => (
             <button
               key={i}
               onClick={() => setCurrent(i)}
               aria-label={`Slide ${i + 1}`}
-              className={`h-1.5 rounded-full transition-all duration-300 ${
+              className={`h-1.5 rounded-full transition-all duration-300 cursor-pointer ${
                 i === current ? "w-4 bg-[#F26522]" : "w-1.5 bg-white/60"
               }`}
             />

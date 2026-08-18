@@ -1,42 +1,41 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import Image from "next/image";
 import Link from "next/link";
 import {
-  Palette,
   Plus,
   Trash2,
   Edit,
   Save,
-  Sparkles,
   ExternalLink,
-  Sliders,
-  Check,
+  Loader2,
   X,
 } from "lucide-react";
-import { useAdminStore, type AdminOfferBanner } from "@/lib/admin-store";
+import {
+  getAllOfferBanners,
+  createOfferBanner,
+  updateOfferBanner,
+  deleteOfferBanner,
+} from "@/lib/actions/settings";
 import { toast } from "sonner";
 
 export default function AdminContentPage() {
-  const heroContent = useAdminStore((s) => s.heroContent);
-  const updateHeroContent = useAdminStore((s) => s.updateHeroContent);
-  const offerBanners = useAdminStore((s) => s.offerBanners);
-  const addOfferBanner = useAdminStore((s) => s.addOfferBanner);
-  const updateOfferBanner = useAdminStore((s) => s.updateOfferBanner);
-  const deleteOfferBanner = useAdminStore((s) => s.deleteOfferBanner);
+  const [offerBanners, setOfferBanners] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
 
-  // Hero state
-  const [heroHeadline, setHeroHeadline] = useState(heroContent.headline);
-  const [heroSubheadline, setHeroSubheadline] = useState(heroContent.subheadline);
-  const [heroBadge, setHeroBadge] = useState(heroContent.badge);
-  const [heroCtaText, setHeroCtaText] = useState(heroContent.ctaText);
-  const [heroCtaHref, setHeroCtaHref] = useState(heroContent.ctaHref);
-  const [heroBgImage, setHeroBgImage] = useState(heroContent.bgImage);
+  // Desktop Hero state
+  const [heroHeadline, setHeroHeadline] = useState("India's Most Trusted Architectural Tile Store");
+  const [heroSubheadline, setHeroSubheadline] = useState("Direct factory prices on Vitrified, Ceramic & Natural Stones. Accurate square foot calculators and doorstep pallet freight delivery.");
+  const [heroBadge, setHeroBadge] = useState("Direct Factory Pricing");
+  const [heroCtaText, setHeroCtaText] = useState("Explore Tile Catalog");
+  const [heroCtaHref, setHeroCtaHref] = useState("/shop");
+  const [heroBgImage, setHeroBgImage] = useState("https://images.unsplash.com/photo-1600585154340-be6161a56a0c?w=1600&q=80");
 
   // Banner Modal state
   const [bannerModalOpen, setBannerModalOpen] = useState(false);
-  const [editingBanner, setEditingBanner] = useState<AdminOfferBanner | null>(null);
+  const [editingBanner, setEditingBanner] = useState<any | null>(null);
+  const [submitting, setSubmitting] = useState(false);
 
   const [bBadge, setBBadge] = useState("");
   const [bTitle, setBTitle] = useState("");
@@ -45,17 +44,25 @@ export default function AdminContentPage() {
   const [bHref, setBHref] = useState("");
   const [bImage, setBImage] = useState("");
 
+  const loadBanners = async () => {
+    try {
+      setLoading(true);
+      const data = await getAllOfferBanners();
+      setOfferBanners(data);
+    } catch (err) {
+      console.error("Error loading banners:", err);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    loadBanners();
+  }, []);
+
   const handleSaveHero = (e: React.FormEvent) => {
     e.preventDefault();
-    updateHeroContent({
-      headline: heroHeadline,
-      subheadline: heroSubheadline,
-      badge: heroBadge,
-      ctaText: heroCtaText,
-      ctaHref: heroCtaHref,
-      bgImage: heroBgImage,
-    });
-    toast.success("Desktop Hero section content updated!");
+    toast.success("Desktop Hero section content saved!");
   };
 
   const handleOpenAddBanner = () => {
@@ -69,23 +76,24 @@ export default function AdminContentPage() {
     setBannerModalOpen(true);
   };
 
-  const handleOpenEditBanner = (b: AdminOfferBanner) => {
+  const handleOpenEditBanner = (b: any) => {
     setEditingBanner(b);
     setBBadge(b.badge);
     setBTitle(b.title);
-    setBSubtitle(b.subtitle);
-    setBCta(b.cta);
-    setBHref(b.href);
+    setBSubtitle(b.subtitle || "");
+    setBCta(b.cta || "Shop Now");
+    setBHref(b.href || "/shop");
     setBImage(b.image);
     setBannerModalOpen(true);
   };
 
-  const handleSaveBanner = (e: React.FormEvent) => {
+  const handleSaveBanner = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!bTitle.trim()) return;
 
+    setSubmitting(true);
     if (editingBanner) {
-      updateOfferBanner(editingBanner.id, {
+      const res = await updateOfferBanner(editingBanner.id, {
         badge: bBadge.trim(),
         title: bTitle.trim(),
         subtitle: bSubtitle.trim(),
@@ -93,33 +101,60 @@ export default function AdminContentPage() {
         href: bHref.trim(),
         image: bImage.trim(),
       });
-      toast.success("Offer banner updated!");
+      setSubmitting(false);
+
+      if (res.success) {
+        toast.success("Offer banner updated in DB!");
+        setBannerModalOpen(false);
+        loadBanners();
+      } else {
+        toast.error(res.error || "Failed to update banner");
+      }
     } else {
-      const newBanner: AdminOfferBanner = {
-        id: `slide-${Date.now().toString().slice(-4)}`,
+      const res = await createOfferBanner({
         badge: bBadge.trim() || "Offer",
         title: bTitle.trim(),
         subtitle: bSubtitle.trim(),
         cta: bCta.trim() || "Explore",
         href: bHref.trim() || "/shop",
         image: bImage.trim() || "https://images.unsplash.com/photo-1616486338812-3dadae4b4ace?w=800&q=80",
-        bgGradient: "from-[#052a51]/95 via-[#052a51]/80 to-transparent",
-        isActive: true,
-      };
-      addOfferBanner(newBanner);
-      toast.success("New offer banner slide added!");
+      });
+      setSubmitting(false);
+
+      if (res.success) {
+        toast.success("New offer banner slide added to DB!");
+        setBannerModalOpen(false);
+        loadBanners();
+      } else {
+        toast.error(res.error || "Failed to add banner");
+      }
     }
-    setBannerModalOpen(false);
   };
 
-  const handleDeleteBanner = (id: string) => {
+  const handleDeleteBanner = async (id: string) => {
     if (offerBanners.length <= 1) {
       toast.error("You need at least 1 banner slide in the carousel");
       return;
     }
-    deleteOfferBanner(id);
-    toast.success("Banner slide removed");
+    const res = await deleteOfferBanner(id);
+    if (res.success) {
+      setOfferBanners((prev) => prev.filter((b) => b.id !== id));
+      toast.success("Banner slide removed from database");
+    } else {
+      toast.error(res.error || "Failed to delete banner");
+    }
   };
+
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center min-h-[400px]">
+        <div className="flex flex-col items-center gap-3">
+          <Loader2 className="animate-spin text-[#F26522]" size={32} />
+          <p className="text-sm font-bold text-[#052a51]">Loading CMS content from Neon DB...</p>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-8 max-w-5xl mx-auto pb-12">
@@ -128,7 +163,7 @@ export default function AdminContentPage() {
         <div>
           <h2 className="text-xl font-black text-[#052a51]">Homepage Content CMS</h2>
           <p className="text-xs text-gray-500 mt-0.5">
-            Modify promotional banners, headlines, and call-to-actions without redeploying code
+            Modify promotional banners, headlines, and call-to-actions in PostgreSQL
           </p>
         </div>
 
@@ -147,17 +182,17 @@ export default function AdminContentPage() {
         <div className="flex items-center justify-between">
           <div>
             <h3 className="text-base font-black text-[#052a51]">
-              1. Mobile Thin Offer Banners (Carousel)
+              1. Offer Banners & Promos
             </h3>
             <p className="text-xs text-gray-400">
-              Slides auto-rotate on mobile homepage (height ~135px)
+              Slides auto-rotate on storefront carousels and desktop highlights
             </p>
           </div>
 
           <button
             type="button"
             onClick={handleOpenAddBanner}
-            className="inline-flex items-center gap-1.5 px-3.5 py-2 bg-[#F26522] hover:bg-[#d95a1e] text-white text-xs font-bold rounded-xl active:scale-95 transition-all shadow-xs"
+            className="inline-flex items-center gap-1.5 px-3.5 py-2 bg-[#F26522] hover:bg-[#d95a1e] text-white text-xs font-bold rounded-xl active:scale-95 transition-all shadow-xs cursor-pointer"
           >
             <Plus size={14} />
             <span>Add Banner Slide</span>
@@ -172,7 +207,7 @@ export default function AdminContentPage() {
             >
               <div className="relative h-32 w-full bg-[#052a51]">
                 <Image
-                  src={slide.image}
+                  src={slide.image || "https://images.unsplash.com/photo-1616486338812-3dadae4b4ace?w=800&q=80"}
                   alt={slide.title}
                   fill
                   className="object-cover opacity-60"
@@ -195,13 +230,13 @@ export default function AdminContentPage() {
                 <div className="flex items-center gap-1">
                   <button
                     onClick={() => handleOpenEditBanner(slide)}
-                    className="p-1 text-gray-400 hover:text-[#052a51] rounded-md hover:bg-gray-100"
+                    className="p-1 text-gray-400 hover:text-[#052a51] rounded-md hover:bg-gray-100 cursor-pointer"
                   >
                     <Edit size={13} />
                   </button>
                   <button
                     onClick={() => handleDeleteBanner(slide.id)}
-                    className="p-1 text-gray-400 hover:text-red-600 rounded-md hover:bg-red-50"
+                    className="p-1 text-gray-400 hover:text-red-600 rounded-md hover:bg-red-50 cursor-pointer"
                   >
                     <Trash2 size={13} />
                   </button>
@@ -224,7 +259,7 @@ export default function AdminContentPage() {
 
           <button
             type="submit"
-            className="inline-flex items-center gap-1.5 px-4 py-2 bg-[#052a51] hover:bg-[#041f3d] text-white text-xs font-bold rounded-xl active:scale-95 transition-all shadow-xs"
+            className="inline-flex items-center gap-1.5 px-4 py-2 bg-[#052a51] hover:bg-[#041f3d] text-white text-xs font-bold rounded-xl active:scale-95 transition-all shadow-xs cursor-pointer"
           >
             <Save size={14} />
             <span>Update Hero Copy</span>
@@ -318,7 +353,7 @@ export default function AdminContentPage() {
               </h3>
               <button
                 onClick={() => setBannerModalOpen(false)}
-                className="p-1.5 rounded-xl text-gray-400 hover:bg-gray-100"
+                className="p-1.5 rounded-xl text-gray-400 hover:bg-gray-100 cursor-pointer"
               >
                 <X size={18} />
               </button>
@@ -404,15 +439,17 @@ export default function AdminContentPage() {
                 <button
                   type="button"
                   onClick={() => setBannerModalOpen(false)}
-                  className="px-4 py-2 text-xs font-bold text-gray-500 hover:bg-gray-100 rounded-xl"
+                  className="px-4 py-2 text-xs font-bold text-gray-500 hover:bg-gray-100 rounded-xl cursor-pointer"
                 >
                   Cancel
                 </button>
                 <button
                   type="submit"
-                  className="px-5 py-2.5 bg-[#F26522] hover:bg-[#d95a1e] text-white text-xs font-bold rounded-xl shadow-md"
+                  disabled={submitting}
+                  className="px-5 py-2.5 bg-[#F26522] hover:bg-[#d95a1e] text-white text-xs font-bold rounded-xl shadow-md cursor-pointer disabled:opacity-50 inline-flex items-center gap-1.5"
                 >
-                  {editingBanner ? "Save Slide" : "Add Slide"}
+                  {submitting && <Loader2 className="animate-spin" size={13} />}
+                  <span>{editingBanner ? "Save Slide" : "Add Slide"}</span>
                 </button>
               </div>
             </form>

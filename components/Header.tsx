@@ -58,14 +58,14 @@ export default function Header() {
                   <MapPin size={13} className="text-[#F26522]" /> Bangalore, Karnataka
                 </span>
                 <a
-                  href="mailto:hello@tiletra.in"
+                  href="mailto:hello@intrihub.com"
                   className="flex items-center gap-1.5 hover:text-[#F26522] transition-colors"
                 >
-                  <Mail size={13} className="text-[#F26522]" /> hello@tiletra.in
+                  <Mail size={13} className="text-[#F26522]" /> hello@intrihub.com
                 </a>
               </div>
               <div className="flex items-center gap-4">
-                <span className="text-[#F26522] font-bold">✨ Free delivery on orders above ₹15,000</span>
+                <span className="text-[#F26522] font-bold">✨ Everything for Every Space</span>
                 <span className="text-white/30">|</span>
                 <a
                   href="tel:+917870935277"
@@ -82,20 +82,35 @@ export default function Header() {
         <div
           className={cn(
             "bg-white shadow-xs transition-all duration-300 border-b border-gray-100",
-            "h-[68px] md:h-[76px]"
+            "h-[56px] md:h-[76px]"
           )}
         >
-          <div className="w-full max-w-[1400px] mx-auto px-[20px] md:px-[24px] lg:px-[32px] h-full flex items-center justify-between">
+          <div className="w-full max-w-[1400px] mx-auto px-3 sm:px-4 md:px-6 lg:px-8 h-full flex items-center justify-between gap-2.5">
             {/* Logo */}
             <div className="flex-shrink-0">
-              <Link href="/" className="flex items-center gap-3 group">
+              <Link href="/" className="flex items-center group">
                 {/* eslint-disable-next-line @next/next/no-img-element */}
                 <img
-                  src="/Tiletra/logo/web-logo.png"
-                  alt="Tiletra"
-                  className="h-[30px] md:h-[38px] lg:h-[42px] w-auto object-contain transition-all duration-300 group-hover:opacity-90"
+                  src="/logo/intri-web-logo.png"
+                  alt="Intrihub Logo"
+                  className="h-[30px] sm:h-[34px] md:h-[40px] w-auto object-contain transition-all duration-300 group-hover:scale-105"
                 />
               </Link>
+            </div>
+
+            {/* Mobile Prominent Search Bar (Center) */}
+            <div className="flex md:hidden flex-1 min-w-0">
+              <button
+                type="button"
+                onClick={() => setSearchOpen(true)}
+                aria-label="Search products"
+                className="w-full h-9 bg-gray-100/90 hover:bg-gray-100 border border-gray-200/80 rounded-full px-3 flex items-center gap-2 text-left transition-all shadow-2xs group active:scale-[0.99]"
+              >
+                <Search size={14} className="text-[#F26522] shrink-0" />
+                <span className="text-xs text-gray-400 group-hover:text-gray-500 font-medium truncate">
+                  Search tiles, wires, pipes, plywood...
+                </span>
+              </button>
             </div>
 
             {/* Desktop Large Prominent Search Bar (Flipkart / Amazon Pattern) */}
@@ -107,7 +122,7 @@ export default function Header() {
               >
                 <div className="flex items-center gap-2.5 text-gray-400 group-hover:text-gray-600 text-xs font-semibold">
                   <Search size={16} className="text-gray-400 group-hover:text-[#F26522] transition-colors" />
-                  <span>Search floor tiles, bathroom marble, subway splashbacks...</span>
+                  <span>Search tiles, electrical, plumbing, hardware, plywood, granite...</span>
                 </div>
                 <span className="text-[10px] font-bold text-gray-400 bg-white border border-gray-200 px-2 py-0.5 rounded-md shadow-2xs">
                   ⌘K
@@ -116,21 +131,11 @@ export default function Header() {
             </div>
 
             {/* Right Actions */}
-            <div className="flex items-center gap-1.5 md:gap-2 lg:gap-3">
-              {/* Mobile Search Trigger */}
-              <button
-                id="search-btn"
-                onClick={() => setSearchOpen(true)}
-                aria-label="Search tiles"
-                className="md:hidden w-10 h-10 rounded-full flex items-center justify-center text-[#052a51] hover:bg-gray-100 active:scale-95 transition-all"
-              >
-                <Search size={20} />
-              </button>
-
-              {/* Notification Center */}
+            <div className="flex items-center gap-1.5 md:gap-2 lg:gap-3 shrink-0">
+              {/* Notification Center (Site-wide on mobile & desktop) */}
               <NotificationCenter />
 
-              {/* Wishlist Button (Desktop) */}
+              {/* Wishlist Button (Desktop only - mobile uses BottomTabBar) */}
               <Link
                 href="/wishlist"
                 aria-label="View Wishlist"
@@ -144,12 +149,12 @@ export default function Header() {
                 )}
               </Link>
 
-              {/* Cart Drawer Trigger */}
+              {/* Cart Drawer Trigger (Desktop only - mobile uses BottomTabBar) */}
               <button
                 id="cart-button"
                 onClick={toggleCart}
                 aria-label="Open cart"
-                className="relative w-10 h-10 rounded-full flex items-center justify-center text-[#052a51] hover:bg-gray-100 active:scale-95 transition-all"
+                className="hidden md:flex relative w-10 h-10 rounded-full items-center justify-center text-[#052a51] hover:bg-gray-100 active:scale-95 transition-all"
               >
                 <ShoppingCart size={20} />
                 {mounted && totalBoxes > 0 && (
@@ -164,11 +169,20 @@ export default function Header() {
                 <Link
                   href="/account"
                   aria-label="Account"
-                  className="hidden lg:flex items-center gap-1.5 px-3 h-[40px] rounded-xl text-xs font-bold text-[#052a51] hover:bg-gray-100 transition-colors"
+                  className="hidden lg:flex items-center gap-2 px-2.5 h-[40px] rounded-xl text-xs font-bold text-[#052a51] hover:bg-gray-100 transition-colors"
                 >
-                  <div className="w-6 h-6 rounded-full bg-[#052a51] text-white flex items-center justify-center text-[10px] font-black">
-                    {user.name ? user.name[0].toUpperCase() : "U"}
-                  </div>
+                  {user.avatar ? (
+                    // eslint-disable-next-line @next/next/no-img-element
+                    <img
+                      src={user.avatar}
+                      alt={user.name || "User"}
+                      className="w-7 h-7 rounded-full object-cover border border-[#052a51]/20 shadow-2xs"
+                    />
+                  ) : (
+                    <div className="w-7 h-7 rounded-full bg-[#052a51] text-white flex items-center justify-center text-[11px] font-black">
+                      {user.name ? user.name[0].toUpperCase() : "U"}
+                    </div>
+                  )}
                   <span className="truncate max-w-[100px]">{user.name?.split(" ")[0] || "Account"}</span>
                 </Link>
               ) : (
@@ -188,15 +202,6 @@ export default function Header() {
                   Shop Now
                 </Button>
               </Link>
-
-              {/* Mobile Hamburger Toggle */}
-              <button
-                className="md:hidden p-2 text-[#052a51] active:scale-95"
-                onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
-                aria-label="Menu"
-              >
-                {mobileMenuOpen ? <X size={24} /> : <Menu size={24} />}
-              </button>
             </div>
           </div>
         </div>

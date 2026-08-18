@@ -88,66 +88,75 @@ export default function CartDrawer() {
             </div>
             <div>
               <p className="text-lg font-bold text-[#052a51]">Your cart is empty</p>
-              <p className="text-sm text-gray-500 mt-1">Browse our collection and add tiles to your cart</p>
+              <p className="text-sm text-gray-500 mt-1">Browse our collection and add materials to your cart</p>
             </div>
             <Link
               href="/shop"
               onClick={closeCart}
               className="mt-2 px-6 py-3 bg-[#F26522] text-white font-bold rounded-xl hover:bg-[#d95a1e] transition-colors flex items-center gap-2"
             >
-              Shop Tiles <ArrowRight size={16} />
+              Explore Products <ArrowRight size={16} />
             </Link>
           </div>
         ) : (
           <>
             <div className="flex-1 overflow-y-auto px-6 py-4 space-y-4">
-              {items.map((item) => (
-                <div
-                  key={item.variant.id}
-                  className="flex gap-4 p-4 bg-gray-50 rounded-2xl border border-gray-100 group"
-                >
-                  {/* Image */}
-                  <div className="relative w-20 h-20 rounded-xl overflow-hidden flex-shrink-0 bg-gray-100">
-                    <Image
-                      src={item.product.images[0]}
-                      alt={item.product.name}
-                      fill
-                      className="object-cover"
-                      sizes="80px"
-                    />
-                  </div>
+              {items.map((item) => {
+                const isTile =
+                  !item.product.unitOfSale ||
+                  item.product.unitOfSale === "box" ||
+                  item.product.categorySlug.includes("tile");
+                const unit = item.product.unitOfSale || "box";
 
-                  {/* Info */}
-                  <div className="flex-1 min-w-0">
-                    <p className="text-sm font-bold text-[#052a51] leading-tight line-clamp-1">
-                      {item.product.name}
-                    </p>
-                    <p className="text-xs text-gray-500 mt-0.5">
-                      {item.variant.size} · {item.variant.finish} · {item.variant.color}
-                    </p>
-                    <p className="text-xs text-gray-400 mt-0.5">
-                      {(item.variant.sqftPerBox * item.quantity).toFixed(0)} sq.ft coverage
-                    </p>
+                return (
+                  <div
+                    key={item.variant.id}
+                    className="flex gap-4 p-4 bg-gray-50 rounded-2xl border border-gray-100 group"
+                  >
+                    {/* Image */}
+                    <div className="relative w-20 h-20 rounded-xl overflow-hidden flex-shrink-0 bg-gray-100">
+                      <Image
+                        src={item.product.images[0]}
+                        alt={item.product.name}
+                        fill
+                        className="object-cover"
+                        sizes="80px"
+                      />
+                    </div>
 
-                    <div className="flex items-center justify-between mt-2">
-                      {/* Qty stepper */}
-                      <div className="flex items-center gap-2 bg-white border border-gray-200 rounded-lg px-1">
-                        <button
-                          onClick={() => updateQuantity(item.variant.id, item.quantity - 1)}
-                          className="w-7 h-7 flex items-center justify-center text-[#052a51] hover:text-[#F26522] transition-colors"
-                        >
-                          <Minus size={13} />
-                        </button>
-                        <span className="text-sm font-bold text-[#052a51] min-w-[1.5rem] text-center">
-                          {item.quantity}
-                        </span>
-                        <button
-                          onClick={() => updateQuantity(item.variant.id, item.quantity + 1)}
-                          className="w-7 h-7 flex items-center justify-center text-[#052a51] hover:text-[#F26522] transition-colors"
-                        >
-                          <Plus size={13} />
-                        </button>
-                      </div>
+                    {/* Info */}
+                    <div className="flex-1 min-w-0">
+                      <p className="text-sm font-bold text-[#052a51] leading-tight line-clamp-1">
+                        {item.product.name}
+                      </p>
+                      <p className="text-xs text-gray-500 mt-0.5">
+                        {item.variant.size} · {item.variant.finish}
+                      </p>
+                      <p className="text-xs text-gray-400 mt-0.5">
+                        {isTile
+                          ? `${(item.variant.sqftPerBox * item.quantity).toFixed(0)} sq.ft coverage`
+                          : `${item.quantity} ${unit}${item.quantity > 1 ? "s" : ""}`}
+                      </p>
+
+                      <div className="flex items-center justify-between mt-2">
+                        {/* Qty stepper */}
+                        <div className="flex items-center gap-2 bg-white border border-gray-200 rounded-lg px-1">
+                          <button
+                            onClick={() => updateQuantity(item.variant.id, item.quantity - 1)}
+                            className="w-7 h-7 flex items-center justify-center text-[#052a51] hover:text-[#F26522] transition-colors"
+                          >
+                            <Minus size={13} />
+                          </button>
+                          <span className="text-sm font-bold text-[#052a51] min-w-[1.5rem] text-center">
+                            {item.quantity}
+                          </span>
+                          <button
+                            onClick={() => updateQuantity(item.variant.id, item.quantity + 1)}
+                            className="w-7 h-7 flex items-center justify-center text-[#052a51] hover:text-[#F26522] transition-colors"
+                          >
+                            <Plus size={13} />
+                          </button>
+                        </div>
 
                       {/* Price */}
                       <p className="text-sm font-bold text-[#052a51]">
@@ -156,15 +165,16 @@ export default function CartDrawer() {
                     </div>
                   </div>
 
-                  {/* Remove */}
-                  <button
-                    onClick={() => removeItem(item.variant.id)}
-                    className="opacity-0 group-hover:opacity-100 transition-opacity self-start p-1 text-gray-400 hover:text-red-500"
-                  >
-                    <Trash2 size={15} />
-                  </button>
-                </div>
-              ))}
+                    {/* Remove */}
+                    <button
+                      onClick={() => removeItem(item.variant.id)}
+                      className="opacity-0 group-hover:opacity-100 transition-opacity self-start p-1 text-gray-400 hover:text-red-500"
+                    >
+                      <Trash2 size={15} />
+                    </button>
+                  </div>
+                );
+              })}
             </div>
 
             {/* Footer */}

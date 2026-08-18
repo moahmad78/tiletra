@@ -9,7 +9,7 @@ import { getLowestPrice, getLowestBoxPrice } from "@/lib/data/products";
 import type { Product } from "@/lib/data/products";
 import { useCartStore } from "@/lib/cart-store";
 import { useWishlistStore } from "@/lib/wishlist-store";
-import { toast } from "sonner";
+import { showCartToast } from "@/lib/cart-toast-store";
 
 function formatPrice(n: number) {
   return "₹" + n.toLocaleString("en-IN");
@@ -30,7 +30,7 @@ export default function ProductCard({ product }: { product: Product }) {
     e.preventDefault();
     e.stopPropagation();
     addItem(product, defaultVariant, 1);
-    toast.success(`Added 1 box of ${product.name} to cart!`);
+    showCartToast(product.name, 1);
   };
 
   const handleToggleWishlist = (e: React.MouseEvent) => {
@@ -106,35 +106,73 @@ export default function ProductCard({ product }: { product: Product }) {
             {defaultVariant.size} · {defaultVariant.finish} · {product.material}
           </p>
 
-          {/* Rating */}
-          <div className="flex items-center gap-1 mt-2">
-            <div className="flex">
-              {[1, 2, 3, 4, 5].map((s) => (
-                <Star
-                  key={s}
-                  size={11}
-                  className={s <= Math.round(product.rating) ? "fill-amber-400 text-amber-400" : "text-gray-200"}
-                />
-              ))}
-            </div>
-            <span className="text-[11px] text-gray-500 font-medium">({product.reviewCount})</span>
-          </div>
+          {/* Rating (Admin Controlled / DB) */}
+          {(() => {
+            const cardRating =
+              product.manualRating !== null && product.manualRating !== undefined
+                ? product.manualRating
+                : product.rating;
+            const cardReviewCount =
+              product.manualReviewCount !== null && product.manualReviewCount !== undefined
+                ? product.manualReviewCount
+                : product.reviewCount;
+
+            if (!cardRating || cardRating <= 0) return null;
+
+            return (
+              <div className="flex items-center gap-1.5 mt-2">
+                <div className="flex">
+                  {[1, 2, 3, 4, 5].map((s) => (
+                    <Star
+                      key={s}
+                      size={11}
+                      className={s <= Math.round(cardRating) ? "fill-amber-400 text-amber-400" : "text-gray-200"}
+                    />
+                  ))}
+                </div>
+                <span className="text-[11px] text-gray-500 font-medium">
+                  {cardRating}
+                  {cardReviewCount !== null && cardReviewCount !== undefined && cardReviewCount > 0 ? ` (${cardReviewCount})` : ""}
+                </span>
+              </div>
+            );
+          })()}
         </div>
 
         <div className="flex items-center justify-between mt-4 pt-3 border-t border-gray-50">
           <div>
-            <p className="text-[14px] font-black text-[#052a51]">
-              {formatPrice(getLowestPrice(product))}
-              <span className="text-xs font-medium text-gray-500">/sq.ft</span>
-            </p>
-            <p className="text-[11px] text-gray-400">{formatPrice(getLowestBoxPrice(product))}/box</p>
+            {product.unitOfSale && product.unitOfSale !== "box" && product.unitOfSale !== "sqft" ? (
+              <>
+                <p className="text-[14px] font-black text-[#052a51]">
+                  {formatPrice(defaultVariant.pricePerBox)}
+                  <span className="text-xs font-medium text-gray-500 capitalize">/{product.unitOfSale}</span>
+                </p>
+                <p className="text-[11px] text-gray-400">Standard Pack</p>
+              </>
+            ) : product.unitOfSale === "sqft" ? (
+              <>
+                <p className="text-[14px] font-black text-[#052a51]">
+                  {formatPrice(defaultVariant.pricePerSqft || defaultVariant.pricePerBox)}
+                  <span className="text-xs font-medium text-gray-500">/sq.ft</span>
+                </p>
+                <p className="text-[11px] text-gray-400">Custom Cut</p>
+              </>
+            ) : (
+              <>
+                <p className="text-[14px] font-black text-[#052a51]">
+                  {formatPrice(getLowestPrice(product))}
+                  <span className="text-xs font-medium text-gray-500">/sq.ft</span>
+                </p>
+                <p className="text-[11px] text-gray-400">{formatPrice(getLowestBoxPrice(product))}/box</p>
+              </>
+            )}
           </div>
           <button
             onClick={handleAddToCart}
-            className="px-3.5 py-2 bg-[#F26522] text-white text-xs font-bold rounded-xl hover:bg-[#d95a1e] active:scale-95 transition-all flex items-center gap-1.5 shadow-sm hover:shadow"
+            className="px-3.5 py-2 bg-[#F26522] text-white text-xs font-bold rounded-xl hover:bg-[#d95a1e] active:scale-95 transition-all flex items-center gap-1.5 shadow-sm hover:shadow whitespace-nowrap shrink-0"
           >
-            <ShoppingBag size={13} />
-            <span>Add</span>
+            <ShoppingBag size={13} className="shrink-0" />
+            <span className="whitespace-nowrap">Add</span>
           </button>
         </div>
       </div>

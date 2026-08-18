@@ -1,35 +1,40 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import {
   ArrowLeft,
   Download,
   Upload,
-  FileSpreadsheet,
   CheckCircle,
   AlertCircle,
-  Sparkles,
+  Loader2,
 } from "lucide-react";
-import { useAdminStore } from "@/lib/admin-store";
-import type { Product, Material, Finish } from "@/lib/data/products";
+import { createProduct } from "@/lib/actions/products";
+import { getCategories } from "@/lib/actions/categories";
+import type { Category } from "@/lib/data/categories";
+import type { Material, Finish } from "@/lib/data/products";
 import { toast } from "sonner";
 
 const SAMPLE_CSV = `Name,CategorySlug,Material,Size,Finish,Color,PricePerBox,SqftPerBox,Stock,Images,Description
 Royal Statuario White,floor-tiles,Vitrified,800x800mm,Polished,White,3400,44,150,https://images.unsplash.com/photo-1615529182904-14819c35db37?w=800&q=80,Luxurious Italian-look vitrified floor tiles.
 Matte Charcoal Hex,bathroom-tiles,Porcelain,200x200mm,Matte,Charcoal,2100,32,80,https://images.unsplash.com/photo-1507652313519-d4e9174996dd?w=800&q=80,Modern geometric dark tiles for bathroom showers.
-Glossy Mint Metro,kitchen-tiles,Ceramic,300x100mm,Glossy,Mint,920,31,200,https://images.unsplash.com/photo-1556909172-b6b6f3f0ecf6?w=800&q=80,Fresh pastel metro splashback tiles for modern kitchens.`;
+Glossy Mint Metro,kitchen-tiles,Ceramic,300x100mm,Glossy,Mint,920,31,200,https://images.unsplash.com/photo-1584622650111-993a426fbf0a?w=800&q=80,Fresh pastel metro splashback tiles for modern kitchens.`;
 
 export default function BulkProductImportPage() {
   const router = useRouter();
-  const importProducts = useAdminStore((s) => s.importProducts);
-  const categories = useAdminStore((s) => s.categories);
+  const [categories, setCategories] = useState<Category[]>([]);
+  const [importing, setImporting] = useState(false);
 
   const [csvText, setCsvText] = useState(SAMPLE_CSV);
   const [parsedRows, setParsedRows] = useState<any[]>([]);
   const [errors, setErrors] = useState<string[]>([]);
   const [hasValidated, setHasValidated] = useState(false);
+
+  useEffect(() => {
+    getCategories().then(setCategories);
+  }, []);
 
   const handleDownloadTemplate = () => {
     const blob = new Blob([SAMPLE_CSV], { type: "text/csv;charset=utf-8;" });
@@ -103,28 +108,27 @@ export default function BulkProductImportPage() {
     setHasValidated(true);
   };
 
-  const handleImport = () => {
+  const handleImport = async () => {
     if (parsedRows.length === 0) return;
 
-    const newProducts: Product[] = parsedRows.map((row, idx) => {
+    setImporting(true);
+    let successCount = 0;
+
+    for (const row of parsedRows) {
       const cat = categories.find((c) => c.slug === row.categoryslug) || categories[0];
       const boxPrice = Number(row.priceperbox) || 2000;
       const sqft = Number(row.sqftperbox) || 40;
       const rateSqft = Math.round(boxPrice / sqft);
-      const newId = `prod-imp-${Date.now().toString().slice(-4)}-${idx}`;
 
-      return {
-        id: newId,
+      const res = await createProduct({
         name: row.name,
-        slug: `${row.name.toLowerCase().replace(/[^a-z0-9]+/g, "-")}-${newId}`,
-        categorySlug: cat.slug,
-        categoryName: cat.name,
+        categorySlug: cat?.slug || "floor-tiles",
+        categoryName: cat?.name || "Floor Tiles",
         description: row.description || "Premium high-grade architectural tile design.",
         material: (row.material as Material) || "Vitrified",
         images: row.images ? [row.images] : ["https://images.unsplash.com/photo-1615529182904-14819c35db37?w=800&q=80"],
         variants: [
           {
-            id: `v-${newId}-0`,
             size: row.size || "600x600mm",
             finish: (row.finish as Finish) || "Matte",
             color: row.color || "Standard",
@@ -134,11 +138,8 @@ export default function BulkProductImportPage() {
             stockBoxes: Number(row.stock) || 100,
           },
         ],
-        rating: 4.8,
-        reviewCount: 1,
         isBestseller: false,
         isNew: true,
-        tags: ["imported", cat.slug],
         specs: {
           waterAbsorption: "< 0.5%",
           slipResistance: "R9",
@@ -147,11 +148,15 @@ export default function BulkProductImportPage() {
           breakingStrength: "> 1200N",
           frostResistance: "Yes",
         },
-      };
-    });
+      });
 
-    importProducts(newProducts);
-    toast.success(`Successfully imported ${newProducts.length} new tile designs!`);
+      if (res.success) {
+        successCount++;
+      }
+    }
+
+    setImporting(false);
+    toast.success(`Successfully imported ${successCount} new tile designs into Neon database!`);
     router.push("/admin/products");
   };
 
@@ -169,14 +174,14 @@ export default function BulkProductImportPage() {
           <div>
             <h2 className="text-xl font-black text-[#052a51]">Bulk CSV Product Import</h2>
             <p className="text-xs text-gray-400">
-              Upload multiple tile catalog items at once using CSV or Excel
+              Upload multiple tile catalog items at once directly into Neon PostgreSQL
             </p>
           </div>
         </div>
 
         <button
           onClick={handleDownloadTemplate}
-          className="inline-flex items-center gap-1.5 px-3.5 py-2 bg-gray-100 hover:bg-gray-200 text-[#052a51] text-xs font-bold rounded-xl transition-colors shadow-2xs"
+          className="inline-flex items-center gap-1.5 px-3.5 py-2 bg-gray-100 hover:bg-gray-200 text-[#052a51] text-xs font-bold rounded-xl transition-colors shadow-2xs cursor-pointer"
         >
           <Download size={14} />
           <span>Download Template</span>
@@ -215,7 +220,7 @@ export default function BulkProductImportPage() {
           <button
             type="button"
             onClick={() => validateCSV(csvText)}
-            className="px-4 py-2 bg-gray-100 hover:bg-gray-200 text-[#052a51] text-xs font-bold rounded-xl transition-colors"
+            className="px-4 py-2 bg-gray-100 hover:bg-gray-200 text-[#052a51] text-xs font-bold rounded-xl transition-colors cursor-pointer"
           >
             Validate Data
           </button>
@@ -224,10 +229,11 @@ export default function BulkProductImportPage() {
             <button
               type="button"
               onClick={handleImport}
-              className="inline-flex items-center gap-1.5 px-5 py-2.5 bg-[#F26522] hover:bg-[#d95a1e] text-white text-xs font-bold rounded-xl shadow-md active:scale-95 transition-all"
+              disabled={importing}
+              className="inline-flex items-center gap-1.5 px-5 py-2.5 bg-[#F26522] hover:bg-[#d95a1e] text-white text-xs font-bold rounded-xl shadow-md active:scale-95 transition-all cursor-pointer disabled:opacity-50"
             >
-              <CheckCircle size={15} />
-              <span>Import {parsedRows.length} Valid Products</span>
+              {importing ? <Loader2 className="animate-spin" size={15} /> : <CheckCircle size={15} />}
+              <span>{importing ? "Importing to DB..." : `Import ${parsedRows.length} Valid Products`}</span>
             </button>
           )}
         </div>

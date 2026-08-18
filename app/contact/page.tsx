@@ -5,8 +5,8 @@ import GoogleMap from "@/components/GoogleMap";
 import { QuoteModalProvider } from "@/components/QuoteModalProvider";
 
 export const metadata = {
-  title: "Contact Us - Tiletra",
-  description: "Get in touch with Tiletra for premium tile installations and products in Bangalore.",
+  title: "Contact Us - Intrihub",
+  description: "Get in touch with Intrihub for premium interior and construction supplies in Bangalore.",
 };
 
 export default function ContactPage() {

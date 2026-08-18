@@ -3,70 +3,126 @@
 import { useState, useRef, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { motion, AnimatePresence } from "framer-motion";
-import { X, Phone, ShieldCheck, ArrowRight, Sparkles, CheckCircle2, RotateCw } from "lucide-react";
+import {
+  X, Phone, Mail, ShieldCheck, ArrowRight, Sparkles,
+  CheckCircle2, RotateCw, ChevronLeft,
+} from "lucide-react";
 import { useAuthStore } from "@/lib/auth-store";
 import { useCartStore } from "@/lib/cart-store";
-import { products } from "@/lib/data/products";
 import { toast } from "sonner";
+
+type LoginTab = "choose" | "phone" | "email";
+type OtpStep = "input" | "otp";
 
 export default function LoginModal() {
   const router = useRouter();
-  const { isLoginModalOpen, closeLoginModal, sendOtp, verifyOtp, googleSignIn, pendingIntent } =
-    useAuthStore();
+  const {
+    isLoginModalOpen, closeLoginModal,
+    sendOtp, verifyOtp,
+    sendEmailOtp, verifyEmailOtp,
+    pendingIntent,
+  } = useAuthStore();
   const { addItem } = useCartStore();
 
+  // Tab / step state
+  const [tab, setTab] = useState<LoginTab>("choose");
+  const [step, setStep] = useState<OtpStep>("input");
+
+  // Phone flow
   const [phone, setPhone] = useState("");
-  const [step, setStep] = useState<"phone" | "otp">("phone");
-  const [otp, setOtp] = useState(["", "", "", ""]);
+
+  // Email flow
+  const [email, setEmail] = useState("");
+
+  // Shared OTP state (6 digits)
+  const [otp, setOtp] = useState(["", "", "", "", "", ""]);
   const [loading, setLoading] = useState(false);
-  const [timer, setTimer] = useState(30);
+  const [timer, setTimer] = useState(60);
   const [canResend, setCanResend] = useState(false);
 
   const otpInputsRef = useRef<(HTMLInputElement | null)[]>([]);
 
-  // Reset state on open/close
+  // Reset on open/close
   useEffect(() => {
     if (!isLoginModalOpen) {
-      setStep("phone");
+      setTab("choose");
+      setStep("input");
       setPhone("");
-      setOtp(["", "", "", ""]);
+      setEmail("");
+      setOtp(["", "", "", "", "", ""]);
       setLoading(false);
-      setTimer(30);
+      setTimer(60);
       setCanResend(false);
     }
   }, [isLoginModalOpen]);
 
-  // Countdown timer for OTP
+  // Countdown timer
   useEffect(() => {
     if (step !== "otp") return;
-    if (timer <= 0) {
-      setCanResend(true);
-      return;
-    }
-    const interval = setInterval(() => {
-      setTimer((prev) => prev - 1);
-    }, 1000);
-    return () => clearInterval(interval);
+    if (timer <= 0) { setCanResend(true); return; }
+    const id = setInterval(() => setTimer((t) => t - 1), 1000);
+    return () => clearInterval(id);
   }, [step, timer]);
 
   if (!isLoginModalOpen) return null;
 
+  // ─── Navigation helpers ───────────────────────────────────────────────────
+
+  const goBack = () => {
+    if (step === "otp") {
+      setStep("input");
+      setOtp(["", "", "", "", "", ""]);
+      setTimer(60);
+      setCanResend(false);
+    } else {
+      setTab("choose");
+    }
+  };
+
+  // ─── Post-login intent redirect ───────────────────────────────────────────
+
+  const handlePostLogin = async () => {
+    if (pendingIntent?.type === "checkout") {
+      router.push("/checkout");
+    } else if (pendingIntent?.type === "buy_now") {
+      const { productId, variantId, quantity } = pendingIntent.data;
+      try {
+        const { getProductById } = await import("@/lib/actions/products");
+        const prod = await getProductById(productId);
+        if (prod) {
+          const variant = prod.variants.find((v) => v.id === variantId) || prod.variants[0];
+          addItem(prod, variant, quantity);
+        }
+      } catch (e) { console.error("buy_now intent error:", e); }
+      router.push("/checkout");
+    }
+  };
+
+  // ─── Google ───────────────────────────────────────────────────────────────
+
+  const handleGoogleOAuth = () => {
+    // Build intent param so the callback can redirect appropriately after login
+    const intent = pendingIntent?.type || "";
+    const params = intent ? `?intent=${encodeURIComponent(intent)}` : "";
+    // Full page redirect to our OAuth initiate route
+    window.location.href = `/api/auth/google${params}`;
+  };
+
+  // ─── Phone OTP ────────────────────────────────────────────────────────────
+
   const handlePhoneSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    const cleanPhone = phone.replace(/\D/g, "");
-    if (cleanPhone.length !== 10) {
-      toast.error("Please enter a valid 10-digit mobile number");
-      return;
-    }
+    const clean = phone.replace(/\D/g, "");
+    if (clean.length !== 10) { toast.error("Enter a valid 10-digit number"); return; }
 
     setLoading(true);
-    const res = await sendOtp(cleanPhone);
+    const res = await sendOtp(clean);
     setLoading(false);
 
     if (res.success) {
       toast.success(res.message);
       setStep("otp");
-      setTimer(30);
+      setTimer(60);
       setCanResend(false);
       setTimeout(() => otpInputsRef.current[0]?.focus(), 100);
     } else {
@@ -74,36 +130,52 @@ export default function LoginModal() {
     }
   };
 
-  const handleOtpChange = (index: number, val: string) => {
-    if (val.length > 1) {
-      // Paste handling
-      const digits = val.slice(0, 4).split("");
-      const newOtp = [...otp];
-      digits.forEach((d, i) => {
-        if (i < 4) newOtp[i] = d;
-      });
-      setOtp(newOtp);
-      if (digits.length === 4) {
-        verifyCode(digits.join(""));
-      }
+  // ─── Email OTP ────────────────────────────────────────────────────────────
+
+  const handleEmailSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    const clean = email.trim().toLowerCase();
+    if (!clean || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(clean)) {
+      toast.error("Enter a valid email address");
       return;
     }
 
-    const newOtp = [...otp];
-    newOtp[index] = val;
-    setOtp(newOtp);
+    setLoading(true);
+    const res = await sendEmailOtp(clean);
+    setLoading(false);
 
-    // Auto-focus next input
-    if (val && index < 3) {
-      otpInputsRef.current[index + 1]?.focus();
+    if (res.success) {
+      toast.success(res.message);
+      setStep("otp");
+      setTimer(60);
+      setCanResend(false);
+      setTimeout(() => otpInputsRef.current[0]?.focus(), 100);
+    } else {
+      toast.error(res.message);
+    }
+  };
+
+  // ─── OTP input handling (shared, 6 digits) ────────────────────────────────
+
+  const handleOtpChange = (index: number, val: string) => {
+    if (val.length > 1) {
+      // Paste handling
+      const digits = val.replace(/\D/g, "").slice(0, 6).split("");
+      const next = [...otp];
+      digits.forEach((d, i) => { if (i < 6) next[i] = d; });
+      setOtp(next);
+      if (digits.length === 6) verifyCode(next.join(""));
+      return;
     }
 
-    // Auto-submit on 4th digit
-    if (index === 3 && val) {
-      const fullOtp = newOtp.join("");
-      if (fullOtp.length === 4) {
-        verifyCode(fullOtp);
-      }
+    const next = [...otp];
+    next[index] = val.replace(/\D/g, "");
+    setOtp(next);
+
+    if (val && index < 5) otpInputsRef.current[index + 1]?.focus();
+    if (index === 5 && val) {
+      const full = next.join("");
+      if (full.length === 6) verifyCode(full);
     }
   };
 
@@ -113,72 +185,72 @@ export default function LoginModal() {
     }
   };
 
-  const verifyCode = async (codeToVerify?: string) => {
-    const code = codeToVerify || otp.join("");
-    if (code.length !== 4) {
-      toast.error("Please enter all 4 digits");
-      return;
-    }
+  const verifyCode = async (codeArg?: string) => {
+    const code = codeArg ?? otp.join("");
+    if (code.length !== 6) { toast.error("Enter all 6 digits"); return; }
 
     setLoading(true);
-    const res = await verifyOtp(phone, code);
+    let res: { success: boolean; message: string };
+
+    if (tab === "phone") {
+      res = await verifyOtp(phone.replace(/\D/g, ""), code);
+    } else {
+      res = await verifyEmailOtp(email.trim().toLowerCase(), code);
+    }
+
     setLoading(false);
 
     if (res.success) {
       toast.success(res.message);
-
-      // Handle pending action intent
-      if (pendingIntent) {
-        if (pendingIntent.type === "checkout") {
-          router.push("/checkout");
-        } else if (pendingIntent.type === "buy_now") {
-          const { productId, variantId, quantity } = pendingIntent.data;
-          const foundProduct = products.find((p) => p.id === productId);
-          if (foundProduct) {
-            const foundVariant = foundProduct.variants.find((v) => v.id === variantId) || foundProduct.variants[0];
-            addItem(foundProduct, foundVariant, quantity);
-          }
-          router.push("/checkout");
-        }
-      }
+      await handlePostLogin();
     } else {
       toast.error(res.message);
     }
   };
 
-  const handleResendOtp = async () => {
+  const handleResend = async () => {
     if (!canResend) return;
     setCanResend(false);
-    setTimer(30);
-    const res = await sendOtp(phone);
-    if (res.success) {
-      toast.success("New OTP sent to +91 " + phone);
+    setTimer(60);
+    setOtp(["", "", "", "", "", ""]);
+
+    if (tab === "phone") {
+      const res = await sendOtp(phone.replace(/\D/g, ""));
+      if (res.success) toast.success("New OTP sent to +91 " + phone);
+    } else {
+      const res = await sendEmailOtp(email.trim().toLowerCase());
+      if (res.success) toast.success("New OTP sent to " + email);
     }
   };
 
-  const handleGoogleMock = () => {
-    googleSignIn({
-      name: "Mohammad Ahmad",
-      email: "moahmad78@gmail.com",
-    });
-    toast.success("Signed in with Google!");
-    if (pendingIntent?.type === "checkout" || pendingIntent?.type === "buy_now") {
-      router.push("/checkout");
-    }
-  };
+  // ─── UI ───────────────────────────────────────────────────────────────────
+
+  const isPhoneOtp = tab === "phone";
+  const sentTo = isPhoneOtp ? `+91 ${phone}` : email;
+  const headerTitle =
+    tab === "choose" ? "Login to Continue"
+    : step === "input" ? (isPhoneOtp ? "Enter Mobile Number" : "Enter Email Address")
+    : "Enter Verification Code";
+
+  const headerSubtitle =
+    tab === "choose"
+      ? "Choose how you'd like to continue. Your orders and saved addresses will be linked to your account."
+      : step === "input"
+        ? isPhoneOtp
+          ? "We'll send a 6-digit code to your number."
+          : "We'll send a 6-digit code to your inbox."
+        : `Code sent to ${sentTo}`;
 
   return (
     <div className="fixed inset-0 z-50 flex items-end md:items-center justify-center p-0 md:p-4">
       {/* Backdrop */}
       <motion.div
-        initial={{ opacity: 0 }}
-        animate={{ opacity: 1 }}
-        exit={{ opacity: 0 }}
+        initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
         onClick={closeLoginModal}
         className="fixed inset-0 bg-black/60 backdrop-blur-xs transition-opacity"
       />
 
-      {/* Modal / Bottom Sheet Container */}
+      {/* Modal */}
       <motion.div
         initial={{ y: "100%", opacity: 0 }}
         animate={{ y: 0, opacity: 1 }}
@@ -186,10 +258,19 @@ export default function LoginModal() {
         transition={{ type: "spring", damping: 25, stiffness: 300 }}
         className="relative w-full max-w-[440px] bg-white rounded-t-[32px] md:rounded-[32px] shadow-2xl z-10 overflow-hidden border border-gray-100"
       >
-        {/* Mobile Drag Indicator */}
+        {/* Mobile drag handle */}
         <div className="md:hidden w-12 h-1.5 bg-gray-300 rounded-full mx-auto mt-3 mb-1" />
 
-        {/* Close Button */}
+        {/* Close / Back */}
+        {tab !== "choose" ? (
+          <button
+            onClick={goBack}
+            aria-label="Go back"
+            className="absolute top-4 left-4 z-20 w-8 h-8 rounded-full bg-gray-100 hover:bg-gray-200 text-gray-600 flex items-center justify-center transition-colors"
+          >
+            <ChevronLeft size={16} />
+          </button>
+        ) : null}
         <button
           onClick={closeLoginModal}
           aria-label="Close modal"
@@ -198,188 +279,245 @@ export default function LoginModal() {
           <X size={16} />
         </button>
 
-        {/* Header Branding Banner */}
+        {/* Header */}
         <div className="bg-gradient-to-br from-[#052a51] to-[#0a3869] text-white p-6 pt-7 md:pt-6">
           <div className="flex items-center gap-2 mb-2">
             <span className="px-2.5 py-0.5 rounded-md bg-[#F26522] text-[10px] font-black uppercase tracking-wider">
-              Quick Checkout
+              Intrihub
             </span>
             <span className="text-xs text-white/70 font-semibold flex items-center gap-1">
-              <ShieldCheck size={14} className="text-[#F26522]" /> Safe & Secure
+              <ShieldCheck size={14} className="text-[#F26522]" /> Secure Login
             </span>
           </div>
-          <h2 className="text-2xl font-black text-white tracking-tight">
-            {step === "phone" ? "Login to Continue" : "Verify Phone Number"}
-          </h2>
-          <p className="text-xs text-white/75 mt-1 leading-relaxed">
-            {step === "phone"
-              ? "Enter your mobile number to view saved addresses, track orders, and complete your tile purchase."
-              : `We sent a 4-digit code to +91 ${phone}`}
-          </p>
+          <h2 className="text-2xl font-black text-white tracking-tight">{headerTitle}</h2>
+          <p className="text-xs text-white/75 mt-1 leading-relaxed">{headerSubtitle}</p>
         </div>
 
-        {/* Content Body */}
-        <div className="p-6">
-          {step === "phone" ? (
-            /* STEP 1: PHONE NUMBER INPUT */
-            <form onSubmit={handlePhoneSubmit} className="space-y-4">
-              <div>
-                <label className="block text-xs font-bold text-[#052a51] uppercase tracking-wider mb-2">
-                  Mobile Number
-                </label>
-                <div className="flex rounded-2xl border-2 border-gray-200 focus-within:border-[#F26522] transition-colors overflow-hidden bg-gray-50 focus-within:bg-white">
-                  <span className="flex items-center gap-1.5 px-3.5 bg-gray-100/80 text-xs font-black text-[#052a51] border-r border-gray-200 select-none">
-                    🇮🇳 +91
-                  </span>
+        {/* Body */}
+        <AnimatePresence mode="wait">
+          <motion.div
+            key={`${tab}-${step}`}
+            initial={{ opacity: 0, x: tab === "choose" ? -10 : 10 }}
+            animate={{ opacity: 1, x: 0 }}
+            exit={{ opacity: 0 }}
+            transition={{ duration: 0.15 }}
+            className="p-6"
+          >
+            {/* ── CHOOSE TAB ── */}
+            {tab === "choose" && (
+              <div className="space-y-3">
+                {/* Google */}
+                <button
+                  id="login-google-btn"
+                  type="button"
+                  onClick={handleGoogleOAuth}
+                  className="w-full h-12 bg-white border-2 border-gray-200 hover:border-[#F26522] hover:bg-orange-50 rounded-2xl text-sm font-bold text-[#052a51] flex items-center justify-center gap-3 transition-all shadow-xs group"
+                >
+                  <svg className="w-5 h-5" viewBox="0 0 24 24">
+                    <path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" />
+                    <path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" />
+                    <path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.06H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.94l2.85-2.22.81-.63z" />
+                    <path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.06l3.66 2.84c.87-2.6 3.3-4.52 6.16-4.52z" />
+                  </svg>
+                  <span>Continue with Google</span>
+                  <span className="ml-auto text-[10px] font-black uppercase bg-[#F26522] text-white px-2 py-0.5 rounded-md">Fastest</span>
+                </button>
+
+                <div className="relative flex py-1 items-center">
+                  <div className="flex-grow border-t border-gray-200" />
+                  <span className="flex-shrink mx-4 text-gray-400 text-[11px] font-bold uppercase tracking-wider">OR</span>
+                  <div className="flex-grow border-t border-gray-200" />
+                </div>
+
+                {/* Phone */}
+                <button
+                  id="login-phone-btn"
+                  type="button"
+                  onClick={() => setTab("phone")}
+                  className="w-full h-12 bg-gray-50 hover:bg-gray-100 border border-gray-200 rounded-2xl text-sm font-bold text-[#052a51] flex items-center gap-3 px-4 transition-colors"
+                >
+                  <div className="w-8 h-8 rounded-xl bg-[#052a51]/10 flex items-center justify-center shrink-0">
+                    <Phone size={16} className="text-[#052a51]" />
+                  </div>
+                  <span>Continue with Phone</span>
+                  <ArrowRight size={16} className="ml-auto text-gray-400" />
+                </button>
+
+                {/* Email */}
+                <button
+                  id="login-email-btn"
+                  type="button"
+                  onClick={() => setTab("email")}
+                  className="w-full h-12 bg-gray-50 hover:bg-gray-100 border border-gray-200 rounded-2xl text-sm font-bold text-[#052a51] flex items-center gap-3 px-4 transition-colors"
+                >
+                  <div className="w-8 h-8 rounded-xl bg-[#052a51]/10 flex items-center justify-center shrink-0">
+                    <Mail size={16} className="text-[#052a51]" />
+                  </div>
+                  <span>Continue with Email</span>
+                  <ArrowRight size={16} className="ml-auto text-gray-400" />
+                </button>
+
+                <p className="text-[10px] text-gray-400 text-center leading-relaxed mt-4">
+                  By continuing, you agree to Intrihub's{" "}
+                  <a href="/terms" className="text-[#052a51] underline font-semibold">Terms</a>{" "}
+                  and{" "}
+                  <a href="/privacy-policy" className="text-[#052a51] underline font-semibold">Privacy Policy</a>.
+                </p>
+              </div>
+            )}
+
+            {/* ── PHONE INPUT ── */}
+            {tab === "phone" && step === "input" && (
+              <form onSubmit={handlePhoneSubmit} className="space-y-4">
+                <div>
+                  <label className="block text-xs font-bold text-[#052a51] uppercase tracking-wider mb-2">
+                    Mobile Number
+                  </label>
+                  <div className="flex rounded-2xl border-2 border-gray-200 focus-within:border-[#F26522] transition-colors overflow-hidden bg-gray-50 focus-within:bg-white">
+                    <span className="flex items-center gap-1.5 px-3.5 bg-gray-100/80 text-xs font-black text-[#052a51] border-r border-gray-200 select-none">
+                      🇮🇳 +91
+                    </span>
+                    <input
+                      id="login-phone-input"
+                      type="tel"
+                      inputMode="numeric"
+                      maxLength={10}
+                      value={phone}
+                      onChange={(e) => setPhone(e.target.value.replace(/\D/g, ""))}
+                      placeholder="Enter 10-digit number"
+                      autoFocus
+                      className="w-full px-3.5 py-3.5 bg-transparent text-base font-bold text-[#052a51] placeholder-gray-400 focus:outline-none tracking-wider"
+                    />
+                  </div>
+                </div>
+
+                <button
+                  type="submit"
+                  disabled={phone.replace(/\D/g, "").length !== 10 || loading}
+                  className="w-full h-12 bg-[#F26522] hover:bg-[#d95a1e] text-white font-black text-sm rounded-xl shadow-md transition-all flex items-center justify-center gap-2 active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  {loading ? <RotateCw size={18} className="animate-spin" /> : (
+                    <><span>Send Code</span><ArrowRight size={16} /></>
+                  )}
+                </button>
+              </form>
+            )}
+
+            {/* ── EMAIL INPUT ── */}
+            {tab === "email" && step === "input" && (
+              <form onSubmit={handleEmailSubmit} className="space-y-4">
+                <div>
+                  <label className="block text-xs font-bold text-[#052a51] uppercase tracking-wider mb-2">
+                    Email Address
+                  </label>
                   <input
-                    type="tel"
-                    inputMode="numeric"
-                    maxLength={10}
-                    value={phone}
-                    onChange={(e) => setPhone(e.target.value.replace(/\D/g, ""))}
-                    placeholder="Enter 10-digit number"
+                    id="login-email-input"
+                    type="email"
+                    inputMode="email"
+                    value={email}
+                    onChange={(e) => setEmail(e.target.value)}
+                    placeholder="you@example.com"
                     autoFocus
-                    className="w-full px-3.5 py-3.5 bg-transparent text-base font-bold text-[#052a51] placeholder-gray-400 focus:outline-none tracking-wider"
+                    className="w-full px-4 py-3.5 rounded-2xl border-2 border-gray-200 focus:border-[#F26522] bg-gray-50 focus:bg-white text-base font-bold text-[#052a51] placeholder-gray-400 focus:outline-none transition-colors"
                   />
                 </div>
-              </div>
 
-              <button
-                type="submit"
-                disabled={phone.length !== 10 || loading}
-                className="w-full h-12 bg-[#F26522] hover:bg-[#d95a1e] text-white font-black text-sm rounded-xl shadow-md transition-all flex items-center justify-center gap-2 active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed"
-              >
-                {loading ? (
-                  <RotateCw size={18} className="animate-spin" />
-                ) : (
-                  <>
-                    <span>Send Verification Code</span>
-                    <ArrowRight size={16} />
-                  </>
-                )}
-              </button>
-
-              <div className="relative flex py-1 items-center">
-                <div className="flex-grow border-t border-gray-200" />
-                <span className="flex-shrink mx-4 text-gray-400 text-[11px] font-bold uppercase tracking-wider">
-                  OR
-                </span>
-                <div className="flex-grow border-t border-gray-200" />
-              </div>
-
-              {/* Google One-Tap Sign In */}
-              <button
-                type="button"
-                onClick={handleGoogleMock}
-                className="w-full h-11 bg-white border border-gray-200 hover:bg-gray-50 rounded-xl text-xs font-bold text-[#052a51] flex items-center justify-center gap-2.5 transition-colors shadow-2xs"
-              >
-                <svg className="w-4 h-4" viewBox="0 0 24 24">
-                  <path
-                    fill="#4285F4"
-                    d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"
-                  />
-                  <path
-                    fill="#34A853"
-                    d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"
-                  />
-                  <path
-                    fill="#FBBC05"
-                    d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.06H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.94l2.85-2.22.81-.63z"
-                  />
-                  <path
-                    fill="#EA4335"
-                    d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.06l3.66 2.84c.87-2.6 3.3-4.52 6.16-4.52z"
-                  />
-                </svg>
-                <span>Continue with Google</span>
-              </button>
-
-              <p className="text-[10px] text-gray-400 text-center leading-relaxed mt-3">
-                By continuing, you agree to Tiletra's{" "}
-                <a href="/terms" className="text-[#052a51] underline font-semibold">
-                  Terms of Service
-                </a>{" "}
-                and{" "}
-                <a href="/privacy-policy" className="text-[#052a51] underline font-semibold">
-                  Privacy Policy
-                </a>
-                .
-              </p>
-            </form>
-          ) : (
-            /* STEP 2: 4-DIGIT OTP VERIFICATION */
-            <div className="space-y-5">
-              <div className="flex items-center justify-between">
-                <span className="text-xs font-bold text-[#052a51]">
-                  OTP sent to +91 {phone}
-                </span>
                 <button
-                  type="button"
-                  onClick={() => setStep("phone")}
-                  className="text-xs font-bold text-[#F26522] hover:underline"
+                  type="submit"
+                  disabled={!email.includes("@") || loading}
+                  className="w-full h-12 bg-[#F26522] hover:bg-[#d95a1e] text-white font-black text-sm rounded-xl shadow-md transition-all flex items-center justify-center gap-2 active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed"
                 >
-                  Edit Number
+                  {loading ? <RotateCw size={18} className="animate-spin" /> : (
+                    <><Mail size={16} /><span>Send OTP to Email</span></>
+                  )}
                 </button>
-              </div>
 
-              {/* 4 OTP Inputs */}
-              <div className="flex justify-between gap-3 my-2">
-                {[0, 1, 2, 3].map((idx) => (
-                  <input
-                    key={idx}
-                    ref={(el) => {
-                      otpInputsRef.current[idx] = el;
-                    }}
-                    type="text"
-                    inputMode="numeric"
-                    maxLength={1}
-                    value={otp[idx]}
-                    onChange={(e) => handleOtpChange(idx, e.target.value.replace(/\D/g, ""))}
-                    onKeyDown={(e) => handleKeyDown(idx, e)}
-                    className="w-14 h-14 text-center text-2xl font-black text-[#052a51] bg-gray-50 border-2 border-gray-200 focus:border-[#F26522] focus:bg-white rounded-2xl focus:outline-none transition-all shadow-2xs"
-                  />
-                ))}
-              </div>
+                <p className="text-[11px] text-gray-400 text-center">
+                  A 6-digit code will be emailed to you. Check your inbox (and spam).
+                </p>
+              </form>
+            )}
 
-              {/* Demo Hint */}
-              <div className="p-3 bg-amber-50 rounded-xl border border-amber-200/80 flex items-center gap-2 text-xs text-amber-900 font-semibold">
-                <Sparkles size={16} className="text-[#F26522] shrink-0" />
-                <span>Quick Demo OTP: Enter <strong>1234</strong></span>
-              </div>
-
-              <button
-                type="button"
-                onClick={() => verifyCode()}
-                disabled={otp.join("").length !== 4 || loading}
-                className="w-full h-12 bg-[#F26522] hover:bg-[#d95a1e] text-white font-black text-sm rounded-xl shadow-md transition-all flex items-center justify-center gap-2 active:scale-95 disabled:opacity-50"
-              >
-                {loading ? (
-                  <RotateCw size={18} className="animate-spin" />
-                ) : (
-                  <>
-                    <CheckCircle2 size={18} />
-                    <span>Verify & Continue</span>
-                  </>
-                )}
-              </button>
-
-              <div className="flex items-center justify-between text-xs text-gray-500 font-medium">
-                <span>Didn't receive SMS?</span>
-                {canResend ? (
+            {/* ── OTP STEP (shared for phone & email) ── */}
+            {step === "otp" && (
+              <div className="space-y-5">
+                <div className="flex items-center justify-between">
+                  <span className="text-xs font-bold text-[#052a51]">
+                    {isPhoneOtp ? `OTP sent to +91 ${phone}` : `OTP sent to ${email}`}
+                  </span>
                   <button
                     type="button"
-                    onClick={handleResendOtp}
-                    className="font-bold text-[#F26522] hover:underline"
+                    onClick={goBack}
+                    className="text-xs font-bold text-[#F26522] hover:underline"
                   >
-                    Resend Code
+                    Change
                   </button>
-                ) : (
-                  <span className="text-gray-400">Resend in {timer}s</span>
+                </div>
+
+                {/* 6 OTP Inputs */}
+                <div className="flex justify-between gap-2 my-2">
+                  {[0, 1, 2, 3, 4, 5].map((idx) => (
+                    <input
+                      key={idx}
+                      id={`otp-digit-${idx}`}
+                      ref={(el) => { otpInputsRef.current[idx] = el; }}
+                      type="text"
+                      inputMode="numeric"
+                      maxLength={1}
+                      value={otp[idx]}
+                      onChange={(e) => handleOtpChange(idx, e.target.value)}
+                      onKeyDown={(e) => handleKeyDown(idx, e)}
+                      className="w-11 h-12 text-center text-xl font-black text-[#052a51] bg-gray-50 border-2 border-gray-200 focus:border-[#F26522] focus:bg-white rounded-xl focus:outline-none transition-all shadow-xs"
+                    />
+                  ))}
+                </div>
+
+                {/* Dev hint (phone only — email goes to real inbox) */}
+                {isPhoneOtp && (
+                  <div className="p-3 bg-amber-50 rounded-xl border border-amber-200/80 flex items-center gap-2 text-xs text-amber-900 font-semibold">
+                    <Sparkles size={15} className="text-[#F26522] shrink-0" />
+                    <span>Demo mode — enter <strong>123456</strong></span>
+                  </div>
                 )}
+                {!isPhoneOtp && (
+                  <div className="p-3 bg-blue-50 rounded-xl border border-blue-200/80 flex items-center gap-2 text-xs text-blue-900 font-semibold">
+                    <Mail size={15} className="text-blue-600 shrink-0" />
+                    <span>Check your inbox (or spam folder) for the 6-digit code.</span>
+                  </div>
+                )}
+
+                <button
+                  type="button"
+                  id="login-verify-btn"
+                  onClick={() => verifyCode()}
+                  disabled={otp.join("").length !== 6 || loading}
+                  className="w-full h-12 bg-[#F26522] hover:bg-[#d95a1e] text-white font-black text-sm rounded-xl shadow-md transition-all flex items-center justify-center gap-2 active:scale-95 disabled:opacity-50"
+                >
+                  {loading ? (
+                    <RotateCw size={18} className="animate-spin" />
+                  ) : (
+                    <><CheckCircle2 size={18} /><span>Verify & Continue</span></>
+                  )}
+                </button>
+
+                <div className="flex items-center justify-between text-xs text-gray-500 font-medium">
+                  <span>Didn't receive the code?</span>
+                  {canResend ? (
+                    <button
+                      type="button"
+                      onClick={handleResend}
+                      className="font-bold text-[#F26522] hover:underline"
+                    >
+                      Resend Code
+                    </button>
+                  ) : (
+                    <span className="text-gray-400">Resend in {timer}s</span>
+                  )}
+                </div>
               </div>
-            </div>
-          )}
-        </div>
+            )}
+          </motion.div>
+        </AnimatePresence>
       </motion.div>
     </div>
   );

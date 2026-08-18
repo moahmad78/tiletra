@@ -69,14 +69,16 @@ export default function AdminSidebar({
       {/* Brand Header */}
       <div className="h-16 flex items-center justify-between px-4 border-b border-white/10">
         {!collapsed && (
-          <Link href="/admin" className="flex items-center gap-2.5">
-            {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img
-              src="/Tiletra/logo/web-logo.png"
-              alt="Tiletra Admin"
-              className="h-7 w-auto object-contain brightness-0 invert"
-            />
-            <span className="text-[10px] font-black uppercase tracking-widest px-1.5 py-0.5 bg-[#F26522] rounded text-white">
+          <Link href="/admin" className="flex items-center gap-2">
+            <div className="bg-white px-2.5 py-1 rounded-xl shadow-2xs flex items-center">
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img
+                src="/logo/intri-web-logo.png"
+                alt="Intrihub Admin"
+                className="h-6 w-auto object-contain"
+              />
+            </div>
+            <span className="text-[9px] font-black uppercase tracking-widest px-1.5 py-0.5 bg-[#F26522] rounded text-white shadow-2xs">
               Admin
             </span>
           </Link>
@@ -84,7 +86,7 @@ export default function AdminSidebar({
         {collapsed && (
           <Link href="/admin" className="mx-auto">
             <span className="w-8 h-8 rounded-xl bg-[#F26522] text-white font-black flex items-center justify-center text-sm shadow-sm">
-              T
+              I
             </span>
           </Link>
         )}

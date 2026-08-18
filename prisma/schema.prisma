@@ -3,63 +3,156 @@ generator client {
 }
 
 datasource db {
-  provider = "postgresql"
-  url      = env("DATABASE_URL")
+  provider  = "postgresql"
+  url       = env("DATABASE_URL")
+  directUrl = env("DIRECT_URL")
 }
 
+// ----------------------------------------------------
+// 1. Users & Authentication
+// ----------------------------------------------------
+model User {
+  id                    String                  @id @default(cuid())
+  name                  String?
+  email                 String?                 @unique
+  phone                 String                  @unique
+  phoneVerified         Boolean                 @default(false)
+  emailVerified         Boolean                 @default(false)
+  role                  String                  @default("customer") // customer | admin | staff
+  authProvider          String?                 // "google" | "email" | "phone"
+  avatar                String?
+  createdAt             DateTime                @default(now())
+  updatedAt             DateTime                @updatedAt
+
+  addresses             Address[]
+  orders                Order[]
+  reviews               Review[]
+  cart                  Cart?
+  notifications         Notification[]
+  notificationPreference NotificationPreference?
+  recentlyViewed        RecentlyViewed[]
+  returnRequests        ReturnRequest[]
+  auditLogs             AuditLog[]
+  staffPermissions      StaffPermission[]
+
+  @@index([phone])
+  @@index([email])
+  @@index([role])
+}
+
+// Email OTP token store (expires after 10 minutes)
+model EmailOtpToken {
+  id        String   @id @default(cuid())
+  email     String
+  otp       String
+  expiresAt DateTime
+  used      Boolean  @default(false)
+  createdAt DateTime @default(now())
+
+  @@index([email])
+}
+
+model Address {
+  id        String   @id @default(cuid())
+  userId    String
+  label     String   @default("Home") // Home | Work | Site | Other
+  street    String
+  landmark  String?
+  city      String   @default("Bangalore")
+  state     String   @default("Karnataka")
+  pincode   String
+  latitude  Float?
+  longitude Float?
+  isDefault Boolean  @default(false)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+}
+
+// ----------------------------------------------------
+// 2. Catalog: Categories, Products & Variants
+// ----------------------------------------------------
 model Category {
-  id              String    @id @default(cuid())
+  id              String     @id @default(cuid())
   name            String
-  slug            String    @unique
-  icon            String    @default("Grid")
-  description     String    @default("")
-  image           String    @default("")
-  popularFinishes String[]  @default([])
-  popularSizes    String[]  @default([])
-  order           Int       @default(0)
-  createdAt       DateTime  @default(now())
-  updatedAt       DateTime  @updatedAt
+  slug            String     @unique
+  icon            String     @default("Grid")
+  description     String     @default("")
+  image           String     @default("")
+  popularFinishes String[]   @default([])
+  popularSizes    String[]   @default([])
+  order           Int        @default(0)
+  parentId        String?
+  createdAt       DateTime   @default(now())
+  updatedAt       DateTime   @updatedAt
+
+  parent          Category?  @relation("CategoryHierarchy", fields: [parentId], references: [id], onDelete: SetNull)
+  children        Category[] @relation("CategoryHierarchy")
   products        Product[]
+
+  @@index([parentId])
 }
 
 model Product {
-  id           String           @id @default(cuid())
+  id           String             @id @default(cuid())
   name         String
-  slug         String           @unique
+  slug         String             @unique
   categoryId   String?
-  categorySlug String           @default("floor-tiles")
-  categoryName String           @default("Floor Tiles")
+  categorySlug String             @default("floor-tiles")
+  categoryName String             @default("Floor Tiles")
   subcategory  String?
-  material     String           @default("Vitrified")
-  finish       String           @default("Glossy")
-  size         String           @default("600x600mm")
-  pricePerSqft Float            @default(45)
-  thickness    String           @default("9mm")
-  usage        String           @default("Indoor / Floor")
-  look         String           @default("Marble Look")
-  isTrending   Boolean          @default(false)
-  isBestseller Boolean          @default(false)
-  isNewArrival Boolean          @default(false)
-  inStock      Boolean          @default(true)
-  images       String[]         @default([])
-  description  String           @default("")
-  rating       Float            @default(4.8)
-  reviewCount  Int              @default(12)
+  unitOfSale   String             @default("box") // box | sqft | piece | meter | coil | kg | pack | roll
+  material     String             @default("Vitrified")
+  finish       String             @default("Glossy")
+  size         String             @default("600x600mm")
+  pricePerSqft Float              @default(45)
+  thickness    String             @default("9mm")
+  usage        String             @default("Indoor / Floor")
+  look         String             @default("Marble Look")
+  isTrending   Boolean            @default(false)
+  isBestseller Boolean            @default(false)
+  isNewArrival Boolean            @default(false)
+  inStock      Boolean            @default(true)
+  images       String[]           @default([])
+  description  String             @default("")
+  rating       Float              @default(4.8)
+  reviewCount  Int                @default(12)
+  manualRating Float?
+  manualReviewCount Int?
   specs        Json?
-  createdAt    DateTime         @default(now())
-  updatedAt    DateTime         @updatedAt
+  createdAt    DateTime           @default(now())
+  updatedAt    DateTime           @updatedAt
 
-  category     Category?        @relation(fields: [categoryId], references: [id], onDelete: SetNull)
+  category     Category?          @relation(fields: [categoryId], references: [id], onDelete: SetNull)
   variants     ProductVariant[]
+  attributes   ProductAttribute[]
   reviews      Review[]
+  orderItems   OrderItem[]
+  recentlyViewed RecentlyViewed[]
 
   @@index([categorySlug])
   @@index([isTrending])
   @@index([isBestseller])
 }
 
+model ProductAttribute {
+  id        String   @id @default(cuid())
+  productId String
+  key       String   // e.g. "gauge", "thickness", "material", "packOf", "pattern"
+  value     String   // e.g. "2.5 sq mm", "18mm", "SS 304", "100 Pcs", "Geometric"
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  product   Product  @relation(fields: [productId], references: [id], onDelete: Cascade)
+
+  @@index([productId])
+}
+
 model ProductVariant {
-  id           String   @id @default(cuid())
+  id           String     @id @default(cuid())
   productId    String
   size         String
   finish       String
@@ -67,45 +160,86 @@ model ProductVariant {
   pricePerSqft Float
   pricePerBox  Float
   sqftPerBox   Float
-  piecesPerBox Int      @default(4)
-  inStock      Boolean  @default(true)
-  stockBoxes   Int      @default(50)
+  piecesPerBox Int        @default(4)
+  inStock      Boolean    @default(true)
+  stockBoxes   Int        @default(50)
+  createdAt    DateTime   @default(now())
+  updatedAt    DateTime   @updatedAt
 
-  product      Product  @relation(fields: [productId], references: [id], onDelete: Cascade)
+  product      Product    @relation(fields: [productId], references: [id], onDelete: Cascade)
+  cartItems    CartItem[]
 
   @@index([productId])
 }
 
+// ----------------------------------------------------
+// 3. Cart & Synced Cart Items
+// ----------------------------------------------------
+model Cart {
+  id        String     @id @default(cuid())
+  userId    String?    @unique
+  sessionId String?    @unique
+  createdAt DateTime   @default(now())
+  updatedAt DateTime   @updatedAt
+
+  user      User?      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  items     CartItem[]
+}
+
+model CartItem {
+  id          String         @id @default(cuid())
+  cartId      String
+  productId   String
+  variantId   String
+  boxQuantity Int            @default(1)
+  createdAt   DateTime       @default(now())
+  updatedAt   DateTime       @updatedAt
+
+  cart        Cart           @relation(fields: [cartId], references: [id], onDelete: Cascade)
+  variant     ProductVariant @relation(fields: [variantId], references: [id], onDelete: Cascade)
+
+  @@unique([cartId, variantId])
+  @@index([cartId])
+}
+
+// ----------------------------------------------------
+// 4. Orders, Order Items & Return Requests
+// ----------------------------------------------------
 model Order {
-  id                String      @id
+  id                String          @id
+  userId            String?
   customerName      String
   customerPhone     String
-  customerEmail     String      @default("customer@tiletra.in")
+  customerEmail     String          @default("customer@tiletra.in")
   shippingAddress   Json
   subtotal          Float
-  deliveryFee       Float       @default(0)
-  discount          Float       @default(0)
+  deliveryFee       Float           @default(0)
+  discount          Float           @default(0)
   total             Float
-  paymentStatus     String      @default("Pending") // Paid | Pending | Refunded
-  paymentMethod     String      @default("Online")  // Online | COD | UPI | Card | NetBanking
-  paymentCollected  Boolean     @default(false)
+  paymentStatus     String          @default("Pending") // Paid | Pending | Refunded
+  paymentMethod     String          @default("Online")  // Online | COD | UPI | Card | NetBanking
+  codConfirmed      Boolean         @default(false)
+  paymentCollected  Boolean         @default(false)
   paymentId         String?
-  orderStatus       String      @default("Processing") // Processing | Confirmed | Dispatched | Out for Delivery | Delivered | Cancelled
+  orderStatus       String          @default("Processing") // Processing | Confirmed | Dispatched | Out for Delivery | Delivered | Cancelled
   courierName       String?
   trackingNumber    String?
   internalNotes     String?
-  createdAt         DateTime    @default(now())
-  estimatedDelivery String      @default("3–5 Business Days")
-  updatedAt         DateTime    @updatedAt
+  estimatedDelivery String          @default("3–5 Business Days")
+  createdAt         DateTime        @default(now())
+  updatedAt         DateTime        @updatedAt
 
+  user              User?           @relation(fields: [userId], references: [id], onDelete: SetNull)
   items             OrderItem[]
+  returnRequests    ReturnRequest[]
 
   @@index([customerPhone])
   @@index([orderStatus])
+  @@index([userId])
 }
 
 model OrderItem {
-  id             String  @id @default(cuid())
+  id             String          @id @default(cuid())
   orderId        String
   productId      String
   productName    String
@@ -114,13 +248,39 @@ model OrderItem {
   boxQuantity    Int
   pricePerBox    Float
   totalPrice     Float
-  image          String  @default("")
+  image          String          @default("")
 
-  order          Order   @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  order          Order           @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  product        Product?        @relation(fields: [productId], references: [id], onDelete: SetNull)
+  returnRequests ReturnRequest[]
 
   @@index([orderId])
+  @@index([productId])
 }
 
+model ReturnRequest {
+  id          String     @id @default(cuid())
+  orderId     String
+  orderItemId String?
+  userId      String?
+  reason      String
+  status      String     @default("Pending") // Pending | Approved | Rejected | Completed
+  photos      String[]   @default([])
+  notes       String?
+  createdAt   DateTime   @default(now())
+  updatedAt   DateTime   @updatedAt
+
+  order       Order      @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  orderItem   OrderItem? @relation(fields: [orderItemId], references: [id], onDelete: SetNull)
+  user        User?      @relation(fields: [userId], references: [id], onDelete: SetNull)
+
+  @@index([orderId])
+  @@index([userId])
+}
+
+// ----------------------------------------------------
+// 5. Customers (CRM)
+// ----------------------------------------------------
 model Customer {
   id          String   @id @default(cuid())
   name        String
@@ -133,27 +293,40 @@ model Customer {
   notes       String?
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
+
+  @@index([phone])
 }
 
+// ----------------------------------------------------
+// 6. Reviews
+// ----------------------------------------------------
 model Review {
-  id          String   @id @default(cuid())
-  productId   String
-  productName String
-  author      String
-  city        String   @default("Bangalore")
-  rating      Int      @default(5)
-  comment     String
-  date        String
-  status      String   @default("approved") // pending | approved | rejected
-  photos      String[] @default([])
-  createdAt   DateTime @default(now())
+  id               String   @id @default(cuid())
+  productId        String
+  productName      String
+  userId           String?
+  author           String
+  city             String   @default("Bangalore")
+  rating           Int      @default(5)
+  comment          String
+  date             String
+  status           String   @default("approved") // pending | approved | rejected
+  photos           String[] @default([])
+  verifiedPurchase Boolean  @default(false)
+  createdAt        DateTime @default(now())
+  updatedAt        DateTime @updatedAt
 
-  product     Product? @relation(fields: [productId], references: [id], onDelete: Cascade)
+  product          Product? @relation(fields: [productId], references: [id], onDelete: Cascade)
+  user             User?    @relation(fields: [userId], references: [id], onDelete: SetNull)
 
   @@index([productId])
   @@index([status])
+  @@index([userId])
 }
 
+// ----------------------------------------------------
+// 7. Coupons & Discounts
+// ----------------------------------------------------
 model Coupon {
   id             String   @id @default(cuid())
   code           String   @unique
@@ -167,8 +340,12 @@ model Coupon {
   validTill      String   @default("2026-12-31")
   isActive       Boolean  @default(true)
   createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
 }
 
+// ----------------------------------------------------
+// 8. Offer Banners & Content
+// ----------------------------------------------------
 model OfferBanner {
   id         String   @id @default(cuid())
   badge      String   @default("Special Offer")
@@ -181,8 +358,26 @@ model OfferBanner {
   isActive   Boolean  @default(true)
   order      Int      @default(0)
   createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
 }
 
+// Alias for PRD Banner compatibility
+model Banner {
+  id         String   @id @default(cuid())
+  title      String
+  subtitle   String?
+  badge      String?
+  image      String
+  link       String   @default("/shop")
+  isActive   Boolean  @default(true)
+  order      Int      @default(0)
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+}
+
+// ----------------------------------------------------
+// 9. Store Settings & Shipping Zones
+// ----------------------------------------------------
 model StoreSettings {
   id                    String   @id @default("default-settings")
   storeName             String   @default("Tiletra India")
@@ -198,4 +393,119 @@ model StoreSettings {
   codMaxLimit           Float    @default(25000)
   codBlockedPincodes    String[] @default(["560099"])
   updatedAt             DateTime @updatedAt
+}
+
+model Setting {
+  id        String   @id @default(cuid())
+  key       String   @unique
+  value     String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model ShippingZone {
+  id                      String   @id @default(cuid())
+  name                    String
+  pincodes                String[] @default([])
+  fee                     Float    @default(999)
+  minOrderForFreeShipping Float    @default(15000)
+  estimatedDelivery       String   @default("3–5 Business Days")
+  isActive                Boolean  @default(true)
+  createdAt               DateTime @default(now())
+  updatedAt               DateTime @updatedAt
+}
+
+// ----------------------------------------------------
+// 10. Notifications & Preferences
+// ----------------------------------------------------
+model Notification {
+  id        String   @id @default(cuid())
+  userId    String
+  title     String
+  message   String
+  type      String   @default("info") // order | promo | system | info
+  isRead    Boolean  @default(false)
+  link      String?
+  createdAt DateTime @default(now())
+
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+}
+
+model NotificationPreference {
+  id           String   @id @default(cuid())
+  userId       String   @unique
+  orderUpdates Boolean  @default(true)
+  promotional  Boolean  @default(true)
+  email        Boolean  @default(true)
+  sms          Boolean  @default(true)
+  whatsapp     Boolean  @default(true)
+  updatedAt    DateTime @updatedAt
+
+  user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model AdminNotification {
+  id        String   @id @default(cuid())
+  title     String
+  message   String
+  type      String   @default("general") // new_order | low_stock | return_request | review | general
+  isRead    Boolean  @default(false)
+  link      String?
+  metadata  Json?    // arbitrary extra data (orderId, productId, etc.)
+  createdAt DateTime @default(now())
+
+  @@index([isRead])
+  @@index([createdAt])
+}
+
+// ----------------------------------------------------
+// 11. Customer Activity & Recently Viewed
+// ----------------------------------------------------
+model RecentlyViewed {
+  id        String   @id @default(cuid())
+  userId    String?
+  sessionId String?
+  productId String
+  viewedAt  DateTime @default(now())
+
+  user      User?    @relation(fields: [userId], references: [id], onDelete: Cascade)
+  product   Product  @relation(fields: [productId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, productId])
+  @@index([userId])
+  @@index([sessionId])
+}
+
+// ----------------------------------------------------
+// 12. Staff, RBAC & Audit Logs
+// ----------------------------------------------------
+model StaffPermission {
+  id          String   @id @default(cuid())
+  userId      String
+  permissions String[] @default([])
+  role        String   @default("staff")
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([userId])
+}
+
+model AuditLog {
+  id        String   @id @default(cuid())
+  action    String
+  entity    String
+  entityId  String?
+  userId    String?
+  details   Json?
+  ipAddress String?
+  createdAt DateTime @default(now())
+
+  user      User?    @relation(fields: [userId], references: [id], onDelete: SetNull)
+
+  @@index([entity])
+  @@index([userId])
 }

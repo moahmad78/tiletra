@@ -1,26 +1,22 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect, useCallback } from "react";
 import Link from "next/link";
 import {
   ShoppingBag,
   Search,
-  Filter,
   ArrowRight,
-  Truck,
-  CheckCircle,
-  Clock,
-  Printer,
-  ExternalLink,
+  Loader2,
 } from "lucide-react";
-import { useAdminStore, type OrderStatus } from "@/lib/admin-store";
+import { getOrders, updateOrderStatus } from "@/lib/actions/orders";
+import { useSocket } from "@/lib/socket";
 import { toast } from "sonner";
 
 function formatPrice(n: number) {
   return "₹" + n.toLocaleString("en-IN");
 }
 
-const STATUS_FILTERS: (OrderStatus | "All")[] = [
+const STATUS_FILTERS = [
   "All",
   "Processing",
   "Confirmed",
@@ -31,11 +27,43 @@ const STATUS_FILTERS: (OrderStatus | "All")[] = [
 ];
 
 export default function AdminOrdersPage() {
-  const orders = useAdminStore((s) => s.orders);
-  const updateOrderStatus = useAdminStore((s) => s.updateOrderStatus);
-
+  const [orders, setOrders] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState("");
-  const [statusFilter, setStatusFilter] = useState<OrderStatus | "All">("All");
+  const [statusFilter, setStatusFilter] = useState("All");
+
+  const loadOrders = useCallback(async () => {
+    try {
+      const data = await getOrders();
+      setOrders(data);
+    } catch (err) {
+      console.error("Error fetching orders:", err);
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+
+  // ── Real-Time Order Stream (Phase 5b PRD) ──
+  useSocket("admin", {
+    "new-order": (newOrderData: any) => {
+      console.log("⚡ [ADMIN ORDERS: live new-order received]", newOrderData);
+      loadOrders();
+    },
+    "order-status-updated": (updateData: any) => {
+      setOrders((prev) =>
+        prev.map((o) =>
+          o.id === updateData.orderId
+            ? { ...o, orderStatus: updateData.orderStatus, estimatedDelivery: updateData.estimatedDelivery }
+            : o
+        )
+      );
+    },
+  });
+
+  useEffect(() => {
+    setLoading(true);
+    loadOrders();
+  }, [loadOrders]);
 
   const filteredOrders = orders.filter((o) => {
     const matchesSearch =
@@ -49,12 +77,19 @@ export default function AdminOrdersPage() {
     return matchesSearch && matchesStatus;
   });
 
-  const handleStatusChange = (orderId: string, newStatus: OrderStatus) => {
-    updateOrderStatus(orderId, newStatus);
-    toast.success(`Order ${orderId} status set to ${newStatus}`);
+  const handleStatusChange = async (orderId: string, newStatus: string) => {
+    const res = await updateOrderStatus(orderId, newStatus);
+    if (res.success) {
+      setOrders((prev) =>
+        prev.map((o) => (o.id === orderId ? { ...o, orderStatus: newStatus } : o))
+      );
+      toast.success(`Order ${orderId} status set to ${newStatus}`);
+    } else {
+      toast.error(res.error || "Failed to update status");
+    }
   };
 
-  const getStatusBadge = (status: OrderStatus) => {
+  const getStatusBadge = (status: string) => {
     switch (status) {
       case "Delivered":
         return "bg-emerald-50 text-emerald-700 border-emerald-200";
@@ -72,6 +107,17 @@ export default function AdminOrdersPage() {
     }
   };
 
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center min-h-[400px]">
+        <div className="flex flex-col items-center gap-3">
+          <Loader2 className="animate-spin text-[#F26522]" size={32} />
+          <p className="text-sm font-bold text-[#052a51]">Loading orders from Neon DB...</p>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="space-y-6">
       {/* Header */}
@@ -79,7 +125,7 @@ export default function AdminOrdersPage() {
         <div>
           <h2 className="text-xl font-black text-[#052a51]">Order Management</h2>
           <p className="text-xs text-gray-500 mt-0.5">
-            Track customer orders, shipments, and payment fulfillments
+            Track customer orders, shipments, and payment fulfillments in PostgreSQL
           </p>
         </div>
 
@@ -114,7 +160,7 @@ export default function AdminOrdersPage() {
               <button
                 key={s}
                 onClick={() => setStatusFilter(s)}
-                className={`px-3 py-1.5 rounded-xl text-xs font-bold whitespace-nowrap transition-all ${
+                className={`px-3 py-1.5 rounded-xl text-xs font-bold whitespace-nowrap transition-all cursor-pointer ${
                   statusFilter === s
                     ? "bg-[#052a51] text-white shadow-xs"
                     : "bg-gray-100 text-gray-600 hover:bg-gray-200"
@@ -170,17 +216,17 @@ export default function AdminOrdersPage() {
                     <td className="py-3.5 px-4">
                       <p className="font-bold text-[#052a51]">{order.customerName}</p>
                       <p className="text-[10px] text-gray-500">
-                        {order.shippingAddress.city}, {order.shippingAddress.pincode}
+                        {order.shippingAddress?.city || "Bangalore"}, {order.shippingAddress?.pincode || ""}
                       </p>
                       <p className="text-[10px] text-gray-400 font-mono">{order.customerPhone}</p>
                     </td>
 
                     <td className="py-3.5 px-4">
                       <p className="font-bold text-[#052a51]">
-                        {order.items.length} tile design(s)
+                        {order.items?.length || 0} tile design(s)
                       </p>
                       <p className="text-[10px] text-gray-400 truncate max-w-[200px]">
-                        {order.items.map((i) => `${i.productName} (${i.boxQuantity}bx)`).join(", ")}
+                        {order.items?.map((i: any) => `${i.productName} (${i.boxQuantity}bx)`).join(", ")}
                       </p>
                     </td>
 
@@ -199,9 +245,7 @@ export default function AdminOrdersPage() {
                     <td className="py-3.5 px-4">
                       <select
                         value={order.orderStatus}
-                        onChange={(e) =>
-                          handleStatusChange(order.id, e.target.value as OrderStatus)
-                        }
+                        onChange={(e) => handleStatusChange(order.id, e.target.value)}
                         className={`px-2.5 py-1.5 rounded-xl text-xs font-bold border focus:outline-none cursor-pointer ${getStatusBadge(
                           order.orderStatus
                         )}`}

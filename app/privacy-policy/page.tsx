@@ -38,7 +38,7 @@ export default function PrivacyPolicyPage() {
           <section className="space-y-2">
             <h2 className="text-lg font-black text-[#052a51]">3. Security</h2>
             <p>
-              All traffic between your device and Tiletra is encrypted using standard HTTPS/TLS protocols.
+              All traffic between your device and Intrihub is encrypted using standard HTTPS/TLS protocols.
             </p>
           </section>
         </div>

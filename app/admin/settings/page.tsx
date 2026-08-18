@@ -1,47 +1,68 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import {
-  Settings,
   Save,
-  RotateCcw,
   Truck,
   Phone,
-  Mail,
-  MapPin,
   ShieldCheck,
-  AlertTriangle,
+  Loader2,
 } from "lucide-react";
-import { useAdminStore } from "@/lib/admin-store";
+import { getStoreSettings, updateStoreSettings } from "@/lib/actions/settings";
 import { toast } from "sonner";
 
 export default function AdminSettingsPage() {
-  const settings = useAdminStore((s) => s.settings);
-  const updateSettings = useAdminStore((s) => s.updateSettings);
-  const resetToDefaults = useAdminStore((s) => s.resetToDefaults);
+  const [loading, setLoading] = useState(true);
+  const [saving, setSaving] = useState(false);
 
-  const [storeName, setStoreName] = useState(settings.storeName);
-  const [contactPhone, setContactPhone] = useState(settings.contactPhone);
-  const [whatsappNumber, setWhatsappNumber] = useState(settings.whatsappNumber);
-  const [email, setEmail] = useState(settings.email);
-  const [address, setAddress] = useState(settings.address);
-  const [freeDeliveryThreshold, setFreeDeliveryThreshold] = useState(settings.freeDeliveryThreshold);
-  const [standardDeliveryFee, setStandardDeliveryFee] = useState(settings.standardDeliveryFee);
-  const [lowStockThreshold, setLowStockThreshold] = useState(settings.lowStockThreshold);
-  const [codEnabled, setCodEnabled] = useState(settings.codEnabled ?? true);
-  const [codMaxLimit, setCodMaxLimit] = useState(settings.codMaxLimit ?? 25000);
-  const [codBlockedPincodes, setCodBlockedPincodes] = useState(
-    (settings.codBlockedPincodes || []).join(", ")
-  );
+  const [storeName, setStoreName] = useState("Intrihub");
+  const [contactPhone, setContactPhone] = useState("+91 78709 35277");
+  const [whatsappNumber, setWhatsappNumber] = useState("+91 78709 35277");
+  const [email, setEmail] = useState("hello@intrihub.com");
+  const [address, setAddress] = useState("Intrihub Central Logistics Hub, Hosur Road, Bangalore, Karnataka - 560068");
+  const [freeDeliveryThreshold, setFreeDeliveryThreshold] = useState(15000);
+  const [standardDeliveryFee, setStandardDeliveryFee] = useState(999);
+  const [lowStockThreshold, setLowStockThreshold] = useState(25);
+  const [codEnabled, setCodEnabled] = useState(true);
+  const [codMaxLimit, setCodMaxLimit] = useState(25000);
+  const [codBlockedPincodes, setCodBlockedPincodes] = useState("560099, 560088");
 
-  const handleSave = (e: React.FormEvent) => {
+  useEffect(() => {
+    async function load() {
+      try {
+        setLoading(true);
+        const s = await getStoreSettings();
+        if (s) {
+          setStoreName(s.storeName);
+          setContactPhone(s.contactPhone);
+          setWhatsappNumber(s.whatsappNumber);
+          setEmail(s.email);
+          setAddress(s.address);
+          setFreeDeliveryThreshold(s.freeDeliveryThreshold);
+          setStandardDeliveryFee(s.standardDeliveryFee);
+          setLowStockThreshold(s.lowStockThreshold);
+          setCodEnabled(s.codEnabled);
+          setCodMaxLimit(s.codMaxLimit);
+          setCodBlockedPincodes((s.codBlockedPincodes || []).join(", "));
+        }
+      } catch (err) {
+        console.error("Error loading store settings:", err);
+      } finally {
+        setLoading(false);
+      }
+    }
+    load();
+  }, []);
+
+  const handleSave = async (e: React.FormEvent) => {
     e.preventDefault();
+    setSaving(true);
     const blockedPincodesArray = codBlockedPincodes
       .split(",")
       .map((p) => p.trim())
       .filter(Boolean);
 
-    updateSettings({
+    const res = await updateStoreSettings({
       storeName,
       contactPhone,
       whatsappNumber,
@@ -54,19 +75,25 @@ export default function AdminSettingsPage() {
       codMaxLimit: Number(codMaxLimit),
       codBlockedPincodes: blockedPincodesArray,
     });
-    toast.success("Store settings updated successfully!");
-  };
+    setSaving(false);
 
-  const handleResetData = () => {
-    if (
-      window.confirm(
-        "Are you sure you want to reset demo products, orders, and content to original seed data?"
-      )
-    ) {
-      resetToDefaults();
-      toast.success("Store data restored to defaults!");
+    if (res.success) {
+      toast.success("Store settings updated successfully in Neon PostgreSQL!");
+    } else {
+      toast.error(res.error || "Failed to update settings");
     }
   };
+
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center min-h-[400px]">
+        <div className="flex flex-col items-center gap-3">
+          <Loader2 className="animate-spin text-[#F26522]" size={32} />
+          <p className="text-sm font-bold text-[#052a51]">Loading store settings from Neon DB...</p>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-6 max-w-4xl mx-auto pb-12">
@@ -75,17 +102,9 @@ export default function AdminSettingsPage() {
         <div>
           <h2 className="text-xl font-black text-[#052a51]">Store Settings & Config</h2>
           <p className="text-xs text-gray-500 mt-0.5">
-            Configure contact details, delivery charges, and system thresholds
+            Configure contact details, delivery charges, and system thresholds in PostgreSQL
           </p>
         </div>
-
-        <button
-          onClick={handleResetData}
-          className="inline-flex items-center gap-1.5 px-3.5 py-2 bg-gray-100 hover:bg-red-50 hover:text-red-700 text-gray-600 text-xs font-bold rounded-xl transition-colors shadow-2xs w-fit"
-        >
-          <RotateCcw size={13} />
-          <span>Reset Sample Seed Data</span>
-        </button>
       </div>
 
       <form onSubmit={handleSave} className="space-y-6">
@@ -246,7 +265,7 @@ export default function AdminSettingsPage() {
                 step={1000}
               />
               <p className="text-[10px] text-gray-400 mt-1">
-                Orders above ₹{Number(codMaxLimit).toLocaleString("en-IN")} will require online payment to protect against bulk freight refusals.
+                Orders above ₹{Number(codMaxLimit).toLocaleString("en-IN")} will require online payment.
               </p>
             </div>
 
@@ -272,10 +291,11 @@ export default function AdminSettingsPage() {
         <div className="flex justify-end pt-2">
           <button
             type="submit"
-            className="inline-flex items-center gap-2 px-6 py-3 bg-[#F26522] hover:bg-[#d95a1e] text-white text-xs font-bold rounded-xl shadow-md active:scale-95 transition-all"
+            disabled={saving}
+            className="inline-flex items-center gap-2 px-6 py-3 bg-[#F26522] hover:bg-[#d95a1e] text-white text-xs font-bold rounded-xl shadow-md active:scale-95 transition-all cursor-pointer disabled:opacity-50"
           >
-            <Save size={16} />
-            <span>Save Settings</span>
+            {saving ? <Loader2 className="animate-spin" size={16} /> : <Save size={16} />}
+            <span>{saving ? "Saving to DB..." : "Save Settings"}</span>
           </button>
         </div>
       </form>

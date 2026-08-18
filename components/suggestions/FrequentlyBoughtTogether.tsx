@@ -7,6 +7,7 @@ import { Plus, Check, ShoppingBag, Sparkles } from "lucide-react";
 import { useCartStore } from "@/lib/cart-store";
 import type { Product } from "@/lib/data/products";
 import { getFrequentlyBoughtTogether, type FrequentPair } from "@/lib/recommendations";
+import { showCartToast } from "@/lib/cart-toast-store";
 import { toast } from "sonner";
 
 function formatPrice(n: number) {
@@ -48,7 +49,11 @@ export default function FrequentlyBoughtTogether({ product }: { product: Product
     }
 
     setAdded(true);
-    toast.success("Added combination bundle to your cart!");
+    showCartToast(
+      `${pair.mainProduct.name} + ${pair.pairedProduct.name}`,
+      2,
+      "Design combination added to cart!"
+    );
     setTimeout(() => setAdded(false), 2000);
   };
 
@@ -167,7 +172,7 @@ export default function FrequentlyBoughtTogether({ product }: { product: Product
           <button
             onClick={handleAddBundle}
             disabled={!includeMain && !includePaired}
-            className={`w-full py-2.5 px-5 rounded-xl font-bold text-xs flex items-center justify-center gap-2 shadow-xs transition-all active:scale-95 ${
+            className={`w-full py-2.5 px-4 rounded-xl font-bold text-xs sm:text-sm flex items-center justify-center gap-1.5 shadow-xs transition-all active:scale-95 whitespace-nowrap ${
               added
                 ? "bg-emerald-600 text-white"
                 : "bg-[#F26522] hover:bg-[#d95a1e] text-white"
@@ -175,11 +180,11 @@ export default function FrequentlyBoughtTogether({ product }: { product: Product
           >
             {added ? (
               <>
-                <Check size={14} /> Added to Cart
+                <Check size={15} className="shrink-0" /> <span className="whitespace-nowrap">Added to Cart</span>
               </>
             ) : (
               <>
-                <ShoppingBag size={14} /> Add Both to Cart
+                <ShoppingBag size={15} className="shrink-0" /> <span className="whitespace-nowrap">Add Both to Cart</span>
               </>
             )}
           </button>

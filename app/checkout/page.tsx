@@ -23,9 +23,9 @@ import {
   Sparkles,
 } from "lucide-react";
 import { useCartStore } from "@/lib/cart-store";
-import { useAdminStore } from "@/lib/admin-store";
 import { useAuthStore, type CustomerAddress } from "@/lib/auth-store";
 import { useNotificationsStore } from "@/lib/notifications-store";
+import { getStoreSettings } from "@/lib/actions/settings";
 import Header from "@/components/Header";
 import LocationPicker from "@/components/location/LocationPicker";
 import { toast } from "sonner";
@@ -41,11 +41,27 @@ export default function CheckoutPage() {
   const router = useRouter();
   const { items, clearCart } = useCartStore();
   const subtotal = useCartStore((s) => s.getSubtotal());
-  const deliveryFee = subtotal >= 15000 ? 0 : 999;
+
+  const [storeSettings, setStoreSettings] = useState<{
+    freeDeliveryThreshold: number;
+    standardDeliveryFee: number;
+    codEnabled: boolean;
+    codMaxLimit: number;
+    codBlockedPincodes: string[];
+  }>({
+    freeDeliveryThreshold: 15000,
+    standardDeliveryFee: 999,
+    codEnabled: true,
+    codMaxLimit: 25000,
+    codBlockedPincodes: ["560099", "560088"],
+  });
+
+  const freeThreshold = storeSettings.freeDeliveryThreshold ?? 15000;
+  const standardFee = storeSettings.standardDeliveryFee ?? 999;
+  const deliveryFee = subtotal >= freeThreshold ? 0 : standardFee;
   const total = subtotal + deliveryFee;
 
   const { user, isAuthenticated, openLoginModal } = useAuthStore();
-  const adminSettings = useAdminStore((s) => s.settings);
 
   const [step, setStep] = useState<Step>("Address");
   const [selectedAddressId, setSelectedAddressId] = useState<string>("");
@@ -56,6 +72,21 @@ export default function CheckoutPage() {
   const [isCodOtpModalOpen, setIsCodOtpModalOpen] = useState(false);
   const [codOtp, setCodOtp] = useState(["", "", "", ""]);
   const [codLoading, setCodLoading] = useState(false);
+
+  // Fetch live store settings from database
+  useEffect(() => {
+    getStoreSettings().then((s) => {
+      if (s) {
+        setStoreSettings({
+          freeDeliveryThreshold: s.freeDeliveryThreshold ?? 15000,
+          standardDeliveryFee: s.standardDeliveryFee ?? 999,
+          codEnabled: s.codEnabled ?? true,
+          codMaxLimit: s.codMaxLimit ?? 25000,
+          codBlockedPincodes: s.codBlockedPincodes ?? ["560099", "560088"],
+        });
+      }
+    });
+  }, []);
 
   // Auto-select default address on load
   useEffect(() => {
@@ -70,11 +101,11 @@ export default function CheckoutPage() {
   const selectedAddress = user?.addresses.find((a) => a.id === selectedAddressId) || user?.addresses[0];
 
   // COD Rules check
-  const codMaxLimit = adminSettings?.codMaxLimit || 25000;
+  const codMaxLimit = storeSettings.codMaxLimit ?? 25000;
   const isCodOverLimit = total > codMaxLimit;
   const isCodBlockedPincode =
-    selectedAddress && adminSettings?.codBlockedPincodes?.includes(selectedAddress.pincode);
-  const isCodAllowed = !isCodOverLimit && !isCodBlockedPincode && (adminSettings?.codEnabled !== false);
+    selectedAddress && storeSettings.codBlockedPincodes?.includes(selectedAddress.pincode);
+  const isCodAllowed = !isCodOverLimit && !isCodBlockedPincode && (storeSettings.codEnabled !== false);
 
   const stepIndex = STEPS.indexOf(step);
 
@@ -88,46 +119,65 @@ export default function CheckoutPage() {
   };
 
   // Place Order (Online or COD)
-  const placeOrder = (method: "Online" | "COD", paymentStatus: "Paid" | "Pending") => {
-    if (!selectedAddress) return;
+  const placeOrder = async (method: "Online" | "COD", paymentStatus: "Paid" | "Pending") => {
+    if (!isAuthenticated) {
+      openLoginModal({ type: "checkout" });
+      return;
+    }
+
+    if (!selectedAddress) {
+      toast.error("Please select a delivery address");
+      return;
+    }
 
     const orderId = `TL-${Math.floor(100000 + Math.random() * 900000)}`;
 
-    const { addOrder } = useAdminStore.getState();
-    addOrder({
-      id: orderId,
-      customerName: selectedAddress.name.trim() || user?.name || "Customer",
-      customerPhone: selectedAddress.phone.trim() || user?.phone || "+91 98765 43210",
-      customerEmail: user?.email || "customer@tiletra.in",
-      shippingAddress: {
-        line1: selectedAddress.line1,
-        line2: selectedAddress.line2,
-        city: selectedAddress.city,
-        pincode: selectedAddress.pincode,
-        state: selectedAddress.state,
-      },
-      items: items.map((i) => ({
-        productId: i.product.id,
-        productName: i.product.name,
-        variantId: i.variant.id,
-        variantDetails: `${i.variant.size} · ${i.variant.finish} · ${i.variant.color}`,
-        boxQuantity: i.quantity,
-        pricePerBox: i.variant.pricePerBox,
-        totalPrice: i.variant.pricePerBox * i.quantity,
-        image: i.product.images[0] || "https://images.unsplash.com/photo-1615529182904-14819c35db37?w=800&q=80",
-      })),
-      subtotal,
-      deliveryFee,
-      discount: 0,
-      total,
-      paymentStatus,
-      paymentMethod: method === "COD" ? "COD" : "Online",
-      paymentCollected: method === "COD" ? false : true,
-      paymentId: method === "COD" ? `cod_ref_${Date.now().toString().slice(-6)}` : `pay_rzp_${Date.now().toString().slice(-8)}`,
-      orderStatus: "Processing",
-      createdAt: new Date().toISOString(),
-      estimatedDelivery: "3–7 Business Days",
-    });
+    try {
+      const { createOrder } = await import("@/lib/actions/orders");
+      const res = await createOrder({
+        id: orderId,
+        userId: user?.id,
+        customerName: selectedAddress.name?.trim() || user?.name || "Customer",
+        customerPhone: selectedAddress.phone?.trim() || user?.phone || "+91 98765 43210",
+        customerEmail: user?.email || "customer@intrihub.com",
+        shippingAddress: {
+          fullName: selectedAddress.name || user?.name || "Customer",
+          phone: selectedAddress.phone || user?.phone || "+91 98765 43210",
+          street: `${selectedAddress.line1}${selectedAddress.line2 ? `, ${selectedAddress.line2}` : ""}`,
+          city: selectedAddress.city || "Bangalore",
+          state: selectedAddress.state || "Karnataka",
+          pincode: selectedAddress.pincode,
+          landmark: selectedAddress.landmark,
+        },
+        items: items.map((i) => ({
+          productId: i.product.id,
+          productName: i.product.name,
+          variantId: i.variant.id,
+          variantDetails: `${i.variant.size} · ${i.variant.finish} · ${i.variant.color}`,
+          boxQuantity: i.quantity,
+          pricePerBox: i.variant.pricePerBox,
+          totalPrice: i.variant.pricePerBox * i.quantity,
+          image: i.product.images[0] || "https://images.unsplash.com/photo-1615529182904-14819c35db37?w=800&q=80",
+        })),
+        subtotal,
+        deliveryFee,
+        discount: 0,
+        total,
+        paymentStatus,
+        paymentMethod: method === "COD" ? "COD" : "Online",
+        codConfirmed: method === "COD",
+        paymentId: method === "COD" ? `cod_ref_${Date.now().toString().slice(-6)}` : `pay_rzp_${Date.now().toString().slice(-8)}`,
+      });
+
+      if (!res.success || !res.order) {
+        toast.error(res.error || "Failed to create order. Please try again.");
+        return;
+      }
+    } catch (err: any) {
+      console.error("Error creating database order:", err);
+      toast.error(err?.message || "Failed to create order. Please check your connection.");
+      return;
+    }
 
     // In-app notification
     const { addNotification } = useNotificationsStore.getState();

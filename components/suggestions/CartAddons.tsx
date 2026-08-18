@@ -6,7 +6,7 @@ import { Plus, Check, ShoppingBag, Sparkles } from "lucide-react";
 import { useCartStore } from "@/lib/cart-store";
 import { getCartAddons } from "@/lib/recommendations";
 import { getLowestPrice, getLowestBoxPrice } from "@/lib/data/products";
-import { toast } from "sonner";
+import { showCartToast } from "@/lib/cart-toast-store";
 import { useState } from "react";
 
 function formatPrice(n: number) {
@@ -25,7 +25,7 @@ export default function CartAddons() {
   const handleAdd = (prod: any) => {
     addItem(prod, prod.variants[0], 1);
     setAddedId(prod.id);
-    toast.success(`Added ${prod.name} to cart!`);
+    showCartToast(prod.name, 1);
     setTimeout(() => setAddedId(null), 1500);
   };
 

@@ -23,7 +23,7 @@ export default function AboutPage() {
             Quality Tiles for <span className="text-[#F26522]">Strong Spaces</span>
           </h1>
           <p className="text-white/80 text-base md:text-lg mt-4 max-w-xl mx-auto leading-relaxed">
-            Tiletra is on a mission to simplify tile shopping for Indian homeowners. From high-grade vitrified floor tiles to designer wall mosaics, we deliver factory-fresh tiles directly to your home.
+            Intrihub is on a mission to simplify interior & construction supply for Indian homeowners, architects, and builders. From high-grade vitrified floor tiles to electrical, plumbing, plywood, and granite, we deliver factory-fresh materials directly to your site.
           </p>
         </div>
       </div>
@@ -31,24 +31,24 @@ export default function AboutPage() {
       {/* Story Content */}
       <div className="w-full max-w-[1200px] mx-auto px-[20px] md:px-[24px] lg:px-[32px] py-14 flex-1">
         <div className="bg-white rounded-3xl p-8 md:p-12 shadow-sm border border-gray-100 space-y-8">
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-10 items-center">
+          {/* Story Section */}
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-12 items-center mb-16">
             <div>
-              <p className="text-xs font-bold text-[#F26522] uppercase tracking-wider mb-2">Why Tiletra</p>
-              <h2 className="text-2xl md:text-3xl font-black text-[#052a51] leading-tight">
-                No middlemen, no confusing dealer rates. Just honest tiles.
+              <p className="text-xs font-bold text-[#F26522] uppercase tracking-wider mb-2">Why Intrihub</p>
+              <h2 className="text-2xl sm:text-3xl font-black text-[#052a51] mb-4">
+                Building materials shopping shouldn&apos;t be a headache.
               </h2>
-              <p className="text-gray-600 text-sm md:text-base mt-4 leading-relaxed">
-                Traditional tile buying involves visiting dusty wholesale markets, guessing how many boxes you need, and dealing with broken boxes and hidden delivery charges.
+              <p className="text-sm text-gray-600 leading-relaxed mb-4">
+                Traditional building material procurement involves multiple middlemen, unclear pricing, high transport breakages, and endless physical showroom trips.
               </p>
-              <p className="text-gray-600 text-sm md:text-base mt-3 leading-relaxed">
-                We started Tiletra in Bangalore to change that — transparent box and sq.ft pricing, instant room coverage calculator, curated aesthetic designs, and safe freight delivery to your doorstep.
+              <p className="text-sm text-gray-600 leading-relaxed">
+                We started Intrihub in Bangalore to change that — transparent unit pricing, instant room coverage calculator, curated aesthetic designs, and safe freight delivery to your doorstep.
               </p>
             </div>
-
-            <div className="relative h-[320px] md:h-[380px] rounded-2xl overflow-hidden shadow-md">
+            <div className="relative aspect-4/3 rounded-3xl overflow-hidden shadow-lg bg-gray-100">
               <Image
-                src="https://images.unsplash.com/photo-1616486338812-3dadae4b4ace?w=800&q=80"
-                alt="Tiletra workspace"
+                src="https://images.unsplash.com/photo-1600585154340-be6161a56a0c?w=800&q=80"
+                alt="Intrihub workspace"
                 fill
                 className="object-cover"
               />

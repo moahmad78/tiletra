@@ -64,7 +64,7 @@ export default function ShippingPolicyPage() {
           <section className="space-y-2">
             <h2 className="text-lg font-black text-[#052a51]">4. Serviceable Areas</h2>
             <p>
-              Tiletra currently delivers across Bangalore, Mysore, Chennai, Hyderabad, and major tier-1 & tier-2 cities in South India, with expanding pan-India coverage.
+              Intrihub currently delivers across Bangalore, Mysore, Chennai, Hyderabad, and major tier-1 & tier-2 cities in South India, with expanding pan-India coverage.
             </p>
           </section>
 

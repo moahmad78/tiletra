@@ -11,7 +11,7 @@ export default function AdminLoginPage() {
   const router = useRouter();
   const { login } = useAdminAuth();
 
-  const [email, setEmail] = useState("admin@tiletra.in");
+  const [email, setEmail] = useState("admin@intrihub.com");
   const [password, setPassword] = useState("admin");
   const [loading, setLoading] = useState(false);
 
@@ -24,23 +24,23 @@ export default function AdminLoginPage() {
       setLoading(false);
 
       if (success) {
-        toast.success("Welcome back to Tiletra Admin Portal!");
+        toast.success("Welcome back to Intrihub Admin Portal!");
         router.push("/admin");
       } else {
-        toast.error("Invalid credentials. Use admin@tiletra.in / admin");
+        toast.error("Invalid credentials. Use admin@intrihub.com / admin");
       }
     }, 300);
   };
 
   const handleQuickLogin = (role: "admin" | "staff") => {
     if (role === "admin") {
-      setEmail("admin@tiletra.in");
+      setEmail("admin@intrihub.com");
       setPassword("admin");
-      login("admin@tiletra.in", "admin");
+      login("admin@intrihub.com", "admin");
     } else {
-      setEmail("staff@tiletra.in");
+      setEmail("staff@intrihub.com");
       setPassword("staff");
-      login("staff@tiletra.in", "staff");
+      login("staff@intrihub.com", "staff");
     }
     toast.success(`Logged in as ${role === "admin" ? "Store Owner" : "Staff"}`);
     router.push("/admin");
@@ -51,12 +51,14 @@ export default function AdminLoginPage() {
       <div className="w-full max-w-md bg-white rounded-3xl p-8 sm:p-10 shadow-2xl border border-white/10 relative overflow-hidden">
         {/* Top Accent Pill */}
         <div className="text-center mb-8">
-          {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img
-            src="/Tiletra/logo/web-logo.png"
-            alt="Tiletra"
-            className="h-10 mx-auto object-contain mb-4"
-          />
+          <div className="inline-flex items-center bg-white px-4 py-2 rounded-2xl shadow-xs mb-3 border border-gray-100">
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img
+              src="/logo/intri-web-logo.png"
+              alt="Intrihub"
+              className="h-8 w-auto object-contain"
+            />
+          </div>
           <h1 className="text-2xl font-black text-[#052a51]">Admin Management Portal</h1>
           <p className="text-xs text-gray-500 mt-1">
             Sign in to manage catalog, orders, customers & site content
@@ -76,7 +78,7 @@ export default function AdminLoginPage() {
                 required
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
-                placeholder="admin@tiletra.in"
+                placeholder="admin@intrihub.com"
                 className="w-full pl-10 pr-4 py-3 bg-gray-50 border border-gray-200 rounded-xl text-sm font-semibold text-[#052a51] focus:outline-none focus:border-[#F26522] transition-colors"
               />
             </div>
@@ -121,7 +123,7 @@ export default function AdminLoginPage() {
               className="p-2.5 bg-gray-50 hover:bg-gray-100 border border-gray-200 rounded-xl text-xs font-bold text-[#052a51] transition-colors flex flex-col items-center gap-0.5"
             >
               <span className="text-[#F26522]">Owner Account</span>
-              <span className="text-[10px] text-gray-400">admin@tiletra.in</span>
+              <span className="text-[10px] text-gray-400">admin@intrihub.com</span>
             </button>
             <button
               type="button"
@@ -129,7 +131,7 @@ export default function AdminLoginPage() {
               className="p-2.5 bg-gray-50 hover:bg-gray-100 border border-gray-200 rounded-xl text-xs font-bold text-[#052a51] transition-colors flex flex-col items-center gap-0.5"
             >
               <span>Staff Account</span>
-              <span className="text-[10px] text-gray-400">staff@tiletra.in</span>
+              <span className="text-[10px] text-gray-400">staff@intrihub.com</span>
             </button>
           </div>
         </div>

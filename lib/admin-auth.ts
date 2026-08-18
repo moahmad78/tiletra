@@ -24,13 +24,35 @@ type AdminAuthState = {
 // Default owner credentials for easy testing & secure access
 const VALID_CREDENTIALS = [
   {
+    email: "admin@intrihub.com",
+    password: "admin",
+    user: {
+      id: "adm-001",
+      name: "Vishal Poddar",
+      email: "admin@intrihub.com",
+      role: "admin" as AdminRole,
+      lastLogin: new Date().toISOString(),
+    },
+  },
+  {
     email: "admin@tiletra.in",
     password: "admin",
     user: {
       id: "adm-001",
       name: "Vishal Poddar",
-      email: "admin@tiletra.in",
+      email: "admin@intrihub.com",
       role: "admin" as AdminRole,
+      lastLogin: new Date().toISOString(),
+    },
+  },
+  {
+    email: "staff@intrihub.com",
+    password: "staff",
+    user: {
+      id: "adm-002",
+      name: "Operations Staff",
+      email: "staff@intrihub.com",
+      role: "staff" as AdminRole,
       lastLogin: new Date().toISOString(),
     },
   },
@@ -40,7 +62,7 @@ const VALID_CREDENTIALS = [
     user: {
       id: "adm-002",
       name: "Operations Staff",
-      email: "staff@tiletra.in",
+      email: "staff@intrihub.com",
       role: "staff" as AdminRole,
       lastLogin: new Date().toISOString(),
     },

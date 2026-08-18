@@ -1,29 +1,28 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import {
   Tag,
   Plus,
   Trash2,
   Edit,
-  CheckCircle,
-  Percent,
-  IndianRupee,
+  Loader2,
   X,
-  Sparkles,
 } from "lucide-react";
-import { useAdminStore, type AdminCoupon } from "@/lib/admin-store";
+import {
+  getCoupons,
+  createCoupon,
+  updateCoupon,
+  deleteCoupon,
+} from "@/lib/actions/coupons";
 import { toast } from "sonner";
 
 export default function AdminCouponsPage() {
-  const coupons = useAdminStore((s) => s.coupons);
-  const addCoupon = useAdminStore((s) => s.addCoupon);
-  const updateCoupon = useAdminStore((s) => s.updateCoupon);
-  const deleteCoupon = useAdminStore((s) => s.deleteCoupon);
-  const toggleCoupon = useAdminStore((s) => s.toggleCoupon);
-
+  const [coupons, setCoupons] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
   const [modalOpen, setModalOpen] = useState(false);
-  const [editingCoupon, setEditingCoupon] = useState<AdminCoupon | null>(null);
+  const [editingCoupon, setEditingCoupon] = useState<any | null>(null);
+  const [submitting, setSubmitting] = useState(false);
 
   const [code, setCode] = useState("");
   const [discountType, setDiscountType] = useState<"percentage" | "flat">("percentage");
@@ -32,6 +31,22 @@ export default function AdminCouponsPage() {
   const [maxDiscountCap, setMaxDiscountCap] = useState(2500);
   const [usageLimit, setUsageLimit] = useState(100);
   const [validTill, setValidTill] = useState("2026-12-31");
+
+  const loadCoupons = async () => {
+    try {
+      setLoading(true);
+      const data = await getCoupons();
+      setCoupons(data);
+    } catch (err) {
+      console.error("Error fetching coupons:", err);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    loadCoupons();
+  }, []);
 
   const handleOpenAdd = () => {
     setEditingCoupon(null);
@@ -45,7 +60,7 @@ export default function AdminCouponsPage() {
     setModalOpen(true);
   };
 
-  const handleOpenEdit = (cp: AdminCoupon) => {
+  const handleOpenEdit = (cp: any) => {
     setEditingCoupon(cp);
     setCode(cp.code);
     setDiscountType(cp.discountType);
@@ -57,12 +72,13 @@ export default function AdminCouponsPage() {
     setModalOpen(true);
   };
 
-  const handleSave = (e: React.FormEvent) => {
+  const handleSave = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!code.trim()) return;
 
+    setSubmitting(true);
     if (editingCoupon) {
-      updateCoupon(editingCoupon.id, {
+      const res = await updateCoupon(editingCoupon.id, {
         code: code.trim().toUpperCase(),
         discountType,
         value: Number(value),
@@ -71,33 +87,69 @@ export default function AdminCouponsPage() {
         usageLimit: Number(usageLimit),
         validTill,
       });
-      toast.success(`Coupon ${code.toUpperCase()} updated!`);
+      setSubmitting(false);
+
+      if (res.success) {
+        toast.success(`Coupon ${code.toUpperCase()} updated in DB!`);
+        setModalOpen(false);
+        loadCoupons();
+      } else {
+        toast.error(res.error || "Failed to update coupon");
+      }
     } else {
-      const newCoupon: AdminCoupon = {
-        id: `cp-${Date.now().toString().slice(-4)}`,
+      const res = await createCoupon({
         code: code.trim().toUpperCase(),
         discountType,
         value: Number(value),
         minOrderValue: Number(minOrderValue),
         maxDiscountCap: discountType === "percentage" ? Number(maxDiscountCap) : undefined,
         usageLimit: Number(usageLimit),
-        usedCount: 0,
-        validFrom: new Date().toISOString().split("T")[0],
         validTill,
-        isActive: true,
-      };
-      addCoupon(newCoupon);
-      toast.success(`Coupon ${code.toUpperCase()} created!`);
+      });
+      setSubmitting(false);
+
+      if (res.success) {
+        toast.success(`Coupon ${code.toUpperCase()} created in DB!`);
+        setModalOpen(false);
+        loadCoupons();
+      } else {
+        toast.error(res.error || "Failed to create coupon");
+      }
     }
-    setModalOpen(false);
   };
 
-  const handleDelete = (id: string, cpCode: string) => {
-    if (window.confirm(`Delete coupon ${cpCode}?`)) {
-      deleteCoupon(id);
-      toast.success("Coupon removed");
+  const handleToggle = async (cp: any) => {
+    const res = await updateCoupon(cp.id, { isActive: !cp.isActive });
+    if (res.success) {
+      setCoupons((prev) =>
+        prev.map((c) => (c.id === cp.id ? { ...c, isActive: !cp.isActive } : c))
+      );
+      toast.success(`Coupon ${cp.code} ${!cp.isActive ? "activated" : "paused"}`);
     }
   };
+
+  const handleDelete = async (id: string, cpCode: string) => {
+    if (window.confirm(`Delete coupon ${cpCode}?`)) {
+      const res = await deleteCoupon(id);
+      if (res.success) {
+        setCoupons((prev) => prev.filter((c) => c.id !== id));
+        toast.success("Coupon removed");
+      } else {
+        toast.error(res.error || "Failed to delete coupon");
+      }
+    }
+  };
+
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center min-h-[400px]">
+        <div className="flex flex-col items-center gap-3">
+          <Loader2 className="animate-spin text-[#F26522]" size={32} />
+          <p className="text-sm font-bold text-[#052a51]">Loading coupons from Neon DB...</p>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-6">
@@ -106,13 +158,13 @@ export default function AdminCouponsPage() {
         <div>
           <h2 className="text-xl font-black text-[#052a51]">Discount Coupons & Offers</h2>
           <p className="text-xs text-gray-500 mt-0.5">
-            Configure promotional discount codes for customer checkout
+            Configure promotional discount codes in PostgreSQL for customer checkout
           </p>
         </div>
 
         <button
           onClick={handleOpenAdd}
-          className="inline-flex items-center gap-1.5 px-4 py-2 bg-[#F26522] hover:bg-[#d95a1e] text-white text-xs font-bold rounded-xl active:scale-95 transition-all shadow-sm w-fit"
+          className="inline-flex items-center gap-1.5 px-4 py-2 bg-[#F26522] hover:bg-[#d95a1e] text-white text-xs font-bold rounded-xl active:scale-95 transition-all shadow-sm w-fit cursor-pointer"
         >
           <Plus size={15} strokeWidth={2.5} />
           <span>Create New Coupon</span>
@@ -135,7 +187,7 @@ export default function AdminCouponsPage() {
                 </span>
 
                 <button
-                  onClick={() => toggleCoupon(cp.id)}
+                  onClick={() => handleToggle(cp)}
                   className={`px-2.5 py-0.5 rounded-full text-[10px] font-extrabold cursor-pointer ${
                     cp.isActive
                       ? "bg-emerald-50 text-emerald-700 border border-emerald-200"
@@ -151,7 +203,7 @@ export default function AdminCouponsPage() {
                   {cp.discountType === "percentage" ? `${cp.value}% OFF` : `₹${cp.value} FLAT OFF`}
                 </p>
                 <p className="text-xs text-gray-500 font-medium">
-                  Min order: <strong>₹{cp.minOrderValue.toLocaleString("en-IN")}</strong>
+                  Min order: <strong>₹{(cp.minOrderValue || 0).toLocaleString("en-IN")}</strong>
                   {cp.maxDiscountCap ? ` (Max cap: ₹${cp.maxDiscountCap})` : ""}
                 </p>
               </div>
@@ -174,7 +226,7 @@ export default function AdminCouponsPage() {
             <div className="pt-3 border-t border-gray-100 flex items-center justify-between">
               <button
                 onClick={() => handleOpenEdit(cp)}
-                className="text-xs font-bold text-[#052a51] hover:text-[#F26522] flex items-center gap-1"
+                className="text-xs font-bold text-[#052a51] hover:text-[#F26522] flex items-center gap-1 cursor-pointer"
               >
                 <Edit size={13} />
                 <span>Edit</span>
@@ -182,7 +234,7 @@ export default function AdminCouponsPage() {
 
               <button
                 onClick={() => handleDelete(cp.id, cp.code)}
-                className="p-1.5 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded-lg"
+                className="p-1.5 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded-lg cursor-pointer"
                 title="Delete coupon"
               >
                 <Trash2 size={14} />
@@ -202,7 +254,7 @@ export default function AdminCouponsPage() {
               </h3>
               <button
                 onClick={() => setModalOpen(false)}
-                className="p-1.5 rounded-xl text-gray-400 hover:bg-gray-100"
+                className="p-1.5 rounded-xl text-gray-400 hover:bg-gray-100 cursor-pointer"
               >
                 <X size={18} />
               </button>
@@ -218,7 +270,7 @@ export default function AdminCouponsPage() {
                   required
                   value={code}
                   onChange={(e) => setCode(e.target.value.toUpperCase())}
-                  placeholder="e.g. TILETRA15"
+                  placeholder="e.g. INTRIHUB15"
                   className="w-full px-3.5 py-2.5 bg-gray-50 border border-gray-200 rounded-xl text-sm font-mono font-black text-[#052a51] uppercase focus:outline-none focus:border-[#F26522]"
                 />
               </div>
@@ -231,7 +283,7 @@ export default function AdminCouponsPage() {
                   <select
                     value={discountType}
                     onChange={(e) => setDiscountType(e.target.value as any)}
-                    className="w-full px-3 py-2 bg-gray-50 border border-gray-200 rounded-xl text-xs font-bold text-[#052a51] focus:outline-none focus:border-[#F26522]"
+                    className="w-full px-3 py-2 bg-gray-50 border border-gray-200 rounded-xl text-xs font-bold text-[#052a51] focus:outline-none focus:border-[#F26522] cursor-pointer"
                   >
                     <option value="percentage">Percentage (%)</option>
                     <option value="flat">Flat Amount (₹)</option>
@@ -314,15 +366,17 @@ export default function AdminCouponsPage() {
                 <button
                   type="button"
                   onClick={() => setModalOpen(false)}
-                  className="px-4 py-2 text-xs font-bold text-gray-500 hover:bg-gray-100 rounded-xl"
+                  className="px-4 py-2 text-xs font-bold text-gray-500 hover:bg-gray-100 rounded-xl cursor-pointer"
                 >
                   Cancel
                 </button>
                 <button
                   type="submit"
-                  className="px-5 py-2.5 bg-[#F26522] hover:bg-[#d95a1e] text-white text-xs font-bold rounded-xl shadow-md"
+                  disabled={submitting}
+                  className="px-5 py-2.5 bg-[#F26522] hover:bg-[#d95a1e] text-white text-xs font-bold rounded-xl shadow-md cursor-pointer disabled:opacity-50 inline-flex items-center gap-1.5"
                 >
-                  {editingCoupon ? "Save Changes" : "Publish Coupon"}
+                  {submitting && <Loader2 className="animate-spin" size={13} />}
+                  <span>{editingCoupon ? "Save Changes" : "Publish Coupon"}</span>
                 </button>
               </div>
             </form>

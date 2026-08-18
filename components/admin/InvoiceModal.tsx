@@ -55,14 +55,14 @@ export default function InvoiceModal({
             <div>
               {/* eslint-disable-next-line @next/next/no-img-element */}
               <img
-                src="/Tiletra/logo/web-logo.png"
-                alt="Tiletra"
+                src="/logo/intri-web-logo.png"
+                alt="Intrihub"
                 className="h-9 w-auto object-contain mb-3"
               />
               <p className="text-xs text-gray-500 font-medium leading-relaxed max-w-xs">
-                Tiletra India Private Limited<br />
+                Intrihub Supply Solutions Private Limited<br />
                 Begur, Classic Paradise Layout, Bangalore, Karnataka 560114<br />
-                GSTIN: 29AABCT1234F1Z8 | support@tiletra.in
+                GSTIN: 29AABCT1234F1Z8 | support@intrihub.com
               </p>
             </div>
 

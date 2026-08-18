@@ -54,7 +54,7 @@ export default function ImageUploadManager({
     "https://images.unsplash.com/photo-1616486338812-3dadae4b4ace?w=800&q=80",
     "https://images.unsplash.com/photo-1552321554-5fefe8c9ef14?w=800&q=80",
     "https://images.unsplash.com/photo-1558618666-fcd25c85cd64?w=800&q=80",
-    "https://images.unsplash.com/photo-1556909172-b6b6f3f0ecf6?w=800&q=80",
+    "https://images.unsplash.com/photo-1584622650111-993a426fbf0a?w=800&q=80",
     "https://images.unsplash.com/photo-1507652313519-d4e9174996dd?w=800&q=80",
   ];
 

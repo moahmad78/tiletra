@@ -156,7 +156,7 @@ const INSPIRATION_ITEMS: RoomInspirationItem[] = [
       finish: "Satin",
       ratePerSqft: 52,
       pricePerBox: 1550,
-      thumbnail: "https://images.unsplash.com/photo-1556909172-b6b6f3f0ecf6?w=300&q=80",
+      thumbnail: "https://images.unsplash.com/photo-1584622650111-993a426fbf0a?w=300&q=80",
     },
   },
   {
@@ -300,7 +300,7 @@ export default function InspirationGalleryClient() {
             Calculate your room's tile requirement
           </h2>
           <p className="text-xs sm:text-sm text-white/80 mt-1 max-w-xl">
-            Every Tiletra product page includes a built-in Tile Calculator with automatic 10% wastage buffer.
+            Every Intrihub product page includes a built-in Tile Calculator with automatic 10% wastage buffer.
             Enter your square footage and get instant box counts!
           </p>
         </div>

@@ -29,7 +29,7 @@ export function trackProductView(productId: string) {
 /**
  * Retrieve recently viewed products for current user
  */
-export function getRecentlyViewed(currentProductId?: string, limit = 6): Product[] {
+export function getRecentlyViewed(currentProductId?: string, limit = 6, productCatalog: Product[] = products): Product[] {
   if (typeof window === "undefined") return [];
 
   try {
@@ -40,7 +40,7 @@ export function getRecentlyViewed(currentProductId?: string, limit = 6): Product
     const filteredIds = currentProductId ? ids.filter((id) => id !== currentProductId) : ids;
 
     return filteredIds
-      .map((id) => products.find((p) => p.id === id))
+      .map((id) => productCatalog.find((p) => p.id === id || p.slug === id))
       .filter((p): p is Product => Boolean(p))
       .slice(0, limit);
   } catch (e) {
@@ -52,9 +52,9 @@ export function getRecentlyViewed(currentProductId?: string, limit = 6): Product
  * "You May Also Like" recommendation logic:
  * Same category + similar finish/material, excluding current product
  */
-export function getYouMayAlsoLike(product: Product, limit = 4): Product[] {
+export function getYouMayAlsoLike(product: Product, limit = 4, productCatalog: Product[] = products): Product[] {
   // First match same category
-  const sameCategory = products.filter(
+  const sameCategory = productCatalog.filter(
     (p) => p.categorySlug === product.categorySlug && p.id !== product.id
   );
 
@@ -63,11 +63,11 @@ export function getYouMayAlsoLike(product: Product, limit = 4): Product[] {
   }
 
   // Fallback to same material
-  const sameMaterial = products.filter(
+  const sameMaterial = productCatalog.filter(
     (p) => p.material === product.material && p.id !== product.id && !sameCategory.includes(p)
   );
 
-  return [...sameCategory, ...sameMaterial, ...products.filter((p) => p.id !== product.id)].slice(
+  return [...sameCategory, ...sameMaterial, ...productCatalog.filter((p) => p.id !== product.id)].slice(
     0,
     limit
   );
@@ -86,9 +86,9 @@ export type FrequentPair = {
  * "Frequently Bought Together" paired co-occurrence logic:
  * Finds a matching floor/wall complement or subway companion tile
  */
-export function getFrequentlyBoughtTogether(product: Product): FrequentPair | null {
+export function getFrequentlyBoughtTogether(product: Product, productCatalog: Product[] = products): FrequentPair | null {
   // Find a complementary tile (e.g. wall for floor, or subway for bathroom)
-  let paired = products.find((p) => {
+  let paired = productCatalog.find((p) => {
     if (p.id === product.id) return false;
     if (product.categorySlug === "floor-tiles" && p.categorySlug === "wall-tiles") return true;
     if (product.categorySlug === "bathroom-tiles" && p.categorySlug === "floor-tiles") return true;
@@ -97,7 +97,7 @@ export function getFrequentlyBoughtTogether(product: Product): FrequentPair | nu
   });
 
   if (!paired) {
-    paired = products.find((p) => p.id !== product.id) || products[0];
+    paired = productCatalog.find((p) => p.id !== product.id) || productCatalog[0];
   }
 
   if (!paired) return null;
@@ -122,6 +122,6 @@ export function getFrequentlyBoughtTogether(product: Product): FrequentPair | nu
 /**
  * Cart cross-sells: Products not yet in the cart
  */
-export function getCartAddons(cartProductIds: string[], limit = 4): Product[] {
-  return products.filter((p) => !cartProductIds.includes(p.id)).slice(0, limit);
+export function getCartAddons(cartProductIds: string[], limit = 4, productCatalog: Product[] = products): Product[] {
+  return productCatalog.filter((p) => !cartProductIds.includes(p.id)).slice(0, limit);
 }

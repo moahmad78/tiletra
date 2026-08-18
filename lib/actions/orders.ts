@@ -1,0 +1,397 @@
+"use server";
+
+import { prisma } from "@/lib/prisma";
+import { safeRevalidate } from "@/lib/formatters";
+
+export type OrderItemInput = {
+  productId: string;
+  productName: string;
+  variantId: string;
+  variantDetails: string;
+  boxQuantity: number;
+  pricePerBox: number;
+  totalPrice: number;
+  image?: string;
+};
+
+export type CreateOrderInput = {
+  id?: string;
+  userId?: string;
+  customerName: string;
+  customerPhone: string;
+  customerEmail?: string;
+  shippingAddress: {
+    fullName: string;
+    phone: string;
+    street: string;
+    city: string;
+    state: string;
+    pincode: string;
+    landmark?: string;
+  };
+  items: OrderItemInput[];
+  subtotal: number;
+  deliveryFee: number;
+  discount: number;
+  total: number;
+  paymentMethod: string;
+  paymentStatus?: string;
+  paymentId?: string;
+  codConfirmed?: boolean;
+};
+
+export async function createOrder(input: CreateOrderInput) {
+  try {
+    const orderId = input.id || `ORD-${Date.now().toString().slice(-6)}`;
+
+    const cleanPhone = input.customerPhone.replace(/\D/g, "");
+
+    // Resolve or upsert real User in PostgreSQL to guarantee FK integrity
+    let validUserId: string | null = null;
+    if (input.userId) {
+      const existingUser = await prisma.user.findUnique({ where: { id: input.userId } });
+      if (existingUser) {
+        validUserId = existingUser.id;
+      }
+    }
+
+    if (!validUserId && cleanPhone.length === 10) {
+      // Find or create User record for customer phone
+      const user = await prisma.user.upsert({
+        where: { phone: cleanPhone },
+        update: {
+          name: input.customerName || undefined,
+          email: input.customerEmail || undefined,
+        },
+        create: {
+          phone: cleanPhone,
+          name: input.customerName || `Customer ${cleanPhone.slice(-4)}`,
+          email: input.customerEmail || null,
+          role: "customer",
+        },
+      });
+      validUserId = user.id;
+    }
+
+    // Create or update customer record in Customer CRM
+    await prisma.customer.upsert({
+      where: { phone: input.customerPhone },
+      update: {
+        name: input.customerName,
+        email: input.customerEmail || undefined,
+        city: input.shippingAddress.city || "Bangalore",
+        totalOrders: { increment: 1 },
+        totalSpent: { increment: input.total },
+      },
+      create: {
+        name: input.customerName,
+        phone: input.customerPhone,
+        email: input.customerEmail || null,
+        city: input.shippingAddress.city || "Bangalore",
+        totalOrders: 1,
+        totalSpent: input.total,
+        status: "Active",
+      },
+    });
+
+    const order = await prisma.order.create({
+      data: {
+        id: orderId,
+        userId: validUserId,
+        customerName: input.customerName,
+        customerPhone: input.customerPhone,
+        customerEmail: input.customerEmail || "customer@intrihub.com",
+        shippingAddress: input.shippingAddress as any,
+        subtotal: input.subtotal,
+        deliveryFee: input.deliveryFee,
+        discount: input.discount,
+        total: input.total,
+        paymentStatus: input.paymentStatus || (input.paymentMethod === "COD" ? "Pending" : "Paid"),
+        paymentMethod: input.paymentMethod,
+        codConfirmed: Boolean(input.codConfirmed),
+        paymentCollected: input.paymentMethod !== "COD",
+        paymentId: input.paymentId || null,
+        orderStatus: "Processing",
+        estimatedDelivery: "3–5 Business Days",
+        items: {
+          create: input.items.map((item) => ({
+            productId: item.productId,
+            productName: item.productName,
+            variantId: item.variantId,
+            variantDetails: item.variantDetails,
+            boxQuantity: item.boxQuantity,
+            pricePerBox: item.pricePerBox,
+            totalPrice: item.totalPrice,
+            image: item.image || "",
+          })),
+        },
+      },
+      include: {
+        items: true,
+      },
+    });
+
+    // Create an Admin Notification
+    try {
+      await prisma.adminNotification.create({
+        data: {
+          title: `New Order #${order.id}`,
+          message: `${order.customerName} placed an order for ₹${order.total.toLocaleString("en-IN")}`,
+          type: "order",
+          link: `/admin/orders/${order.id}`,
+        },
+      });
+    } catch (e) {
+      console.error("Failed to create admin notification:", e);
+    }
+
+    // Real-Time Socket Broadcast to Admin Room (Phase 5b PRD)
+    try {
+      const { emitSocketEvent } = await import("@/lib/socket-server-emit");
+      await emitSocketEvent({
+        event: "new-order",
+        room: "admin",
+        data: {
+          id: order.id,
+          orderId: order.id,
+          customerName: order.customerName,
+          customerPhone: order.customerPhone,
+          total: order.total,
+          paymentMethod: order.paymentMethod,
+          paymentStatus: order.paymentStatus,
+          orderStatus: order.orderStatus,
+          itemsCount: order.items.length,
+          items: order.items,
+          shippingAddress: order.shippingAddress,
+          createdAt: order.createdAt,
+        },
+      });
+    } catch (e) {
+      console.error("Failed to emit socket new-order event:", e);
+    }
+
+    safeRevalidate("/admin/orders");
+    safeRevalidate("/account/orders");
+
+    return { success: true, order };
+  } catch (error: any) {
+    console.error("Error creating order:", error);
+    return { success: false, error: error?.message || "Failed to create order" };
+  }
+}
+
+export async function getOrders(options?: {
+  status?: string;
+  phone?: string;
+  limit?: number;
+}) {
+  try {
+    const where: any = {};
+    if (options?.status && options.status !== "All") {
+      where.orderStatus = options.status;
+    }
+    if (options?.phone) {
+      where.customerPhone = { contains: options.phone };
+    }
+
+    const orders = await prisma.order.findMany({
+      where,
+      include: {
+        items: true,
+      },
+      orderBy: { createdAt: "desc" },
+      take: options?.limit,
+    });
+
+    return orders;
+  } catch (error) {
+    console.error("Error fetching orders:", error);
+    return [];
+  }
+}
+
+export async function getOrderById(id: string) {
+  try {
+    const order = await prisma.order.findUnique({
+      where: { id },
+      include: {
+        items: true,
+      },
+    });
+
+    return order;
+  } catch (error) {
+    console.error(`Error fetching order ${id}:`, error);
+    return null;
+  }
+}
+
+export async function getCustomerOrders(params: { userId?: string; phone?: string }) {
+  try {
+    const orConditions: any[] = [];
+
+    if (params.userId && params.userId.trim()) {
+      orConditions.push({ userId: params.userId.trim() });
+    }
+
+    if (params.phone && params.phone.trim()) {
+      const raw = params.phone.trim();
+      const digits = raw.replace(/\D/g, "");
+      orConditions.push({ customerPhone: raw });
+      if (digits.length >= 10) {
+        const last10 = digits.slice(-10);
+        orConditions.push({ customerPhone: last10 });
+        orConditions.push({ customerPhone: `+91 ${last10}` });
+        orConditions.push({ customerPhone: `+91${last10}` });
+        orConditions.push({ customerPhone: { contains: last10 } });
+      }
+    }
+
+    if (orConditions.length === 0) return [];
+
+    const orders = await prisma.order.findMany({
+      where: { OR: orConditions },
+      include: { items: true },
+      orderBy: { createdAt: "desc" },
+    });
+
+    return orders;
+  } catch (error) {
+    console.error("Error fetching customer orders:", error);
+    return [];
+  }
+}
+
+export async function getOrdersByPhone(phone: string) {
+  return getCustomerOrders({ phone });
+}
+
+export async function updateOrderStatus(id: string, orderStatus: string) {
+  try {
+    const order = await prisma.order.update({
+      where: { id },
+      data: { orderStatus },
+      include: { items: true },
+    });
+
+    const cleanCustomerPhone = order.customerPhone.replace(/\D/g, "");
+    const targetRooms = [
+      "admin",
+      ...(order.userId ? [`user:${order.userId}`] : []),
+      ...(cleanCustomerPhone ? [`phone:${cleanCustomerPhone}`] : []),
+    ];
+
+    try {
+      const { emitSocketEvent } = await import("@/lib/socket-server-emit");
+      await emitSocketEvent({
+        event: "order-status-updated",
+        rooms: targetRooms,
+        data: {
+          orderId: order.id,
+          orderStatus: order.orderStatus,
+          trackingNumber: order.trackingNumber,
+          courierName: order.courierName,
+          estimatedDelivery: order.estimatedDelivery,
+          updatedAt: order.updatedAt,
+        },
+      });
+    } catch (e) {
+      console.error("Failed to emit order-status-updated socket event:", e);
+    }
+
+    safeRevalidate("/admin/orders");
+    safeRevalidate(`/admin/orders/${id}`);
+    safeRevalidate("/account/orders");
+
+    return { success: true, order };
+  } catch (error: any) {
+    console.error("Error updating order status:", error);
+    return { success: false, error: error?.message || "Failed to update order status" };
+  }
+}
+
+export async function updateOrderTracking(
+  id: string,
+  data: { courierName: string; trackingNumber: string }
+) {
+  try {
+    const order = await prisma.order.update({
+      where: { id },
+      data: {
+        courierName: data.courierName,
+        trackingNumber: data.trackingNumber,
+        orderStatus: "Dispatched",
+      },
+      include: { items: true },
+    });
+
+    const cleanCustomerPhone = order.customerPhone.replace(/\D/g, "");
+    const targetRooms = [
+      "admin",
+      ...(order.userId ? [`user:${order.userId}`] : []),
+      ...(cleanCustomerPhone ? [`phone:${cleanCustomerPhone}`] : []),
+    ];
+
+    try {
+      const { emitSocketEvent } = await import("@/lib/socket-server-emit");
+      await emitSocketEvent({
+        event: "order-status-updated",
+        rooms: targetRooms,
+        data: {
+          orderId: order.id,
+          orderStatus: order.orderStatus,
+          trackingNumber: order.trackingNumber,
+          courierName: order.courierName,
+          estimatedDelivery: order.estimatedDelivery,
+          updatedAt: order.updatedAt,
+        },
+      });
+    } catch (e) {
+      console.error("Failed to emit order-status-updated socket event:", e);
+    }
+
+    safeRevalidate("/admin/orders");
+    safeRevalidate(`/admin/orders/${id}`);
+    safeRevalidate("/account/orders");
+
+    return { success: true, order };
+  } catch (error: any) {
+    console.error("Error updating order tracking:", error);
+    return { success: false, error: error?.message || "Failed to update tracking info" };
+  }
+}
+
+export async function updateOrderNotes(id: string, internalNotes: string) {
+  try {
+    const order = await prisma.order.update({
+      where: { id },
+      data: { internalNotes },
+    });
+
+    safeRevalidate(`/admin/orders/${id}`);
+    return { success: true, order };
+  } catch (error: any) {
+    console.error("Error updating order notes:", error);
+    return { success: false, error: error?.message || "Failed to update notes" };
+  }
+}
+
+export async function updatePaymentCollected(id: string, paymentCollected: boolean) {
+  try {
+    const order = await prisma.order.update({
+      where: { id },
+      data: {
+        paymentCollected,
+        paymentStatus: paymentCollected ? "Paid" : "Pending",
+      },
+    });
+
+    safeRevalidate("/admin/orders");
+    safeRevalidate(`/admin/orders/${id}`);
+
+    return { success: true, order };
+  } catch (error: any) {
+    console.error("Error updating payment collected:", error);
+    return { success: false, error: error?.message || "Failed to update payment status" };
+  }
+}

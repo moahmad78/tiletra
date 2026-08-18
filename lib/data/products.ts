@@ -1,5 +1,13 @@
 export type Finish = "Matte" | "Glossy" | "Textured" | "Satin" | "Polished";
-export type Material = "Ceramic" | "Vitrified" | "Porcelain" | "Natural Stone" | "Mosaic";
+export type Material = "Ceramic" | "Vitrified" | "Porcelain" | "Natural Stone" | "Mosaic" | "Wood" | "Metal" | "Brass" | "PVC" | "CPVC" | "Vinyl" | "Composite" | "Other";
+
+export type UnitOfSale = "box" | "sqft" | "piece" | "meter" | "coil" | "kg" | "pack" | "roll";
+
+export type ProductAttribute = {
+  id?: string;
+  key: string;
+  value: string;
+};
 
 export type ProductVariant = {
   id: string;
@@ -21,19 +29,24 @@ export type Product = {
   description: string;
   material: Material;
   images: string[];
+  unitOfSale?: UnitOfSale;
+  attributes?: ProductAttribute[];
   variants: ProductVariant[];
   rating: number;
   reviewCount: number;
+  manualRating?: number | null;
+  manualReviewCount?: number | null;
   isBestseller: boolean;
   isNew: boolean;
   tags: string[];
   specs: {
-    waterAbsorption: string;
-    slipResistance: string;
-    thickness: string;
-    surfaceFinish: string;
-    breakingStrength: string;
-    frostResistance: string;
+    waterAbsorption?: string;
+    slipResistance?: string;
+    thickness?: string;
+    surfaceFinish?: string;
+    breakingStrength?: string;
+    frostResistance?: string;
+    [key: string]: string | undefined;
   };
 };
 
@@ -111,7 +124,7 @@ export const products: Product[] = [
       "Warm beige tones inspired by sandstone deserts. Creates a cozy, earthy atmosphere in bedrooms, living areas, and corridors. Versatile enough to pair with both modern and traditional décor.",
     material: "Ceramic",
     images: [
-      "https://images.unsplash.com/photo-1571539177729-df0e30e06b3f?w=800&q=80",
+      "https://images.unsplash.com/photo-1558618666-fcd25c85cd64?w=800&q=80",
       "https://images.unsplash.com/photo-1565182999561-18d7dc61c393?w=800&q=80",
     ],
     variants: [
@@ -145,7 +158,7 @@ export const products: Product[] = [
     material: "Ceramic",
     images: [
       "https://images.unsplash.com/photo-1552321554-5fefe8c9ef14?w=800&q=80",
-      "https://images.unsplash.com/photo-1556909172-b6b6f3f0ecf6?w=800&q=80",
+      "https://images.unsplash.com/photo-1584622650111-993a426fbf0a?w=800&q=80",
     ],
     variants: [
       { id: "v-004-a", size: "300x150mm", finish: "Glossy", color: "White", pricePerBox: 950, pricePerSqft: 28, sqftPerBox: 34, stockBoxes: 300 },
@@ -175,7 +188,7 @@ export const products: Product[] = [
       "Handcrafted zellige-inspired tiles in a soothing sage green. Each tile has subtle variation in tone and texture — making every installation unique. Perfect for bathroom feature walls and kitchen splashbacks.",
     material: "Ceramic",
     images: [
-      "https://images.unsplash.com/photo-1594388968031-c1d87fef5e68?w=800&q=80",
+      "https://images.unsplash.com/photo-1507652313519-d4e9174996dd?w=800&q=80",
       "https://images.unsplash.com/photo-1541123437800-1bb1317badc2?w=800&q=80",
     ],
     variants: [
@@ -300,7 +313,7 @@ export const products: Product[] = [
       "A high-gloss white metro tile that's a kitchen design staple. Reflects light to make small kitchens feel bigger. Heat-resistant, grease-proof, and supremely easy to wipe clean.",
     material: "Ceramic",
     images: [
-      "https://images.unsplash.com/photo-1556909172-b6b6f3f0ecf6?w=800&q=80",
+      "https://images.unsplash.com/photo-1584622650111-993a426fbf0a?w=800&q=80",
       "https://images.unsplash.com/photo-1556909114-f6e7ad7d3136?w=800&q=80",
     ],
     variants: [
@@ -367,7 +380,7 @@ export const products: Product[] = [
     material: "Mosaic",
     images: [
       "https://images.unsplash.com/photo-1615529182904-14819c35db37?w=800&q=80",
-      "https://images.unsplash.com/photo-1594388968031-c1d87fef5e68?w=800&q=80",
+      "https://images.unsplash.com/photo-1552321554-5fefe8c9ef14?w=800&q=80",
     ],
     variants: [
       { id: "v-011-a", size: "200x200mm", finish: "Matte", color: "Multi", pricePerBox: 4500, pricePerSqft: 138, sqftPerBox: 32, stockBoxes: 40 },

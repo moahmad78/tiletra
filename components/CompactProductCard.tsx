@@ -4,17 +4,23 @@ import { useState, useEffect } from "react";
 import Link from "next/link";
 import Image from "next/image";
 import { Plus, Heart, Check } from "lucide-react";
-import { getLowestPrice, getLowestBoxPrice } from "@/lib/data/products";
-import type { Product } from "@/lib/data/products";
+import { getLowestPrice, getLowestBoxPrice, type Product } from "@/lib/data/products";
 import { useCartStore } from "@/lib/cart-store";
 import { useWishlistStore } from "@/lib/wishlist-store";
-import { toast } from "sonner";
+import { showCartToast } from "@/lib/cart-toast-store";
+import { cn } from "@/lib/utils";
 
 function formatPrice(n: number) {
   return "₹" + n.toLocaleString("en-IN");
 }
 
-export default function CompactProductCard({ product }: { product: Product }) {
+export default function CompactProductCard({
+  product,
+  className,
+}: {
+  product: Product;
+  className?: string;
+}) {
   const [mounted, setMounted] = useState(false);
   const [justAdded, setJustAdded] = useState(false);
   const { addItem } = useCartStore();
@@ -31,7 +37,7 @@ export default function CompactProductCard({ product }: { product: Product }) {
     e.stopPropagation();
     addItem(product, defaultVariant, 1);
     setJustAdded(true);
-    toast.success(`Added ${product.name} to cart!`);
+    showCartToast(product.name, 1);
     setTimeout(() => setJustAdded(false), 1200);
   };
 
@@ -42,7 +48,12 @@ export default function CompactProductCard({ product }: { product: Product }) {
   };
 
   return (
-    <div className="w-[145px] sm:w-[155px] shrink-0 snap-start bg-white rounded-xl border border-gray-100 shadow-xs hover:shadow-md transition-all flex flex-col justify-between overflow-hidden">
+    <div
+      className={cn(
+        "bg-white rounded-2xl border border-gray-100/90 shadow-2xs hover:shadow-md transition-all flex flex-col justify-between overflow-hidden group",
+        className || "w-[145px] sm:w-[155px] shrink-0 snap-start"
+      )}
+    >
       {/* Top Image Container */}
       <div className="relative">
         <Link href={`/product/${product.slug}`} className="block relative aspect-square w-full bg-gray-50 overflow-hidden">
@@ -98,11 +109,29 @@ export default function CompactProductCard({ product }: { product: Product }) {
 
         <div className="flex items-end justify-between mt-2 pt-1.5 border-t border-gray-50">
           <div>
-            <p className="text-[12px] font-black text-[#052a51] leading-none">
-              {formatPrice(getLowestPrice(product))}
-              <span className="text-[9px] font-normal text-gray-500">/sqft</span>
-            </p>
-            <p className="text-[9px] text-gray-400 mt-0.5">{formatPrice(getLowestBoxPrice(product))}/box</p>
+            {product.unitOfSale && product.unitOfSale !== "box" && product.unitOfSale !== "sqft" ? (
+              <>
+                <p className="text-[12px] font-black text-[#052a51] leading-none">
+                  {formatPrice(defaultVariant.pricePerBox)}
+                </p>
+                <p className="text-[9px] text-gray-400 mt-0.5 capitalize">/{product.unitOfSale}</p>
+              </>
+            ) : product.unitOfSale === "sqft" ? (
+              <>
+                <p className="text-[12px] font-black text-[#052a51] leading-none">
+                  {formatPrice(defaultVariant.pricePerSqft || defaultVariant.pricePerBox)}
+                </p>
+                <p className="text-[9px] text-gray-400 mt-0.5">/sq.ft</p>
+              </>
+            ) : (
+              <>
+                <p className="text-[12px] font-black text-[#052a51] leading-none">
+                  {formatPrice(getLowestPrice(product))}
+                  <span className="text-[9px] font-normal text-gray-500">/sqft</span>
+                </p>
+                <p className="text-[9px] text-gray-400 mt-0.5">{formatPrice(getLowestBoxPrice(product))}/box</p>
+              </>
+            )}
           </div>
 
           <button

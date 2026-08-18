@@ -37,10 +37,16 @@ async function main() {
   // 2. Seed Products & Variants
   console.log("📦 Seeding products and variants...");
   for (const prod of products) {
+    // Find category ID if exists
+    const matchedCategory = await prisma.category.findUnique({
+      where: { slug: prod.categorySlug },
+    });
+
     const createdProduct = await prisma.product.upsert({
       where: { slug: prod.slug },
       update: {
         name: prod.name,
+        categoryId: matchedCategory?.id || null,
         categorySlug: prod.categorySlug,
         categoryName: prod.categoryName,
         description: prod.description,
@@ -64,6 +70,7 @@ async function main() {
         id: prod.id,
         name: prod.name,
         slug: prod.slug,
+        categoryId: matchedCategory?.id || null,
         categorySlug: prod.categorySlug,
         categoryName: prod.categoryName,
         description: prod.description,
@@ -230,6 +237,48 @@ async function main() {
       create: cp,
     });
   }
+
+  // 6. Seed Shipping Zones
+  console.log("🚚 Seeding shipping zones...");
+  await prisma.shippingZone.upsert({
+    where: { id: "zone-bangalore" },
+    update: {
+      name: "Bangalore Urban & Rural",
+      pincodes: ["560001", "560068", "560100", "560114", "560034", "560076", "560099"],
+      fee: 999,
+      minOrderForFreeShipping: 15000,
+      estimatedDelivery: "2–4 Business Days",
+      isActive: true,
+    },
+    create: {
+      id: "zone-bangalore",
+      name: "Bangalore Urban & Rural",
+      pincodes: ["560001", "560068", "560100", "560114", "560034", "560076", "560099"],
+      fee: 999,
+      minOrderForFreeShipping: 15000,
+      estimatedDelivery: "2–4 Business Days",
+      isActive: true,
+    },
+  });
+
+  // 7. Seed Admin User
+  console.log("👤 Seeding admin & sample users...");
+  await prisma.user.upsert({
+    where: { phone: "+919876543210" },
+    update: {
+      name: "Tiletra Admin",
+      email: "admin@tiletra.in",
+      role: "admin",
+      phoneVerified: true,
+    },
+    create: {
+      name: "Tiletra Admin",
+      email: "admin@tiletra.in",
+      phone: "+919876543210",
+      role: "admin",
+      phoneVerified: true,
+    },
+  });
 
   console.log("✅ Neon PostgreSQL database seeded successfully!");
 }

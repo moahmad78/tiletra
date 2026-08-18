@@ -1,24 +1,24 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import Link from "next/link";
 import Image from "next/image";
 import {
   Plus,
   Search,
-  Filter,
   Trash2,
   Copy,
   Edit,
   ExternalLink,
   Upload,
-  Layers,
-  ArrowUpDown,
   CheckSquare,
   Square,
-  AlertTriangle,
+  Loader2,
 } from "lucide-react";
-import { useAdminStore } from "@/lib/admin-store";
+import { getProducts, deleteProduct, createProduct } from "@/lib/actions/products";
+import { getCategories } from "@/lib/actions/categories";
+import type { Product } from "@/lib/data/products";
+import type { Category } from "@/lib/data/categories";
 import { getLowestPrice, getLowestBoxPrice } from "@/lib/data/products";
 import { toast } from "sonner";
 
@@ -27,16 +27,34 @@ function formatPrice(n: number) {
 }
 
 export default function AdminProductsPage() {
-  const products = useAdminStore((s) => s.products);
-  const categories = useAdminStore((s) => s.categories);
-  const deleteProduct = useAdminStore((s) => s.deleteProduct);
-  const duplicateProduct = useAdminStore((s) => s.duplicateProduct);
-  const bulkDeleteProducts = useAdminStore((s) => s.bulkDeleteProducts);
+  const [products, setProducts] = useState<Product[]>([]);
+  const [categories, setCategories] = useState<Category[]>([]);
+  const [loading, setLoading] = useState(true);
 
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedCategory, setSelectedCategory] = useState<string>("all");
   const [selectedStockStatus, setSelectedStockStatus] = useState<string>("all");
   const [selectedIds, setSelectedIds] = useState<string[]>([]);
+
+  const loadData = async () => {
+    try {
+      setLoading(true);
+      const [prods, cats] = await Promise.all([
+        getProducts(),
+        getCategories(),
+      ]);
+      setProducts(prods);
+      setCategories(cats);
+    } catch (err) {
+      console.error("Error loading products:", err);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    loadData();
+  }, []);
 
   // Filter logic
   const filteredProducts = products.filter((p) => {
@@ -75,30 +93,75 @@ export default function AdminProductsPage() {
     );
   };
 
-  const handleDelete = (id: string, name: string) => {
+  const handleDelete = async (id: string, name: string) => {
     if (window.confirm(`Are you sure you want to delete "${name}"?`)) {
-      deleteProduct(id);
-      setSelectedIds((prev) => prev.filter((i) => i !== id));
-      toast.success(`Deleted ${name}`);
+      const res = await deleteProduct(id);
+      if (res.success) {
+        setProducts((prev) => prev.filter((p) => p.id !== id));
+        setSelectedIds((prev) => prev.filter((i) => i !== id));
+        toast.success(`Deleted ${name}`);
+      } else {
+        toast.error(res.error || "Failed to delete product");
+      }
     }
   };
 
-  const handleDuplicate = (id: string) => {
-    duplicateProduct(id);
-    toast.success("Product duplicated!");
+  const handleDuplicate = async (p: Product) => {
+    const dupName = `${p.name} (Copy)`;
+    const res = await createProduct({
+      name: dupName,
+      categorySlug: p.categorySlug,
+      categoryName: p.categoryName,
+      description: p.description,
+      material: p.material,
+      images: p.images,
+      variants: p.variants.map((v) => ({
+        size: v.size,
+        finish: v.finish,
+        color: v.color,
+        pricePerBox: v.pricePerBox,
+        pricePerSqft: v.pricePerSqft,
+        sqftPerBox: v.sqftPerBox,
+        stockBoxes: v.stockBoxes,
+      })),
+      isBestseller: false,
+      isNew: true,
+      specs: p.specs,
+    });
+
+    if (res.success && res.product) {
+      setProducts((prev) => [res.product!, ...prev]);
+      toast.success("Product duplicated!");
+    } else {
+      toast.error(res.error || "Failed to duplicate product");
+    }
   };
 
-  const handleBulkDelete = () => {
+  const handleBulkDelete = async () => {
     if (
       window.confirm(
         `Are you sure you want to delete ${selectedIds.length} selected products?`
       )
     ) {
-      bulkDeleteProducts(selectedIds);
+      for (const id of selectedIds) {
+        await deleteProduct(id);
+      }
+      setProducts((prev) => prev.filter((p) => !selectedIds.includes(p.id)));
       setSelectedIds([]);
       toast.success("Selected products deleted");
     }
   };
+
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center min-h-[400px]">
+        <div className="flex flex-col items-center gap-3">
+          <Loader2 className="animate-spin text-[#F26522]" size={32} />
+          <p className="text-sm font-bold text-[#052a51]">Loading tile catalog from Neon DB...</p>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-6">
@@ -107,7 +170,7 @@ export default function AdminProductsPage() {
         <div>
           <h2 className="text-xl font-black text-[#052a51]">Tile Catalog Management</h2>
           <p className="text-xs text-gray-500 mt-0.5">
-            Total {products.length} tile designs in your store
+            Total {products.length} tile designs in your database
           </p>
         </div>
 
@@ -185,7 +248,7 @@ export default function AdminProductsPage() {
             </span>
             <button
               onClick={handleBulkDelete}
-              className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-red-600 hover:bg-red-700 text-white text-xs font-bold rounded-lg shadow-xs transition-colors"
+              className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-red-600 hover:bg-red-700 text-white text-xs font-bold rounded-lg shadow-xs transition-colors cursor-pointer"
             >
               <Trash2 size={13} />
               <span>Delete Selected</span>
@@ -203,7 +266,7 @@ export default function AdminProductsPage() {
                 <th className="py-3.5 px-4 w-10">
                   <button
                     onClick={handleSelectAll}
-                    className="p-1 rounded text-gray-400 hover:text-[#052a51]"
+                    className="p-1 rounded text-gray-400 hover:text-[#052a51] cursor-pointer"
                   >
                     {selectedIds.length === filteredProducts.length &&
                     filteredProducts.length > 0 ? (
@@ -244,7 +307,7 @@ export default function AdminProductsPage() {
                       <td className="py-3 px-4">
                         <button
                           onClick={() => handleToggleSelect(p.id)}
-                          className="p-1 text-gray-400 hover:text-[#052a51]"
+                          className="p-1 text-gray-400 hover:text-[#052a51] cursor-pointer"
                         >
                           {isSelected ? (
                             <CheckSquare size={16} className="text-[#F26522]" />
@@ -259,7 +322,7 @@ export default function AdminProductsPage() {
                         <div className="flex items-center gap-3">
                           <div className="relative w-12 h-12 rounded-xl overflow-hidden bg-gray-100 shrink-0 border border-gray-200">
                             <Image
-                              src={p.images[0]}
+                              src={p.images[0] || "https://images.unsplash.com/photo-1615529182904-14819c35db37?w=800&q=80"}
                               alt={p.name}
                               fill
                               className="object-cover"
@@ -346,8 +409,8 @@ export default function AdminProductsPage() {
                           <ExternalLink size={14} />
                         </Link>
                         <button
-                          onClick={() => handleDuplicate(p.id)}
-                          className="p-1.5 text-gray-400 hover:text-[#052a51] rounded-lg hover:bg-gray-100"
+                          onClick={() => handleDuplicate(p)}
+                          className="p-1.5 text-gray-400 hover:text-[#052a51] rounded-lg hover:bg-gray-100 cursor-pointer"
                           title="Duplicate tile"
                         >
                           <Copy size={14} />
@@ -361,7 +424,7 @@ export default function AdminProductsPage() {
                         </Link>
                         <button
                           onClick={() => handleDelete(p.id, p.name)}
-                          className="p-1.5 text-gray-400 hover:text-red-600 rounded-lg hover:bg-red-50"
+                          className="p-1.5 text-gray-400 hover:text-red-600 rounded-lg hover:bg-red-50 cursor-pointer"
                           title="Delete tile"
                         >
                           <Trash2 size={14} />

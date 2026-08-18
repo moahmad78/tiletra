@@ -3,9 +3,9 @@
 import { useState, useEffect } from "react";
 import Image from "next/image";
 import Link from "next/link";
-import { ChevronLeft, ChevronRight, Sparkles, ArrowRight, ShieldCheck, Truck } from "lucide-react";
+import { ChevronLeft, ChevronRight, Sparkles, ArrowRight, Truck } from "lucide-react";
 
-interface BannerSlide {
+export interface BannerSlide {
   id: string;
   badge: string;
   headline: string;
@@ -13,10 +13,10 @@ interface BannerSlide {
   ctaText: string;
   ctaHref: string;
   image: string;
-  accentColor: string;
+  accentColor?: string;
 }
 
-const DESKTOP_SLIDES: BannerSlide[] = [
+const DEFAULT_DESKTOP_SLIDES: BannerSlide[] = [
   {
     id: "slide-1",
     badge: "Special Seasonal Offer",
@@ -59,24 +59,25 @@ const DESKTOP_SLIDES: BannerSlide[] = [
   },
 ];
 
-export default function DesktopBannerCarousel() {
+export default function DesktopBannerCarousel({ slides }: { slides?: BannerSlide[] }) {
+  const bannerSlides = slides && slides.length > 0 ? slides : DEFAULT_DESKTOP_SLIDES;
   const [current, setCurrent] = useState(0);
   const [isPaused, setIsPaused] = useState(false);
 
   useEffect(() => {
     if (isPaused) return;
     const interval = setInterval(() => {
-      setCurrent((prev) => (prev + 1) % DESKTOP_SLIDES.length);
+      setCurrent((prev) => (prev + 1) % bannerSlides.length);
     }, 5000);
     return () => clearInterval(interval);
-  }, [isPaused]);
+  }, [isPaused, bannerSlides.length]);
 
   const prevSlide = () => {
-    setCurrent((prev) => (prev === 0 ? DESKTOP_SLIDES.length - 1 : prev - 1));
+    setCurrent((prev) => (prev === 0 ? bannerSlides.length - 1 : prev - 1));
   };
 
   const nextSlide = () => {
-    setCurrent((prev) => (prev + 1) % DESKTOP_SLIDES.length);
+    setCurrent((prev) => (prev + 1) % bannerSlides.length);
   };
 
   return (
@@ -87,8 +88,9 @@ export default function DesktopBannerCarousel() {
     >
       <div className="relative h-[320px] lg:h-[350px] rounded-3xl overflow-hidden shadow-sm border border-gray-100 bg-[#052a51]">
         {/* Slides Track */}
-        {DESKTOP_SLIDES.map((slide, index) => {
+        {bannerSlides.map((slide, index) => {
           const isActive = index === current;
+          const accent = slide.accentColor || "#F26522";
           return (
             <div
               key={slide.id}
@@ -98,7 +100,7 @@ export default function DesktopBannerCarousel() {
             >
               {/* Background Photo */}
               <Image
-                src={slide.image}
+                src={slide.image || "https://images.unsplash.com/photo-1600585154340-be6161a56a0c?w=1400&q=85"}
                 alt={slide.headline}
                 fill
                 priority={index === 0}
@@ -113,10 +115,10 @@ export default function DesktopBannerCarousel() {
               <div className="relative z-20 h-full flex flex-col justify-center max-w-xl pl-8 lg:pl-12 pr-6 text-white">
                 <span
                   className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-black uppercase tracking-wider mb-3 w-fit shadow-xs"
-                  style={{ backgroundColor: `${slide.accentColor}33`, color: "#FFF", border: `1px solid ${slide.accentColor}88` }}
+                  style={{ backgroundColor: `${accent}33`, color: "#FFF", border: `1px solid ${accent}88` }}
                 >
                   <Sparkles size={13} className="text-[#F26522]" />
-                  {slide.badge}
+                  {slide.badge || "Special Offer"}
                 </span>
 
                 <h2 className="text-2xl lg:text-3xl xl:text-4xl font-black leading-tight tracking-tight text-white drop-shadow-sm">
@@ -129,10 +131,10 @@ export default function DesktopBannerCarousel() {
 
                 <div className="flex items-center gap-4 mt-6">
                   <Link
-                    href={slide.ctaHref}
+                    href={slide.ctaHref || "/shop"}
                     className="inline-flex items-center gap-2 px-6 py-3 bg-[#F26522] hover:bg-[#d95a1e] text-white text-xs font-black rounded-xl shadow-md transition-all hover:scale-105 active:scale-95"
                   >
-                    <span>{slide.ctaText}</span>
+                    <span>{slide.ctaText || "Shop Now"}</span>
                     <ArrowRight size={15} />
                   </Link>
 
@@ -150,7 +152,7 @@ export default function DesktopBannerCarousel() {
         <button
           onClick={prevSlide}
           aria-label="Previous Banner"
-          className="absolute left-4 top-1/2 -translate-y-1/2 z-30 w-10 h-10 rounded-full bg-black/40 hover:bg-black/70 text-white backdrop-blur-xs flex items-center justify-center transition-all hover:scale-110 shadow-md"
+          className="absolute left-4 top-1/2 -translate-y-1/2 z-30 w-10 h-10 rounded-full bg-black/40 hover:bg-black/70 text-white backdrop-blur-xs flex items-center justify-center transition-all hover:scale-110 shadow-md cursor-pointer"
         >
           <ChevronLeft size={22} />
         </button>
@@ -159,19 +161,19 @@ export default function DesktopBannerCarousel() {
         <button
           onClick={nextSlide}
           aria-label="Next Banner"
-          className="absolute right-4 top-1/2 -translate-y-1/2 z-30 w-10 h-10 rounded-full bg-black/40 hover:bg-black/70 text-white backdrop-blur-xs flex items-center justify-center transition-all hover:scale-110 shadow-md"
+          className="absolute right-4 top-1/2 -translate-y-1/2 z-30 w-10 h-10 rounded-full bg-black/40 hover:bg-black/70 text-white backdrop-blur-xs flex items-center justify-center transition-all hover:scale-110 shadow-md cursor-pointer"
         >
           <ChevronRight size={22} />
         </button>
 
         {/* Dot Indicators */}
         <div className="absolute bottom-4 left-1/2 -translate-x-1/2 z-30 flex items-center gap-2">
-          {DESKTOP_SLIDES.map((_, i) => (
+          {bannerSlides.map((_, i) => (
             <button
               key={i}
               onClick={() => setCurrent(i)}
               aria-label={`Go to slide ${i + 1}`}
-              className={`h-2 rounded-full transition-all duration-300 ${
+              className={`h-2 rounded-full transition-all duration-300 cursor-pointer ${
                 i === current ? "w-7 bg-[#F26522]" : "w-2 bg-white/50 hover:bg-white"
               }`}
             />

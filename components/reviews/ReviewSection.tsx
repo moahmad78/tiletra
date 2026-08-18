@@ -44,9 +44,15 @@ export default function ReviewSection({
     return 0; // default recent
   });
 
+  // If no approved reviews exist yet, hide the public review list/empty banner to prevent contradictory fake data
+  // When real reviews are submitted and approved, this section will automatically display the genuine reviews
+  if (reviews.length === 0) {
+    return null;
+  }
+
   return (
     <div className="space-y-8">
-      {/* ── Top Summary & Rating Breakdown ── */}
+      {/* ── Top Summary & Genuine Rating Breakdown ── */}
       <div className="bg-white rounded-3xl p-6 sm:p-8 border border-gray-200/80 shadow-2xs">
         <div className="grid grid-cols-1 md:grid-cols-12 gap-8 items-center">
           {/* Left: Overall Score */}
@@ -71,33 +77,20 @@ export default function ReviewSection({
             </div>
 
             <p className="text-xs text-gray-500 font-medium">
-              Based on <strong>{stats.totalReviews} verified reviews</strong>
+              Based on <strong>{stats.totalReviews} verified {stats.totalReviews === 1 ? "review" : "reviews"}</strong>
             </p>
-            <p className="text-xs font-bold text-emerald-700 mt-1">
-              ✓ {stats.recommendPercent}% of buyers recommend this tile
-            </p>
-
-            <button
-              onClick={() => setWriteModalOpen(true)}
-              className="mt-5 w-full sm:w-auto inline-flex items-center justify-center gap-2 px-5 py-2.5 bg-[#052a51] hover:bg-[#041f3d] text-white text-xs font-bold rounded-xl shadow-xs active:scale-95 transition-all"
-            >
-              <Edit3 size={14} />
-              <span>Write a Review</span>
-            </button>
+            {stats.recommendPercent > 0 && (
+              <p className="text-xs font-bold text-emerald-700 mt-1">
+                ✓ {stats.recommendPercent}% of buyers recommend this product
+              </p>
+            )}
           </div>
 
           {/* Right: Rating Distribution Bars */}
           <div className="md:col-span-8 space-y-2">
             {[5, 4, 3, 2, 1].map((star) => {
               const count = stats.distribution[star] || 0;
-              const percent =
-                stats.totalReviews > 0
-                  ? Math.round((count / stats.totalReviews) * 100)
-                  : star === 5
-                  ? 80
-                  : star === 4
-                  ? 20
-                  : 0;
+              const percent = stats.totalReviews > 0 ? Math.round((count / stats.totalReviews) * 100) : 0;
 
               return (
                 <div key={star} className="flex items-center gap-3 text-xs">
@@ -111,7 +104,7 @@ export default function ReviewSection({
                     />
                   </div>
                   <span className="w-10 text-right text-gray-400 font-medium text-[11px] shrink-0">
-                    {percent}%
+                    {count} ({percent}%)
                   </span>
                 </div>
               );
@@ -164,17 +157,12 @@ export default function ReviewSection({
 
       {/* ── Reviews Cards List ── */}
       <div className="space-y-4">
-        {displayedReviews.length === 0 ? (
-          <div className="bg-white p-12 rounded-3xl text-center border border-gray-200 text-gray-400 text-sm">
-            <p className="font-bold text-[#052a51]">No reviews matching this filter</p>
-            <p className="text-xs text-gray-400 mt-1">Be the first to share installation photos!</p>
-          </div>
-        ) : (
-          displayedReviews.map((rev) => <ReviewCard key={rev.id} review={rev} />)
-        )}
+        {displayedReviews.map((rev) => (
+          <ReviewCard key={rev.id} review={rev} />
+        ))}
       </div>
 
-      {/* Write Review Modal */}
+      {/* Write Review Modal (Kept structurally in code for Phase 3 activation) */}
       <WriteReviewModal
         productId={productId}
         productName={productName}

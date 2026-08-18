@@ -6,12 +6,12 @@ import Footer from "@/components/Footer";
 import InspirationGalleryClient from "./InspirationGalleryClient";
 
 export const metadata: Metadata = {
-  title: "Room Inspiration & Tile Design Gallery | Tiletra",
+  title: "Room Inspiration & Interior Design Gallery | Intrihub",
   description:
-    "Explore real room transformations with Tiletra tiles. Browse living room floors, luxury marble bathrooms, modern kitchen splashbacks, and outdoor patios — and shop each look directly.",
+    "Explore real room transformations with Intrihub materials. Browse living room floors, luxury marble bathrooms, modern kitchen splashbacks, and outdoor patios — and shop each look directly.",
   openGraph: {
-    title: "Room Inspiration Gallery | Tiletra",
-    description: "Browse 200+ tile looks across real living rooms, kitchens, bathrooms, and patios.",
+    title: "Room Inspiration Gallery | Intrihub",
+    description: "Browse curated interior and construction looks across real living rooms, kitchens, bathrooms, and commercial spaces.",
   },
 };
 

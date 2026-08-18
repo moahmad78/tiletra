@@ -3,6 +3,8 @@
 import { create } from "zustand";
 import { persist } from "zustand/middleware";
 import type { Product, ProductVariant } from "@/lib/data/products";
+import { useAuthStore } from "@/lib/auth-store";
+import { syncCartToDb } from "@/lib/actions/cart";
 
 export type CartItem = {
   product: Product;
@@ -22,12 +24,34 @@ type CartState = {
   openCart: () => void;
   closeCart: () => void;
   toggleCart: () => void;
+  setItems: (items: CartItem[]) => void;
+  syncWithDatabase: (userId?: string) => Promise<void>;
 
   // Computed helpers (called as functions)
   getTotalItems: () => number;
   getTotalBoxes: () => number;
   getSubtotal: () => number;
   getTotalSqft: () => number;
+};
+
+const triggerDbSync = async (items: CartItem[]) => {
+  try {
+    const authState = useAuthStore.getState();
+    const user = authState.user;
+    // Guest carts stay in localStorage only. Only sync to DB if authenticated with a real DB user id
+    if (authState.isAuthenticated && user?.id && !user.id.startsWith("usr-")) {
+      await syncCartToDb(
+        user.id,
+        items.map((i) => ({
+          productId: i.product.id,
+          variantId: i.variant.id,
+          quantity: i.quantity,
+        }))
+      );
+    }
+  } catch (err) {
+    console.error("Failed to sync cart with database:", err);
+  }
 };
 
 export const useCartStore = create<CartState>()(
@@ -39,27 +63,27 @@ export const useCartStore = create<CartState>()(
       addItem: (product, variant, quantity = 1) => {
         set((state) => {
           const existing = state.items.find((i) => i.variant.id === variant.id);
+          let newItems: CartItem[];
           if (existing) {
-            return {
-              items: state.items.map((i) =>
-                i.variant.id === variant.id
-                  ? { ...i, quantity: i.quantity + quantity }
-                  : i
-              ),
-              isOpen: true,
-            };
+            newItems = state.items.map((i) =>
+              i.variant.id === variant.id
+                ? { ...i, quantity: i.quantity + quantity }
+                : i
+            );
+          } else {
+            newItems = [...state.items, { product, variant, quantity }];
           }
-          return {
-            items: [...state.items, { product, variant, quantity }],
-            isOpen: true,
-          };
+          triggerDbSync(newItems);
+          return { items: newItems };
         });
       },
 
       removeItem: (variantId) => {
-        set((state) => ({
-          items: state.items.filter((i) => i.variant.id !== variantId),
-        }));
+        set((state) => {
+          const newItems = state.items.filter((i) => i.variant.id !== variantId);
+          triggerDbSync(newItems);
+          return { items: newItems };
+        });
       },
 
       updateQuantity: (variantId, quantity) => {
@@ -67,14 +91,40 @@ export const useCartStore = create<CartState>()(
           get().removeItem(variantId);
           return;
         }
-        set((state) => ({
-          items: state.items.map((i) =>
+        set((state) => {
+          const newItems = state.items.map((i) =>
             i.variant.id === variantId ? { ...i, quantity } : i
-          ),
-        }));
+          );
+          triggerDbSync(newItems);
+          return { items: newItems };
+        });
       },
 
-      clearCart: () => set({ items: [] }),
+      clearCart: () => {
+        set({ items: [] });
+        triggerDbSync([]);
+      },
+
+      setItems: (items) => {
+        set({ items });
+        triggerDbSync(items);
+      },
+
+      syncWithDatabase: async (userId) => {
+        const authState = useAuthStore.getState();
+        const uid = userId || authState.user?.id;
+        if (!uid || uid.startsWith("usr-") || !authState.isAuthenticated) return;
+        const currentItems = get().items;
+        await syncCartToDb(
+          uid,
+          currentItems.map((i) => ({
+            productId: i.product.id,
+            variantId: i.variant.id,
+            quantity: i.quantity,
+          }))
+        );
+      },
+
       openCart: () => set({ isOpen: true }),
       closeCart: () => set({ isOpen: false }),
       toggleCart: () => set((s) => ({ isOpen: !s.isOpen })),
@@ -94,7 +144,6 @@ export const useCartStore = create<CartState>()(
     }),
     {
       name: "tiletra-cart",
-      // Only persist the items array, not UI state
       partialize: (state) => ({ items: state.items }),
     }
   )

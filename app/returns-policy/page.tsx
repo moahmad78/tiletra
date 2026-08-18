@@ -43,7 +43,7 @@ export default function ReturnsPolicyPage() {
           <section className="space-y-2">
             <h2 className="text-lg font-black text-[#052a51]">2. Transit Breakage & Defects</h2>
             <p>
-              If your delivery contains broken tiles, share photos of the damaged boxes via WhatsApp (+91 78709 35277) or email (hello@tiletra.in) within 48 hours of delivery. We will dispatch replacement boxes on priority freight.
+              If your delivery contains broken tiles or materials, share photos of the damaged boxes via WhatsApp (+91 78709 35277) or email (hello@intrihub.com) within 48 hours of delivery. We will dispatch replacement boxes on priority freight.
             </p>
           </section>
 
