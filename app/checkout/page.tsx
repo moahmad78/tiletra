@@ -211,7 +211,7 @@ export default function CheckoutPage() {
     <main className="min-h-screen flex flex-col bg-[#F3F4F5]">
       <Header />
 
-      <div className="w-full max-w-[1200px] mx-auto px-3 sm:px-6 lg:px-8 pt-[76px] sm:pt-[84px] md:pt-[130px] pb-14 flex-1">
+      <div className="w-full max-w-[1200px] mx-auto px-3 sm:px-6 lg:px-8 pt-[76px] sm:pt-[84px] md:pt-[175px] lg:pt-[180px] pb-14 flex-1">
         {/* Breadcrumb / Title */}
         <div className="flex items-center justify-between mb-4 sm:mb-6 flex-wrap gap-3">
           <div>
