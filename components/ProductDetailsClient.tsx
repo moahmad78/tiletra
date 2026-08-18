@@ -523,13 +523,13 @@ export default function ProductDetailsClient({
               </div>
             </div>
 
-            {/* ── 7. Dedicated Inline WhatsApp Support (Zero CTA overlap) ── */}
+            {/* ── 7. Dedicated Inline WhatsApp Support (Gulshan Ali Sheikh) ── */}
             <div className="pt-2 border-t border-gray-100">
               <a
-                href={`https://wa.me/917870935277?text=${encodeURIComponent(`Hi Intrihub, I need guidance or bulk quote for ${definedProduct.name}`)}`}
+                href={`https://wa.me/919198035803?text=${encodeURIComponent(`Hi Gulshan (Intrihub), I need expert guidance or project quote for ${definedProduct.name}`)}`}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="w-full py-2.5 px-3.5 bg-emerald-50 hover:bg-emerald-100 border border-emerald-200 text-emerald-800 rounded-2xl text-xs font-bold flex items-center justify-between transition-colors group"
+                className="w-full py-2.5 px-3.5 bg-emerald-50 hover:bg-emerald-100 border border-emerald-200 text-emerald-800 rounded-2xl text-xs font-bold flex items-center justify-between transition-colors group cursor-pointer"
               >
                 <div className="flex items-center gap-2">
                   <div className="w-6 h-6 rounded-full bg-[#25D366] text-white flex items-center justify-center shrink-0 shadow-xs">
@@ -537,7 +537,8 @@ export default function ProductDetailsClient({
                   </div>
                   <span>Need expert guidance or project quote?</span>
                 </div>
-                <span className="text-[#25D366] group-hover:translate-x-0.5 transition-transform">
+                <span className="text-[#25D366] group-hover:translate-x-0.5 transition-transform font-bold flex items-center gap-1">
+                  <span>Chat with Gulshan</span>
                   <ArrowRight size={14} />
                 </span>
               </a>
