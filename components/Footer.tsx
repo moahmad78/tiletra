@@ -131,17 +131,27 @@ export default function Footer() {
             <div>
               <h4 className="text-white font-bold text-sm uppercase tracking-[2px] mb-5">Contact Us</h4>
               <ul className="space-y-4 text-sm">
-                <li className="flex items-start gap-3">
-                  <MapPin size={16} className="text-[#F26522] shrink-0 mt-0.5" />
-                  <span className="leading-relaxed">Begur, Bengaluru, Karnataka 560114</span>
-                </li>
-                <li className="pt-0.5">
+                <li>
                   <RotatingFooterContact />
+                </li>
+                <li className="flex items-start gap-3">
+                  <div className="w-8 h-8 rounded-full bg-white/5 flex items-center justify-center text-[#F26522] shrink-0 mt-0.5">
+                    <MapPin size={15} />
+                  </div>
+                  <div className="flex flex-col justify-center">
+                    <span className="font-bold text-white text-xs">Our Office</span>
+                    <span className="text-white/70 text-xs leading-relaxed mt-0.5">Begur, Bengaluru, Karnataka 560114</span>
+                  </div>
                 </li>
                 <li>
                   <a href="mailto:hello@intrihub.com" className="flex items-center gap-3 hover:text-white transition-colors break-all">
-                    <Mail size={16} className="text-[#F26522] shrink-0" />
-                    hello@intrihub.com
+                    <div className="w-8 h-8 rounded-full bg-white/5 flex items-center justify-center text-[#F26522] shrink-0">
+                      <Mail size={15} />
+                    </div>
+                    <div className="flex flex-col justify-center">
+                      <span className="font-bold text-white text-xs">Email Us</span>
+                      <span className="text-white/70 text-xs mt-0.5">hello@intrihub.com</span>
+                    </div>
                   </a>
                 </li>
               </ul>
