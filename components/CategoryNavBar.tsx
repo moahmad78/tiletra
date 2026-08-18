@@ -1,14 +1,11 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useRef, useEffect, useCallback } from "react";
 import Link from "next/link";
-import { ChevronDown, Sparkles, ArrowRight, Flame, LayoutGrid } from "lucide-react";
+import { ChevronDown, ChevronLeft, ChevronRight, Sparkles, ArrowRight, Flame } from "lucide-react";
 import { categories } from "@/lib/data/categories";
 
 const TOP_CATEGORIES = categories.filter((c) => !c.parentId);
-const PRIMARY_COUNT = 8;
-const PRIMARY_CATEGORIES = TOP_CATEGORIES.slice(0, PRIMARY_COUNT);
-const MORE_CATEGORIES = TOP_CATEGORIES.slice(PRIMARY_COUNT);
 
 const CATEGORY_SUBCATS: Record<string, { name: string; slug: string; desc: string }[]> = {
   "electrical": [
@@ -135,160 +132,172 @@ const CATEGORY_SUBCATS: Record<string, { name: string; slug: string; desc: strin
 
 export default function CategoryNavBar() {
   const [activeMenu, setActiveMenu] = useState<string | null>(null);
+  const scrollRef = useRef<HTMLDivElement>(null);
+  const [canScrollLeft, setCanScrollLeft] = useState(false);
+  const [canScrollRight, setCanScrollRight] = useState(true);
+
+  const checkScroll = useCallback(() => {
+    const el = scrollRef.current;
+    if (!el) return;
+    const { scrollLeft, scrollWidth, clientWidth } = el;
+    setCanScrollLeft(scrollLeft > 5);
+    setCanScrollRight(scrollLeft < scrollWidth - clientWidth - 5);
+  }, []);
+
+  useEffect(() => {
+    checkScroll();
+    window.addEventListener("resize", checkScroll);
+    return () => window.removeEventListener("resize", checkScroll);
+  }, [checkScroll]);
+
+  const handleScroll = (direction: "left" | "right") => {
+    const el = scrollRef.current;
+    if (!el) return;
+    const distance = 280;
+    el.scrollBy({
+      left: direction === "left" ? -distance : distance,
+      behavior: "smooth",
+    });
+    setTimeout(checkScroll, 350);
+  };
 
   return (
-    <div className="hidden md:block bg-white border-b border-gray-200 shadow-2xs relative z-40">
+    <div className="hidden md:block bg-white border-b border-gray-200 shadow-2xs relative z-40 select-none">
       <div className="w-full max-w-[1400px] mx-auto px-3 sm:px-4 md:px-6 lg:px-8">
-        <div className="flex items-center justify-between h-[44px] text-xs font-bold text-[#052a51]">
-          {/* Main Category Navigation Bar */}
-          <nav className="flex items-center gap-0.5 lg:gap-1 flex-1 min-w-0">
-            {/* Primary Category Links */}
-            {PRIMARY_CATEGORIES.map((cat) => {
-              const subcats = CATEGORY_SUBCATS[cat.slug] || [];
-              return (
-                <div
-                  key={cat.slug}
-                  className="relative group"
-                  onMouseEnter={() => setActiveMenu(cat.slug)}
-                  onMouseLeave={() => setActiveMenu(null)}
-                >
-                  <Link
-                    href={`/shop/${cat.slug}`}
-                    className="flex items-center gap-1 px-2.5 py-1.5 rounded-lg hover:text-[#F26522] hover:bg-gray-50 transition-colors whitespace-nowrap text-[12px]"
-                  >
-                    <span>{cat.name}</span>
-                    <ChevronDown
-                      size={12}
-                      className="text-gray-400 group-hover:text-[#F26522] transition-transform group-hover:rotate-180 shrink-0"
-                    />
-                  </Link>
-
-                  {/* Mega-menu Dropdown on Hover */}
-                  {activeMenu === cat.slug && (
-                    <div className="absolute top-full left-0 w-[360px] bg-white rounded-2xl shadow-xl border border-gray-100 p-4 z-50 animate-in fade-in zoom-in-95 duration-150">
-                      <div className="flex items-center justify-between pb-2.5 border-b border-gray-100 mb-2.5">
-                        <div>
-                          <h4 className="font-black text-[#052a51] text-sm">{cat.name}</h4>
-                          <p className="text-[11px] text-gray-500 line-clamp-1">{cat.description}</p>
-                        </div>
-                        <Link
-                          href={`/shop/${cat.slug}`}
-                          className="text-[11px] font-bold text-[#F26522] hover:underline flex items-center gap-1 shrink-0"
-                        >
-                          All <ArrowRight size={11} />
-                        </Link>
-                      </div>
-
-                      <div className="space-y-1">
-                        {subcats.map((sub, idx) => (
-                          <Link
-                            key={idx}
-                            href={`/shop/${sub.slug}`}
-                            className="block p-2 rounded-xl hover:bg-[#F26522]/5 transition-colors group/item"
-                          >
-                            <p className="text-xs font-bold text-[#052a51] group-hover/item:text-[#F26522]">
-                              {sub.name}
-                            </p>
-                            <p className="text-[10px] text-gray-400 line-clamp-1">{sub.desc}</p>
-                          </Link>
-                        ))}
-                      </div>
-                    </div>
-                  )}
-                </div>
-              );
-            })}
-
-            {/* "More Categories" Dropdown */}
-            <div
-              className="relative group"
-              onMouseEnter={() => setActiveMenu("more-categories")}
-              onMouseLeave={() => setActiveMenu(null)}
+        <div className="flex items-center justify-between h-[44px] text-xs font-bold text-[#052a51] gap-3">
+          
+          {/* 1. Category Scroll Section with Functional Left & Right Arrows */}
+          <div className="relative flex-1 min-w-0 flex items-center">
+            {/* Functional Left Scroll Arrow */}
+            <button
+              type="button"
+              onClick={() => handleScroll("left")}
+              disabled={!canScrollLeft}
+              aria-label="Scroll categories left"
+              className={`shrink-0 w-6 h-6 rounded-full flex items-center justify-center border transition-all z-10 mr-1 ${
+                canScrollLeft
+                  ? "border-gray-300 text-[#052a51] hover:bg-gray-100 hover:border-[#F26522] hover:text-[#F26522] shadow-2xs cursor-pointer"
+                  : "border-transparent text-gray-300 cursor-not-allowed opacity-0 pointer-events-none"
+              }`}
             >
-              <button
-                className={`flex items-center gap-1 px-2.5 py-1.5 rounded-lg transition-colors whitespace-nowrap text-[12px] cursor-pointer ${
-                  activeMenu === "more-categories"
-                    ? "text-[#F26522] bg-[#F26522]/10 font-black"
-                    : "hover:text-[#F26522] hover:bg-gray-50 text-[#052a51]"
-                }`}
-              >
-                <LayoutGrid size={13} className="text-[#F26522] shrink-0" />
-                <span>More Categories</span>
-                <ChevronDown
-                  size={12}
-                  className={`transition-transform shrink-0 ${
-                    activeMenu === "more-categories" ? "rotate-180 text-[#F26522]" : "text-gray-400"
-                  }`}
-                />
-              </button>
+              <ChevronLeft size={14} />
+            </button>
 
-              {/* Mega-menu with all 12 remaining categories in a structured 3-column grid */}
-              {activeMenu === "more-categories" && (
-                <div className="absolute top-full left-0 w-[680px] bg-white rounded-2xl shadow-2xl border border-gray-100 p-5 z-50 animate-in fade-in zoom-in-95 duration-150">
-                  <div className="flex items-center justify-between pb-3 border-b border-gray-100 mb-3.5">
-                    <div>
-                      <h4 className="font-black text-[#052a51] text-sm flex items-center gap-2">
-                        <LayoutGrid size={15} className="text-[#F26522]" />
-                        <span>All Interior & Construction Categories</span>
-                      </h4>
-                      <p className="text-[11px] text-gray-500 mt-0.5">
-                        Explore all 20 curated construction and interior categories
-                      </p>
-                    </div>
+            {/* Horizontally Scrollable Category Items Track */}
+            <nav
+              ref={scrollRef}
+              onScroll={checkScroll}
+              className="flex items-center gap-0.5 lg:gap-1 overflow-x-auto scrollbar-none scroll-smooth flex-1 min-w-0 py-1"
+            >
+              {TOP_CATEGORIES.map((cat, idx) => {
+                const subcats = CATEGORY_SUBCATS[cat.slug] || [];
+                const isHovered = activeMenu === cat.slug;
+                // Align right if dropdown is towards the right side of the list
+                const isRightAligned = idx > TOP_CATEGORIES.length - 4;
+
+                return (
+                  <div
+                    key={cat.slug}
+                    className="relative group shrink-0"
+                    onMouseEnter={() => setActiveMenu(cat.slug)}
+                    onMouseLeave={() => setActiveMenu(null)}
+                  >
                     <Link
-                      href="/shop"
-                      className="text-xs font-bold text-[#F26522] hover:underline flex items-center gap-1 bg-[#F26522]/10 px-3 py-1.5 rounded-lg shrink-0"
+                      href={`/shop/${cat.slug}`}
+                      className={`flex items-center gap-1 px-2.5 py-1.5 rounded-lg transition-colors whitespace-nowrap text-[12px] font-bold ${
+                        isHovered
+                          ? "text-[#F26522] bg-[#F26522]/10"
+                          : "text-[#052a51] hover:text-[#F26522] hover:bg-gray-50"
+                      }`}
                     >
-                      View All Catalog <ArrowRight size={12} />
+                      <span>{cat.name}</span>
+                      <ChevronDown
+                        size={11}
+                        className={`text-gray-400 transition-transform ${
+                          isHovered ? "rotate-180 text-[#F26522]" : "group-hover:text-[#F26522]"
+                        }`}
+                      />
                     </Link>
-                  </div>
 
-                  <div className="grid grid-cols-3 gap-2.5 max-h-[380px] overflow-y-auto pr-1">
-                    {MORE_CATEGORIES.map((cat) => (
-                      <Link
-                        key={cat.slug}
-                        href={`/shop/${cat.slug}`}
-                        className="p-2.5 rounded-xl border border-gray-100 hover:border-[#F26522]/30 hover:bg-[#F26522]/5 transition-all group/item flex flex-col justify-between"
+                    {/* Rich Category Mega-Menu Dropdown */}
+                    {isHovered && (
+                      <div
+                        className={`absolute top-full w-[360px] bg-white rounded-2xl shadow-2xl border border-gray-100 p-4 z-50 animate-in fade-in zoom-in-95 duration-150 ${
+                          isRightAligned ? "right-0" : "left-0"
+                        }`}
                       >
-                        <div>
-                          <p className="text-xs font-black text-[#052a51] group-hover/item:text-[#F26522] transition-colors leading-tight">
-                            {cat.name}
-                          </p>
-                          <p className="text-[10px] text-gray-400 line-clamp-2 mt-1 leading-snug">
-                            {cat.description}
-                          </p>
+                        <div className="flex items-center justify-between pb-2.5 border-b border-gray-100 mb-2.5">
+                          <div>
+                            <h4 className="font-black text-[#052a51] text-sm">{cat.name}</h4>
+                            <p className="text-[11px] text-gray-500 line-clamp-1">{cat.description}</p>
+                          </div>
+                          <Link
+                            href={`/shop/${cat.slug}`}
+                            className="text-[11px] font-bold text-[#F26522] hover:underline flex items-center gap-1 shrink-0"
+                          >
+                            All <ArrowRight size={11} />
+                          </Link>
                         </div>
-                        <span className="text-[10px] font-bold text-[#F26522] mt-2 inline-flex items-center gap-0.5 opacity-0 group-hover/item:opacity-100 transition-opacity">
-                          Explore <ArrowRight size={10} />
-                        </span>
-                      </Link>
-                    ))}
-                  </div>
-                </div>
-              )}
-            </div>
 
-            {/* Room Inspiration Link */}
+                        <div className="space-y-1">
+                          {subcats.map((sub, sIdx) => (
+                            <Link
+                              key={sIdx}
+                              href={`/shop/${sub.slug}`}
+                              className="block p-2 rounded-xl hover:bg-[#F26522]/5 transition-colors group/item"
+                            >
+                              <p className="text-xs font-bold text-[#052a51] group-hover/item:text-[#F26522]">
+                                {sub.name}
+                              </p>
+                              <p className="text-[10px] text-gray-400 line-clamp-1">{sub.desc}</p>
+                            </Link>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                );
+              })}
+            </nav>
+
+            {/* Functional Right Scroll Arrow */}
+            <button
+              type="button"
+              onClick={() => handleScroll("right")}
+              disabled={!canScrollRight}
+              aria-label="Scroll categories right"
+              className={`shrink-0 w-6 h-6 rounded-full flex items-center justify-center border transition-all z-10 ml-1 ${
+                canScrollRight
+                  ? "border-gray-300 text-[#052a51] hover:bg-gray-100 hover:border-[#F26522] hover:text-[#F26522] shadow-2xs cursor-pointer"
+                  : "border-transparent text-gray-300 cursor-not-allowed opacity-0 pointer-events-none"
+              }`}
+            >
+              <ChevronRight size={14} />
+            </button>
+          </div>
+
+          {/* 2. Right Side Fixed Slot (Zero overlap guaranteed) */}
+          <div className="flex items-center gap-2 pl-3 border-l border-gray-200 shrink-0">
+            {/* Room Inspiration Quick Link */}
             <Link
               href="/inspiration"
-              className="flex items-center gap-1 px-2.5 py-1.5 rounded-lg text-[#F26522] hover:bg-[#F26522]/10 transition-colors whitespace-nowrap font-black text-[12px] ml-1 shrink-0"
+              className="flex items-center gap-1 px-2.5 py-1.5 rounded-lg text-[#F26522] hover:bg-[#F26522]/10 transition-colors whitespace-nowrap font-black text-[12px] shrink-0"
             >
               <Sparkles size={13} className="shrink-0" />
               <span>Inspiration</span>
             </Link>
-          </nav>
 
-          {/* Right Highlights: Dedicated "Explore All Supplies" CTA */}
-          <div className="flex items-center pl-4 shrink-0">
+            {/* Explore All Supplies CTA */}
             <Link
               href="/shop"
-              className="flex items-center gap-1.5 px-3.5 py-1.5 rounded-full bg-[#052a51] hover:bg-[#F26522] text-white transition-all text-xs font-bold shadow-xs active:scale-95 cursor-pointer whitespace-nowrap"
+              className="flex items-center gap-1.5 px-3.5 py-1.5 rounded-full bg-[#052a51] hover:bg-[#F26522] text-white transition-all text-xs font-bold shadow-xs active:scale-95 cursor-pointer whitespace-nowrap shrink-0"
             >
               <Flame size={13} className="text-[#F26522] group-hover:text-white" />
               <span>Explore All Supplies</span>
-              <ArrowRight size={12} className="ml-0.5" />
+              <ArrowRight size={12} />
             </Link>
           </div>
+
         </div>
       </div>
     </div>
