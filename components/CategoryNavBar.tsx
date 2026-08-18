@@ -2,8 +2,17 @@
 
 import { useState, useRef, useEffect, useCallback } from "react";
 import Link from "next/link";
-import { ChevronDown, ChevronLeft, ChevronRight, Sparkles, ArrowRight, Flame } from "lucide-react";
-import { categories } from "@/lib/data/categories";
+import Image from "next/image";
+import {
+  ChevronDown,
+  ChevronLeft,
+  ChevronRight,
+  Sparkles,
+  ArrowRight,
+  Flame,
+  ArrowUpRight,
+} from "lucide-react";
+import { categories, type Category } from "@/lib/data/categories";
 
 const TOP_CATEGORIES = categories.filter((c) => !c.parentId);
 
@@ -23,8 +32,8 @@ const CATEGORY_SUBCATS: Record<string, { name: string; slug: string; desc: strin
   "tiles-stone": [
     { name: "Living Room Floor Tiles", slug: "tiles-stone", desc: "Vitrified large format 800x800mm & GVT" },
     { name: "Granite & Marble Slabs", slug: "tiles-stone", desc: "South Indian granite & Italian marble" },
-    { name: "Bathroom Wall & Floor", slug: "tiles-stone", desc: "Waterproof anti-skid ceramic tiles" },
-    { name: "Kitchen Subway & Splashbacks", slug: "tiles-stone", desc: "Glossy subway & decorative mosaics" },
+    { name: "Bathroom Wall & Floor", slug: "bathroom-tiles", desc: "Waterproof anti-skid ceramic tiles" },
+    { name: "Kitchen Subway & Splashbacks", slug: "kitchen-tiles", desc: "Glossy subway & decorative mosaics" },
   ],
   "paint-finishes": [
     { name: "Interior Luxury Emulsions", slug: "paint-finishes", desc: "Washable velvet sheen & matte wall paints" },
@@ -131,10 +140,14 @@ const CATEGORY_SUBCATS: Record<string, { name: string; slug: string; desc: strin
 };
 
 export default function CategoryNavBar() {
-  const [activeMenu, setActiveMenu] = useState<string | null>(null);
+  const containerRef = useRef<HTMLDivElement>(null);
   const scrollRef = useRef<HTMLDivElement>(null);
   const [canScrollLeft, setCanScrollLeft] = useState(false);
   const [canScrollRight, setCanScrollRight] = useState(true);
+
+  const [activeCategory, setActiveCategory] = useState<Category | null>(null);
+  const [dropdownPos, setDropdownPos] = useState<{ left: number }>({ left: 16 });
+  const closeTimerRef = useRef<NodeJS.Timeout | null>(null);
 
   const checkScroll = useCallback(() => {
     const el = scrollRef.current;
@@ -161,14 +174,51 @@ export default function CategoryNavBar() {
     setTimeout(checkScroll, 350);
   };
 
+  const handleMouseEnterItem = (cat: Category, e: React.MouseEvent<HTMLAnchorElement>) => {
+    if (closeTimerRef.current) clearTimeout(closeTimerRef.current);
+
+    const btnRect = e.currentTarget.getBoundingClientRect();
+    const parentRect = containerRef.current?.getBoundingClientRect() || { left: 0, width: 1400 };
+
+    // Calculate left relative to parent container, bounded so it doesn't overflow right edge
+    const desiredLeft = btnRect.left - parentRect.left;
+    const boundedLeft = Math.max(16, Math.min(desiredLeft, parentRect.width - 420));
+
+    setDropdownPos({ left: boundedLeft });
+    setActiveCategory(cat);
+  };
+
+  const handleMouseLeaveItem = () => {
+    if (closeTimerRef.current) clearTimeout(closeTimerRef.current);
+    closeTimerRef.current = setTimeout(() => {
+      setActiveCategory(null);
+    }, 180);
+  };
+
+  const handleDropdownMouseEnter = () => {
+    if (closeTimerRef.current) clearTimeout(closeTimerRef.current);
+  };
+
+  const handleDropdownMouseLeave = () => {
+    if (closeTimerRef.current) clearTimeout(closeTimerRef.current);
+    closeTimerRef.current = setTimeout(() => {
+      setActiveCategory(null);
+    }, 180);
+  };
+
+  const subcats = activeCategory ? (CATEGORY_SUBCATS[activeCategory.slug] || []) : [];
+  const hasSubcats = subcats.length > 0;
+
   return (
-    <div className="hidden md:block bg-white border-b border-gray-200 shadow-2xs relative z-40 select-none">
+    <div
+      ref={containerRef}
+      className="hidden md:block bg-white border-b border-gray-200 shadow-2xs relative z-40 select-none"
+    >
       <div className="w-full max-w-[1400px] mx-auto px-3 sm:px-4 md:px-6 lg:px-8">
         <div className="flex items-center justify-between h-[44px] text-xs font-bold text-[#052a51] gap-3">
-          
           {/* 1. Category Scroll Section with Functional Left & Right Arrows */}
           <div className="relative flex-1 min-w-0 flex items-center">
-            {/* Functional Left Scroll Arrow */}
+            {/* Left Scroll Arrow */}
             <button
               type="button"
               onClick={() => handleScroll("left")}
@@ -189,78 +239,34 @@ export default function CategoryNavBar() {
               onScroll={checkScroll}
               className="flex items-center gap-0.5 lg:gap-1 overflow-x-auto scrollbar-none scroll-smooth flex-1 min-w-0 py-1"
             >
-              {TOP_CATEGORIES.map((cat, idx) => {
-                const subcats = CATEGORY_SUBCATS[cat.slug] || [];
-                const isHovered = activeMenu === cat.slug;
-                // Align right if dropdown is towards the right side of the list
-                const isRightAligned = idx > TOP_CATEGORIES.length - 4;
+              {TOP_CATEGORIES.map((cat) => {
+                const isActive = activeCategory?.slug === cat.slug;
 
                 return (
-                  <div
+                  <Link
                     key={cat.slug}
-                    className="relative group shrink-0"
-                    onMouseEnter={() => setActiveMenu(cat.slug)}
-                    onMouseLeave={() => setActiveMenu(null)}
+                    href={`/shop/${cat.slug}`}
+                    onMouseEnter={(e) => handleMouseEnterItem(cat, e)}
+                    onMouseLeave={handleMouseLeaveItem}
+                    className={`flex items-center gap-1 px-2.5 py-1.5 rounded-lg transition-colors whitespace-nowrap text-[12px] font-bold shrink-0 ${
+                      isActive
+                        ? "text-[#F26522] bg-[#F26522]/10"
+                        : "text-[#052a51] hover:text-[#F26522] hover:bg-gray-50"
+                    }`}
                   >
-                    <Link
-                      href={`/shop/${cat.slug}`}
-                      className={`flex items-center gap-1 px-2.5 py-1.5 rounded-lg transition-colors whitespace-nowrap text-[12px] font-bold ${
-                        isHovered
-                          ? "text-[#F26522] bg-[#F26522]/10"
-                          : "text-[#052a51] hover:text-[#F26522] hover:bg-gray-50"
+                    <span>{cat.name}</span>
+                    <ChevronDown
+                      size={11}
+                      className={`transition-transform ${
+                        isActive ? "rotate-180 text-[#F26522]" : "text-gray-400 group-hover:text-[#F26522]"
                       }`}
-                    >
-                      <span>{cat.name}</span>
-                      <ChevronDown
-                        size={11}
-                        className={`text-gray-400 transition-transform ${
-                          isHovered ? "rotate-180 text-[#F26522]" : "group-hover:text-[#F26522]"
-                        }`}
-                      />
-                    </Link>
-
-                    {/* Rich Category Mega-Menu Dropdown */}
-                    {isHovered && (
-                      <div
-                        className={`absolute top-full w-[360px] bg-white rounded-2xl shadow-2xl border border-gray-100 p-4 z-50 animate-in fade-in zoom-in-95 duration-150 ${
-                          isRightAligned ? "right-0" : "left-0"
-                        }`}
-                      >
-                        <div className="flex items-center justify-between pb-2.5 border-b border-gray-100 mb-2.5">
-                          <div>
-                            <h4 className="font-black text-[#052a51] text-sm">{cat.name}</h4>
-                            <p className="text-[11px] text-gray-500 line-clamp-1">{cat.description}</p>
-                          </div>
-                          <Link
-                            href={`/shop/${cat.slug}`}
-                            className="text-[11px] font-bold text-[#F26522] hover:underline flex items-center gap-1 shrink-0"
-                          >
-                            All <ArrowRight size={11} />
-                          </Link>
-                        </div>
-
-                        <div className="space-y-1">
-                          {subcats.map((sub, sIdx) => (
-                            <Link
-                              key={sIdx}
-                              href={`/shop/${sub.slug}`}
-                              className="block p-2 rounded-xl hover:bg-[#F26522]/5 transition-colors group/item"
-                            >
-                              <p className="text-xs font-bold text-[#052a51] group-hover/item:text-[#F26522]">
-                                {sub.name}
-                              </p>
-                              <p className="text-[10px] text-gray-400 line-clamp-1">{sub.desc}</p>
-                            </Link>
-                          ))}
-                        </div>
-                      </div>
-                    )}
-                  </div>
+                    />
+                  </Link>
                 );
               })}
             </nav>
 
-            {/* Functional Right Scroll Arrow */}
+            {/* Right Scroll Arrow */}
             <button
               type="button"
               onClick={() => handleScroll("right")}
@@ -276,7 +282,7 @@ export default function CategoryNavBar() {
             </button>
           </div>
 
-          {/* 2. Right Side Fixed Slot (Zero overlap guaranteed) */}
+          {/* 2. Right Side Dedicated Fixed Slot */}
           <div className="flex items-center gap-2 pl-3 border-l border-gray-200 shrink-0">
             {/* Room Inspiration Quick Link */}
             <Link
@@ -297,9 +303,102 @@ export default function CategoryNavBar() {
               <ArrowRight size={12} />
             </Link>
           </div>
-
         </div>
       </div>
+
+      {/* 3. Generalized Mega-Menu Dropdown (Rendered in Outer Container - Zero CSS Clipping) */}
+      {activeCategory && (
+        <div
+          onMouseEnter={handleDropdownMouseEnter}
+          onMouseLeave={handleDropdownMouseLeave}
+          style={{ left: `${dropdownPos.left}px` }}
+          className="absolute top-full w-[400px] bg-white rounded-2xl shadow-2xl border border-gray-100 p-4 z-50 animate-in fade-in zoom-in-95 duration-150"
+        >
+          {/* Header: Category Name + Short Description + Top All CTA */}
+          <div className="flex items-start justify-between pb-3 border-b border-gray-100 mb-3">
+            <div className="pr-3">
+              <div className="flex items-center gap-2">
+                <h4 className="font-black text-[#052a51] text-sm">{activeCategory.name}</h4>
+                {activeCategory.productCount > 0 && (
+                  <span className="bg-[#F26522]/10 text-[#F26522] text-[10px] font-bold px-1.5 py-0.5 rounded-md">
+                    {activeCategory.productCount} Items
+                  </span>
+                )}
+              </div>
+              <p className="text-[11px] text-gray-500 mt-0.5 line-clamp-2 leading-relaxed">
+                {activeCategory.description}
+              </p>
+            </div>
+            <Link
+              href={`/shop/${activeCategory.slug}`}
+              className="text-[11px] font-bold text-[#F26522] hover:underline flex items-center gap-1 shrink-0 bg-[#F26522]/5 px-2.5 py-1 rounded-lg hover:bg-[#F26522]/10 transition-colors"
+            >
+              Browse All <ArrowRight size={11} />
+            </Link>
+          </div>
+
+          {/* Body: Generalized Subcategories or Simple Single-CTA Variant */}
+          {hasSubcats ? (
+            <div className="space-y-1">
+              <span className="text-[10px] font-black text-gray-400 uppercase tracking-wider block px-1 mb-1">
+                Popular Categories & Products
+              </span>
+              <div className="grid grid-cols-1 gap-1">
+                {subcats.map((sub, idx) => (
+                  <Link
+                    key={idx}
+                    href={`/shop/${sub.slug}`}
+                    className="flex items-center justify-between p-2 rounded-xl hover:bg-[#F26522]/5 transition-colors group/item"
+                  >
+                    <div>
+                      <p className="text-xs font-bold text-[#052a51] group-hover/item:text-[#F26522] transition-colors">
+                        {sub.name}
+                      </p>
+                      <p className="text-[10px] text-gray-400 line-clamp-1">{sub.desc}</p>
+                    </div>
+                    <ArrowUpRight
+                      size={13}
+                      className="text-gray-300 group-hover/item:text-[#F26522] transition-colors shrink-0 ml-2"
+                    />
+                  </Link>
+                ))}
+              </div>
+            </div>
+          ) : (
+            /* Simpler Variant for categories without subcategories */
+            <div className="py-2">
+              <div className="flex items-center gap-3 p-3 bg-gray-50 rounded-xl border border-gray-100">
+                <div className="relative w-12 h-12 rounded-lg overflow-hidden shrink-0 border border-gray-200 bg-white">
+                  <Image
+                    src={activeCategory.image || "https://images.unsplash.com/photo-1616486338812-3dadae4b4ace?w=800&q=80"}
+                    alt={activeCategory.name}
+                    fill
+                    className="object-cover"
+                    sizes="48px"
+                  />
+                </div>
+                <div>
+                  <p className="text-xs font-bold text-[#052a51]">Explore {activeCategory.name}</p>
+                  <p className="text-[10px] text-gray-500 line-clamp-1">
+                    Direct-from-manufacturer supplies delivered to site.
+                  </p>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* Footer CTA: Prominent Generalized CTA */}
+          <div className="mt-3 pt-2.5 border-t border-gray-100">
+            <Link
+              href={`/shop/${activeCategory.slug}`}
+              className="w-full flex items-center justify-center gap-1.5 py-2 rounded-xl bg-[#052a51] hover:bg-[#F26522] text-white text-xs font-bold transition-colors shadow-2xs"
+            >
+              <span>View All {activeCategory.name} Supplies</span>
+              <ArrowRight size={12} />
+            </Link>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
