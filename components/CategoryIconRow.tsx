@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef, useState, useCallback } from "react";
+import { useEffect, useRef, useCallback } from "react";
 import Link from "next/link";
 import Image from "next/image";
 import { categories as defaultCategories, type Category } from "@/lib/data/categories";
@@ -48,32 +48,38 @@ export default function CategoryIconRow({ categories }: { categories?: Category[
   const singleSetWidthRef = useRef(0);
   const isDraggingRef = useRef(false);
 
-  // Measure single set width
-  const updateMetrics = useCallback(() => {
+  const measureWidth = useCallback(() => {
     if (singleSetRef.current) {
-      singleSetWidthRef.current = singleSetRef.current.offsetWidth;
+      singleSetWidthRef.current = singleSetRef.current.scrollWidth;
     }
   }, []);
 
   useEffect(() => {
-    updateMetrics();
-    window.addEventListener("resize", updateMetrics);
-    return () => window.removeEventListener("resize", updateMetrics);
-  }, [updateMetrics]);
+    measureWidth();
+    // Re-measure after initial image decodes
+    const timer = setTimeout(measureWidth, 200);
+    window.addEventListener("resize", measureWidth);
+    return () => {
+      clearTimeout(timer);
+      window.removeEventListener("resize", measureWidth);
+    };
+  }, [measureWidth]);
 
-  // Buttery-smooth sub-pixel GPU hardware-accelerated auto-scroll loop
+  // Silky 60fps GPU auto-scroll loop with delta clamp to prevent initial load jitter
   useEffect(() => {
     let lastTime = performance.now();
-    const speed = 22; // ~22px per second (gentle and smooth)
+    const speed = 24; // Smooth ~24px per second
 
     const step = (now: number) => {
-      const delta = (now - lastTime) / 1000;
+      // Clamp delta to 35ms max so initial page load / hydration never causes a stutter or sudden jump
+      const rawDelta = (now - lastTime) / 1000;
+      const delta = Math.min(rawDelta, 0.035);
       lastTime = now;
 
       if (!isInteractingRef.current && trackRef.current) {
         posRef.current += speed * delta;
 
-        const setWidth = singleSetWidthRef.current || 1500;
+        const setWidth = singleSetWidthRef.current || (categoryList.length * 78);
         if (posRef.current >= setWidth) {
           posRef.current -= setWidth;
         }
@@ -90,7 +96,7 @@ export default function CategoryIconRow({ categories }: { categories?: Category[
       if (animFrameRef.current) cancelAnimationFrame(animFrameRef.current);
       if (touchTimerRef.current) clearTimeout(touchTimerRef.current);
     };
-  }, []);
+  }, [categoryList.length]);
 
   // Touch and drag handlers for responsive swipe without lag
   const handleTouchStart = (e: React.TouchEvent | React.MouseEvent) => {
@@ -111,7 +117,7 @@ export default function CategoryIconRow({ categories }: { categories?: Category[
       isDraggingRef.current = true;
     }
 
-    const setWidth = singleSetWidthRef.current || 1500;
+    const setWidth = singleSetWidthRef.current || (categoryList.length * 78);
     let newPos = touchStartPosRef.current + diff;
     while (newPos < 0) newPos += setWidth;
     while (newPos >= setWidth) newPos -= setWidth;
@@ -124,7 +130,6 @@ export default function CategoryIconRow({ categories }: { categories?: Category[
 
   const handleTouchEnd = () => {
     if (touchTimerRef.current) clearTimeout(touchTimerRef.current);
-    // Pause briefly after user finishes interaction, then resume smoothly
     touchTimerRef.current = setTimeout(() => {
       isInteractingRef.current = false;
       isDraggingRef.current = false;
@@ -145,7 +150,7 @@ export default function CategoryIconRow({ categories }: { categories?: Category[
     >
       <div
         ref={trackRef}
-        className="flex items-center will-change-transform"
+        className="flex items-center will-change-transform transform-gpu"
         style={{ transform: "translate3d(0, 0, 0)" }}
       >
         {/* Set 1: Measured set */}
@@ -167,6 +172,7 @@ export default function CategoryIconRow({ categories }: { categories?: Category[
                       src={cat.image || "https://images.unsplash.com/photo-1616486338812-3dadae4b4ace?w=800&q=80"}
                       alt={cat.name}
                       fill
+                      loading="eager"
                       className="object-cover group-hover:scale-110 transition-transform duration-300"
                       sizes="56px"
                     />
@@ -200,6 +206,7 @@ export default function CategoryIconRow({ categories }: { categories?: Category[
                       src={cat.image || "https://images.unsplash.com/photo-1616486338812-3dadae4b4ace?w=800&q=80"}
                       alt={cat.name}
                       fill
+                      loading="eager"
                       className="object-cover group-hover:scale-110 transition-transform duration-300"
                       sizes="56px"
                     />
@@ -233,6 +240,7 @@ export default function CategoryIconRow({ categories }: { categories?: Category[
                       src={cat.image || "https://images.unsplash.com/photo-1616486338812-3dadae4b4ace?w=800&q=80"}
                       alt={cat.name}
                       fill
+                      loading="eager"
                       className="object-cover group-hover:scale-110 transition-transform duration-300"
                       sizes="56px"
                     />
