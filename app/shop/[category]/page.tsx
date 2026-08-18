@@ -27,7 +27,7 @@ export default async function CategoryPage({
   }
 
   return (
-    <main className="min-h-screen flex flex-col bg-[#F3F4F5] pt-[56px] md:pt-[124px]">
+    <main className="min-h-screen flex flex-col bg-[#F3F4F5] pt-[56px] md:pt-[175px] lg:pt-[180px]">
       <Header />
 
       {/* Products Grid */}

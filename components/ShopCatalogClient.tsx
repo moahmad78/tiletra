@@ -253,14 +253,14 @@ export default function ShopCatalogClient({
   );
 
   return (
-    <main className="min-h-screen flex flex-col bg-[#F3F4F5] pt-[56px] md:pt-[124px]">
+    <main className="min-h-screen flex flex-col bg-[#F3F4F5] pt-[56px] md:pt-[175px] lg:pt-[180px]">
       <Header />
 
       <div className="w-full max-w-[1400px] mx-auto px-3 sm:px-4 md:px-6 lg:px-8 py-4 sm:py-6 md:py-8 flex-1">
         <div className="flex gap-6 lg:gap-8">
           {/* Desktop Filter Sidebar */}
           <aside className="hidden lg:block w-[260px] flex-shrink-0">
-            <div className="sticky top-[150px] bg-white rounded-2xl border border-gray-100 shadow-sm p-6 max-h-[calc(100vh-180px)] overflow-y-auto">
+            <div className="sticky top-[175px] bg-white rounded-2xl border border-gray-100 shadow-sm p-6 max-h-[calc(100vh-200px)] overflow-y-auto">
               <div className="flex items-center justify-between mb-5">
                 <h2 className="font-black text-[#052a51] text-base">Filters</h2>
                 {activeFilterCount > 0 && (
@@ -281,7 +281,7 @@ export default function ShopCatalogClient({
             {/* Filter bar & Sort */}
             <div className="flex items-center justify-between gap-3 mb-4 sm:mb-6 flex-wrap bg-white p-3 sm:p-3.5 rounded-2xl border border-gray-100 shadow-xs">
               <p className="text-xs md:text-sm text-gray-500 font-medium">
-                Found <span className="text-[#052a51] font-black">{filtered.length}</span> tiles
+                Found <span className="text-[#052a51] font-black">{filtered.length}</span> products
               </p>
 
               <div className="flex items-center gap-2">
