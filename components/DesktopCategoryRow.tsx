@@ -3,7 +3,7 @@
 import { useEffect, useRef, useState, useCallback } from "react";
 import Link from "next/link";
 import Image from "next/image";
-import { ChevronLeft, ChevronRight } from "lucide-react";
+import { ChevronLeft, ChevronRight, ArrowRight } from "lucide-react";
 import type { Category } from "@/lib/data/categories";
 
 interface DesktopCategoryRowProps {
@@ -20,8 +20,8 @@ export default function DesktopCategoryRow({ categories }: DesktopCategoryRowPro
   const [canScrollLeft, setCanScrollLeft] = useState(false);
   const [canScrollRight, setCanScrollRight] = useState(true);
 
-  // Seamless infinite loop by duplicating list
-  const duplicatedList = [...topCategories, ...topCategories];
+  // Triple the list for a completely seamless, jitter-free loop
+  const duplicatedList = [...topCategories, ...topCategories, ...topCategories];
 
   const updateArrowState = useCallback(() => {
     const el = scrollRef.current;
@@ -39,13 +39,13 @@ export default function DesktopCategoryRow({ categories }: DesktopCategoryRowPro
     updateArrowState();
   }, [updateArrowState]);
 
-  // Smooth continuous auto-scroll loop
+  // Smooth continuous auto-scroll loop without CSS scroll-smooth conflict
   useEffect(() => {
     const el = scrollRef.current;
     if (!el) return;
 
     let lastTime = performance.now();
-    const speed = 35; // ~35 pixels per second
+    const speed = 38; // ~38 pixels per second for fluid motion
 
     const step = (now: number) => {
       const delta = (now - lastTime) / 1000;
@@ -54,10 +54,10 @@ export default function DesktopCategoryRow({ categories }: DesktopCategoryRowPro
       if (!isHoveredRef.current && !isInteractingRef.current && el) {
         el.scrollLeft += speed * delta;
 
-        // Seamless loop when reaching midpoint of duplicated list
-        const halfWidth = el.scrollWidth / 2;
-        if (halfWidth > 0 && el.scrollLeft >= halfWidth) {
-          el.scrollLeft -= halfWidth;
+        // Loop seamlessly at 1/3 width
+        const oneThird = el.scrollWidth / 3;
+        if (oneThird > 0 && el.scrollLeft >= oneThird * 2) {
+          el.scrollLeft -= oneThird;
         }
       }
 
@@ -76,7 +76,7 @@ export default function DesktopCategoryRow({ categories }: DesktopCategoryRowPro
     triggerUserInteraction();
     const el = scrollRef.current;
     if (!el) return;
-    const distance = 320;
+    const distance = 360;
     el.scrollBy({
       left: direction === "left" ? -distance : distance,
       behavior: "smooth",
@@ -86,7 +86,8 @@ export default function DesktopCategoryRow({ categories }: DesktopCategoryRowPro
   return (
     <section id="categories" className="py-6 select-none relative group/row">
       <div className="w-full max-w-[1400px] mx-auto px-[20px] md:px-[24px] lg:px-[32px]">
-        <div className="flex items-center justify-between mb-3.5">
+        {/* Section Header */}
+        <div className="flex items-center justify-between mb-4">
           <div>
             <span className="text-[11px] font-black text-[#F26522] uppercase tracking-wider">
               Explore By Category
@@ -113,7 +114,7 @@ export default function DesktopCategoryRow({ categories }: DesktopCategoryRowPro
           </div>
         </div>
 
-        {/* Continuous Auto-Scrolling Track */}
+        {/* Continuous Auto-Scrolling Track (No CSS scroll-smooth to prevent jitter) */}
         <div
           ref={scrollRef}
           onMouseEnter={() => {
@@ -126,31 +127,37 @@ export default function DesktopCategoryRow({ categories }: DesktopCategoryRowPro
           onPointerDown={triggerUserInteraction}
           onTouchStart={triggerUserInteraction}
           onScroll={updateArrowState}
-          className="flex gap-3.5 overflow-x-auto scrollbar-none py-1.5 scroll-smooth"
+          className="flex gap-3 overflow-x-auto scrollbar-none py-1 will-change-scroll"
         >
           {duplicatedList.map((cat, idx) => (
             <Link
               key={`${cat.slug}-${idx}`}
               href={`/shop/${cat.slug}`}
-              className="shrink-0 w-[145px] lg:w-[155px] group"
+              className="shrink-0 w-[155px] sm:w-[165px] lg:w-[175px] group"
             >
-              <div className="bg-white rounded-2xl p-3 border border-gray-200/80 shadow-2xs hover:shadow-md hover:border-[#F26522] transition-all text-center flex flex-col items-center h-full justify-between active:scale-98">
-                <div className="relative w-16 h-16 rounded-xl overflow-hidden mb-2 bg-gray-100 border border-gray-100 shrink-0">
+              <div className="bg-white rounded-2xl p-2 border border-gray-200/90 shadow-2xs hover:shadow-md hover:border-[#F26522] transition-all text-center flex flex-col h-full active:scale-98">
+                {/* Large Prominent Image with Minimal Whitespace */}
+                <div className="relative w-full h-[115px] sm:h-[120px] rounded-xl overflow-hidden bg-gray-100 shrink-0">
                   <Image
                     src={cat.image || "https://images.unsplash.com/photo-1616486338812-3dadae4b4ace?w=800&q=80"}
                     alt={cat.name}
                     fill
-                    className="object-cover group-hover:scale-110 transition-transform duration-300"
-                    sizes="64px"
+                    className="object-cover group-hover:scale-108 transition-transform duration-300"
+                    sizes="(max-width: 768px) 155px, 175px"
                   />
-                  <div className="absolute inset-0 bg-black/5 group-hover:bg-transparent transition-colors" />
+                  <div className="absolute inset-0 bg-gradient-to-t from-black/20 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
                 </div>
-                <p className="text-xs font-bold text-[#052a51] group-hover:text-[#F26522] transition-colors leading-tight line-clamp-2">
-                  {cat.name}
-                </p>
-                <span className="text-[10px] text-gray-400 font-medium mt-1">
-                  {cat.productCount > 0 ? `${cat.productCount} Items` : "Available"}
-                </span>
+
+                {/* Compact, High-Legibility Label Area */}
+                <div className="px-1 pt-2 pb-1 flex flex-col items-center justify-between flex-1">
+                  <p className="text-xs sm:text-sm font-bold text-[#052a51] group-hover:text-[#F26522] transition-colors leading-tight line-clamp-1">
+                    {cat.name}
+                  </p>
+                  <span className="text-[11px] text-gray-400 font-semibold mt-1 inline-flex items-center gap-0.5 group-hover:text-[#F26522] transition-colors">
+                    {cat.productCount > 0 ? `${cat.productCount} Items` : "Explore"}
+                    <ArrowRight size={10} className="opacity-0 group-hover:opacity-100 transition-opacity" />
+                  </span>
+                </div>
               </div>
             </Link>
           ))}
