@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { MapPin, Phone, Mail, ExternalLink } from "lucide-react";
+import RotatingFooterContact from "@/components/RotatingFooterContact";
 
 const shopLinks = [
   { label: "Electrical", href: "/shop/electrical" },
@@ -134,11 +135,8 @@ export default function Footer() {
                   <MapPin size={16} className="text-[#F26522] shrink-0 mt-0.5" />
                   <span className="leading-relaxed">Begur, Bengaluru, Karnataka 560114</span>
                 </li>
-                <li>
-                  <a href="tel:+917870935277" className="flex items-center gap-3 hover:text-white transition-colors">
-                    <Phone size={16} className="text-[#F26522] shrink-0" />
-                    +91 78709 35277
-                  </a>
+                <li className="pt-0.5">
+                  <RotatingFooterContact />
                 </li>
                 <li>
                   <a href="mailto:hello@intrihub.com" className="flex items-center gap-3 hover:text-white transition-colors break-all">
