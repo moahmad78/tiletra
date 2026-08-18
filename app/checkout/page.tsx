@@ -99,13 +99,8 @@ export default function CheckoutPage() {
   }, [user]);
 
   const selectedAddress = user?.addresses.find((a) => a.id === selectedAddressId) || user?.addresses[0];
-
-  // COD Rules check
-  const codMaxLimit = storeSettings.codMaxLimit ?? 25000;
-  const isCodOverLimit = total > codMaxLimit;
-  const isCodBlockedPincode =
-    selectedAddress && storeSettings.codBlockedPincodes?.includes(selectedAddress.pincode);
-  const isCodAllowed = !isCodOverLimit && !isCodBlockedPincode && (storeSettings.codEnabled !== false);
+  // COD Rules check: 100% enabled for every item and pincode as requested
+  const isCodAllowed = true;
 
   const stepIndex = STEPS.indexOf(step);
 
@@ -184,7 +179,7 @@ export default function CheckoutPage() {
     addNotification({
       type: "order_placed",
       title: `Order ${orderId} Placed (${method === "COD" ? "Cash on Delivery" : "Online Paid"})!`,
-      body: `Thank you, ${selectedAddress.name}! Your tile order for ${items.length} design(s) is scheduled for safe crate dispatch.`,
+      body: `Thank you, ${selectedAddress.name}! Your order for ${items.length} item(s) is scheduled for safe crate dispatch.`,
       link: "/account/orders",
     });
 
@@ -194,11 +189,6 @@ export default function CheckoutPage() {
 
   // Trigger COD Confirmation Dialog
   const handleInitiateCod = () => {
-    if (!isCodAllowed) {
-      if (isCodOverLimit) toast.error(`COD is available only up to ${formatPrice(codMaxLimit)}.`);
-      if (isCodBlockedPincode) toast.error(`COD is unavailable for pincode ${selectedAddress?.pincode}.`);
-      return;
-    }
     setIsCodOtpModalOpen(true);
   };
 
@@ -221,14 +211,14 @@ export default function CheckoutPage() {
     <main className="min-h-screen flex flex-col bg-[#F3F4F5]">
       <Header />
 
-      <div className="w-full max-w-[1200px] mx-auto px-[20px] md:px-[24px] lg:px-[32px] pt-[110px] md:pt-[168px] pb-16 flex-1">
+      <div className="w-full max-w-[1200px] mx-auto px-3 sm:px-6 lg:px-8 pt-[76px] sm:pt-[84px] md:pt-[130px] pb-14 flex-1">
         {/* Breadcrumb / Title */}
-        <div className="flex items-center justify-between mb-8 flex-wrap gap-4">
+        <div className="flex items-center justify-between mb-4 sm:mb-6 flex-wrap gap-3">
           <div>
-            <span className="text-[10px] font-black text-[#F26522] uppercase tracking-[2.5px] bg-[#F26522]/10 px-2.5 py-0.5 rounded-md">
+            <span className="text-[10px] font-black text-[#F26522] uppercase tracking-[2px] bg-[#F26522]/10 px-2.5 py-0.5 rounded-md">
               Secure Checkout
             </span>
-            <h1 className="text-[28px] md:text-[36px] font-black text-[#052a51] tracking-tight mt-1">
+            <h1 className="text-2xl sm:text-3xl md:text-[34px] font-black text-[#052a51] tracking-tight mt-1">
               Order Checkout
             </h1>
           </div>
@@ -434,16 +424,18 @@ export default function CheckoutPage() {
                 )}
 
                 {/* Actions */}
-                <div className="flex gap-3 pt-2">
+                <div className="flex items-center gap-3 pt-2">
                   <button
+                    type="button"
                     onClick={() => setStep("Address")}
-                    className="flex-1 h-12 border-2 border-gray-200 text-[#052a51] font-bold rounded-xl hover:border-gray-400 text-xs"
+                    className="h-12 px-4 sm:px-6 border-2 border-gray-200 hover:border-gray-300 text-[#052a51] font-bold rounded-xl text-xs sm:text-sm transition-colors cursor-pointer shrink-0"
                   >
-                    ← Change Address
+                    ← Back
                   </button>
                   <button
+                    type="button"
                     onClick={() => setStep("Payment")}
-                    className="flex-1 h-12 bg-[#F26522] hover:bg-[#d95a1e] text-white font-black text-xs rounded-xl shadow-md transition-all flex items-center justify-center gap-2 active:scale-95"
+                    className="flex-1 h-12 bg-[#F26522] hover:bg-[#d95a1e] text-white font-black text-xs sm:text-sm rounded-xl shadow-md transition-all flex items-center justify-center gap-2 active:scale-95 cursor-pointer"
                   >
                     <span>Proceed to Payment</span>
                     <ArrowRight size={16} />
@@ -499,17 +491,13 @@ export default function CheckoutPage() {
                   </div>
                 </div>
 
-                {/* Method 2: Cash on Delivery (COD) */}
+                {/* Method 2: Cash on Delivery (COD) - 100% Enabled */}
                 <div
-                  onClick={() => {
-                    if (isCodAllowed) setPaymentMethod("COD");
-                  }}
-                  className={`p-5 rounded-2xl border-2 transition-all ${
-                    !isCodAllowed
-                      ? "opacity-60 bg-gray-50 border-gray-200 cursor-not-allowed"
-                      : paymentMethod === "COD"
-                      ? "border-[#F26522] bg-[#F26522]/5 shadow-2xs cursor-pointer"
-                      : "border-gray-200 hover:border-gray-300 bg-white cursor-pointer"
+                  onClick={() => setPaymentMethod("COD")}
+                  className={`p-5 rounded-2xl border-2 transition-all cursor-pointer ${
+                    paymentMethod === "COD"
+                      ? "border-[#F26522] bg-[#F26522]/5 shadow-2xs"
+                      : "border-gray-200 hover:border-gray-300 bg-white"
                   }`}
                 >
                   <div className="flex items-start justify-between gap-4">
@@ -517,37 +505,20 @@ export default function CheckoutPage() {
                       <input
                         type="radio"
                         name="payment-method"
-                        disabled={!isCodAllowed}
                         checked={paymentMethod === "COD"}
-                        onChange={() => {
-                          if (isCodAllowed) setPaymentMethod("COD");
-                        }}
-                        className="w-4 h-4 accent-[#F26522] mt-1 cursor-pointer disabled:cursor-not-allowed"
+                        onChange={() => setPaymentMethod("COD")}
+                        className="w-4 h-4 accent-[#F26522] mt-1 cursor-pointer"
                       />
                       <div>
                         <p className="text-sm font-black text-[#052a51] flex items-center gap-2">
                           <span>Cash on Delivery (COD)</span>
                           <span className="px-2 py-0.5 rounded bg-amber-100 text-amber-900 text-[10px] font-black uppercase">
-                            Pay on Arrival
+                            Available on All Items
                           </span>
                         </p>
                         <p className="text-xs text-gray-500 mt-1 leading-relaxed">
                           Pay cash to our delivery driver when your tiles reach your doorstep. Requires quick OTP confirmation.
                         </p>
-
-                        {/* Warnings if COD is blocked */}
-                        {isCodOverLimit && (
-                          <p className="text-[11px] font-bold text-amber-700 mt-2 flex items-center gap-1">
-                            <AlertTriangle size={13} />
-                            COD is available only up to {formatPrice(codMaxLimit)}. Order total is {formatPrice(total)}.
-                          </p>
-                        )}
-                        {isCodBlockedPincode && (
-                          <p className="text-[11px] font-bold text-red-600 mt-2 flex items-center gap-1">
-                            <AlertTriangle size={13} />
-                            COD is currently restricted for pincode {selectedAddress?.pincode}.
-                          </p>
-                        )}
                       </div>
                     </div>
                     <Banknote size={22} className="text-gray-400 shrink-0 mt-0.5" />
@@ -555,12 +526,19 @@ export default function CheckoutPage() {
                 </div>
 
                 {/* Final Place Order Action Button */}
-                <div className="pt-3 border-t border-gray-100">
+                <div className="flex items-center gap-3 pt-3 border-t border-gray-100">
+                  <button
+                    type="button"
+                    onClick={() => setStep("Delivery")}
+                    className="h-12 sm:h-13 px-4 sm:px-6 border-2 border-gray-200 hover:border-gray-300 text-[#052a51] font-bold rounded-2xl text-xs sm:text-sm transition-colors cursor-pointer shrink-0"
+                  >
+                    ← Back
+                  </button>
                   {paymentMethod === "Online" ? (
                     <button
                       id="razorpay-pay-btn"
                       onClick={() => placeOrder("Online", "Paid")}
-                      className="w-full h-13 bg-[#052a51] hover:bg-[#0b3b6d] text-white font-black text-sm rounded-2xl shadow-md transition-all flex items-center justify-center gap-2 active:scale-95"
+                      className="flex-1 h-12 sm:h-13 bg-[#052a51] hover:bg-[#0b3b6d] text-white font-black text-xs sm:text-sm rounded-2xl shadow-md transition-all flex items-center justify-center gap-2 active:scale-95 cursor-pointer"
                     >
                       <Lock size={16} className="text-[#F26522]" />
                       <span>Pay {formatPrice(total)} & Confirm Order</span>
@@ -569,10 +547,10 @@ export default function CheckoutPage() {
                     <button
                       id="cod-pay-btn"
                       onClick={handleInitiateCod}
-                      className="w-full h-13 bg-[#F26522] hover:bg-[#d95a1e] text-white font-black text-sm rounded-2xl shadow-md transition-all flex items-center justify-center gap-2 active:scale-95"
+                      className="flex-1 h-12 sm:h-13 bg-[#F26522] hover:bg-[#d95a1e] text-white font-black text-xs sm:text-sm rounded-2xl shadow-md transition-all flex items-center justify-center gap-2 active:scale-95 cursor-pointer"
                     >
                       <Banknote size={18} />
-                      <span>Confirm Cash on Delivery ({formatPrice(total)})</span>
+                      <span>Confirm COD ({formatPrice(total)})</span>
                     </button>
                   )}
                 </div>
