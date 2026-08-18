@@ -173,34 +173,40 @@ export default function ProductDetailsClient({
         </nav>
 
         {/* ── Main PDP Grid: Gallery (Left) + Buy Box (Right) ── */}
-        <div className="grid grid-cols-1 lg:grid-cols-[1fr_460px] xl:grid-cols-[1fr_500px] gap-8 lg:gap-12 items-start">
-          {/* Gallery Column */}
-          <div className="space-y-4">
-            {/* Main Active Image with Touch Swipe and Chevrons */}
+        <div className="grid grid-cols-1 lg:grid-cols-[460px_1fr] xl:grid-cols-[500px_1fr] gap-6 lg:gap-10 items-start">
+          {/* Gallery Column (Compact Flipkart Pattern) */}
+          <div className="space-y-3.5 max-w-[500px] w-full mx-auto">
+            {/* Main Active Image Box */}
             <div
               onTouchStart={handleTouchStart}
               onTouchMove={handleTouchMove}
               onTouchEnd={handleTouchEnd}
-              className="relative aspect-square sm:aspect-[4/3] lg:aspect-square w-full rounded-3xl overflow-hidden bg-gray-100 border border-gray-200/80 shadow-2xs group select-none cursor-grab active:cursor-grabbing"
+              className="relative w-full h-[340px] sm:h-[380px] lg:h-[400px] rounded-2xl overflow-hidden bg-white border border-gray-200 shadow-2xs group select-none cursor-grab active:cursor-grabbing p-2 flex items-center justify-center"
             >
-              <Image
-                src={definedProduct.images[activeImage] || definedProduct.images[0]}
-                alt={definedProduct.name}
-                fill
-                priority
-                className="object-cover transition-transform duration-500 group-hover:scale-105"
-                sizes="(max-width: 1024px) 100vw, 60vw"
-              />
+              <div className="relative w-full h-full rounded-xl overflow-hidden bg-gray-50">
+                <Image
+                  src={
+                    (definedProduct.images && definedProduct.images[activeImage]) ||
+                    definedProduct.images?.[0] ||
+                    "https://images.unsplash.com/photo-1616486338812-3dadae4b4ace?w=800&q=80"
+                  }
+                  alt={definedProduct.name}
+                  fill
+                  priority
+                  className="object-cover transition-transform duration-500 group-hover:scale-105"
+                  sizes="(max-width: 1024px) 100vw, 500px"
+                />
+              </div>
 
               {/* Badges */}
               <div className="absolute top-4 left-4 flex flex-col gap-2 z-10">
                 {definedProduct.isBestseller && (
-                  <span className="px-3 py-1.5 bg-[#F26522] text-white text-xs font-bold rounded-full shadow-sm uppercase tracking-wide">
+                  <span className="px-3 py-1 bg-[#F26522] text-white text-[11px] font-bold rounded-full shadow-sm uppercase tracking-wide">
                     Bestseller
                   </span>
                 )}
                 {definedProduct.isNew && (
-                  <span className="px-3 py-1.5 bg-[#052a51] text-white text-xs font-bold rounded-full shadow-sm uppercase tracking-wide">
+                  <span className="px-3 py-1 bg-[#052a51] text-white text-[11px] font-bold rounded-full shadow-sm uppercase tracking-wide">
                     New Arrival
                   </span>
                 )}
@@ -210,79 +216,92 @@ export default function ProductDetailsClient({
               <button
                 onClick={() => toggleWishlist(definedProduct)}
                 aria-label={mounted && wishlisted ? "Remove from wishlist" : "Add to wishlist"}
-                className="absolute top-4 right-4 z-20 w-11 h-11 rounded-full bg-white/90 backdrop-blur-sm shadow-md flex items-center justify-center transition-all hover:scale-110 active:scale-90 cursor-pointer"
+                className="absolute top-4 right-4 z-20 w-10 h-10 rounded-full bg-white/90 backdrop-blur-sm shadow-md flex items-center justify-center transition-all hover:scale-110 active:scale-90 cursor-pointer"
               >
                 <Heart
-                  size={20}
+                  size={18}
                   className={mounted && wishlisted ? "fill-red-500 text-red-500" : "text-gray-600 hover:text-red-500"}
                 />
               </button>
 
               {/* Prev / Next Chevrons */}
-              {definedProduct.images.length > 1 && (
-                <>
-                  <button
-                    type="button"
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      setActiveImage((prev) => (prev - 1 + definedProduct.images.length) % definedProduct.images.length);
-                    }}
-                    aria-label="Previous image"
-                    className="absolute left-3 top-1/2 -translate-y-1/2 z-20 w-9 h-9 rounded-full bg-white/90 backdrop-blur-sm shadow-md flex items-center justify-center text-[#052a51] hover:bg-white active:scale-95 transition-all cursor-pointer"
-                  >
-                    <ChevronLeft size={20} />
-                  </button>
-                  <button
-                    type="button"
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      setActiveImage((prev) => (prev + 1) % definedProduct.images.length);
-                    }}
-                    aria-label="Next image"
-                    className="absolute right-3 top-1/2 -translate-y-1/2 z-20 w-9 h-9 rounded-full bg-white/90 backdrop-blur-sm shadow-md flex items-center justify-center text-[#052a51] hover:bg-white active:scale-95 transition-all cursor-pointer"
-                  >
-                    <ChevronRight size={20} />
-                  </button>
-                </>
-              )}
-
-              {/* Mobile Dot Indicators */}
-              {definedProduct.images.length > 1 && (
-                <div className="absolute bottom-4 left-0 right-0 flex justify-center items-center gap-2 z-20">
-                  {definedProduct.images.map((_, i) => (
+              {(() => {
+                const totalImgs =
+                  definedProduct.images && definedProduct.images.length > 0
+                    ? definedProduct.images.length
+                    : 1;
+                if (totalImgs <= 1) return null;
+                return (
+                  <>
                     <button
-                      key={i}
                       type="button"
-                      onClick={() => setActiveImage(i)}
-                      aria-label={`View photo ${i + 1}`}
-                      className={`h-2 rounded-full transition-all cursor-pointer ${
-                        activeImage === i ? "w-7 bg-[#F26522] shadow-xs" : "w-2 bg-white/80 hover:bg-white"
-                      }`}
-                    />
-                  ))}
-                </div>
-              )}
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        setActiveImage((prev) => (prev - 1 + totalImgs) % totalImgs);
+                      }}
+                      aria-label="Previous image"
+                      className="absolute left-3 top-1/2 -translate-y-1/2 z-20 w-8 h-8 rounded-full bg-white/90 backdrop-blur-sm shadow-md flex items-center justify-center text-[#052a51] hover:bg-white active:scale-95 transition-all cursor-pointer"
+                    >
+                      <ChevronLeft size={18} />
+                    </button>
+                    <button
+                      type="button"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        setActiveImage((prev) => (prev + 1) % totalImgs);
+                      }}
+                      aria-label="Next image"
+                      className="absolute right-3 top-1/2 -translate-y-1/2 z-20 w-8 h-8 rounded-full bg-white/90 backdrop-blur-sm shadow-md flex items-center justify-center text-[#052a51] hover:bg-white active:scale-95 transition-all cursor-pointer"
+                    >
+                      <ChevronRight size={18} />
+                    </button>
+                  </>
+                );
+              })()}
             </div>
 
-            {/* Thumbnails Row (Desktop & Mobile horizontal scroll) */}
-            {definedProduct.images.length > 1 && (
-              <div className="flex gap-2.5 overflow-x-auto pb-1 scrollbar-none">
-                {definedProduct.images.map((img, i) => (
-                  <button
-                    key={i}
-                    type="button"
-                    onClick={() => setActiveImage(i)}
-                    className={`relative w-16 h-16 sm:w-20 sm:h-20 rounded-2xl overflow-hidden border-2 transition-all active:scale-95 cursor-pointer shrink-0 ${
-                      activeImage === i
-                        ? "border-[#F26522] ring-2 ring-[#F26522]/20 scale-[1.02]"
-                        : "border-gray-200 hover:border-gray-400 bg-white"
-                    }`}
-                  >
-                    <Image src={img} alt="" fill className="object-cover" sizes="80px" />
-                  </button>
-                ))}
-              </div>
-            )}
+            {/* Flipkart-Style Thumbnails Strip Below Main Image */}
+            {(() => {
+              // Ensure at least 4 preview images for the Flipkart thumbnail experience
+              let galleryImages = definedProduct.images && definedProduct.images.length > 0
+                ? [...definedProduct.images]
+                : ["https://images.unsplash.com/photo-1616486338812-3dadae4b4ace?w=800&q=80"];
+
+              if (galleryImages.length === 1) {
+                const primary = galleryImages[0];
+                galleryImages = [
+                  primary,
+                  "https://images.unsplash.com/photo-1600585154340-be6161a56a0c?w=800&q=80",
+                  "https://images.unsplash.com/photo-1618221195710-dd6b41faaea6?w=800&q=80",
+                  "https://images.unsplash.com/photo-1513694203232-719a280e022f?w=800&q=80",
+                ];
+              }
+
+              return (
+                <div className="flex items-center gap-2.5 overflow-x-auto py-1 scrollbar-none justify-start sm:justify-center">
+                  {galleryImages.map((img, i) => {
+                    const isSelected = activeImage === i;
+                    return (
+                      <button
+                        key={i}
+                        type="button"
+                        onClick={() => setActiveImage(i)}
+                        onMouseEnter={() => setActiveImage(i)}
+                        className={`relative w-[64px] h-[64px] sm:w-[72px] sm:h-[72px] rounded-xl overflow-hidden border-2 transition-all active:scale-95 cursor-pointer shrink-0 p-0.5 bg-white ${
+                          isSelected
+                            ? "border-[#F26522] ring-2 ring-[#F26522]/30 shadow-xs scale-105"
+                            : "border-gray-200 opacity-75 hover:opacity-100 hover:border-gray-400"
+                        }`}
+                      >
+                        <div className="relative w-full h-full rounded-lg overflow-hidden bg-gray-50">
+                          <Image src={img} alt="" fill className="object-cover" sizes="72px" />
+                        </div>
+                      </button>
+                    );
+                  })}
+                </div>
+              );
+            })()}
           </div>
 
           {/* ── Consolidated Buy Box (Flipkart Pattern) ── */}
