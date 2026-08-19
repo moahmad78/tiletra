@@ -106,8 +106,28 @@ export default function CheckoutPage() {
     setStep("Delivery");
   };
 
+  const [isProcessingPayment, setIsProcessingPayment] = useState(false);
+
+  const loadRazorpayScript = (): Promise<boolean> => {
+    return new Promise((resolve) => {
+      if (typeof window !== "undefined" && (window as any).Razorpay) {
+        resolve(true);
+        return;
+      }
+      const script = document.createElement("script");
+      script.src = "https://checkout.razorpay.com/v1/checkout.js";
+      script.onload = () => resolve(true);
+      script.onerror = () => resolve(false);
+      document.body.appendChild(script);
+    });
+  };
+
   // Place Order (Online or COD)
-  const placeOrder = async (method: "Online" | "COD", paymentStatus: "Paid" | "Pending") => {
+  const placeOrder = async (
+    method: "Online" | "COD",
+    paymentStatus: "Paid" | "Pending",
+    customPaymentId?: string
+  ) => {
     if (!isAuthenticated) {
       openLoginModal({ type: "checkout" });
       return;
@@ -154,7 +174,7 @@ export default function CheckoutPage() {
         paymentStatus,
         paymentMethod: method === "COD" ? "COD" : "Online",
         codConfirmed: method === "COD",
-        paymentId: method === "COD" ? `cod_ref_${Date.now().toString().slice(-6)}` : `pay_rzp_${Date.now().toString().slice(-8)}`,
+        paymentId: customPaymentId || (method === "COD" ? `cod_ref_${Date.now().toString().slice(-6)}` : `pay_rzp_${Date.now().toString().slice(-8)}`),
       });
 
       if (!res.success || !res.order) {
@@ -178,6 +198,120 @@ export default function CheckoutPage() {
 
     clearCart();
     router.push(`/checkout/success?orderId=${orderId}&method=${method.toLowerCase()}&total=${total}`);
+  };
+
+  // Online Payment Flow with Razorpay Standard Modal
+  const handleOnlinePayment = async () => {
+    if (!isAuthenticated) {
+      openLoginModal({ type: "checkout" });
+      return;
+    }
+
+    if (!selectedAddress) {
+      toast.error("Please select or add a delivery address to continue.");
+      return;
+    }
+
+    setIsProcessingPayment(true);
+
+    try {
+      // 1. Load Razorpay script
+      const scriptLoaded = await loadRazorpayScript();
+      if (!scriptLoaded) {
+        toast.error("Failed to load Razorpay checkout SDK. Please check your internet connection.");
+        setIsProcessingPayment(false);
+        return;
+      }
+
+      // 2. Create Razorpay Order on Backend
+      const orderAmountPaise = Math.round(total * 100);
+      const res = await fetch("/api/create-order", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          amount: orderAmountPaise,
+          currency: "INR",
+          receipt: `rcpt_${Date.now().toString().slice(-8)}`,
+        }),
+      });
+
+      const orderData = await res.json();
+      if (!res.ok || !orderData.order_id) {
+        toast.error(orderData.error || "Failed to initiate online payment order");
+        setIsProcessingPayment(false);
+        return;
+      }
+
+      // 3. Open Razorpay Checkout Modal
+      const razorpayKey =
+        process.env.NEXT_PUBLIC_RAZORPAY_KEY_ID || "rzp_test_TRbTSybnlrbKuZ";
+
+      const options = {
+        key: razorpayKey,
+        amount: orderData.amount,
+        currency: orderData.currency || "INR",
+        name: "Tiletra",
+        description: `Order Payment (${items.length} item${items.length > 1 ? "s" : ""})`,
+        image: "/favicon.png",
+        order_id: orderData.order_id,
+        prefill: {
+          name: selectedAddress.name || user?.name || "Customer",
+          email: user?.email || "",
+          contact: selectedAddress.phone || user?.phone || "",
+        },
+        theme: {
+          color: "#052a51",
+        },
+        handler: async function (response: {
+          razorpay_payment_id: string;
+          razorpay_order_id: string;
+          razorpay_signature: string;
+        }) {
+          try {
+            // 4. Verify Payment Signature on Backend
+            const verifyRes = await fetch("/api/verify-payment", {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({
+                razorpay_order_id: response.razorpay_order_id,
+                razorpay_payment_id: response.razorpay_payment_id,
+                razorpay_signature: response.razorpay_signature,
+              }),
+            });
+
+            const verifyData = await verifyRes.json();
+            if (verifyRes.ok && verifyData.success) {
+              toast.success("Payment verified successfully!");
+              await placeOrder("Online", "Paid", response.razorpay_payment_id);
+            } else {
+              toast.error(verifyData.error || "Payment signature verification failed");
+            }
+          } catch (e: any) {
+            console.error("Verification error:", e);
+            toast.error("Failed to verify payment with server");
+          } finally {
+            setIsProcessingPayment(false);
+          }
+        },
+        modal: {
+          ondismiss: function () {
+            setIsProcessingPayment(false);
+            toast.info("Payment cancelled");
+          },
+        },
+      };
+
+      const rzp = new (window as any).Razorpay(options);
+      rzp.on("payment.failed", function (response: any) {
+        setIsProcessingPayment(false);
+        toast.error(response?.error?.description || "Payment failed. Please retry.");
+      });
+      rzp.open();
+    } catch (err: any) {
+      console.error("Online payment error:", err);
+      toast.error(err?.message || "An unexpected error occurred during payment");
+      setIsProcessingPayment(false);
+    }
   };
 
   return (
@@ -510,11 +644,16 @@ export default function CheckoutPage() {
                   {paymentMethod === "Online" ? (
                     <button
                       id="razorpay-pay-btn"
-                      onClick={() => placeOrder("Online", "Paid")}
-                      className="flex-1 h-12 sm:h-13 bg-[#052a51] hover:bg-[#0b3b6d] text-white font-black text-xs sm:text-sm rounded-2xl shadow-md transition-all flex items-center justify-center gap-2 active:scale-95 cursor-pointer"
+                      onClick={handleOnlinePayment}
+                      disabled={isProcessingPayment}
+                      className="flex-1 h-12 sm:h-13 bg-[#052a51] hover:bg-[#0b3b6d] text-white font-black text-xs sm:text-sm rounded-2xl shadow-md transition-all flex items-center justify-center gap-2 active:scale-95 cursor-pointer disabled:opacity-60"
                     >
                       <Lock size={16} className="text-[#F26522]" />
-                      <span>Pay {formatPrice(total)} & Confirm Order</span>
+                      <span>
+                        {isProcessingPayment
+                          ? "Opening Payment Window..."
+                          : `Pay ${formatPrice(total)} & Confirm Order`}
+                      </span>
                     </button>
                   ) : (
                     <button
