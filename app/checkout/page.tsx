@@ -19,8 +19,6 @@ import {
   Lock,
   Phone,
   AlertTriangle,
-  RotateCw,
-  Sparkles,
 } from "lucide-react";
 import { useCartStore } from "@/lib/cart-store";
 import { useAuthStore, type CustomerAddress } from "@/lib/auth-store";
@@ -67,11 +65,6 @@ export default function CheckoutPage() {
   const [selectedAddressId, setSelectedAddressId] = useState<string>("");
   const [isAddingNewAddress, setIsAddingNewAddress] = useState(false);
   const [paymentMethod, setPaymentMethod] = useState<"Online" | "COD">("Online");
-
-  // COD Confirmation OTP Modal State
-  const [isCodOtpModalOpen, setIsCodOtpModalOpen] = useState(false);
-  const [codOtp, setCodOtp] = useState(["", "", "", ""]);
-  const [codLoading, setCodLoading] = useState(false);
 
   // Fetch live store settings from database
   useEffect(() => {
@@ -185,26 +178,6 @@ export default function CheckoutPage() {
 
     clearCart();
     router.push(`/checkout/success?orderId=${orderId}&method=${method.toLowerCase()}&total=${total}`);
-  };
-
-  // Trigger COD Confirmation Dialog
-  const handleInitiateCod = () => {
-    setIsCodOtpModalOpen(true);
-  };
-
-  // Verify COD OTP & Finalize Order
-  const handleConfirmCodOtp = () => {
-    const code = codOtp.join("");
-    if (code !== "1234" && code.length !== 4) {
-      toast.error("Invalid confirmation code. Please enter 1234 to confirm.");
-      return;
-    }
-    setCodLoading(true);
-    setTimeout(() => {
-      setCodLoading(false);
-      setIsCodOtpModalOpen(false);
-      placeOrder("COD", "Pending");
-    }, 600);
   };
 
   return (
@@ -517,7 +490,7 @@ export default function CheckoutPage() {
                           </span>
                         </p>
                         <p className="text-xs text-gray-500 mt-1 leading-relaxed">
-                          Pay cash to our delivery driver when your tiles reach your doorstep. Requires quick OTP confirmation.
+                          Pay cash to our delivery driver when your tiles reach your doorstep.
                         </p>
                       </div>
                     </div>
@@ -546,11 +519,11 @@ export default function CheckoutPage() {
                   ) : (
                     <button
                       id="cod-pay-btn"
-                      onClick={handleInitiateCod}
+                      onClick={() => placeOrder("COD", "Pending")}
                       className="flex-1 h-12 sm:h-13 bg-[#F26522] hover:bg-[#d95a1e] text-white font-black text-xs sm:text-sm rounded-2xl shadow-md transition-all flex items-center justify-center gap-2 active:scale-95 cursor-pointer"
                     >
                       <Banknote size={18} />
-                      <span>Confirm COD ({formatPrice(total)})</span>
+                      <span>Confirm COD Order ({formatPrice(total)})</span>
                     </button>
                   )}
                 </div>
@@ -615,71 +588,6 @@ export default function CheckoutPage() {
           </div>
         </div>
       </div>
-
-      {/* ── COD OTP CONFIRMATION MODAL ── */}
-      {isCodOtpModalOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
-          <div
-            className="fixed inset-0 bg-black/60 backdrop-blur-xs"
-            onClick={() => setIsCodOtpModalOpen(false)}
-          />
-          <div className="relative w-full max-w-sm bg-white rounded-3xl p-6 shadow-2xl z-10 border border-gray-100 text-center space-y-4 animate-in fade-in zoom-in-95">
-            <div className="w-12 h-12 rounded-2xl bg-amber-500/10 text-amber-600 flex items-center justify-center mx-auto">
-              <Banknote size={24} />
-            </div>
-
-            <div>
-              <h3 className="text-xl font-black text-[#052a51]">Confirm Cash on Delivery</h3>
-              <p className="text-xs text-gray-500 mt-1">
-                Enter the 4-digit code sent to +91 {selectedAddress?.phone || user?.phone} to confirm your order of {formatPrice(total)}.
-              </p>
-            </div>
-
-            {/* Quick Demo Hint */}
-            <div className="p-2.5 bg-amber-50 rounded-xl border border-amber-200 text-xs text-amber-900 font-semibold flex items-center justify-center gap-1.5">
-              <Sparkles size={14} className="text-[#F26522]" />
-              <span>Demo Code: Enter <strong>1234</strong></span>
-            </div>
-
-            {/* OTP Boxes */}
-            <div className="flex justify-center gap-2.5 py-2">
-              {[0, 1, 2, 3].map((i) => (
-                <input
-                  key={i}
-                  type="text"
-                  maxLength={1}
-                  inputMode="numeric"
-                  value={codOtp[i]}
-                  onChange={(e) => {
-                    const newOtp = [...codOtp];
-                    newOtp[i] = e.target.value.replace(/\D/g, "");
-                    setCodOtp(newOtp);
-                  }}
-                  className="w-12 h-12 text-center text-xl font-black text-[#052a51] bg-gray-50 border-2 border-gray-200 focus:border-[#F26522] rounded-xl focus:outline-none"
-                />
-              ))}
-            </div>
-
-            <div className="flex gap-2 pt-2">
-              <button
-                type="button"
-                onClick={() => setIsCodOtpModalOpen(false)}
-                className="flex-1 py-3 border border-gray-200 rounded-xl text-xs font-bold text-gray-600 hover:bg-gray-50"
-              >
-                Cancel
-              </button>
-              <button
-                type="button"
-                onClick={handleConfirmCodOtp}
-                disabled={codLoading || codOtp.join("").length !== 4}
-                className="flex-1 py-3 bg-[#F26522] hover:bg-[#d95a1e] text-white rounded-xl text-xs font-black shadow-md flex items-center justify-center gap-1.5 disabled:opacity-50"
-              >
-                {codLoading ? <RotateCw size={15} className="animate-spin" /> : "Confirm Order"}
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
     </main>
   );
 }
