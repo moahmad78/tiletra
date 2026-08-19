@@ -50,12 +50,12 @@ export default function ImageUploadManager({
 
   // Curated Tile Presets for Quick Demo/Adding
   const presetTiles = [
-    "https://images.unsplash.com/photo-1615529182904-14819c35db37?w=800&q=80",
-    "https://images.unsplash.com/photo-1616486338812-3dadae4b4ace?w=800&q=80",
-    "https://images.unsplash.com/photo-1552321554-5fefe8c9ef14?w=800&q=80",
-    "https://images.unsplash.com/photo-1558618666-fcd25c85cd64?w=800&q=80",
-    "https://images.unsplash.com/photo-1584622650111-993a426fbf0a?w=800&q=80",
-    "https://images.unsplash.com/photo-1507652313519-d4e9174996dd?w=800&q=80",
+    "/placeholders/product.svg",
+    "/placeholders/product.svg",
+    "/placeholders/product.svg",
+    "/placeholders/product.svg",
+    "/placeholders/product.svg",
+    "/placeholders/product.svg",
   ];
 
   return (
@@ -143,7 +143,7 @@ export default function ImageUploadManager({
               type="url"
               value={urlInput}
               onChange={(e) => setUrlInput(e.target.value)}
-              placeholder="https://images.unsplash.com/..."
+              placeholder="/placeholders/product.svg"
               className="flex-1 px-3 py-1.5 text-xs border border-gray-300 rounded-xl focus:outline-none focus:border-[#F26522]"
               autoFocus
             />

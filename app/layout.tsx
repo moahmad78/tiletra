@@ -71,7 +71,7 @@ export default function RootLayout({
               "@context": "https://schema.org",
               "@type": "Store",
               "name": "Intrihub",
-              "image": "https://images.unsplash.com/photo-1581094794329-c8112a89af12?q=80&w=2070&auto=format&fit=crop",
+              "image": "/placeholders/product.svg",
               "@id": "",
               "url": "https://tiletra.com",
               "telephone": "+917870935277",

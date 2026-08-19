@@ -347,7 +347,7 @@ export async function createProduct(input: CreateProductInput) {
         isBestseller: Boolean(input.isBestseller),
         isNewArrival: Boolean(input.isNew),
         isTrending: Boolean(input.isTrending),
-        images: input.images.length > 0 ? input.images : ["https://images.unsplash.com/photo-1615529182904-14819c35db37?w=800&q=80"],
+        images: input.images.length > 0 ? input.images : ["/placeholders/product.svg"],
         description: input.description,
         rating: input.manualRating !== undefined && input.manualRating !== null ? Number(input.manualRating) : 4.8,
         reviewCount: input.manualReviewCount !== undefined && input.manualReviewCount !== null ? Number(input.manualReviewCount) : 0,

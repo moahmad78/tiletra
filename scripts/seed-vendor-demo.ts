@@ -66,7 +66,7 @@ async function seedVendorDemo() {
       pricePerSqft: 2150,
       description: "ISI certified flame retardant single core flexible copper cable for residential and commercial electrification.",
       images: [
-        "https://images.unsplash.com/photo-1544716278-ca5e3f4abd8c?w=800&q=80",
+        "/placeholders/product.svg",
       ],
       vendorId: vendorBalaji.id,
       status: "active",

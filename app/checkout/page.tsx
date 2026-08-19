@@ -152,7 +152,7 @@ export default function CheckoutPage() {
           boxQuantity: i.quantity,
           pricePerBox: i.variant.pricePerBox,
           totalPrice: i.variant.pricePerBox * i.quantity,
-          image: i.product.images[0] || "https://images.unsplash.com/photo-1615529182904-14819c35db37?w=800&q=80",
+          image: i.product.images[0] || "/placeholders/product.svg",
         })),
         subtotal,
         deliveryFee,

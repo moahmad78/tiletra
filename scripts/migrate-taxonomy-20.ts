@@ -16,7 +16,7 @@ const NEW_20_TAXONOMY: NewCategoryDef[] = [
     slug: "electrical",
     order: 1,
     description: "Certified wires, modular switches, MCBs, distribution boards & conduit piping.",
-    image: "https://images.unsplash.com/photo-1558494949-ef010cbdcc31?w=800&q=80",
+    image: "/placeholders/product.svg",
     icon: "Zap",
   },
   {
@@ -24,7 +24,7 @@ const NEW_20_TAXONOMY: NewCategoryDef[] = [
     slug: "lighting",
     order: 2,
     description: "Decorative chandeliers, pendant lights, recessed COB downlights, LED strips & profile lights.",
-    image: "https://images.unsplash.com/photo-1507473885765-e6ed057f782c?w=800&q=80",
+    image: "/placeholders/product.svg",
     icon: "Sun",
   },
   {
@@ -32,7 +32,7 @@ const NEW_20_TAXONOMY: NewCategoryDef[] = [
     slug: "tiles-stone",
     order: 3,
     description: "Vitrified tiles, ceramic, Italian marble, polished granite slabs & stone cladding.",
-    image: "https://images.unsplash.com/photo-1616486338812-3dadae4b4ace?w=800&q=80",
+    image: "/placeholders/product.svg",
     icon: "Grid",
   },
   {
@@ -40,7 +40,7 @@ const NEW_20_TAXONOMY: NewCategoryDef[] = [
     slug: "paint-finishes",
     order: 4,
     description: "Luxury interior emulsions, exterior weatherproof paints, primers, textures & wood polishes.",
-    image: "https://images.unsplash.com/photo-1589939705384-5185137a7f0f?w=800&q=80",
+    image: "/placeholders/product.svg",
     icon: "Palette",
   },
   {
@@ -48,7 +48,7 @@ const NEW_20_TAXONOMY: NewCategoryDef[] = [
     slug: "false-ceiling",
     order: 5,
     description: "Gypsum false ceiling boards, POP molding plaster, GI channel grids & acoustic ceiling tiles.",
-    image: "https://images.unsplash.com/photo-1600565193348-f74bd3c7ccdf?w=800&q=80",
+    image: "/placeholders/product.svg",
     icon: "Square",
   },
   {
@@ -56,7 +56,7 @@ const NEW_20_TAXONOMY: NewCategoryDef[] = [
     slug: "flooring",
     order: 6,
     description: "Wooden laminate flooring, SPC/LVP waterproof planks, engineered hardwood & vinyl rolls.",
-    image: "https://images.unsplash.com/photo-1581858726788-75bc0f6a952d?w=800&q=80",
+    image: "/placeholders/product.svg",
     icon: "Layers",
   },
   {
@@ -64,7 +64,7 @@ const NEW_20_TAXONOMY: NewCategoryDef[] = [
     slug: "doors-windows",
     order: 7,
     description: "Solid flush doors, UPVC/aluminum window sections, sliding profiles & hardware kits.",
-    image: "https://images.unsplash.com/photo-1534349762230-e0cadf78f5da?w=800&q=80",
+    image: "/placeholders/product.svg",
     icon: "DoorOpen",
   },
   {
@@ -72,7 +72,7 @@ const NEW_20_TAXONOMY: NewCategoryDef[] = [
     slug: "glass-mirror",
     order: 8,
     description: "Toughened partition glass, LED smart touch vanity mirrors, shower cubicles & glass fittings.",
-    image: "https://images.unsplash.com/photo-1584622781564-1d987f7333c1?w=800&q=80",
+    image: "/placeholders/product.svg",
     icon: "Maximize",
   },
   {
@@ -80,7 +80,7 @@ const NEW_20_TAXONOMY: NewCategoryDef[] = [
     slug: "hardware-fittings",
     order: 9,
     description: "SS 304 screws, soft-close hydraulic hinges, mortise locks, handles & drawer slides.",
-    image: "https://images.unsplash.com/photo-1581092160607-ee22621dd758?w=800&q=80",
+    image: "/placeholders/product.svg",
     icon: "Wrench",
   },
   {
@@ -88,7 +88,7 @@ const NEW_20_TAXONOMY: NewCategoryDef[] = [
     slug: "furniture",
     order: 10,
     description: "Living room, dining & bedroom furniture, ergonomic seating, study tables & storage.",
-    image: "https://images.unsplash.com/photo-1555041469-a586c61ea9bc?w=800&q=80",
+    image: "/placeholders/product.svg",
     icon: "Armchair",
   },
   {
@@ -96,7 +96,7 @@ const NEW_20_TAXONOMY: NewCategoryDef[] = [
     slug: "kitchen-wardrobe",
     order: 11,
     description: "Modular kitchen wire baskets, tandem drawer boxes, pantry units & wardrobe organizers.",
-    image: "https://images.unsplash.com/photo-1556911220-e15b29be8c8f?w=800&q=80",
+    image: "/placeholders/product.svg",
     icon: "Package",
   },
   {
@@ -104,7 +104,7 @@ const NEW_20_TAXONOMY: NewCategoryDef[] = [
     slug: "plumbing-sanitary",
     order: 12,
     description: "CPVC/UPVC pipes, brass mixer faucets, washbasins, ceramic water closets & bath fittings.",
-    image: "https://images.unsplash.com/photo-1584622650111-993a426fbf0a?w=800&q=80",
+    image: "/placeholders/product.svg",
     icon: "Droplets",
   },
   {
@@ -112,7 +112,7 @@ const NEW_20_TAXONOMY: NewCategoryDef[] = [
     slug: "wall-surface",
     order: 13,
     description: "Designer non-woven wallpapers, 3D charcoal fluted wall slats, louvers & PVC wall panels.",
-    image: "https://images.unsplash.com/photo-1615529182904-14819c35db37?w=800&q=80",
+    image: "/placeholders/product.svg",
     icon: "Wallpaper",
   },
   {
@@ -120,7 +120,7 @@ const NEW_20_TAXONOMY: NewCategoryDef[] = [
     slug: "decor-accessories",
     order: 14,
     description: "Wall art, metal planters, decorative vases, table accents, rugs & ambient interior styling.",
-    image: "https://images.unsplash.com/photo-1513519245088-0e12902e5a38?w=800&q=80",
+    image: "/placeholders/product.svg",
     icon: "Sparkles",
   },
   {
@@ -128,7 +128,7 @@ const NEW_20_TAXONOMY: NewCategoryDef[] = [
     slug: "curtains-blinds",
     order: 15,
     description: "Motorized smart curtain tracks, zebra & roller blinds, blackout fabrics and designer rods.",
-    image: "https://images.unsplash.com/photo-1513694203232-719a280e022f?w=800&q=80",
+    image: "/placeholders/product.svg",
     icon: "Sliders",
   },
   {
@@ -136,7 +136,7 @@ const NEW_20_TAXONOMY: NewCategoryDef[] = [
     slug: "office-commercial",
     order: 16,
     description: "Workstations, acoustic desk dividers, office conference tables, reception desks & task chairs.",
-    image: "https://images.unsplash.com/photo-1497366216548-37526070297c?w=800&q=80",
+    image: "/placeholders/product.svg",
     icon: "Building",
   },
   {
@@ -144,7 +144,7 @@ const NEW_20_TAXONOMY: NewCategoryDef[] = [
     slug: "outdoor-landscape",
     order: 17,
     description: "Heavy-duty parking pavers, 35mm UV artificial turf, outdoor composite decking & fencing.",
-    image: "https://images.unsplash.com/photo-1558618666-fcd25c85cd64?w=800&q=80",
+    image: "/placeholders/product.svg",
     icon: "Trees",
   },
   {
@@ -152,7 +152,7 @@ const NEW_20_TAXONOMY: NewCategoryDef[] = [
     slug: "smart-home",
     order: 18,
     description: "Smart touch switches, WiFi curtain motors, voice-controlled ambient lighting & smart hubs.",
-    image: "https://images.unsplash.com/photo-1558002038-1055907df827?w=800&q=80",
+    image: "/placeholders/product.svg",
     icon: "Cpu",
   },
   {
@@ -160,7 +160,7 @@ const NEW_20_TAXONOMY: NewCategoryDef[] = [
     slug: "safety-fire",
     order: 19,
     description: "Smart biometric door locks, HD WiFi CCTV cameras, fire extinguishers & smoke detectors.",
-    image: "https://images.unsplash.com/photo-1557597774-9d273605dfa9?w=800&q=80",
+    image: "/placeholders/product.svg",
     icon: "ShieldAlert",
   },
   {
@@ -168,7 +168,7 @@ const NEW_20_TAXONOMY: NewCategoryDef[] = [
     slug: "tools-consumables",
     order: 20,
     description: "Power tools, measuring tapes, diamond cutting blades, safety gear, fasteners & site supplies.",
-    image: "https://images.unsplash.com/photo-1504307651254-35680f356dfd?w=800&q=80",
+    image: "/placeholders/product.svg",
     icon: "Hammer",
   },
   // Subcategories
@@ -177,7 +177,7 @@ const NEW_20_TAXONOMY: NewCategoryDef[] = [
     slug: "plywood",
     order: 21,
     description: "BWP marine ply, commercial MR plywood, MDF, HDHMR boards & decorative laminates.",
-    image: "https://images.unsplash.com/photo-1513694203232-719a280e022f?w=800&q=80",
+    image: "/placeholders/product.svg",
     icon: "Layers",
     parentSlug: "furniture",
   },
@@ -186,7 +186,7 @@ const NEW_20_TAXONOMY: NewCategoryDef[] = [
     slug: "adhesives-sealants-waterproofing",
     order: 22,
     description: "Polymer tile adhesive, epoxy grout, sanitary silicone & terrace waterproofing membranes.",
-    image: "https://images.unsplash.com/photo-1504307651254-35680f356dfd?w=800&q=80",
+    image: "/placeholders/product.svg",
     icon: "Shield",
     parentSlug: "tools-consumables",
   },

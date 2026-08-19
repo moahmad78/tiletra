@@ -151,7 +151,7 @@ export default function DesktopCategoryRow({ categories }: DesktopCategoryRowPro
                   <div className="bg-white rounded-2xl p-2 border border-gray-200/90 shadow-2xs hover:shadow-md hover:border-[#F26522] transition-all text-center flex flex-col h-full active:scale-98">
                     <div className="relative w-full h-[115px] sm:h-[120px] rounded-xl overflow-hidden bg-gray-100 shrink-0">
                       <Image
-                        src={cat.image || "https://images.unsplash.com/photo-1616486338812-3dadae4b4ace?w=800&q=80"}
+                        src={cat.image || "/placeholders/category.svg"}
                         alt={cat.name}
                         fill
                         loading="eager"
@@ -186,7 +186,7 @@ export default function DesktopCategoryRow({ categories }: DesktopCategoryRowPro
                   <div className="bg-white rounded-2xl p-2 border border-gray-200/90 shadow-2xs hover:shadow-md hover:border-[#F26522] transition-all text-center flex flex-col h-full active:scale-98">
                     <div className="relative w-full h-[115px] sm:h-[120px] rounded-xl overflow-hidden bg-gray-100 shrink-0">
                       <Image
-                        src={cat.image || "https://images.unsplash.com/photo-1616486338812-3dadae4b4ace?w=800&q=80"}
+                        src={cat.image || "/placeholders/category.svg"}
                         alt={cat.name}
                         fill
                         loading="eager"
@@ -221,7 +221,7 @@ export default function DesktopCategoryRow({ categories }: DesktopCategoryRowPro
                   <div className="bg-white rounded-2xl p-2 border border-gray-200/90 shadow-2xs hover:shadow-md hover:border-[#F26522] transition-all text-center flex flex-col h-full active:scale-98">
                     <div className="relative w-full h-[115px] sm:h-[120px] rounded-xl overflow-hidden bg-gray-100 shrink-0">
                       <Image
-                        src={cat.image || "https://images.unsplash.com/photo-1616486338812-3dadae4b4ace?w=800&q=80"}
+                        src={cat.image || "/placeholders/category.svg"}
                         alt={cat.name}
                         fill
                         loading="eager"

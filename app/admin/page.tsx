@@ -173,7 +173,7 @@ export default function AdminDashboardPage() {
                     <div className="flex items-center gap-3 min-w-0">
                       <div className="relative w-10 h-10 rounded-lg overflow-hidden bg-gray-200 shrink-0">
                         <Image
-                          src={p.images[0] || "https://images.unsplash.com/photo-1615529182904-14819c35db37?w=800&q=80"}
+                          src={p.images[0] || "/placeholders/product.svg"}
                           alt={p.name}
                           fill
                           className="object-cover"
@@ -328,7 +328,7 @@ export default function AdminDashboardPage() {
                     </span>
                     <div className="relative w-10 h-10 rounded-lg overflow-hidden bg-gray-100 shrink-0">
                       <Image
-                        src={p.images[0] || "https://images.unsplash.com/photo-1615529182904-14819c35db37?w=800&q=80"}
+                        src={p.images[0] || "/placeholders/product.svg"}
                         alt={p.name}
                         fill
                         className="object-cover"

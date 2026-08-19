@@ -132,7 +132,7 @@ export default function SuggestedItemsSection({
                 <Image
                   src={
                     product.images?.[0] ||
-                    "https://images.unsplash.com/photo-1616486338812-3dadae4b4ace?w=800&q=80"
+                    "/placeholders/product.svg"
                   }
                   alt={product.name}
                   fill

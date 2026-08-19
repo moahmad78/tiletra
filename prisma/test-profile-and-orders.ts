@@ -20,7 +20,7 @@ async function testProfileAndOrders() {
 
   console.log("\n=== 2. Testing Google Sign-in: First Time Login captures Avatar & Name ===");
   const testGooglePhone = "9199887766";
-  const googleAvatarUrl = "https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=400&q=80";
+  const googleAvatarUrl = "/placeholders/product.svg";
 
   // Clean up any prior test user
   await prisma.user.deleteMany({ where: { phone: testGooglePhone } });

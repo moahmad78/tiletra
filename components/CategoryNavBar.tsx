@@ -370,7 +370,7 @@ export default function CategoryNavBar() {
               <div className="flex items-center gap-3 p-3 bg-gray-50 rounded-xl border border-gray-100">
                 <div className="relative w-12 h-12 rounded-lg overflow-hidden shrink-0 border border-gray-200 bg-white">
                   <Image
-                    src={activeCategory.image || "https://images.unsplash.com/photo-1616486338812-3dadae4b4ace?w=800&q=80"}
+                    src={activeCategory.image || "/placeholders/category.svg"}
                     alt={activeCategory.name}
                     fill
                     className="object-cover"

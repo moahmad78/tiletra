@@ -39,10 +39,10 @@ export default function WhyChooseUs() {
           >
             {/* eslint-disable-next-line @next/next/no-img-element */}
             <img 
-              src="https://images.unsplash.com/photo-1600585154340-be6161a56a0c?auto=format&fit=crop&q=80&w=1000" 
+              src="/placeholders/product.svg" 
               alt="Premium tile installation craftsmanship"
               className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-105"
-              onError={(e) => { e.currentTarget.src = "https://images.unsplash.com/photo-1600607687920-4e2a09cf159d?auto=format&fit=crop&q=80&w=1000"; }}
+              onError={(e) => { e.currentTarget.src = "/placeholders/product.svg"; }}
             />
             {/* Subtle Gradient Overlay */}
             <div className="absolute inset-0 bg-gradient-to-t from-black/30 to-transparent pointer-events-none" />

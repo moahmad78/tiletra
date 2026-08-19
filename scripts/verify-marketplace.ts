@@ -185,7 +185,7 @@ async function runAudit() {
       material: "Polycarbonate",
       unitOfSale: "piece",
       description: "Test modular switch for marketplace audit",
-      images: ["https://images.unsplash.com/photo-1544716278-ca5e3f4abd8c?w=800&q=80"],
+      images: ["/placeholders/product.svg"],
       variants: [
         {
           size: "1 Module",

@@ -21,7 +21,7 @@ async function verify() {
     categoryName: "Floor Tiles",
     description: "Database end-to-end verification tile.",
     material: "Vitrified",
-    images: ["https://images.unsplash.com/photo-1615529182904-14819c35db37?w=800&q=80"],
+    images: ["/placeholders/product.svg"],
     variants: [
       {
         size: "800x800mm",

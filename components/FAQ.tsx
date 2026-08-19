@@ -68,7 +68,7 @@ export default function FAQ() {
             {/* Background Texture/Image Overlay */}
             <div className="absolute inset-0 z-0 opacity-10 mix-blend-overlay">
               <img 
-                src="https://images.unsplash.com/photo-1550211925-69c5c0f9a3c0?auto=format&fit=crop&q=80&w=1000" 
+                src="/placeholders/product.svg" 
                 alt="Tile Texture" 
                 className="w-full h-full object-cover"
               />

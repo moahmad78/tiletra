@@ -1,0 +1,23 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 800 800" width="100%" height="100%">
+  <defs>
+    <linearGradient id="catBg" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#0f345a"/>
+      <stop offset="100%" stop-color="#061f38"/>
+    </linearGradient>
+    <linearGradient id="catAccent" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#F26522"/>
+      <stop offset="100%" stop-color="#FFA066"/>
+    </linearGradient>
+  </defs>
+  <rect width="800" height="800" fill="url(#catBg)"/>
+  
+  <g transform="translate(400, 360)">
+    <rect x="-100" y="-100" width="90" height="90" rx="16" fill="url(#catAccent)" opacity="0.9"/>
+    <rect x="10" y="-100" width="90" height="90" rx="16" fill="#1c4b78"/>
+    <rect x="-100" y="10" width="90" height="90" rx="16" fill="#1c4b78"/>
+    <rect x="10" y="10" width="90" height="90" rx="16" fill="#0c2d4e"/>
+  </g>
+
+  <text x="400" y="560" text-anchor="middle" fill="#ffffff" font-family="system-ui, -apple-system, sans-serif" font-size="28" font-weight="800" letter-spacing="2">TILETRA</text>
+  <text x="400" y="595" text-anchor="middle" fill="#94A3B8" font-family="system-ui, -apple-system, sans-serif" font-size="16" font-weight="600">Category Catalog</text>
+</svg>

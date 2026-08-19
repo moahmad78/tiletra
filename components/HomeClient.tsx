@@ -33,25 +33,25 @@ const roomInspirations = [
   {
     title: "Master Bathroom",
     tag: "Onyx Black Marble",
-    image: "https://images.unsplash.com/photo-1552321554-5fefe8c9ef14?w=800&q=80",
+    image: "/placeholders/product.svg",
     slug: "/shop/bathroom-tiles",
   },
   {
     title: "Modern Kitchen",
     tag: "White Metro Splashback",
-    image: "https://images.unsplash.com/photo-1584622650111-993a426fbf0a?w=800&q=80",
+    image: "/placeholders/product.svg",
     slug: "/shop/kitchen-tiles",
   },
   {
     title: "Living Room",
     tag: "Calacatta Marble Effect",
-    image: "https://images.unsplash.com/photo-1616486338812-3dadae4b4ace?w=800&q=80",
+    image: "/placeholders/product.svg",
     slug: "/shop/floor-tiles",
   },
   {
     title: "Outdoor Patio",
     tag: "Slate Grey Porcelain",
-    image: "https://images.unsplash.com/photo-1558618666-fcd25c85cd64?w=800&q=80",
+    image: "/placeholders/product.svg",
     slug: "/shop/outdoor-tiles",
   },
 ];
@@ -88,7 +88,7 @@ export default function HomeClient({
     subtext: b.subtitle || "Premium Vitrified & Ceramic Collection",
     ctaText: b.cta || "Shop Now",
     ctaHref: b.href || "/shop",
-    image: b.image || "https://images.unsplash.com/photo-1600585154340-be6161a56a0c?w=1400&q=85",
+    image: b.image || "/placeholders/product.svg",
     accentColor: "#F26522",
   }));
 
@@ -100,7 +100,7 @@ export default function HomeClient({
     cta: b.cta || "Shop Now",
     href: b.href || "/shop",
     bgGradient: b.bgGradient || "from-[#052a51]/95 via-[#052a51]/80 to-transparent",
-    image: b.image || "https://images.unsplash.com/photo-1616486338812-3dadae4b4ace?w=800&q=80",
+    image: b.image || "/placeholders/product.svg",
   }));
 
   return (

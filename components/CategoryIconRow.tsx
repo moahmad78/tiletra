@@ -169,7 +169,7 @@ export default function CategoryIconRow({ categories }: { categories?: Category[
                 <div className="w-[56px] h-[56px] rounded-2xl overflow-hidden relative p-0.5 bg-gradient-to-tr from-[#052a51]/10 to-[#F26522]/20 border border-gray-100 shadow-2xs group-hover:border-[#F26522]/40 transition-colors">
                   <div className="w-full h-full rounded-[14px] overflow-hidden relative">
                     <Image
-                      src={cat.image || "https://images.unsplash.com/photo-1616486338812-3dadae4b4ace?w=800&q=80"}
+                      src={cat.image || "/placeholders/category.svg"}
                       alt={cat.name}
                       fill
                       loading="eager"
@@ -203,7 +203,7 @@ export default function CategoryIconRow({ categories }: { categories?: Category[
                 <div className="w-[56px] h-[56px] rounded-2xl overflow-hidden relative p-0.5 bg-gradient-to-tr from-[#052a51]/10 to-[#F26522]/20 border border-gray-100 shadow-2xs group-hover:border-[#F26522]/40 transition-colors">
                   <div className="w-full h-full rounded-[14px] overflow-hidden relative">
                     <Image
-                      src={cat.image || "https://images.unsplash.com/photo-1616486338812-3dadae4b4ace?w=800&q=80"}
+                      src={cat.image || "/placeholders/category.svg"}
                       alt={cat.name}
                       fill
                       loading="eager"
@@ -237,7 +237,7 @@ export default function CategoryIconRow({ categories }: { categories?: Category[
                 <div className="w-[56px] h-[56px] rounded-2xl overflow-hidden relative p-0.5 bg-gradient-to-tr from-[#052a51]/10 to-[#F26522]/20 border border-gray-100 shadow-2xs group-hover:border-[#F26522]/40 transition-colors">
                   <div className="w-full h-full rounded-[14px] overflow-hidden relative">
                     <Image
-                      src={cat.image || "https://images.unsplash.com/photo-1616486338812-3dadae4b4ace?w=800&q=80"}
+                      src={cat.image || "/placeholders/category.svg"}
                       alt={cat.name}
                       fill
                       loading="eager"

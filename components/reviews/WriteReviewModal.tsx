@@ -66,9 +66,9 @@ export default function WriteReviewModal({
 
   // Sample installation room shots for quick test
   const samplePhotoPresets = [
-    "https://images.unsplash.com/photo-1616486338812-3dadae4b4ace?w=600&q=80",
-    "https://images.unsplash.com/photo-1552321554-5fefe8c9ef14?w=600&q=80",
-    "https://images.unsplash.com/photo-1556911220-e15b29be8c8f?w=600&q=80",
+    "/placeholders/product.svg",
+    "/placeholders/product.svg",
+    "/placeholders/product.svg",
   ];
 
   const handleSubmit = (e: React.FormEvent) => {

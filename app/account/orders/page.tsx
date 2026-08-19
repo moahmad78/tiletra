@@ -195,7 +195,7 @@ export default function OrdersPage() {
                       <div className="flex items-center gap-4 min-w-0">
                         <div className="relative w-16 h-16 rounded-xl overflow-hidden bg-gray-100 shrink-0 border border-gray-200">
                           <Image
-                            src={item.image || "https://images.unsplash.com/photo-1615529182904-14819c35db37?w=800&q=80"}
+                            src={item.image || "/placeholders/product.svg"}
                             alt={item.productName}
                             fill
                             className="object-cover"

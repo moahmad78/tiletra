@@ -161,7 +161,7 @@ export default function SearchModal({
                 >
                   <div className="relative w-14 h-14 rounded-xl overflow-hidden bg-gray-100 shrink-0">
                     <Image
-                      src={product.images[0] || "https://images.unsplash.com/photo-1615529182904-14819c35db37?w=800&q=80"}
+                      src={product.images[0] || "/placeholders/product.svg"}
                       alt={product.name}
                       fill
                       className="object-cover group-hover:scale-105 transition-transform"

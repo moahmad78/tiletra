@@ -73,8 +73,8 @@ export function formatProduct(dbProduct: any): Product {
     unitOfSale: (dbProduct.unitOfSale as any) || "box",
     attributes,
     images: Array.isArray(dbProduct.images) && dbProduct.images.length > 0
-      ? dbProduct.images
-      : ["https://images.unsplash.com/photo-1615529182904-14819c35db37?w=800&q=80"],
+      ? dbProduct.images.map((img: string) => (typeof img === "string" && img.includes("unsplash.com") ? "/placeholders/product.svg" : img))
+      : ["/placeholders/product.svg"],
     variants,
     rating: dbProduct.manualRating !== null && dbProduct.manualRating !== undefined
       ? Number(dbProduct.manualRating)

@@ -186,7 +186,7 @@ export default function AdminProductApprovalsPage() {
                       <div className="w-16 h-16 rounded-xl bg-gray-200 overflow-hidden shrink-0 border border-gray-200 relative">
                         {/* eslint-disable-next-line @next/next/no-img-element */}
                         <img
-                          src={p.images[0] || "https://images.unsplash.com/photo-1615529182904-14819c35db37?w=800&q=80"}
+                          src={p.images[0] || "/placeholders/product.svg"}
                           alt={p.name}
                           className="w-full h-full object-cover"
                         />

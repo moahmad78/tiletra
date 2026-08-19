@@ -25,7 +25,7 @@ const DEFAULT_SLIDES: MobileBannerSlide[] = [
     cta: "Shop Now",
     href: "/shop/floor-tiles",
     bgGradient: "from-[#052a51]/95 via-[#052a51]/80 to-transparent",
-    image: "https://images.unsplash.com/photo-1616486338812-3dadae4b4ace?w=800&q=80",
+    image: "/placeholders/banner.svg",
   },
   {
     id: "slide-2",
@@ -35,7 +35,7 @@ const DEFAULT_SLIDES: MobileBannerSlide[] = [
     cta: "Explore Tiles",
     href: "/shop",
     bgGradient: "from-[#0c3966]/95 via-[#052a51]/85 to-transparent",
-    image: "https://images.unsplash.com/photo-1558618666-fcd25c85cd64?w=800&q=80",
+    image: "/placeholders/banner.svg",
   },
   {
     id: "slide-3",
@@ -45,7 +45,7 @@ const DEFAULT_SLIDES: MobileBannerSlide[] = [
     cta: "Get Samples",
     href: "/shop",
     bgGradient: "from-[#1a1c29]/95 via-[#052a51]/85 to-transparent",
-    image: "https://images.unsplash.com/photo-1552321554-5fefe8c9ef14?w=800&q=80",
+    image: "/placeholders/banner.svg",
   },
 ];
 
@@ -111,7 +111,7 @@ export default function OfferBanner({ slides }: { slides?: MobileBannerSlide[] }
               <Link href={slide.href || "/shop"} className="block w-full h-full relative">
                 {/* Background Image */}
                 <Image
-                  src={slide.image || "https://images.unsplash.com/photo-1616486338812-3dadae4b4ace?w=800&q=80"}
+                  src={slide.image || "/placeholders/banner.svg"}
                   alt={slide.title}
                   fill
                   className="object-cover"

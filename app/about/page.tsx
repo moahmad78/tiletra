@@ -47,7 +47,7 @@ export default function AboutPage() {
             </div>
             <div className="relative aspect-4/3 rounded-3xl overflow-hidden shadow-lg bg-gray-100">
               <Image
-                src="https://images.unsplash.com/photo-1600585154340-be6161a56a0c?w=800&q=80"
+                src="/placeholders/product.svg"
                 alt="Intrihub workspace"
                 fill
                 className="object-cover"

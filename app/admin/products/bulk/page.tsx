@@ -18,9 +18,9 @@ import type { Material, Finish } from "@/lib/data/products";
 import { toast } from "sonner";
 
 const SAMPLE_CSV = `Name,CategorySlug,Material,Size,Finish,Color,PricePerBox,SqftPerBox,Stock,Images,Description
-Royal Statuario White,floor-tiles,Vitrified,800x800mm,Polished,White,3400,44,150,https://images.unsplash.com/photo-1615529182904-14819c35db37?w=800&q=80,Luxurious Italian-look vitrified floor tiles.
-Matte Charcoal Hex,bathroom-tiles,Porcelain,200x200mm,Matte,Charcoal,2100,32,80,https://images.unsplash.com/photo-1507652313519-d4e9174996dd?w=800&q=80,Modern geometric dark tiles for bathroom showers.
-Glossy Mint Metro,kitchen-tiles,Ceramic,300x100mm,Glossy,Mint,920,31,200,https://images.unsplash.com/photo-1584622650111-993a426fbf0a?w=800&q=80,Fresh pastel metro splashback tiles for modern kitchens.`;
+Royal Statuario White,floor-tiles,Vitrified,800x800mm,Polished,White,3400,44,150,/placeholders/product.svg,Luxurious Italian-look vitrified floor tiles.
+Matte Charcoal Hex,bathroom-tiles,Porcelain,200x200mm,Matte,Charcoal,2100,32,80,/placeholders/product.svg,Modern geometric dark tiles for bathroom showers.
+Glossy Mint Metro,kitchen-tiles,Ceramic,300x100mm,Glossy,Mint,920,31,200,/placeholders/product.svg,Fresh pastel metro splashback tiles for modern kitchens.`;
 
 export default function BulkProductImportPage() {
   const router = useRouter();
@@ -126,7 +126,7 @@ export default function BulkProductImportPage() {
         categoryName: cat?.name || "Floor Tiles",
         description: row.description || "Premium high-grade architectural tile design.",
         material: (row.material as Material) || "Vitrified",
-        images: row.images ? [row.images] : ["https://images.unsplash.com/photo-1615529182904-14819c35db37?w=800&q=80"],
+        images: row.images ? [row.images] : ["/placeholders/product.svg"],
         variants: [
           {
             size: row.size || "600x600mm",

@@ -37,8 +37,8 @@ const INITIAL_REVIEWS: CustomerReview[] = [
     comment:
       "Superb quality tiles! The finish is extremely premium and looks like real Italian marble in our living room. Delivery came in 4 days with sturdy box packaging.",
     images: [
-      "https://images.unsplash.com/photo-1616486338812-3dadae4b4ace?w=800&q=80",
-      "https://images.unsplash.com/photo-1615529182904-14819c35db37?w=800&q=80",
+      "/placeholders/product.svg",
+      "/placeholders/product.svg",
     ],
     verifiedPurchase: true,
     helpfulCount: 18,
@@ -58,7 +58,7 @@ const INITIAL_REVIEWS: CustomerReview[] = [
     comment:
       "The coverage calculator gave the exact boxes needed for our kitchen backsplash. We had just half a box spare after laying. Perfect glossy bevel finish!",
     images: [
-      "https://images.unsplash.com/photo-1556911220-e15b29be8c8f?w=800&q=80",
+      "/placeholders/product.svg",
     ],
     verifiedPurchase: true,
     helpfulCount: 12,
@@ -78,7 +78,7 @@ const INITIAL_REVIEWS: CustomerReview[] = [
     comment:
       "Looks exactly like luxury hotel marble. Delivered in 4 days in neat sturdy packaging. Make sure to use light grey grout for contrast.",
     images: [
-      "https://images.unsplash.com/photo-1552321554-5fefe8c9ef14?w=800&q=80",
+      "/placeholders/product.svg",
     ],
     verifiedPurchase: true,
     helpfulCount: 8,

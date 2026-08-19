@@ -1,0 +1,41 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 800 800" width="100%" height="100%">
+  <defs>
+    <linearGradient id="bg" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#0a2a4a"/>
+      <stop offset="100%" stop-color="#051c33"/>
+    </linearGradient>
+    <linearGradient id="accent" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#F26522"/>
+      <stop offset="100%" stop-color="#FF8A4C"/>
+    </linearGradient>
+    <linearGradient id="boxGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#163e66"/>
+      <stop offset="100%" stop-color="#0e2a47"/>
+    </linearGradient>
+  </defs>
+  <rect width="800" height="800" fill="url(#bg)"/>
+  
+  <!-- Subtle Grid Pattern -->
+  <g opacity="0.08" stroke="#ffffff" stroke-width="1.5">
+    <line x1="0" y1="200" x2="800" y2="200"/>
+    <line x1="0" y1="400" x2="800" y2="400"/>
+    <line x1="0" y1="600" x2="800" y2="600"/>
+    <line x1="200" y1="0" x2="200" y2="800"/>
+    <line x1="400" y1="0" x2="400" y2="800"/>
+    <line x1="600" y1="0" x2="600" y2="800"/>
+  </g>
+
+  <!-- Product Box Illustration -->
+  <g transform="translate(400, 360)">
+    <!-- Isometric Top -->
+    <polygon points="0,-100 120,-40 0,20 -120,-40" fill="url(#accent)" opacity="0.9"/>
+    <!-- Isometric Left -->
+    <polygon points="-120,-40 0,20 0,160 -120,100" fill="url(#boxGrad)" stroke="#235282" stroke-width="2"/>
+    <!-- Isometric Right -->
+    <polygon points="0,20 120,-40 120,100 0,160" fill="#092038" stroke="#235282" stroke-width="2"/>
+  </g>
+
+  <!-- Brand Text -->
+  <text x="400" y="580" text-anchor="middle" fill="#ffffff" font-family="system-ui, -apple-system, sans-serif" font-size="28" font-weight="800" letter-spacing="2">TILETRA</text>
+  <text x="400" y="615" text-anchor="middle" fill="#94A3B8" font-family="system-ui, -apple-system, sans-serif" font-size="16" font-weight="600">Product Image Coming Soon</text>
+</svg>

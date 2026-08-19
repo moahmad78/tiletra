@@ -235,7 +235,7 @@ export default function VendorDashboardPage() {
                     <div className="w-12 h-12 rounded-xl overflow-hidden bg-gray-100 shrink-0 border border-gray-100 relative">
                       {/* eslint-disable-next-line @next/next/no-img-element */}
                       <img
-                        src={p.images[0] || "https://images.unsplash.com/photo-1615529182904-14819c35db37?w=800&q=80"}
+                        src={p.images[0] || "/placeholders/product.svg"}
                         alt={p.name}
                         className="w-full h-full object-cover group-hover:scale-105 transition-transform"
                       />

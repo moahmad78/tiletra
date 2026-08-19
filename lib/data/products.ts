@@ -67,8 +67,8 @@ export const products: Product[] = [
       "Inspired by the iconic Calacatta marble from Italy, these large-format tiles bring unmatched luxury to living rooms and master bedrooms. The subtle grey veining on a crisp white base creates a timeless, premium aesthetic.",
     material: "Vitrified",
     images: [
-      "https://images.unsplash.com/photo-1615529182904-14819c35db37?w=800&q=80",
-      "https://images.unsplash.com/photo-1558618666-fcd25c85cd64?w=800&q=80",
+      "/placeholders/product.svg",
+      "/placeholders/product.svg",
     ],
     variants: [
       { id: "v-001-a", size: "800x800mm", finish: "Polished", color: "White", pricePerBox: 3200, pricePerSqft: 72, sqftPerBox: 44, stockBoxes: 120 },
@@ -98,8 +98,8 @@ export const products: Product[] = [
       "The raw, urban aesthetic of concrete — without the maintenance. Perfect for modern apartments, open-plan living areas, and studio spaces. Anti-slip textured surface for safe, everyday use.",
     material: "Vitrified",
     images: [
-      "https://images.unsplash.com/photo-1616486338812-3dadae4b4ace?w=800&q=80",
-      "https://images.unsplash.com/photo-1583847268964-b28dc8f51f92?w=800&q=80",
+      "/placeholders/product.svg",
+      "/placeholders/product.svg",
     ],
     variants: [
       { id: "v-002-a", size: "600x600mm", finish: "Matte", color: "Grey", pricePerBox: 1800, pricePerSqft: 45, sqftPerBox: 40, stockBoxes: 200 },
@@ -129,8 +129,8 @@ export const products: Product[] = [
       "Warm beige tones inspired by sandstone deserts. Creates a cozy, earthy atmosphere in bedrooms, living areas, and corridors. Versatile enough to pair with both modern and traditional décor.",
     material: "Ceramic",
     images: [
-      "https://images.unsplash.com/photo-1558618666-fcd25c85cd64?w=800&q=80",
-      "https://images.unsplash.com/photo-1565182999561-18d7dc61c393?w=800&q=80",
+      "/placeholders/product.svg",
+      "/placeholders/product.svg",
     ],
     variants: [
       { id: "v-003-a", size: "600x600mm", finish: "Matte", color: "Beige", pricePerBox: 1400, pricePerSqft: 35, sqftPerBox: 40, stockBoxes: 180 },
@@ -162,8 +162,8 @@ export const products: Product[] = [
       "The classic subway tile — reimagined in a crisp arctic white with a high-gloss finish. Timeless in kitchens, bathrooms, and feature walls. Easy to clean and pairs with any grout color.",
     material: "Ceramic",
     images: [
-      "https://images.unsplash.com/photo-1552321554-5fefe8c9ef14?w=800&q=80",
-      "https://images.unsplash.com/photo-1584622650111-993a426fbf0a?w=800&q=80",
+      "/placeholders/product.svg",
+      "/placeholders/product.svg",
     ],
     variants: [
       { id: "v-004-a", size: "300x150mm", finish: "Glossy", color: "White", pricePerBox: 950, pricePerSqft: 28, sqftPerBox: 34, stockBoxes: 300 },
@@ -193,8 +193,8 @@ export const products: Product[] = [
       "Handcrafted zellige-inspired tiles in a soothing sage green. Each tile has subtle variation in tone and texture — making every installation unique. Perfect for bathroom feature walls and kitchen splashbacks.",
     material: "Ceramic",
     images: [
-      "https://images.unsplash.com/photo-1507652313519-d4e9174996dd?w=800&q=80",
-      "https://images.unsplash.com/photo-1541123437800-1bb1317badc2?w=800&q=80",
+      "/placeholders/product.svg",
+      "/placeholders/product.svg",
     ],
     variants: [
       { id: "v-005-a", size: "100x100mm", finish: "Glossy", color: "Sage Green", pricePerBox: 1650, pricePerSqft: 52, sqftPerBox: 31, stockBoxes: 80 },
@@ -225,8 +225,8 @@ export const products: Product[] = [
       "Dramatic black with gold veining — for a luxury spa-like bathroom experience. The matte finish prevents water spots and fingerprints. Works beautifully on both floors and walls.",
     material: "Porcelain",
     images: [
-      "https://images.unsplash.com/photo-1507652313519-d4e9174996dd?w=800&q=80",
-      "https://images.unsplash.com/photo-1552321554-5fefe8c9ef14?w=800&q=80",
+      "/placeholders/product.svg",
+      "/placeholders/product.svg",
     ],
     variants: [
       { id: "v-006-a", size: "600x600mm", finish: "Matte", color: "Black", pricePerBox: 3800, pricePerSqft: 95, sqftPerBox: 40, stockBoxes: 60 },
@@ -256,8 +256,8 @@ export const products: Product[] = [
       "Bring the ocean into your bathroom with these luminous sea-blue mosaic tiles. Each sheet creates a shimmering, aquatic effect. Perfect for shower niches, feature walls, and pool surrounds.",
     material: "Mosaic",
     images: [
-      "https://images.unsplash.com/photo-1584622650111-993a426fbf0a?w=800&q=80",
-      "https://images.unsplash.com/photo-1507652313519-d4e9174996dd?w=800&q=80",
+      "/placeholders/product.svg",
+      "/placeholders/product.svg",
     ],
     variants: [
       { id: "v-007-a", size: "300x300mm (sheet)", finish: "Glossy", color: "Blue", pricePerBox: 2200, pricePerSqft: 68, sqftPerBox: 32, stockBoxes: 100 },
@@ -288,8 +288,8 @@ export const products: Product[] = [
       "Warm, earthy terracotta hexagons for a boho-chic kitchen floor. The geometric shape creates visual interest while the matte finish hides everyday kitchen grime. Pairs beautifully with wood cabinets.",
     material: "Ceramic",
     images: [
-      "https://images.unsplash.com/photo-1556909114-f6e7ad7d3136?w=800&q=80",
-      "https://images.unsplash.com/photo-1565182999561-18d7dc61c393?w=800&q=80",
+      "/placeholders/product.svg",
+      "/placeholders/product.svg",
     ],
     variants: [
       { id: "v-008-a", size: "200x175mm (hex)", finish: "Matte", color: "Terracotta", pricePerBox: 1900, pricePerSqft: 58, sqftPerBox: 33, stockBoxes: 120 },
@@ -318,8 +318,8 @@ export const products: Product[] = [
       "A high-gloss white metro tile that's a kitchen design staple. Reflects light to make small kitchens feel bigger. Heat-resistant, grease-proof, and supremely easy to wipe clean.",
     material: "Ceramic",
     images: [
-      "https://images.unsplash.com/photo-1584622650111-993a426fbf0a?w=800&q=80",
-      "https://images.unsplash.com/photo-1556909114-f6e7ad7d3136?w=800&q=80",
+      "/placeholders/product.svg",
+      "/placeholders/product.svg",
     ],
     variants: [
       { id: "v-009-a", size: "300x150mm", finish: "Glossy", color: "White", pricePerBox: 880, pricePerSqft: 26, sqftPerBox: 34, stockBoxes: 250 },
@@ -351,8 +351,8 @@ export const products: Product[] = [
       "Heavy-duty porcelain tiles engineered for Indian weather — UV-resistant, frost-proof (for hill homes), and deeply anti-slip. Ideal for terraces, driveways, and garden pathways.",
     material: "Porcelain",
     images: [
-      "https://images.unsplash.com/photo-1558618666-fcd25c85cd64?w=800&q=80",
-      "https://images.unsplash.com/photo-1616486338812-3dadae4b4ace?w=800&q=80",
+      "/placeholders/product.svg",
+      "/placeholders/product.svg",
     ],
     variants: [
       { id: "v-010-a", size: "600x600mm", finish: "Textured", color: "Slate Grey", pricePerBox: 2100, pricePerSqft: 52, sqftPerBox: 40, stockBoxes: 160 },
@@ -384,8 +384,8 @@ export const products: Product[] = [
       "Handcrafted encaustic cement tiles with intricate arabesque patterns. Each tile is unique — slight color variation adds to the artisanal charm. Makes a stunning entryway, bathroom floor, or feature wall.",
     material: "Mosaic",
     images: [
-      "https://images.unsplash.com/photo-1615529182904-14819c35db37?w=800&q=80",
-      "https://images.unsplash.com/photo-1552321554-5fefe8c9ef14?w=800&q=80",
+      "/placeholders/product.svg",
+      "/placeholders/product.svg",
     ],
     variants: [
       { id: "v-011-a", size: "200x200mm", finish: "Matte", color: "Multi", pricePerBox: 4500, pricePerSqft: 138, sqftPerBox: 32, stockBoxes: 40 },
@@ -414,8 +414,8 @@ export const products: Product[] = [
       "Opulent art deco tiles with genuine 24k gold leaf inlay. Create a show-stopping feature wall in your living room, hotel lobby, or powder room. Limited production run — every order is made to order.",
     material: "Ceramic",
     images: [
-      "https://images.unsplash.com/photo-1541123437800-1bb1317badc2?w=800&q=80",
-      "https://images.unsplash.com/photo-1615529182904-14819c35db37?w=800&q=80",
+      "/placeholders/product.svg",
+      "/placeholders/product.svg",
     ],
     variants: [
       { id: "v-012-a", size: "150x150mm", finish: "Glossy", color: "Gold", pricePerBox: 8500, pricePerSqft: 245, sqftPerBox: 34, stockBoxes: 20 },

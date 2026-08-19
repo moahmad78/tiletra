@@ -34,7 +34,7 @@ export default function VendorNewProductPage() {
   const [unitOfSale, setUnitOfSale] = useState("box");
   const [description, setDescription] = useState("");
   const [images, setImages] = useState<string[]>([
-    "https://images.unsplash.com/photo-1615529182904-14819c35db37?w=800&q=80",
+    "/placeholders/product.svg",
   ]);
 
   // Dynamic Attributes
@@ -292,7 +292,7 @@ export default function VendorNewProductPage() {
                     copy[idx] = e.target.value;
                     setImages(copy);
                   }}
-                  placeholder="https://images.unsplash.com/..."
+                  placeholder="/placeholders/product.svg"
                   className="flex-1 bg-gray-50 border border-gray-200 rounded-xl px-4 py-2.5 text-xs sm:text-sm font-medium text-gray-800 focus:bg-white focus:border-emerald-500 focus:outline-hidden transition-all"
                 />
                 {images.length > 1 && (

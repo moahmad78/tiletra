@@ -24,7 +24,7 @@ const DEFAULT_DESKTOP_SLIDES: BannerSlide[] = [
     subtext: "Mirror-polished seamless 800x800mm vitrified tiles starting at ₹72/sq.ft. Safe doorstep crate delivery.",
     ctaText: "Explore Floor Tiles",
     ctaHref: "/shop/floor-tiles",
-    image: "https://images.unsplash.com/photo-1600585154340-be6161a56a0c?w=1400&q=85",
+    image: "/placeholders/banner.svg",
     accentColor: "#F26522",
   },
   {
@@ -34,7 +34,7 @@ const DEFAULT_DESKTOP_SLIDES: BannerSlide[] = [
     subtext: "Beveled glossy subway tiles and textured ceramic walls. Wipe-clean and heat resistant.",
     ctaText: "Shop Kitchen Tiles",
     ctaHref: "/shop/kitchen-tiles",
-    image: "https://images.unsplash.com/photo-1556911220-e15b29be8c8f?w=1400&q=85",
+    image: "/placeholders/banner.svg",
     accentColor: "#052a51",
   },
   {
@@ -44,7 +44,7 @@ const DEFAULT_DESKTOP_SLIDES: BannerSlide[] = [
     subtext: "R11 anti-slip textured porcelain pavers designed for heavy Bangalore rains and garden terraces.",
     ctaText: "Browse Outdoor Tiles",
     ctaHref: "/shop/outdoor-tiles",
-    image: "https://images.unsplash.com/photo-1558618666-fcd25c85cd64?w=1400&q=85",
+    image: "/placeholders/banner.svg",
     accentColor: "#2F7A4F",
   },
   {
@@ -54,7 +54,7 @@ const DEFAULT_DESKTOP_SLIDES: BannerSlide[] = [
     subtext: "Free specialized freight delivery on all orders above ₹15,000 with 100% breakage protection.",
     ctaText: "Calculate Room Sq.Ft",
     ctaHref: "/shop",
-    image: "https://images.unsplash.com/photo-1616486338812-3dadae4b4ace?w=1400&q=85",
+    image: "/placeholders/banner.svg",
     accentColor: "#F26522",
   },
 ];
@@ -100,7 +100,7 @@ export default function DesktopBannerCarousel({ slides }: { slides?: BannerSlide
             >
               {/* Background Photo */}
               <Image
-                src={slide.image || "https://images.unsplash.com/photo-1600585154340-be6161a56a0c?w=1400&q=85"}
+                src={slide.image || "/placeholders/banner.svg"}
                 alt={slide.headline}
                 fill
                 priority={index === 0}

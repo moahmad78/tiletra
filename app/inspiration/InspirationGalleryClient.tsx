@@ -38,7 +38,7 @@ const INSPIRATION_ITEMS: RoomInspirationItem[] = [
     title: "Italian Marble Living Room",
     roomType: "living-room",
     roomLabel: "Living Room",
-    image: "https://images.unsplash.com/photo-1616486338812-3dadae4b4ace?w=1000&q=80",
+    image: "/placeholders/product.svg",
     description: "Expansive light-filled living area featuring high-gloss seamless vitrified marble flooring.",
     featuredProduct: {
       name: "Calacatta Marble Effect",
@@ -48,7 +48,7 @@ const INSPIRATION_ITEMS: RoomInspirationItem[] = [
       finish: "Polished",
       ratePerSqft: 72,
       pricePerBox: 3200,
-      thumbnail: "https://images.unsplash.com/photo-1615529182904-14819c35db37?w=300&q=80",
+      thumbnail: "/placeholders/product.svg",
     },
   },
   {
@@ -56,7 +56,7 @@ const INSPIRATION_ITEMS: RoomInspirationItem[] = [
     title: "Hotel-Style Onyx Bathroom",
     roomType: "bathroom",
     roomLabel: "Bathroom",
-    image: "https://images.unsplash.com/photo-1552321554-5fefe8c9ef14?w=1000&q=80",
+    image: "/placeholders/product.svg",
     description: "Moody, ultra-luxe master ensuite with full-height black onyx marble wall tiles.",
     featuredProduct: {
       name: "Onyx Black Marble",
@@ -66,7 +66,7 @@ const INSPIRATION_ITEMS: RoomInspirationItem[] = [
       finish: "Matte",
       ratePerSqft: 95,
       pricePerBox: 3800,
-      thumbnail: "https://images.unsplash.com/photo-1507652313519-d4e9174996dd?w=300&q=80",
+      thumbnail: "/placeholders/product.svg",
     },
   },
   {
@@ -74,7 +74,7 @@ const INSPIRATION_ITEMS: RoomInspirationItem[] = [
     title: "Nordic White Subway Kitchen",
     roomType: "kitchen",
     roomLabel: "Kitchen",
-    image: "https://images.unsplash.com/photo-1556911220-e15b29be8c8f?w=1000&q=80",
+    image: "/placeholders/product.svg",
     description: "Clean Scandinavian kitchen splashback with beveled glossy white subway brick tiles.",
     featuredProduct: {
       name: "Arctic White Subway",
@@ -84,7 +84,7 @@ const INSPIRATION_ITEMS: RoomInspirationItem[] = [
       finish: "Glossy",
       ratePerSqft: 32,
       pricePerBox: 950,
-      thumbnail: "https://images.unsplash.com/photo-1552321554-5fefe8c9ef14?w=300&q=80",
+      thumbnail: "/placeholders/product.svg",
     },
   },
   {
@@ -92,7 +92,7 @@ const INSPIRATION_ITEMS: RoomInspirationItem[] = [
     title: "Mediterranean Courtyard Patio",
     roomType: "outdoor",
     roomLabel: "Outdoor",
-    image: "https://images.unsplash.com/photo-1558618666-fcd25c85cd64?w=1000&q=80",
+    image: "/placeholders/product.svg",
     description: "Slip-resistant heavy-duty outdoor pavers for open terraces and balcony gardens.",
     featuredProduct: {
       name: "Slate Grey Porcelain",
@@ -102,7 +102,7 @@ const INSPIRATION_ITEMS: RoomInspirationItem[] = [
       finish: "Textured",
       ratePerSqft: 70,
       pricePerBox: 2800,
-      thumbnail: "https://images.unsplash.com/photo-1558618666-fcd25c85cd64?w=300&q=80",
+      thumbnail: "/placeholders/product.svg",
     },
   },
   {
@@ -110,7 +110,7 @@ const INSPIRATION_ITEMS: RoomInspirationItem[] = [
     title: "Urban Industrial Loft Flooring",
     roomType: "living-room",
     roomLabel: "Living Room",
-    image: "https://images.unsplash.com/photo-1600585154340-be6161a56a0c?w=1000&q=80",
+    image: "/placeholders/product.svg",
     description: "Raw cement-look matte tiles delivering seamless contemporary minimalism.",
     featuredProduct: {
       name: "Concrete Grey Industrial",
@@ -120,7 +120,7 @@ const INSPIRATION_ITEMS: RoomInspirationItem[] = [
       finish: "Matte",
       ratePerSqft: 45,
       pricePerBox: 1800,
-      thumbnail: "https://images.unsplash.com/photo-1616486338812-3dadae4b4ace?w=300&q=80",
+      thumbnail: "/placeholders/product.svg",
     },
   },
   {
@@ -128,7 +128,7 @@ const INSPIRATION_ITEMS: RoomInspirationItem[] = [
     title: "Emerald Green Feature Wall",
     roomType: "bathroom",
     roomLabel: "Bathroom",
-    image: "https://images.unsplash.com/photo-1584622650111-993a426fbf0a?w=1000&q=80",
+    image: "/placeholders/product.svg",
     description: "Rich jewel-toned subway tiles stacked vertically in a modern walk-in shower.",
     featuredProduct: {
       name: "Emerald Green Subway",
@@ -138,7 +138,7 @@ const INSPIRATION_ITEMS: RoomInspirationItem[] = [
       finish: "Glossy",
       ratePerSqft: 38,
       pricePerBox: 1150,
-      thumbnail: "https://images.unsplash.com/photo-1552321554-5fefe8c9ef14?w=300&q=80",
+      thumbnail: "/placeholders/product.svg",
     },
   },
   {
@@ -146,7 +146,7 @@ const INSPIRATION_ITEMS: RoomInspirationItem[] = [
     title: "Artisan Moroccan Splashback",
     roomType: "kitchen",
     roomLabel: "Kitchen",
-    image: "https://images.unsplash.com/photo-1507089947368-19c1da9775ae?w=1000&q=80",
+    image: "/placeholders/product.svg",
     description: "Intricate geometric ceramic tiles adding warmth and bespoke character behind the hob.",
     featuredProduct: {
       name: "Moroccan Heritage Pattern",
@@ -156,7 +156,7 @@ const INSPIRATION_ITEMS: RoomInspirationItem[] = [
       finish: "Satin",
       ratePerSqft: 52,
       pricePerBox: 1550,
-      thumbnail: "https://images.unsplash.com/photo-1584622650111-993a426fbf0a?w=300&q=80",
+      thumbnail: "/placeholders/product.svg",
     },
   },
   {
@@ -164,7 +164,7 @@ const INSPIRATION_ITEMS: RoomInspirationItem[] = [
     title: "Sunlit Terracotta Balcony",
     roomType: "outdoor",
     roomLabel: "Outdoor",
-    image: "https://images.unsplash.com/photo-1513694203232-719a280e022f?w=1000&q=80",
+    image: "/placeholders/product.svg",
     description: "Earthy natural stone finish outdoor tiles resistant to monsoon rain and UV exposure.",
     featuredProduct: {
       name: "Sandstone Beige Outdoor",
@@ -174,7 +174,7 @@ const INSPIRATION_ITEMS: RoomInspirationItem[] = [
       finish: "Textured",
       ratePerSqft: 65,
       pricePerBox: 2200,
-      thumbnail: "https://images.unsplash.com/photo-1558618666-fcd25c85cd64?w=300&q=80",
+      thumbnail: "/placeholders/product.svg",
     },
   },
 ];

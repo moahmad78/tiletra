@@ -8,37 +8,37 @@ const projects = [
     id: 1,
     title: "Luxury Marble Flooring Bangalore",
     category: "Residential Flooring",
-    image: "https://images.unsplash.com/photo-1600585154340-be6161a56a0c?auto=format&fit=crop&q=80&w=800",
+    image: "/placeholders/product.svg",
   },
   {
     id: 2,
     title: "Premium Bathroom Tiles Installation",
     category: "Bathroom Renovation",
-    image: "https://images.unsplash.com/photo-1600566752355-35792bedcfea?auto=format&fit=crop&q=80&w=800",
+    image: "/placeholders/product.svg",
   },
   {
     id: 3,
     title: "Commercial Granite Lobby",
     category: "Commercial Tile Contractor",
-    image: "https://images.unsplash.com/photo-1577412647305-991150c7d163?auto=format&fit=crop&q=80&w=800",
+    image: "/placeholders/product.svg",
   },
   {
     id: 4,
     title: "Outdoor Patio Stonework",
     category: "Exterior Tiling",
-    image: "https://images.unsplash.com/photo-1584622781564-1d987f7333c1?auto=format&fit=crop&q=80&w=800",
+    image: "/placeholders/product.svg",
   },
   {
     id: 5,
     title: "Restaurant Feature Wall Tiles",
     category: "Wall Tile Installation",
-    image: "https://images.unsplash.com/photo-1582719478250-c89af14eb422?auto=format&fit=crop&q=80&w=800",
+    image: "/placeholders/product.svg",
   },
   {
     id: 6,
     title: "Walk-in Shower Enclosure",
     category: "Waterproof Tiling",
-    image: "https://images.unsplash.com/photo-1620626011761-996317b8d101?auto=format&fit=crop&q=80&w=800",
+    image: "/placeholders/product.svg",
   },
 ];
 
@@ -66,7 +66,7 @@ export default function ProjectGallery() {
                 src={project.image} 
                 alt={`${project.title} by Tiletra Bangalore`}
                 className="w-full h-full object-cover transition-transform duration-1000 group-hover:scale-110"
-                onError={(e) => { e.currentTarget.src = "https://images.unsplash.com/photo-1600607687920-4e2a09cf159d?auto=format&fit=crop&q=80&w=800"; }}
+                onError={(e) => { e.currentTarget.src = "/placeholders/product.svg"; }}
               />
               <div className="absolute inset-0 bg-gradient-to-t from-[#02152b]/95 via-[#02152b]/40 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500 flex flex-col justify-end p-8 lg:p-10">
                 <span className="text-white/80 font-medium text-xs mb-2 uppercase tracking-[0.15em]">{project.category}</span>

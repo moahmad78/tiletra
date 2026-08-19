@@ -8,35 +8,35 @@ import { useQuoteModal } from "@/components/QuoteModalProvider";
 const services = [
   {
     title: "Floor Tile Installation",
-    image: "https://images.unsplash.com/photo-1584622650111-993a426fbf0a?auto=format&fit=crop&q=80&w=600",
+    image: "/placeholders/product.svg",
   },
   {
     title: "Wall Tile Installation",
-    image: "https://images.unsplash.com/photo-1502005229762-cf1b2da7c5d6?auto=format&fit=crop&q=80&w=600",
+    image: "/placeholders/product.svg",
   },
   {
     title: "Bathroom Tile Installation",
-    image: "https://images.unsplash.com/photo-1552321554-5fefe8c9ef14?auto=format&fit=crop&q=80&w=600",
+    image: "/placeholders/product.svg",
   },
   {
     title: "Kitchen Tile Installation",
-    image: "https://images.unsplash.com/photo-1556910103-1c02745aae4d?auto=format&fit=crop&q=80&w=600",
+    image: "/placeholders/product.svg",
   },
   {
     title: "Marble Flooring",
-    image: "https://images.unsplash.com/photo-1600585154340-be6161a56a0c?auto=format&fit=crop&q=80&w=600",
+    image: "/placeholders/product.svg",
   },
   {
     title: "Granite Installation",
-    image: "https://images.unsplash.com/photo-1600607686527-6fb886090705?auto=format&fit=crop&q=80&w=600",
+    image: "/placeholders/product.svg",
   },
   {
     title: "Commercial Tile Work",
-    image: "https://images.unsplash.com/photo-1497366216548-37526070297c?auto=format&fit=crop&q=80&w=600",
+    image: "/placeholders/product.svg",
   },
   {
     title: "Tile Repair & Replacement",
-    image: "https://images.unsplash.com/photo-1523413363574-c30aa1c2a516?auto=format&fit=crop&q=80&w=600",
+    image: "/placeholders/product.svg",
   }
 ];
 

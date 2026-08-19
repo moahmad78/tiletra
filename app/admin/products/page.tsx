@@ -373,7 +373,7 @@ export default function AdminProductsPage() {
                         <div className="flex items-center gap-3">
                           <div className="relative w-12 h-12 rounded-xl overflow-hidden bg-gray-100 shrink-0 border border-gray-200">
                             <Image
-                              src={p.images[0] || "https://images.unsplash.com/photo-1615529182904-14819c35db37?w=800&q=80"}
+                              src={p.images[0] || "/placeholders/product.svg"}
                               alt={p.name}
                               fill
                               className="object-cover"

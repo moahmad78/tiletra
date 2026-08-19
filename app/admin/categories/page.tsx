@@ -54,7 +54,7 @@ export default function AdminCategoriesPage() {
     setName("");
     setSlug("");
     setDescription("");
-    setImage("https://images.unsplash.com/photo-1616486338812-3dadae4b4ace?w=800&q=80");
+    setImage("/placeholders/product.svg");
     setModalOpen(true);
   };
 
@@ -95,7 +95,7 @@ export default function AdminCategoriesPage() {
         name: name.trim(),
         slug: computedSlug,
         description: description.trim() || "Curated architectural tile collections.",
-        image: image.trim() || "https://images.unsplash.com/photo-1616486338812-3dadae4b4ace?w=800&q=80",
+        image: image.trim() || "/placeholders/product.svg",
       });
       setSubmitting(false);
 
@@ -163,7 +163,7 @@ export default function AdminCategoriesPage() {
               {/* Image Header */}
               <div className="relative h-40 w-full bg-gray-100 overflow-hidden">
                 <Image
-                  src={cat.image || "https://images.unsplash.com/photo-1616486338812-3dadae4b4ace?w=800&q=80"}
+                  src={cat.image || "/placeholders/product.svg"}
                   alt={cat.name}
                   fill
                   className="object-cover group-hover:scale-105 transition-transform duration-500"
@@ -288,7 +288,7 @@ export default function AdminCategoriesPage() {
                   type="url"
                   value={image}
                   onChange={(e) => setImage(e.target.value)}
-                  placeholder="https://images.unsplash.com/..."
+                  placeholder="/placeholders/product.svg"
                   className="w-full px-3.5 py-2.5 bg-gray-50 border border-gray-200 rounded-xl text-xs font-mono text-gray-600 focus:outline-none focus:border-[#F26522]"
                 />
               </div>

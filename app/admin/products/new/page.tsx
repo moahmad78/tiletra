@@ -33,8 +33,8 @@ export default function AddProductPage() {
   const [attributes, setAttributes] = useState<ProductAttribute[]>([]);
 
   const [images, setImages] = useState<string[]>([
-    "https://images.unsplash.com/photo-1615529182904-14819c35db37?w=800&q=80",
-    "https://images.unsplash.com/photo-1558618666-fcd25c85cd64?w=800&q=80",
+    "/placeholders/product.svg",
+    "/placeholders/product.svg",
   ]);
 
   const [variants, setVariants] = useState<ProductVariant[]>([

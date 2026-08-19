@@ -87,14 +87,14 @@ export default function ProductDetailsClient({
 
     const base =
       raw[0] ||
-      "https://images.unsplash.com/photo-1616486338812-3dadae4b4ace?w=800&q=80";
+      "/placeholders/product.svg";
 
     // Provide high-res multi-angle / contextual mockup perspectives for Flipkart experience
     return [
       base,
-      "https://images.unsplash.com/photo-1600585154340-be6161a56a0c?w=800&q=80",
-      "https://images.unsplash.com/photo-1618221195710-dd6b41faaea6?w=800&q=80",
-      "https://images.unsplash.com/photo-1513694203232-719a280e022f?w=800&q=80",
+      "/placeholders/product.svg",
+      "/placeholders/product.svg",
+      "/placeholders/product.svg",
     ];
   }, [definedProduct.images]);
 

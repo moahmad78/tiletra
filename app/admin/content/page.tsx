@@ -30,7 +30,7 @@ export default function AdminContentPage() {
   const [heroBadge, setHeroBadge] = useState("Direct Factory Pricing");
   const [heroCtaText, setHeroCtaText] = useState("Explore Tile Catalog");
   const [heroCtaHref, setHeroCtaHref] = useState("/shop");
-  const [heroBgImage, setHeroBgImage] = useState("https://images.unsplash.com/photo-1600585154340-be6161a56a0c?w=1600&q=80");
+  const [heroBgImage, setHeroBgImage] = useState("/placeholders/product.svg");
 
   // Banner Modal state
   const [bannerModalOpen, setBannerModalOpen] = useState(false);
@@ -72,7 +72,7 @@ export default function AdminContentPage() {
     setBSubtitle("Waterproof & anti-slip glazed ceramic looks");
     setBCta("Shop Now");
     setBHref("/shop/bathroom-tiles");
-    setBImage("https://images.unsplash.com/photo-1552321554-5fefe8c9ef14?w=800&q=80");
+    setBImage("/placeholders/product.svg");
     setBannerModalOpen(true);
   };
 
@@ -117,7 +117,7 @@ export default function AdminContentPage() {
         subtitle: bSubtitle.trim(),
         cta: bCta.trim() || "Explore",
         href: bHref.trim() || "/shop",
-        image: bImage.trim() || "https://images.unsplash.com/photo-1616486338812-3dadae4b4ace?w=800&q=80",
+        image: bImage.trim() || "/placeholders/product.svg",
       });
       setSubmitting(false);
 
@@ -207,7 +207,7 @@ export default function AdminContentPage() {
             >
               <div className="relative h-32 w-full bg-[#052a51]">
                 <Image
-                  src={slide.image || "https://images.unsplash.com/photo-1616486338812-3dadae4b4ace?w=800&q=80"}
+                  src={slide.image || "/placeholders/product.svg"}
                   alt={slide.title}
                   fill
                   className="object-cover opacity-60"
