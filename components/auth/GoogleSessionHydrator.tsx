@@ -5,6 +5,24 @@ import { useRouter, useSearchParams } from "next/navigation";
 import { useAuthStore } from "@/lib/auth-store";
 import { toast } from "sonner";
 
+function decodeBase64Url(str: string): string {
+  try {
+    let base64 = str.replace(/-/g, "+").replace(/_/g, "/");
+    while (base64.length % 4 !== 0) {
+      base64 += "=";
+    }
+    const binary = atob(base64);
+    const bytes = new Uint8Array(binary.length);
+    for (let i = 0; i < binary.length; i++) {
+      bytes[i] = binary.charCodeAt(i);
+    }
+    return new TextDecoder("utf-8").decode(bytes);
+  } catch (e) {
+    // Fallback simple atob
+    return atob(str.replace(/-/g, "+").replace(/_/g, "/"));
+  }
+}
+
 /**
  * GoogleSessionHydrator
  *
@@ -42,7 +60,8 @@ export default function GoogleSessionHydrator() {
 
     if (session && !isAuthenticated) {
       try {
-        const decoded = JSON.parse(Buffer.from(session, "base64url").toString());
+        const jsonStr = decodeBase64Url(session);
+        const decoded = JSON.parse(jsonStr);
         googleSignIn({
           name: decoded.name || decoded.email?.split("@")[0] || "User",
           email: decoded.email || "",
