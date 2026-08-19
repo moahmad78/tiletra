@@ -1,14 +1,79 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
+import crypto from "crypto";
 
 const GOOGLE_TOKEN_URL = "https://oauth2.googleapis.com/token";
 const GOOGLE_USERINFO_URL = "https://www.googleapis.com/oauth2/v3/userinfo";
 
+function getBaseUrl(request: NextRequest): string {
+  const envUrl = process.env.NEXT_PUBLIC_APP_URL || process.env.BETTER_AUTH_URL;
+  if (envUrl && !envUrl.includes("localhost")) {
+    return envUrl.replace(/\/$/, "");
+  }
+
+  const host = request.headers.get("x-forwarded-host") || request.headers.get("host") || "";
+  if (host.includes("tiletra.com")) {
+    return "https://tiletra.com";
+  }
+
+  const proto = request.headers.get("x-forwarded-proto") || (request.url.startsWith("https") ? "https" : "http");
+  if (host) {
+    return `${proto}://${host}`;
+  }
+
+  return process.env.NODE_ENV === "production" ? "https://tiletra.com" : "http://localhost:3000";
+}
+
+function getOAuthSecret(): string {
+  return (
+    process.env.NEXTAUTH_SECRET ||
+    process.env.GOOGLE_CLIENT_SECRET ||
+    "tiletra-super-secure-oauth-secret-key-2026"
+  );
+}
+
+function verifyAndExtractState(state: string | null, savedCookieState: string | undefined): { valid: boolean; intent: string } {
+  if (!state) return { valid: false, intent: "" };
+
+  const secret = getOAuthSecret();
+
+  // 1. Direct HMAC validation of stateless state parameter
+  if (state.includes(".")) {
+    const [payloadB64, signature] = state.split(".");
+    if (payloadB64 && signature) {
+      const expectedSignature = crypto
+        .createHmac("sha256", secret)
+        .update(payloadB64)
+        .digest("base64url");
+
+      if (signature === expectedSignature) {
+        try {
+          const payload = JSON.parse(Buffer.from(payloadB64, "base64url").toString("utf-8"));
+          if (payload.exp && payload.exp > Date.now()) {
+            return { valid: true, intent: payload.intent || "" };
+          }
+        } catch (e) {
+          console.error("Error parsing verified state payload:", e);
+        }
+      }
+    }
+  }
+
+  // 2. Cookie fallback validation (for backwards compatibility)
+  if (savedCookieState && savedCookieState === state) {
+    try {
+      const b64 = state.includes(".") ? state.split(".")[0] : state;
+      const payload = JSON.parse(Buffer.from(b64, "base64url").toString("utf-8"));
+      return { valid: true, intent: payload.intent || "" };
+    } catch {}
+    return { valid: true, intent: "" };
+  }
+
+  return { valid: false, intent: "" };
+}
+
 export async function GET(request: NextRequest) {
-  const baseUrl =
-    process.env.NEXT_PUBLIC_APP_URL ||
-    process.env.BETTER_AUTH_URL ||
-    (process.env.NODE_ENV === "production" ? "https://tiletra.com" : "http://localhost:3000");
+  const baseUrl = getBaseUrl(request);
   const { searchParams } = new URL(request.url);
 
   const code = searchParams.get("code");
@@ -20,9 +85,12 @@ export async function GET(request: NextRequest) {
     return NextResponse.redirect(`${baseUrl}/?auth_error=${encodeURIComponent(error)}`);
   }
 
-  // CSRF check: state must match cookie
-  const savedState = request.cookies.get("oauth_state")?.value;
-  if (!state || !savedState || state !== savedState) {
+  // Dual State Verification (HMAC signature + cookie fallback)
+  const savedCookieState = request.cookies.get("oauth_state")?.value;
+  const { valid: isStateValid, intent } = verifyAndExtractState(state, savedCookieState);
+
+  if (!isStateValid) {
+    console.warn("OAuth state validation failed for state:", state, "cookie:", savedCookieState);
     return NextResponse.redirect(`${baseUrl}/?auth_error=state_mismatch`);
   }
 
@@ -30,20 +98,12 @@ export async function GET(request: NextRequest) {
     return NextResponse.redirect(`${baseUrl}/?auth_error=no_code`);
   }
 
-  // Decode intent from state
-  let intent = "";
-  try {
-    const parsed = JSON.parse(Buffer.from(state, "base64url").toString());
-    intent = parsed.intent || "";
-  } catch {}
-
   try {
     const clientId = process.env.GOOGLE_CLIENT_ID!;
     const clientSecret = process.env.GOOGLE_CLIENT_SECRET!;
     const redirectUri = `${baseUrl}/api/auth/callback/google`;
 
     // ─── 1. Exchange code for tokens ─────────────────────────────────────────
-
     const tokenRes = await fetch(GOOGLE_TOKEN_URL, {
       method: "POST",
       headers: { "Content-Type": "application/x-www-form-urlencoded" },
@@ -66,7 +126,6 @@ export async function GET(request: NextRequest) {
     const accessToken: string = tokens.access_token;
 
     // ─── 2. Fetch user profile ────────────────────────────────────────────────
-
     const profileRes = await fetch(GOOGLE_USERINFO_URL, {
       headers: { Authorization: `Bearer ${accessToken}` },
     });
@@ -76,7 +135,6 @@ export async function GET(request: NextRequest) {
     }
 
     const profile = await profileRes.json();
-    // Google profile fields: sub, email, name, picture, email_verified
     const { email, name, picture: avatar } = profile as {
       sub: string;
       email: string;
@@ -90,15 +148,11 @@ export async function GET(request: NextRequest) {
     }
 
     // ─── 3. Upsert user in DB ─────────────────────────────────────────────────
-
-    // Synthetic phone for email-only Google users (no phone yet)
     const syntheticPhone = `google_${email.replace(/[^a-z0-9]/gi, "_")}`;
-
     const existingByEmail = await prisma.user.findUnique({ where: { email } });
 
     let user;
     if (existingByEmail) {
-      // Preserve manually customized name and avatar
       const shouldUpdateName =
         name && (!existingByEmail.name || existingByEmail.name.startsWith("User "));
       const shouldUpdateAvatar = avatar && !existingByEmail.avatar;
@@ -113,7 +167,6 @@ export async function GET(request: NextRequest) {
         },
       });
     } else {
-      // Try to find a phone-based user with the same phone placeholder (shouldn't exist normally)
       const existingByPhone = await prisma.user.findUnique({ where: { phone: syntheticPhone } });
       if (existingByPhone) {
         user = await prisma.user.update({
@@ -136,9 +189,7 @@ export async function GET(request: NextRequest) {
       }
     }
 
-    // ─── 4. Set session cookie ────────────────────────────────────────────────
-
-    // Session payload: just the user ID. The client reads this to fetch the profile.
+    // ─── 4. Set session payload ───────────────────────────────────────────────
     const sessionPayload = JSON.stringify({
       userId: user.id,
       name: user.name,
@@ -151,8 +202,7 @@ export async function GET(request: NextRequest) {
 
     const encoded = Buffer.from(sessionPayload).toString("base64url");
 
-    // ─── 5. Redirect back to app with session ─────────────────────────────────
-
+    // ─── 5. Redirect back to app ─────────────────────────────────────────────
     let redirectTo = "/";
     if (intent === "checkout") redirectTo = "/checkout";
 
@@ -161,10 +211,11 @@ export async function GET(request: NextRequest) {
     // Clear the CSRF state cookie
     response.cookies.set("oauth_state", "", { maxAge: 0, path: "/" });
 
-    // Set a persistent (7-day) session cookie for SSR/server reads if needed later
+    // Set persistent session cookie
+    const isProd = process.env.NODE_ENV === "production" || baseUrl.includes("tiletra.com");
     response.cookies.set("tiletra_session", encoded, {
-      httpOnly: false, // needs to be readable by JS to populate Zustand store
-      secure: process.env.NODE_ENV === "production",
+      httpOnly: false,
+      secure: isProd,
       sameSite: "lax",
       maxAge: 60 * 60 * 24 * 7, // 7 days
       path: "/",
