@@ -16,6 +16,7 @@ const jakarta = Plus_Jakarta_Sans({
 });
 
 export const metadata: Metadata = {
+  metadataBase: new URL(process.env.NEXT_PUBLIC_APP_URL || "https://tiletra.com"),
   title: "Intrihub | Everything for Every Space.",
   description: "Intrihub — Everything for Every Space. Shop tiles, electricals, plumbing, hardware, plywood, granite, aluminum doors, and wallpaper online. Delivery across Bangalore & Pan-India.",
   icons: {
@@ -34,6 +35,7 @@ export const metadata: Metadata = {
     title: "Intrihub | Everything for Every Space.",
     description: "Intrihub — Everything for Every Space. End-to-end interior and construction supplies: tiles, electrical, plumbing, hardware, plywood, granite & more.",
     type: "website",
+    url: "https://tiletra.com",
     images: ["/logo/intri-web-logo.png"],
   },
   twitter: {
@@ -71,7 +73,7 @@ export default function RootLayout({
               "name": "Intrihub",
               "image": "https://images.unsplash.com/photo-1581094794329-c8112a89af12?q=80&w=2070&auto=format&fit=crop",
               "@id": "",
-              "url": "https://intrihub.com",
+              "url": "https://tiletra.com",
               "telephone": "+917870935277",
               "email": "hello@intrihub.com",
               "address": {

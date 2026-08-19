@@ -12,16 +12,22 @@ import {
   Tag,
   Palette,
   Settings,
+  Store,
+  CheckSquare,
+  ShieldCheck,
   ExternalLink,
   ChevronLeft,
   ChevronRight,
   Sparkles,
 } from "lucide-react";
 import { useAdminStore } from "@/lib/admin-store";
-import { useState } from "react";
+import { useState, useEffect } from "react";
+import { getAdminMarketplaceStats } from "@/lib/actions/admin-vendor";
 
 const navItems = [
   { name: "Dashboard", href: "/admin", icon: LayoutDashboard, exact: true },
+  { name: "Vendors & Shops", href: "/admin/vendors", icon: Store, badgeKey: "pendingVendors" },
+  { name: "Product Approvals", href: "/admin/product-approvals", icon: CheckSquare, badgeKey: "pendingProducts" },
   { name: "Products", href: "/admin/products", icon: Package, badgeKey: "lowStock" },
   { name: "Categories", href: "/admin/categories", icon: Layers },
   { name: "Orders", href: "/admin/orders", icon: ShoppingBag, badgeKey: "pendingOrders" },
@@ -44,6 +50,20 @@ export default function AdminSidebar({
   const products = useAdminStore((s) => s.products);
   const reviews = useAdminStore((s) => s.reviews);
 
+  const [marketplaceStats, setMarketplaceStats] = useState({
+    pendingVendors: 0,
+    pendingProducts: 0,
+  });
+
+  useEffect(() => {
+    getAdminMarketplaceStats().then((res) => {
+      setMarketplaceStats({
+        pendingVendors: res.pendingVendors,
+        pendingProducts: res.pendingProducts,
+      });
+    });
+  }, [pathname]);
+
   const pendingOrdersCount = orders.filter(
     (o) => o.orderStatus === "Processing" || o.orderStatus === "Confirmed"
   ).length;
@@ -58,6 +78,8 @@ export default function AdminSidebar({
     pendingOrders: pendingOrdersCount,
     lowStock: lowStockCount,
     pendingReviews: pendingReviewsCount,
+    pendingVendors: marketplaceStats.pendingVendors,
+    pendingProducts: marketplaceStats.pendingProducts,
   };
 
   return (

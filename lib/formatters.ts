@@ -87,6 +87,11 @@ export function formatProduct(dbProduct: any): Product {
     isBestseller: Boolean(dbProduct.isBestseller),
     isNew: Boolean(dbProduct.isNewArrival),
     tags: Array.isArray(dbProduct.tags) ? dbProduct.tags : [],
+    vendorId: dbProduct.vendorId || null,
+    vendorName: dbProduct.vendor?.businessName || null,
+    status: dbProduct.status || "active",
+    approvalStatus: dbProduct.approvalStatus || "approved",
+    rejectionReason: dbProduct.rejectionReason || null,
     specs,
   };
 }

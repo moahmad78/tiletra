@@ -12,7 +12,10 @@ export async function GET(request: NextRequest) {
   const { searchParams } = new URL(request.url);
   const intent = searchParams.get("intent") || "";
 
-  const baseUrl = process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3000";
+  const baseUrl =
+    process.env.NEXT_PUBLIC_APP_URL ||
+    process.env.BETTER_AUTH_URL ||
+    (process.env.NODE_ENV === "production" ? "https://tiletra.com" : "http://localhost:3000");
   const redirectUri = `${baseUrl}/api/auth/callback/google`;
 
   // CSRF protection: a random state token; we also embed the intent inside it

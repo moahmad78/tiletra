@@ -39,6 +39,11 @@ export type Product = {
   isBestseller: boolean;
   isNew: boolean;
   tags: string[];
+  vendorId?: string | null;
+  vendorName?: string | null;
+  status?: "active" | "paused" | "draft";
+  approvalStatus?: "pending" | "approved" | "rejected";
+  rejectionReason?: string | null;
   specs: {
     waterAbsorption?: string;
     slipResistance?: string;

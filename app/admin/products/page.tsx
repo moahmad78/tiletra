@@ -17,10 +17,12 @@ import {
 } from "lucide-react";
 import { getProducts, deleteProduct, createProduct } from "@/lib/actions/products";
 import { getCategories } from "@/lib/actions/categories";
+import { getAdminVendors } from "@/lib/actions/admin-vendor";
 import type { Product } from "@/lib/data/products";
 import type { Category } from "@/lib/data/categories";
 import { getLowestPrice, getLowestBoxPrice } from "@/lib/data/products";
 import { toast } from "sonner";
+import { Store, ShieldCheck, Clock, PauseCircle, PlayCircle } from "lucide-react";
 
 function formatPrice(n: number) {
   return "₹" + n.toLocaleString("en-IN");
@@ -29,22 +31,27 @@ function formatPrice(n: number) {
 export default function AdminProductsPage() {
   const [products, setProducts] = useState<Product[]>([]);
   const [categories, setCategories] = useState<Category[]>([]);
+  const [vendors, setVendors] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
 
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedCategory, setSelectedCategory] = useState<string>("all");
+  const [selectedVendor, setSelectedVendor] = useState<string>("all");
   const [selectedStockStatus, setSelectedStockStatus] = useState<string>("all");
+  const [selectedApprovalStatus, setSelectedApprovalStatus] = useState<string>("all");
   const [selectedIds, setSelectedIds] = useState<string[]>([]);
 
   const loadData = async () => {
     try {
       setLoading(true);
-      const [prods, cats] = await Promise.all([
-        getProducts(),
+      const [prods, cats, vends] = await Promise.all([
+        getProducts({ includeAllStatuses: true }),
         getCategories(),
+        getAdminVendors(),
       ]);
       setProducts(prods);
       setCategories(cats);
+      setVendors(vends);
     } catch (err) {
       console.error("Error loading products:", err);
     } finally {
@@ -61,10 +68,23 @@ export default function AdminProductsPage() {
     const matchesSearch =
       p.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
       p.categoryName.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      p.material.toLowerCase().includes(searchQuery.toLowerCase());
+      p.material.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      (p.vendorName && p.vendorName.toLowerCase().includes(searchQuery.toLowerCase()));
 
     const matchesCategory =
       selectedCategory === "all" || p.categorySlug === selectedCategory;
+
+    const matchesVendor =
+      selectedVendor === "all"
+        ? true
+        : selectedVendor === "platform"
+        ? !p.vendorId
+        : p.vendorId === selectedVendor;
+
+    const matchesApproval =
+      selectedApprovalStatus === "all"
+        ? true
+        : p.approvalStatus === selectedApprovalStatus;
 
     const totalStock = p.variants.reduce((sum, v) => sum + v.stockBoxes, 0);
     const matchesStock =
@@ -76,7 +96,7 @@ export default function AdminProductsPage() {
         ? totalStock <= 0
         : totalStock >= 25;
 
-    return matchesSearch && matchesCategory && matchesStock;
+    return matchesSearch && matchesCategory && matchesVendor && matchesApproval && matchesStock;
   });
 
   const handleSelectAll = () => {
@@ -212,11 +232,11 @@ export default function AdminProductsPage() {
           </div>
 
           {/* Category Filter */}
-          <div className="flex items-center gap-2 w-full sm:w-auto">
+          <div className="flex flex-wrap items-center gap-2 w-full sm:w-auto">
             <select
               value={selectedCategory}
               onChange={(e) => setSelectedCategory(e.target.value)}
-              className="w-full sm:w-44 px-3 py-2 bg-gray-50 border border-gray-200 rounded-xl text-xs font-bold text-[#052a51] focus:outline-none focus:border-[#F26522] cursor-pointer"
+              className="w-full sm:w-36 px-3 py-2 bg-gray-50 border border-gray-200 rounded-xl text-xs font-bold text-[#052a51] focus:outline-none focus:border-[#F26522] cursor-pointer"
             >
               <option value="all">All Categories</option>
               {categories.map((c) => (
@@ -226,11 +246,38 @@ export default function AdminProductsPage() {
               ))}
             </select>
 
+            {/* Vendor Filter */}
+            <select
+              value={selectedVendor}
+              onChange={(e) => setSelectedVendor(e.target.value)}
+              className="w-full sm:w-40 px-3 py-2 bg-gray-50 border border-gray-200 rounded-xl text-xs font-bold text-[#052a51] focus:outline-none focus:border-[#F26522] cursor-pointer"
+            >
+              <option value="all">All Vendors</option>
+              <option value="platform">Platform Direct</option>
+              {vendors.map((v) => (
+                <option key={v.id} value={v.id}>
+                  {v.businessName}
+                </option>
+              ))}
+            </select>
+
+            {/* Approval Status Filter */}
+            <select
+              value={selectedApprovalStatus}
+              onChange={(e) => setSelectedApprovalStatus(e.target.value)}
+              className="w-full sm:w-36 px-3 py-2 bg-gray-50 border border-gray-200 rounded-xl text-xs font-bold text-[#052a51] focus:outline-none focus:border-[#F26522] cursor-pointer"
+            >
+              <option value="all">All Approvals</option>
+              <option value="approved">Approved</option>
+              <option value="pending">Pending Approval</option>
+              <option value="rejected">Rejected</option>
+            </select>
+
             {/* Stock Filter */}
             <select
               value={selectedStockStatus}
               onChange={(e) => setSelectedStockStatus(e.target.value)}
-              className="w-full sm:w-36 px-3 py-2 bg-gray-50 border border-gray-200 rounded-xl text-xs font-bold text-[#052a51] focus:outline-none focus:border-[#F26522] cursor-pointer"
+              className="w-full sm:w-32 px-3 py-2 bg-gray-50 border border-gray-200 rounded-xl text-xs font-bold text-[#052a51] focus:outline-none focus:border-[#F26522] cursor-pointer"
             >
               <option value="all">All Stock</option>
               <option value="in">In Stock (25+)</option>
@@ -260,7 +307,7 @@ export default function AdminProductsPage() {
       {/* ── Products Table ── */}
       <div className="bg-white rounded-2xl border border-gray-200/80 shadow-2xs overflow-hidden">
         <div className="overflow-x-auto">
-          <table className="w-full text-left text-xs border-collapse min-w-[760px]">
+          <table className="w-full text-left text-xs border-collapse min-w-[840px]">
             <thead>
               <tr className="bg-gray-50 border-b border-gray-200 text-gray-400 font-bold uppercase text-[10px]">
                 <th className="py-3.5 px-4 w-10">
@@ -277,17 +324,18 @@ export default function AdminProductsPage() {
                   </button>
                 </th>
                 <th className="py-3.5 px-4">Tile Design</th>
+                <th className="py-3.5 px-4">Vendor Shop</th>
                 <th className="py-3.5 px-4">Category / Material</th>
                 <th className="py-3.5 px-4">Pricing</th>
                 <th className="py-3.5 px-4">Total Inventory</th>
-                <th className="py-3.5 px-4">Status</th>
+                <th className="py-3.5 px-4">Approval & Status</th>
                 <th className="py-3.5 px-4 text-right">Actions</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-gray-100 font-medium">
               {filteredProducts.length === 0 ? (
                 <tr>
-                  <td colSpan={7} className="py-12 text-center text-gray-400 text-sm">
+                  <td colSpan={8} className="py-12 text-center text-gray-400 text-sm">
                     No matching tiles found for your filters.
                   </td>
                 </tr>
@@ -295,6 +343,9 @@ export default function AdminProductsPage() {
                 filteredProducts.map((p) => {
                   const isSelected = selectedIds.includes(p.id);
                   const totalStock = p.variants.reduce((s, v) => s + v.stockBoxes, 0);
+                  const isPending = p.approvalStatus === "pending";
+                  const isRejected = p.approvalStatus === "rejected";
+                  const isPaused = p.status === "paused";
 
                   return (
                     <tr
@@ -343,6 +394,19 @@ export default function AdminProductsPage() {
                         </div>
                       </td>
 
+                      {/* Vendor Column */}
+                      <td className="py-3 px-4">
+                        {p.vendorName ? (
+                          <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-emerald-50 text-emerald-700 border border-emerald-200">
+                            <Store size={11} /> {p.vendorName}
+                          </span>
+                        ) : (
+                          <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-gray-100 text-gray-700 border border-gray-200">
+                            Platform Direct
+                          </span>
+                        )}
+                      </td>
+
                       {/* Category & Material */}
                       <td className="py-3 px-4">
                         <span className="font-bold text-[#052a51]">{p.categoryName}</span>
@@ -377,22 +441,32 @@ export default function AdminProductsPage() {
                         </div>
                       </td>
 
-                      {/* Badges */}
+                      {/* Approval & Store Visibility */}
                       <td className="py-3 px-4">
-                        <div className="flex flex-wrap gap-1">
-                          {p.isBestseller && (
-                            <span className="px-2 py-0.5 bg-[#F26522] text-white text-[9px] font-bold rounded-md">
-                              Bestseller
+                        <div className="flex flex-col gap-1">
+                          {isPending && (
+                            <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded text-[9px] font-bold bg-blue-50 text-blue-700 border border-blue-200 w-fit">
+                              <Clock size={10} /> Pending Approval
                             </span>
                           )}
-                          {p.isNew && (
-                            <span className="px-2 py-0.5 bg-[#052a51] text-white text-[9px] font-bold rounded-md">
-                              New
+                          {isRejected && (
+                            <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded text-[9px] font-bold bg-rose-50 text-rose-700 border border-rose-200 w-fit">
+                              Rejected
                             </span>
                           )}
-                          {!p.isBestseller && !p.isNew && (
-                            <span className="px-2 py-0.5 bg-gray-100 text-gray-600 text-[9px] font-semibold rounded-md">
-                              Active
+                          {(!p.approvalStatus || p.approvalStatus === "approved") && (
+                            <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded text-[9px] font-bold bg-emerald-50 text-emerald-700 border border-emerald-200 w-fit">
+                              Approved
+                            </span>
+                          )}
+
+                          {isPaused ? (
+                            <span className="text-[9px] text-amber-600 font-bold flex items-center gap-1">
+                              <PauseCircle size={10} /> Paused
+                            </span>
+                          ) : (
+                            <span className="text-[9px] text-emerald-600 font-bold flex items-center gap-1">
+                              <PlayCircle size={10} /> Live on Store
                             </span>
                           )}
                         </div>

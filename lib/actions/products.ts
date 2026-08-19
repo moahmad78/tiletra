@@ -7,6 +7,7 @@ import { formatProduct, safeRevalidate } from "@/lib/formatters";
 export type CreateProductInput = {
   name: string;
   slug?: string;
+  categoryId?: string | null;
   categorySlug: string;
   categoryName?: string;
   material: string;
@@ -29,6 +30,10 @@ export type CreateProductInput = {
   manualRating?: number | null;
   manualReviewCount?: number | null;
   specs?: any;
+  vendorId?: string | null;
+  status?: "active" | "paused" | "draft";
+  approvalStatus?: "pending" | "approved" | "rejected";
+  rejectionReason?: string | null;
 };
 
 import { products as defaultProducts } from "@/lib/data/products";
@@ -41,9 +46,39 @@ export async function getProducts(options?: {
   search?: string;
   limit?: number;
   inStockOnly?: boolean;
+  vendorId?: string;
+  status?: string;
+  approvalStatus?: string;
+  includeAllStatuses?: boolean;
 }): Promise<Product[]> {
   try {
     const where: any = {};
+
+    // For customer storefront, strictly enforce active & approved unless includeAllStatuses is true
+    if (!options?.includeAllStatuses) {
+      if (options?.status) {
+        where.status = options.status;
+      } else {
+        where.status = "active";
+      }
+
+      if (options?.approvalStatus) {
+        where.approvalStatus = options.approvalStatus;
+      } else {
+        where.approvalStatus = "approved";
+      }
+    } else {
+      if (options?.status && options.status !== "all") {
+        where.status = options.status;
+      }
+      if (options?.approvalStatus && options.approvalStatus !== "all") {
+        where.approvalStatus = options.approvalStatus;
+      }
+    }
+
+    if (options?.vendorId) {
+      where.vendorId = options.vendorId;
+    }
 
     if (options?.categorySlug && options.categorySlug !== "all") {
       const slug = options.categorySlug;
@@ -94,6 +129,13 @@ export async function getProducts(options?: {
       include: {
         variants: true,
         attributes: true,
+        vendor: {
+          select: {
+            id: true,
+            businessName: true,
+            status: true,
+          },
+        },
       },
       orderBy: { createdAt: "desc" },
       take: options?.limit,
@@ -108,6 +150,14 @@ export async function getProducts(options?: {
 
   // Fallback to static products dataset
   let result = [...defaultProducts];
+  if (!options?.includeAllStatuses) {
+    result = result.filter(
+      (p) => (p.status || "active") === "active" && (p.approvalStatus || "approved") === "approved"
+    );
+  }
+  if (options?.vendorId) {
+    result = result.filter((p) => p.vendorId === options.vendorId);
+  }
   if (options?.categorySlug && options.categorySlug !== "all") {
     result = result.filter(
       (p) =>
@@ -141,17 +191,31 @@ export async function getProducts(options?: {
   return result;
 }
 
-export async function getProductBySlug(slug: string): Promise<Product | null> {
+export async function getProductBySlug(slug: string, options?: { includeAllStatuses?: boolean }): Promise<Product | null> {
   try {
     const dbProduct = await prisma.product.findUnique({
       where: { slug },
       include: {
         variants: true,
         attributes: true,
+        vendor: {
+          select: {
+            id: true,
+            businessName: true,
+            status: true,
+          },
+        },
       },
     });
 
-    if (dbProduct) return formatProduct(dbProduct);
+    if (dbProduct) {
+      if (!options?.includeAllStatuses) {
+        if (dbProduct.status !== "active" || dbProduct.approvalStatus !== "approved") {
+          return null;
+        }
+      }
+      return formatProduct(dbProduct);
+    }
   } catch (error) {
     console.error(`Error fetching product by slug ${slug} from DB:`, error);
   }
@@ -161,17 +225,29 @@ export async function getProductBySlug(slug: string): Promise<Product | null> {
   return staticProduct || null;
 }
 
-export async function getProductById(id: string): Promise<Product | null> {
+export async function getProductById(id: string, options?: { includeAllStatuses?: boolean }): Promise<Product | null> {
   try {
     const dbProduct = await prisma.product.findUnique({
       where: { id },
       include: {
         variants: true,
         attributes: true,
+        vendor: {
+          select: {
+            id: true,
+            businessName: true,
+            status: true,
+          },
+        },
       },
     });
 
     if (!dbProduct) return null;
+    if (!options?.includeAllStatuses) {
+      if (dbProduct.status !== "active" || dbProduct.approvalStatus !== "approved") {
+        return null;
+      }
+    }
     return formatProduct(dbProduct);
   } catch (error) {
     console.error(`Error fetching product by id ${id}:`, error);
@@ -278,6 +354,10 @@ export async function createProduct(input: CreateProductInput) {
         manualRating: input.manualRating !== undefined && input.manualRating !== null ? Number(input.manualRating) : null,
         manualReviewCount: input.manualReviewCount !== undefined && input.manualReviewCount !== null ? Number(input.manualReviewCount) : null,
         specs: input.specs || null,
+        vendorId: input.vendorId || null,
+        status: input.status || "active",
+        approvalStatus: input.approvalStatus || (input.vendorId ? "pending" : "approved"),
+        rejectionReason: input.rejectionReason || null,
         variants: {
           create: input.variants.map((v) => ({
             size: v.size,
@@ -300,12 +380,21 @@ export async function createProduct(input: CreateProductInput) {
       include: {
         variants: true,
         attributes: true,
+        vendor: {
+          select: {
+            id: true,
+            businessName: true,
+            status: true,
+          },
+        },
       },
     });
 
     safeRevalidate("/shop");
     safeRevalidate(`/shop/${input.categorySlug}`);
     safeRevalidate("/admin/products");
+    safeRevalidate("/admin/product-approvals");
+    safeRevalidate("/vendor/products");
     safeRevalidate("/");
 
     return { success: true, product: formatProduct(newProduct) };
@@ -321,6 +410,10 @@ export async function updateProduct(id: string, input: Partial<CreateProductInpu
     if (input.name) updateData.name = input.name;
     if (input.description !== undefined) updateData.description = input.description;
     if (input.unitOfSale) updateData.unitOfSale = input.unitOfSale;
+    if (input.vendorId !== undefined) updateData.vendorId = input.vendorId;
+    if (input.status !== undefined) updateData.status = input.status;
+    if (input.approvalStatus !== undefined) updateData.approvalStatus = input.approvalStatus;
+    if (input.rejectionReason !== undefined) updateData.rejectionReason = input.rejectionReason;
     if (input.categorySlug) {
       updateData.categorySlug = input.categorySlug;
       const cat = await prisma.category.findUnique({ where: { slug: input.categorySlug } });
@@ -378,13 +471,25 @@ export async function updateProduct(id: string, input: Partial<CreateProductInpu
     const updated = await prisma.product.update({
       where: { id },
       data: updateData,
-      include: { variants: true, attributes: true },
+      include: {
+        variants: true,
+        attributes: true,
+        vendor: {
+          select: {
+            id: true,
+            businessName: true,
+            status: true,
+          },
+        },
+      },
     });
 
     safeRevalidate("/shop");
     safeRevalidate(`/shop/${updated.categorySlug}`);
     safeRevalidate(`/product/${updated.slug}`);
     safeRevalidate("/admin/products");
+    safeRevalidate("/admin/product-approvals");
+    safeRevalidate("/vendor/products");
     safeRevalidate("/");
 
     return { success: true, product: formatProduct(updated) };

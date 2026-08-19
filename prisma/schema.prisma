@@ -18,7 +18,7 @@ model User {
   phone                 String                  @unique
   phoneVerified         Boolean                 @default(false)
   emailVerified         Boolean                 @default(false)
-  role                  String                  @default("customer") // customer | admin | staff
+  role                  String                  @default("customer") // customer | vendor | admin | staff
   authProvider          String?                 // "google" | "email" | "phone"
   avatar                String?
   createdAt             DateTime                @default(now())
@@ -34,6 +34,7 @@ model User {
   returnRequests        ReturnRequest[]
   auditLogs             AuditLog[]
   staffPermissions      StaffPermission[]
+  vendor                Vendor?                 @relation("VendorOwner")
 
   @@index([phone])
   @@index([email])
@@ -123,10 +124,18 @@ model Product {
   manualRating Float?
   manualReviewCount Int?
   specs        Json?
+
+  // Multi-Vendor fields
+  vendorId         String?
+  status           String             @default("active") // active | paused | draft
+  approvalStatus   String             @default("approved") // pending | approved | rejected
+  rejectionReason  String?
+
   createdAt    DateTime           @default(now())
   updatedAt    DateTime           @updatedAt
 
   category     Category?          @relation(fields: [categoryId], references: [id], onDelete: SetNull)
+  vendor       Vendor?            @relation(fields: [vendorId], references: [id], onDelete: SetNull)
   variants     ProductVariant[]
   attributes   ProductAttribute[]
   reviews      Review[]
@@ -136,6 +145,9 @@ model Product {
   @@index([categorySlug])
   @@index([isTrending])
   @@index([isBestseller])
+  @@index([vendorId])
+  @@index([status])
+  @@index([approvalStatus])
 }
 
 model ProductAttribute {
@@ -509,3 +521,94 @@ model AuditLog {
   @@index([entity])
   @@index([userId])
 }
+
+// ----------------------------------------------------
+// 13. Multi-Vendor Marketplace
+// ----------------------------------------------------
+model Vendor {
+  id              String             @id @default(cuid())
+  businessName    String
+  slug            String             @unique
+  logo            String?
+  description     String?            @default("")
+  contactEmail    String
+  contactPhone    String
+  businessAddress String?
+  category        String?            @default("General")
+  gstNumber       String?
+  status          String             @default("pending") // pending | approved | rejected | suspended
+  rejectionReason String?
+  commissionRate  Float              @default(15.0) // % platform fee
+  ownerId         String             @unique
+  createdAt       DateTime           @default(now())
+  updatedAt       DateTime           @updatedAt
+
+  owner           User               @relation("VendorOwner", fields: [ownerId], references: [id], onDelete: Cascade)
+  products        Product[]
+  splits          VendorOrderSplit[]
+  payouts         Payout[]
+  coupons         VendorCoupon[]
+
+  @@index([status])
+  @@index([ownerId])
+}
+
+model VendorOrderSplit {
+  id                 String   @id @default(cuid())
+  orderId            String
+  vendorId           String
+  subtotal           Float
+  commissionRate     Float    @default(15.0)
+  commissionAmount   Float    @default(0)
+  vendorPayoutAmount Float    @default(0)
+  fulfillmentStatus  String   @default("Processing") // Processing | Dispatched | Delivered | Cancelled
+  trackingNumber     String?
+  courierName        String?
+  createdAt          DateTime @default(now())
+  updatedAt          DateTime @updatedAt
+
+  vendor             Vendor   @relation(fields: [vendorId], references: [id], onDelete: Cascade)
+
+  @@index([orderId])
+  @@index([vendorId])
+  @@index([fulfillmentStatus])
+}
+
+model Payout {
+  id             String    @id @default(cuid())
+  vendorId       String
+  amount         Float
+  status         String    @default("pending") // pending | processing | completed | held
+  periodStart    DateTime
+  periodEnd      DateTime
+  initiatedAt    DateTime  @default(now())
+  completedAt    DateTime?
+  notes          String?
+  createdAt      DateTime  @default(now())
+  updatedAt      DateTime  @updatedAt
+
+  vendor         Vendor    @relation(fields: [vendorId], references: [id], onDelete: Cascade)
+
+  @@index([vendorId])
+  @@index([status])
+}
+
+model VendorCoupon {
+  id           String    @id @default(cuid())
+  vendorId     String
+  code         String
+  discountType String    @default("percentage") // percentage | flat
+  value        Float
+  minOrderValue Float    @default(0)
+  validFrom    DateTime  @default(now())
+  validTill    DateTime
+  isActive     Boolean   @default(true)
+  createdAt    DateTime  @default(now())
+  updatedAt    DateTime  @updatedAt
+
+  vendor       Vendor    @relation(fields: [vendorId], references: [id], onDelete: Cascade)
+
+  @@unique([vendorId, code])
+  @@index([vendorId])
+}
+
