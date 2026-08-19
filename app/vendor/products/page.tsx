@@ -7,8 +7,12 @@ import {
   getVendorProducts,
   toggleVendorProductStatus,
   deleteVendorProduct,
+  updateVendorProduct,
 } from "@/lib/actions/vendor";
+import { getCategories } from "@/lib/actions/categories";
+import type { Category } from "@/lib/data/categories";
 import type { Product } from "@/lib/data/products";
+import ImageUploadManager from "@/components/admin/ImageUploadManager";
 import {
   Plus,
   Search,
@@ -24,22 +28,42 @@ import {
   Loader2,
   Package,
   Layers,
+  X,
+  Sparkles,
 } from "lucide-react";
 import { toast } from "sonner";
 
 export default function VendorProductsPage() {
   const { vendor } = useVendorAuth();
   const [products, setProducts] = useState<Product[]>([]);
+  const [categories, setCategories] = useState<Category[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState("");
   const [filterTab, setFilterTab] = useState<"all" | "active" | "paused" | "pending" | "rejected">("all");
+
+  // Edit Modal State
+  const [editingProduct, setEditingProduct] = useState<Product | null>(null);
+  const [editName, setEditName] = useState("");
+  const [editCategorySlug, setEditCategorySlug] = useState("");
+  const [editCategoryName, setEditCategoryName] = useState("");
+  const [editMaterial, setEditMaterial] = useState("");
+  const [editUnitOfSale, setEditUnitOfSale] = useState("box");
+  const [editDescription, setEditDescription] = useState("");
+  const [editImages, setEditImages] = useState<string[]>([]);
+  const [editVariants, setEditVariants] = useState<any[]>([]);
+  const [editAttributes, setEditAttributes] = useState<{ key: string; value: string }[]>([]);
+  const [editSaving, setEditSaving] = useState(false);
 
   const loadData = async () => {
     if (!vendor?.id) return;
     try {
       setLoading(true);
-      const prods = await getVendorProducts(vendor.id);
+      const [prods, cats] = await Promise.all([
+        getVendorProducts(vendor.id),
+        getCategories(),
+      ]);
       setProducts(prods);
+      setCategories(cats);
     } catch (e) {
       console.error("Error loading vendor products:", e);
     } finally {
@@ -50,6 +74,74 @@ export default function VendorProductsPage() {
   useEffect(() => {
     loadData();
   }, [vendor?.id]);
+
+  const handleStartEdit = (p: Product) => {
+    setEditingProduct(p);
+    setEditName(p.name);
+    setEditCategorySlug(p.categorySlug || "floor-tiles");
+    setEditCategoryName(p.categoryName || "Floor Tiles");
+    setEditMaterial(p.material || "Vitrified");
+    setEditUnitOfSale(p.unitOfSale || "box");
+    setEditDescription(p.description || "");
+    setEditImages(p.images && p.images.length > 0 ? p.images : ["/placeholders/product.svg"]);
+    setEditVariants(
+      p.variants && p.variants.length > 0
+        ? p.variants.map((v) => ({
+            size: v.size,
+            finish: v.finish,
+            color: v.color,
+            pricePerBox: v.pricePerBox,
+            pricePerSqft: v.pricePerSqft,
+            sqftPerBox: v.sqftPerBox,
+            stockBoxes: v.stockBoxes ?? 50,
+          }))
+        : [
+            {
+              size: "Standard",
+              finish: "Standard",
+              color: "Standard",
+              pricePerBox: 1000,
+              pricePerSqft: 50,
+              sqftPerBox: 20,
+              stockBoxes: 50,
+            },
+          ]
+    );
+    setEditAttributes(p.attributes && p.attributes.length > 0 ? p.attributes.map((a) => ({ key: a.key, value: a.value })) : []);
+  };
+
+  const handleSaveEdit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!vendor?.id || !editingProduct) return;
+    if (!editName.trim()) {
+      toast.error("Product name is required");
+      return;
+    }
+
+    setEditSaving(true);
+    const res = await updateVendorProduct(vendor.id, editingProduct.id, {
+      name: editName.trim(),
+      categorySlug: editCategorySlug,
+      categoryName: editCategoryName,
+      material: editMaterial,
+      unitOfSale: editUnitOfSale,
+      description: editDescription.trim(),
+      images: editImages.filter((img) => img.trim().length > 0),
+      variants: editVariants,
+      attributes: editAttributes.filter((a) => a.key.trim() && a.value.trim()),
+    });
+    setEditSaving(false);
+
+    if (res.success && res.product) {
+      toast.success("Product updated! Sent for Super Admin approval.");
+      setProducts((prev) =>
+        prev.map((p) => (p.id === editingProduct.id ? res.product! : p))
+      );
+      setEditingProduct(null);
+    } else {
+      toast.error(res.error || "Failed to update product");
+    }
+  };
 
   const handleToggleStatus = async (product: Product) => {
     if (!vendor?.id) return;
@@ -125,7 +217,7 @@ export default function VendorProductsPage() {
 
         <Link
           href="/vendor/products/new"
-          className="inline-flex items-center justify-center gap-2 px-5 py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 active:scale-95 text-white text-xs font-bold shadow-md shadow-emerald-600/20 transition-all shrink-0"
+          className="inline-flex items-center justify-center gap-2 px-5 py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 active:scale-95 text-white text-xs font-bold shadow-md shadow-emerald-600/20 transition-all shrink-0 cursor-pointer"
         >
           <Plus size={16} /> Add New Product
         </Link>
@@ -137,57 +229,53 @@ export default function VendorProductsPage() {
         <div className="flex items-center gap-2 overflow-x-auto pb-2 scrollbar-none border-b border-gray-100">
           <button
             onClick={() => setFilterTab("all")}
-            className={`px-3.5 py-1.5 rounded-xl text-xs font-bold whitespace-nowrap transition-all ${
+            className={`px-3.5 py-1.5 rounded-xl text-xs font-bold whitespace-nowrap transition-all cursor-pointer ${
               filterTab === "all"
-                ? "bg-gray-900 text-white shadow-xs"
-                : "text-gray-600 hover:bg-gray-100"
+                ? "bg-gray-900 text-white"
+                : "bg-gray-100 text-gray-600 hover:bg-gray-200"
             }`}
           >
             All Products ({tabCounts.all})
           </button>
-
           <button
             onClick={() => setFilterTab("active")}
-            className={`px-3.5 py-1.5 rounded-xl text-xs font-bold whitespace-nowrap transition-all ${
+            className={`px-3.5 py-1.5 rounded-xl text-xs font-bold whitespace-nowrap transition-all cursor-pointer ${
               filterTab === "active"
-                ? "bg-emerald-600 text-white shadow-xs"
-                : "text-gray-600 hover:bg-gray-100"
+                ? "bg-emerald-600 text-white"
+                : "bg-emerald-50 text-emerald-700 hover:bg-emerald-100"
             }`}
           >
-            Active on Store ({tabCounts.active})
+            Live on Store ({tabCounts.active})
           </button>
-
-          <button
-            onClick={() => setFilterTab("paused")}
-            className={`px-3.5 py-1.5 rounded-xl text-xs font-bold whitespace-nowrap transition-all ${
-              filterTab === "paused"
-                ? "bg-amber-600 text-white shadow-xs"
-                : "text-gray-600 hover:bg-gray-100"
-            }`}
-          >
-            Paused ({tabCounts.paused})
-          </button>
-
           <button
             onClick={() => setFilterTab("pending")}
-            className={`px-3.5 py-1.5 rounded-xl text-xs font-bold whitespace-nowrap transition-all ${
+            className={`px-3.5 py-1.5 rounded-xl text-xs font-bold whitespace-nowrap transition-all cursor-pointer ${
               filterTab === "pending"
-                ? "bg-blue-600 text-white shadow-xs"
-                : "text-gray-600 hover:bg-gray-100"
+                ? "bg-blue-600 text-white"
+                : "bg-blue-50 text-blue-700 hover:bg-blue-100"
             }`}
           >
             Pending Review ({tabCounts.pending})
           </button>
-
           <button
-            onClick={() => setFilterTab("rejected")}
-            className={`px-3.5 py-1.5 rounded-xl text-xs font-bold whitespace-nowrap transition-all ${
-              filterTab === "rejected"
-                ? "bg-rose-600 text-white shadow-xs"
-                : "text-gray-600 hover:bg-gray-100"
+            onClick={() => setFilterTab("paused")}
+            className={`px-3.5 py-1.5 rounded-xl text-xs font-bold whitespace-nowrap transition-all cursor-pointer ${
+              filterTab === "paused"
+                ? "bg-amber-600 text-white"
+                : "bg-amber-50 text-amber-700 hover:bg-amber-100"
             }`}
           >
-            Rejected ({tabCounts.rejected})
+            Paused ({tabCounts.paused})
+          </button>
+          <button
+            onClick={() => setFilterTab("rejected")}
+            className={`px-3.5 py-1.5 rounded-xl text-xs font-bold whitespace-nowrap transition-all cursor-pointer ${
+              filterTab === "rejected"
+                ? "bg-rose-600 text-white"
+                : "bg-rose-50 text-rose-700 hover:bg-rose-100"
+            }`}
+          >
+            Action Required ({tabCounts.rejected})
           </button>
         </div>
 
@@ -203,20 +291,20 @@ export default function VendorProductsPage() {
           />
         </div>
 
-        {/* Products Table */}
+        {/* Product Table */}
         {loading ? (
-          <div className="py-16 text-center text-gray-400 flex flex-col items-center justify-center gap-2">
-            <Loader2 className="animate-spin text-emerald-600" size={28} />
-            <p className="text-xs font-medium">Loading your products...</p>
+          <div className="py-20 text-center text-gray-400">
+            <Loader2 className="animate-spin inline-block mb-2 text-emerald-600" size={24} />
+            <p className="text-xs font-medium">Loading your shop catalog...</p>
           </div>
         ) : filteredProducts.length === 0 ? (
-          <div className="py-16 text-center rounded-2xl bg-gray-50 border border-dashed border-gray-200">
-            <Package size={40} className="mx-auto text-gray-300 mb-2" />
-            <h3 className="text-sm font-bold text-gray-700">No products found</h3>
-            <p className="text-xs text-gray-400 mt-1 max-w-sm mx-auto">
+          <div className="py-16 text-center text-gray-400">
+            <Package className="mx-auto mb-3 text-gray-300" size={36} />
+            <p className="text-sm font-bold text-gray-700">No products found</p>
+            <p className="text-xs text-gray-400 mt-1">
               {searchQuery
                 ? `No products matching "${searchQuery}"`
-                : "No products in this category yet. Click '+ Add New Product' to list one."}
+                : "Get started by adding your first product listing"}
             </p>
           </div>
         ) : (
@@ -303,7 +391,7 @@ export default function VendorProductsPage() {
                       <td className="py-3.5 px-3">
                         <button
                           onClick={() => handleToggleStatus(p)}
-                          className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-xl text-[11px] font-bold transition-all ${
+                          className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-xl text-[11px] font-bold transition-all cursor-pointer ${
                             isPaused
                               ? "bg-amber-100 text-amber-800 hover:bg-amber-200"
                               : "bg-emerald-100 text-emerald-800 hover:bg-emerald-200"
@@ -318,6 +406,13 @@ export default function VendorProductsPage() {
                       {/* Actions */}
                       <td className="py-3.5 px-4 text-right">
                         <div className="flex items-center justify-end gap-1.5">
+                          <button
+                            onClick={() => handleStartEdit(p)}
+                            className="p-1.5 text-gray-500 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-colors cursor-pointer"
+                            title="Edit Listing (Triggers re-approval)"
+                          >
+                            <Edit size={15} />
+                          </button>
                           {isApproved && !isPaused && (
                             <Link
                               href={`/product/${p.slug}`}
@@ -330,7 +425,7 @@ export default function VendorProductsPage() {
                           )}
                           <button
                             onClick={() => handleDelete(p.id, p.name)}
-                            className="p-1.5 text-gray-400 hover:text-rose-600 hover:bg-rose-50 rounded-lg transition-colors"
+                            className="p-1.5 text-gray-400 hover:text-rose-600 hover:bg-rose-50 rounded-lg transition-colors cursor-pointer"
                             title="Delete Product"
                           >
                             <Trash2 size={15} />
@@ -345,6 +440,195 @@ export default function VendorProductsPage() {
           </div>
         )}
       </div>
+
+      {/* Edit Product Modal */}
+      {editingProduct && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-xs overflow-y-auto">
+          <div className="bg-white rounded-3xl max-w-2xl w-full max-h-[90vh] overflow-y-auto shadow-2xl border border-gray-100 p-6 space-y-5 my-8">
+            <div className="flex items-center justify-between pb-3 border-b border-gray-100">
+              <div>
+                <h2 className="text-lg font-black text-gray-900">Edit Product Listing</h2>
+                <p className="text-xs text-gray-500">
+                  Editing will resubmit this product for Super Admin approval
+                </p>
+              </div>
+              <button
+                onClick={() => setEditingProduct(null)}
+                className="p-2 rounded-xl text-gray-400 hover:text-gray-600 hover:bg-gray-100 cursor-pointer"
+              >
+                <X size={18} />
+              </button>
+            </div>
+
+            <form onSubmit={handleSaveEdit} className="space-y-4">
+              <div>
+                <label className="block text-xs font-bold text-gray-700 uppercase mb-1">
+                  Product Name *
+                </label>
+                <input
+                  type="text"
+                  value={editName}
+                  onChange={(e) => setEditName(e.target.value)}
+                  className="w-full bg-gray-50 border border-gray-200 rounded-xl px-4 py-2.5 text-sm font-medium text-gray-800 focus:bg-white focus:border-emerald-500 focus:outline-hidden"
+                  required
+                />
+              </div>
+
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                <div>
+                  <label className="block text-xs font-bold text-gray-700 uppercase mb-1">
+                    Category *
+                  </label>
+                  <select
+                    value={editCategorySlug}
+                    onChange={(e) => {
+                      setEditCategorySlug(e.target.value);
+                      const found = categories.find((c) => c.slug === e.target.value);
+                      if (found) setEditCategoryName(found.name);
+                    }}
+                    className="w-full bg-gray-50 border border-gray-200 rounded-xl px-3 py-2.5 text-xs font-medium text-gray-800 focus:bg-white focus:border-emerald-500 focus:outline-hidden"
+                  >
+                    {categories.map((c) => (
+                      <option key={c.slug} value={c.slug}>
+                        {c.name}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+
+                <div>
+                  <label className="block text-xs font-bold text-gray-700 uppercase mb-1">
+                    Material *
+                  </label>
+                  <input
+                    type="text"
+                    value={editMaterial}
+                    onChange={(e) => setEditMaterial(e.target.value)}
+                    className="w-full bg-gray-50 border border-gray-200 rounded-xl px-3 py-2.5 text-xs font-medium text-gray-800 focus:bg-white focus:border-emerald-500 focus:outline-hidden"
+                    required
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-xs font-bold text-gray-700 uppercase mb-1">
+                    Unit of Sale *
+                  </label>
+                  <select
+                    value={editUnitOfSale}
+                    onChange={(e) => setEditUnitOfSale(e.target.value)}
+                    className="w-full bg-gray-50 border border-gray-200 rounded-xl px-3 py-2.5 text-xs font-medium text-gray-800 focus:bg-white focus:border-emerald-500 focus:outline-hidden"
+                  >
+                    <option value="box">Box (Tiles/Hardware)</option>
+                    <option value="piece">Piece / Unit</option>
+                    <option value="sqft">Sq. Ft.</option>
+                    <option value="meter">Meter (Pipes/Wires)</option>
+                    <option value="coil">Coil (90m wire)</option>
+                    <option value="kg">Kilogram (Adhesives/Grout)</option>
+                    <option value="pack">Pack (Fasteners/Screws)</option>
+                    <option value="roll">Roll (Membrane)</option>
+                  </select>
+                </div>
+              </div>
+
+              <div>
+                <label className="block text-xs font-bold text-gray-700 uppercase mb-1">
+                  Description
+                </label>
+                <textarea
+                  value={editDescription}
+                  onChange={(e) => setEditDescription(e.target.value)}
+                  rows={3}
+                  className="w-full bg-gray-50 border border-gray-200 rounded-xl px-4 py-2 text-xs font-medium text-gray-800 focus:bg-white focus:border-emerald-500 focus:outline-hidden"
+                />
+              </div>
+
+              {/* Photos & Media */}
+              <div>
+                <label className="block text-xs font-bold text-gray-700 uppercase mb-2">
+                  Product Photos (File Upload + URL Links)
+                </label>
+                <ImageUploadManager images={editImages} onChange={setEditImages} />
+              </div>
+
+              {/* Pricing & Primary Variant */}
+              <div className="bg-gray-50 rounded-2xl p-4 border border-gray-200/80 space-y-3">
+                <h3 className="text-xs font-bold text-gray-900 uppercase">Primary Variant Pricing</h3>
+                <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
+                  <div>
+                    <label className="block text-[10px] font-bold text-gray-500 uppercase mb-1">
+                      Price per {editUnitOfSale} (₹)
+                    </label>
+                    <input
+                      type="number"
+                      value={editVariants[0]?.pricePerBox || 1000}
+                      onChange={(e) => {
+                        const copy = [...editVariants];
+                        copy[0] = { ...copy[0], pricePerBox: Number(e.target.value) };
+                        setEditVariants(copy);
+                      }}
+                      className="w-full bg-white border border-gray-200 rounded-xl px-3 py-2 text-xs font-bold text-gray-800"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-[10px] font-bold text-gray-500 uppercase mb-1">
+                      Price per Sqft (₹)
+                    </label>
+                    <input
+                      type="number"
+                      value={editVariants[0]?.pricePerSqft || 50}
+                      onChange={(e) => {
+                        const copy = [...editVariants];
+                        copy[0] = { ...copy[0], pricePerSqft: Number(e.target.value) };
+                        setEditVariants(copy);
+                      }}
+                      className="w-full bg-white border border-gray-200 rounded-xl px-3 py-2 text-xs font-bold text-gray-800"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-[10px] font-bold text-gray-500 uppercase mb-1">
+                      Stock Count ({editUnitOfSale}s)
+                    </label>
+                    <input
+                      type="number"
+                      value={editVariants[0]?.stockBoxes ?? 50}
+                      onChange={(e) => {
+                        const copy = [...editVariants];
+                        copy[0] = { ...copy[0], stockBoxes: Number(e.target.value) };
+                        setEditVariants(copy);
+                      }}
+                      className="w-full bg-white border border-gray-200 rounded-xl px-3 py-2 text-xs font-bold text-gray-800"
+                    />
+                  </div>
+                </div>
+              </div>
+
+              <div className="flex items-center justify-end gap-3 pt-3 border-t border-gray-100">
+                <button
+                  type="button"
+                  onClick={() => setEditingProduct(null)}
+                  className="px-4 py-2.5 rounded-xl text-xs font-bold text-gray-600 bg-gray-100 hover:bg-gray-200 cursor-pointer"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  disabled={editSaving}
+                  className="px-5 py-2.5 rounded-xl text-xs font-bold text-white bg-emerald-600 hover:bg-emerald-700 active:scale-95 shadow-md transition-all cursor-pointer flex items-center gap-2"
+                >
+                  {editSaving ? (
+                    <>
+                      <Loader2 size={14} className="animate-spin" />
+                      <span>Saving Changes...</span>
+                    </>
+                  ) : (
+                    <span>Save & Submit for Approval</span>
+                  )}
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

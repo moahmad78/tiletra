@@ -232,13 +232,88 @@ export async function getVendorProducts(
   }
 }
 
+// Helper to ensure demo/registered vendor exists in DB
+async function ensureVendorRecord(vendorId: string) {
+  let vendor = await prisma.vendor.findUnique({ where: { id: vendorId } });
+  if (vendor) return vendor;
+
+  const demoMap: Record<string, { name: string; slug: string; email: string; phone: string; cat: string; owner: string }> = {
+    "vnd-001": {
+      name: "Sri Balaji Electricals & Hardware",
+      slug: "sri-balaji-electricals",
+      email: "balaji.electricals@intrihub.com",
+      phone: "9845012345",
+      cat: "Electricals & Lighting",
+      owner: "Ramesh Kumar",
+    },
+    "vnd-002": {
+      name: "Royal Ceramics & Sanitaryware",
+      slug: "royal-ceramics",
+      email: "royal.ceramics@intrihub.com",
+      phone: "9876543210",
+      cat: "Sanitary & Bath Fittings",
+      owner: "Anand Poddar",
+    },
+    "vnd-003": {
+      name: "Apex Plumbing Supplies",
+      slug: "apex-plumbing",
+      email: "apex.plumbing@intrihub.com",
+      phone: "9123456780",
+      cat: "Plumbing & Pipes",
+      owner: "Vikas Sharma",
+    },
+  };
+
+  const demo = demoMap[vendorId];
+  if (demo) {
+    let user = await prisma.user.findFirst({
+      where: { OR: [{ phone: demo.phone }, { email: demo.email }] },
+    });
+    if (!user) {
+      user = await prisma.user.create({
+        data: {
+          name: demo.owner,
+          email: demo.email,
+          phone: demo.phone,
+          role: "vendor",
+          phoneVerified: true,
+        },
+      });
+    }
+    vendor = await prisma.vendor.upsert({
+      where: { id: vendorId },
+      update: {
+        businessName: demo.name,
+        slug: demo.slug,
+        contactEmail: demo.email,
+        contactPhone: demo.phone,
+        category: demo.cat,
+        status: "approved",
+        ownerId: user.id,
+      },
+      create: {
+        id: vendorId,
+        businessName: demo.name,
+        slug: demo.slug,
+        contactEmail: demo.email,
+        contactPhone: demo.phone,
+        category: demo.cat,
+        status: "approved",
+        ownerId: user.id,
+      },
+    });
+  }
+
+  return vendor;
+}
+
 // 5. Vendor Create Product (Submits with approvalStatus: "pending")
 export async function createVendorProduct(vendorId: string, input: CreateProductInput) {
   try {
     if (!vendorId) return { success: false, error: "Vendor ID required" };
 
-    const vendor = await prisma.vendor.findUnique({ where: { id: vendorId } });
-    if (!vendor) return { success: false, error: "Vendor not found" };
+    const vendor = await ensureVendorRecord(vendorId);
+    if (!vendor) return { success: false, error: "Vendor not found. Please refresh and try again." };
 
     if (vendor.status === "suspended") {
       return { success: false, error: "Your vendor account is suspended. Contact support." };
@@ -247,14 +322,37 @@ export async function createVendorProduct(vendorId: string, input: CreateProduct
     // Force vendorId and pending approval status for vendor submissions
     const res = await createProduct({
       ...input,
-      vendorId,
+      vendorId: vendor.id,
       status: "active",
       approvalStatus: "pending",
       rejectionReason: null,
     });
 
+    if (res.success && res.product) {
+      try {
+        await prisma.adminNotification.create({
+          data: {
+            title: "New Product Awaiting Approval",
+            message: `Vendor "${vendor.businessName}" submitted "${res.product.name}" for catalog approval.`,
+            type: "new_order",
+            link: "/admin/product-approvals",
+            metadata: {
+              productId: res.product.id,
+              vendorId: vendor.id,
+              vendorName: vendor.businessName,
+            },
+          },
+        });
+      } catch (notifErr) {
+        console.error("Error creating admin notification:", notifErr);
+      }
+    }
+
     safeRevalidate("/vendor/products");
     safeRevalidate("/admin/product-approvals");
+    safeRevalidate("/admin/products");
+    safeRevalidate("/shop");
+    safeRevalidate("/");
 
     return res;
   } catch (error: any) {
@@ -272,24 +370,50 @@ export async function updateVendorProduct(
   try {
     if (!vendorId) return { success: false, error: "Vendor ID required" };
 
+    const vendor = await ensureVendorRecord(vendorId);
+    if (!vendor) return { success: false, error: "Vendor not found" };
+
     const existing = await prisma.product.findUnique({
       where: { id: productId },
     });
 
-    if (!existing || existing.vendorId !== vendorId) {
+    if (!existing || existing.vendorId !== vendor.id) {
       return { success: false, error: "Unauthorized: You do not own this product" };
     }
 
-    // Resubmit for approval upon significant modifications
+    // Resubmit for approval upon modifications
     const res = await updateProduct(productId, {
       ...input,
-      vendorId,
+      vendorId: vendor.id,
       approvalStatus: "pending",
       rejectionReason: null,
     });
 
+    if (res.success && res.product) {
+      try {
+        await prisma.adminNotification.create({
+          data: {
+            title: "Product Listing Updated",
+            message: `Vendor "${vendor.businessName}" updated "${res.product.name}". Queued for re-approval.`,
+            type: "general",
+            link: "/admin/product-approvals",
+            metadata: {
+              productId: res.product.id,
+              vendorId: vendor.id,
+              vendorName: vendor.businessName,
+            },
+          },
+        });
+      } catch (notifErr) {
+        console.error("Error creating admin notification:", notifErr);
+      }
+    }
+
     safeRevalidate("/vendor/products");
     safeRevalidate("/admin/product-approvals");
+    safeRevalidate("/admin/products");
+    safeRevalidate("/shop");
+    safeRevalidate("/");
 
     return res;
   } catch (error: any) {

@@ -1,12 +1,14 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { useRouter } from "next/navigation";
+import { useRouter, useParams } from "next/navigation";
 import Link from "next/link";
 import { useVendorAuth } from "@/lib/vendor-auth";
-import { createVendorProduct } from "@/lib/actions/vendor";
+import { getProductById } from "@/lib/actions/products";
+import { updateVendorProduct } from "@/lib/actions/vendor";
 import { getCategories } from "@/lib/actions/categories";
 import type { Category } from "@/lib/data/categories";
+import type { Product } from "@/lib/data/products";
 import ImageUploadManager from "@/components/admin/ImageUploadManager";
 import {
   ArrowLeft,
@@ -18,14 +20,19 @@ import {
   Layers,
   Sparkles,
   Info,
+  Loader2,
 } from "lucide-react";
 import { toast } from "sonner";
 
-export default function VendorNewProductPage() {
+export default function VendorEditProductPage() {
   const router = useRouter();
+  const params = useParams();
+  const productId = params.id as string;
   const { vendor } = useVendorAuth();
+
   const [categories, setCategories] = useState<Category[]>([]);
-  const [loading, setLoading] = useState(false);
+  const [loading, setLoading] = useState(true);
+  const [saving, setSaving] = useState(false);
 
   // Form State
   const [name, setName] = useState("");
@@ -34,15 +41,10 @@ export default function VendorNewProductPage() {
   const [material, setMaterial] = useState("Vitrified");
   const [unitOfSale, setUnitOfSale] = useState("box");
   const [description, setDescription] = useState("");
-  const [images, setImages] = useState<string[]>([
-    "/placeholders/product.svg",
-  ]);
+  const [images, setImages] = useState<string[]>(["/placeholders/product.svg"]);
 
   // Dynamic Attributes
-  const [attributes, setAttributes] = useState<{ key: string; value: string }[]>([
-    { key: "gauge", value: "" },
-    { key: "brand", value: "" },
-  ]);
+  const [attributes, setAttributes] = useState<{ key: string; value: string }[]>([]);
 
   // Variants
   const [variants, setVariants] = useState([
@@ -58,14 +60,54 @@ export default function VendorNewProductPage() {
   ]);
 
   useEffect(() => {
-    getCategories().then((cats) => {
-      setCategories(cats);
-      if (cats.length > 0) {
-        setCategorySlug(cats[0].slug);
-        setCategoryName(cats[0].name);
+    async function init() {
+      try {
+        setLoading(true);
+        const [cats, prod] = await Promise.all([
+          getCategories(),
+          getProductById(productId),
+        ]);
+        setCategories(cats);
+
+        if (prod) {
+          setName(prod.name);
+          setCategorySlug(prod.categorySlug || "floor-tiles");
+          setCategoryName(prod.categoryName || "Floor Tiles");
+          setMaterial(prod.material || "Vitrified");
+          setUnitOfSale(prod.unitOfSale || "box");
+          setDescription(prod.description || "");
+          setImages(prod.images && prod.images.length > 0 ? prod.images : ["/placeholders/product.svg"]);
+          if (prod.variants && prod.variants.length > 0) {
+            setVariants(
+              prod.variants.map((v) => ({
+                size: v.size,
+                finish: v.finish,
+                color: v.color,
+                pricePerBox: v.pricePerBox,
+                pricePerSqft: v.pricePerSqft,
+                sqftPerBox: v.sqftPerBox,
+                stockBoxes: v.stockBoxes ?? 50,
+              }))
+            );
+          }
+          if (prod.attributes && prod.attributes.length > 0) {
+            setAttributes(prod.attributes.map((a) => ({ key: a.key, value: a.value })));
+          }
+        } else {
+          toast.error("Product not found");
+          router.push("/vendor/products");
+        }
+      } catch (err) {
+        console.error("Error loading product:", err);
+      } finally {
+        setLoading(false);
       }
-    });
-  }, []);
+    }
+
+    if (productId) {
+      init();
+    }
+  }, [productId, router]);
 
   const handleCategoryChange = (slug: string) => {
     setCategorySlug(slug);
@@ -134,8 +176,8 @@ export default function VendorNewProductPage() {
 
     const cleanAttributes = attributes.filter((a) => a.key.trim() && a.value.trim());
 
-    setLoading(true);
-    const res = await createVendorProduct(vendor.id, {
+    setSaving(true);
+    const res = await updateVendorProduct(vendor.id, productId, {
       name: name.trim(),
       categorySlug,
       categoryName,
@@ -146,15 +188,24 @@ export default function VendorNewProductPage() {
       attributes: cleanAttributes,
       variants,
     });
-    setLoading(false);
+    setSaving(false);
 
     if (res.success) {
-      toast.success("Product submitted for Super Admin approval!");
+      toast.success("Product updated & resubmitted for Super Admin approval!");
       router.push("/vendor/products");
     } else {
-      toast.error(res.error || "Failed to create product");
+      toast.error(res.error || "Failed to update product");
     }
   };
+
+  if (loading) {
+    return (
+      <div className="py-24 text-center text-gray-400">
+        <Loader2 className="animate-spin inline-block mb-3 text-emerald-600" size={32} />
+        <p className="text-sm font-medium">Loading product details...</p>
+      </div>
+    );
+  }
 
   return (
     <div className="max-w-4xl mx-auto space-y-6">
@@ -169,10 +220,10 @@ export default function VendorNewProductPage() {
           </Link>
           <div>
             <h1 className="text-xl md:text-2xl font-black text-gray-900 tracking-tight">
-              Create New Listing
+              Edit Product Listing
             </h1>
             <p className="text-xs text-gray-500">
-              Submit product details to be listed under your shop
+              Update product details and photos. Updates are submitted for Super Admin review.
             </p>
           </div>
         </div>
@@ -184,7 +235,7 @@ export default function VendorNewProductPage() {
         <div>
           <strong className="font-bold">Quality & Catalog Review:</strong>
           <p className="mt-0.5 text-blue-800">
-            Once submitted, your listing will be queued for Super Admin approval before appearing on the public storefront. You can pause or activate it anytime from your dashboard once approved.
+            Saving changes will resubmit this listing to the Super Admin queue for quick quality verification before going live.
           </p>
         </div>
       </div>
@@ -230,13 +281,13 @@ export default function VendorNewProductPage() {
 
             <div>
               <label className="block text-xs font-bold text-gray-700 uppercase tracking-wider mb-1.5">
-                Material / Grade *
+                Material / Composition *
               </label>
               <input
                 type="text"
                 value={material}
                 onChange={(e) => setMaterial(e.target.value)}
-                placeholder="e.g. Polycarbonate / Vitrified / Brass"
+                placeholder="e.g. Polycarbonate, Vitrified, Brass"
                 className="w-full bg-gray-50 border border-gray-200 rounded-xl px-4 py-3 text-sm font-medium text-gray-800 focus:bg-white focus:border-emerald-500 focus:outline-hidden transition-all"
                 required
               />
@@ -302,63 +353,63 @@ export default function VendorNewProductPage() {
               <h2 className="text-sm font-black text-gray-900 uppercase tracking-wider">
                 3. Technical Specifications & Attributes
               </h2>
-              <p className="text-xs text-gray-500">
-                Add flexible attributes like gauge, warranty, pack size, voltage, etc.
+              <p className="text-xs text-gray-500 mt-0.5">
+                Add item properties (e.g., Gauge, Current Rating, Voltage, Water Absorption, ISI Mark)
               </p>
             </div>
             <button
               type="button"
               onClick={handleAddAttribute}
-              className="text-xs font-bold text-emerald-600 hover:text-emerald-700 flex items-center gap-1"
+              className="text-xs font-bold text-emerald-600 hover:text-emerald-700 flex items-center gap-1 bg-emerald-50 px-3 py-1.5 rounded-xl cursor-pointer"
             >
-              <Plus size={14} /> Add Attribute
+              <Plus size={14} /> Add Property
             </button>
           </div>
 
-          <div className="space-y-3">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
             {attributes.map((attr, idx) => (
-              <div key={idx} className="flex items-center gap-3">
+              <div key={idx} className="flex items-center gap-2 bg-gray-50 p-2.5 rounded-2xl border border-gray-200/60">
                 <input
                   type="text"
+                  placeholder="Attribute (e.g. Brand)"
                   value={attr.key}
                   onChange={(e) => handleAttributeChange(idx, "key", e.target.value)}
-                  placeholder="Attribute name (e.g. gauge)"
-                  className="w-1/3 bg-gray-50 border border-gray-200 rounded-xl px-3 py-2 text-xs font-medium text-gray-800 focus:bg-white focus:border-emerald-500 focus:outline-hidden"
+                  className="w-1/2 bg-white border border-gray-200 rounded-xl px-3 py-2 text-xs font-bold text-gray-800"
                 />
                 <input
                   type="text"
+                  placeholder="Value (e.g. Havells / 16A)"
                   value={attr.value}
                   onChange={(e) => handleAttributeChange(idx, "value", e.target.value)}
-                  placeholder="Value (e.g. 2.5 sq mm)"
-                  className="flex-1 bg-gray-50 border border-gray-200 rounded-xl px-3 py-2 text-xs font-medium text-gray-800 focus:bg-white focus:border-emerald-500 focus:outline-hidden"
+                  className="w-1/2 bg-white border border-gray-200 rounded-xl px-3 py-2 text-xs font-medium text-gray-800"
                 />
                 <button
                   type="button"
                   onClick={() => handleRemoveAttribute(idx)}
-                  className="p-2 text-gray-400 hover:text-rose-600 hover:bg-rose-50 rounded-xl transition-colors"
+                  className="p-2 text-gray-400 hover:text-rose-600 rounded-xl cursor-pointer"
                 >
-                  <Trash2 size={16} />
+                  <Trash2 size={15} />
                 </button>
               </div>
             ))}
           </div>
         </div>
 
-        {/* Pricing & Variants */}
+        {/* Variants & Pricing */}
         <div className="bg-white rounded-3xl p-6 border border-gray-200/80 shadow-xs space-y-4">
           <div className="flex items-center justify-between">
             <div>
               <h2 className="text-sm font-black text-gray-900 uppercase tracking-wider">
-                4. Pricing, Sizes & Stock Variants
+                4. Pricing & Inventory Variants
               </h2>
-              <p className="text-xs text-gray-500">
-                Define sizes, finish/colors, price per unit, and available inventory
+              <p className="text-xs text-gray-500 mt-0.5">
+                Define sizes, finishes, colors, rates per unit, and available warehouse stock
               </p>
             </div>
             <button
               type="button"
               onClick={handleAddVariant}
-              className="text-xs font-bold text-emerald-600 hover:text-emerald-700 flex items-center gap-1"
+              className="text-xs font-bold text-emerald-600 hover:text-emerald-700 flex items-center gap-1 bg-emerald-50 px-3 py-1.5 rounded-xl cursor-pointer"
             >
               <Plus size={14} /> Add Variant
             </button>
@@ -368,17 +419,17 @@ export default function VendorNewProductPage() {
             {variants.map((v, idx) => (
               <div
                 key={idx}
-                className="p-4 rounded-2xl bg-gray-50 border border-gray-200 space-y-3"
+                className="p-4 rounded-2xl border border-gray-200 bg-gray-50/50 space-y-3 relative"
               >
                 <div className="flex items-center justify-between">
-                  <span className="text-xs font-black text-gray-700 uppercase">
+                  <span className="text-xs font-black uppercase text-gray-700 tracking-wider">
                     Variant #{idx + 1}
                   </span>
                   {variants.length > 1 && (
                     <button
                       type="button"
                       onClick={() => handleRemoveVariant(idx)}
-                      className="text-xs text-rose-600 font-bold hover:underline flex items-center gap-1"
+                      className="text-xs text-rose-600 hover:text-rose-700 font-bold flex items-center gap-1 cursor-pointer"
                     >
                       <Trash2 size={13} /> Remove
                     </button>
@@ -388,29 +439,40 @@ export default function VendorNewProductPage() {
                 <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
                   <div>
                     <label className="block text-[10px] font-bold text-gray-500 uppercase mb-1">
-                      Size / Model
+                      Size / Dimension
                     </label>
                     <input
                       type="text"
                       value={v.size}
                       onChange={(e) => handleVariantChange(idx, "size", e.target.value)}
-                      placeholder="e.g. 600x600mm"
-                      className="w-full bg-white border border-gray-200 rounded-lg px-3 py-2 text-xs font-medium"
-                      required
+                      placeholder="e.g. 600x600mm / 1-Inch"
+                      className="w-full bg-white border border-gray-200 rounded-xl px-3 py-2 text-xs font-medium text-gray-800"
                     />
                   </div>
 
                   <div>
                     <label className="block text-[10px] font-bold text-gray-500 uppercase mb-1">
-                      Finish / Color
+                      Finish / Type
                     </label>
                     <input
                       type="text"
                       value={v.finish}
                       onChange={(e) => handleVariantChange(idx, "finish", e.target.value)}
-                      placeholder="e.g. Glossy / White"
-                      className="w-full bg-white border border-gray-200 rounded-lg px-3 py-2 text-xs font-medium"
-                      required
+                      placeholder="e.g. Glossy / Matte"
+                      className="w-full bg-white border border-gray-200 rounded-xl px-3 py-2 text-xs font-medium text-gray-800"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block text-[10px] font-bold text-gray-500 uppercase mb-1">
+                      Color / Shade
+                    </label>
+                    <input
+                      type="text"
+                      value={v.color}
+                      onChange={(e) => handleVariantChange(idx, "color", e.target.value)}
+                      placeholder="e.g. White / Silver"
+                      className="w-full bg-white border border-gray-200 rounded-xl px-3 py-2 text-xs font-medium text-gray-800"
                     />
                   </div>
 
@@ -422,22 +484,44 @@ export default function VendorNewProductPage() {
                       type="number"
                       value={v.pricePerBox}
                       onChange={(e) => handleVariantChange(idx, "pricePerBox", Number(e.target.value))}
-                      placeholder="1200"
-                      className="w-full bg-white border border-gray-200 rounded-lg px-3 py-2 text-xs font-medium font-bold text-gray-900"
+                      className="w-full bg-white border border-gray-200 rounded-xl px-3 py-2 text-xs font-bold text-gray-900"
                       required
                     />
                   </div>
 
                   <div>
                     <label className="block text-[10px] font-bold text-gray-500 uppercase mb-1">
-                      Stock Units
+                      Price per Sqft (₹)
+                    </label>
+                    <input
+                      type="number"
+                      value={v.pricePerSqft}
+                      onChange={(e) => handleVariantChange(idx, "pricePerSqft", Number(e.target.value))}
+                      className="w-full bg-white border border-gray-200 rounded-xl px-3 py-2 text-xs font-medium text-gray-800"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block text-[10px] font-bold text-gray-500 uppercase mb-1">
+                      Sqft per {unitOfSale}
+                    </label>
+                    <input
+                      type="number"
+                      value={v.sqftPerBox}
+                      onChange={(e) => handleVariantChange(idx, "sqftPerBox", Number(e.target.value))}
+                      className="w-full bg-white border border-gray-200 rounded-xl px-3 py-2 text-xs font-medium text-gray-800"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block text-[10px] font-bold text-gray-500 uppercase mb-1">
+                      Available Stock ({unitOfSale}s)
                     </label>
                     <input
                       type="number"
                       value={v.stockBoxes}
                       onChange={(e) => handleVariantChange(idx, "stockBoxes", Number(e.target.value))}
-                      placeholder="50"
-                      className="w-full bg-white border border-gray-200 rounded-lg px-3 py-2 text-xs font-medium"
+                      className="w-full bg-white border border-gray-200 rounded-xl px-3 py-2 text-xs font-medium text-gray-800"
                     />
                   </div>
                 </div>
@@ -446,20 +530,30 @@ export default function VendorNewProductPage() {
           </div>
         </div>
 
-        {/* Submit Bar */}
-        <div className="flex items-center justify-end gap-3 pt-4">
+        {/* Submit Buttons */}
+        <div className="flex items-center justify-end gap-4 pt-2">
           <Link
             href="/vendor/products"
-            className="px-5 py-3 rounded-xl bg-gray-100 hover:bg-gray-200 text-gray-700 font-bold text-xs transition-colors"
+            className="px-6 py-3 rounded-2xl bg-gray-100 hover:bg-gray-200 text-gray-700 text-xs font-bold transition-all"
           >
             Cancel
           </Link>
           <button
             type="submit"
-            disabled={loading}
-            className="px-8 py-3.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 active:scale-95 text-white font-bold text-sm shadow-md shadow-emerald-600/30 transition-all disabled:opacity-50"
+            disabled={saving}
+            className="px-8 py-3 rounded-2xl bg-emerald-600 hover:bg-emerald-700 active:scale-95 text-white text-xs font-bold shadow-lg shadow-emerald-600/30 transition-all flex items-center gap-2 cursor-pointer disabled:opacity-50"
           >
-            {loading ? "Submitting Listing..." : "Submit Listing for Approval"}
+            {saving ? (
+              <>
+                <Loader2 size={16} className="animate-spin" />
+                <span>Updating Listing...</span>
+              </>
+            ) : (
+              <>
+                <CheckCircle2 size={16} />
+                <span>Save & Resubmit for Approval</span>
+              </>
+            )}
           </button>
         </div>
       </form>
