@@ -4,7 +4,7 @@ import { useState, useMemo, useEffect, useRef } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import Link from "next/link";
 import { useSearchParams, useRouter } from "next/navigation";
-import { SlidersHorizontal, X, ChevronDown, Check, Loader2, Sparkles, Search } from "lucide-react";
+import { SlidersHorizontal, X, ChevronDown, Check, Loader2, Sparkles } from "lucide-react";
 import type { Product } from "@/lib/data/products";
 import type { Category } from "@/lib/data/categories";
 import { getLowestPrice } from "@/lib/data/products";
@@ -319,47 +319,25 @@ export default function ShopCatalogClient({
 
           {/* Main Content */}
           <div className="flex-1 min-w-0">
-            {/* Catalog In-Page Search Bar */}
-            <div className="relative mb-3 sm:mb-4">
-              <div className="relative flex items-center">
-                <Search size={18} className="absolute left-3.5 text-gray-400 pointer-events-none" />
-                <input
-                  type="text"
-                  value={searchQuery}
-                  onChange={(e) => setSearchQuery(e.target.value)}
-                  placeholder="Filter shop products by name, marble, finish, size, material..."
-                  className="w-full h-11 pl-10 pr-10 bg-white border border-gray-200 focus:border-[#F26522] rounded-2xl text-xs sm:text-sm font-semibold text-[#052a51] placeholder-gray-400 focus:outline-none shadow-2xs transition-all"
-                />
-                {searchQuery && (
-                  <button
-                    type="button"
-                    onClick={() => {
-                      setSearchQuery("");
-                      if (urlSearch) router.replace("/shop");
-                    }}
-                    className="absolute right-3 text-gray-400 hover:text-gray-600 p-1 rounded-full cursor-pointer"
-                  >
-                    <X size={16} />
-                  </button>
-                )}
+            {/* Active Search Filter Badge (if searched from Navbar) */}
+            {searchQuery && (
+              <div className="mb-3 sm:mb-4 flex items-center justify-between bg-white px-4 py-2.5 rounded-2xl border border-gray-100 shadow-2xs text-xs text-gray-600">
+                <span>
+                  Showing results for: <strong className="text-[#052a51] font-bold">"{searchQuery}"</strong>
+                </span>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setSearchQuery("");
+                    if (urlSearch) router.replace("/shop");
+                  }}
+                  className="inline-flex items-center gap-1 text-[#F26522] font-bold hover:underline cursor-pointer"
+                >
+                  <X size={14} />
+                  <span>Clear search filter</span>
+                </button>
               </div>
-              {searchQuery && (
-                <div className="mt-2 flex items-center justify-between text-xs px-1 text-gray-500">
-                  <span>
-                    Showing results for: <strong className="text-[#052a51]">"{searchQuery}"</strong>
-                  </span>
-                  <button
-                    onClick={() => {
-                      setSearchQuery("");
-                      if (urlSearch) router.replace("/shop");
-                    }}
-                    className="text-[#F26522] font-bold hover:underline cursor-pointer"
-                  >
-                    Clear search
-                  </button>
-                </div>
-              )}
-            </div>
+            )}
 
             {/* Filter bar & Sort */}
             <div className="flex items-center justify-between gap-3 mb-4 sm:mb-6 flex-wrap bg-white p-3 sm:p-3.5 rounded-2xl border border-gray-100 shadow-xs">

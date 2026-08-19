@@ -20,7 +20,6 @@ import { useWishlistStore } from "@/lib/wishlist-store";
 import Header from "@/components/Header";
 import WhyChooseUs from "@/components/WhyChooseUs";
 import Footer from "@/components/Footer";
-import MobileStickySearchBar from "@/components/MobileStickySearchBar";
 import CategoryIconRow from "@/components/CategoryIconRow";
 import OfferBanner, { type MobileBannerSlide } from "@/components/OfferBanner";
 import ProductSlider from "@/components/ProductSlider";
