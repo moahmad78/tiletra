@@ -1,3 +1,4 @@
+import { Suspense } from "react";
 import { getProducts } from "@/lib/actions/products";
 import { getCategories } from "@/lib/actions/categories";
 import ShopCatalogClient from "@/components/ShopCatalogClient";
@@ -11,9 +12,12 @@ export default async function ShopPage() {
   ]);
 
   return (
-    <ShopCatalogClient
-      initialProducts={initialProducts}
-      categories={categories}
-    />
+    <Suspense fallback={<div className="min-h-screen bg-[#F3F4F5]" />}>
+      <ShopCatalogClient
+        initialProducts={initialProducts}
+        categories={categories}
+      />
+    </Suspense>
   );
 }
+

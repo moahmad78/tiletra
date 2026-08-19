@@ -111,17 +111,49 @@ export async function getProducts(options?: {
       where.inStock = true;
     }
     if (options?.search) {
-      const term = options.search.trim();
-      where.AND = [
-        {
-          OR: [
-            { name: { contains: term, mode: "insensitive" } },
-            { description: { contains: term, mode: "insensitive" } },
-            { categoryName: { contains: term, mode: "insensitive" } },
-            { material: { contains: term, mode: "insensitive" } },
-          ],
-        },
-      ];
+      const rawTerm = options.search.trim();
+      const words = rawTerm.split(/\s+/).filter(Boolean);
+
+      if (words.length > 0) {
+        where.AND = [
+          ...(where.AND || []),
+          ...words.map((word) => ({
+            OR: [
+              { name: { contains: word, mode: "insensitive" } },
+              { description: { contains: word, mode: "insensitive" } },
+              { categoryName: { contains: word, mode: "insensitive" } },
+              { categorySlug: { contains: word, mode: "insensitive" } },
+              { subcategory: { contains: word, mode: "insensitive" } },
+              { material: { contains: word, mode: "insensitive" } },
+              { finish: { contains: word, mode: "insensitive" } },
+              { size: { contains: word, mode: "insensitive" } },
+              { look: { contains: word, mode: "insensitive" } },
+              { usage: { contains: word, mode: "insensitive" } },
+              {
+                variants: {
+                  some: {
+                    OR: [
+                      { finish: { contains: word, mode: "insensitive" } },
+                      { size: { contains: word, mode: "insensitive" } },
+                      { color: { contains: word, mode: "insensitive" } },
+                    ],
+                  },
+                },
+              },
+              {
+                attributes: {
+                  some: {
+                    OR: [
+                      { key: { contains: word, mode: "insensitive" } },
+                      { value: { contains: word, mode: "insensitive" } },
+                    ],
+                  },
+                },
+              },
+            ],
+          })),
+        ];
+      }
     }
 
     const dbProducts = await prisma.product.findMany({
@@ -141,9 +173,7 @@ export async function getProducts(options?: {
       take: options?.limit,
     });
 
-    if (dbProducts.length > 0) {
-      return dbProducts.map(formatProduct);
-    }
+    return dbProducts.map(formatProduct);
   } catch (error) {
     console.error("Error fetching products from DB, falling back to static products:", error);
   }
@@ -176,13 +206,25 @@ export async function getProducts(options?: {
     result = result.filter((p) => p.isNew);
   }
   if (options?.search) {
-    const q = options.search.toLowerCase();
-    result = result.filter(
-      (p) =>
-        p.name.toLowerCase().includes(q) ||
-        p.description.toLowerCase().includes(q) ||
-        p.categoryName.toLowerCase().includes(q)
-    );
+    const rawTerm = options.search.trim().toLowerCase();
+    const words = rawTerm.split(/\s+/).filter(Boolean);
+    result = result.filter((p) => {
+      const searchTarget = [
+        p.name,
+        p.description,
+        p.categoryName,
+        p.categorySlug,
+        p.material,
+        ...(p.tags || []),
+        ...(p.variants?.map((v) => `${v.finish} ${v.size} ${v.color}`) || []),
+        ...(p.attributes?.map((a) => `${a.key} ${a.value}`) || []),
+      ]
+        .filter(Boolean)
+        .join(" ")
+        .toLowerCase();
+
+      return words.every((word) => searchTarget.includes(word));
+    });
   }
   if (options?.limit) {
     result = result.slice(0, options.limit);

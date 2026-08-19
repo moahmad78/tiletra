@@ -3,7 +3,8 @@
 import { useState, useMemo, useEffect, useRef } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import Link from "next/link";
-import { SlidersHorizontal, X, ChevronDown, Check, Loader2, Sparkles } from "lucide-react";
+import { useSearchParams, useRouter } from "next/navigation";
+import { SlidersHorizontal, X, ChevronDown, Check, Loader2, Sparkles, Search } from "lucide-react";
 import type { Product } from "@/lib/data/products";
 import type { Category } from "@/lib/data/categories";
 import { getLowestPrice } from "@/lib/data/products";
@@ -27,6 +28,16 @@ export default function ShopCatalogClient({
   initialProducts,
   categories,
 }: ShopCatalogClientProps) {
+  const searchParams = useSearchParams();
+  const router = useRouter();
+
+  const urlSearch = searchParams.get("search") || searchParams.get("q") || "";
+  const [searchQuery, setSearchQuery] = useState(urlSearch);
+
+  useEffect(() => {
+    setSearchQuery(urlSearch);
+  }, [urlSearch]);
+
   const [selectedCategories, setSelectedCategories] = useState<string[]>([]);
   const [selectedFinishes, setSelectedFinishes] = useState<string[]>([]);
   const [selectedMaterials, setSelectedMaterials] = useState<string[]>([]);
@@ -47,6 +58,28 @@ export default function ShopCatalogClient({
 
   const filtered = useMemo(() => {
     let result = [...initialProducts];
+
+    // Search query filter
+    if (searchQuery.trim()) {
+      const words = searchQuery.trim().toLowerCase().split(/\s+/).filter(Boolean);
+      result = result.filter((p) => {
+        const searchTarget = [
+          p.name,
+          p.description,
+          p.categoryName,
+          p.categorySlug,
+          p.material,
+          ...(p.tags || []),
+          ...(p.variants?.map((v) => `${v.finish} ${v.size} ${v.color}`) || []),
+          ...(p.attributes?.map((a) => `${a.key} ${a.value}`) || []),
+        ]
+          .filter(Boolean)
+          .join(" ")
+          .toLowerCase();
+
+        return words.every((w) => searchTarget.includes(w));
+      });
+    }
 
     if (selectedCategories.length > 0) {
       result = result.filter((p) => selectedCategories.includes(p.categorySlug));
@@ -84,12 +117,12 @@ export default function ShopCatalogClient({
     }
 
     return result;
-  }, [initialProducts, selectedCategories, selectedFinishes, selectedMaterials, selectedSizes, priceRange, sort]);
+  }, [initialProducts, searchQuery, selectedCategories, selectedFinishes, selectedMaterials, selectedSizes, priceRange, sort]);
 
-  // Reset pagination on filter or sort change
+  // Reset pagination on filter, search or sort change
   useEffect(() => {
     setVisibleCount(12);
-  }, [selectedCategories, selectedFinishes, selectedMaterials, selectedSizes, priceRange, sort]);
+  }, [searchQuery, selectedCategories, selectedFinishes, selectedMaterials, selectedSizes, priceRange, sort]);
 
   const displayedProducts = useMemo(() => {
     return filtered.slice(0, visibleCount);
@@ -123,14 +156,22 @@ export default function ShopCatalogClient({
   }, [hasMore, isLoadingMore, filtered.length]);
 
   const activeFilterCount =
-    selectedCategories.length + selectedFinishes.length + selectedMaterials.length + selectedSizes.length;
+    (searchQuery.trim() ? 1 : 0) +
+    selectedCategories.length +
+    selectedFinishes.length +
+    selectedMaterials.length +
+    selectedSizes.length;
 
   function clearFilters() {
+    setSearchQuery("");
     setSelectedCategories([]);
     setSelectedFinishes([]);
     setSelectedMaterials([]);
     setSelectedSizes([]);
     setPriceRange([0, 300]);
+    if (urlSearch) {
+      router.replace("/shop");
+    }
   }
 
   const FilterSidebar = () => (
@@ -278,6 +319,48 @@ export default function ShopCatalogClient({
 
           {/* Main Content */}
           <div className="flex-1 min-w-0">
+            {/* Catalog In-Page Search Bar */}
+            <div className="relative mb-3 sm:mb-4">
+              <div className="relative flex items-center">
+                <Search size={18} className="absolute left-3.5 text-gray-400 pointer-events-none" />
+                <input
+                  type="text"
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  placeholder="Filter shop products by name, marble, finish, size, material..."
+                  className="w-full h-11 pl-10 pr-10 bg-white border border-gray-200 focus:border-[#F26522] rounded-2xl text-xs sm:text-sm font-semibold text-[#052a51] placeholder-gray-400 focus:outline-none shadow-2xs transition-all"
+                />
+                {searchQuery && (
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setSearchQuery("");
+                      if (urlSearch) router.replace("/shop");
+                    }}
+                    className="absolute right-3 text-gray-400 hover:text-gray-600 p-1 rounded-full cursor-pointer"
+                  >
+                    <X size={16} />
+                  </button>
+                )}
+              </div>
+              {searchQuery && (
+                <div className="mt-2 flex items-center justify-between text-xs px-1 text-gray-500">
+                  <span>
+                    Showing results for: <strong className="text-[#052a51]">"{searchQuery}"</strong>
+                  </span>
+                  <button
+                    onClick={() => {
+                      setSearchQuery("");
+                      if (urlSearch) router.replace("/shop");
+                    }}
+                    className="text-[#F26522] font-bold hover:underline cursor-pointer"
+                  >
+                    Clear search
+                  </button>
+                </div>
+              )}
+            </div>
+
             {/* Filter bar & Sort */}
             <div className="flex items-center justify-between gap-3 mb-4 sm:mb-6 flex-wrap bg-white p-3 sm:p-3.5 rounded-2xl border border-gray-100 shadow-xs">
               <p className="text-xs md:text-sm text-gray-500 font-medium">
