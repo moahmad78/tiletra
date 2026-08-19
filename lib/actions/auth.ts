@@ -160,3 +160,35 @@ export async function getDbUser(id: string) {
     return null;
   }
 }
+
+export async function saveUserAddress(userId: string, address: any) {
+  try {
+    if (!userId) return { success: false, error: "User ID required" };
+
+    const userExists = await prisma.user.findUnique({ where: { id: userId } });
+    if (!userExists) return { success: false, error: "User not found" };
+
+    const created = await prisma.address.create({
+      data: {
+        userId,
+        street: `${address.line1 || ""}${address.line2 ? `, ${address.line2}` : ""}`,
+        city: address.city || "Bangalore",
+        state: address.state || "Karnataka",
+        pincode: address.pincode || "560001",
+        landmark: address.landmark || null,
+        label: address.label || "Home",
+        latitude: address.latitude ? Number(address.latitude) : null,
+        longitude: address.longitude ? Number(address.longitude) : null,
+        isDefault: Boolean(address.isDefault),
+      },
+    });
+
+    safeRevalidate("/account");
+    safeRevalidate("/checkout");
+
+    return { success: true, address: created };
+  } catch (error: any) {
+    console.error("Error saving user address to DB:", error);
+    return { success: false, error: error?.message || "Failed to save address" };
+  }
+}

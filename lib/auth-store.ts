@@ -53,7 +53,15 @@ interface AuthState {
   verifyOtp: (phone: string, otp: string) => Promise<{ success: boolean; message: string }>;
   sendEmailOtp: (email: string) => Promise<{ success: boolean; message: string }>;
   verifyEmailOtp: (email: string, otp: string) => Promise<{ success: boolean; message: string }>;
-  googleSignIn: (userData: { name: string; email: string; avatar?: string; image?: string }) => Promise<void>;
+  googleSignIn: (userData: {
+    userId?: string;
+    name: string;
+    email: string;
+    avatar?: string;
+    phone?: string;
+    phoneVerified?: boolean;
+    createdAt?: string;
+  }) => Promise<void>;
   updateProfile: (data: { name?: string; email?: string; avatar?: string | null }) => Promise<{ success: boolean; message?: string }>;
   logout: () => void;
   setHasHydrated: (v: boolean) => void;
@@ -64,24 +72,6 @@ interface AuthState {
   deleteAddress: (id: string) => void;
   setDefaultAddress: (id: string) => void;
 }
-
-const DEFAULT_SAMPLE_ADDRESSES: CustomerAddress[] = [
-  {
-    id: "addr-001",
-    name: "Mohammad Ahmad",
-    phone: "9876543210",
-    pincode: "560034",
-    line1: "#42, 3rd Cross, 5th Main, Koramangala 4th Block",
-    line2: "Near Sony World Signal",
-    city: "Bangalore",
-    state: "Karnataka",
-    landmark: "Behind Forum Mall",
-    label: "Home",
-    latitude: 12.9352,
-    longitude: 77.6245,
-    isDefault: true,
-  },
-];
 
 export const useAuthStore = create<AuthState>()(
   persist(
@@ -111,13 +101,13 @@ export const useAuthStore = create<AuthState>()(
           return { success: false, message: "Please enter a valid 10-digit mobile number." };
         }
 
-        // Generate 6-digit simulated OTP
-        const generatedOtp = "123456"; // Consistent test OTP for demo
+        // Generate 6-digit simulated OTP for testing
+        const generatedOtp = "123456";
         set({ activeOtpCode: generatedOtp, otpSentAt: Date.now() });
 
         return {
           success: true,
-          message: `OTP sent to +91 ${cleanPhone}. (Demo: use 123456)`,
+          message: `OTP sent to +91 ${cleanPhone}. (Demo code: 123456)`,
           simulatedOtp: generatedOtp,
         };
       },
@@ -126,17 +116,15 @@ export const useAuthStore = create<AuthState>()(
         const cleanPhone = phone.replace(/\D/g, "");
         const currentOtp = get().activeOtpCode;
 
-        // Allow '123456' as default demo code or generated OTP
         if (otp !== currentOtp && otp !== "123456") {
-          return { success: false, message: "Invalid OTP. Please enter the 6-digit code sent to your phone." };
+          return { success: false, message: "Invalid OTP. Please enter the 6-digit code." };
         }
 
         try {
           const { upsertCustomerUser } = await import("@/lib/actions/auth");
           const res = await upsertCustomerUser({
             phone: cleanPhone,
-            name: get().user?.name || `User ${cleanPhone.slice(-4)}`,
-            email: get().user?.email,
+            name: `User ${cleanPhone.slice(-4)}`,
           });
 
           if (res.success && res.user) {
@@ -146,8 +134,8 @@ export const useAuthStore = create<AuthState>()(
               name: res.user.name,
               email: res.user.email,
               avatar: res.user.avatar,
-              addresses: res.user.addresses?.length ? res.user.addresses : DEFAULT_SAMPLE_ADDRESSES,
-              defaultAddressId: res.user.defaultAddressId || DEFAULT_SAMPLE_ADDRESSES[0].id,
+              addresses: res.user.addresses || [],
+              defaultAddressId: res.user.defaultAddressId || res.user.addresses?.[0]?.id,
               phoneVerified: true,
               createdAt: res.user.createdAt,
             };
@@ -162,16 +150,15 @@ export const useAuthStore = create<AuthState>()(
             return { success: true, message: "Logged in successfully!" };
           }
         } catch (e) {
-          console.error("Failed to upsert user in DB:", e);
+          console.error("Failed to authenticate user via phone:", e);
         }
 
-        // Fallback user if DB is offline
+        // Fallback user if DB is unreachable
         const loggedUser: CustomerUser = {
           id: `usr-${Date.now()}`,
           phone: cleanPhone,
           name: `User ${cleanPhone.slice(-4)}`,
-          addresses: DEFAULT_SAMPLE_ADDRESSES,
-          defaultAddressId: DEFAULT_SAMPLE_ADDRESSES[0].id,
+          addresses: [],
           phoneVerified: true,
           createdAt: new Date().toISOString(),
         };
@@ -187,55 +174,50 @@ export const useAuthStore = create<AuthState>()(
       },
 
       googleSignIn: async (userData) => {
-        const phone = "9876543210";
-        const avatar = userData.avatar || userData.image;
-        try {
-          const { upsertCustomerUser } = await import("@/lib/actions/auth");
-          const res = await upsertCustomerUser({
-            phone,
-            name: userData.name,
-            email: userData.email,
-            avatar,
-          });
+        let addresses: CustomerAddress[] = [];
+        let userId = userData.userId || "";
 
-          if (res.success && res.user) {
-            const loggedUser: CustomerUser = {
-              id: res.user.id,
-              phone: res.user.phone,
-              name: res.user.name,
-              email: res.user.email,
-              avatar: res.user.avatar || avatar,
-              addresses: res.user.addresses?.length ? res.user.addresses : DEFAULT_SAMPLE_ADDRESSES,
-              defaultAddressId: res.user.defaultAddressId || DEFAULT_SAMPLE_ADDRESSES[0].id,
-              phoneVerified: true,
-              createdAt: res.user.createdAt,
-            };
-
-            set({
-              user: loggedUser,
-              isAuthenticated: true,
-              isLoginModalOpen: false,
-            });
-            return;
+        // If userId is provided from OAuth session, fetch real DB addresses for this specific user
+        if (userId) {
+          try {
+            const { getDbUser } = await import("@/lib/actions/auth");
+            const dbUser = await getDbUser(userId);
+            if (dbUser && Array.isArray(dbUser.addresses)) {
+              addresses = dbUser.addresses.map((a: any) => ({
+                id: a.id,
+                name: userData.name || "Customer",
+                phone: (userData.phone && !userData.phone.startsWith("google_")) ? userData.phone : "",
+                pincode: a.pincode || "",
+                line1: a.street || "",
+                line2: "",
+                city: a.city || "Bangalore",
+                state: a.state || "Karnataka",
+                landmark: a.landmark || "",
+                label: (a.label as any) || "Home",
+                isDefault: Boolean(a.isDefault),
+              }));
+            }
+          } catch (e) {
+            console.error("Failed to load user addresses:", e);
           }
-        } catch (e) {
-          console.error("Failed to upsert google user in DB:", e);
         }
 
-        const newUser: CustomerUser = {
-          id: `usr-google-${Date.now()}`,
-          phone,
+        const realPhone = userData.phone && !userData.phone.startsWith("google_") ? userData.phone : "";
+
+        const loggedUser: CustomerUser = {
+          id: userId || `usr-google-${Date.now()}`,
+          phone: realPhone,
           name: userData.name,
           email: userData.email,
-          avatar,
-          addresses: DEFAULT_SAMPLE_ADDRESSES,
-          defaultAddressId: DEFAULT_SAMPLE_ADDRESSES[0].id,
-          phoneVerified: true,
-          createdAt: new Date().toISOString(),
+          avatar: userData.avatar,
+          addresses, // Strictly scoped to this user only (empty for new users)
+          defaultAddressId: addresses.find((a) => a.isDefault)?.id || addresses[0]?.id,
+          phoneVerified: Boolean(userData.phoneVerified),
+          createdAt: userData.createdAt || new Date().toISOString(),
         };
 
         set({
-          user: newUser,
+          user: loggedUser,
           isAuthenticated: true,
           isLoginModalOpen: false,
         });
@@ -260,21 +242,35 @@ export const useAuthStore = create<AuthState>()(
           const { verifyEmailOtp } = await import("@/lib/actions/email-otp");
           const res = await verifyEmailOtp(email, otp);
           if (res.success && res.userId) {
-            // Fetch user record directly by email - verifyEmailOtp already created/updated it
             const { getDbUser } = await import("@/lib/actions/auth");
             const dbUser = await getDbUser(res.userId);
             if (dbUser) {
+              const addresses: CustomerAddress[] = (dbUser.addresses || []).map((a: any) => ({
+                id: a.id,
+                name: dbUser.name || "Customer",
+                phone: (dbUser.phone && !dbUser.phone.startsWith("email_")) ? dbUser.phone : "",
+                pincode: a.pincode || "",
+                line1: a.street || "",
+                line2: "",
+                city: a.city || "Bangalore",
+                state: a.state || "Karnataka",
+                landmark: a.landmark || "",
+                label: (a.label as any) || "Home",
+                isDefault: Boolean(a.isDefault),
+              }));
+
               const loggedUser: CustomerUser = {
                 id: dbUser.id,
-                phone: dbUser.phone,
+                phone: (dbUser.phone && !dbUser.phone.startsWith("email_")) ? dbUser.phone : "",
                 name: dbUser.name || email.split("@")[0],
                 email: dbUser.email || email,
                 avatar: dbUser.avatar || undefined,
-                addresses: DEFAULT_SAMPLE_ADDRESSES,
-                defaultAddressId: DEFAULT_SAMPLE_ADDRESSES[0].id,
+                addresses,
+                defaultAddressId: addresses.find((a) => a.isDefault)?.id || addresses[0]?.id,
                 phoneVerified: dbUser.phoneVerified,
                 createdAt: dbUser.createdAt.toISOString(),
               };
+
               set({
                 user: loggedUser,
                 isAuthenticated: true,
@@ -290,7 +286,6 @@ export const useAuthStore = create<AuthState>()(
           return { success: false, message: "Verification failed. Please try again." };
         }
       },
-
 
       updateProfile: async (data) => {
         const currentUser = get().user;
@@ -316,7 +311,6 @@ export const useAuthStore = create<AuthState>()(
           console.error("Failed to update profile:", e);
         }
 
-        // Local state update fallback
         set((state) => ({
           user: state.user
             ? {
@@ -333,6 +327,12 @@ export const useAuthStore = create<AuthState>()(
 
       logout: () => {
         set({ user: null, isAuthenticated: false, pendingIntent: null });
+        if (typeof window !== "undefined") {
+          try {
+            localStorage.removeItem("tiletra-customer-auth");
+            document.cookie = "tiletra_session=; max-age=0; path=/;";
+          } catch {}
+        }
       },
 
       addAddress: (addressData) => {
@@ -353,6 +353,16 @@ export const useAuthStore = create<AuthState>()(
             },
           };
         });
+
+        // Persist to DB in background if user is authenticated
+        const currentUser = get().user;
+        if (currentUser?.id) {
+          import("@/lib/actions/auth").then(({ saveUserAddress }) => {
+            saveUserAddress(currentUser.id, newAddress).catch((e) =>
+              console.error("Failed to save address to DB:", e)
+            );
+          });
+        }
 
         return newAddress;
       },
@@ -404,12 +414,10 @@ export const useAuthStore = create<AuthState>()(
     {
       name: "tiletra-customer-auth",
       onRehydrateStorage: () => (state) => {
-        // Called once localStorage hydration finishes — mark hydration complete
         state?.setHasHydrated(true);
       },
     }
   )
 );
 
-/** Hook: resolves true only after Zustand has rehydrated from localStorage */
 export const useAuthHydrated = () => useAuthStore((s) => s._hasHydrated);

@@ -63,9 +63,13 @@ export default function GoogleSessionHydrator() {
         const jsonStr = decodeBase64Url(session);
         const decoded = JSON.parse(jsonStr);
         googleSignIn({
+          userId: decoded.userId,
           name: decoded.name || decoded.email?.split("@")[0] || "User",
           email: decoded.email || "",
           avatar: decoded.avatar || undefined,
+          phone: decoded.phone,
+          phoneVerified: decoded.phoneVerified,
+          createdAt: decoded.createdAt,
         }).then(() => {
           toast.success(`Welcome, ${decoded.name?.split(" ")[0] || "back"}! 👋`);
         });
