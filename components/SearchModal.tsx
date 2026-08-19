@@ -40,13 +40,16 @@ export default function SearchModal({
     };
   }, [isOpen]);
 
-  // Handle escape key
+  // Handle escape key globally with capture phase
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
-      if (e.key === "Escape") onClose();
+      if (e.key === "Escape") {
+        e.preventDefault();
+        onClose();
+      }
     };
-    window.addEventListener("keydown", handleKeyDown);
-    return () => window.removeEventListener("keydown", handleKeyDown);
+    window.addEventListener("keydown", handleKeyDown, true);
+    return () => window.removeEventListener("keydown", handleKeyDown, true);
   }, [onClose]);
 
   // Search when query changes
@@ -114,32 +117,43 @@ export default function SearchModal({
           )}
           <input
             ref={inputRef}
-            type="search"
+            type="text"
             enterKeyHint="search"
             value={query}
             onChange={(e) => setQuery(e.target.value)}
+            onKeyDown={(e) => {
+              if (e.key === "Escape") {
+                e.preventDefault();
+                onClose();
+              }
+            }}
             placeholder="Search tiles, marble, granite, finish, size..."
             className="flex-1 text-sm sm:text-base font-semibold text-[#052a51] placeholder-gray-400 focus:outline-none bg-transparent"
           />
           {query && (
             <button
               type="button"
-              onClick={() => setQuery("")}
-              className="p-1 rounded-full text-gray-400 hover:text-gray-600 cursor-pointer"
+              onClick={() => {
+                setQuery("");
+                inputRef.current?.focus();
+              }}
+              title="Clear search"
+              className="p-1 rounded-full text-gray-400 hover:text-gray-600 transition-colors cursor-pointer"
             >
               <X size={18} />
             </button>
           )}
           <button
             type="submit"
-            className="px-3 py-1.5 bg-[#F26522] hover:bg-[#d95a1e] text-white text-xs font-bold rounded-xl transition-colors cursor-pointer shrink-0"
+            className="px-3.5 py-1.5 bg-[#F26522] hover:bg-[#d95a1e] text-white text-xs font-bold rounded-xl transition-colors cursor-pointer shrink-0 shadow-xs"
           >
             Search
           </button>
           <button
             type="button"
             onClick={onClose}
-            className="hidden sm:inline-block px-2.5 py-1.5 bg-gray-100 hover:bg-gray-200 text-[#052a51] text-xs font-bold rounded-xl transition-colors cursor-pointer"
+            title="Close (Esc)"
+            className="px-2.5 py-1.5 bg-gray-100 hover:bg-gray-200 text-[#052a51] text-xs font-bold rounded-xl transition-colors cursor-pointer shrink-0"
           >
             Esc
           </button>
