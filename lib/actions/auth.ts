@@ -15,41 +15,61 @@ export async function upsertCustomerUser(data: {
       return { success: false, error: "Invalid phone number" };
     }
 
-    // Check if user already exists
+    // Check if user already exists by phone
     const existing = await prisma.user.findUnique({
       where: { phone: cleanPhone },
       include: { addresses: true },
     });
 
+    // Check if email already belongs to a user (e.g. Google user merging phone)
+    let existingByEmail = null;
+    if (data.email) {
+      existingByEmail = await prisma.user.findUnique({
+        where: { email: data.email },
+        include: { addresses: true },
+      });
+    }
+
     let user;
 
     if (existing) {
-      // User exists: preserve manual customizations (name and avatar)
-      // Only set name if existing is empty or a default placeholder
+      // User exists by phone
       const shouldUpdateName =
         data.name &&
         (!existing.name || existing.name.startsWith("User ") || existing.name === "Customer");
 
-      // Only set avatar if user hasn't uploaded or customized an avatar yet
       const shouldUpdateAvatar = data.avatar && !existing.avatar;
+      const canSetEmail = data.email && (!existingByEmail || existingByEmail.id === existing.id);
 
       user = await prisma.user.update({
         where: { id: existing.id },
         data: {
           phoneVerified: true,
           name: shouldUpdateName ? data.name : undefined,
-          email: data.email || undefined,
+          email: canSetEmail ? data.email : undefined,
           avatar: shouldUpdateAvatar ? data.avatar : undefined,
         },
         include: { addresses: true },
       });
+    } else if (existingByEmail) {
+      // User exists by email (e.g. Google login with synthetic phone) -> Link real phone
+      user = await prisma.user.update({
+        where: { id: existingByEmail.id },
+        data: {
+          phone: cleanPhone,
+          phoneVerified: true,
+          name: data.name || existingByEmail.name,
+          avatar: data.avatar || existingByEmail.avatar,
+        },
+        include: { addresses: true },
+      });
     } else {
-      // New user: pre-fill name, email, avatar from Google / OAuth
+      // New user
       user = await prisma.user.create({
         data: {
           phone: cleanPhone,
           name: data.name || `User ${cleanPhone.slice(-4)}`,
-          email: data.email || undefined,
+          email: data.email || null,
           avatar: data.avatar || undefined,
           phoneVerified: true,
           role: "customer",

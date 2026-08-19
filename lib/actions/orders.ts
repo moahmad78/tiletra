@@ -45,9 +45,12 @@ export async function createOrder(input: CreateOrderInput) {
     const orderId = input.id || `ORD-${Date.now().toString().slice(-6)}`;
 
     const cleanPhone = input.customerPhone.replace(/\D/g, "");
+    const cleanEmail = input.customerEmail?.trim().toLowerCase() || "";
 
-    // Resolve or upsert real User in PostgreSQL to guarantee FK integrity
+    // ── Resolve or create User in PostgreSQL to guarantee FK integrity ──
     let validUserId: string | null = null;
+
+    // 1. Check by explicit userId (logged-in session)
     if (input.userId) {
       const existingUser = await prisma.user.findUnique({ where: { id: input.userId } });
       if (existingUser) {
@@ -55,22 +58,56 @@ export async function createOrder(input: CreateOrderInput) {
       }
     }
 
+    // 2. Check by email (handles Google OAuth users, Email OTP users, returning customers)
+    if (!validUserId && cleanEmail) {
+      const userByEmail = await prisma.user.findUnique({ where: { email: cleanEmail } });
+      if (userByEmail) {
+        validUserId = userByEmail.id;
+
+        // If user had a synthetic placeholder phone (e.g. google_... or email_...), upgrade to real phone if available
+        if (cleanPhone.length === 10 && (userByEmail.phone.startsWith("google_") || userByEmail.phone.startsWith("email_"))) {
+          const phoneInUse = await prisma.user.findUnique({ where: { phone: cleanPhone } });
+          if (!phoneInUse) {
+            await prisma.user.update({
+              where: { id: userByEmail.id },
+              data: { phone: cleanPhone, name: input.customerName || userByEmail.name },
+            }).catch(() => {});
+          }
+        }
+      }
+    }
+
+    // 3. Check by phone number
     if (!validUserId && cleanPhone.length === 10) {
-      // Find or create User record for customer phone
-      const user = await prisma.user.upsert({
-        where: { phone: cleanPhone },
-        update: {
-          name: input.customerName || undefined,
-          email: input.customerEmail || undefined,
-        },
-        create: {
-          phone: cleanPhone,
-          name: input.customerName || `Customer ${cleanPhone.slice(-4)}`,
-          email: input.customerEmail || null,
-          role: "customer",
-        },
-      });
-      validUserId = user.id;
+      const userByPhone = await prisma.user.findUnique({ where: { phone: cleanPhone } });
+      if (userByPhone) {
+        validUserId = userByPhone.id;
+      }
+    }
+
+    // 4. If user still doesn't exist, create a new customer user record safely
+    if (!validUserId) {
+      try {
+        const newUser = await prisma.user.create({
+          data: {
+            phone: cleanPhone.length === 10 ? cleanPhone : `guest_${Date.now()}_${Math.random().toString(36).substring(2, 6)}`,
+            email: cleanEmail || null,
+            name: input.customerName || (cleanPhone.length === 10 ? `Customer ${cleanPhone.slice(-4)}` : "Customer"),
+            role: "customer",
+          },
+        });
+        validUserId = newUser.id;
+      } catch {
+        // Fallback in case of race condition / unique collision
+        if (cleanEmail) {
+          const fallbackUser = await prisma.user.findUnique({ where: { email: cleanEmail } });
+          if (fallbackUser) validUserId = fallbackUser.id;
+        }
+        if (!validUserId && cleanPhone.length === 10) {
+          const fallbackUser = await prisma.user.findUnique({ where: { phone: cleanPhone } });
+          if (fallbackUser) validUserId = fallbackUser.id;
+        }
+      }
     }
 
     // Create or update customer record in Customer CRM
