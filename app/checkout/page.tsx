@@ -26,6 +26,7 @@ import { useNotificationsStore } from "@/lib/notifications-store";
 import { getStoreSettings } from "@/lib/actions/settings";
 import Header from "@/components/Header";
 import LocationPicker from "@/components/location/LocationPicker";
+import { OnlinePaymentIconsRow, CodCashBadge } from "@/components/checkout/PaymentIcons";
 import { toast } from "sonner";
 
 function formatPrice(n: number) {
@@ -586,27 +587,29 @@ export default function CheckoutPage() {
                   }`}
                 >
                   <div className="flex items-start justify-between gap-4">
-                    <div className="flex items-start gap-3">
+                    <div className="flex items-start gap-3 w-full">
                       <input
                         type="radio"
                         name="payment-method"
                         checked={paymentMethod === "Online"}
                         onChange={() => setPaymentMethod("Online")}
-                        className="w-4 h-4 accent-[#F26522] mt-1 cursor-pointer"
+                        className="w-4 h-4 accent-[#F26522] mt-1 cursor-pointer shrink-0"
                       />
-                      <div>
-                        <p className="text-sm font-black text-[#052a51] flex items-center gap-2">
-                          <span>Pay Online (Razorpay)</span>
+                      <div className="flex-1 min-w-0">
+                        <div className="flex flex-wrap items-center gap-2">
+                          <span className="text-sm font-black text-[#052a51]">Pay Online (Razorpay)</span>
                           <span className="px-2 py-0.5 rounded bg-green-100 text-green-800 text-[10px] font-black uppercase">
                             Instant Confirmation
                           </span>
-                        </p>
+                        </div>
                         <p className="text-xs text-gray-500 mt-1 leading-relaxed">
                           Pay securely via UPI (Google Pay, PhonePe, Paytm), Credit/Debit Cards, or NetBanking.
                         </p>
+
+                        {/* Payment Method Badges Row */}
+                        <OnlinePaymentIconsRow />
                       </div>
                     </div>
-                    <CreditCard size={22} className="text-gray-400 shrink-0 mt-0.5" />
                   </div>
                 </div>
 
@@ -620,27 +623,31 @@ export default function CheckoutPage() {
                   }`}
                 >
                   <div className="flex items-start justify-between gap-4">
-                    <div className="flex items-start gap-3">
+                    <div className="flex items-start gap-3 w-full">
                       <input
                         type="radio"
                         name="payment-method"
                         checked={paymentMethod === "COD"}
                         onChange={() => setPaymentMethod("COD")}
-                        className="w-4 h-4 accent-[#F26522] mt-1 cursor-pointer"
+                        className="w-4 h-4 accent-[#F26522] mt-1 cursor-pointer shrink-0"
                       />
-                      <div>
-                        <p className="text-sm font-black text-[#052a51] flex items-center gap-2">
-                          <span>Cash on Delivery (COD)</span>
+                      <div className="flex-1 min-w-0">
+                        <div className="flex flex-wrap items-center gap-2">
+                          <span className="text-sm font-black text-[#052a51]">Cash on Delivery (COD)</span>
                           <span className="px-2 py-0.5 rounded bg-amber-100 text-amber-900 text-[10px] font-black uppercase">
                             Available on All Items
                           </span>
-                        </p>
+                        </div>
                         <p className="text-xs text-gray-500 mt-1 leading-relaxed">
-                          Pay cash to our delivery driver when your tiles reach your doorstep.
+                          Pay cash or scan delivery driver&apos;s UPI QR code when your tiles arrive at your doorstep.
                         </p>
+
+                        {/* COD Cash Badge */}
+                        <div className="pt-2">
+                          <CodCashBadge />
+                        </div>
                       </div>
                     </div>
-                    <Banknote size={22} className="text-gray-400 shrink-0 mt-0.5" />
                   </div>
                 </div>
 
