@@ -21,6 +21,7 @@ import {
   AlertTriangle,
   QrCode,
   Smartphone,
+  ShoppingBag,
 } from "lucide-react";
 import { useCartStore } from "@/lib/cart-store";
 import { useAuthStore, type CustomerAddress } from "@/lib/auth-store";
@@ -40,6 +41,7 @@ type Step = typeof STEPS[number];
 
 export default function CheckoutPage() {
   const router = useRouter();
+  const [mounted, setMounted] = useState(false);
   const { items, clearCart } = useCartStore();
   const subtotal = useCartStore((s) => s.getSubtotal());
 
@@ -68,6 +70,10 @@ export default function CheckoutPage() {
   const [selectedAddressId, setSelectedAddressId] = useState<string>("");
   const [isAddingNewAddress, setIsAddingNewAddress] = useState(false);
   const [paymentMethod, setPaymentMethod] = useState<"Online" | "COD">("Online");
+
+  useEffect(() => {
+    setMounted(true);
+  }, []);
 
   // Fetch live store settings from database
   useEffect(() => {
@@ -376,6 +382,50 @@ export default function CheckoutPage() {
       setIsProcessingPayment(false);
     }
   };
+
+  if (!mounted) {
+    return (
+      <main className="min-h-screen flex flex-col bg-[#F3F4F5]">
+        <Header />
+        <div className="w-full max-w-[1200px] mx-auto px-3 sm:px-6 lg:px-8 pt-[76px] sm:pt-[84px] md:pt-[175px] lg:pt-[180px] pb-14 flex-1">
+          <div className="animate-pulse space-y-6">
+            <div className="h-8 bg-gray-200 rounded-xl w-48" />
+            <div className="h-14 bg-white rounded-3xl border border-gray-200/80" />
+            <div className="grid grid-cols-1 lg:grid-cols-[1fr_380px] gap-8 items-start">
+              <div className="h-96 bg-white rounded-3xl border border-gray-200/80" />
+              <div className="h-96 bg-white rounded-3xl border border-gray-200/80" />
+            </div>
+          </div>
+        </div>
+      </main>
+    );
+  }
+
+  if (items.length === 0) {
+    return (
+      <main className="min-h-screen flex flex-col bg-[#F3F4F5]">
+        <Header />
+        <div className="w-full max-w-[1200px] mx-auto px-3 sm:px-6 lg:px-8 pt-[76px] sm:pt-[84px] md:pt-[175px] lg:pt-[180px] pb-14 flex-1 flex items-center justify-center">
+          <div className="bg-white rounded-3xl p-10 md:p-14 text-center max-w-md mx-auto shadow-sm border border-gray-100 my-8">
+            <div className="w-16 h-16 rounded-full bg-orange-50 flex items-center justify-center mx-auto mb-4 text-[#F26522]">
+              <ShoppingBag size={30} strokeWidth={1.75} />
+            </div>
+            <h2 className="text-xl md:text-2xl font-black text-[#052a51]">Your cart is empty</h2>
+            <p className="text-gray-500 text-xs sm:text-sm mt-1.5 leading-relaxed">
+              Add tiles to your cart before proceeding to checkout.
+            </p>
+            <div className="mt-6">
+              <Link href="/shop">
+                <button className="px-6 h-11 bg-[#F26522] text-white text-xs sm:text-sm font-bold rounded-xl hover:bg-[#d95a1e] active:scale-95 transition-all flex items-center justify-center gap-2 shadow-xs mx-auto cursor-pointer">
+                  Shop All Tiles <ArrowRight size={15} />
+                </button>
+              </Link>
+            </div>
+          </div>
+        </div>
+      </main>
+    );
+  }
 
   return (
     <main className="min-h-screen flex flex-col bg-[#F3F4F5]">
