@@ -34,7 +34,7 @@ export async function POST(request: NextRequest) {
       amount: parsedAmount, // in paise
       currency: currency || "INR",
       receipt: receipt || `rcpt_${Date.now().toString().slice(-8)}`,
-      payment_capture: 1,
+      payment_capture: true,
     };
 
     const order = await razorpay.orders.create(options);

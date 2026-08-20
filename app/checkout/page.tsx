@@ -126,7 +126,12 @@ export default function CheckoutPage() {
   const placeOrder = async (
     method: "Online" | "COD",
     paymentStatus: "Paid" | "Pending",
-    customPaymentId?: string
+    customPaymentId?: string,
+    razorpayData?: {
+      orderId?: string;
+      paymentId?: string;
+      signature?: string;
+    }
   ) => {
     if (!isAuthenticated) {
       openLoginModal({ type: "checkout" });
@@ -174,7 +179,10 @@ export default function CheckoutPage() {
         paymentStatus,
         paymentMethod: method === "COD" ? "COD" : "Online",
         codConfirmed: method === "COD",
-        paymentId: customPaymentId || (method === "COD" ? `cod_ref_${Date.now().toString().slice(-6)}` : `pay_rzp_${Date.now().toString().slice(-8)}`),
+        paymentId: razorpayData?.paymentId || customPaymentId || (method === "COD" ? `cod_ref_${Date.now().toString().slice(-6)}` : `pay_rzp_${Date.now().toString().slice(-8)}`),
+        razorpayOrderId: razorpayData?.orderId,
+        razorpayPaymentId: razorpayData?.paymentId,
+        razorpaySignature: razorpayData?.signature,
       });
 
       if (!res.success || !res.order) {
@@ -215,7 +223,7 @@ export default function CheckoutPage() {
     setIsProcessingPayment(true);
 
     try {
-      // 1. Load Razorpay script
+      // 1. Load Razorpay checkout script
       const scriptLoaded = await loadRazorpayScript();
       if (!scriptLoaded) {
         toast.error("Failed to load Razorpay checkout SDK. Please check your internet connection.");
@@ -242,17 +250,17 @@ export default function CheckoutPage() {
         return;
       }
 
-      // 3. Open Razorpay Checkout Modal
+      // 3. Open Razorpay Standard Checkout Modal
       const razorpayKey =
-        process.env.NEXT_PUBLIC_RAZORPAY_KEY_ID || "rzp_test_TRbTSybnlrbKuZ";
+        process.env.NEXT_PUBLIC_RAZORPAY_KEY_ID || "rzp_test_TRvgjhkrG11QUR";
 
       const options = {
         key: razorpayKey,
         amount: orderData.amount,
         currency: orderData.currency || "INR",
-        name: "Tiletra",
+        name: "Intrihub",
         description: `Order Payment (${items.length} item${items.length > 1 ? "s" : ""})`,
-        image: "/favicon.png",
+        image: "/logo/intri-web-logo.png",
         order_id: orderData.order_id,
         prefill: {
           name: selectedAddress.name || user?.name || "Customer",
@@ -268,7 +276,7 @@ export default function CheckoutPage() {
           razorpay_signature: string;
         }) {
           try {
-            // 4. Verify Payment Signature on Backend
+            // 4. Verify Payment Signature on Backend (HMAC-SHA256)
             const verifyRes = await fetch("/api/verify-payment", {
               method: "POST",
               headers: { "Content-Type": "application/json" },
@@ -282,7 +290,11 @@ export default function CheckoutPage() {
             const verifyData = await verifyRes.json();
             if (verifyRes.ok && verifyData.success) {
               toast.success("Payment verified successfully!");
-              await placeOrder("Online", "Paid", response.razorpay_payment_id);
+              await placeOrder("Online", "Paid", response.razorpay_payment_id, {
+                orderId: response.razorpay_order_id,
+                paymentId: response.razorpay_payment_id,
+                signature: response.razorpay_signature,
+              });
             } else {
               toast.error(verifyData.error || "Payment signature verification failed");
             }

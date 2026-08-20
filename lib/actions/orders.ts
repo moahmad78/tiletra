@@ -2,6 +2,8 @@
 
 import { prisma } from "@/lib/prisma";
 import { safeRevalidate } from "@/lib/formatters";
+import Razorpay from "razorpay";
+import crypto from "crypto";
 
 export type OrderItemInput = {
   productId: string;
@@ -37,6 +39,9 @@ export type CreateOrderInput = {
   paymentMethod: string;
   paymentStatus?: string;
   paymentId?: string;
+  razorpayOrderId?: string;
+  razorpayPaymentId?: string;
+  razorpaySignature?: string;
   codConfirmed?: boolean;
 };
 
@@ -148,6 +153,9 @@ export async function createOrder(input: CreateOrderInput) {
         codConfirmed: Boolean(input.codConfirmed),
         paymentCollected: input.paymentMethod !== "COD",
         paymentId: input.paymentId || null,
+        razorpayOrderId: input.razorpayOrderId || null,
+        razorpayPaymentId: input.razorpayPaymentId || null,
+        razorpaySignature: input.razorpaySignature || null,
         orderStatus: "Processing",
         estimatedDelivery: "3–5 Business Days",
         items: {
@@ -430,5 +438,99 @@ export async function updatePaymentCollected(id: string, paymentCollected: boole
   } catch (error: any) {
     console.error("Error updating payment collected:", error);
     return { success: false, error: error?.message || "Failed to update payment status" };
+  }
+}
+
+export async function createRazorpayOrder({
+  amount,
+  currency = "INR",
+  receipt,
+}: {
+  amount: number; // in paise
+  currency?: string;
+  receipt?: string;
+}) {
+  try {
+    const key_id = process.env.RAZORPAY_KEY_ID;
+    const key_secret = process.env.RAZORPAY_KEY_SECRET;
+
+    if (!key_id || !key_secret) {
+      return { success: false, error: "Razorpay credentials not configured on server" };
+    }
+
+    const parsedAmount = typeof amount === "number" ? Math.round(amount) : parseInt(amount, 10);
+    if (!parsedAmount || isNaN(parsedAmount) || parsedAmount < 100) {
+      return { success: false, error: "Amount must be at least ₹1 (100 paise)" };
+    }
+
+    const razorpay = new Razorpay({ key_id, key_secret });
+    const order = await razorpay.orders.create({
+      amount: parsedAmount,
+      currency: currency || "INR",
+      receipt: receipt || `rcpt_${Date.now().toString().slice(-8)}`,
+      payment_capture: true,
+    });
+
+    return {
+      success: true,
+      order_id: order.id,
+      amount: order.amount,
+      currency: order.currency,
+      receipt: order.receipt,
+    };
+  } catch (error: any) {
+    console.error("Error creating Razorpay order:", error);
+    return {
+      success: false,
+      error: error?.error?.description || error?.message || "Failed to create Razorpay order",
+    };
+  }
+}
+
+export async function verifyRazorpayPayment({
+  razorpay_order_id,
+  razorpay_payment_id,
+  razorpay_signature,
+}: {
+  razorpay_order_id: string;
+  razorpay_payment_id: string;
+  razorpay_signature: string;
+}) {
+  try {
+    const key_secret = process.env.RAZORPAY_KEY_SECRET;
+    if (!key_secret) {
+      return { success: false, error: "Razorpay secret key not configured on server" };
+    }
+
+    if (!razorpay_order_id || !razorpay_payment_id || !razorpay_signature) {
+      return { success: false, error: "Missing payment verification parameters" };
+    }
+
+    const text = `${razorpay_order_id}|${razorpay_payment_id}`;
+    const expectedSignature = crypto
+      .createHmac("sha256", key_secret)
+      .update(text)
+      .digest("hex");
+
+    const expectedBuffer = Buffer.from(expectedSignature);
+    const signatureBuffer = Buffer.from(razorpay_signature);
+
+    const isMatch =
+      expectedBuffer.length === signatureBuffer.length &&
+      crypto.timingSafeEqual(expectedBuffer, signatureBuffer);
+
+    if (!isMatch) {
+      return { success: false, error: "Invalid payment signature. Verification failed." };
+    }
+
+    return {
+      success: true,
+      message: "Payment signature verified successfully",
+      paymentId: razorpay_payment_id,
+      orderId: razorpay_order_id,
+    };
+  } catch (error: any) {
+    console.error("Error verifying payment signature:", error);
+    return { success: false, error: error?.message || "Verification failed" };
   }
 }

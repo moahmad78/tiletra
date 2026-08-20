@@ -235,6 +235,9 @@ model Order {
   codConfirmed      Boolean         @default(false)
   paymentCollected  Boolean         @default(false)
   paymentId         String?
+  razorpayOrderId   String?
+  razorpayPaymentId String?
+  razorpaySignature String?
   orderStatus       String          @default("Processing") // Processing | Confirmed | Dispatched | Out for Delivery | Delivered | Cancelled
   courierName       String?
   trackingNumber    String?
