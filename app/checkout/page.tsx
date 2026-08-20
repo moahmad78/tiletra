@@ -29,7 +29,7 @@ import { useNotificationsStore } from "@/lib/notifications-store";
 import { getStoreSettings } from "@/lib/actions/settings";
 import Header from "@/components/Header";
 import LocationPicker from "@/components/location/LocationPicker";
-import { OnlinePaymentIconsRow, CodCashBadge } from "@/components/checkout/PaymentIcons";
+import PaymentSection, { type PaymentSelectionState } from "@/components/checkout/PaymentSection";
 import { toast } from "sonner";
 
 function formatPrice(n: number) {
@@ -69,7 +69,10 @@ export default function CheckoutPage() {
   const [step, setStep] = useState<Step>("Address");
   const [selectedAddressId, setSelectedAddressId] = useState<string>("");
   const [isAddingNewAddress, setIsAddingNewAddress] = useState(false);
-  const [paymentMethod, setPaymentMethod] = useState<"Online" | "COD">("Online");
+  const [paymentSelection, setPaymentSelection] = useState<PaymentSelectionState>({
+    method: "upi",
+    upiApp: "gpay",
+  });
 
   useEffect(() => {
     setMounted(true);
@@ -230,8 +233,8 @@ export default function CheckoutPage() {
     router.push(`/checkout/success?orderId=${orderId}&method=${method.toLowerCase()}&total=${total}`);
   };
 
-  // Online Payment Flow with Razorpay Standard Modal
-  const handleOnlinePayment = async () => {
+  // Online Payment Flow with Razorpay Standard Modal targeted to selected method
+  const handleOnlinePayment = async (selectedPayment: PaymentSelectionState) => {
     // 0. Prevent concurrent or double invocations
     if (isPayingRef.current || isProcessingPayment) {
       return;
@@ -297,19 +300,26 @@ export default function CheckoutPage() {
         .slice(-10);
 
       console.log("[Razorpay Checkout] Prefill contact initialized:", {
+        method: selectedPayment.method,
         hasName: Boolean(customerName),
         hasEmail: Boolean(customerEmail),
         hasValidPhone: Boolean(normalizedPhone && normalizedPhone.length === 10),
-        phoneLength: normalizedPhone?.length || 0,
       });
 
-      // 4. Open Razorpay Standard Checkout Modal
+      // 4. Open Razorpay Standard Checkout targeting the selected method
       const razorpayKey =
         orderData.key_id ||
         process.env.NEXT_PUBLIC_RAZORPAY_KEY_ID ||
         "rzp_live_TRwZ7JnWhHsutK";
 
-      const options = {
+      const rzpMethod =
+        selectedPayment.method === "card"
+          ? "card"
+          : selectedPayment.method === "netbanking"
+          ? "netbanking"
+          : "upi";
+
+      const options: any = {
         key: razorpayKey,
         amount: orderData.amount,
         currency: orderData.currency || "INR",
@@ -321,6 +331,7 @@ export default function CheckoutPage() {
           name: customerName,
           email: customerEmail,
           contact: normalizedPhone || undefined,
+          method: rzpMethod,
         },
         theme: {
           color: "#052a51",
@@ -370,6 +381,14 @@ export default function CheckoutPage() {
         },
       };
 
+      // Direct Bank/VPA pass-through
+      if (selectedPayment.method === "netbanking" && selectedPayment.bankCode) {
+        options.prefill.bank = selectedPayment.bankCode;
+      }
+      if (selectedPayment.method === "upi" && selectedPayment.upiId) {
+        options.prefill.vpa = selectedPayment.upiId;
+      }
+
       // Close previous instance if any exists
       if (activeRzpRef.current) {
         try {
@@ -394,6 +413,14 @@ export default function CheckoutPage() {
       toast.error(err?.message || "An unexpected error occurred during payment");
       isPayingRef.current = false;
       setIsProcessingPayment(false);
+    }
+  };
+
+  const handlePaymentSubmit = () => {
+    if (paymentSelection.method === "cod") {
+      placeOrder("COD", "Pending");
+    } else {
+      handleOnlinePayment(paymentSelection);
     }
   };
 
@@ -678,160 +705,16 @@ export default function CheckoutPage() {
               </div>
             )}
 
-            {/* ── STEP 3: PAYMENT METHOD SELECTION ── */}
+            {/* ── STEP 3: EMBEDDED TILETRA PAYMENT SECTION ── */}
             {step === "Payment" && (
-              <div className="bg-white rounded-3xl p-6 md:p-8 border border-gray-200/80 shadow-xs space-y-6">
-                <div className="flex items-center justify-between flex-wrap gap-3 pb-4 border-b border-gray-100">
-                  <div className="flex items-center gap-3">
-                    <div className="w-10 h-10 rounded-2xl bg-[#052a51] text-white flex items-center justify-center">
-                      <CreditCard size={20} />
-                    </div>
-                    <div>
-                      <h2 className="text-xl font-black text-[#052a51]">Choose Payment Method</h2>
-                      <p className="text-xs text-gray-500">Select your preferred way to pay securely.</p>
-                    </div>
-                  </div>
-                  <div className="text-right">
-                    <span className="text-[11px] font-bold text-gray-400 uppercase tracking-wider block">Total Payable</span>
-                    <span className="text-lg sm:text-xl font-black text-[#F26522]">{formatPrice(total)}</span>
-                  </div>
-                </div>
-
-                {/* Method 1: Pay Online (Tiletra Branded Card) */}
-                <div
-                  onClick={() => setPaymentMethod("Online")}
-                  className={`p-5 sm:p-6 rounded-2xl border-2 transition-all cursor-pointer ${
-                    paymentMethod === "Online"
-                      ? "border-[#F26522] bg-[#F26522]/5 shadow-sm"
-                      : "border-gray-200 hover:border-gray-300 bg-white"
-                  }`}
-                >
-                  <div className="flex items-start gap-3.5 w-full">
-                    <input
-                      type="radio"
-                      name="payment-method"
-                      checked={paymentMethod === "Online"}
-                      onChange={() => setPaymentMethod("Online")}
-                      className="w-4 h-4 accent-[#F26522] mt-1 cursor-pointer shrink-0"
-                    />
-                    <div className="flex-1 min-w-0 space-y-2.5">
-                      <div className="flex flex-wrap items-center justify-between gap-2">
-                        <div className="flex items-center gap-2">
-                          <span className="text-base font-black text-[#052a51]">Pay Online</span>
-                          <span className="px-2 py-0.5 rounded-md bg-green-100 text-green-800 text-[10px] font-black uppercase tracking-wider">
-                            Instant Confirmation
-                          </span>
-                        </div>
-                        <span className="text-xs font-bold text-gray-500">UPI, Cards & Net Banking</span>
-                      </div>
-                      <p className="text-xs text-gray-500 leading-relaxed">
-                        Pay securely using Google Pay, PhonePe, Paytm, BHIM UPI, Credit/Debit Cards, or NetBanking.
-                      </p>
-
-                      {/* Payment Method Badges Row */}
-                      <OnlinePaymentIconsRow />
-                    </div>
-                  </div>
-                </div>
-
-                {/* Method 2: Cash on Delivery (Tiletra Branded Card) */}
-                <div
-                  onClick={() => setPaymentMethod("COD")}
-                  className={`p-5 sm:p-6 rounded-2xl border-2 transition-all cursor-pointer ${
-                    paymentMethod === "COD"
-                      ? "border-[#F26522] bg-[#F26522]/5 shadow-sm"
-                      : "border-gray-200 hover:border-gray-300 bg-white"
-                  }`}
-                >
-                  <div className="flex items-start gap-3.5 w-full">
-                    <input
-                      type="radio"
-                      name="payment-method"
-                      checked={paymentMethod === "COD"}
-                      onChange={() => setPaymentMethod("COD")}
-                      className="w-4 h-4 accent-[#F26522] mt-1 cursor-pointer shrink-0"
-                    />
-                    <div className="flex-1 min-w-0 space-y-2">
-                      <div className="flex flex-wrap items-center justify-between gap-2">
-                        <div className="flex items-center gap-2">
-                          <span className="text-base font-black text-[#052a51]">Cash on Delivery</span>
-                          <span className="px-2 py-0.5 rounded-md bg-amber-100 text-amber-900 text-[10px] font-black uppercase tracking-wider">
-                            Available on All Items
-                          </span>
-                        </div>
-                        <div className="flex items-center gap-1 text-xs font-bold text-emerald-700">
-                          <span>💵 Pay at Doorstep</span>
-                        </div>
-                      </div>
-                      <p className="text-xs text-gray-500 leading-relaxed">
-                        Pay with cash or scan the delivery driver&apos;s UPI QR code when your tile crates arrive at your doorstep.
-                      </p>
-                    </div>
-                  </div>
-                </div>
-
-                {/* Final Action Bar with Dynamic Tiletra CTAs */}
-                <div className="pt-4 border-t border-gray-100 space-y-3">
-                  <div className="flex items-center gap-3">
-                    <button
-                      type="button"
-                      onClick={() => setStep("Delivery")}
-                      disabled={isProcessingPayment}
-                      className="h-12 sm:h-13 px-4 sm:px-6 border-2 border-gray-200 hover:border-gray-300 text-[#052a51] font-bold rounded-2xl text-xs sm:text-sm transition-colors cursor-pointer shrink-0 disabled:opacity-50"
-                    >
-                      ← Back
-                    </button>
-
-                    {paymentMethod === "Online" ? (
-                      <button
-                        id="razorpay-pay-btn"
-                        type="button"
-                        onClick={handleOnlinePayment}
-                        disabled={isProcessingPayment}
-                        className="flex-1 h-12 sm:h-13 bg-[#F26522] hover:bg-[#d95a1e] text-white font-black text-xs sm:text-sm rounded-2xl shadow-md transition-all flex items-center justify-center gap-2 active:scale-95 cursor-pointer disabled:opacity-60 disabled:cursor-not-allowed"
-                      >
-                        {isProcessingPayment ? (
-                          <>
-                            <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
-                            <span>Opening secure payment...</span>
-                          </>
-                        ) : (
-                          <>
-                            <Lock size={16} />
-                            <span>Pay {formatPrice(total)}</span>
-                          </>
-                        )}
-                      </button>
-                    ) : (
-                      <button
-                        id="cod-pay-btn"
-                        type="button"
-                        onClick={() => placeOrder("COD", "Pending")}
-                        disabled={isProcessingPayment}
-                        className="flex-1 h-12 sm:h-13 bg-[#052a51] hover:bg-[#0b3b6d] text-white font-black text-xs sm:text-sm rounded-2xl shadow-md transition-all flex items-center justify-center gap-2 active:scale-95 cursor-pointer disabled:opacity-60 disabled:cursor-not-allowed"
-                      >
-                        {isProcessingPayment ? (
-                          <>
-                            <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
-                            <span>Placing your order...</span>
-                          </>
-                        ) : (
-                          <>
-                            <Check size={16} className="text-[#F26522]" />
-                            <span>Place Order</span>
-                          </>
-                        )}
-                      </button>
-                    )}
-                  </div>
-
-                  {/* Security Guarantee */}
-                  <div className="flex items-center justify-center gap-2 text-[11px] font-bold text-gray-500 pt-1">
-                    <ShieldCheck size={14} className="text-emerald-600" />
-                    <span>🔒 256-bit Bank-Grade Encryption · 100% Safe & Verified</span>
-                  </div>
-                </div>
-              </div>
+              <PaymentSection
+                totalAmount={total}
+                paymentState={paymentSelection}
+                onPaymentStateChange={setPaymentSelection}
+                isProcessing={isProcessingPayment}
+                onPaySubmit={handlePaymentSubmit}
+                onBack={() => setStep("Delivery")}
+              />
             )}
           </div>
 
