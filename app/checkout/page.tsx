@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
@@ -112,14 +112,27 @@ export default function CheckoutPage() {
   };
 
   const [isProcessingPayment, setIsProcessingPayment] = useState(false);
+  const isPayingRef = useRef(false);
+  const activeRzpRef = useRef<any>(null);
 
   const loadRazorpayScript = (): Promise<boolean> => {
     return new Promise((resolve) => {
-      if (typeof window !== "undefined" && (window as any).Razorpay) {
+      if (typeof window === "undefined") {
+        resolve(false);
+        return;
+      }
+      if ((window as any).Razorpay) {
         resolve(true);
         return;
       }
+      const existingScript = document.getElementById("razorpay-checkout-script");
+      if (existingScript) {
+        existingScript.addEventListener("load", () => resolve(true), { once: true });
+        existingScript.addEventListener("error", () => resolve(false), { once: true });
+        return;
+      }
       const script = document.createElement("script");
+      script.id = "razorpay-checkout-script";
       script.src = "https://checkout.razorpay.com/v1/checkout.js";
       script.onload = () => resolve(true);
       script.onerror = () => resolve(false);
@@ -215,6 +228,11 @@ export default function CheckoutPage() {
 
   // Online Payment Flow with Razorpay Standard Modal
   const handleOnlinePayment = async () => {
+    // 0. Prevent concurrent or double invocations
+    if (isPayingRef.current || isProcessingPayment) {
+      return;
+    }
+
     if (!isAuthenticated) {
       openLoginModal({ type: "checkout" });
       return;
@@ -225,6 +243,7 @@ export default function CheckoutPage() {
       return;
     }
 
+    isPayingRef.current = true;
     setIsProcessingPayment(true);
 
     try {
@@ -232,6 +251,7 @@ export default function CheckoutPage() {
       const scriptLoaded = await loadRazorpayScript();
       if (!scriptLoaded) {
         toast.error("Failed to load Razorpay checkout SDK. Please check your internet connection.");
+        isPayingRef.current = false;
         setIsProcessingPayment(false);
         return;
       }
@@ -251,11 +271,21 @@ export default function CheckoutPage() {
       const orderData = await res.json();
       if (!res.ok || !orderData.order_id) {
         toast.error(orderData.error || "Failed to initiate online payment order");
+        isPayingRef.current = false;
         setIsProcessingPayment(false);
         return;
       }
 
-      // 3. Open Razorpay Standard Checkout Modal
+      // 3. Extract complete contact prefill details
+      const customerName =
+        selectedAddress?.name?.trim() || user?.name?.trim() || "Customer";
+      const customerEmail =
+        user?.email?.trim() || "customer@intrihub.com";
+      const rawPhone =
+        selectedAddress?.phone?.trim() || user?.phone?.trim() || "9876543210";
+      const customerPhone = rawPhone.replace(/[^\d+]/g, "");
+
+      // 4. Open Razorpay Standard Checkout Modal
       const razorpayKey =
         orderData.key_id ||
         process.env.NEXT_PUBLIC_RAZORPAY_KEY_ID ||
@@ -270,9 +300,9 @@ export default function CheckoutPage() {
         image: "/logo/intri-web-logo.png",
         order_id: orderData.order_id,
         prefill: {
-          name: selectedAddress.name || user?.name || "Customer",
-          email: user?.email || "",
-          contact: selectedAddress.phone || user?.phone || "",
+          name: customerName,
+          email: customerEmail,
+          contact: customerPhone,
         },
         theme: {
           color: "#052a51",
@@ -283,7 +313,7 @@ export default function CheckoutPage() {
           razorpay_signature: string;
         }) {
           try {
-            // 4. Verify Payment Signature on Backend (HMAC-SHA256)
+            // 5. Verify Payment Signature on Backend (HMAC-SHA256)
             const verifyRes = await fetch("/api/verify-payment", {
               method: "POST",
               headers: { "Content-Type": "application/json" },
@@ -309,26 +339,42 @@ export default function CheckoutPage() {
             console.error("Verification error:", e);
             toast.error("Failed to verify payment with server");
           } finally {
+            isPayingRef.current = false;
             setIsProcessingPayment(false);
           }
         },
         modal: {
           ondismiss: function () {
+            isPayingRef.current = false;
             setIsProcessingPayment(false);
-            toast.info("Payment cancelled");
+            toast.info("Payment window closed");
           },
         },
       };
 
+      // Close previous instance if any exists
+      if (activeRzpRef.current) {
+        try {
+          activeRzpRef.current.close();
+        } catch {
+          // ignore
+        }
+      }
+
       const rzp = new (window as any).Razorpay(options);
+      activeRzpRef.current = rzp;
+
       rzp.on("payment.failed", function (response: any) {
+        isPayingRef.current = false;
         setIsProcessingPayment(false);
         toast.error(response?.error?.description || "Payment failed. Please retry.");
       });
+
       rzp.open();
     } catch (err: any) {
       console.error("Online payment error:", err);
       toast.error(err?.message || "An unexpected error occurred during payment");
+      isPayingRef.current = false;
       setIsProcessingPayment(false);
     }
   };
