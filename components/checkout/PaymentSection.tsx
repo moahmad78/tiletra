@@ -11,6 +11,10 @@ import {
   QrCode,
   ShieldCheck,
   ChevronDown,
+  Info,
+  Calendar,
+  KeyRound,
+  User,
 } from "lucide-react";
 import {
   UpiIcon,
@@ -30,6 +34,10 @@ export interface PaymentSelectionState {
   upiApp?: "gpay" | "phonepe" | "paytm" | "other" | "qr";
   upiId?: string;
   bankCode?: string;
+  cardNumber?: string;
+  cardExpiry?: string;
+  cardCvv?: string;
+  cardName?: string;
 }
 
 interface PaymentSectionProps {
@@ -78,6 +86,10 @@ export default function PaymentSection({
   onBack,
 }: PaymentSectionProps) {
   const [customUpiInput, setCustomUpiInput] = useState(paymentState.upiId || "");
+  const [cardNumber, setCardNumber] = useState(paymentState.cardNumber || "");
+  const [cardExpiry, setCardExpiry] = useState(paymentState.cardExpiry || "");
+  const [cardCvv, setCardCvv] = useState(paymentState.cardCvv || "");
+  const [cardName, setCardName] = useState(paymentState.cardName || "");
 
   const handleSelectMethod = (method: PaymentMethodType) => {
     onPaymentStateChange({
@@ -111,7 +123,59 @@ export default function PaymentSection({
     });
   };
 
+  // Format Card Number (XXXX XXXX XXXX XXXX)
+  const handleCardNumberChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const raw = e.target.value.replace(/\D/g, "").slice(0, 16);
+    const formatted = raw.replace(/(\d{4})(?=\d)/g, "$1 ");
+    setCardNumber(formatted);
+    onPaymentStateChange({
+      ...paymentState,
+      cardNumber: formatted,
+    });
+  };
+
+  // Format Card Expiry (MM / YY)
+  const handleCardExpiryChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const raw = e.target.value.replace(/\D/g, "").slice(0, 4);
+    let formatted = raw;
+    if (raw.length >= 2) {
+      formatted = `${raw.slice(0, 2)}/${raw.slice(2)}`;
+    }
+    setCardExpiry(formatted);
+    onPaymentStateChange({
+      ...paymentState,
+      cardExpiry: formatted,
+    });
+  };
+
+  // Format Card CVV (3 or 4 digits)
+  const handleCardCvvChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const raw = e.target.value.replace(/\D/g, "").slice(0, 4);
+    setCardCvv(raw);
+    onPaymentStateChange({
+      ...paymentState,
+      cardCvv: raw,
+    });
+  };
+
   const formattedTotal = "₹" + totalAmount.toLocaleString("en-IN");
+
+  // Determine card type icon
+  const getCardIcon = () => {
+    const clean = cardNumber.replace(/\s/g, "");
+    if (clean.startsWith("4")) return <VisaIcon />;
+    if (clean.startsWith("51") || clean.startsWith("52") || clean.startsWith("53") || clean.startsWith("54") || clean.startsWith("55"))
+      return <MastercardIcon />;
+    if (clean.startsWith("60") || clean.startsWith("65") || clean.startsWith("81") || clean.startsWith("82"))
+      return <RuPayIcon />;
+    return (
+      <div className="flex items-center gap-1">
+        <VisaIcon />
+        <MastercardIcon />
+        <RuPayIcon />
+      </div>
+    );
+  };
 
   return (
     <div className="bg-white rounded-3xl p-5 sm:p-7 md:p-8 border border-gray-200/80 shadow-xs space-y-6">
@@ -162,12 +226,22 @@ export default function PaymentSection({
               >
                 <p className="text-xs font-bold text-gray-700">Choose UPI option:</p>
 
-                <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
+                <div className="grid grid-cols-2 sm:grid-cols-5 gap-2">
                   {[
-                    { id: "gpay", label: "Google Pay", icon: <GPayIcon className="h-4.5 w-auto" /> },
-                    { id: "phonepe", label: "PhonePe", icon: <PhonePeIcon className="h-4.5 w-auto" /> },
-                    { id: "paytm", label: "Paytm", icon: <PaytmIcon className="h-4.5 w-auto" /> },
-                    { id: "other", label: "UPI ID", icon: <UpiIcon className="h-4.5 w-auto" /> },
+                    { id: "gpay", label: "Google Pay", icon: <GPayIcon className="h-4 w-auto" /> },
+                    { id: "phonepe", label: "PhonePe", icon: <PhonePeIcon className="h-4 w-auto" /> },
+                    { id: "paytm", label: "Paytm", icon: <PaytmIcon className="h-4 w-auto" /> },
+                    { id: "other", label: "UPI ID", icon: <UpiIcon className="h-4 w-auto" /> },
+                    {
+                      id: "qr",
+                      label: "Scan QR",
+                      icon: (
+                        <div className="h-4 flex items-center gap-1 text-[#052a51] font-black text-[11px]">
+                          <QrCode size={16} className="text-[#F26522]" />
+                          <span>QR</span>
+                        </div>
+                      ),
+                    },
                   ].map((app) => {
                     const isSelected = (paymentState.upiApp || "gpay") === app.id;
                     return (
@@ -175,7 +249,7 @@ export default function PaymentSection({
                         key={app.id}
                         type="button"
                         onClick={() => handleUpiAppSelect(app.id as any)}
-                        className={`p-3 rounded-xl border text-xs font-bold transition-all flex flex-col items-center justify-center gap-1.5 cursor-pointer ${
+                        className={`p-2.5 sm:p-3 rounded-xl border text-xs font-bold transition-all flex flex-col items-center justify-center gap-1.5 cursor-pointer ${
                           isSelected
                             ? "border-[#052a51] bg-[#052a51] text-white shadow-2xs"
                             : "border-gray-200 hover:border-gray-300 bg-white text-gray-700"
@@ -203,6 +277,19 @@ export default function PaymentSection({
                     />
                     <p className="text-[10px] text-gray-500">
                       A payment request will be sent to your UPI application for authorization.
+                    </p>
+                  </div>
+                )}
+
+                {/* Scan QR Option Callout */}
+                {paymentState.upiApp === "qr" && (
+                  <div className="p-3.5 bg-white rounded-xl border border-orange-200 text-xs space-y-1 text-gray-700">
+                    <div className="flex items-center gap-2 font-bold text-[#052a51]">
+                      <QrCode size={16} className="text-[#F26522]" />
+                      <span>Instant Dynamic UPI QR</span>
+                    </div>
+                    <p className="text-[11px] text-gray-500 leading-relaxed">
+                      Click below to generate and display the order-specific UPI QR code to scan with any UPI app (GPay, PhonePe, Paytm, BHIM, CRED).
                     </p>
                   </div>
                 )}
@@ -237,20 +324,100 @@ export default function PaymentSection({
               </div>
             </div>
 
-            {/* Expanded Card Details */}
+            {/* Expanded Secure Tokenized Card Fields */}
             {paymentState.method === "card" && (
               <div
-                className="mt-4 pt-3.5 border-t border-[#F26522]/20 space-y-2.5"
+                className="mt-4 pt-3.5 border-t border-[#F26522]/20 space-y-3.5"
                 onClick={(e) => e.stopPropagation()}
               >
-                <div className="flex items-center gap-2">
-                  <VisaIcon />
-                  <MastercardIcon />
-                  <RuPayIcon />
+                <div className="flex items-center justify-between">
+                  <p className="text-xs font-bold text-gray-700">Enter Card Details:</p>
+                  {getCardIcon()}
                 </div>
-                <p className="text-xs text-gray-600 leading-relaxed">
-                  Pay securely with any Indian or International card. You will complete 3D Secure / OTP authorization with your issuing bank.
-                </p>
+
+                <div className="space-y-3">
+                  {/* Card Number */}
+                  <div className="space-y-1">
+                    <label className="text-[11px] font-bold text-gray-600 block">Card Number</label>
+                    <div className="relative">
+                      <input
+                        type="text"
+                        value={cardNumber}
+                        onChange={handleCardNumberChange}
+                        placeholder="4532 •••• •••• 8892"
+                        className="w-full h-10 pl-9 pr-3 rounded-xl border border-gray-300 focus:outline-none focus:border-[#F26522] text-xs font-mono font-medium bg-white"
+                      />
+                      <CreditCard
+                        size={15}
+                        className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400"
+                      />
+                    </div>
+                  </div>
+
+                  {/* Expiry & CVV */}
+                  <div className="grid grid-cols-2 gap-3">
+                    <div className="space-y-1">
+                      <label className="text-[11px] font-bold text-gray-600 block">Expiry (MM/YY)</label>
+                      <div className="relative">
+                        <input
+                          type="text"
+                          value={cardExpiry}
+                          onChange={handleCardExpiryChange}
+                          placeholder="MM/YY"
+                          className="w-full h-10 pl-9 pr-3 rounded-xl border border-gray-300 focus:outline-none focus:border-[#F26522] text-xs font-mono font-medium bg-white"
+                        />
+                        <Calendar
+                          size={15}
+                          className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400"
+                        />
+                      </div>
+                    </div>
+
+                    <div className="space-y-1">
+                      <label className="text-[11px] font-bold text-gray-600 block">CVV</label>
+                      <div className="relative">
+                        <input
+                          type="password"
+                          value={cardCvv}
+                          onChange={handleCardCvvChange}
+                          placeholder="•••"
+                          maxLength={4}
+                          className="w-full h-10 pl-9 pr-3 rounded-xl border border-gray-300 focus:outline-none focus:border-[#F26522] text-xs font-mono font-medium bg-white"
+                        />
+                        <KeyRound
+                          size={15}
+                          className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400"
+                        />
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Cardholder Name */}
+                  <div className="space-y-1">
+                    <label className="text-[11px] font-bold text-gray-600 block">Name on Card</label>
+                    <div className="relative">
+                      <input
+                        type="text"
+                        value={cardName}
+                        onChange={(e) => {
+                          setCardName(e.target.value);
+                          onPaymentStateChange({ ...paymentState, cardName: e.target.value });
+                        }}
+                        placeholder="Cardholder Full Name"
+                        className="w-full h-10 pl-9 pr-3 rounded-xl border border-gray-300 focus:outline-none focus:border-[#F26522] text-xs font-medium bg-white uppercase"
+                      />
+                      <User
+                        size={15}
+                        className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400"
+                      />
+                    </div>
+                  </div>
+                </div>
+
+                <div className="flex items-center gap-2 text-[11px] text-gray-500 pt-1">
+                  <ShieldCheck size={14} className="text-emerald-600 shrink-0" />
+                  <span>3D Secure / OTP authorization will be verified with your issuing bank.</span>
+                </div>
               </div>
             )}
           </div>
@@ -332,6 +499,11 @@ export default function PaymentSection({
                       className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none"
                     />
                   </div>
+                </div>
+
+                <div className="flex items-center gap-2 text-[11px] text-gray-500 pt-1">
+                  <ShieldCheck size={14} className="text-emerald-600 shrink-0" />
+                  <span>You will be securely redirected to your bank&apos;s authorized portal.</span>
                 </div>
               </div>
             )}
