@@ -285,9 +285,23 @@ export default function CheckoutPage() {
         selectedAddress?.name?.trim() || user?.name?.trim() || "Customer";
       const customerEmail =
         user?.email?.trim() || "customer@intrihub.com";
-      const rawPhone =
-        selectedAddress?.phone?.trim() || user?.phone?.trim() || "9876543210";
-      const customerPhone = rawPhone.replace(/[^\d+]/g, "");
+      const customerPhone =
+        selectedAddress?.phone?.trim() ||
+        user?.phone?.trim() ||
+        "";
+
+      const normalizedPhone = customerPhone
+        ?.replace(/\D/g, "")
+        .replace(/^91/, "")
+        .replace(/^0/, "")
+        .slice(-10);
+
+      console.log("[Razorpay Checkout] Prefill contact initialized:", {
+        hasName: Boolean(customerName),
+        hasEmail: Boolean(customerEmail),
+        hasValidPhone: Boolean(normalizedPhone && normalizedPhone.length === 10),
+        phoneLength: normalizedPhone?.length || 0,
+      });
 
       // 4. Open Razorpay Standard Checkout Modal
       const razorpayKey =
@@ -306,7 +320,7 @@ export default function CheckoutPage() {
         prefill: {
           name: customerName,
           email: customerEmail,
-          contact: customerPhone,
+          contact: normalizedPhone || undefined,
         },
         theme: {
           color: "#052a51",
