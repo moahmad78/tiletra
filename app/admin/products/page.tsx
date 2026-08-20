@@ -177,7 +177,7 @@ export default function AdminProductsPage() {
       <div className="flex items-center justify-center min-h-[400px]">
         <div className="flex flex-col items-center gap-3">
           <Loader2 className="animate-spin text-[#F26522]" size={32} />
-          <p className="text-sm font-bold text-[#052a51]">Loading tile catalog from Neon DB...</p>
+          <p className="text-sm font-bold text-[#052a51]">Loading catalog from Neon DB...</p>
         </div>
       </div>
     );
@@ -188,9 +188,9 @@ export default function AdminProductsPage() {
       {/* ── Page Header & Action Buttons ── */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 bg-white p-5 md:p-6 rounded-2xl border border-gray-200/80 shadow-2xs">
         <div>
-          <h2 className="text-xl font-black text-[#052a51]">Tile Catalog Management</h2>
+          <h2 className="text-xl font-black text-[#052a51]">Product Catalog Management</h2>
           <p className="text-xs text-gray-500 mt-0.5">
-            Total {products.length} tile designs in your database
+            Total {products.length} products across all categories in your database
           </p>
         </div>
 
@@ -208,7 +208,7 @@ export default function AdminProductsPage() {
             className="inline-flex items-center gap-1.5 px-4 py-2 bg-[#F26522] hover:bg-[#d95a1e] text-white text-xs font-bold rounded-xl active:scale-95 transition-all shadow-sm"
           >
             <Plus size={15} strokeWidth={2.5} />
-            <span>Add New Tile</span>
+            <span>Add Product</span>
           </Link>
         </div>
       </div>
@@ -226,7 +226,7 @@ export default function AdminProductsPage() {
               type="text"
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              placeholder="Search tiles by name, category, or material..."
+              placeholder="Search products by name, category, vendor, or material..."
               className="w-full pl-10 pr-4 py-2 bg-gray-50 border border-gray-200 rounded-xl text-xs font-semibold text-[#052a51] focus:outline-none focus:border-[#F26522]"
             />
           </div>
@@ -323,7 +323,7 @@ export default function AdminProductsPage() {
                     )}
                   </button>
                 </th>
-                <th className="py-3.5 px-4">Tile Design</th>
+                <th className="py-3.5 px-4">Product Name</th>
                 <th className="py-3.5 px-4">Vendor Shop</th>
                 <th className="py-3.5 px-4">Category / Material</th>
                 <th className="py-3.5 px-4">Pricing</th>
@@ -336,7 +336,7 @@ export default function AdminProductsPage() {
               {filteredProducts.length === 0 ? (
                 <tr>
                   <td colSpan={8} className="py-12 text-center text-gray-400 text-sm">
-                    No matching tiles found for your filters.
+                    No matching products found for your filters.
                   </td>
                 </tr>
               ) : (
@@ -485,7 +485,7 @@ export default function AdminProductsPage() {
                         <button
                           onClick={() => handleDuplicate(p)}
                           className="p-1.5 text-gray-400 hover:text-[#052a51] rounded-lg hover:bg-gray-100 cursor-pointer"
-                          title="Duplicate tile"
+                          title="Duplicate product"
                         >
                           <Copy size={14} />
                         </button>
@@ -499,7 +499,7 @@ export default function AdminProductsPage() {
                         <button
                           onClick={() => handleDelete(p.id, p.name)}
                           className="p-1.5 text-gray-400 hover:text-red-600 rounded-lg hover:bg-red-50 cursor-pointer"
-                          title="Delete tile"
+                          title="Delete product"
                         >
                           <Trash2 size={14} />
                         </button>

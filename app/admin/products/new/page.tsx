@@ -145,7 +145,7 @@ export default function AddProductPage() {
             <ArrowLeft size={18} />
           </Link>
           <div>
-            <h2 className="text-xl font-black text-[#052a51]">Create New Tile Product</h2>
+            <h2 className="text-xl font-black text-[#052a51]">Create New Product</h2>
             <p className="text-xs text-gray-400">Persists directly to Neon PostgreSQL database</p>
           </div>
         </div>
@@ -163,7 +163,7 @@ export default function AddProductPage() {
             className="inline-flex items-center gap-2 px-5 py-2.5 bg-[#F26522] hover:bg-[#d95a1e] text-white text-xs font-bold rounded-xl shadow-md active:scale-95 transition-all cursor-pointer disabled:opacity-50"
           >
             {loading ? <Loader2 className="animate-spin" size={15} /> : <Save size={15} />}
-            <span>{loading ? "Saving to DB..." : "Publish Tile Design"}</span>
+            <span>{loading ? "Saving to DB..." : "Publish Product"}</span>
           </button>
         </div>
       </div>
@@ -385,7 +385,7 @@ export default function AddProductPage() {
           className="inline-flex items-center gap-2 px-6 py-3 bg-[#F26522] hover:bg-[#d95a1e] text-white text-xs font-bold rounded-xl shadow-md active:scale-95 transition-all cursor-pointer disabled:opacity-50"
         >
           {loading ? <Loader2 className="animate-spin" size={16} /> : <Save size={16} />}
-          <span>{loading ? "Saving to DB..." : "Save & Publish Tile"}</span>
+          <span>{loading ? "Saving to DB..." : "Save & Publish Product"}</span>
         </button>
       </div>
     </form>

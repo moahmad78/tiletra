@@ -12,6 +12,7 @@ import {
   reactivateVendor,
   updateVendorCommission,
   createVendorManually,
+  deleteVendor,
 } from "@/lib/actions/admin-vendor";
 import {
   Store,
@@ -39,6 +40,7 @@ import {
   Sparkles,
   ChevronRight,
   Building,
+  Trash2,
 } from "lucide-react";
 import { toast } from "sonner";
 
@@ -66,6 +68,10 @@ export default function AdminVendorsPage() {
   const [commissionInput, setCommissionInput] = useState<number>(15.0);
   const [rejectionReason, setRejectionReason] = useState("");
   const [actionLoading, setActionLoading] = useState(false);
+
+  // Delete Vendor Confirmation State
+  const [vendorToDelete, setVendorToDelete] = useState<any | null>(null);
+  const [deleteLoading, setDeleteLoading] = useState(false);
 
   // Manual Add Vendor (Path B) Modal
   const [showAddModal, setShowAddModal] = useState(false);
@@ -164,6 +170,21 @@ export default function AdminVendorsPage() {
       loadVendors();
     } else {
       toast.error(res.error || "Failed to reactivate vendor");
+    }
+  };
+
+  const handleDeleteVendor = async () => {
+    if (!vendorToDelete) return;
+    setDeleteLoading(true);
+    const res = await deleteVendor(vendorToDelete.id);
+    setDeleteLoading(false);
+    if (res.success) {
+      toast.success(res.message);
+      setVendorToDelete(null);
+      setSelectedVendor(null);
+      loadVendors();
+    } else {
+      toast.error(res.error || "Failed to delete vendor");
     }
   };
 
@@ -504,6 +525,13 @@ export default function AdminVendorsPage() {
                             className="px-2.5 py-1.5 rounded-xl bg-gray-100 hover:bg-gray-200 text-gray-700 text-xs font-bold transition-colors"
                           >
                             Inspect
+                          </button>
+                          <button
+                            onClick={() => setVendorToDelete(v)}
+                            className="p-1.5 rounded-xl bg-red-50 hover:bg-red-100 text-red-600 transition-colors"
+                            title="Delete Vendor"
+                          >
+                            <Trash2 size={14} />
                           </button>
                         </div>
                       </td>
@@ -851,12 +879,24 @@ export default function AdminVendorsPage() {
 
             {/* Action Buttons */}
             <div className="pt-4 border-t border-gray-100 flex flex-wrap items-center justify-between gap-2.5">
-              <Link
-                href={`/admin/vendors/${selectedVendor.id}`}
-                className="px-4 py-2 bg-blue-50 text-[#052a51] rounded-xl text-xs font-bold hover:bg-blue-100 flex items-center gap-1"
-              >
-                <BarChart3 size={14} /> View Analytics Dashboard
-              </Link>
+              <div className="flex items-center gap-2">
+                <Link
+                  href={`/admin/vendors/${selectedVendor.id}`}
+                  className="px-4 py-2 bg-blue-50 text-[#052a51] rounded-xl text-xs font-bold hover:bg-blue-100 flex items-center gap-1"
+                >
+                  <BarChart3 size={14} /> Analytics Dashboard
+                </Link>
+                <button
+                  onClick={() => {
+                    const v = selectedVendor;
+                    setSelectedVendor(null);
+                    setVendorToDelete(v);
+                  }}
+                  className="px-3 py-2 bg-rose-50 hover:bg-rose-100 text-rose-700 rounded-xl text-xs font-bold flex items-center gap-1 transition-colors"
+                >
+                  <Trash2 size={13} /> Delete Vendor
+                </button>
+              </div>
 
               <div className="flex items-center gap-2">
                 <button
@@ -914,6 +954,61 @@ export default function AdminVendorsPage() {
                   </button>
                 )}
               </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ── DELETE VENDOR CONFIRMATION MODAL ── */}
+      {vendorToDelete && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-xs animate-in fade-in">
+          <div className="bg-white rounded-3xl max-w-md w-full p-6 sm:p-8 shadow-2xl border border-gray-100 space-y-5">
+            <div className="flex items-center gap-3.5">
+              <div className="w-12 h-12 rounded-2xl bg-rose-50 text-rose-600 flex items-center justify-center shrink-0 border border-rose-100">
+                <Trash2 size={22} />
+              </div>
+              <div>
+                <h3 className="text-lg font-black text-[#052a51]">Delete Vendor Account</h3>
+                <p className="text-xs text-gray-500">Permanent destructive action</p>
+              </div>
+            </div>
+
+            <div className="p-4 bg-rose-50/50 rounded-2xl border border-rose-100 text-xs space-y-2 text-gray-700">
+              <p>
+                Are you sure you want to permanently delete <strong>{vendorToDelete.businessName}</strong>?
+              </p>
+              <ul className="list-disc pl-4 space-y-1 text-gray-600">
+                <li>Vendor profile & settings will be deleted.</li>
+                <li>Linked login user account (+91 {vendorToDelete.contactPhone}) will be removed.</li>
+                <li>All {vendorToDelete._count?.products || 0} product listings will be removed from marketplace.</li>
+              </ul>
+            </div>
+
+            <div className="flex items-center justify-end gap-3 pt-2">
+              <button
+                type="button"
+                disabled={deleteLoading}
+                onClick={() => setVendorToDelete(null)}
+                className="px-4 py-2.5 rounded-xl text-xs font-bold text-gray-600 hover:bg-gray-100 disabled:opacity-50"
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                disabled={deleteLoading}
+                onClick={handleDeleteVendor}
+                className="px-5 py-2.5 rounded-xl bg-rose-600 hover:bg-rose-700 text-white text-xs font-bold shadow-md shadow-rose-600/20 disabled:opacity-50 flex items-center gap-1.5 transition-all"
+              >
+                {deleteLoading ? (
+                  <>
+                    <Loader2 size={13} className="animate-spin" /> Deleting...
+                  </>
+                ) : (
+                  <>
+                    <Trash2 size={13} /> Yes, Permanently Delete
+                  </>
+                )}
+              </button>
             </div>
           </div>
         </div>

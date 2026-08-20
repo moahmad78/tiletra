@@ -139,7 +139,7 @@ export default function AdminCategoriesPage() {
         <div>
           <h2 className="text-xl font-black text-[#052a51]">Category Management</h2>
           <p className="text-xs text-gray-500 mt-0.5">
-            Organize tiles into room and application categories in PostgreSQL
+            Organize catalog items into departments and categories in PostgreSQL
           </p>
         </div>
 
@@ -188,7 +188,7 @@ export default function AdminCategoriesPage() {
 
                 <div className="flex items-center gap-2 pt-2 text-xs">
                   <span className="font-bold text-[#052a51] px-2 py-0.5 bg-gray-100 rounded-md">
-                    {cat.productCount} Active Tile(s)
+                    {cat.productCount} Active Product(s)
                   </span>
                 </div>
               </div>

@@ -123,7 +123,7 @@ export default function AdminHeader({
   const getPageTitle = () => {
     if (pathname === "/admin") return "Dashboard Overview";
     if (pathname === "/admin/products") return "Product Catalog";
-    if (pathname === "/admin/products/new") return "Add New Tile";
+    if (pathname === "/admin/products/new") return "Add Product";
     if (pathname.includes("/admin/products/") && pathname.includes("/edit"))
       return "Edit Product";
     if (pathname === "/admin/products/bulk") return "Bulk CSV Import";
@@ -170,15 +170,6 @@ export default function AdminHeader({
 
       {/* Right Actions */}
       <div className="flex items-center gap-2 sm:gap-3">
-        {/* Quick Add Product Shortcut */}
-        <Link
-          href="/admin/products/new"
-          className="hidden sm:inline-flex items-center gap-1.5 px-3 py-1.5 bg-[#F26522] text-white text-xs font-bold rounded-xl hover:bg-[#d95a1e] active:scale-95 transition-all shadow-xs"
-        >
-          <Plus size={14} strokeWidth={2.5} />
-          <span>New Tile</span>
-        </Link>
-
         {/* ── Notification Bell (Phase 5 PRD Section 4) ── */}
         <div className="relative">
           <button

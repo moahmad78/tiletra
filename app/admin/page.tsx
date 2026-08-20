@@ -155,7 +155,7 @@ export default function AdminDashboardPage() {
             <div className="flex items-center justify-between mb-4 pb-3 border-b border-gray-100">
               <div className="flex items-center gap-2">
                 <AlertTriangle size={18} className="text-amber-500" />
-                <h3 className="font-black text-[#052a51] text-base">Low Stock Tiles</h3>
+                <h3 className="font-black text-[#052a51] text-base">Low Stock Products</h3>
               </div>
               <span className="text-xs font-bold text-amber-600 bg-amber-50 px-2 py-0.5 rounded-full">
                 {lowStockProducts.length} items
@@ -213,7 +213,7 @@ export default function AdminDashboardPage() {
         <div className="lg:col-span-2 bg-white rounded-2xl p-5 md:p-6 border border-gray-200/80 shadow-2xs">
           <div className="flex items-center justify-between mb-4 pb-3 border-b border-gray-100">
             <div>
-              <h3 className="font-black text-[#052a51] text-base">Recent Tile Orders</h3>
+              <h3 className="font-black text-[#052a51] text-base">Recent Orders</h3>
               <p className="text-xs text-gray-400">Manage orders and quick status transitions</p>
             </div>
             <Link
@@ -311,7 +311,7 @@ export default function AdminDashboardPage() {
             <div className="flex items-center justify-between mb-4 pb-3 border-b border-gray-100">
               <div className="flex items-center gap-2">
                 <TrendingUp size={18} className="text-emerald-600" />
-                <h3 className="font-black text-[#052a51] text-base">Top Performing Tiles</h3>
+                <h3 className="font-black text-[#052a51] text-base">Top Performing Products</h3>
               </div>
               <span className="text-[10px] font-bold text-gray-400 uppercase">This Month</span>
             </div>

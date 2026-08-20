@@ -3,7 +3,7 @@
 export const dynamic = "force-dynamic";
 
 import { useState, useEffect } from "react";
-import { useParams } from "next/navigation";
+import { useParams, useRouter } from "next/navigation";
 import Link from "next/link";
 import {
   Store,
@@ -37,6 +37,7 @@ import {
   Truck,
   PackageCheck,
   Sliders,
+  Trash2,
 } from "lucide-react";
 import { toast } from "sonner";
 import {
@@ -45,11 +46,13 @@ import {
   suspendVendor,
   reactivateVendor,
   updateVendorCommission,
+  deleteVendor,
 } from "@/lib/actions/admin-vendor";
 import { formatPrice } from "@/lib/formatters";
 
 export default function VendorDetailDashboardPage() {
   const params = useParams();
+  const router = useRouter();
   const vendorId = params?.id as string;
 
   const [data, setData] = useState<any | null>(null);
@@ -60,6 +63,10 @@ export default function VendorDetailDashboardPage() {
   const [commissionInput, setCommissionInput] = useState<number>(15.0);
   const [actionLoading, setActionLoading] = useState(false);
   const [copiedField, setCopiedField] = useState<string | null>(null);
+
+  // Delete vendor dialog state
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
+  const [deleteLoading, setDeleteLoading] = useState(false);
 
   const loadData = async () => {
     if (!vendorId) return;
@@ -140,6 +147,18 @@ export default function VendorDetailDashboardPage() {
       loadData();
     } else {
       toast.error(res.error || "Failed to reactivate vendor");
+    }
+  };
+
+  const handleDeleteVendor = async () => {
+    setDeleteLoading(true);
+    const res = await deleteVendor(vendorId);
+    setDeleteLoading(false);
+    if (res.success) {
+      toast.success(res.message);
+      router.push("/admin/vendors");
+    } else {
+      toast.error(res.error || "Failed to delete vendor");
     }
   };
 
@@ -253,6 +272,16 @@ export default function VendorDetailDashboardPage() {
               Reactivate Account
             </button>
           )}
+
+          <button
+            type="button"
+            disabled={actionLoading}
+            onClick={() => setShowDeleteConfirm(true)}
+            className="px-3.5 py-2 bg-red-50 hover:bg-red-100 text-red-600 border border-red-200 rounded-xl text-xs font-bold transition-all flex items-center gap-1 cursor-pointer"
+            title="Delete Vendor Account"
+          >
+            <Trash2 size={13} /> Delete Vendor
+          </button>
         </div>
       </div>
 
@@ -652,6 +681,61 @@ export default function VendorDetailDashboardPage() {
           </div>
         )}
       </div>
+
+      {/* ── DELETE VENDOR CONFIRMATION MODAL ── */}
+      {showDeleteConfirm && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-xs animate-in fade-in">
+          <div className="bg-white rounded-3xl max-w-md w-full p-6 sm:p-8 shadow-2xl border border-gray-100 space-y-5">
+            <div className="flex items-center gap-3.5">
+              <div className="w-12 h-12 rounded-2xl bg-rose-50 text-rose-600 flex items-center justify-center shrink-0 border border-rose-100">
+                <Trash2 size={22} />
+              </div>
+              <div>
+                <h3 className="text-lg font-black text-[#052a51]">Delete Vendor Account</h3>
+                <p className="text-xs text-gray-500">Permanent destructive action</p>
+              </div>
+            </div>
+
+            <div className="p-4 bg-rose-50/50 rounded-2xl border border-rose-100 text-xs space-y-2 text-gray-700">
+              <p>
+                Are you sure you want to permanently delete <strong>{vendor.businessName}</strong>?
+              </p>
+              <ul className="list-disc pl-4 space-y-1 text-gray-600">
+                <li>Vendor profile and payout settings will be permanently removed.</li>
+                <li>Linked login credentials (+91 {vendor.contactPhone}) will be deleted.</li>
+                <li>All {products.length} product listings and associated variants will be deleted from the marketplace.</li>
+              </ul>
+            </div>
+
+            <div className="flex items-center justify-end gap-3 pt-2">
+              <button
+                type="button"
+                disabled={deleteLoading}
+                onClick={() => setShowDeleteConfirm(false)}
+                className="px-4 py-2.5 rounded-xl text-xs font-bold text-gray-600 hover:bg-gray-100 disabled:opacity-50"
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                disabled={deleteLoading}
+                onClick={handleDeleteVendor}
+                className="px-5 py-2.5 rounded-xl bg-rose-600 hover:bg-rose-700 text-white text-xs font-bold shadow-md shadow-rose-600/20 disabled:opacity-50 flex items-center gap-1.5 transition-all"
+              >
+                {deleteLoading ? (
+                  <>
+                    <Loader2 size={13} className="animate-spin" /> Deleting...
+                  </>
+                ) : (
+                  <>
+                    <Trash2 size={13} /> Yes, Permanently Delete
+                  </>
+                )}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
