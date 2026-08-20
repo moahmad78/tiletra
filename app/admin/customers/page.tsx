@@ -11,6 +11,7 @@ import {
   Loader2,
 } from "lucide-react";
 import { getCustomers } from "@/lib/actions/customers";
+import { buildWhatsAppShareUrl } from "@/lib/notifications/whatsapp-templates";
 
 function formatPrice(n: number) {
   return "₹" + n.toLocaleString("en-IN");
@@ -93,10 +94,10 @@ export default function AdminCustomersPage() {
           </div>
         ) : (
           filteredCustomers.map((cust) => {
-            const cleanPhone = cust.phone.replace(/[^0-9]/g, "");
-            const waUrl = `https://wa.me/${cleanPhone}?text=${encodeURIComponent(
-              `Hello ${cust.name}, greetings from Intrihub!`
-            )}`;
+            const waUrl = buildWhatsAppShareUrl(cust.phone, "customer", {
+              customerName: cust.name,
+              phone: cust.phone,
+            });
 
             return (
               <div

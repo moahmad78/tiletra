@@ -43,6 +43,7 @@ import {
   Trash2,
 } from "lucide-react";
 import { toast } from "sonner";
+import { generateNotificationMessage, buildWhatsAppShareUrl } from "@/lib/notifications/whatsapp-templates";
 
 const CATEGORIES = [
   "Tiles & Natural Stone",
@@ -244,10 +245,16 @@ export default function AdminVendorsPage() {
 
   const handleCopyCredentials = () => {
     if (!generatedCredentials) return;
-    const text = `*Intrihub Vendor Login Credentials*\nShop: ${generatedCredentials.businessName}\nPortal: https://intrihub.com/vendor/login\nUsername: ${generatedCredentials.username}\nPhone: ${generatedCredentials.phone}\nPassword: ${generatedCredentials.password}\nCommission: ${generatedCredentials.commissionRate}%`;
+    const text = generateNotificationMessage("vendor", {
+      businessName: generatedCredentials.businessName,
+      username: generatedCredentials.username,
+      password: generatedCredentials.password,
+      commissionRate: generatedCredentials.commissionRate,
+      phone: generatedCredentials.phone,
+    });
     navigator.clipboard.writeText(text);
     setCopied(true);
-    toast.success("Credentials copied to clipboard!");
+    toast.success("Branded welcome message copied to clipboard!");
     setTimeout(() => setCopied(false), 2500);
   };
 
@@ -754,9 +761,13 @@ export default function AdminVendorsPage() {
                 <span>{copied ? "Copied to Clipboard!" : "Copy Full Details"}</span>
               </button>
               <a
-                href={`https://wa.me/91${generatedCredentials.phone}?text=${encodeURIComponent(
-                  `*Welcome to Intrihub Marketplace!*\n\nYour vendor account for *${generatedCredentials.businessName}* is active.\n\n🔗 *Login Portal:* https://intrihub.com/vendor/login\n👤 *Username:* ${generatedCredentials.username}\n🔑 *Initial Password:* ${generatedCredentials.password}\n📊 *Commission Rate:* ${generatedCredentials.commissionRate}%\n\nYou will be prompted to set your own password on first login.`
-                )}`}
+                href={buildWhatsAppShareUrl(generatedCredentials.phone, "vendor", {
+                  businessName: generatedCredentials.businessName,
+                  username: generatedCredentials.username,
+                  password: generatedCredentials.password,
+                  commissionRate: generatedCredentials.commissionRate,
+                  phone: generatedCredentials.phone,
+                })}
                 target="_blank"
                 rel="noopener noreferrer"
                 className="flex-1 py-3 bg-emerald-500 hover:bg-emerald-600 text-white rounded-xl text-xs font-black shadow-md flex items-center justify-center gap-1.5 transition-all"

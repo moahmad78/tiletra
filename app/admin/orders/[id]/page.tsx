@@ -23,6 +23,7 @@ import {
 } from "@/lib/actions/orders";
 import InvoiceModal from "@/components/admin/InvoiceModal";
 import { toast } from "sonner";
+import { buildWhatsAppShareUrl } from "@/lib/notifications/whatsapp-templates";
 
 function formatPrice(n: number) {
   return "₹" + n.toLocaleString("en-IN");
@@ -136,10 +137,16 @@ export default function OrderDetailPage({
     }
   };
 
-  const cleanPhone = (order.customerPhone || "").replace(/[^0-9]/g, "");
-  const whatsappUrl = `https://wa.me/${cleanPhone}?text=${encodeURIComponent(
-    `Hello ${order.customerName}, regarding your Intrihub order ${order.id}...`
-  )}`;
+  const cleanPhone = (order?.customerPhone || "").replace(/[^0-9]/g, "");
+  const whatsappUrl = buildWhatsAppShareUrl(order.customerPhone, "order_update", {
+    orderId: order.id,
+    customerName: order.customerName,
+    status: order.orderStatus,
+    totalAmount: order.total,
+    estimatedDelivery: order.estimatedDelivery,
+    trackingNumber: order.trackingNumber || undefined,
+    phone: order.customerPhone,
+  });
 
   return (
     <div className="space-y-6 max-w-5xl mx-auto pb-12">
