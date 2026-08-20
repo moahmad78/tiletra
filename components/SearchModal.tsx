@@ -85,14 +85,16 @@ export default function SearchModal({
   if (!isOpen) return null;
 
   const popularSearches = [
+    "Wires & Cables",
+    "Modular Switches",
+    "CPVC Pipes",
+    "Sanitaryware",
     "Floor Tiles",
-    "Wall Tiles",
-    "Marble",
-    "Bathroom",
-    "Glossy",
-    "Matte",
-    "Kitchen",
-    "Granite",
+    "Plywood",
+    "LED Lights",
+    "Hardware & Fittings",
+    "Granite & Marble",
+    "Waterproofing",
   ];
 
   return (
@@ -252,7 +254,13 @@ export default function SearchModal({
                   <div className="text-right shrink-0">
                     <p className="text-xs sm:text-sm font-black text-[#052a51]">
                       {formatPrice(getLowestPrice(product))}
-                      <span className="text-[10px] font-normal text-gray-500">/sq.ft</span>
+                      {product.unitOfSale && product.unitOfSale !== "box" && product.unitOfSale !== "sqft" ? (
+                        <span className="text-[10px] font-normal text-gray-500 capitalize">/{product.unitOfSale}</span>
+                      ) : product.unitOfSale === "sqft" || product.categorySlug?.includes("tile") || product.categorySlug?.includes("stone") ? (
+                        <span className="text-[10px] font-normal text-gray-500">/sq.ft</span>
+                      ) : (
+                        <span className="text-[10px] font-normal text-gray-500">/box</span>
+                      )}
                     </p>
                   </div>
                   <ArrowRight size={16} className="text-gray-300 group-hover:text-[#F26522] shrink-0" />
