@@ -49,6 +49,8 @@ export async function GET(request: NextRequest) {
 
   const googleAuthUrl = `https://accounts.google.com/o/oauth2/v2/auth?${params.toString()}`;
 
+  console.log("[FULL AUTH URL]", googleAuthUrl);
+
   const response = NextResponse.redirect(googleAuthUrl);
 
   // Set cookie for browser session tracking (supporting both root and subdomains)
