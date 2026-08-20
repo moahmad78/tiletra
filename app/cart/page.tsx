@@ -20,9 +20,14 @@ function formatPrice(n: number) {
 export default function CartPage() {
   const router = useRouter();
   const [mounted, setMounted] = useState(false);
-  const [settings, setSettings] = useState<{ freeDeliveryThreshold: number; standardDeliveryFee: number }>({
+  const [settings, setSettings] = useState<{
+    freeDeliveryThreshold: number;
+    standardDeliveryFee: number;
+    deliveryFeeEnabled: boolean;
+  }>({
     freeDeliveryThreshold: 15000,
     standardDeliveryFee: 999,
+    deliveryFeeEnabled: true,
   });
 
   const { isAuthenticated, openLoginModal } = useAuthStore();
@@ -30,18 +35,20 @@ export default function CartPage() {
   const subtotal = useCartStore((s) => s.getSubtotal());
   const totalSqft = useCartStore((s) => s.getTotalSqft());
 
+  const isDeliveryFeeEnabled = settings.deliveryFeeEnabled !== false;
   const freeThreshold = settings.freeDeliveryThreshold ?? 15000;
   const standardFee = settings.standardDeliveryFee ?? 999;
-  const deliveryFee = subtotal >= freeThreshold ? 0 : standardFee;
+  const deliveryFee = !isDeliveryFeeEnabled ? 0 : (subtotal >= freeThreshold ? 0 : standardFee);
   const total = subtotal + deliveryFee;
 
   useEffect(() => {
     setMounted(true);
-    getStoreSettings().then((res) => {
+    getStoreSettings().then((res: any) => {
       if (res) {
         setSettings({
           freeDeliveryThreshold: res.freeDeliveryThreshold ?? 15000,
           standardDeliveryFee: res.standardDeliveryFee ?? 999,
+          deliveryFeeEnabled: res.deliveryFeeEnabled !== false,
         });
       }
     });

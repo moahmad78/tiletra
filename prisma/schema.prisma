@@ -397,13 +397,14 @@ model Banner {
 // ----------------------------------------------------
 model StoreSettings {
   id                    String   @id @default("default-settings")
-  storeName             String   @default("Tiletra India")
+  storeName             String   @default("Intrihub")
   contactPhone          String   @default("+91 78709 35277")
   whatsappNumber        String   @default("+91 78709 35277")
-  email                 String   @default("hello@tiletra.in")
-  address               String   @default("41, 10th A Cross Rd, Janapriya Layout, Begur, Bengaluru, Karnataka 560114")
+  email                 String   @default("info@intrihub.com")
+  address               String   @default("Intrihub Central Supply Hub, Begur, Bengaluru, Karnataka 560114")
   freeDeliveryThreshold Float    @default(15000)
   standardDeliveryFee   Float    @default(999)
+  deliveryFeeEnabled    Boolean  @default(true)
   autoAcceptOrders      Boolean  @default(true)
   lowStockThreshold     Int      @default(10)
   codEnabled            Boolean  @default(true)
@@ -555,6 +556,23 @@ model Vendor {
   bankIfscCode      String?
   bankUpiId         String?
 
+  // Shop Storefront & KYC Legal Documents
+  shopPhotoUrl        String?
+  panNumber           String?
+  panDocUrl           String?
+  aadharNumber        String?
+  aadharDocUrl        String?
+  gstDocUrl           String?
+  chequeDocUrl        String?
+  tradeLicenseDocUrl  String?
+  kycStatus           String             @default("pending") // pending | submitted | verified | rejected
+  kycNotes            String?
+
+  // Delivery & Shipping Controls
+  deliveryFeeEnabled    Boolean            @default(true)
+  customDeliveryFee     Float?             // null means follow store standard fee
+  freeDeliveryThreshold Float?             // null means follow store threshold
+
   createdAt       DateTime           @default(now())
   updatedAt       DateTime           @updatedAt
 
@@ -651,4 +669,20 @@ model VendorCoupon {
   @@unique([vendorId, code])
   @@index([vendorId])
 }
+
+// ----------------------------------------------------
+// Persistent Database Media & Image Storage
+// ----------------------------------------------------
+model UploadedFile {
+  id          String   @id @default(cuid())
+  fileName    String   @unique
+  mimeType    String   @default("image/jpeg")
+  dataBase64  String   @db.Text
+  sizeBytes   Int      @default(0)
+  altText     String?
+  createdAt   DateTime @default(now())
+
+  @@index([fileName])
+}
+
 

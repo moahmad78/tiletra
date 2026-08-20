@@ -47,6 +47,7 @@ import {
   reactivateVendor,
   updateVendorCommission,
   deleteVendor,
+  verifyVendorKyc,
 } from "@/lib/actions/admin-vendor";
 import { formatPrice } from "@/lib/formatters";
 
@@ -63,6 +64,11 @@ export default function VendorDetailDashboardPage() {
   const [commissionInput, setCommissionInput] = useState<number>(15.0);
   const [actionLoading, setActionLoading] = useState(false);
   const [copiedField, setCopiedField] = useState<string | null>(null);
+
+  // KYC Inspection & Modal Preview
+  const [previewDoc, setPreviewDoc] = useState<{ url: string; title: string } | null>(null);
+  const [kycNoteInput, setKycNoteInput] = useState("");
+  const [kycLoading, setKycLoading] = useState(false);
 
   // Delete vendor dialog state
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
@@ -159,6 +165,21 @@ export default function VendorDetailDashboardPage() {
       router.push("/admin/vendors");
     } else {
       toast.error(res.error || "Failed to delete vendor");
+    }
+  };
+
+  const handleKycStatusChange = async (status: "verified" | "rejected" | "pending") => {
+    setKycLoading(true);
+    const res = await verifyVendorKyc(vendorId, {
+      kycStatus: status,
+      kycNotes: kycNoteInput,
+    });
+    setKycLoading(false);
+    if (res.success) {
+      toast.success(res.message);
+      loadData();
+    } else {
+      toast.error(res.error || "Failed to update KYC status");
     }
   };
 
@@ -369,6 +390,169 @@ export default function VendorDetailDashboardPage() {
             </span>
           </div>
         )}
+      </div>
+
+      {/* Part B2: Legal KYC Documents & Storefront Inspection Card */}
+      <div className="bg-white rounded-3xl p-6 sm:p-7 border border-gray-200/80 shadow-xs space-y-5">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-gray-100 pb-3">
+          <div className="flex items-center gap-3">
+            <div className="w-10 h-10 rounded-2xl bg-emerald-700 text-white flex items-center justify-center font-bold">
+              <FileText size={20} />
+            </div>
+            <div>
+              <div className="flex items-center gap-2">
+                <h2 className="text-base font-black text-[#052a51]">
+                  Legal KYC Documents & Shopfront Verification
+                </h2>
+                {vendor.kycStatus === "verified" ? (
+                  <span className="px-2.5 py-0.5 rounded-full text-[10px] font-black uppercase bg-emerald-100 text-emerald-800 border border-emerald-300 flex items-center gap-1">
+                    <ShieldCheck size={12} /> KYC Verified
+                  </span>
+                ) : vendor.kycStatus === "submitted" ? (
+                  <span className="px-2.5 py-0.5 rounded-full text-[10px] font-black uppercase bg-blue-100 text-blue-800 border border-blue-300 flex items-center gap-1">
+                    <Clock size={12} /> Submitted for Review
+                  </span>
+                ) : vendor.kycStatus === "rejected" ? (
+                  <span className="px-2.5 py-0.5 rounded-full text-[10px] font-black uppercase bg-rose-100 text-rose-800 border border-rose-300 flex items-center gap-1">
+                    <XCircle size={12} /> Rejected / Needs Re-upload
+                  </span>
+                ) : (
+                  <span className="px-2.5 py-0.5 rounded-full text-[10px] font-black uppercase bg-amber-100 text-amber-800 border border-amber-300 flex items-center gap-1">
+                    <AlertTriangle size={12} /> Incomplete
+                  </span>
+                )}
+              </div>
+              <p className="text-xs text-gray-500 mt-0.5">
+                Inspect government IDs (Aadhaar & PAN), shopfront photos, and GST filings to approve or reject vendor KYC.
+              </p>
+            </div>
+          </div>
+        </div>
+
+        {/* KYC Document Thumbnails Grid */}
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+          {/* 1. PAN Card */}
+          <div className="p-4 rounded-2xl bg-gray-50 border border-gray-200 flex flex-col justify-between space-y-3">
+            <div>
+              <p className="text-[10px] font-black uppercase text-gray-400">PAN Card</p>
+              <p className="text-xs font-mono font-bold text-gray-900 mt-1">
+                {vendor.panNumber || "Number Not Provided"}
+              </p>
+            </div>
+            {vendor.panDocUrl ? (
+              <button
+                type="button"
+                onClick={() => setPreviewDoc({ url: vendor.panDocUrl, title: `PAN Card - ${vendor.businessName}` })}
+                className="w-full py-2 px-3 bg-white hover:bg-emerald-50 border border-gray-200 hover:border-emerald-300 text-emerald-700 text-xs font-bold rounded-xl transition-colors flex items-center justify-center gap-1.5 cursor-pointer shadow-2xs"
+              >
+                <ExternalLink size={13} /> View PAN Document
+              </button>
+            ) : (
+              <span className="text-[11px] text-gray-400 italic">No document uploaded</span>
+            )}
+          </div>
+
+          {/* 2. Aadhaar Card */}
+          <div className="p-4 rounded-2xl bg-gray-50 border border-gray-200 flex flex-col justify-between space-y-3">
+            <div>
+              <p className="text-[10px] font-black uppercase text-gray-400">Aadhaar Card</p>
+              <p className="text-xs font-mono font-bold text-gray-900 mt-1">
+                {vendor.aadharNumber || "Number Not Provided"}
+              </p>
+            </div>
+            {vendor.aadharDocUrl ? (
+              <button
+                type="button"
+                onClick={() => setPreviewDoc({ url: vendor.aadharDocUrl, title: `Aadhaar Card - ${vendor.businessName}` })}
+                className="w-full py-2 px-3 bg-white hover:bg-emerald-50 border border-gray-200 hover:border-emerald-300 text-emerald-700 text-xs font-bold rounded-xl transition-colors flex items-center justify-center gap-1.5 cursor-pointer shadow-2xs"
+              >
+                <ExternalLink size={13} /> View Aadhaar Document
+              </button>
+            ) : (
+              <span className="text-[11px] text-gray-400 italic">No document uploaded</span>
+            )}
+          </div>
+
+          {/* 3. Shopfront / Store Photo */}
+          <div className="p-4 rounded-2xl bg-gray-50 border border-gray-200 flex flex-col justify-between space-y-3">
+            <div>
+              <p className="text-[10px] font-black uppercase text-gray-400">Storefront Photo</p>
+              <p className="text-xs font-bold text-gray-900 mt-1 truncate">
+                {vendor.businessAddress || "Physical Store Location"}
+              </p>
+            </div>
+            {vendor.shopPhotoUrl ? (
+              <button
+                type="button"
+                onClick={() => setPreviewDoc({ url: vendor.shopPhotoUrl, title: `Storefront Photo - ${vendor.businessName}` })}
+                className="w-full py-2 px-3 bg-white hover:bg-emerald-50 border border-gray-200 hover:border-emerald-300 text-emerald-700 text-xs font-bold rounded-xl transition-colors flex items-center justify-center gap-1.5 cursor-pointer shadow-2xs"
+              >
+                <ExternalLink size={13} /> View Shop Photo
+              </button>
+            ) : (
+              <span className="text-[11px] text-gray-400 italic">No photo uploaded</span>
+            )}
+          </div>
+
+          {/* 4. GST / Cheque */}
+          <div className="p-4 rounded-2xl bg-gray-50 border border-gray-200 flex flex-col justify-between space-y-3">
+            <div>
+              <p className="text-[10px] font-black uppercase text-gray-400">GST / Bank Proof</p>
+              <p className="text-xs font-mono font-bold text-gray-900 mt-1 truncate">
+                {vendor.gstNumber || "GST Unregistered"}
+              </p>
+            </div>
+            {vendor.gstDocUrl || vendor.chequeDocUrl ? (
+              <button
+                type="button"
+                onClick={() => setPreviewDoc({ url: vendor.gstDocUrl || vendor.chequeDocUrl, title: `GST / Cheque Proof - ${vendor.businessName}` })}
+                className="w-full py-2 px-3 bg-white hover:bg-emerald-50 border border-gray-200 hover:border-emerald-300 text-emerald-700 text-xs font-bold rounded-xl transition-colors flex items-center justify-center gap-1.5 cursor-pointer shadow-2xs"
+              >
+                <ExternalLink size={13} /> View Business Proof
+              </button>
+            ) : (
+              <span className="text-[11px] text-gray-400 italic">No proof uploaded</span>
+            )}
+          </div>
+        </div>
+
+        {/* KYC Admin Actions & Feedback */}
+        <div className="p-4 rounded-2xl bg-slate-50 border border-slate-200 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+          <div className="flex-1 w-full sm:w-auto">
+            <label className="block text-[10px] font-black uppercase tracking-wider text-gray-600 mb-1">
+              Admin Notes / Rejection Reason
+            </label>
+            <input
+              type="text"
+              placeholder="e.g. Aadhaar photo is blurry, please re-upload front and back scan."
+              value={kycNoteInput}
+              onChange={(e) => setKycNoteInput(e.target.value)}
+              className="w-full bg-white border border-gray-300 rounded-xl px-3 py-2 text-xs text-gray-800 focus:outline-none focus:border-emerald-500"
+            />
+          </div>
+
+          <div className="flex items-center gap-2 self-end sm:self-auto shrink-0 pt-2 sm:pt-0">
+            <button
+              type="button"
+              disabled={kycLoading}
+              onClick={() => handleKycStatusChange("verified")}
+              className="px-4 py-2 bg-emerald-600 hover:bg-emerald-700 active:scale-95 text-white text-xs font-bold rounded-xl shadow-xs transition-all flex items-center gap-1.5 cursor-pointer disabled:opacity-50"
+            >
+              {kycLoading ? <Loader2 size={13} className="animate-spin" /> : <ShieldCheck size={13} />}
+              <span>Approve KYC</span>
+            </button>
+
+            <button
+              type="button"
+              disabled={kycLoading}
+              onClick={() => handleKycStatusChange("rejected")}
+              className="px-4 py-2 bg-rose-600 hover:bg-rose-700 active:scale-95 text-white text-xs font-bold rounded-xl shadow-xs transition-all flex items-center gap-1.5 cursor-pointer disabled:opacity-50"
+            >
+              {kycLoading ? <Loader2 size={13} className="animate-spin" /> : <XCircle size={13} />}
+              <span>Reject KYC</span>
+            </button>
+          </div>
+        </div>
       </div>
 
       {/* Part C: Consolidated Product & Order At-a-Glance Stats */}
@@ -732,6 +916,60 @@ export default function VendorDetailDashboardPage() {
                   </>
                 )}
               </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* KYC Document Lightbox Modal */}
+      {previewDoc && (
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/70 backdrop-blur-xs animate-in fade-in"
+          onClick={() => setPreviewDoc(null)}
+        >
+          <div
+            className="bg-white max-w-3xl w-full rounded-3xl p-6 shadow-2xl border border-gray-100 space-y-4 max-h-[90vh] flex flex-col"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="flex items-center justify-between pb-3 border-b border-gray-100">
+              <h3 className="font-black text-gray-900 text-base flex items-center gap-2">
+                <FileText className="text-emerald-600" size={18} />
+                <span>{previewDoc.title}</span>
+              </h3>
+              <div className="flex items-center gap-2">
+                <a
+                  href={previewDoc.url}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="px-3 py-1.5 rounded-xl bg-gray-100 hover:bg-gray-200 text-gray-700 text-xs font-bold flex items-center gap-1"
+                >
+                  <ExternalLink size={12} /> Open Original
+                </a>
+                <button
+                  type="button"
+                  onClick={() => setPreviewDoc(null)}
+                  className="p-1.5 rounded-xl text-gray-400 hover:bg-gray-100 cursor-pointer"
+                >
+                  <XCircle size={20} />
+                </button>
+              </div>
+            </div>
+
+            <div className="flex-1 overflow-auto rounded-2xl bg-gray-50 border border-gray-200 p-2 flex items-center justify-center min-h-[300px]">
+              {previewDoc.url.toLowerCase().endsWith(".pdf") ? (
+                <iframe
+                  src={previewDoc.url}
+                  className="w-full h-[500px] rounded-xl"
+                  title="PDF Preview"
+                />
+              ) : (
+                // eslint-disable-next-line @next/next/no-img-element
+                <img
+                  src={previewDoc.url}
+                  alt={previewDoc.title}
+                  className="max-h-[500px] w-auto object-contain rounded-xl shadow-xs"
+                />
+              )}
             </div>
           </div>
         </div>

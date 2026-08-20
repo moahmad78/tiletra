@@ -124,6 +124,7 @@ export type AdminSettings = {
   address: string;
   freeDeliveryThreshold: number;
   standardDeliveryFee: number;
+  deliveryFeeEnabled: boolean;
   autoAcceptOrders: boolean;
   lowStockThreshold: number;
   codEnabled: boolean;
@@ -502,13 +503,14 @@ export const useAdminStore = create<AdminStore>()(
         bgImage: "/placeholders/product.svg",
       },
       settings: {
-        storeName: "Tiletra India",
+        storeName: "Intrihub",
         contactPhone: "+91 78709 35277",
         whatsappNumber: "+91 78709 35277",
-        email: "hello@tiletra.in",
+        email: "info@intrihub.com",
         address: "41, 10th A Cross Rd, Janapriya Layout, Classic Paradise Layout, Begur, Bengaluru, Karnataka 560114",
         freeDeliveryThreshold: 15000,
         standardDeliveryFee: 999,
+        deliveryFeeEnabled: true,
         autoAcceptOrders: true,
         lowStockThreshold: 10,
         codEnabled: true,

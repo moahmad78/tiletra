@@ -43,7 +43,7 @@ export default function ReturnsPolicyPage() {
           <section className="space-y-2">
             <h2 className="text-lg font-black text-[#052a51]">2. Transit Breakage & Defects</h2>
             <p>
-              If your delivery contains damaged items or materials, share photos of the damaged packages via WhatsApp (+91 78709 35277) or email (hello@intrihub.com) within 48 hours of delivery. We will dispatch replacements on priority freight.
+              If your delivery contains damaged items or materials, share photos of the damaged packages via WhatsApp (+91 78709 35277) or email (info@intrihub.com) within 48 hours of delivery. We will dispatch replacements on priority freight.
             </p>
           </section>
 

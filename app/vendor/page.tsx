@@ -8,6 +8,7 @@ import {
   getVendorProducts,
   toggleVendorProductStatus,
 } from "@/lib/actions/vendor";
+import { useLiveSync, broadcastLiveEvent } from "@/lib/live-sync";
 import type { Product } from "@/lib/data/products";
 import {
   Package,
@@ -27,6 +28,7 @@ import {
 } from "lucide-react";
 import { toast } from "sonner";
 import { formatPrice } from "@/lib/formatters";
+import VendorKycBanner from "@/components/vendor/VendorKycBanner";
 
 export default function VendorDashboardPage() {
   const { vendor } = useVendorAuth();
@@ -46,7 +48,6 @@ export default function VendorDashboardPage() {
   const loadData = async () => {
     if (!vendor?.id) return;
     try {
-      setLoading(true);
       const [s, prods] = await Promise.all([
         getVendorDashboardStats(vendor.id),
         getVendorProducts(vendor.id),
@@ -60,27 +61,39 @@ export default function VendorDashboardPage() {
     }
   };
 
-  useEffect(() => {
-    loadData();
-  }, [vendor?.id]);
+  // ── Universal Live Sync Hook (Cross-tab broadcast + Tab Focus + 4s Auto-Poll) ──
+  useLiveSync({
+    eventTypes: ["order:new", "order:status-updated", "product:updated", "data:refresh"],
+    onSync: loadData,
+    pollIntervalMs: 4000,
+    enableFocusRefresh: true,
+  });
 
   const handleToggleStatus = async (product: Product) => {
     if (!vendor?.id) return;
     const newStatus = (product.status || "active") === "active" ? "paused" : "active";
+
+    // Optimistic UI update
+    setRecentProducts((prev) =>
+      prev.map((p) => (p.id === product.id ? { ...p, status: newStatus } : p))
+    );
+
     const res = await toggleVendorProductStatus(vendor.id, product.id, newStatus);
     if (res.success) {
+      broadcastLiveEvent("product:status-toggled", { productId: product.id, status: newStatus });
       toast.success(res.message);
-      setRecentProducts((prev) =>
-        prev.map((p) => (p.id === product.id ? { ...p, status: newStatus } : p))
-      );
       loadData();
     } else {
       toast.error(res.error || "Failed to update product status");
+      loadData();
     }
   };
 
   return (
     <div className="space-y-6">
+      {/* Mandatory KYC Warning Banner */}
+      <VendorKycBanner vendor={vendor} />
+
       {/* Welcome Banner */}
       <div className="bg-linear-to-r from-[#052a51] via-[#07386d] to-[#0a488a] rounded-3xl p-6 md:p-8 text-white shadow-xl flex flex-col md:flex-row items-start md:items-center justify-between gap-6">
         <div className="space-y-2">

@@ -30,6 +30,7 @@ import {
   Layers,
   X,
   Sparkles,
+  Upload,
 } from "lucide-react";
 import { toast } from "sonner";
 
@@ -215,12 +216,20 @@ export default function VendorProductsPage() {
           </p>
         </div>
 
-        <Link
-          href="/vendor/products/new"
-          className="inline-flex items-center justify-center gap-2 px-5 py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 active:scale-95 text-white text-xs font-bold shadow-md shadow-emerald-600/20 transition-all shrink-0 cursor-pointer"
-        >
-          <Plus size={16} /> Add New Product
-        </Link>
+        <div className="flex items-center gap-2 flex-wrap">
+          <Link
+            href="/admin/products/bulk"
+            className="inline-flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl bg-gray-100 hover:bg-gray-200 active:scale-95 text-gray-800 text-xs font-bold border border-gray-200 transition-all shrink-0 cursor-pointer"
+          >
+            <Upload size={15} /> Bulk CSV Import
+          </Link>
+          <Link
+            href="/vendor/products/new"
+            className="inline-flex items-center justify-center gap-2 px-5 py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 active:scale-95 text-white text-xs font-bold shadow-md shadow-emerald-600/20 transition-all shrink-0 cursor-pointer"
+          >
+            <Plus size={16} /> Add New Product
+          </Link>
+        </div>
       </div>
 
       {/* Tabs & Search */}

@@ -36,6 +36,7 @@ import {
   createVendorFromApplication,
   updateVendorApplication,
 } from "@/lib/actions/vendor-application";
+import { useLiveSync, broadcastLiveEvent } from "@/lib/live-sync";
 
 export default function AdminVendorApplicationsPage() {
   const [applications, setApplications] = useState<any[]>([]);
@@ -70,7 +71,6 @@ export default function AdminVendorApplicationsPage() {
 
   const loadApplications = async () => {
     try {
-      setLoading(true);
       const data = await getVendorApplications({
         status: statusFilter,
         search: searchQuery,
@@ -83,9 +83,13 @@ export default function AdminVendorApplicationsPage() {
     }
   };
 
-  useEffect(() => {
-    loadApplications();
-  }, [statusFilter]);
+  // ── Universal Live Sync Hook (Cross-tab broadcast + Tab Focus + 5s Auto-Poll) ──
+  useLiveSync({
+    eventTypes: ["vendor:updated", "data:refresh"],
+    onSync: loadApplications,
+    pollIntervalMs: 5000,
+    enableFocusRefresh: true,
+  });
 
   const handleSearchSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -104,6 +108,7 @@ export default function AdminVendorApplicationsPage() {
     setActionLoading(false);
 
     if (res.success && res.credentials) {
+      broadcastLiveEvent("vendor:updated", { action: "converted" });
       toast.success(res.message);
       setGeneratedCredentials(res.credentials);
       setSelectedApp(null);
@@ -116,6 +121,7 @@ export default function AdminVendorApplicationsPage() {
   const handleMarkContacted = async (appId: string) => {
     const res = await updateVendorApplication(appId, { status: "contacted" });
     if (res.success) {
+      broadcastLiveEvent("vendor:updated", { appId, status: "contacted" });
       toast.success("Application marked as contacted");
       loadApplications();
     } else {
@@ -135,6 +141,7 @@ export default function AdminVendorApplicationsPage() {
     setActionLoading(false);
 
     if (res.success) {
+      broadcastLiveEvent("vendor:updated", { appId: rejectingApp.id, status: "rejected" });
       toast.success("Application marked as rejected");
       setRejectingApp(null);
       setRejectionReason("");

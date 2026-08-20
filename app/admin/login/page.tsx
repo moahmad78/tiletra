@@ -11,8 +11,8 @@ export default function AdminLoginPage() {
   const router = useRouter();
   const { login } = useAdminAuth();
 
-  const [email, setEmail] = useState("admin@intrihub.com");
-  const [password, setPassword] = useState("admin");
+  const [email, setEmail] = useState("sahil@intrihub.com");
+  const [password, setPassword] = useState("sahil@7814");
   const [loading, setLoading] = useState(false);
 
   const handleSubmit = (e: React.FormEvent) => {
@@ -24,25 +24,26 @@ export default function AdminLoginPage() {
       setLoading(false);
 
       if (success) {
-        toast.success("Welcome back to Intrihub Admin Portal!");
+        toast.success("Welcome back, Sahil! Signed in to Intrihub Admin Portal.");
         router.push("/admin");
       } else {
-        toast.error("Invalid credentials. Use admin@intrihub.com / admin");
+        toast.error("Invalid credentials. Use sahil@intrihub.com / sahil@7814");
       }
     }, 300);
   };
 
   const handleQuickLogin = (role: "admin" | "staff") => {
     if (role === "admin") {
-      setEmail("admin@intrihub.com");
-      setPassword("admin");
-      login("admin@intrihub.com", "admin");
+      setEmail("sahil@intrihub.com");
+      setPassword("sahil@7814");
+      login("sahil@intrihub.com", "sahil@7814");
+      toast.success("Logged in as Sahil Sheikh (Founder & CEO)");
     } else {
       setEmail("staff@intrihub.com");
       setPassword("staff");
       login("staff@intrihub.com", "staff");
+      toast.success("Logged in as Operations Staff");
     }
-    toast.success(`Logged in as ${role === "admin" ? "Store Owner" : "Staff"}`);
     router.push("/admin");
   };
 
@@ -61,7 +62,7 @@ export default function AdminLoginPage() {
           </div>
           <h1 className="text-2xl font-black text-[#052a51]">Admin Management Portal</h1>
           <p className="text-xs text-gray-500 mt-1">
-            Sign in to manage catalog, orders, customers & site content
+            Sign in to manage catalog, orders, vendors, customers & site content
           </p>
         </div>
 
@@ -78,7 +79,7 @@ export default function AdminLoginPage() {
                 required
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
-                placeholder="admin@intrihub.com"
+                placeholder="sahil@intrihub.com"
                 className="w-full pl-10 pr-4 py-3 bg-gray-50 border border-gray-200 rounded-xl text-sm font-semibold text-[#052a51] focus:outline-none focus:border-[#F26522] transition-colors"
               />
             </div>
@@ -104,7 +105,7 @@ export default function AdminLoginPage() {
           <button
             type="submit"
             disabled={loading}
-            className="w-full h-12 bg-[#F26522] text-white font-bold text-sm rounded-xl hover:bg-[#d95a1e] active:scale-95 transition-all shadow-md flex items-center justify-center gap-2 mt-2 disabled:opacity-50"
+            className="w-full h-12 bg-[#F26522] text-white font-bold text-sm rounded-xl hover:bg-[#d95a1e] active:scale-95 transition-all shadow-md flex items-center justify-center gap-2 mt-2 disabled:opacity-50 cursor-pointer"
           >
             {loading ? "Authenticating..." : "Sign In to Dashboard"}
             {!loading && <ArrowRight size={16} />}
@@ -114,21 +115,21 @@ export default function AdminLoginPage() {
         {/* Quick Demo Credentials */}
         <div className="mt-8 pt-6 border-t border-gray-100">
           <p className="text-[11px] font-bold text-gray-400 uppercase tracking-wider text-center mb-3">
-            Quick Fill Demo Accounts
+            Quick Fill Accounts
           </p>
           <div className="grid grid-cols-2 gap-2">
             <button
               type="button"
               onClick={() => handleQuickLogin("admin")}
-              className="p-2.5 bg-gray-50 hover:bg-gray-100 border border-gray-200 rounded-xl text-xs font-bold text-[#052a51] transition-colors flex flex-col items-center gap-0.5"
+              className="p-2.5 bg-gray-50 hover:bg-gray-100 border border-gray-200 rounded-xl text-xs font-bold text-[#052a51] transition-colors flex flex-col items-center gap-0.5 cursor-pointer"
             >
-              <span className="text-[#F26522]">Owner Account</span>
-              <span className="text-[10px] text-gray-400">admin@intrihub.com</span>
+              <span className="text-[#F26522]">Founder & CEO</span>
+              <span className="text-[10px] text-gray-400">sahil@intrihub.com</span>
             </button>
             <button
               type="button"
               onClick={() => handleQuickLogin("staff")}
-              className="p-2.5 bg-gray-50 hover:bg-gray-100 border border-gray-200 rounded-xl text-xs font-bold text-[#052a51] transition-colors flex flex-col items-center gap-0.5"
+              className="p-2.5 bg-gray-50 hover:bg-gray-100 border border-gray-200 rounded-xl text-xs font-bold text-[#052a51] transition-colors flex flex-col items-center gap-0.5 cursor-pointer"
             >
               <span>Staff Account</span>
               <span className="text-[10px] text-gray-400">staff@intrihub.com</span>

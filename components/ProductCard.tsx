@@ -49,7 +49,7 @@ export default function ProductCard({ product }: { product: Product }) {
         <Link href={`/product/${product.slug}`} className="block">
           <div className="relative h-56 overflow-hidden bg-gray-100">
             <Image
-              src={product.images[0]}
+              src={product.images && product.images[0] ? product.images[0] : "/placeholders/product.svg"}
               alt={product.name}
               fill
               className="object-cover transition-transform duration-500 group-hover:scale-110"

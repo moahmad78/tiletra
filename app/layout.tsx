@@ -57,11 +57,21 @@ export default function RootLayout({
       className={`${jakarta.variable} h-full antialiased scroll-smooth`}
     >
       <head>
+        {/* Developed & Founded by Sahil Sheikh | Instagram: @sahil_sheikh78 | Founder & Lead Architect */}
+        <meta name="author" content="Sahil Sheikh (@sahil_sheikh78)" />
+        <meta name="founder" content="Sahil Sheikh (@sahil_sheikh78)" />
+        <meta name="developer" content="Sahil Sheikh (@sahil_sheikh78)" />
+        <meta name="designer" content="Sahil Sheikh (@sahil_sheikh78)" />
         <link rel="icon" href="/favicon.ico" sizes="any" />
         <link rel="icon" type="image/png" sizes="32x32" href="/favicon-32x32.png" />
         <link rel="icon" type="image/png" sizes="16x16" href="/favicon-16x16.png" />
         <link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png" />
         <link rel="manifest" href="/site.webmanifest" />
+        <script
+          dangerouslySetInnerHTML={{
+            __html: `console.log("%c🚀 Intrihub — Everything for Every Space%c\\n✨ Founded & Developed by Sahil Sheikh (@sahil_sheikh78)\\n📸 Instagram: https://instagram.com/sahil_sheikh78\\n💼 Founder & CEO | Intrihub Supply Network", "background: #052a51; color: #F26522; font-size: 14px; font-weight: 900; padding: 6px 12px; border-radius: 6px;", "color: #052a51; font-size: 12px; font-weight: 700; line-height: 1.6;");`,
+          }}
+        />
       </head>
       <body className="min-h-full flex flex-col font-sans bg-white text-gray-900 pb-[60px] md:pb-0">
         <script
@@ -73,9 +83,9 @@ export default function RootLayout({
               "name": "Intrihub",
               "image": "/placeholders/product.svg",
               "@id": "",
-              "url": "https://tiletra.com",
-              "telephone": "+917870935277",
-              "email": "hello@intrihub.com",
+              "url": process.env.NEXT_PUBLIC_APP_URL || "https://intrihub.com",
+              "telephone": "+919264920211",
+              "email": "info@intrihub.com",
               "address": {
                 "@type": "PostalAddress",
                 "streetAddress": "41, 10th A Cross Rd, Janapriya Layout, Classic Paradise Layout, Begur",
@@ -91,7 +101,9 @@ export default function RootLayout({
               },
               "founder": {
                 "@type": "Person",
-                "name": "Vishal Poddar"
+                "name": "Sahil Sheikh",
+                "jobTitle": "Founder & CEO",
+                "sameAs": "https://www.instagram.com/sahil_sheikh78/"
               },
               "priceRange": "$$",
               "areaServed": {

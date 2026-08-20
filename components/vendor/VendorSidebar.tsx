@@ -17,6 +17,7 @@ import {
   ShieldCheck,
   AlertTriangle,
   Clock,
+  Headphones,
 } from "lucide-react";
 import { useVendorAuth } from "@/lib/vendor-auth";
 
@@ -27,7 +28,8 @@ const navItems = [
   { name: "Inventory Stock", href: "/vendor/inventory", icon: Boxes },
   { name: "Payouts & Earnings", href: "/vendor/payouts", icon: CreditCard, badge: "8c" },
   { name: "Customer Reviews", href: "/vendor/reviews", icon: MessageSquare },
-  { name: "Shop Profile", href: "/vendor/settings", icon: Store },
+  { name: "Shop Profile & KYC", href: "/vendor/settings", icon: Store },
+  { name: "Support & Helpline", href: "/vendor/help", icon: Headphones },
 ];
 
 export default function VendorSidebar({

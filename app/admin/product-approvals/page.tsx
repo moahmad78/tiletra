@@ -9,6 +9,7 @@ import {
   approveProduct,
   rejectProduct,
 } from "@/lib/actions/admin-vendor";
+import { useLiveSync, broadcastLiveEvent } from "@/lib/live-sync";
 import type { Product } from "@/lib/data/products";
 import {
   CheckSquare,
@@ -51,7 +52,6 @@ export default function AdminProductApprovalsPage() {
 
   const loadPending = async () => {
     try {
-      setLoading(true);
       const data = await getAdminPendingProducts();
       setPendingProducts(data);
     } catch (e) {
@@ -61,15 +61,20 @@ export default function AdminProductApprovalsPage() {
     }
   };
 
-  useEffect(() => {
-    loadPending();
-  }, []);
+  // ── Universal Live Sync Hook (Cross-tab broadcast + Tab Focus + 4s Auto-Poll) ──
+  useLiveSync({
+    eventTypes: ["product:created", "product:updated", "product:status-toggled", "data:refresh"],
+    onSync: loadPending,
+    pollIntervalMs: 4000,
+    enableFocusRefresh: true,
+  });
 
   const handleApprove = async (productId: string) => {
     setActionLoading(true);
     const res = await approveProduct(productId);
     setActionLoading(false);
     if (res.success) {
+      broadcastLiveEvent("product:updated", { productId, approvalStatus: "approved" });
       toast.success(res.message);
       setInspectingProduct(null);
       setPendingProducts((prev) => prev.filter((p) => p.id !== productId));
@@ -87,6 +92,7 @@ export default function AdminProductApprovalsPage() {
     const res = await rejectProduct(productId, rejectionReason);
     setActionLoading(false);
     if (res.success) {
+      broadcastLiveEvent("product:updated", { productId, approvalStatus: "rejected" });
       toast.success(res.message);
       setRejectingProduct(null);
       setInspectingProduct(null);

@@ -49,20 +49,23 @@ export default function CheckoutPage() {
   const [storeSettings, setStoreSettings] = useState<{
     freeDeliveryThreshold: number;
     standardDeliveryFee: number;
+    deliveryFeeEnabled: boolean;
     codEnabled: boolean;
     codMaxLimit: number;
     codBlockedPincodes: string[];
   }>({
     freeDeliveryThreshold: 15000,
     standardDeliveryFee: 999,
+    deliveryFeeEnabled: true,
     codEnabled: true,
     codMaxLimit: 25000,
     codBlockedPincodes: ["560099", "560088"],
   });
 
+  const isDeliveryFeeEnabled = storeSettings.deliveryFeeEnabled !== false;
   const freeThreshold = storeSettings.freeDeliveryThreshold ?? 15000;
   const standardFee = storeSettings.standardDeliveryFee ?? 999;
-  const deliveryFee = subtotal >= freeThreshold ? 0 : standardFee;
+  const deliveryFee = !isDeliveryFeeEnabled ? 0 : (subtotal >= freeThreshold ? 0 : standardFee);
   const total = subtotal + deliveryFee;
 
   const { user, isAuthenticated, openLoginModal } = useAuthStore();
@@ -82,11 +85,12 @@ export default function CheckoutPage() {
 
   // Fetch live store settings from database
   useEffect(() => {
-    getStoreSettings().then((s) => {
+    getStoreSettings().then((s: any) => {
       if (s) {
         setStoreSettings({
           freeDeliveryThreshold: s.freeDeliveryThreshold ?? 15000,
           standardDeliveryFee: s.standardDeliveryFee ?? 999,
+          deliveryFeeEnabled: s.deliveryFeeEnabled !== false,
           codEnabled: s.codEnabled ?? true,
           codMaxLimit: s.codMaxLimit ?? 25000,
           codBlockedPincodes: s.codBlockedPincodes ?? ["560099", "560088"],
@@ -223,6 +227,14 @@ export default function CheckoutPage() {
       console.error("Error creating database order:", err);
       toast.error(err?.message || "Failed to create order. Please check your connection.");
       return;
+    }
+
+    // Real-time live sync broadcast to all open Admin and Vendor panels
+    try {
+      const { broadcastLiveEvent } = await import("@/lib/live-sync");
+      broadcastLiveEvent("order:new", { orderId, total, method });
+    } catch {
+      // Ignore broadcast errors
     }
 
     // In-app notification

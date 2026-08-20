@@ -755,3 +755,38 @@ export async function deleteVendor(vendorId: string) {
     return { success: false, error: error?.message || "Failed to delete vendor" };
   }
 }
+
+// 15. Super Admin: Verify / Update Vendor KYC Status
+export async function verifyVendorKyc(
+  vendorId: string,
+  data: {
+    kycStatus: "verified" | "rejected" | "pending" | "submitted";
+    kycNotes?: string;
+  }
+) {
+  try {
+    if (!vendorId) return { success: false, error: "Vendor ID required" };
+
+    const updated = await prisma.vendor.update({
+      where: { id: vendorId },
+      data: {
+        kycStatus: data.kycStatus,
+        kycNotes: data.kycNotes?.trim() || null,
+      } as any,
+    });
+
+    safeRevalidate(`/admin/vendors/${vendorId}`);
+    safeRevalidate("/admin/vendors");
+    safeRevalidate("/vendor");
+    safeRevalidate("/vendor/settings");
+
+    return {
+      success: true,
+      vendor: updated,
+      message: `KYC Status updated to "${data.kycStatus}" successfully!`,
+    };
+  } catch (error: any) {
+    console.error("verifyVendorKyc error:", error);
+    return { success: false, error: error?.message || "Failed to update KYC status" };
+  }
+}

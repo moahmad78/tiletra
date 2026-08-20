@@ -510,6 +510,73 @@ export async function updatePaymentCollected(id: string, paymentCollected: boole
   }
 }
 
+export async function deleteOrder(id: string) {
+  try {
+    // 1. Delete associated VendorOrderSplit records
+    await prisma.vendorOrderSplit.deleteMany({
+      where: { orderId: id },
+    });
+
+    // 2. Delete associated OrderItems
+    await prisma.orderItem.deleteMany({
+      where: { orderId: id },
+    });
+
+    // 3. Delete the Order
+    await prisma.order.delete({
+      where: { id },
+    });
+
+    safeRevalidate("/admin/orders");
+    safeRevalidate("/admin");
+    safeRevalidate(`/admin/orders/${id}`);
+    safeRevalidate("/account/orders");
+    safeRevalidate("/vendor/orders");
+
+    return { success: true, message: `Order #${id} deleted permanently from database` };
+  } catch (error: any) {
+    console.error("Error deleting order:", error);
+    return { success: false, error: error?.message || "Failed to delete order" };
+  }
+}
+
+export async function deleteOrdersBulk(ids: string[]) {
+  try {
+    if (!ids || ids.length === 0) {
+      return { success: false, error: "No order IDs provided for bulk deletion" };
+    }
+
+    // 1. Delete associated VendorOrderSplit records
+    await prisma.vendorOrderSplit.deleteMany({
+      where: { orderId: { in: ids } },
+    });
+
+    // 2. Delete associated OrderItems
+    await prisma.orderItem.deleteMany({
+      where: { orderId: { in: ids } },
+    });
+
+    // 3. Delete the Orders
+    const result = await prisma.order.deleteMany({
+      where: { id: { in: ids } },
+    });
+
+    safeRevalidate("/admin/orders");
+    safeRevalidate("/admin");
+    safeRevalidate("/account/orders");
+    safeRevalidate("/vendor/orders");
+
+    return {
+      success: true,
+      count: result.count,
+      message: `Successfully deleted ${result.count} order(s) permanently from database`,
+    };
+  } catch (error: any) {
+    console.error("Error bulk deleting orders:", error);
+    return { success: false, error: error?.message || "Failed to bulk delete orders" };
+  }
+}
+
 export async function createRazorpayOrder({
   amount,
   currency = "INR",

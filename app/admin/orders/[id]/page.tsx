@@ -3,6 +3,7 @@
 import { useState, useEffect, use } from "react";
 import Link from "next/link";
 import Image from "next/image";
+import { useRouter } from "next/navigation";
 import {
   ArrowLeft,
   Printer,
@@ -13,6 +14,9 @@ import {
   MapPin,
   MessageSquare,
   Loader2,
+  Trash2,
+  AlertTriangle,
+  X,
 } from "lucide-react";
 import {
   getOrderById,
@@ -20,7 +24,9 @@ import {
   updateOrderTracking,
   updateOrderNotes,
   updatePaymentCollected,
+  deleteOrder,
 } from "@/lib/actions/orders";
+import { useLiveSync, broadcastLiveEvent } from "@/lib/live-sync";
 import InvoiceModal from "@/components/admin/InvoiceModal";
 import { toast } from "sonner";
 import { buildWhatsAppShareUrl } from "@/lib/notifications/whatsapp-templates";
@@ -43,17 +49,19 @@ export default function OrderDetailPage({
   params: Promise<{ id: string }>;
 }) {
   const { id } = use(params);
+  const router = useRouter();
   const [order, setOrder] = useState<any>(null);
   const [loading, setLoading] = useState(true);
 
   const [invoiceOpen, setInvoiceOpen] = useState(false);
+  const [showDeleteModal, setShowDeleteModal] = useState(false);
+  const [isDeleting, setIsDeleting] = useState(false);
   const [courier, setCourier] = useState("Delhivery Freight");
   const [tracking, setTracking] = useState("");
   const [notes, setNotes] = useState("");
 
   const loadOrder = async () => {
     try {
-      setLoading(true);
       const data = await getOrderById(id);
       setOrder(data);
       if (data) {
@@ -68,11 +76,15 @@ export default function OrderDetailPage({
     }
   };
 
-  useEffect(() => {
-    loadOrder();
-  }, [id]);
+  // ── Universal Live Sync Hook (Cross-tab broadcast + Tab Focus + 4s Auto-Poll) ──
+  useLiveSync({
+    eventTypes: ["order:status-updated", "data:refresh"],
+    onSync: loadOrder,
+    pollIntervalMs: 4000,
+    enableFocusRefresh: true,
+  });
 
-  if (loading) {
+  if (loading && !order) {
     return (
       <div className="flex items-center justify-center min-h-[400px]">
         <div className="flex flex-col items-center gap-3">
@@ -97,12 +109,16 @@ export default function OrderDetailPage({
   const currentStepIdx = STEPS.indexOf(order.orderStatus);
 
   const handleStatusClick = async (status: string) => {
+    // Optimistic UI update
+    setOrder((prev: any) => ({ ...prev, orderStatus: status }));
+
     const res = await updateOrderStatus(order.id, status);
     if (res.success) {
-      setOrder((prev: any) => ({ ...prev, orderStatus: status }));
+      broadcastLiveEvent("order:status-updated", { orderId: order.id, orderStatus: status });
       toast.success(`Order marked as ${status}`);
     } else {
       toast.error("Failed to update status");
+      loadOrder();
     }
   };
 
@@ -110,6 +126,7 @@ export default function OrderDetailPage({
     e.preventDefault();
     const res = await updateOrderTracking(order.id, { courierName: courier, trackingNumber: tracking });
     if (res.success) {
+      broadcastLiveEvent("order:status-updated", { orderId: order.id, orderStatus: "Dispatched" });
       setOrder((prev: any) => ({ ...prev, courierName: courier, trackingNumber: tracking, orderStatus: "Dispatched" }));
       toast.success("Courier & tracking updated in Neon DB!");
     } else {
@@ -134,6 +151,26 @@ export default function OrderDetailPage({
       toast.success(`Payment of ${formatPrice(order.total)} marked as collected!`);
     } else {
       toast.error("Failed to update payment status");
+    }
+  };
+
+  const handleDelete = async () => {
+    if (!order?.id) return;
+    setIsDeleting(true);
+    try {
+      const res = await deleteOrder(order.id);
+      if (res.success) {
+        toast.success(res.message || `Order #${order.id} deleted permanently`);
+        broadcastLiveEvent("order:status-updated", { orderId: order.id, deleted: true });
+        broadcastLiveEvent("data:refresh");
+        router.push("/admin/orders");
+      } else {
+        toast.error(res.error || "Failed to delete order");
+      }
+    } catch (err: any) {
+      toast.error(err?.message || "Failed to delete order");
+    } finally {
+      setIsDeleting(false);
     }
   };
 
@@ -189,6 +226,16 @@ export default function OrderDetailPage({
           >
             <Printer size={14} />
             <span>Tax Invoice</span>
+          </button>
+
+          <button
+            type="button"
+            onClick={() => setShowDeleteModal(true)}
+            className="inline-flex items-center gap-1.5 px-3.5 py-2 bg-red-50 hover:bg-red-600 text-red-600 hover:text-white border border-red-200 text-xs font-bold rounded-xl transition-colors shadow-2xs cursor-pointer active:scale-95"
+            title="Delete Order Permanently"
+          >
+            <Trash2 size={14} />
+            <span>Delete</span>
           </button>
         </div>
       </div>
@@ -456,6 +503,62 @@ export default function OrderDetailPage({
         isOpen={invoiceOpen}
         onClose={() => setInvoiceOpen(false)}
       />
+
+      {/* Delete Confirmation Modal */}
+      {showDeleteModal && (
+        <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-xs flex items-center justify-center p-4">
+          <div className="bg-white rounded-3xl p-6 sm:p-8 max-w-md w-full shadow-2xl border border-gray-100 animate-in fade-in zoom-in duration-150">
+            <div className="flex items-center justify-between mb-4">
+              <div className="w-12 h-12 rounded-2xl bg-red-50 border border-red-100 flex items-center justify-center text-red-600">
+                <AlertTriangle size={24} />
+              </div>
+              <button
+                type="button"
+                onClick={() => setShowDeleteModal(false)}
+                className="p-2 text-gray-400 hover:text-gray-600 rounded-xl hover:bg-gray-100 transition-colors"
+              >
+                <X size={18} />
+              </button>
+            </div>
+
+            <h3 className="text-lg font-black text-[#052a51]">Delete Order Permanently?</h3>
+            <p className="text-xs text-gray-500 mt-2 leading-relaxed">
+              Are you sure you want to permanently delete order{" "}
+              <strong className="text-[#052a51] font-mono">#{order.id}</strong> (Customer:{" "}
+              {order.customerName}, Total: {formatPrice(order.total)})? This will remove all items and split records from the database.
+            </p>
+
+            <div className="flex items-center justify-end gap-3 mt-6">
+              <button
+                type="button"
+                onClick={() => setShowDeleteModal(false)}
+                disabled={isDeleting}
+                className="px-4 py-2 text-xs font-bold text-gray-600 hover:bg-gray-100 rounded-xl transition-colors"
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                onClick={handleDelete}
+                disabled={isDeleting}
+                className="px-5 py-2 text-xs font-bold bg-red-600 hover:bg-red-700 text-white rounded-xl shadow-md flex items-center gap-2 active:scale-95 transition-all cursor-pointer disabled:opacity-50"
+              >
+                {isDeleting ? (
+                  <>
+                    <Loader2 size={14} className="animate-spin" />
+                    <span>Deleting...</span>
+                  </>
+                ) : (
+                  <>
+                    <Trash2 size={14} />
+                    <span>Delete Permanently</span>
+                  </>
+                )}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

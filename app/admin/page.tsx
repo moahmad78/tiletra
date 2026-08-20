@@ -16,6 +16,7 @@ import StatCard from "@/components/admin/StatCard";
 import SalesChart from "@/components/admin/SalesChart";
 import { getOrders, updateOrderStatus } from "@/lib/actions/orders";
 import { getProducts } from "@/lib/actions/products";
+import { useLiveSync, broadcastLiveEvent } from "@/lib/live-sync";
 import type { Product } from "@/lib/data/products";
 import { getLowestPrice } from "@/lib/data/products";
 import { toast } from "sonner";
@@ -31,7 +32,6 @@ export default function AdminDashboardPage() {
 
   const loadData = async () => {
     try {
-      setLoading(true);
       const [ordersData, productsData] = await Promise.all([
         getOrders(),
         getProducts(),
@@ -45,9 +45,13 @@ export default function AdminDashboardPage() {
     }
   };
 
-  useEffect(() => {
-    loadData();
-  }, []);
+  // ── Universal Live Sync Hook (Cross-tab broadcast + Tab Focus + 4s Auto-Poll) ──
+  useLiveSync({
+    eventTypes: ["order:new", "order:status-updated", "product:updated", "data:refresh"],
+    onSync: loadData,
+    pollIntervalMs: 4000,
+    enableFocusRefresh: true,
+  });
 
   // Computations
   const totalRevenue = orders.reduce((sum, o) => sum + (o.total || 0), 0);
@@ -67,14 +71,18 @@ export default function AdminDashboardPage() {
   const topSelling = products.slice(0, 5);
 
   const handleStatusChange = async (orderId: string, status: string) => {
+    // Optimistic UI update
+    setOrders((prev) =>
+      prev.map((o) => (o.id === orderId ? { ...o, orderStatus: status } : o))
+    );
+
     const res = await updateOrderStatus(orderId, status);
     if (res.success) {
-      setOrders((prev) =>
-        prev.map((o) => (o.id === orderId ? { ...o, orderStatus: status } : o))
-      );
+      broadcastLiveEvent("order:status-updated", { orderId, orderStatus: status });
       toast.success(`Order #${orderId} updated to ${status}`);
     } else {
       toast.error("Failed to update status");
+      loadData();
     }
   };
 

@@ -18,6 +18,7 @@ import {
 import { useAdminAuth } from "@/lib/admin-auth";
 import { useState, useEffect, useCallback } from "react";
 import { useSocket } from "@/lib/socket";
+import { useLiveSync } from "@/lib/live-sync";
 import { toast } from "sonner";
 import {
   getAdminNotifications,
@@ -83,16 +84,13 @@ export default function AdminHeader({
     },
   });
 
-  useEffect(() => {
-    fetchNotifications();
-    const interval = setInterval(fetchNotifications, 20000);
-    const onFocus = () => fetchNotifications();
-    window.addEventListener("focus", onFocus);
-    return () => {
-      clearInterval(interval);
-      window.removeEventListener("focus", onFocus);
-    };
-  }, [fetchNotifications]);
+  // ── Universal Live Sync Hook (Cross-tab broadcast + Tab Focus + 4s Auto-Poll) ──
+  useLiveSync({
+    eventTypes: ["order:new", "data:refresh"],
+    onSync: fetchNotifications,
+    pollIntervalMs: 4000,
+    enableFocusRefresh: true,
+  });
 
   const handleLogout = () => {
     logout();

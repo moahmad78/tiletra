@@ -22,6 +22,7 @@ import {
 } from "lucide-react";
 import { useVendorAuth } from "@/lib/vendor-auth";
 import { getVendorOrders, updateVendorFulfillmentStatus } from "@/lib/actions/vendor";
+import { useLiveSync, broadcastLiveEvent } from "@/lib/live-sync";
 import { formatPrice } from "@/lib/formatters";
 import { toast } from "sonner";
 
@@ -41,21 +42,23 @@ export default function VendorOrdersPage() {
 
   const loadOrders = async () => {
     if (!vendor?.id) return;
-    setLoading(true);
     try {
       const data = await getVendorOrders(vendor.id);
       setOrders(data);
     } catch (e) {
       console.error("Error loading vendor orders:", e);
-      toast.error("Failed to load orders");
     } finally {
       setLoading(false);
     }
   };
 
-  useEffect(() => {
-    loadOrders();
-  }, [vendor?.id]);
+  // ── Universal Live Sync Hook (Cross-tab broadcast + Tab Focus + 3.5s Auto-Poll) ──
+  useLiveSync({
+    eventTypes: ["order:new", "order:status-updated", "data:refresh"],
+    onSync: loadOrders,
+    pollIntervalMs: 3500,
+    enableFocusRefresh: true,
+  });
 
   const handleStatusChange = async (
     splitId: string,
@@ -65,6 +68,12 @@ export default function VendorOrdersPage() {
   ) => {
     if (!vendor?.id) return;
     setUpdating(true);
+
+    // Optimistic UI update
+    setOrders((prev) =>
+      prev.map((o) => (o.id === splitId ? { ...o, fulfillmentStatus: newStatus } : o))
+    );
+
     const res = await updateVendorFulfillmentStatus(
       splitId,
       vendor.id,
@@ -75,11 +84,14 @@ export default function VendorOrdersPage() {
     setUpdating(false);
 
     if (res.success) {
+      // Instant cross-tab broadcast to all admin and customer tabs
+      broadcastLiveEvent("order:status-updated", { splitId, fulfillmentStatus: newStatus });
       toast.success(res.message);
       setDispatchModalSplit(null);
       loadOrders();
     } else {
       toast.error(res.error || "Failed to update order status");
+      loadOrders();
     }
   };
 

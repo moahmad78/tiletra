@@ -18,10 +18,11 @@ export default function AdminSettingsPage() {
   const [storeName, setStoreName] = useState("Intrihub");
   const [contactPhone, setContactPhone] = useState("+91 78709 35277");
   const [whatsappNumber, setWhatsappNumber] = useState("+91 78709 35277");
-  const [email, setEmail] = useState("hello@intrihub.com");
+  const [email, setEmail] = useState("info@intrihub.com");
   const [address, setAddress] = useState("Intrihub Central Logistics Hub, Hosur Road, Bangalore, Karnataka - 560068");
   const [freeDeliveryThreshold, setFreeDeliveryThreshold] = useState(15000);
   const [standardDeliveryFee, setStandardDeliveryFee] = useState(999);
+  const [deliveryFeeEnabled, setDeliveryFeeEnabled] = useState(true);
   const [lowStockThreshold, setLowStockThreshold] = useState(25);
   const [codEnabled, setCodEnabled] = useState(true);
   const [codMaxLimit, setCodMaxLimit] = useState(25000);
@@ -31,7 +32,7 @@ export default function AdminSettingsPage() {
     async function load() {
       try {
         setLoading(true);
-        const s = await getStoreSettings();
+        const s: any = await getStoreSettings();
         if (s) {
           setStoreName(s.storeName);
           setContactPhone(s.contactPhone);
@@ -40,6 +41,7 @@ export default function AdminSettingsPage() {
           setAddress(s.address);
           setFreeDeliveryThreshold(s.freeDeliveryThreshold);
           setStandardDeliveryFee(s.standardDeliveryFee);
+          setDeliveryFeeEnabled(s.deliveryFeeEnabled !== false);
           setLowStockThreshold(s.lowStockThreshold);
           setCodEnabled(s.codEnabled);
           setCodMaxLimit(s.codMaxLimit);
@@ -70,6 +72,7 @@ export default function AdminSettingsPage() {
       address,
       freeDeliveryThreshold: Number(freeDeliveryThreshold),
       standardDeliveryFee: Number(standardDeliveryFee),
+      deliveryFeeEnabled,
       lowStockThreshold: Number(lowStockThreshold),
       codEnabled,
       codMaxLimit: Number(codMaxLimit),
@@ -78,7 +81,7 @@ export default function AdminSettingsPage() {
     setSaving(false);
 
     if (res.success) {
-      toast.success("Store settings updated successfully in Neon PostgreSQL!");
+      toast.success("Store settings & delivery charges updated successfully!");
     } else {
       toast.error(res.error || "Failed to update settings");
     }
@@ -178,42 +181,162 @@ export default function AdminSettingsPage() {
               className="w-full px-3.5 py-2.5 bg-gray-50 border border-gray-200 rounded-xl text-xs text-gray-700 focus:outline-none focus:border-[#F26522]"
             />
           </div>
+
+          {/* Executive & Department Support Desks */}
+          <div className="pt-4 border-t border-gray-100 space-y-3">
+            <h4 className="text-xs font-black text-[#052a51] uppercase tracking-wider">
+              Executive Leadership & Direct Department Desks
+            </h4>
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+              {/* Sahil Sheikh */}
+              <div className="p-3.5 bg-amber-50/70 border border-amber-200/80 rounded-xl text-xs space-y-1">
+                <span className="px-1.5 py-0.5 rounded bg-amber-500 text-white text-[9px] font-black uppercase tracking-wider">
+                  Founder, CEO & CTO
+                </span>
+                <p className="font-black text-[#052a51] text-sm">Sahil Sheikh</p>
+                <p className="text-[11px] text-amber-800 font-bold">Tech & Platform Architecture</p>
+                <p className="text-[11px] text-gray-600">Email: sahil@intrihub.com</p>
+                <p className="text-[11px] text-gray-600">Phone: +91 92649 20211</p>
+              </div>
+
+              {/* Gulshan */}
+              <div className="p-3.5 bg-blue-50/70 border border-blue-200/80 rounded-xl text-xs space-y-1">
+                <span className="px-1.5 py-0.5 rounded bg-[#052a51] text-white text-[9px] font-black uppercase tracking-wider">
+                  Chief Operating Officer
+                </span>
+                <p className="font-black text-[#052a51] text-sm">Gulshan</p>
+                <p className="text-[11px] text-blue-800 font-bold">Operations & Logistics</p>
+                <p className="text-[11px] text-gray-600">Email: gulshan@intrihub.com</p>
+                <p className="text-[11px] text-gray-600">Phone: +91 91980 35803</p>
+              </div>
+
+              {/* Vishal Poddar */}
+              <div className="p-3.5 bg-purple-50/70 border border-purple-200/80 rounded-xl text-xs space-y-1">
+                <span className="px-1.5 py-0.5 rounded bg-purple-700 text-white text-[9px] font-black uppercase tracking-wider">
+                  Chief Product Officer
+                </span>
+                <p className="font-black text-[#052a51] text-sm">Vishal Poddar</p>
+                <p className="text-[11px] text-purple-800 font-bold">Product & Merchandising</p>
+                <p className="text-[11px] text-gray-600">Email: vishal@intrihub.com</p>
+                <p className="text-[11px] text-gray-600">Phone: +91 78709 35277</p>
+              </div>
+            </div>
+          </div>
         </div>
 
         {/* ── Section 2: Delivery & Shipping Rules ── */}
-        <div className="bg-white p-6 rounded-2xl border border-gray-200/80 shadow-2xs space-y-4">
-          <div className="flex items-center gap-2 pb-2 border-b border-gray-100">
-            <Truck size={18} className="text-[#F26522]" />
-            <h3 className="text-base font-black text-[#052a51]">Shipping & Delivery Rules</h3>
-          </div>
-
-          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
-            <div>
-              <label className="text-xs font-bold text-[#052a51] uppercase tracking-wider block mb-1.5">
-                Free Delivery Threshold (₹)
-              </label>
-              <input
-                type="number"
-                value={freeDeliveryThreshold}
-                onChange={(e) => setFreeDeliveryThreshold(Number(e.target.value))}
-                className="w-full px-3.5 py-2.5 bg-gray-50 border border-gray-200 rounded-xl text-xs font-black text-[#052a51] focus:outline-none focus:border-[#F26522]"
-                min={0}
-              />
-              <p className="text-[10px] text-gray-400 mt-1">Orders above this qualify for ₹0 shipping.</p>
+        <div className="bg-white p-6 rounded-2xl border border-gray-200/80 shadow-2xs space-y-5">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-3 border-b border-gray-100">
+            <div className="flex items-center gap-2">
+              <Truck size={18} className="text-[#F26522]" />
+              <div>
+                <h3 className="text-base font-black text-[#052a51]">Shipping & Delivery Charges Management</h3>
+                <p className="text-xs text-gray-400">Control platform-wide freight fee collection and free shipping limits</p>
+              </div>
             </div>
 
-            <div>
-              <label className="text-xs font-bold text-[#052a51] uppercase tracking-wider block mb-1.5">
-                Standard Shipping Fee (₹)
-              </label>
+            {/* Master Toggle Switch */}
+            <label className="inline-flex items-center gap-3 p-2 px-3.5 bg-gray-50 hover:bg-gray-100 rounded-xl border border-gray-200/80 cursor-pointer transition-all">
+              <span className="text-xs font-bold text-[#052a51]">Charge Delivery Fee</span>
+              <div className="relative inline-flex items-center">
+                <input
+                  type="checkbox"
+                  checked={deliveryFeeEnabled}
+                  onChange={(e) => setDeliveryFeeEnabled(e.target.checked)}
+                  className="sr-only peer"
+                />
+                <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-[#F26522]"></div>
+              </div>
+            </label>
+          </div>
+
+          {/* Status Preview Card */}
+          <div className={`p-4 rounded-xl border flex items-start gap-3 transition-colors ${
+            deliveryFeeEnabled
+              ? "bg-blue-50/60 border-blue-200/70 text-blue-900"
+              : "bg-emerald-50/80 border-emerald-200/80 text-emerald-900"
+          }`}>
+            <div className={`w-8 h-8 rounded-lg flex items-center justify-center shrink-0 font-bold text-xs ${
+              deliveryFeeEnabled ? "bg-blue-100 text-blue-700" : "bg-emerald-100 text-emerald-700"
+            }`}>
+              {deliveryFeeEnabled ? "₹" : "FREE"}
+            </div>
+            <div className="text-xs leading-relaxed">
+              {deliveryFeeEnabled ? (
+                <>
+                  <p className="font-bold text-sm">Delivery Charges are ACTIVE</p>
+                  <p className="mt-0.5 text-blue-800/80">
+                    Customers pay a standard fee of <strong>₹{Number(standardDeliveryFee).toLocaleString("en-IN")}</strong> on orders below <strong>₹{Number(freeDeliveryThreshold).toLocaleString("en-IN")}</strong>. Orders at or above this threshold qualify for Free Shipping.
+                  </p>
+                </>
+              ) : (
+                <>
+                  <p className="font-bold text-sm text-emerald-800">100% Free Delivery Active Platform-Wide</p>
+                  <p className="mt-0.5 text-emerald-700">
+                    Delivery charge collection is turned <strong>OFF</strong>. All customers will receive ₹0 delivery fee across all categories, irrespective of order total.
+                  </p>
+                </>
+              )}
+            </div>
+          </div>
+
+          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-5 pt-1">
+            <div className={!deliveryFeeEnabled ? "opacity-50 pointer-events-none" : ""}>
+              <div className="flex items-center justify-between mb-1.5">
+                <label className="text-xs font-bold text-[#052a51] uppercase tracking-wider block">
+                  Standard Delivery Fee (₹)
+                </label>
+              </div>
               <input
                 type="number"
                 value={standardDeliveryFee}
                 onChange={(e) => setStandardDeliveryFee(Number(e.target.value))}
                 className="w-full px-3.5 py-2.5 bg-gray-50 border border-gray-200 rounded-xl text-xs font-black text-[#052a51] focus:outline-none focus:border-[#F26522]"
                 min={0}
+                step={50}
               />
-              <p className="text-[10px] text-gray-400 mt-1">Flat freight charge if below threshold.</p>
+              <div className="flex items-center gap-1.5 mt-2">
+                {[499, 999, 1499].map((fee) => (
+                  <button
+                    key={fee}
+                    type="button"
+                    onClick={() => setStandardDeliveryFee(fee)}
+                    className="px-2 py-0.5 rounded-md bg-gray-100 hover:bg-gray-200 text-[10px] font-bold text-gray-700 transition-colors"
+                  >
+                    ₹{fee}
+                  </button>
+                ))}
+              </div>
+              <p className="text-[10px] text-gray-400 mt-1">Flat freight charge applied under threshold.</p>
+            </div>
+
+            <div className={!deliveryFeeEnabled ? "opacity-50 pointer-events-none" : ""}>
+              <div className="flex items-center justify-between mb-1.5">
+                <label className="text-xs font-bold text-[#052a51] uppercase tracking-wider block">
+                  Free Delivery Threshold (₹)
+                </label>
+              </div>
+              <input
+                type="number"
+                value={freeDeliveryThreshold}
+                onChange={(e) => setFreeDeliveryThreshold(Number(e.target.value))}
+                className="w-full px-3.5 py-2.5 bg-gray-50 border border-gray-200 rounded-xl text-xs font-black text-[#052a51] focus:outline-none focus:border-[#F26522]"
+                min={0}
+                step={1000}
+              />
+              <div className="flex items-center gap-1.5 mt-2">
+                {[5000, 10000, 15000, 25000].map((th) => (
+                  <button
+                    key={th}
+                    type="button"
+                    onClick={() => setFreeDeliveryThreshold(th)}
+                    className="px-2 py-0.5 rounded-md bg-gray-100 hover:bg-gray-200 text-[10px] font-bold text-gray-700 transition-colors"
+                  >
+                    ₹{(th / 1000)}k
+                  </button>
+                ))}
+              </div>
+              <p className="text-[10px] text-gray-400 mt-1">Cart totals reaching this amount get free shipping.</p>
             </div>
 
             <div>
@@ -227,7 +350,7 @@ export default function AdminSettingsPage() {
                 className="w-full px-3.5 py-2.5 bg-gray-50 border border-gray-200 rounded-xl text-xs font-black text-[#052a51] focus:outline-none focus:border-[#F26522]"
                 min={1}
               />
-              <p className="text-[10px] text-gray-400 mt-1">Triggers warning alert on dashboard.</p>
+              <p className="text-[10px] text-gray-400 mt-2">Triggers low-inventory warning alerts on admin dashboard.</p>
             </div>
           </div>
         </div>

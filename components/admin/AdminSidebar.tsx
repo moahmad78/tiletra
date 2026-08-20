@@ -20,10 +20,12 @@ import {
   ChevronRight,
   Sparkles,
   Clock,
+  LogOut,
 } from "lucide-react";
 import { useAdminStore } from "@/lib/admin-store";
-import { useState, useEffect } from "react";
+import { useState, useCallback } from "react";
 import { getAdminMarketplaceStats } from "@/lib/actions/admin-vendor";
+import { useLiveSync } from "@/lib/live-sync";
 
 const navItems = [
   { name: "Dashboard", href: "/admin", icon: LayoutDashboard, exact: true },
@@ -58,15 +60,24 @@ export default function AdminSidebar({
     inquiriesCount: 0,
   });
 
-  useEffect(() => {
-    getAdminMarketplaceStats().then((res) => {
+  const fetchStats = useCallback(async () => {
+    try {
+      const res = await getAdminMarketplaceStats();
       setMarketplaceStats({
         pendingVendors: res.pendingVendors,
         pendingProducts: res.pendingProducts,
         inquiriesCount: res.inquiriesCount,
       });
-    });
-  }, [pathname]);
+    } catch {
+      // Ignore
+    }
+  }, []);
+
+  useLiveSync({
+    onSync: fetchStats,
+    pollIntervalMs: 5000,
+    enableFocusRefresh: true,
+  });
 
   const pendingOrdersCount = orders.filter(
     (o) => o.orderStatus === "Processing" || o.orderStatus === "Confirmed"
@@ -169,17 +180,31 @@ export default function AdminSidebar({
         })}
       </nav>
 
-      {/* Live Storefront Link */}
-      <div className="p-3 border-t border-white/10">
+      {/* Live Storefront Link & Logout */}
+      <div className="p-3 border-t border-white/10 space-y-1">
         <Link
           href="/"
           target="_blank"
-          className="flex items-center gap-2.5 px-3 py-2.5 rounded-xl text-xs font-bold text-white/80 bg-white/5 hover:bg-white/15 hover:text-white transition-colors"
+          className="flex items-center gap-2.5 px-3 py-2 rounded-xl text-xs font-bold text-white/80 bg-white/5 hover:bg-white/15 hover:text-white transition-colors"
           title="Open customer storefront in new tab"
         >
           <ExternalLink size={16} className="shrink-0 text-[#F26522]" />
           {!collapsed && <span className="truncate">View Public Store</span>}
         </Link>
+
+        <button
+          type="button"
+          onClick={() => {
+            const { useAdminAuth } = require("@/lib/admin-auth");
+            useAdminAuth.getState().logout();
+            window.location.href = "/admin/login";
+          }}
+          className="w-full flex items-center gap-2.5 px-3 py-2 rounded-xl text-xs font-bold text-red-300 hover:bg-red-500/20 hover:text-red-200 transition-colors cursor-pointer text-left"
+          title="Logout from Admin Panel"
+        >
+          <LogOut size={16} className="shrink-0 text-red-400" />
+          {!collapsed && <span className="truncate">Sign Out</span>}
+        </button>
       </div>
     </aside>
   );

@@ -12,15 +12,16 @@ export async function getStoreSettings() {
           storeName: "Intrihub",
           contactPhone: "+91 78709 35277",
           whatsappNumber: "+91 78709 35277",
-          email: "hello@intrihub.com",
+          email: "info@intrihub.com",
           address: "Intrihub Central Supply Hub, Begur, Bangalore, Karnataka - 560114",
           freeDeliveryThreshold: 15000,
           standardDeliveryFee: 999,
+          deliveryFeeEnabled: true,
           lowStockThreshold: 25,
           codEnabled: true,
           codMaxLimit: 25000,
           codBlockedPincodes: ["560099", "560088"],
-        },
+        } as any,
       });
     }
     return settings;
@@ -38,6 +39,7 @@ export async function updateStoreSettings(data: {
   address?: string;
   freeDeliveryThreshold?: number;
   standardDeliveryFee?: number;
+  deliveryFeeEnabled?: boolean;
   lowStockThreshold?: number;
   codEnabled?: boolean;
   codMaxLimit?: number;
@@ -48,7 +50,7 @@ export async function updateStoreSettings(data: {
     if (settings) {
       settings = await prisma.storeSettings.update({
         where: { id: settings.id },
-        data,
+        data: data as any,
       });
     } else {
       settings = await prisma.storeSettings.create({

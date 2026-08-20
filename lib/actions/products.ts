@@ -446,6 +446,125 @@ export async function createProduct(input: CreateProductInput) {
   }
 }
 
+export async function createProductsBulk(inputs: CreateProductInput[]) {
+  try {
+    if (!inputs || inputs.length === 0) {
+      return { success: false, error: "No products provided for bulk creation" };
+    }
+
+    const createdList: any[] = [];
+    const errors: string[] = [];
+
+    for (let idx = 0; idx < inputs.length; idx++) {
+      const input = inputs[idx];
+      try {
+        const baseSlug = (input.slug || input.name)
+          .toLowerCase()
+          .replace(/[^a-z0-9]+/g, "-")
+          .replace(/(^-|-$)+/g, "");
+
+        // Generate unique slug
+        let finalSlug = baseSlug;
+        const exists = await prisma.product.findUnique({ where: { slug: finalSlug } });
+        if (exists) {
+          finalSlug = `${baseSlug}-${Date.now().toString().slice(-4)}-${idx + 1}`;
+        }
+
+        const primaryVariant = input.variants && input.variants.length > 0 ? input.variants[0] : {
+          size: "Standard",
+          finish: "Standard",
+          color: "Standard",
+          pricePerBox: 100,
+          pricePerSqft: 100,
+          sqftPerBox: 1,
+          stockBoxes: 50,
+        };
+
+        const newProd = await prisma.product.create({
+          data: {
+            name: input.name,
+            slug: finalSlug,
+            categoryId: input.categoryId || null,
+            categorySlug: input.categorySlug,
+            categoryName: input.categoryName || input.categorySlug,
+            material: input.material || "Standard",
+            unitOfSale: input.unitOfSale || "piece",
+            finish: primaryVariant.finish || "Standard",
+            size: primaryVariant.size || "Standard",
+            pricePerSqft: Number(primaryVariant.pricePerSqft || primaryVariant.pricePerBox || 100),
+            thickness: "Standard",
+            usage: "Interior / Project",
+            look: input.name,
+            inStock: true,
+            isBestseller: Boolean(input.isBestseller),
+            isNewArrival: Boolean(input.isNew),
+            isTrending: Boolean(input.isTrending),
+            images: input.images && input.images.length > 0 ? input.images : ["/placeholders/product.svg"],
+            description: input.description || input.name,
+            rating: 4.8,
+            reviewCount: 0,
+            specs: input.specs || null,
+            vendorId: input.vendorId || null,
+            status: input.status || "active",
+            approvalStatus: input.approvalStatus || (input.vendorId ? "pending" : "approved"),
+            variants: {
+              create: input.variants && input.variants.length > 0 ? input.variants.map((v) => ({
+                size: v.size || "Standard",
+                finish: v.finish || "Standard",
+                color: v.color || "Standard",
+                pricePerBox: Number(v.pricePerBox || 100),
+                pricePerSqft: Number(v.pricePerSqft || v.pricePerBox || 100),
+                sqftPerBox: Number(v.sqftPerBox || 1),
+                stockBoxes: Number(v.stockBoxes ?? 50),
+                inStock: true,
+              })) : [
+                {
+                  size: "Standard",
+                  finish: "Standard",
+                  color: "Standard",
+                  pricePerBox: 100,
+                  pricePerSqft: 100,
+                  sqftPerBox: 1,
+                  stockBoxes: 50,
+                  inStock: true,
+                }
+              ],
+            },
+            attributes: input.attributes && input.attributes.length > 0 ? {
+              create: input.attributes.map((a) => ({
+                key: a.key,
+                value: a.value,
+              })),
+            } : undefined,
+          },
+        });
+
+        createdList.push(newProd);
+      } catch (err: any) {
+        console.error(`Error importing row ${idx + 1}:`, err);
+        errors.push(`Row ${idx + 1} (${input.name}): ${err?.message || "DB error"}`);
+      }
+    }
+
+    safeRevalidate("/shop");
+    safeRevalidate("/admin/products");
+    safeRevalidate("/admin/product-approvals");
+    safeRevalidate("/vendor/products");
+    safeRevalidate("/");
+
+    return {
+      success: createdList.length > 0,
+      count: createdList.length,
+      totalRequested: inputs.length,
+      errors: errors.length > 0 ? errors : undefined,
+      message: `Successfully imported ${createdList.length} of ${inputs.length} products to database`,
+    };
+  } catch (error: any) {
+    console.error("Error bulk creating products:", error);
+    return { success: false, error: error?.message || "Failed to bulk create products" };
+  }
+}
+
 export async function updateProduct(id: string, input: Partial<CreateProductInput>) {
   try {
     const updateData: any = {};

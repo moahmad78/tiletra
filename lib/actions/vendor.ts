@@ -149,6 +149,12 @@ export async function updateVendorProfile(
     businessAddress?: string;
     description?: string;
     logo?: string;
+    shopPhotoUrl?: string;
+    category?: string;
+    gstNumber?: string;
+    deliveryFeeEnabled?: boolean;
+    customDeliveryFee?: number | null;
+    freeDeliveryThreshold?: number | null;
   }
 ) {
   try {
@@ -160,19 +166,67 @@ export async function updateVendorProfile(
         businessName: input.businessName?.trim(),
         contactEmail: input.contactEmail?.toLowerCase().trim(),
         contactPhone: input.contactPhone?.trim(),
-        businessAddress: input.businessAddress,
-        description: input.description,
+        businessAddress: input.businessAddress?.trim(),
+        description: input.description?.trim(),
         logo: input.logo,
-      },
+        shopPhotoUrl: input.shopPhotoUrl?.trim(),
+        category: input.category?.trim(),
+        gstNumber: input.gstNumber?.trim().toUpperCase(),
+        ...(input.deliveryFeeEnabled !== undefined && { deliveryFeeEnabled: input.deliveryFeeEnabled }),
+        ...(input.customDeliveryFee !== undefined && { customDeliveryFee: input.customDeliveryFee }),
+        ...(input.freeDeliveryThreshold !== undefined && { freeDeliveryThreshold: input.freeDeliveryThreshold }),
+      } as any,
     });
 
     safeRevalidate("/vendor/settings");
+    safeRevalidate("/vendor");
     safeRevalidate(`/admin/vendors`);
+    safeRevalidate(`/admin/vendors/${vendorId}`);
 
-    return { success: true, vendor: updated };
+    return { success: true, vendor: updated, message: "Shop details updated successfully!" };
   } catch (error: any) {
     console.error("Error updating vendor profile:", error);
     return { success: false, error: error?.message || "Failed to update profile" };
+  }
+}
+
+// 3b. Update Vendor Delivery & Shipping Settings
+export async function updateVendorDeliverySettings(
+  vendorId: string,
+  input: {
+    deliveryFeeEnabled: boolean;
+    customDeliveryFee?: number | null;
+    freeDeliveryThreshold?: number | null;
+  }
+) {
+  try {
+    if (!vendorId) return { success: false, error: "Vendor ID required" };
+
+    const updated = await prisma.vendor.update({
+      where: { id: vendorId },
+      data: {
+        deliveryFeeEnabled: input.deliveryFeeEnabled,
+        customDeliveryFee: input.customDeliveryFee !== undefined ? input.customDeliveryFee : undefined,
+        freeDeliveryThreshold: input.freeDeliveryThreshold !== undefined ? input.freeDeliveryThreshold : undefined,
+      } as any,
+    });
+
+    safeRevalidate("/vendor/settings");
+    safeRevalidate("/vendor");
+    safeRevalidate("/checkout");
+    safeRevalidate("/cart");
+
+    return {
+      success: true,
+      vendor: updated,
+      message: "Delivery and shipping settings saved successfully!",
+    };
+  } catch (error: any) {
+    console.error("Error updating vendor delivery settings:", error);
+    return {
+      success: false,
+      error: error?.message || "Failed to update delivery settings",
+    };
   }
 }
 
@@ -623,6 +677,59 @@ export async function updateVendorBankDetails(
   } catch (error: any) {
     console.error("updateVendorBankDetails error:", error);
     return { success: false, error: error?.message || "Failed to update bank details" };
+  }
+}
+
+// 11b. Vendor KYC & Legal Documents Submission
+export async function updateVendorKycDocuments(
+  vendorId: string,
+  kycData: {
+    panNumber?: string;
+    panDocUrl?: string;
+    aadharNumber?: string;
+    aadharDocUrl?: string;
+    gstNumber?: string;
+    gstDocUrl?: string;
+    chequeDocUrl?: string;
+    tradeLicenseDocUrl?: string;
+    shopPhotoUrl?: string;
+  }
+) {
+  try {
+    if (!vendorId) return { success: false, error: "Vendor ID required" };
+
+    const hasMandatory =
+      (kycData.panNumber || kycData.panDocUrl) &&
+      (kycData.aadharNumber || kycData.aadharDocUrl);
+
+    const updated = await prisma.vendor.update({
+      where: { id: vendorId },
+      data: {
+        panNumber: kycData.panNumber?.trim().toUpperCase() || undefined,
+        panDocUrl: kycData.panDocUrl?.trim() || undefined,
+        aadharNumber: kycData.aadharNumber?.trim() || undefined,
+        aadharDocUrl: kycData.aadharDocUrl?.trim() || undefined,
+        gstNumber: kycData.gstNumber?.trim().toUpperCase() || undefined,
+        gstDocUrl: kycData.gstDocUrl?.trim() || undefined,
+        chequeDocUrl: kycData.chequeDocUrl?.trim() || undefined,
+        tradeLicenseDocUrl: kycData.tradeLicenseDocUrl?.trim() || undefined,
+        shopPhotoUrl: kycData.shopPhotoUrl?.trim() || undefined,
+        kycStatus: hasMandatory ? "submitted" : "pending",
+      } as any,
+    });
+
+    safeRevalidate("/vendor/settings");
+    safeRevalidate("/vendor");
+    safeRevalidate(`/admin/vendors/${vendorId}`);
+
+    return {
+      success: true,
+      vendor: updated,
+      message: "KYC legal documents uploaded and submitted for Super Admin verification!",
+    };
+  } catch (error: any) {
+    console.error("updateVendorKycDocuments error:", error);
+    return { success: false, error: error?.message || "Failed to update KYC documents" };
   }
 }
 
