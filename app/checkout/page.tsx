@@ -19,6 +19,8 @@ import {
   Lock,
   Phone,
   AlertTriangle,
+  QrCode,
+  Smartphone,
 } from "lucide-react";
 import { useCartStore } from "@/lib/cart-store";
 import { useAuthStore, type CustomerAddress } from "@/lib/auth-store";
@@ -27,6 +29,7 @@ import { getStoreSettings } from "@/lib/actions/settings";
 import Header from "@/components/Header";
 import LocationPicker from "@/components/location/LocationPicker";
 import { OnlinePaymentIconsRow, CodCashBadge } from "@/components/checkout/PaymentIcons";
+import ScanAndPayQr from "@/components/checkout/ScanAndPayQr";
 import { toast } from "sonner";
 
 function formatPrice(n: number) {
@@ -66,6 +69,7 @@ export default function CheckoutPage() {
   const [selectedAddressId, setSelectedAddressId] = useState<string>("");
   const [isAddingNewAddress, setIsAddingNewAddress] = useState(false);
   const [paymentMethod, setPaymentMethod] = useState<"Online" | "COD">("Online");
+  const [onlineMode, setOnlineMode] = useState<"modal" | "qr">("modal");
 
   // Fetch live store settings from database
   useEffect(() => {
@@ -323,6 +327,21 @@ export default function CheckoutPage() {
     } catch (err: any) {
       console.error("Online payment error:", err);
       toast.error(err?.message || "An unexpected error occurred during payment");
+      setIsProcessingPayment(false);
+    }
+  };
+
+  const handleQrPaymentSuccess = async (paymentId: string, qrId: string) => {
+    try {
+      setIsProcessingPayment(true);
+      await placeOrder("Online", "Paid", paymentId, {
+        paymentId,
+        orderId: qrId,
+      });
+    } catch (e: any) {
+      console.error("Error finalizing QR order:", e);
+      toast.error("Payment received, but error creating order record");
+    } finally {
       setIsProcessingPayment(false);
     }
   };
@@ -595,19 +614,71 @@ export default function CheckoutPage() {
                         onChange={() => setPaymentMethod("Online")}
                         className="w-4 h-4 accent-[#F26522] mt-1 cursor-pointer shrink-0"
                       />
-                      <div className="flex-1 min-w-0">
+                      <div className="flex-1 min-w-0 space-y-3">
                         <div className="flex flex-wrap items-center gap-2">
                           <span className="text-sm font-black text-[#052a51]">Pay Online (Razorpay)</span>
                           <span className="px-2 py-0.5 rounded bg-green-100 text-green-800 text-[10px] font-black uppercase">
                             Instant Confirmation
                           </span>
                         </div>
-                        <p className="text-xs text-gray-500 mt-1 leading-relaxed">
+                        <p className="text-xs text-gray-500 leading-relaxed">
                           Pay securely via UPI (Google Pay, PhonePe, Paytm), Credit/Debit Cards, or NetBanking.
                         </p>
 
-                        {/* Payment Method Badges Row */}
-                        <OnlinePaymentIconsRow />
+                        {/* Mode Switcher: Modal vs Scan & Pay QR */}
+                        {paymentMethod === "Online" && (
+                          <div className="pt-2 border-t border-gray-100/80">
+                            <div className="flex items-center gap-2 p-1 bg-gray-100/80 rounded-xl max-w-fit">
+                              <button
+                                type="button"
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  setOnlineMode("modal");
+                                }}
+                                className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer ${
+                                  onlineMode === "modal"
+                                    ? "bg-[#052a51] text-white shadow-2xs"
+                                    : "text-gray-600 hover:text-[#052a51]"
+                                }`}
+                              >
+                                <span>⚡ Payment Window</span>
+                              </button>
+
+                              <button
+                                type="button"
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  setOnlineMode("qr");
+                                }}
+                                className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all flex items-center gap-1.5 cursor-pointer ${
+                                  onlineMode === "qr"
+                                    ? "bg-[#F26522] text-white shadow-2xs"
+                                    : "text-gray-600 hover:text-[#052a51]"
+                                }`}
+                              >
+                                <QrCode size={13} />
+                                <span>📱 Scan & Pay UPI QR</span>
+                              </button>
+                            </div>
+                          </div>
+                        )}
+
+                        {/* Standard Modal Mode: Show Badges */}
+                        {paymentMethod === "Online" && onlineMode === "modal" && (
+                          <OnlinePaymentIconsRow />
+                        )}
+
+                        {/* Scan & Pay QR Mode: Render QR Component */}
+                        {paymentMethod === "Online" && onlineMode === "qr" && (
+                          <div className="pt-2" onClick={(e) => e.stopPropagation()}>
+                            <ScanAndPayQr
+                              totalAmount={total}
+                              customerName={selectedAddress?.name || user?.name}
+                              customerPhone={selectedAddress?.phone || user?.phone}
+                              onPaymentSuccess={handleQrPaymentSuccess}
+                            />
+                          </div>
+                        )}
                       </div>
                     </div>
                   </div>
@@ -661,19 +732,26 @@ export default function CheckoutPage() {
                     ← Back
                   </button>
                   {paymentMethod === "Online" ? (
-                    <button
-                      id="razorpay-pay-btn"
-                      onClick={handleOnlinePayment}
-                      disabled={isProcessingPayment}
-                      className="flex-1 h-12 sm:h-13 bg-[#052a51] hover:bg-[#0b3b6d] text-white font-black text-xs sm:text-sm rounded-2xl shadow-md transition-all flex items-center justify-center gap-2 active:scale-95 cursor-pointer disabled:opacity-60"
-                    >
-                      <Lock size={16} className="text-[#F26522]" />
-                      <span>
-                        {isProcessingPayment
-                          ? "Opening Payment Window..."
-                          : `Pay ${formatPrice(total)} & Confirm Order`}
-                      </span>
-                    </button>
+                    onlineMode === "qr" ? (
+                      <div className="flex-1 h-12 sm:h-13 bg-slate-100 text-slate-700 font-bold text-xs sm:text-sm rounded-2xl border border-slate-300 flex items-center justify-center gap-2 text-center px-4">
+                        <QrCode size={16} className="text-[#F26522]" />
+                        <span>Scan & Pay via UPI QR above to complete</span>
+                      </div>
+                    ) : (
+                      <button
+                        id="razorpay-pay-btn"
+                        onClick={handleOnlinePayment}
+                        disabled={isProcessingPayment}
+                        className="flex-1 h-12 sm:h-13 bg-[#052a51] hover:bg-[#0b3b6d] text-white font-black text-xs sm:text-sm rounded-2xl shadow-md transition-all flex items-center justify-center gap-2 active:scale-95 cursor-pointer disabled:opacity-60"
+                      >
+                        <Lock size={16} className="text-[#F26522]" />
+                        <span>
+                          {isProcessingPayment
+                            ? "Opening Payment Window..."
+                            : `Pay ${formatPrice(total)} & Confirm Order`}
+                        </span>
+                      </button>
+                    )
                   ) : (
                     <button
                       id="cod-pay-btn"
