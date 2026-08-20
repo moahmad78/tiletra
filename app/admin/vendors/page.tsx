@@ -1,5 +1,7 @@
 "use client";
 
+export const dynamic = "force-dynamic";
+
 import { useState, useEffect } from "react";
 import Link from "next/link";
 import {
@@ -9,6 +11,7 @@ import {
   suspendVendor,
   reactivateVendor,
   updateVendorCommission,
+  createVendorManually,
 } from "@/lib/actions/admin-vendor";
 import {
   Store,
@@ -26,8 +29,31 @@ import {
   Loader2,
   Eye,
   Sliders,
+  PlusCircle,
+  BarChart3,
+  ExternalLink,
+  Lock,
+  Copy,
+  Check,
+  MessageCircle,
+  Sparkles,
+  ChevronRight,
+  Building,
 } from "lucide-react";
 import { toast } from "sonner";
+
+const CATEGORIES = [
+  "Tiles & Natural Stone",
+  "Electricals & Lighting",
+  "Plumbing, Pipes & Fittings",
+  "Sanitaryware & Bath Fittings",
+  "Hardware & Fasteners",
+  "Paints, Waterproofing & Adhesives",
+  "Plywood, Laminates & Timber",
+  "Doors, Windows & Glass",
+  "Tools & Construction Equipment",
+  "General Building Supplies",
+];
 
 export default function AdminVendorsPage() {
   const [vendors, setVendors] = useState<any[]>([]);
@@ -35,11 +61,36 @@ export default function AdminVendorsPage() {
   const [searchQuery, setSearchQuery] = useState("");
   const [statusFilter, setStatusFilter] = useState<"all" | "pending" | "approved" | "suspended" | "rejected">("all");
 
-  // Selected vendor modal state
+  // Selected vendor inspection modal
   const [selectedVendor, setSelectedVendor] = useState<any | null>(null);
   const [commissionInput, setCommissionInput] = useState<number>(15.0);
   const [rejectionReason, setRejectionReason] = useState("");
   const [actionLoading, setActionLoading] = useState(false);
+
+  // Manual Add Vendor (Path B) Modal
+  const [showAddModal, setShowAddModal] = useState(false);
+  const [newVendorForm, setNewVendorForm] = useState({
+    businessName: "",
+    ownerName: "",
+    contactEmail: "",
+    contactPhone: "",
+    category: CATEGORIES[0],
+    businessAddress: "",
+    gstNumber: "",
+    description: "",
+    commissionRate: 15.0,
+    customPassword: "",
+  });
+
+  // Success Credentials Dialog
+  const [generatedCredentials, setGeneratedCredentials] = useState<{
+    username: string;
+    phone: string;
+    password: string;
+    businessName: string;
+    commissionRate: number;
+  } | null>(null);
+  const [copied, setCopied] = useState(false);
 
   const loadVendors = async () => {
     try {
@@ -126,6 +177,59 @@ export default function AdminVendorsPage() {
     }
   };
 
+  const handleCreateManualVendor = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!newVendorForm.businessName.trim() || !newVendorForm.contactPhone.trim() || !newVendorForm.contactEmail.trim()) {
+      toast.error("Please fill required fields");
+      return;
+    }
+
+    setActionLoading(true);
+    const res = await createVendorManually({
+      businessName: newVendorForm.businessName,
+      ownerName: newVendorForm.ownerName || newVendorForm.businessName,
+      contactEmail: newVendorForm.contactEmail,
+      contactPhone: newVendorForm.contactPhone,
+      category: newVendorForm.category,
+      businessAddress: newVendorForm.businessAddress,
+      gstNumber: newVendorForm.gstNumber,
+      description: newVendorForm.description,
+      commissionRate: newVendorForm.commissionRate,
+      customPassword: newVendorForm.customPassword || undefined,
+    });
+    setActionLoading(false);
+
+    if (res.success && res.credentials) {
+      toast.success(res.message);
+      setShowAddModal(false);
+      setGeneratedCredentials(res.credentials);
+      setNewVendorForm({
+        businessName: "",
+        ownerName: "",
+        contactEmail: "",
+        contactPhone: "",
+        category: CATEGORIES[0],
+        businessAddress: "",
+        gstNumber: "",
+        description: "",
+        commissionRate: 15.0,
+        customPassword: "",
+      });
+      loadVendors();
+    } else {
+      toast.error(res.error || "Failed to create vendor");
+    }
+  };
+
+  const handleCopyCredentials = () => {
+    if (!generatedCredentials) return;
+    const text = `*Intrihub Vendor Login Credentials*\nShop: ${generatedCredentials.businessName}\nPortal: https://intrihub.com/vendor/login\nUsername: ${generatedCredentials.username}\nPhone: ${generatedCredentials.phone}\nPassword: ${generatedCredentials.password}\nCommission: ${generatedCredentials.commissionRate}%`;
+    navigator.clipboard.writeText(text);
+    setCopied(true);
+    toast.success("Credentials copied to clipboard!");
+    setTimeout(() => setCopied(false), 2500);
+  };
+
   // Filter vendors
   const filteredVendors = vendors.filter((v) => {
     const matchesSearch =
@@ -152,12 +256,27 @@ export default function AdminVendorsPage() {
       {/* Top Header */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
-          <h1 className="text-xl md:text-2xl font-black text-gray-900 tracking-tight">
+          <h1 className="text-xl md:text-2xl font-black text-[#052a51] tracking-tight">
             Vendor & Shop Management
           </h1>
           <p className="text-xs text-gray-500 mt-0.5">
-            Super Admin control over multi-vendor onboarding, approvals, commissions, and suspensions
+            Super Admin control over multi-vendor onboarding, approvals, commissions, and individual analytics.
           </p>
+        </div>
+
+        <div className="flex flex-wrap items-center gap-2.5">
+          <Link
+            href="/admin/vendor-applications"
+            className="px-4 py-2.5 bg-amber-50 hover:bg-amber-100 text-amber-900 border border-amber-200 rounded-xl text-xs font-bold shadow-2xs transition-all flex items-center gap-1.5"
+          >
+            <Clock size={14} className="text-amber-700" /> Review Inquiries (Path A)
+          </Link>
+          <button
+            onClick={() => setShowAddModal(true)}
+            className="px-4 py-2.5 bg-[#052a51] hover:bg-[#0a3e74] text-white rounded-xl text-xs font-black shadow-md transition-all active:scale-95 flex items-center gap-1.5"
+          >
+            <PlusCircle size={15} className="text-[#F26522]" /> Add Vendor Manually (Path B)
+          </button>
         </div>
       </div>
 
@@ -204,7 +323,7 @@ export default function AdminVendorsPage() {
             onClick={() => setStatusFilter("all")}
             className={`px-3.5 py-1.5 rounded-xl text-xs font-bold whitespace-nowrap transition-all ${
               statusFilter === "all"
-                ? "bg-gray-900 text-white shadow-xs"
+                ? "bg-[#052a51] text-white shadow-xs"
                 : "text-gray-600 hover:bg-gray-100"
             }`}
           >
@@ -250,40 +369,29 @@ export default function AdminVendorsPage() {
           <Search className="absolute left-3.5 top-3 text-gray-400" size={18} />
           <input
             type="text"
+            placeholder="Search by shop name, owner, phone, email, category..."
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
-            placeholder="Search vendor by shop name, email, phone, or category..."
-            className="w-full bg-gray-50 border border-gray-200 rounded-xl pl-10 pr-4 py-2.5 text-xs sm:text-sm font-medium focus:bg-white focus:border-[#F26522] focus:outline-hidden transition-all"
+            className="w-full bg-gray-50 border border-gray-200 rounded-2xl pl-10 pr-4 py-2.5 text-xs font-medium text-gray-900 focus:bg-white focus:border-[#052a51] focus:outline-hidden"
           />
         </div>
 
-        {/* Table */}
+        {/* Vendor Table */}
         {loading ? (
-          <div className="py-16 text-center text-gray-400 flex flex-col items-center justify-center gap-2">
-            <Loader2 className="animate-spin text-[#F26522]" size={28} />
-            <p className="text-xs font-medium">Loading vendor directory...</p>
-          </div>
+          <div className="py-12 text-center text-xs text-gray-400">Loading vendors...</div>
         ) : filteredVendors.length === 0 ? (
-          <div className="py-16 text-center rounded-2xl bg-gray-50 border border-dashed border-gray-200">
-            <Store size={40} className="mx-auto text-gray-300 mb-2" />
-            <h3 className="text-sm font-bold text-gray-700">No vendors found</h3>
-            <p className="text-xs text-gray-400 mt-1 max-w-sm mx-auto">
-              {searchQuery
-                ? `No vendor matches "${searchQuery}"`
-                : "No vendors in this category."}
-            </p>
-          </div>
+          <div className="py-12 text-center text-xs text-gray-400">No vendors found matching filter.</div>
         ) : (
           <div className="overflow-x-auto">
             <table className="w-full text-left text-xs">
-              <thead className="bg-gray-50 text-gray-500 uppercase tracking-wider font-bold border-y border-gray-200/80">
-                <tr>
-                  <th className="py-3 px-4">Shop & Business Details</th>
-                  <th className="py-3 px-3">Contact & Phone</th>
+              <thead>
+                <tr className="border-b border-gray-100 text-gray-400 font-bold uppercase tracking-wider text-[10px]">
+                  <th className="py-3 px-4">Vendor / Shop</th>
+                  <th className="py-3 px-3">Contact</th>
                   <th className="py-3 px-3">Category</th>
-                  <th className="py-3 px-3">Commission %</th>
-                  <th className="py-3 px-3">Products</th>
-                  <th className="py-3 px-3">Account Status</th>
+                  <th className="py-3 px-3">Commission</th>
+                  <th className="py-3 px-3">Catalog</th>
+                  <th className="py-3 px-3">Status</th>
                   <th className="py-3 px-4 text-right">Actions</th>
                 </tr>
               </thead>
@@ -298,11 +406,16 @@ export default function AdminVendorsPage() {
                       {/* Shop Name */}
                       <td className="py-3.5 px-4">
                         <div className="flex items-center gap-3">
-                          <div className="w-10 h-10 rounded-xl bg-gray-100 text-gray-800 font-black text-sm flex items-center justify-center shrink-0 border border-gray-200">
+                          <div className="w-10 h-10 rounded-xl bg-blue-50 text-[#052a51] font-black text-sm flex items-center justify-center shrink-0 border border-blue-100">
                             {v.businessName.charAt(0).toUpperCase()}
                           </div>
                           <div className="min-w-0 max-w-[220px]">
-                            <p className="font-bold text-gray-900 truncate">{v.businessName}</p>
+                            <Link
+                              href={`/admin/vendors/${v.id}`}
+                              className="font-bold text-gray-900 hover:text-[#052a51] hover:underline truncate block"
+                            >
+                              {v.businessName}
+                            </Link>
                             <p className="text-[10px] text-gray-400 truncate">
                               Owner: {v.owner?.name || "N/A"}
                             </p>
@@ -312,7 +425,7 @@ export default function AdminVendorsPage() {
 
                       {/* Contact */}
                       <td className="py-3.5 px-3">
-                        <p className="font-medium text-gray-800">{v.contactPhone}</p>
+                        <p className="font-medium text-gray-800">+91 {v.contactPhone}</p>
                         <p className="text-[10px] text-gray-400 truncate max-w-[160px]">{v.contactEmail}</p>
                       </td>
 
@@ -326,7 +439,7 @@ export default function AdminVendorsPage() {
                       {/* Commission */}
                       <td className="py-3.5 px-3">
                         <div className="flex items-center gap-1.5">
-                          <span className="font-bold text-gray-900">{v.commissionRate}%</span>
+                          <span className="font-bold text-[#052a51]">{v.commissionRate}%</span>
                         </div>
                       </td>
 
@@ -359,14 +472,21 @@ export default function AdminVendorsPage() {
                       {/* Actions */}
                       <td className="py-3.5 px-4 text-right">
                         <div className="flex items-center justify-end gap-1.5">
+                          <Link
+                            href={`/admin/vendors/${v.id}`}
+                            className="px-2.5 py-1.5 rounded-xl bg-blue-50 hover:bg-blue-100 text-[#052a51] text-xs font-bold transition-colors flex items-center gap-1"
+                            title="View detailed dashboard & analytics"
+                          >
+                            <BarChart3 size={13} /> Dashboard
+                          </Link>
                           <button
                             onClick={() => {
                               setSelectedVendor(v);
                               setCommissionInput(v.commissionRate || 15.0);
                             }}
-                            className="px-3 py-1.5 rounded-xl bg-gray-100 hover:bg-[#052a51] hover:text-white text-gray-700 text-xs font-bold transition-colors"
+                            className="px-2.5 py-1.5 rounded-xl bg-gray-100 hover:bg-gray-200 text-gray-700 text-xs font-bold transition-colors"
                           >
-                            Inspect & Review
+                            Inspect
                           </button>
                         </div>
                       </td>
@@ -379,6 +499,237 @@ export default function AdminVendorsPage() {
         )}
       </div>
 
+      {/* ── ADD VENDOR MANUALLY MODAL (Path B) ── */}
+      {showAddModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-xs animate-in fade-in">
+          <div className="bg-white rounded-3xl max-w-xl w-full p-6 sm:p-8 shadow-2xl border border-gray-100 max-h-[90vh] overflow-y-auto">
+            <div className="flex items-center justify-between pb-4 border-b border-gray-100">
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 rounded-2xl bg-blue-50 text-[#052a51] flex items-center justify-center font-bold">
+                  <PlusCircle size={20} className="text-[#F26522]" />
+                </div>
+                <div>
+                  <h3 className="text-lg font-black text-[#052a51]">Add Vendor Manually (Path B)</h3>
+                  <p className="text-xs text-gray-500">Directly onboard a partner shop without waiting for application</p>
+                </div>
+              </div>
+              <button
+                onClick={() => setShowAddModal(false)}
+                className="p-1.5 text-gray-400 hover:text-gray-700 rounded-xl"
+              >
+                ✕
+              </button>
+            </div>
+
+            <form onSubmit={handleCreateManualVendor} className="space-y-4 py-4 text-xs">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-xs font-bold text-gray-700 mb-1">
+                    Business / Shop Name <span className="text-red-500">*</span>
+                  </label>
+                  <input
+                    type="text"
+                    required
+                    placeholder="e.g. Royal Pipes & Sanitary"
+                    value={newVendorForm.businessName}
+                    onChange={(e) => setNewVendorForm({ ...newVendorForm, businessName: e.target.value })}
+                    className="w-full px-3.5 py-2.5 bg-gray-50 border border-gray-200 rounded-xl text-sm font-medium focus:bg-white outline-none"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-xs font-bold text-gray-700 mb-1">
+                    Owner Name
+                  </label>
+                  <input
+                    type="text"
+                    placeholder="e.g. Anand Poddar"
+                    value={newVendorForm.ownerName}
+                    onChange={(e) => setNewVendorForm({ ...newVendorForm, ownerName: e.target.value })}
+                    className="w-full px-3.5 py-2.5 bg-gray-50 border border-gray-200 rounded-xl text-sm font-medium focus:bg-white outline-none"
+                  />
+                </div>
+              </div>
+
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-xs font-bold text-gray-700 mb-1">
+                    Mobile Phone <span className="text-red-500">*</span>
+                  </label>
+                  <input
+                    type="tel"
+                    required
+                    maxLength={10}
+                    placeholder="10-digit number"
+                    value={newVendorForm.contactPhone}
+                    onChange={(e) => setNewVendorForm({ ...newVendorForm, contactPhone: e.target.value.replace(/\D/g, "") })}
+                    className="w-full px-3.5 py-2.5 bg-gray-50 border border-gray-200 rounded-xl text-sm font-medium focus:bg-white outline-none"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-xs font-bold text-gray-700 mb-1">
+                    Email Address <span className="text-red-500">*</span>
+                  </label>
+                  <input
+                    type="email"
+                    required
+                    placeholder="e.g. vendor@intrihub.com"
+                    value={newVendorForm.contactEmail}
+                    onChange={(e) => setNewVendorForm({ ...newVendorForm, contactEmail: e.target.value })}
+                    className="w-full px-3.5 py-2.5 bg-gray-50 border border-gray-200 rounded-xl text-sm font-medium focus:bg-white outline-none"
+                  />
+                </div>
+              </div>
+
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-xs font-bold text-gray-700 mb-1">
+                    Shop Category
+                  </label>
+                  <select
+                    value={newVendorForm.category}
+                    onChange={(e) => setNewVendorForm({ ...newVendorForm, category: e.target.value })}
+                    className="w-full px-3.5 py-2.5 bg-gray-50 border border-gray-200 rounded-xl text-sm font-medium focus:bg-white outline-none"
+                  >
+                    {CATEGORIES.map((c) => (
+                      <option key={c} value={c}>
+                        {c}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+
+                <div>
+                  <label className="block text-xs font-bold text-gray-700 mb-1">
+                    Platform Commission Rate (%)
+                  </label>
+                  <input
+                    type="number"
+                    step="0.5"
+                    min="0"
+                    max="50"
+                    value={newVendorForm.commissionRate}
+                    onChange={(e) => setNewVendorForm({ ...newVendorForm, commissionRate: parseFloat(e.target.value) || 0 })}
+                    className="w-full px-3.5 py-2.5 bg-gray-50 border border-gray-200 rounded-xl text-sm font-bold focus:bg-white outline-none"
+                  />
+                </div>
+              </div>
+
+              <div>
+                <label className="block text-xs font-bold text-gray-700 mb-1">
+                  Password (Leave empty to auto-generate)
+                </label>
+                <input
+                  type="text"
+                  placeholder="Auto-generated e.g. Vendor#9142"
+                  value={newVendorForm.customPassword}
+                  onChange={(e) => setNewVendorForm({ ...newVendorForm, customPassword: e.target.value })}
+                  className="w-full px-3.5 py-2.5 bg-gray-50 border border-gray-200 rounded-xl text-sm font-medium focus:bg-white outline-none"
+                />
+              </div>
+
+              <div>
+                <label className="block text-xs font-bold text-gray-700 mb-1">
+                  Shop Address & Premises
+                </label>
+                <textarea
+                  rows={2}
+                  placeholder="Street address, landmark, Bangalore"
+                  value={newVendorForm.businessAddress}
+                  onChange={(e) => setNewVendorForm({ ...newVendorForm, businessAddress: e.target.value })}
+                  className="w-full px-3.5 py-2.5 bg-gray-50 border border-gray-200 rounded-xl text-xs font-medium focus:bg-white outline-none resize-none"
+                />
+              </div>
+
+              <div className="flex items-center justify-end gap-3 pt-4 border-t border-gray-100">
+                <button
+                  type="button"
+                  onClick={() => setShowAddModal(false)}
+                  className="px-4 py-2.5 rounded-xl text-xs font-bold text-gray-600 hover:bg-gray-100"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  disabled={actionLoading}
+                  className="px-6 py-2.5 bg-[#052a51] hover:bg-[#0a3e74] text-white rounded-xl text-xs font-black shadow-md flex items-center gap-1.5"
+                >
+                  {actionLoading ? <Loader2 size={16} className="animate-spin" /> : <Sparkles size={16} className="text-[#F26522]" />}
+                  <span>Create Vendor & Generate Login</span>
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* ── GENERATED CREDENTIALS MODAL ── */}
+      {generatedCredentials && (
+        <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-xs flex items-center justify-center p-4">
+          <div className="bg-white rounded-3xl p-6 sm:p-8 max-w-lg w-full shadow-2xl border border-gray-100 text-center">
+            <div className="w-16 h-16 bg-emerald-100 text-emerald-600 rounded-full flex items-center justify-center mx-auto mb-4">
+              <CheckCircle2 size={36} />
+            </div>
+
+            <h3 className="text-xl font-black text-[#052a51]">Vendor Account Created!</h3>
+            <p className="text-xs text-gray-500 mt-1">
+              Share these credentials with <strong>{generatedCredentials.businessName}</strong>.
+            </p>
+
+            <div className="mt-6 p-4 bg-gray-50 rounded-2xl border border-gray-200 text-left space-y-2.5">
+              <div className="flex justify-between items-center text-xs">
+                <span className="text-gray-500 font-semibold">Portal URL:</span>
+                <strong className="text-[#052a51] font-mono">intrihub.com/vendor/login</strong>
+              </div>
+              <div className="flex justify-between items-center text-xs">
+                <span className="text-gray-500 font-semibold">Username / Email:</span>
+                <strong className="text-gray-900 font-mono">{generatedCredentials.username}</strong>
+              </div>
+              <div className="flex justify-between items-center text-xs">
+                <span className="text-gray-500 font-semibold">Registered Phone:</span>
+                <strong className="text-gray-900 font-mono">+91 {generatedCredentials.phone}</strong>
+              </div>
+              <div className="flex justify-between items-center text-xs">
+                <span className="text-gray-500 font-semibold">Initial Password:</span>
+                <strong className="text-[#F26522] font-mono text-sm">{generatedCredentials.password}</strong>
+              </div>
+              <div className="flex justify-between items-center text-xs">
+                <span className="text-gray-500 font-semibold">Commission Rate:</span>
+                <strong className="text-emerald-700">{generatedCredentials.commissionRate}%</strong>
+              </div>
+            </div>
+
+            <div className="mt-6 flex flex-col sm:flex-row gap-3">
+              <button
+                onClick={handleCopyCredentials}
+                className="flex-1 py-3 bg-[#052a51] hover:bg-[#0a3e74] text-white rounded-xl text-xs font-black shadow-md flex items-center justify-center gap-1.5 transition-all"
+              >
+                {copied ? <Check size={16} className="text-emerald-400" /> : <Copy size={16} />}
+                <span>{copied ? "Copied to Clipboard!" : "Copy Full Details"}</span>
+              </button>
+              <a
+                href={`https://wa.me/91${generatedCredentials.phone}?text=${encodeURIComponent(
+                  `*Welcome to Intrihub Marketplace!*\n\nYour vendor account for *${generatedCredentials.businessName}* is active.\n\n🔗 *Login Portal:* https://intrihub.com/vendor/login\n👤 *Username:* ${generatedCredentials.username}\n🔑 *Initial Password:* ${generatedCredentials.password}\n📊 *Commission Rate:* ${generatedCredentials.commissionRate}%\n\nYou will be prompted to set your own password on first login.`
+                )}`}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="flex-1 py-3 bg-emerald-500 hover:bg-emerald-600 text-white rounded-xl text-xs font-black shadow-md flex items-center justify-center gap-1.5 transition-all"
+              >
+                <MessageCircle size={16} /> Send via WhatsApp
+              </a>
+            </div>
+
+            <button
+              onClick={() => setGeneratedCredentials(null)}
+              className="mt-4 text-xs font-bold text-gray-500 hover:text-gray-800"
+            >
+              Done & Close
+            </button>
+          </div>
+        </div>
+      )}
+
       {/* Vendor Review & Inspection Modal */}
       {selectedVendor && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-xs animate-in fade-in duration-200">
@@ -386,7 +737,7 @@ export default function AdminVendorsPage() {
             <div className="flex items-start justify-between gap-4 pb-4 border-b border-gray-100">
               <div>
                 <span className="text-[10px] font-bold text-gray-400 uppercase tracking-widest">
-                  Vendor Application Details
+                  Vendor Details & Controls
                 </span>
                 <h2 className="text-xl font-black text-gray-900 mt-0.5">
                   {selectedVendor.businessName}
@@ -418,7 +769,7 @@ export default function AdminVendorsPage() {
                 <div>
                   <p className="text-gray-400 font-semibold uppercase text-[10px]">Phone Number</p>
                   <p className="font-bold text-gray-800 text-sm mt-0.5">
-                    {selectedVendor.contactPhone}
+                    +91 {selectedVendor.contactPhone}
                   </p>
                 </div>
                 <div>
@@ -443,13 +794,6 @@ export default function AdminVendorsPage() {
                 </div>
               )}
 
-              {selectedVendor.description && (
-                <div className="p-3 rounded-xl bg-gray-50 text-gray-600 border border-gray-200">
-                  <p className="font-semibold text-gray-800 mb-1">About the Shop:</p>
-                  <p>{selectedVendor.description}</p>
-                </div>
-              )}
-
               {/* Commission Rate Setting */}
               <div className="pt-2">
                 <label className="block text-xs font-bold text-gray-700 uppercase tracking-wider mb-1.5">
@@ -463,7 +807,7 @@ export default function AdminVendorsPage() {
                     min={0}
                     max={50}
                     step={0.5}
-                    className="w-32 bg-gray-50 border border-gray-200 rounded-xl px-3 py-2 text-sm font-bold text-gray-900 focus:bg-white focus:border-[#F26522] focus:outline-hidden"
+                    className="w-32 bg-gray-50 border border-gray-200 rounded-xl px-3 py-2 text-sm font-bold text-gray-900 focus:bg-white focus:border-[#052a51] focus:outline-hidden"
                   />
                   <span className="text-xs text-gray-500">
                     Platform takes {commissionInput}% on each order item sold by this vendor
@@ -489,61 +833,70 @@ export default function AdminVendorsPage() {
             </div>
 
             {/* Action Buttons */}
-            <div className="pt-4 border-t border-gray-100 flex flex-wrap items-center justify-end gap-2.5">
-              <button
-                onClick={() => setSelectedVendor(null)}
-                className="px-4 py-2 rounded-xl bg-gray-100 text-gray-700 font-bold text-xs hover:bg-gray-200 transition-colors"
+            <div className="pt-4 border-t border-gray-100 flex flex-wrap items-center justify-between gap-2.5">
+              <Link
+                href={`/admin/vendors/${selectedVendor.id}`}
+                className="px-4 py-2 bg-blue-50 text-[#052a51] rounded-xl text-xs font-bold hover:bg-blue-100 flex items-center gap-1"
               >
-                Close
-              </button>
+                <BarChart3 size={14} /> View Analytics Dashboard
+              </Link>
 
-              {selectedVendor.status === "pending" && (
-                <>
-                  <button
-                    disabled={actionLoading}
-                    onClick={() => handleReject(selectedVendor.id)}
-                    className="px-4 py-2 rounded-xl bg-rose-50 hover:bg-rose-100 text-rose-700 font-bold text-xs transition-colors"
-                  >
-                    Reject Application
-                  </button>
-                  <button
-                    disabled={actionLoading}
-                    onClick={() => handleApprove(selectedVendor.id, commissionInput)}
-                    className="px-6 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs shadow-md shadow-emerald-600/30 transition-all"
-                  >
-                    {actionLoading ? "Approving..." : "Approve & Activate Vendor"}
-                  </button>
-                </>
-              )}
-
-              {selectedVendor.status === "approved" && (
-                <>
-                  <button
-                    disabled={actionLoading}
-                    onClick={() => handleUpdateCommission(selectedVendor.id, commissionInput)}
-                    className="px-4 py-2 rounded-xl bg-gray-800 hover:bg-gray-900 text-white font-bold text-xs transition-colors"
-                  >
-                    Save Commission %
-                  </button>
-                  <button
-                    disabled={actionLoading}
-                    onClick={() => handleSuspend(selectedVendor.id)}
-                    className="px-4 py-2 rounded-xl bg-rose-600 hover:bg-rose-700 text-white font-bold text-xs shadow-md transition-colors"
-                  >
-                    Suspend Vendor
-                  </button>
-                </>
-              )}
-
-              {selectedVendor.status === "suspended" && (
+              <div className="flex items-center gap-2">
                 <button
-                  disabled={actionLoading}
-                  onClick={() => handleReactivate(selectedVendor.id)}
-                  className="px-6 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs shadow-md transition-colors"
+                  onClick={() => setSelectedVendor(null)}
+                  className="px-4 py-2 rounded-xl bg-gray-100 text-gray-700 font-bold text-xs hover:bg-gray-200 transition-colors"
                 >
-                  Reactivate Vendor & Listings
+                  Close
                 </button>
-              )}
+
+                {selectedVendor.status === "pending" && (
+                  <>
+                    <button
+                      disabled={actionLoading}
+                      onClick={() => handleReject(selectedVendor.id)}
+                      className="px-4 py-2 rounded-xl bg-rose-50 hover:bg-rose-100 text-rose-700 font-bold text-xs transition-colors"
+                    >
+                      Reject Application
+                    </button>
+                    <button
+                      disabled={actionLoading}
+                      onClick={() => handleApprove(selectedVendor.id, commissionInput)}
+                      className="px-6 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs shadow-md shadow-emerald-600/30 transition-all"
+                    >
+                      {actionLoading ? "Approving..." : "Approve & Activate"}
+                    </button>
+                  </>
+                )}
+
+                {selectedVendor.status === "approved" && (
+                  <>
+                    <button
+                      disabled={actionLoading}
+                      onClick={() => handleUpdateCommission(selectedVendor.id, commissionInput)}
+                      className="px-4 py-2 rounded-xl bg-[#052a51] hover:bg-[#0a3e74] text-white font-bold text-xs transition-colors"
+                    >
+                      Save Commission %
+                    </button>
+                    <button
+                      disabled={actionLoading}
+                      onClick={() => handleSuspend(selectedVendor.id)}
+                      className="px-4 py-2 rounded-xl bg-rose-600 hover:bg-rose-700 text-white font-bold text-xs shadow-md transition-colors"
+                    >
+                      Suspend Vendor
+                    </button>
+                  </>
+                )}
+
+                {selectedVendor.status === "suspended" && (
+                  <button
+                    disabled={actionLoading}
+                    onClick={() => handleReactivate(selectedVendor.id)}
+                    className="px-6 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs shadow-md transition-colors"
+                  >
+                    Reactivate Vendor
+                  </button>
+                )}
+              </div>
             </div>
           </div>
         </div>

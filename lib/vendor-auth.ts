@@ -15,13 +15,14 @@ export type VendorSession = {
   ownerName: string;
   ownerId: string;
   rejectionReason?: string | null;
+  mustChangePassword?: boolean;
   lastLogin: string;
 };
 
 type VendorAuthState = {
   vendor: VendorSession | null;
   isAuthenticated: boolean;
-  login: (emailOrPhone: string, password?: string) => Promise<{ success: boolean; error?: string }>;
+  login: (emailOrPhone: string, password?: string) => Promise<{ success: boolean; error?: string; mustChangePassword?: boolean }>;
   logout: () => void;
   setVendor: (vendor: VendorSession | null) => void;
   quickSwitchVendor: (demoId: string) => void;
@@ -40,6 +41,7 @@ export const DEMO_VENDORS: VendorSession[] = [
     commissionRate: 12.0,
     ownerName: "Ramesh Kumar",
     ownerId: "usr-vnd-001",
+    mustChangePassword: false,
     lastLogin: new Date().toISOString(),
   },
   {
@@ -53,6 +55,7 @@ export const DEMO_VENDORS: VendorSession[] = [
     commissionRate: 15.0,
     ownerName: "Anand Poddar",
     ownerId: "usr-vnd-002",
+    mustChangePassword: false,
     lastLogin: new Date().toISOString(),
   },
   {
@@ -62,10 +65,11 @@ export const DEMO_VENDORS: VendorSession[] = [
     contactEmail: "apex.plumbing@intrihub.com",
     contactPhone: "9123456780",
     category: "Plumbing & Pipes",
-    status: "pending", // demonstrates pending state banner
+    status: "pending",
     commissionRate: 15.0,
     ownerName: "Vikas Sharma",
     ownerId: "usr-vnd-003",
+    mustChangePassword: false,
     lastLogin: new Date().toISOString(),
   },
 ];
@@ -94,57 +98,44 @@ export const useVendorAuth = create<VendorAuthState>()(
             lastLogin: new Date().toISOString(),
           };
           set({ vendor: session, isAuthenticated: true });
-          return { success: true };
+          return { success: true, mustChangePassword: false };
         }
 
-        // 2. Query Database / Server API
+        // 2. Query Database / Server API via POST
         try {
-          const res = await fetch(`/api/auth/vendor-login?query=${encodeURIComponent(input)}`);
-          if (res.ok) {
-            const data = await res.json();
-            if (data?.vendor) {
-              const session: VendorSession = {
-                id: data.vendor.id,
-                businessName: data.vendor.businessName,
-                slug: data.vendor.slug,
-                contactEmail: data.vendor.contactEmail,
-                contactPhone: data.vendor.contactPhone,
-                category: data.vendor.category,
-                status: data.vendor.status,
-                commissionRate: data.vendor.commissionRate,
-                ownerName: data.vendor.owner?.name || data.vendor.businessName,
-                ownerId: data.vendor.ownerId,
-                rejectionReason: data.vendor.rejectionReason,
-                lastLogin: new Date().toISOString(),
-              };
-              set({ vendor: session, isAuthenticated: true });
-              return { success: true };
-            }
+          const res = await fetch("/api/auth/vendor-login", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ username: input, password }),
+          });
+
+          const data = await res.json();
+          if (res.ok && data?.vendor) {
+            const session: VendorSession = {
+              id: data.vendor.id,
+              businessName: data.vendor.businessName,
+              slug: data.vendor.slug,
+              contactEmail: data.vendor.contactEmail,
+              contactPhone: data.vendor.contactPhone,
+              category: data.vendor.category,
+              status: data.vendor.status,
+              commissionRate: data.vendor.commissionRate,
+              ownerName: data.vendor.ownerName,
+              ownerId: data.vendor.ownerId,
+              rejectionReason: data.vendor.rejectionReason,
+              mustChangePassword: data.vendor.mustChangePassword,
+              lastLogin: new Date().toISOString(),
+            };
+            set({ vendor: session, isAuthenticated: true });
+            return { success: true, mustChangePassword: data.vendor.mustChangePassword };
+          } else if (data?.error) {
+            return { success: false, error: data.error };
           }
         } catch (e) {
           console.error("Vendor login error:", e);
         }
 
-        // Fallback: create temporary vendor session if signing in with new email
-        if (input.includes("@")) {
-          const customVendor: VendorSession = {
-            id: `vnd-${Date.now().toString().slice(-4)}`,
-            businessName: input.split("@")[0].replace(/[^a-zA-Z0-9]/g, " ").toUpperCase() + " ENTERPRISES",
-            slug: input.split("@")[0],
-            contactEmail: input,
-            contactPhone: "9800000000",
-            category: "General Hardware",
-            status: "approved",
-            commissionRate: 15.0,
-            ownerName: input.split("@")[0],
-            ownerId: `usr-${Date.now().toString().slice(-4)}`,
-            lastLogin: new Date().toISOString(),
-          };
-          set({ vendor: customVendor, isAuthenticated: true });
-          return { success: true };
-        }
-
-        return { success: false, error: "Invalid vendor credentials. Please try demo accounts." };
+        return { success: false, error: "Invalid vendor credentials. Please check username and password." };
       },
 
       logout: () => set({ vendor: null, isAuthenticated: false }),

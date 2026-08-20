@@ -354,12 +354,14 @@ export async function getAdminMarketplaceStats() {
       approvedVendors,
       pendingProducts,
       totalVendorProducts,
+      inquiriesCount,
     ] = await Promise.all([
       prisma.vendor.count(),
       prisma.vendor.count({ where: { status: "pending" } }),
       prisma.vendor.count({ where: { status: "approved" } }),
       prisma.product.count({ where: { approvalStatus: "pending" } }),
       prisma.product.count({ where: { vendorId: { not: null } } }),
+      prisma.vendorApplication.count({ where: { status: "new_inquiry" } }),
     ]);
 
     return {
@@ -368,6 +370,7 @@ export async function getAdminMarketplaceStats() {
       approvedVendors,
       pendingProducts,
       totalVendorProducts,
+      inquiriesCount,
     };
   } catch (error) {
     console.error("Error fetching admin marketplace stats:", error);
@@ -377,6 +380,275 @@ export async function getAdminMarketplaceStats() {
       approvedVendors: 0,
       pendingProducts: 0,
       totalVendorProducts: 0,
+      inquiriesCount: 0,
     };
+  }
+}
+
+// 11. Path B: Direct Manual Vendor Creation (No prior application)
+export async function createVendorManually(data: {
+  businessName: string;
+  ownerName: string;
+  contactEmail: string;
+  contactPhone: string;
+  category?: string;
+  businessAddress?: string;
+  gstNumber?: string;
+  description?: string;
+  commissionRate?: number;
+  customPassword?: string;
+}) {
+  try {
+    const cleanPhone = data.contactPhone.replace(/\D/g, "");
+    if (cleanPhone.length !== 10) {
+      return { success: false, error: "Please enter a valid 10-digit phone number" };
+    }
+
+    const email = data.contactEmail.toLowerCase().trim();
+    if (!email || !email.includes("@")) {
+      return { success: false, error: "Please enter a valid email address" };
+    }
+
+    if (!data.businessName || data.businessName.trim().length < 2) {
+      return { success: false, error: "Please enter a valid shop/business name" };
+    }
+
+    const baseSlug = data.businessName
+      .toLowerCase()
+      .replace(/[^a-z0-9]+/g, "-")
+      .replace(/(^-|-$)+/g, "");
+    const slug = `${baseSlug}-${cleanPhone.slice(-4)}`;
+
+    const words = ["Intri", "Vendor", "Hub", "Shop", "Seller"];
+    const randomWord = words[Math.floor(Math.random() * words.length)];
+    const randomNum = Math.floor(1000 + Math.random() * 9000);
+    const plainPassword = data.customPassword?.trim() || `${randomWord}#${randomNum}`;
+    const crypto = await import("crypto");
+    const passwordHash = crypto.createHash("sha256").update(plainPassword).digest("hex");
+    const commissionRate = data.commissionRate !== undefined ? Number(data.commissionRate) : 15.0;
+
+    let user = await prisma.user.findFirst({
+      where: {
+        OR: [{ phone: cleanPhone }, { email }],
+      },
+      include: { vendor: true },
+    });
+
+    if (user?.vendor) {
+      return {
+        success: false,
+        error: `A vendor account already exists for ${user.email || user.phone} (${user.vendor.businessName}).`,
+      };
+    }
+
+    if (user) {
+      user = await prisma.user.update({
+        where: { id: user.id },
+        data: {
+          name: data.ownerName || data.businessName,
+          email,
+          role: "vendor",
+          passwordHash,
+          mustChangePassword: true,
+          authProvider: "credentials",
+        },
+        include: { vendor: true },
+      });
+    } else {
+      user = await prisma.user.create({
+        data: {
+          name: data.ownerName || data.businessName,
+          email,
+          phone: cleanPhone,
+          role: "vendor",
+          passwordHash,
+          mustChangePassword: true,
+          authProvider: "credentials",
+          phoneVerified: true,
+          emailVerified: true,
+        },
+        include: { vendor: true },
+      });
+    }
+
+    const vendor = await prisma.vendor.create({
+      data: {
+        businessName: data.businessName.trim(),
+        slug,
+        ownerId: user.id,
+        contactEmail: email,
+        contactPhone: cleanPhone,
+        businessAddress: data.businessAddress || "",
+        category: data.category || "General",
+        description: data.description || "",
+        gstNumber: data.gstNumber || null,
+        status: "approved",
+        commissionRate,
+        onboardingPath: "admin_created",
+      },
+    });
+
+    safeRevalidate("/admin/vendors");
+    safeRevalidate("/vendor");
+
+    return {
+      success: true,
+      vendor,
+      credentials: {
+        username: email,
+        phone: cleanPhone,
+        password: plainPassword,
+        businessName: vendor.businessName,
+        commissionRate: vendor.commissionRate,
+      },
+      message: `Vendor "${vendor.businessName}" created successfully!`,
+    };
+  } catch (error: any) {
+    console.error("createVendorManually error:", error);
+    return { success: false, error: error?.message || "Failed to create vendor" };
+  }
+}
+
+// 12. Super Admin: Per-Vendor Detail Analytics (/admin/vendors/[id])
+export async function getVendorDetailAnalytics(vendorId: string) {
+  try {
+    const vendor = await prisma.vendor.findUnique({
+      where: { id: vendorId },
+      include: {
+        owner: {
+          select: {
+            id: true,
+            name: true,
+            email: true,
+            phone: true,
+            createdAt: true,
+          },
+        },
+        products: {
+          include: {
+            variants: true,
+            attributes: true,
+          },
+          orderBy: { createdAt: "desc" },
+        },
+        splits: {
+          orderBy: { createdAt: "desc" },
+        },
+        payouts: {
+          orderBy: { createdAt: "desc" },
+        },
+      },
+    });
+
+    if (!vendor) return null;
+
+    // Calculate totals
+    let totalGrossRevenue = 0;
+    let totalCommissionEarned = 0;
+    let totalVendorEarnings = 0;
+    const dayMap: Record<string, { orders: number; revenue: number; commission: number; vendorPayout: number }> = {};
+
+    vendor.splits.forEach((split) => {
+      totalGrossRevenue += split.subtotal;
+      totalCommissionEarned += split.commissionAmount;
+      totalVendorEarnings += split.vendorPayoutAmount;
+
+      const dayKey = split.createdAt.toISOString().slice(0, 10);
+      if (!dayMap[dayKey]) {
+        dayMap[dayKey] = { orders: 0, revenue: 0, commission: 0, vendorPayout: 0 };
+      }
+      dayMap[dayKey].orders += 1;
+      dayMap[dayKey].revenue += split.subtotal;
+      dayMap[dayKey].commission += split.commissionAmount;
+      dayMap[dayKey].vendorPayout += split.vendorPayoutAmount;
+    });
+
+    const dayWiseTrends = Object.entries(dayMap)
+      .map(([date, data]) => ({ date, ...data }))
+      .sort((a, b) => b.date.localeCompare(a.date));
+
+    // Product breakdown
+    const productStats = {
+      total: vendor.products.length,
+      live: vendor.products.filter((p) => p.approvalStatus === "approved" && p.status === "active").length,
+      underReview: vendor.products.filter((p) => p.approvalStatus === "pending").length,
+      rejected: vendor.products.filter((p) => p.approvalStatus === "rejected").length,
+      paused: vendor.products.filter((p) => p.status === "paused").length,
+    };
+
+    return {
+      vendor: {
+        id: vendor.id,
+        businessName: vendor.businessName,
+        slug: vendor.slug,
+        category: vendor.category,
+        contactEmail: vendor.contactEmail,
+        contactPhone: vendor.contactPhone,
+        businessAddress: vendor.businessAddress,
+        gstNumber: vendor.gstNumber,
+        status: vendor.status,
+        rejectionReason: vendor.rejectionReason,
+        commissionRate: vendor.commissionRate,
+        onboardingPath: vendor.onboardingPath,
+        applicationId: vendor.applicationId,
+        createdAt: vendor.createdAt,
+        owner: vendor.owner,
+      },
+      stats: {
+        totalOrders: vendor.splits.length,
+        totalGrossRevenue,
+        totalCommissionEarned,
+        totalVendorEarnings,
+      },
+      productStats,
+      dayWiseTrends,
+      products: vendor.products.map(formatProduct),
+      splits: vendor.splits,
+      payouts: vendor.payouts,
+    };
+  } catch (error) {
+    console.error("getVendorDetailAnalytics error:", error);
+    return null;
+  }
+}
+
+// 13. Super Admin: Top Vendors Ranking Report (/admin/reports)
+export async function getTopVendorsReport() {
+  try {
+    const vendors = await prisma.vendor.findMany({
+      include: {
+        splits: true,
+        _count: {
+          select: { products: true },
+        },
+      },
+    });
+
+    const ranked = vendors.map((v) => {
+      const totalRevenue = v.splits.reduce((acc, s) => acc + s.subtotal, 0);
+      const totalCommission = v.splits.reduce((acc, s) => acc + s.commissionAmount, 0);
+      const totalPayout = v.splits.reduce((acc, s) => acc + s.vendorPayoutAmount, 0);
+      const totalOrders = v.splits.length;
+
+      return {
+        id: v.id,
+        businessName: v.businessName,
+        category: v.category,
+        contactPhone: v.contactPhone,
+        status: v.status,
+        commissionRate: v.commissionRate,
+        totalProducts: v._count.products,
+        totalOrders,
+        totalRevenue,
+        totalCommission,
+        totalPayout,
+      };
+    });
+
+    ranked.sort((a, b) => b.totalRevenue - a.totalRevenue);
+    return ranked;
+  } catch (error) {
+    console.error("getTopVendorsReport error:", error);
+    return [];
   }
 }

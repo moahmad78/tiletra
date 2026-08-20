@@ -368,39 +368,50 @@ export default function VendorProductsPage() {
                         <p className="text-[10px] text-gray-400">per {p.unitOfSale || "box"}</p>
                       </td>
 
-                      {/* Approval Status */}
+                      {/* 4-State Status Badge (Section 4.2) */}
                       <td className="py-3.5 px-3">
                         {isPending && (
-                          <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-[10px] font-bold bg-blue-50 text-blue-700 border border-blue-200">
-                            <Clock size={11} /> Pending Review
+                          <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[11px] font-black bg-amber-100 text-amber-900 border border-amber-300 shadow-2xs">
+                            <Clock size={12} className="text-amber-700" /> Under Review
+                          </span>
+                        )}
+                        {isApproved && !isPaused && (
+                          <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[11px] font-black bg-emerald-100 text-emerald-900 border border-emerald-300 shadow-2xs">
+                            <CheckCircle2 size={12} className="text-emerald-700" /> Live
+                          </span>
+                        )}
+                        {isApproved && isPaused && (
+                          <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[11px] font-black bg-gray-100 text-gray-700 border border-gray-300 shadow-2xs">
+                            <PauseCircle size={12} className="text-gray-500" /> Paused
                           </span>
                         )}
                         {isRejected && (
-                          <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-[10px] font-bold bg-rose-50 text-rose-700 border border-rose-200">
-                            <XCircle size={11} /> Rejected
-                          </span>
-                        )}
-                        {isApproved && (
-                          <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-[10px] font-bold bg-emerald-50 text-emerald-700 border border-emerald-200">
-                            <CheckCircle2 size={11} /> Approved
+                          <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[11px] font-black bg-red-100 text-red-900 border border-red-300 shadow-2xs">
+                            <XCircle size={12} className="text-red-700" /> Rejected
                           </span>
                         )}
                       </td>
 
                       {/* Store Status Toggle */}
                       <td className="py-3.5 px-3">
-                        <button
-                          onClick={() => handleToggleStatus(p)}
-                          className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-xl text-[11px] font-bold transition-all cursor-pointer ${
-                            isPaused
-                              ? "bg-amber-100 text-amber-800 hover:bg-amber-200"
-                              : "bg-emerald-100 text-emerald-800 hover:bg-emerald-200"
-                          }`}
-                          title={isPaused ? "Click to Activate" : "Click to Pause"}
-                        >
-                          {isPaused ? <PlayCircle size={13} /> : <PauseCircle size={13} />}
-                          <span>{isPaused ? "Paused" : "Active"}</span>
-                        </button>
+                        {isApproved ? (
+                          <button
+                            onClick={() => handleToggleStatus(p)}
+                            className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-xl text-xs font-bold transition-all cursor-pointer shadow-2xs ${
+                              isPaused
+                                ? "bg-amber-50 text-amber-900 border border-amber-200 hover:bg-amber-100"
+                                : "bg-emerald-50 text-emerald-900 border border-emerald-200 hover:bg-emerald-100"
+                            }`}
+                            title={isPaused ? "Click to Activate on storefront" : "Click to Pause listing"}
+                          >
+                            {isPaused ? <PlayCircle size={13} className="text-amber-700" /> : <PauseCircle size={13} className="text-emerald-700" />}
+                            <span>{isPaused ? "Resume" : "Pause"}</span>
+                          </button>
+                        ) : (
+                          <span className="text-[11px] text-gray-400 italic">
+                            {isPending ? "Awaiting admin" : "Fix & resubmit"}
+                          </span>
+                        )}
                       </td>
 
                       {/* Actions */}

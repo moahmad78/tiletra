@@ -3,7 +3,7 @@
 import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/Button";
 import { cn } from "@/lib/utils";
-import { Menu, X, MapPin, Phone, Mail, ShoppingCart, Search, Heart, User as UserIcon } from "lucide-react";
+import { Menu, X, MapPin, Phone, Mail, ShoppingCart, Search, Heart, User as UserIcon, Store } from "lucide-react";
 import Link from "next/link";
 import { useCartStore } from "@/lib/cart-store";
 import { useWishlistStore } from "@/lib/wishlist-store";
@@ -206,9 +206,10 @@ export default function Header() {
                 </button>
               )}
 
-              <Link href="/shop" className="hidden sm:block">
-                <Button className="rounded-xl px-4 lg:px-5 h-[40px] font-bold text-white bg-[#F26522] hover:bg-[#d95a1e] active:scale-95 shadow-xs hover:shadow transition-all whitespace-nowrap text-xs md:text-sm">
-                  Shop Now
+              <Link href="/vendor/apply" className="hidden sm:block">
+                <Button className="rounded-xl px-3.5 lg:px-4 h-[40px] font-bold text-white bg-[#F26522] hover:bg-[#d95a1e] active:scale-95 shadow-xs hover:shadow transition-all whitespace-nowrap text-xs md:text-sm flex items-center gap-1.5">
+                  <Store size={15} />
+                  <span>Become a Vendor</span>
                 </Button>
               </Link>
             </div>

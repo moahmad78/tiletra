@@ -1,11 +1,13 @@
-import { revalidatePath } from "next/cache";
 import type { Product, ProductVariant, Material, Finish } from "@/lib/data/products";
 
-export function safeRevalidate(path: string) {
+export async function safeRevalidate(path: string) {
   try {
-    revalidatePath(path);
+    if (typeof window === "undefined") {
+      const { revalidatePath } = await import("next/cache");
+      revalidatePath(path);
+    }
   } catch {
-    // Graceful no-op when called outside Next.js request/static generation store context (e.g. tests, scripts)
+    // Graceful no-op when called outside Next.js request context
   }
 }
 
@@ -89,6 +91,7 @@ export function formatProduct(dbProduct: any): Product {
     tags: Array.isArray(dbProduct.tags) ? dbProduct.tags : [],
     vendorId: dbProduct.vendorId || null,
     vendorName: dbProduct.vendor?.businessName || null,
+    vendorCommissionRate: dbProduct.vendor?.commissionRate !== undefined ? Number(dbProduct.vendor.commissionRate) : 15.0,
     status: dbProduct.status || "active",
     approvalStatus: dbProduct.approvalStatus || "approved",
     rejectionReason: dbProduct.rejectionReason || null,

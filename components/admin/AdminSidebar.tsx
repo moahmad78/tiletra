@@ -19,6 +19,7 @@ import {
   ChevronLeft,
   ChevronRight,
   Sparkles,
+  Clock,
 } from "lucide-react";
 import { useAdminStore } from "@/lib/admin-store";
 import { useState, useEffect } from "react";
@@ -26,6 +27,7 @@ import { getAdminMarketplaceStats } from "@/lib/actions/admin-vendor";
 
 const navItems = [
   { name: "Dashboard", href: "/admin", icon: LayoutDashboard, exact: true },
+  { name: "Vendor Inquiries", href: "/admin/vendor-applications", icon: Clock, badgeKey: "inquiriesCount" },
   { name: "Vendors & Shops", href: "/admin/vendors", icon: Store, badgeKey: "pendingVendors" },
   { name: "Product Approvals", href: "/admin/product-approvals", icon: CheckSquare, badgeKey: "pendingProducts" },
   { name: "Products", href: "/admin/products", icon: Package, badgeKey: "lowStock" },
@@ -53,6 +55,7 @@ export default function AdminSidebar({
   const [marketplaceStats, setMarketplaceStats] = useState({
     pendingVendors: 0,
     pendingProducts: 0,
+    inquiriesCount: 0,
   });
 
   useEffect(() => {
@@ -60,6 +63,7 @@ export default function AdminSidebar({
       setMarketplaceStats({
         pendingVendors: res.pendingVendors,
         pendingProducts: res.pendingProducts,
+        inquiriesCount: res.inquiriesCount,
       });
     });
   }, [pathname]);
@@ -80,6 +84,7 @@ export default function AdminSidebar({
     pendingReviews: pendingReviewsCount,
     pendingVendors: marketplaceStats.pendingVendors,
     pendingProducts: marketplaceStats.pendingProducts,
+    inquiriesCount: marketplaceStats.inquiriesCount,
   };
 
   return (

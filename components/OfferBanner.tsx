@@ -47,6 +47,16 @@ const DEFAULT_SLIDES: MobileBannerSlide[] = [
     bgGradient: "from-[#1a1c29]/95 via-[#052a51]/85 to-transparent",
     image: "/placeholders/banner.svg",
   },
+  {
+    id: "slide-vendor",
+    badge: "Sell on Intrihub",
+    title: "Become a Vendor Partner",
+    subtitle: "Grow your shop, reach more customers across Bangalore",
+    cta: "Apply as Seller",
+    href: "/vendor/apply",
+    bgGradient: "from-[#031d38]/95 via-[#052a51]/85 to-transparent",
+    image: "/placeholders/banner.svg",
+  },
 ];
 
 export default function OfferBanner({ slides }: { slides?: MobileBannerSlide[] }) {

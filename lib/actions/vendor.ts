@@ -548,3 +548,31 @@ export async function getVendorDashboardStats(vendorId: string) {
     };
   }
 }
+
+// 10. Change Vendor Password (First-Login Reset or Settings Update)
+export async function changeVendorPassword(ownerId: string, newPassword: string) {
+  try {
+    if (!ownerId) return { success: false, error: "User ID required" };
+    if (!newPassword || newPassword.trim().length < 6) {
+      return { success: false, error: "Password must be at least 6 characters long." };
+    }
+
+    const crypto = await import("crypto");
+    const passwordHash = crypto.createHash("sha256").update(newPassword.trim()).digest("hex");
+
+    await prisma.user.update({
+      where: { id: ownerId },
+      data: {
+        passwordHash,
+        mustChangePassword: false,
+      },
+    });
+
+    safeRevalidate("/vendor");
+    return { success: true, message: "Your password has been updated successfully!" };
+  } catch (error: any) {
+    console.error("changeVendorPassword error:", error);
+    return { success: false, error: error?.message || "Failed to update password." };
+  }
+}
+

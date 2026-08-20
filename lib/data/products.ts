@@ -41,6 +41,7 @@ export type Product = {
   tags: string[];
   vendorId?: string | null;
   vendorName?: string | null;
+  vendorCommissionRate?: number | null;
   status?: "active" | "paused" | "draft";
   approvalStatus?: "pending" | "approved" | "rejected";
   rejectionReason?: string | null;

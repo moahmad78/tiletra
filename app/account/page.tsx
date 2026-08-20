@@ -34,6 +34,7 @@ import {
   Loader2,
   CheckCircle2,
   AlertCircle,
+  Store,
 } from "lucide-react";
 import Header from "@/components/Header";
 import Footer from "@/components/Footer";
@@ -451,6 +452,25 @@ export default function AccountPage() {
               </div>
               <ChevronRight size={16} className="text-gray-400" />
             </button>
+          </div>
+
+          {/* Sell on Intrihub / Become a Vendor Card */}
+          <div className="bg-gradient-to-r from-blue-50/90 to-orange-50/90 rounded-3xl p-3 border border-blue-100 shadow-2xs">
+            <Link
+              href="/vendor/apply"
+              className="w-full flex items-center justify-between p-2.5 rounded-2xl hover:bg-white/70 active:bg-white transition-colors"
+            >
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 rounded-2xl bg-[#052a51] text-white flex items-center justify-center font-bold shrink-0 shadow-2xs">
+                  <Store size={18} className="text-[#F26522]" />
+                </div>
+                <div>
+                  <p className="text-xs font-black text-[#052a51]">Become a Vendor / Sell on Intrihub</p>
+                  <p className="text-[10px] text-gray-600">Grow your shop & reach thousands of customers</p>
+                </div>
+              </div>
+              <ChevronRight size={16} className="text-gray-400" />
+            </Link>
           </div>
 
           {/* Help & Support List */}
