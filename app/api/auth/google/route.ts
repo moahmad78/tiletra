@@ -14,6 +14,15 @@ export async function GET(request: NextRequest) {
   const baseUrl = getAuthBaseUrl(request);
   const redirectUri = `${baseUrl}/api/auth/callback/google`;
 
+  console.log("[Google OAuth Initiation]", {
+    hostHeader: request.headers.get("host"),
+    xForwardedHost: request.headers.get("x-forwarded-host"),
+    xForwardedProto: request.headers.get("x-forwarded-proto"),
+    requestUrl: request.url,
+    derivedBaseUrl: baseUrl,
+    redirectUri,
+  });
+
   // ─── HMAC-Signed Stateless CSRF State Token ──────────────────────────────
   // Encodes nonce, intent, creation timestamp, and 15-minute expiration
   const secret = getOAuthSecret();

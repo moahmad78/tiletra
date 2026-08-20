@@ -14,17 +14,17 @@ export const ALLOWED_AUTH_HOSTS = new Set<string>([
 // Include optional environment-configured hosts if present
 if (process.env.NEXT_PUBLIC_APP_URL) {
   try {
-    ALLOWED_AUTH_HOSTS.add(new URL(process.env.NEXT_PUBLIC_APP_URL).host.toLowerCase());
+    ALLOWED_AUTH_HOSTS.add(new URL(process.env.NEXT_PUBLIC_APP_URL).host.toLowerCase().split(":")[0]);
   } catch {}
 }
 if (process.env.BETTER_AUTH_URL) {
   try {
-    ALLOWED_AUTH_HOSTS.add(new URL(process.env.BETTER_AUTH_URL).host.toLowerCase());
+    ALLOWED_AUTH_HOSTS.add(new URL(process.env.BETTER_AUTH_URL).host.toLowerCase().split(":")[0]);
   } catch {}
 }
 if (process.env.RENDER_EXTERNAL_HOSTNAME) {
   try {
-    ALLOWED_AUTH_HOSTS.add(process.env.RENDER_EXTERNAL_HOSTNAME.toLowerCase());
+    ALLOWED_AUTH_HOSTS.add(process.env.RENDER_EXTERNAL_HOSTNAME.toLowerCase().split(":")[0]);
   } catch {}
 }
 
@@ -36,6 +36,7 @@ if (process.env.RENDER_EXTERNAL_HOSTNAME) {
  */
 export function getAuthBaseUrl(request: NextRequest): string {
   // 1. Extract host from forwarded headers or host header or request URL
+  // In Render / reverse proxy setups, x-forwarded-host represents the public custom domain
   const forwardedHost = request.headers.get("x-forwarded-host");
   const hostHeader = request.headers.get("host");
   let urlHost = "";
@@ -44,25 +45,27 @@ export function getAuthBaseUrl(request: NextRequest): string {
   } catch {}
 
   // Take the first host if forwarded header contains a comma-separated list
-  const candidateHost = (forwardedHost || hostHeader || urlHost || "")
+  const candidateRaw = (forwardedHost || hostHeader || urlHost || "")
     .split(",")[0]
     .trim()
     .toLowerCase();
 
-  // Check if candidate matches allowlist (or host without port matches allowlist)
-  const hostWithoutPort = candidateHost.split(":")[0];
-  const isAllowed = ALLOWED_AUTH_HOSTS.has(candidateHost) || ALLOWED_AUTH_HOSTS.has(hostWithoutPort);
+  const [hostWithoutPort, port] = candidateRaw.split(":");
+  const isLocal = hostWithoutPort === "localhost" || hostWithoutPort === "127.0.0.1";
 
-  if (candidateHost && isAllowed) {
-    const isLocal = candidateHost.startsWith("localhost") || candidateHost.startsWith("127.0.0.1");
-    let proto = isLocal ? "http" : "https";
+  const isAllowed =
+    ALLOWED_AUTH_HOSTS.has(candidateRaw) ||
+    ALLOWED_AUTH_HOSTS.has(hostWithoutPort);
+
+  if (hostWithoutPort && isAllowed) {
     if (isLocal) {
       const forwardedProto = request.headers.get("x-forwarded-proto");
-      if (forwardedProto) {
-        proto = forwardedProto.split(",")[0].trim();
-      }
+      const proto = forwardedProto ? forwardedProto.split(",")[0].trim() : "http";
+      const finalHost = port && port !== "80" && port !== "443" ? `${hostWithoutPort}:${port}` : hostWithoutPort;
+      return `${proto}://${finalHost}`;
     }
-    return `${proto}://${candidateHost}`;
+    // Production public domain: strictly enforce https and no standard port suffix (:443)
+    return `https://${hostWithoutPort}`;
   }
 
   // 2. Safe fallback when host is unknown or not allowlisted

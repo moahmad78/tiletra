@@ -50,6 +50,14 @@ export async function GET(request: NextRequest) {
   const baseUrl = getAuthBaseUrl(request);
   const { searchParams } = new URL(request.url);
 
+  console.log("[Google OAuth Callback]", {
+    hostHeader: request.headers.get("host"),
+    xForwardedHost: request.headers.get("x-forwarded-host"),
+    xForwardedProto: request.headers.get("x-forwarded-proto"),
+    requestUrl: request.url,
+    derivedBaseUrl: baseUrl,
+  });
+
   const code = searchParams.get("code");
   const state = searchParams.get("state");
   const error = searchParams.get("error");
