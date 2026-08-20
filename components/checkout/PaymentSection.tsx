@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import {
   CreditCard,
   Smartphone,
@@ -15,6 +15,11 @@ import {
   Calendar,
   KeyRound,
   User,
+  Download,
+  Share2,
+  RefreshCw,
+  Clock,
+  CheckCircle2,
 } from "lucide-react";
 import {
   UpiIcon,
@@ -26,6 +31,7 @@ import {
   RuPayIcon,
   NetBankingIcon,
 } from "./PaymentIcons";
+import { toast } from "sonner";
 
 export type PaymentMethodType = "upi" | "card" | "netbanking" | "cod";
 
@@ -47,6 +53,7 @@ interface PaymentSectionProps {
   isProcessing: boolean;
   onPaySubmit: () => void;
   onBack: () => void;
+  orderId?: string;
 }
 
 const POPULAR_BANKS = [
@@ -84,12 +91,41 @@ export default function PaymentSection({
   isProcessing,
   onPaySubmit,
   onBack,
+  orderId = "TILE" + Math.floor(100000 + Math.random() * 900000),
 }: PaymentSectionProps) {
   const [customUpiInput, setCustomUpiInput] = useState(paymentState.upiId || "");
   const [cardNumber, setCardNumber] = useState(paymentState.cardNumber || "");
   const [cardExpiry, setCardExpiry] = useState(paymentState.cardExpiry || "");
   const [cardCvv, setCardCvv] = useState(paymentState.cardCvv || "");
   const [cardName, setCardName] = useState(paymentState.cardName || "");
+
+  // QR State & Timer (15 minutes countdown)
+  const [qrSecondsLeft, setQrSecondsLeft] = useState(15 * 60);
+  const [qrStatus, setQrStatus] = useState<"WAITING" | "PROCESSING" | "PAID" | "EXPIRED">("WAITING");
+
+  const formattedTotal = "₹" + totalAmount.toLocaleString("en-IN");
+
+  // Timer countdown for QR
+  useEffect(() => {
+    if (paymentState.method !== "upi" || paymentState.upiApp !== "qr") return;
+
+    if (qrSecondsLeft <= 0) {
+      setQrStatus("EXPIRED");
+      return;
+    }
+
+    const timer = setInterval(() => {
+      setQrSecondsLeft((prev) => (prev > 0 ? prev - 1 : 0));
+    }, 1000);
+
+    return () => clearInterval(timer);
+  }, [paymentState.method, paymentState.upiApp, qrSecondsLeft]);
+
+  const formatTimer = (secs: number) => {
+    const m = Math.floor(secs / 60);
+    const s = secs % 60;
+    return `${m.toString().padStart(2, "0")}:${s.toString().padStart(2, "0")}`;
+  };
 
   const handleSelectMethod = (method: PaymentMethodType) => {
     onPaymentStateChange({
@@ -104,6 +140,10 @@ export default function PaymentSection({
       method: "upi",
       upiApp: app,
     });
+    if (app === "qr") {
+      setQrSecondsLeft(15 * 60);
+      setQrStatus("WAITING");
+    }
   };
 
   const handleBankSelect = (code: string) => {
@@ -158,15 +198,69 @@ export default function PaymentSection({
     });
   };
 
-  const formattedTotal = "₹" + totalAmount.toLocaleString("en-IN");
+  // Dynamic QR Image URL generator (Standard UPI payload)
+  const qrUpiPayload = `upi://pay?pa=intrihub@razorpay&pn=Tiletra%20Intrihub&am=${totalAmount}&cu=INR&tn=Order%20${orderId}`;
+  const qrImageUrl = `https://api.qrserver.com/v1/create-qr-code/?size=250x250&data=${encodeURIComponent(
+    qrUpiPayload
+  )}&margin=10`;
+
+  // Download QR handler
+  const handleDownloadQr = async () => {
+    try {
+      const response = await fetch(qrImageUrl);
+      const blob = await response.blob();
+      const url = window.URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = `tiletra-payment-${orderId}.png`;
+      document.body.appendChild(a);
+      a.click();
+      window.URL.revokeObjectURL(url);
+      document.body.removeChild(a);
+      toast.success("Payment QR code downloaded!");
+    } catch {
+      toast.error("Failed to download QR image");
+    }
+  };
+
+  // Share QR handler
+  const handleShareQr = async () => {
+    if (navigator.share) {
+      try {
+        await navigator.share({
+          title: "Tiletra Payment QR",
+          text: `Scan & Pay ₹${totalAmount.toLocaleString(
+            "en-IN"
+          )} for Tiletra Order #${orderId}`,
+          url: window.location.href,
+        });
+      } catch {
+        // user cancelled
+      }
+    } else {
+      navigator.clipboard.writeText(qrUpiPayload);
+      toast.success("UPI payment intent copied to clipboard!");
+    }
+  };
 
   // Determine card type icon
   const getCardIcon = () => {
     const clean = cardNumber.replace(/\s/g, "");
     if (clean.startsWith("4")) return <VisaIcon />;
-    if (clean.startsWith("51") || clean.startsWith("52") || clean.startsWith("53") || clean.startsWith("54") || clean.startsWith("55"))
+    if (
+      clean.startsWith("51") ||
+      clean.startsWith("52") ||
+      clean.startsWith("53") ||
+      clean.startsWith("54") ||
+      clean.startsWith("55")
+    )
       return <MastercardIcon />;
-    if (clean.startsWith("60") || clean.startsWith("65") || clean.startsWith("81") || clean.startsWith("82"))
+    if (
+      clean.startsWith("60") ||
+      clean.startsWith("65") ||
+      clean.startsWith("81") ||
+      clean.startsWith("82")
+    )
       return <RuPayIcon />;
     return (
       <div className="flex items-center gap-1">
@@ -262,7 +356,7 @@ export default function PaymentSection({
                   })}
                 </div>
 
-                {/* Enter UPI ID input field */}
+                {/* Option A: Enter UPI ID input field */}
                 {paymentState.upiApp === "other" && (
                   <div className="pt-1.5 space-y-1.5">
                     <label className="text-[11px] font-bold text-gray-700 block">
@@ -281,16 +375,81 @@ export default function PaymentSection({
                   </div>
                 )}
 
-                {/* Scan QR Option Callout */}
+                {/* Option B: Scan & Pay QR Code Container */}
                 {paymentState.upiApp === "qr" && (
-                  <div className="p-3.5 bg-white rounded-xl border border-orange-200 text-xs space-y-1 text-gray-700">
-                    <div className="flex items-center gap-2 font-bold text-[#052a51]">
-                      <QrCode size={16} className="text-[#F26522]" />
-                      <span>Instant Dynamic UPI QR</span>
+                  <div className="p-4 sm:p-5 bg-white rounded-2xl border border-orange-200 shadow-2xs text-center space-y-3.5">
+                    <div className="flex items-center justify-between flex-wrap gap-2 pb-2 border-b border-gray-100">
+                      <div className="flex items-center gap-2">
+                        <QrCode size={18} className="text-[#F26522]" />
+                        <span className="text-xs font-bold text-[#052a51]">Scan & Pay with any UPI App</span>
+                      </div>
+                      <div className="flex items-center gap-1 text-[11px] font-bold text-amber-700 bg-amber-50 px-2.5 py-1 rounded-lg border border-amber-200">
+                        <Clock size={13} />
+                        <span>Expires in {formatTimer(qrSecondsLeft)}</span>
+                      </div>
                     </div>
-                    <p className="text-[11px] text-gray-500 leading-relaxed">
-                      Click below to generate and display the order-specific UPI QR code to scan with any UPI app (GPay, PhonePe, Paytm, BHIM, CRED).
-                    </p>
+
+                    {/* QR Image Box */}
+                    <div className="flex flex-col items-center justify-center py-2">
+                      {qrStatus === "EXPIRED" ? (
+                        <div className="w-48 h-48 rounded-2xl bg-gray-50 border-2 border-dashed border-gray-300 flex flex-col items-center justify-center gap-2 p-4">
+                          <p className="text-xs font-bold text-rose-600">QR Code Expired</p>
+                          <button
+                            type="button"
+                            onClick={() => {
+                              setQrSecondsLeft(15 * 60);
+                              setQrStatus("WAITING");
+                              toast.info("Generated fresh QR Code");
+                            }}
+                            className="px-3 py-1.5 bg-[#052a51] text-white text-xs font-bold rounded-xl flex items-center gap-1.5 cursor-pointer shadow-xs"
+                          >
+                            <RefreshCw size={13} />
+                            <span>Regenerate QR</span>
+                          </button>
+                        </div>
+                      ) : (
+                        <div className="relative p-2 bg-white rounded-2xl border-2 border-gray-200 shadow-xs">
+                          {/* eslint-disable-next-line @next/next/no-img-element */}
+                          <img
+                            src={qrImageUrl}
+                            alt="Tiletra Payment QR Code"
+                            className="w-44 h-44 sm:w-48 sm:h-48 object-contain rounded-xl"
+                          />
+                        </div>
+                      )}
+
+                      <div className="mt-3 space-y-0.5">
+                        <p className="text-xs text-gray-500 font-medium">Payable Amount</p>
+                        <p className="text-lg font-black text-[#F26522]">{formattedTotal}</p>
+                      </div>
+                    </div>
+
+                    {/* Download and Share Buttons */}
+                    <div className="flex items-center justify-center gap-2 pt-1">
+                      <button
+                        type="button"
+                        onClick={handleDownloadQr}
+                        disabled={qrStatus === "EXPIRED"}
+                        className="px-3.5 py-2 bg-gray-100 hover:bg-gray-200 text-gray-700 text-xs font-bold rounded-xl flex items-center gap-1.5 transition-colors cursor-pointer disabled:opacity-50"
+                      >
+                        <Download size={14} />
+                        <span>Download QR</span>
+                      </button>
+                      <button
+                        type="button"
+                        onClick={handleShareQr}
+                        disabled={qrStatus === "EXPIRED"}
+                        className="px-3.5 py-2 bg-gray-100 hover:bg-gray-200 text-gray-700 text-xs font-bold rounded-xl flex items-center gap-1.5 transition-colors cursor-pointer disabled:opacity-50"
+                      >
+                        <Share2 size={14} />
+                        <span>Share QR</span>
+                      </button>
+                    </div>
+
+                    <div className="flex items-center justify-center gap-1.5 text-[11px] font-medium text-gray-500 pt-1">
+                      <div className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
+                      <span>Waiting for payment detection...</span>
+                    </div>
                   </div>
                 )}
               </div>
@@ -591,7 +750,7 @@ export default function PaymentSection({
               id="online-pay-btn"
               type="button"
               onClick={onPaySubmit}
-              disabled={isProcessing}
+              disabled={isProcessing || (paymentState.method === "upi" && paymentState.upiApp === "qr" && qrStatus === "EXPIRED")}
               className="flex-1 h-12 sm:h-13 bg-[#F26522] hover:bg-[#d95a1e] text-white font-black text-xs sm:text-sm rounded-2xl shadow-md transition-all flex items-center justify-center gap-2 active:scale-95 cursor-pointer disabled:opacity-60 disabled:cursor-not-allowed"
             >
               {isProcessing ? (
