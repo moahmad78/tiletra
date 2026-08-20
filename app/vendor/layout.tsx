@@ -5,7 +5,7 @@ import { usePathname, useRouter } from "next/navigation";
 import VendorSidebar from "@/components/vendor/VendorSidebar";
 import VendorHeader from "@/components/vendor/VendorHeader";
 import { useVendorAuth } from "@/lib/vendor-auth";
-import { AlertCircle, Clock, AlertTriangle } from "lucide-react";
+import { AlertCircle, Clock, AlertTriangle, Loader2 } from "lucide-react";
 
 export default function VendorLayout({
   children,
@@ -19,19 +19,30 @@ export default function VendorLayout({
   const [mobileOpen, setMobileOpen] = useState(false);
   const [mounted, setMounted] = useState(false);
 
+  const isAuthPage = pathname === "/vendor/login" || pathname === "/vendor/signup" || pathname === "/vendor/apply";
+
   useEffect(() => {
     setMounted(true);
-    const isAuthPage = pathname === "/vendor/login" || pathname === "/vendor/signup";
     if (!isAuthenticated && !isAuthPage) {
       router.push("/vendor/login");
     }
-  }, [isAuthenticated, pathname, router]);
+  }, [isAuthenticated, isAuthPage, router]);
 
   if (!mounted) return null;
 
-  const isAuthPage = pathname === "/vendor/login" || pathname === "/vendor/signup" || pathname === "/vendor/apply";
   if (isAuthPage) {
     return <div className="min-h-screen bg-[#F3F4F5]">{children}</div>;
+  }
+
+  if (!isAuthenticated) {
+    return (
+      <div className="min-h-screen bg-[#052a51] flex items-center justify-center p-4">
+        <div className="flex flex-col items-center gap-3 text-white">
+          <Loader2 className="animate-spin text-[#F26522]" size={32} />
+          <p className="text-sm font-bold">Redirecting to Vendor Login...</p>
+        </div>
+      </div>
+    );
   }
 
   // If vendor account is in pending or rejected state, block access to panel routes and display Under Review screen

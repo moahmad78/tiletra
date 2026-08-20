@@ -77,31 +77,13 @@ export const DEMO_VENDORS: VendorSession[] = [
 export const useVendorAuth = create<VendorAuthState>()(
   persist(
     (set, get) => ({
-      vendor: DEMO_VENDORS[0], // Pre-authenticated with Sri Balaji Electricals
-      isAuthenticated: true,
+      vendor: null,
+      isAuthenticated: false,
 
       login: async (emailOrPhone, password) => {
         const input = emailOrPhone.toLowerCase().trim();
-        const cleanPhone = input.replace(/\D/g, "");
 
-        // 1. Check demo vendors first
-        const demoMatch = DEMO_VENDORS.find(
-          (v) =>
-            v.contactEmail.toLowerCase() === input ||
-            v.contactPhone === cleanPhone ||
-            v.businessName.toLowerCase().includes(input)
-        );
-
-        if (demoMatch) {
-          const session: VendorSession = {
-            ...demoMatch,
-            lastLogin: new Date().toISOString(),
-          };
-          set({ vendor: session, isAuthenticated: true });
-          return { success: true, mustChangePassword: false };
-        }
-
-        // 2. Query Database / Server API via POST
+        // Query Database / Server API via POST
         try {
           const res = await fetch("/api/auth/vendor-login", {
             method: "POST",
@@ -138,17 +120,23 @@ export const useVendorAuth = create<VendorAuthState>()(
         return { success: false, error: "Invalid vendor credentials. Please check username and password." };
       },
 
-      logout: () => set({ vendor: null, isAuthenticated: false }),
+      logout: () => {
+        set({ vendor: null, isAuthenticated: false });
+        if (typeof window !== "undefined") {
+          try {
+            localStorage.removeItem("intrihub-vendor-auth");
+            sessionStorage.clear();
+          } catch {}
+        }
+      },
 
       setVendor: (vendor) => set({ vendor, isAuthenticated: Boolean(vendor) }),
 
-      quickSwitchVendor: (demoId) => {
-        const found = DEMO_VENDORS.find((v) => v.id === demoId) || DEMO_VENDORS[0];
-        set({ vendor: { ...found, lastLogin: new Date().toISOString() }, isAuthenticated: true });
-      },
+      quickSwitchVendor: () => {},
     }),
     {
       name: "intrihub-vendor-auth",
     }
   )
 );
+

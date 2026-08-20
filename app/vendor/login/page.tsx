@@ -3,14 +3,14 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
-import { useVendorAuth, DEMO_VENDORS } from "@/lib/vendor-auth";
+import { useVendorAuth } from "@/lib/vendor-auth";
 import { changeVendorPassword } from "@/lib/actions/vendor";
 import { Store, ArrowRight, ShieldCheck, Zap, Lock, Mail, KeyRound, CheckCircle2, Loader2 } from "lucide-react";
 import { toast } from "sonner";
 
 export default function VendorLoginPage() {
   const router = useRouter();
-  const { login, quickSwitchVendor, vendor } = useVendorAuth();
+  const { login, vendor } = useVendorAuth();
   const [identifier, setIdentifier] = useState("");
   const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
@@ -71,12 +71,6 @@ export default function VendorLoginPage() {
     } else {
       toast.error(res.error || "Failed to update password");
     }
-  };
-
-  const handleDemoLogin = (demoId: string) => {
-    quickSwitchVendor(demoId);
-    toast.success("Logged in with test vendor account!");
-    router.push("/vendor");
   };
 
   return (
@@ -154,33 +148,6 @@ export default function VendorLoginPage() {
               )}
             </button>
           </form>
-
-          {/* Quick 1-Click Demo Accounts */}
-          <div className="mt-6 pt-6 border-t border-gray-100">
-            <p className="text-[11px] font-bold text-gray-400 uppercase tracking-wider text-center mb-3">
-              ⚡ Instant 1-Click Demo Test Accounts
-            </p>
-            <div className="space-y-2">
-              {DEMO_VENDORS.map((v) => (
-                <button
-                  key={v.id}
-                  type="button"
-                  onClick={() => handleDemoLogin(v.id)}
-                  className="w-full flex items-center justify-between p-2.5 rounded-xl border border-gray-200 hover:border-[#052a51] hover:bg-blue-50/50 transition-all text-left group"
-                >
-                  <div className="min-w-0 pr-2">
-                    <p className="text-xs font-bold text-gray-800 truncate group-hover:text-[#052a51]">
-                      {v.businessName}
-                    </p>
-                    <p className="text-[10px] text-gray-500 truncate">{v.category}</p>
-                  </div>
-                  <span className="text-[10px] font-bold px-2 py-0.5 rounded-md bg-gray-100 text-gray-700 group-hover:bg-[#052a51] group-hover:text-white transition-colors shrink-0">
-                    Login →
-                  </span>
-                </button>
-              ))}
-            </div>
-          </div>
 
           {/* Sign Up Link */}
           <div className="mt-6 text-center text-xs text-gray-500">
