@@ -1,36 +1,10 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import crypto from "crypto";
+import { getAuthBaseUrl, getOAuthSecret } from "@/lib/auth-url";
 
 const GOOGLE_TOKEN_URL = "https://oauth2.googleapis.com/token";
 const GOOGLE_USERINFO_URL = "https://www.googleapis.com/oauth2/v3/userinfo";
-
-function getBaseUrl(request: NextRequest): string {
-  const envUrl = process.env.NEXT_PUBLIC_APP_URL || process.env.BETTER_AUTH_URL;
-  if (envUrl && !envUrl.includes("localhost")) {
-    return envUrl.replace(/\/$/, "");
-  }
-
-  const host = request.headers.get("x-forwarded-host") || request.headers.get("host") || "";
-  if (host.includes("tiletra.com")) {
-    return "https://tiletra.com";
-  }
-
-  const proto = request.headers.get("x-forwarded-proto") || (request.url.startsWith("https") ? "https" : "http");
-  if (host) {
-    return `${proto}://${host}`;
-  }
-
-  return process.env.NODE_ENV === "production" ? "https://tiletra.com" : "http://localhost:3000";
-}
-
-function getOAuthSecret(): string {
-  return (
-    process.env.NEXTAUTH_SECRET ||
-    process.env.GOOGLE_CLIENT_SECRET ||
-    "tiletra-super-secure-oauth-secret-key-2026"
-  );
-}
 
 function verifyAndExtractState(state: string | null, savedCookieState: string | undefined): { valid: boolean; intent: string } {
   if (!state) return { valid: false, intent: "" };
@@ -73,7 +47,7 @@ function verifyAndExtractState(state: string | null, savedCookieState: string | 
 }
 
 export async function GET(request: NextRequest) {
-  const baseUrl = getBaseUrl(request);
+  const baseUrl = getAuthBaseUrl(request);
   const { searchParams } = new URL(request.url);
 
   const code = searchParams.get("code");
@@ -212,10 +186,10 @@ export async function GET(request: NextRequest) {
     response.cookies.set("oauth_state", "", { maxAge: 0, path: "/" });
 
     // Set persistent session cookie
-    const isProd = process.env.NODE_ENV === "production" || baseUrl.includes("tiletra.com");
+    const isSecure = baseUrl.startsWith("https://");
     response.cookies.set("tiletra_session", encoded, {
       httpOnly: false,
-      secure: isProd,
+      secure: isSecure,
       sameSite: "lax",
       maxAge: 60 * 60 * 24 * 7, // 7 days
       path: "/",

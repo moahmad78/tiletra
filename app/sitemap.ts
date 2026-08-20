@@ -3,7 +3,7 @@ import { getProducts } from "@/lib/actions/products";
 import { getCategories } from "@/lib/actions/categories";
 
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
-  const baseUrl = process.env.NEXT_PUBLIC_APP_URL || "https://tiletra.com";
+  const baseUrl = process.env.NEXT_PUBLIC_APP_URL || "https://intrihub.com";
 
   // Static pages
   const staticRoutes: MetadataRoute.Sitemap = [

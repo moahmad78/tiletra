@@ -1,35 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import crypto from "crypto";
-
-function getBaseUrl(request: NextRequest): string {
-  // 1. Explicit production env var
-  const envUrl = process.env.NEXT_PUBLIC_APP_URL || process.env.BETTER_AUTH_URL;
-  if (envUrl && !envUrl.includes("localhost")) {
-    return envUrl.replace(/\/$/, "");
-  }
-
-  // 2. Derive dynamically from request headers
-  const host = request.headers.get("x-forwarded-host") || request.headers.get("host") || "";
-  if (host.includes("tiletra.com")) {
-    return "https://tiletra.com";
-  }
-
-  const proto = request.headers.get("x-forwarded-proto") || (request.url.startsWith("https") ? "https" : "http");
-  if (host) {
-    return `${proto}://${host}`;
-  }
-
-  // 3. Fallback based on NODE_ENV
-  return process.env.NODE_ENV === "production" ? "https://tiletra.com" : "http://localhost:3000";
-}
-
-function getOAuthSecret(): string {
-  return (
-    process.env.NEXTAUTH_SECRET ||
-    process.env.GOOGLE_CLIENT_SECRET ||
-    "tiletra-super-secure-oauth-secret-key-2026"
-  );
-}
+import { getAuthBaseUrl, getOAuthSecret } from "@/lib/auth-url";
 
 export async function GET(request: NextRequest) {
   const clientId = process.env.GOOGLE_CLIENT_ID;
@@ -40,7 +11,7 @@ export async function GET(request: NextRequest) {
   const { searchParams } = new URL(request.url);
   const intent = searchParams.get("intent") || "";
 
-  const baseUrl = getBaseUrl(request);
+  const baseUrl = getAuthBaseUrl(request);
   const redirectUri = `${baseUrl}/api/auth/callback/google`;
 
   // ─── HMAC-Signed Stateless CSRF State Token ──────────────────────────────
@@ -72,10 +43,10 @@ export async function GET(request: NextRequest) {
   const response = NextResponse.redirect(googleAuthUrl);
 
   // Set cookie for browser session tracking (supporting both root and subdomains)
-  const isProd = process.env.NODE_ENV === "production" || baseUrl.includes("tiletra.com");
+  const isSecure = baseUrl.startsWith("https://");
   response.cookies.set("oauth_state", state, {
     httpOnly: true,
-    secure: isProd,
+    secure: isSecure,
     sameSite: "lax",
     maxAge: 900, // 15 minutes
     path: "/",
@@ -83,3 +54,4 @@ export async function GET(request: NextRequest) {
 
   return response;
 }
+
