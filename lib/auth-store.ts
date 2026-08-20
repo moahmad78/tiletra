@@ -174,16 +174,35 @@ export const useAuthStore = create<AuthState>()(
       },
 
       googleSignIn: async (userData) => {
-        let addresses: CustomerAddress[] = [];
-        let userId = userData.userId || "";
+        const userId = userData.userId || "";
+        const realPhone = userData.phone && !userData.phone.startsWith("google_") ? userData.phone : "";
 
-        // If userId is provided from OAuth session, fetch real DB addresses for this specific user
+        // 1. Instantly set authenticated state without blocking UI on network requests
+        const immediateUser: CustomerUser = {
+          id: userId || `usr-google-${Date.now()}`,
+          phone: realPhone,
+          name: userData.name,
+          email: userData.email,
+          avatar: userData.avatar,
+          addresses: [],
+          defaultAddressId: undefined,
+          phoneVerified: Boolean(userData.phoneVerified),
+          createdAt: userData.createdAt || new Date().toISOString(),
+        };
+
+        set({
+          user: immediateUser,
+          isAuthenticated: true,
+          isLoginModalOpen: false,
+        });
+
+        // 2. Fetch real DB addresses asynchronously in the background
         if (userId) {
           try {
             const { getDbUser } = await import("@/lib/actions/auth");
             const dbUser = await getDbUser(userId);
             if (dbUser && Array.isArray(dbUser.addresses)) {
-              addresses = dbUser.addresses.map((a: any) => ({
+              const addresses: CustomerAddress[] = dbUser.addresses.map((a: any) => ({
                 id: a.id,
                 name: userData.name || "Customer",
                 phone: (userData.phone && !userData.phone.startsWith("google_")) ? userData.phone : "",
@@ -196,31 +215,22 @@ export const useAuthStore = create<AuthState>()(
                 label: (a.label as any) || "Home",
                 isDefault: Boolean(a.isDefault),
               }));
+
+              set((state) => {
+                if (!state.user || state.user.id !== userId) return state;
+                return {
+                  user: {
+                    ...state.user,
+                    addresses,
+                    defaultAddressId: addresses.find((a) => a.isDefault)?.id || addresses[0]?.id,
+                  },
+                };
+              });
             }
           } catch (e) {
-            console.error("Failed to load user addresses:", e);
+            console.error("Failed to load user addresses in background:", e);
           }
         }
-
-        const realPhone = userData.phone && !userData.phone.startsWith("google_") ? userData.phone : "";
-
-        const loggedUser: CustomerUser = {
-          id: userId || `usr-google-${Date.now()}`,
-          phone: realPhone,
-          name: userData.name,
-          email: userData.email,
-          avatar: userData.avatar,
-          addresses, // Strictly scoped to this user only (empty for new users)
-          defaultAddressId: addresses.find((a) => a.isDefault)?.id || addresses[0]?.id,
-          phoneVerified: Boolean(userData.phoneVerified),
-          createdAt: userData.createdAt || new Date().toISOString(),
-        };
-
-        set({
-          user: loggedUser,
-          isAuthenticated: true,
-          isLoginModalOpen: false,
-        });
       },
 
       sendEmailOtp: async (email: string) => {
@@ -413,6 +423,10 @@ export const useAuthStore = create<AuthState>()(
     }),
     {
       name: "tiletra-customer-auth",
+      partialize: (state) => ({
+        user: state.user,
+        isAuthenticated: state.isAuthenticated,
+      }),
       onRehydrateStorage: () => (state) => {
         state?.setHasHydrated(true);
       },
@@ -421,3 +435,18 @@ export const useAuthStore = create<AuthState>()(
 );
 
 export const useAuthHydrated = () => useAuthStore((s) => s._hasHydrated);
+
+export type AuthStatus = "loading" | "authenticated" | "unauthenticated";
+
+export const useAuthStatus = (): AuthStatus => {
+  const hasHydrated = useAuthStore((s) => s._hasHydrated);
+  const isAuthenticated = useAuthStore((s) => s.isAuthenticated);
+  const user = useAuthStore((s) => s.user);
+
+  if (!hasHydrated) return "loading";
+  if (typeof window !== "undefined" && new URLSearchParams(window.location.search).has("google_session") && !isAuthenticated) {
+    return "loading";
+  }
+  if (isAuthenticated && user) return "authenticated";
+  return "unauthenticated";
+};

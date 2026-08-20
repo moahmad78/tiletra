@@ -38,13 +38,14 @@ import {
 import Header from "@/components/Header";
 import Footer from "@/components/Footer";
 import { useWishlistStore } from "@/lib/wishlist-store";
-import { useAuthStore, type CustomerAddress } from "@/lib/auth-store";
+import { useAuthStore, useAuthStatus, type CustomerAddress } from "@/lib/auth-store";
 import { toast } from "sonner";
 
 type TabType = "profile" | "addresses" | "gst" | "payments";
 
 export default function AccountPage() {
   const [mounted, setMounted] = useState(false);
+  const authStatus = useAuthStatus();
   const wishlistCount = useWishlistStore((s) => s.items.length);
   const {
     user,
@@ -241,71 +242,82 @@ export default function AccountPage() {
         <div className="block md:hidden space-y-4">
           {/* Top Flipkart Blue Profile Hero */}
           <div className="bg-gradient-to-r from-[#052a51] to-[#0a3e74] text-white rounded-3xl p-5 shadow-sm">
-            <div className="flex items-center gap-3.5">
-              {/* Avatar */}
-              <div className="relative shrink-0">
-                {mounted && isAuthenticated && user?.avatar ? (
-                  // eslint-disable-next-line @next/next/no-img-element
-                  <img
-                    src={user.avatar}
-                    alt={user.name || "Customer"}
-                    className="w-16 h-16 rounded-full object-cover border-2 border-white/40 shadow-md"
-                  />
-                ) : (
-                  <div className="w-16 h-16 rounded-full bg-white/10 text-white flex items-center justify-center text-xl font-black border border-white/20 shadow-md">
-                    {mounted && isAuthenticated && user?.name ? (
-                      user.name[0].toUpperCase()
-                    ) : (
-                      <User size={28} />
-                    )}
-                  </div>
-                )}
-                {mounted && isAuthenticated && (
+            {!mounted || authStatus === "loading" ? (
+              <div className="flex items-center gap-3.5 animate-pulse">
+                <div className="w-16 h-16 rounded-full bg-white/20 shrink-0" />
+                <div className="flex-1 space-y-2">
+                  <div className="w-16 h-3 bg-white/20 rounded" />
+                  <div className="w-32 h-5 bg-white/20 rounded" />
+                  <div className="w-24 h-3 bg-white/20 rounded" />
+                </div>
+              </div>
+            ) : (
+              <div className="flex items-center gap-3.5">
+                {/* Avatar */}
+                <div className="relative shrink-0">
+                  {isAuthenticated && user?.avatar ? (
+                    // eslint-disable-next-line @next/next/no-img-element
+                    <img
+                      src={user.avatar}
+                      alt={user.name || "Customer"}
+                      className="w-16 h-16 rounded-full object-cover border-2 border-white/40 shadow-md"
+                    />
+                  ) : (
+                    <div className="w-16 h-16 rounded-full bg-white/10 text-white flex items-center justify-center text-xl font-black border border-white/20 shadow-md">
+                      {isAuthenticated && user?.name ? (
+                        user.name[0].toUpperCase()
+                      ) : (
+                        <User size={28} />
+                      )}
+                    </div>
+                  )}
+                  {isAuthenticated && (
+                    <button
+                      onClick={() => {
+                        setActiveTab("profile");
+                        setIsEditingProfile(true);
+                        fileInputRef.current?.click();
+                      }}
+                      className="absolute -bottom-1 -right-1 w-6 h-6 rounded-full bg-[#F26522] text-white flex items-center justify-center shadow-md active:scale-95 transition-transform"
+                      aria-label="Upload photo"
+                    >
+                      <Camera size={12} />
+                    </button>
+                  )}
+                </div>
+
+                {/* Details */}
+                <div className="flex-1 min-w-0">
+                  <p className="text-[11px] text-blue-200 font-semibold uppercase tracking-wider">Hello,</p>
+                  <h1 className="text-lg font-black truncate leading-tight">
+                    {isAuthenticated && user ? user.name || "Customer" : "Guest Customer"}
+                  </h1>
+                  <p className="text-xs text-blue-100/90 mt-0.5 truncate">
+                    {isAuthenticated && user
+                      ? (user.phone && !user.phone.startsWith("google_") ? `+91 ${user.phone}` : user.email || "Customer")
+                      : "Log in for orders & fast checkout"}
+                  </p>
+                </div>
+
+                {/* Login / Edit action */}
+                {isAuthenticated ? (
                   <button
-                    onClick={() => {
-                      setActiveTab("profile");
-                      setIsEditingProfile(true);
-                      fileInputRef.current?.click();
-                    }}
-                    className="absolute -bottom-1 -right-1 w-6 h-6 rounded-full bg-[#F26522] text-white flex items-center justify-center shadow-md active:scale-95 transition-transform"
-                    aria-label="Upload photo"
+                    onClick={() => setIsEditingProfile(!isEditingProfile)}
+                    className="px-3 py-1.5 bg-white/15 hover:bg-white/25 rounded-xl text-xs font-bold text-white shrink-0 active:scale-95 transition-all flex items-center gap-1"
                   >
-                    <Camera size={12} />
+                    <Edit2 size={12} />
+                    <span>Edit</span>
+                  </button>
+                ) : (
+                  <button
+                    onClick={() => openLoginModal()}
+                    className="px-3.5 py-2 bg-[#F26522] hover:bg-[#d95a1e] text-white text-xs font-black rounded-xl shadow-xs active:scale-95 transition-all shrink-0"
+                  >
+                    Log In
                   </button>
                 )}
               </div>
-
-              {/* Details */}
-              <div className="flex-1 min-w-0">
-                <p className="text-[11px] text-blue-200 font-semibold uppercase tracking-wider">Hello,</p>
-                <h1 className="text-lg font-black truncate leading-tight">
-                  {mounted && isAuthenticated && user ? user.name || "Customer" : "Guest Customer"}
-                </h1>
-                <p className="text-xs text-blue-100/90 mt-0.5 truncate">
-                  {mounted && isAuthenticated && user
-                    ? `+91 ${user.phone}`
-                    : "Log in for orders & fast checkout"}
-                </p>
-              </div>
-
-              {/* Login / Edit action */}
-              {mounted && isAuthenticated ? (
-                <button
-                  onClick={() => setIsEditingProfile(!isEditingProfile)}
-                  className="px-3 py-1.5 bg-white/15 hover:bg-white/25 rounded-xl text-xs font-bold text-white shrink-0 active:scale-95 transition-all flex items-center gap-1"
-                >
-                  <Edit2 size={12} />
-                  <span>Edit</span>
-                </button>
-              ) : (
-                <button
-                  onClick={() => openLoginModal()}
-                  className="px-3.5 py-2 bg-[#F26522] hover:bg-[#d95a1e] text-white text-xs font-black rounded-xl shadow-xs active:scale-95 transition-all shrink-0"
-                >
-                  Log In
-                </button>
-              )}
-            </div>
+            )}
 
             {/* Quick Badges */}
             <div className="flex items-center gap-4 mt-3.5 pt-3 border-t border-white/15 text-[11px] text-blue-100 font-medium">
@@ -520,47 +532,70 @@ export default function AccountPage() {
           <aside className="space-y-4 sticky top-[160px]">
             {/* User Greeting Card */}
             <div className="bg-white rounded-2xl p-4 border border-gray-200/90 shadow-2xs flex items-center gap-3.5">
-              <div className="relative shrink-0">
-                {mounted && isAuthenticated && user?.avatar ? (
-                  // eslint-disable-next-line @next/next/no-img-element
-                  <img
-                    src={user.avatar}
-                    alt={user.name || "Customer"}
-                    className="w-14 h-14 rounded-full object-cover border-2 border-[#052a51]/20 shadow-xs"
-                  />
-                ) : (
-                  <div className="w-14 h-14 rounded-full bg-[#052a51] text-white flex items-center justify-center text-xl font-black shadow-xs">
-                    {mounted && isAuthenticated && user?.name ? (
-                      user.name[0].toUpperCase()
+              {!mounted || authStatus === "loading" ? (
+                <div className="flex items-center gap-3.5 w-full animate-pulse">
+                  <div className="w-14 h-14 rounded-full bg-gray-200 shrink-0" />
+                  <div className="flex-1 space-y-2">
+                    <div className="w-12 h-3 bg-gray-200 rounded" />
+                    <div className="w-28 h-4 bg-gray-200 rounded" />
+                    <div className="w-20 h-3 bg-gray-200 rounded" />
+                  </div>
+                </div>
+              ) : (
+                <>
+                  <div className="relative shrink-0">
+                    {isAuthenticated && user?.avatar ? (
+                      // eslint-disable-next-line @next/next/no-img-element
+                      <img
+                        src={user.avatar}
+                        alt={user.name || "Customer"}
+                        className="w-14 h-14 rounded-full object-cover border-2 border-[#052a51]/20 shadow-xs"
+                      />
                     ) : (
-                      <User size={24} />
+                      <div className="w-14 h-14 rounded-full bg-[#052a51] text-white flex items-center justify-center text-xl font-black shadow-xs">
+                        {isAuthenticated && user?.name ? (
+                          user.name[0].toUpperCase()
+                        ) : (
+                          <User size={24} />
+                        )}
+                      </div>
+                    )}
+                    {isAuthenticated && (
+                      <button
+                        onClick={() => {
+                          setActiveTab("profile");
+                          setIsEditingProfile(true);
+                          fileInputRef.current?.click();
+                        }}
+                        className="absolute -bottom-1 -right-1 w-6 h-6 rounded-full bg-[#F26522] text-white flex items-center justify-center shadow-md hover:scale-110 active:scale-95 transition-all"
+                        title="Change Avatar"
+                      >
+                        <Camera size={12} />
+                      </button>
                     )}
                   </div>
-                )}
-                {mounted && isAuthenticated && (
-                  <button
-                    onClick={() => {
-                      setActiveTab("profile");
-                      setIsEditingProfile(true);
-                      fileInputRef.current?.click();
-                    }}
-                    className="absolute -bottom-1 -right-1 w-6 h-6 rounded-full bg-[#F26522] text-white flex items-center justify-center shadow-md hover:scale-110 active:scale-95 transition-all"
-                    title="Change Avatar"
-                  >
-                    <Camera size={12} />
-                  </button>
-                )}
-              </div>
 
-              <div className="min-w-0">
-                <span className="text-[11px] text-gray-400 font-semibold uppercase">Hello,</span>
-                <h2 className="text-base font-black text-[#052a51] truncate">
-                  {mounted && isAuthenticated && user ? user.name || "Customer" : "Guest Customer"}
-                </h2>
-                <p className="text-xs text-gray-500 font-medium truncate">
-                  {mounted && isAuthenticated && user ? `+91 ${user.phone}` : "Not logged in"}
-                </p>
-              </div>
+                  <div className="min-w-0 flex-1">
+                    <span className="text-[11px] text-gray-400 font-semibold uppercase">Hello,</span>
+                    <h2 className="text-base font-black text-[#052a51] truncate">
+                      {isAuthenticated && user ? user.name || "Customer" : "Guest Customer"}
+                    </h2>
+                    <p className="text-xs text-gray-500 font-medium truncate">
+                      {isAuthenticated && user
+                        ? (user.phone && !user.phone.startsWith("google_") ? `+91 ${user.phone}` : user.email || "Customer")
+                        : "Not logged in"}
+                    </p>
+                  </div>
+                  {!isAuthenticated && (
+                    <button
+                      onClick={() => openLoginModal()}
+                      className="px-3 py-1.5 bg-[#F26522] hover:bg-[#d95a1e] text-white text-xs font-black rounded-xl shadow-xs active:scale-95 transition-all shrink-0"
+                    >
+                      Log In
+                    </button>
+                  )}
+                </>
+              )}
             </div>
 
             {/* Navigation Menu (Flipkart Sidebar Structure) */}

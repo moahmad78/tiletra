@@ -7,7 +7,7 @@ import {
   X, Phone, Mail, ShieldCheck, ArrowRight, Sparkles,
   CheckCircle2, RotateCw, ChevronLeft,
 } from "lucide-react";
-import { useAuthStore } from "@/lib/auth-store";
+import { useAuthStore, useAuthHydrated, useAuthStatus } from "@/lib/auth-store";
 import { useCartStore } from "@/lib/cart-store";
 import { toast } from "sonner";
 
@@ -64,7 +64,10 @@ export default function LoginModal() {
     return () => clearInterval(id);
   }, [step, timer]);
 
-  if (!isLoginModalOpen) return null;
+  const isHydrated = useAuthHydrated();
+  const authStatus = useAuthStatus();
+
+  if (!isHydrated || !isLoginModalOpen || authStatus === "loading") return null;
 
   // ─── Navigation helpers ───────────────────────────────────────────────────
 
@@ -101,6 +104,7 @@ export default function LoginModal() {
   // ─── Google ───────────────────────────────────────────────────────────────
 
   const handleGoogleOAuth = () => {
+    closeLoginModal();
     // Build intent param so the callback can redirect appropriately after login
     const intent = pendingIntent?.type || "";
     const params = intent ? `?intent=${encodeURIComponent(intent)}` : "";

@@ -7,7 +7,7 @@ import { Menu, X, MapPin, Phone, Mail, ShoppingCart, Search, Heart, User as User
 import Link from "next/link";
 import { useCartStore } from "@/lib/cart-store";
 import { useWishlistStore } from "@/lib/wishlist-store";
-import { useAuthStore } from "@/lib/auth-store";
+import { useAuthStore, useAuthStatus } from "@/lib/auth-store";
 import SearchModal from "@/components/SearchModal";
 import NotificationCenter from "@/components/notifications/NotificationCenter";
 import CategoryNavBar from "@/components/CategoryNavBar";
@@ -19,7 +19,8 @@ export default function Header() {
   const [searchOpen, setSearchOpen] = useState(false);
   const [mounted, setMounted] = useState(false);
 
-  const { user, isAuthenticated, openLoginModal } = useAuthStore();
+  const authStatus = useAuthStatus();
+  const { user, openLoginModal } = useAuthStore();
   const { toggleCart } = useCartStore();
   const totalBoxes = useCartStore((s) => s.getTotalBoxes());
   const wishlistCount = useWishlistStore((s) => s.items.length);
@@ -171,7 +172,9 @@ export default function Header() {
               </button>
 
               {/* Account Link / Sign In (Desktop) */}
-              {mounted && isAuthenticated && user ? (
+              {!mounted || authStatus === "loading" ? (
+                <div className="hidden lg:block w-[76px] h-[40px] rounded-xl bg-gray-100/60 animate-pulse" />
+              ) : authStatus === "authenticated" && user ? (
                 <Link
                   href="/account"
                   aria-label="Account"
