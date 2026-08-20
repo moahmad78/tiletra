@@ -140,7 +140,7 @@ async function testVendorIsolation() {
     });
 
     const vendorBRecord = await prisma.vendor.findUnique({ where: { id: vendorB.id } });
-    const bankLeaked = vendorBRecord?.bankAccountNumber === "50100234567890";
+    const bankLeaked = (vendorBRecord as any)?.bankAccountNumber === "50100234567890";
     console.log(`  - Vendor A Bank details leaked to Vendor B: ${bankLeaked ? "YES (FAIL ❌)" : "NO (ISOLATED ✓)"}`);
     if (bankLeaked) throw new Error("Isolation breach: Vendor B has Vendor A's bank details!");
 
