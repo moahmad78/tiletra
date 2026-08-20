@@ -8,9 +8,9 @@ import {
   Banknote,
   Check,
   Lock,
+  QrCode,
   ShieldCheck,
   ChevronDown,
-  Info,
 } from "lucide-react";
 import {
   UpiIcon,
@@ -21,14 +21,13 @@ import {
   MastercardIcon,
   RuPayIcon,
   NetBankingIcon,
-  CodCashBadge,
 } from "./PaymentIcons";
 
 export type PaymentMethodType = "upi" | "card" | "netbanking" | "cod";
 
 export interface PaymentSelectionState {
   method: PaymentMethodType;
-  upiApp?: "gpay" | "phonepe" | "paytm" | "other";
+  upiApp?: "gpay" | "phonepe" | "paytm" | "other" | "qr";
   upiId?: string;
   bankCode?: string;
 }
@@ -43,17 +42,17 @@ interface PaymentSectionProps {
 }
 
 const POPULAR_BANKS = [
-  { code: "HDFC", name: "HDFC Bank" },
-  { code: "ICIC", name: "ICICI Bank" },
   { code: "SBIN", name: "SBI" },
-  { code: "UTIB", name: "Axis Bank" },
-  { code: "KKBK", name: "Kotak Bank" },
+  { code: "HDFC", name: "HDFC" },
+  { code: "ICIC", name: "ICICI" },
+  { code: "UTIB", name: "Axis" },
+  { code: "KKBK", name: "Kotak" },
 ];
 
 const ALL_BANKS = [
+  { code: "SBIN", name: "State Bank of India (SBI)" },
   { code: "HDFC", name: "HDFC Bank" },
   { code: "ICIC", name: "ICICI Bank" },
-  { code: "SBIN", name: "State Bank of India (SBI)" },
   { code: "UTIB", name: "Axis Bank" },
   { code: "KKBK", name: "Kotak Mahindra Bank" },
   { code: "BARB_R", name: "Bank of Baroda" },
@@ -87,7 +86,7 @@ export default function PaymentSection({
     });
   };
 
-  const handleUpiAppSelect = (app: "gpay" | "phonepe" | "paytm" | "other") => {
+  const handleUpiAppSelect = (app: "gpay" | "phonepe" | "paytm" | "other" | "qr") => {
     onPaymentStateChange({
       ...paymentState,
       method: "upi",
@@ -127,16 +126,10 @@ export default function PaymentSection({
             <p className="text-xs text-gray-500">Select your preferred way to pay securely.</p>
           </div>
         </div>
-        <div className="text-right">
-          <span className="text-[11px] font-bold text-gray-400 uppercase tracking-wider block">
-            Total Payable
-          </span>
-          <span className="text-lg sm:text-xl font-black text-[#F26522]">{formattedTotal}</span>
-        </div>
       </div>
 
-      {/* Embedded Payment Method Selection List */}
-      <div className="space-y-3.5">
+      {/* Embedded Payment Method Cards (Accordion Expansion) */}
+      <div className="space-y-3">
         {/* ── METHOD 1: UPI ── */}
         <div
           onClick={() => handleSelectMethod("upi")}
@@ -146,86 +139,75 @@ export default function PaymentSection({
               : "border-gray-200 hover:border-gray-300 bg-white"
           }`}
         >
-          <div className="p-4 sm:p-5 flex items-start gap-3.5">
-            <input
-              type="radio"
-              name="payment-option"
-              checked={paymentState.method === "upi"}
-              onChange={() => handleSelectMethod("upi")}
-              className="w-4 h-4 accent-[#F26522] mt-1 cursor-pointer shrink-0"
-            />
-            <div className="flex-1 min-w-0 space-y-2">
-              <div className="flex flex-wrap items-center justify-between gap-2">
-                <div className="flex items-center gap-2">
-                  <span className="text-sm sm:text-base font-black text-[#052a51]">UPI</span>
-                  <span className="px-2 py-0.5 rounded-md bg-green-100 text-green-800 text-[10px] font-black uppercase tracking-wider">
-                    Instant
-                  </span>
-                </div>
-                <span className="text-xs font-semibold text-gray-500">
-                  Google Pay • PhonePe • Paytm • Any UPI ID
-                </span>
+          <div className="p-4 sm:p-5">
+            <div className="flex items-center gap-3.5">
+              <input
+                type="radio"
+                name="payment-option"
+                checked={paymentState.method === "upi"}
+                onChange={() => handleSelectMethod("upi")}
+                className="w-4 h-4 accent-[#F26522] cursor-pointer shrink-0"
+              />
+              <div className="flex-1 flex items-center justify-between gap-2">
+                <span className="text-sm sm:text-base font-black text-[#052a51]">UPI</span>
+                <span className="text-xs text-gray-500 font-medium">Fast & secure</span>
               </div>
-
-              {/* UPI Badges */}
-              <div className="flex flex-wrap items-center gap-2 pt-1">
-                <UpiIcon />
-                <GPayIcon />
-                <PhonePeIcon />
-                <PaytmIcon />
-              </div>
-
-              {/* UPI Sub-Options Accordion */}
-              {paymentState.method === "upi" && (
-                <div
-                  className="mt-3 pt-3 border-t border-[#F26522]/20 space-y-3"
-                  onClick={(e) => e.stopPropagation()}
-                >
-                  <p className="text-xs font-bold text-gray-700">Choose UPI Option:</p>
-
-                  <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
-                    {[
-                      { id: "gpay", label: "Google Pay", icon: <GPayIcon className="h-4 w-auto" /> },
-                      { id: "phonepe", label: "PhonePe", icon: <PhonePeIcon className="h-4 w-auto" /> },
-                      { id: "paytm", label: "Paytm", icon: <PaytmIcon className="h-4 w-auto" /> },
-                      { id: "other", label: "Enter UPI ID", icon: <UpiIcon className="h-4 w-auto" /> },
-                    ].map((app) => {
-                      const isSelected = paymentState.upiApp === app.id;
-                      return (
-                        <button
-                          key={app.id}
-                          type="button"
-                          onClick={() => handleUpiAppSelect(app.id as any)}
-                          className={`p-2.5 rounded-xl border text-xs font-bold transition-all flex flex-col items-center justify-center gap-1 cursor-pointer ${
-                            isSelected
-                              ? "border-[#052a51] bg-[#052a51] text-white shadow-2xs"
-                              : "border-gray-200 hover:border-gray-300 bg-white text-gray-700"
-                          }`}
-                        >
-                          <div className="h-5 flex items-center justify-center">{app.icon}</div>
-                          <span className="text-[11px]">{app.label}</span>
-                        </button>
-                      );
-                    })}
-                  </div>
-
-                  {paymentState.upiApp === "other" && (
-                    <div className="pt-2 space-y-1.5">
-                      <label className="text-[11px] font-bold text-gray-600 block">
-                        Enter UPI ID (e.g. mobile@upi, username@okhdfcbank)
-                      </label>
-                      <input
-                        type="text"
-                        value={customUpiInput}
-                        onChange={(e) => handleUpiInputChange(e.target.value)}
-                        placeholder="yourname@upi"
-                        className="w-full h-10 px-3 rounded-xl border border-gray-300 focus:outline-none focus:border-[#F26522] text-xs font-medium bg-white"
-                      />
-                    </div>
-                  )}
-                </div>
-              )}
             </div>
+
+            {/* Expanded UPI Options */}
+            {paymentState.method === "upi" && (
+              <div
+                className="mt-4 pt-3.5 border-t border-[#F26522]/20 space-y-3.5"
+                onClick={(e) => e.stopPropagation()}
+              >
+                <p className="text-xs font-bold text-gray-700">Choose UPI option:</p>
+
+                <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
+                  {[
+                    { id: "gpay", label: "Google Pay", icon: <GPayIcon className="h-4.5 w-auto" /> },
+                    { id: "phonepe", label: "PhonePe", icon: <PhonePeIcon className="h-4.5 w-auto" /> },
+                    { id: "paytm", label: "Paytm", icon: <PaytmIcon className="h-4.5 w-auto" /> },
+                    { id: "other", label: "UPI ID", icon: <UpiIcon className="h-4.5 w-auto" /> },
+                  ].map((app) => {
+                    const isSelected = (paymentState.upiApp || "gpay") === app.id;
+                    return (
+                      <button
+                        key={app.id}
+                        type="button"
+                        onClick={() => handleUpiAppSelect(app.id as any)}
+                        className={`p-3 rounded-xl border text-xs font-bold transition-all flex flex-col items-center justify-center gap-1.5 cursor-pointer ${
+                          isSelected
+                            ? "border-[#052a51] bg-[#052a51] text-white shadow-2xs"
+                            : "border-gray-200 hover:border-gray-300 bg-white text-gray-700"
+                        }`}
+                      >
+                        <div className="h-5 flex items-center justify-center">{app.icon}</div>
+                        <span className="text-[11px]">{app.label}</span>
+                      </button>
+                    );
+                  })}
+                </div>
+
+                {/* Enter UPI ID input field */}
+                {paymentState.upiApp === "other" && (
+                  <div className="pt-1.5 space-y-1.5">
+                    <label className="text-[11px] font-bold text-gray-700 block">
+                      Enter UPI ID / VPA:
+                    </label>
+                    <input
+                      type="text"
+                      value={customUpiInput}
+                      onChange={(e) => handleUpiInputChange(e.target.value)}
+                      placeholder="username@okhdfcbank or mobile@upi"
+                      className="w-full h-10 px-3.5 rounded-xl border border-gray-300 focus:outline-none focus:border-[#F26522] text-xs font-medium bg-white"
+                    />
+                    <p className="text-[10px] text-gray-500">
+                      A payment request will be sent to your UPI application for authorization.
+                    </p>
+                  </div>
+                )}
+              </div>
+            )}
           </div>
         </div>
 
@@ -238,51 +220,39 @@ export default function PaymentSection({
               : "border-gray-200 hover:border-gray-300 bg-white"
           }`}
         >
-          <div className="p-4 sm:p-5 flex items-start gap-3.5">
-            <input
-              type="radio"
-              name="payment-option"
-              checked={paymentState.method === "card"}
-              onChange={() => handleSelectMethod("card")}
-              className="w-4 h-4 accent-[#F26522] mt-1 cursor-pointer shrink-0"
-            />
-            <div className="flex-1 min-w-0 space-y-2">
-              <div className="flex flex-wrap items-center justify-between gap-2">
-                <div className="flex items-center gap-2">
-                  <span className="text-sm sm:text-base font-black text-[#052a51]">
-                    Credit / Debit Cards
-                  </span>
-                  <span className="px-2 py-0.5 rounded-md bg-blue-100 text-blue-800 text-[10px] font-black uppercase tracking-wider">
-                    All Major Cards
-                  </span>
-                </div>
-                <span className="text-xs font-semibold text-gray-500">
-                  Visa • Mastercard • RuPay • Maestro
+          <div className="p-4 sm:p-5">
+            <div className="flex items-center gap-3.5">
+              <input
+                type="radio"
+                name="payment-option"
+                checked={paymentState.method === "card"}
+                onChange={() => handleSelectMethod("card")}
+                className="w-4 h-4 accent-[#F26522] cursor-pointer shrink-0"
+              />
+              <div className="flex-1 flex items-center justify-between gap-2">
+                <span className="text-sm sm:text-base font-black text-[#052a51]">
+                  Credit / Debit Card
                 </span>
+                <span className="text-xs text-gray-500 font-medium">Visa • Mastercard • RuPay</span>
               </div>
-
-              {/* Card Badges */}
-              <div className="flex flex-wrap items-center gap-2 pt-1">
-                <VisaIcon />
-                <MastercardIcon />
-                <RuPayIcon />
-              </div>
-
-              {paymentState.method === "card" && (
-                <div
-                  className="mt-3 pt-3 border-t border-[#F26522]/20 text-xs text-gray-600 space-y-1.5"
-                  onClick={(e) => e.stopPropagation()}
-                >
-                  <p className="font-semibold text-[#052a51] flex items-center gap-1.5">
-                    <ShieldCheck size={15} className="text-emerald-600" />
-                    <span>Card authentication handled through secure 3D Secure / OTP gateway.</span>
-                  </p>
-                  <p className="text-[11px] text-gray-500">
-                    Tiletra does not store your card number or CVV credentials.
-                  </p>
-                </div>
-              )}
             </div>
+
+            {/* Expanded Card Details */}
+            {paymentState.method === "card" && (
+              <div
+                className="mt-4 pt-3.5 border-t border-[#F26522]/20 space-y-2.5"
+                onClick={(e) => e.stopPropagation()}
+              >
+                <div className="flex items-center gap-2">
+                  <VisaIcon />
+                  <MastercardIcon />
+                  <RuPayIcon />
+                </div>
+                <p className="text-xs text-gray-600 leading-relaxed">
+                  Pay securely with any Indian or International card. You will complete 3D Secure / OTP authorization with your issuing bank.
+                </p>
+              </div>
+            )}
           </div>
         </div>
 
@@ -295,87 +265,76 @@ export default function PaymentSection({
               : "border-gray-200 hover:border-gray-300 bg-white"
           }`}
         >
-          <div className="p-4 sm:p-5 flex items-start gap-3.5">
-            <input
-              type="radio"
-              name="payment-option"
-              checked={paymentState.method === "netbanking"}
-              onChange={() => handleSelectMethod("netbanking")}
-              className="w-4 h-4 accent-[#F26522] mt-1 cursor-pointer shrink-0"
-            />
-            <div className="flex-1 min-w-0 space-y-2">
-              <div className="flex flex-wrap items-center justify-between gap-2">
-                <div className="flex items-center gap-2">
-                  <span className="text-sm sm:text-base font-black text-[#052a51]">Net Banking</span>
-                  <span className="px-2 py-0.5 rounded-md bg-purple-100 text-purple-800 text-[10px] font-black uppercase tracking-wider">
-                    50+ Banks
-                  </span>
-                </div>
-                <span className="text-xs font-semibold text-gray-500">
-                  Direct Bank Account Transfer
-                </span>
+          <div className="p-4 sm:p-5">
+            <div className="flex items-center gap-3.5">
+              <input
+                type="radio"
+                name="payment-option"
+                checked={paymentState.method === "netbanking"}
+                onChange={() => handleSelectMethod("netbanking")}
+                className="w-4 h-4 accent-[#F26522] cursor-pointer shrink-0"
+              />
+              <div className="flex-1 flex items-center justify-between gap-2">
+                <span className="text-sm sm:text-base font-black text-[#052a51]">Net Banking</span>
+                <span className="text-xs text-gray-500 font-medium">All major banks</span>
               </div>
-
-              {/* NetBanking Badge */}
-              <div className="pt-1">
-                <NetBankingIcon />
-              </div>
-
-              {paymentState.method === "netbanking" && (
-                <div
-                  className="mt-3 pt-3 border-t border-[#F26522]/20 space-y-3"
-                  onClick={(e) => e.stopPropagation()}
-                >
-                  <p className="text-xs font-bold text-gray-700">Popular Banks:</p>
-
-                  {/* Popular Bank Chips */}
-                  <div className="grid grid-cols-2 sm:grid-cols-5 gap-2">
-                    {POPULAR_BANKS.map((b) => {
-                      const isSelected = paymentState.bankCode === b.code;
-                      return (
-                        <button
-                          key={b.code}
-                          type="button"
-                          onClick={() => handleBankSelect(b.code)}
-                          className={`p-2 rounded-xl border text-xs font-bold transition-all flex items-center justify-center text-center cursor-pointer ${
-                            isSelected
-                              ? "border-[#052a51] bg-[#052a51] text-white shadow-2xs"
-                              : "border-gray-200 hover:border-gray-300 bg-white text-gray-700"
-                          }`}
-                        >
-                          <span>{b.name}</span>
-                        </button>
-                      );
-                    })}
-                  </div>
-
-                  {/* All Banks Dropdown */}
-                  <div className="pt-1 space-y-1">
-                    <label className="text-[11px] font-bold text-gray-600 block">
-                      Or Select from All Supported Indian Banks:
-                    </label>
-                    <div className="relative">
-                      <select
-                        value={paymentState.bankCode || ""}
-                        onChange={(e) => handleBankSelect(e.target.value)}
-                        className="w-full h-10 px-3 pr-8 rounded-xl border border-gray-300 focus:outline-none focus:border-[#F26522] text-xs font-medium bg-white appearance-none cursor-pointer"
-                      >
-                        <option value="">-- Choose Other Bank --</option>
-                        {ALL_BANKS.map((b) => (
-                          <option key={b.code} value={b.code}>
-                            {b.name}
-                          </option>
-                        ))}
-                      </select>
-                      <ChevronDown
-                        size={14}
-                        className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none"
-                      />
-                    </div>
-                  </div>
-                </div>
-              )}
             </div>
+
+            {/* Expanded Net Banking Selector */}
+            {paymentState.method === "netbanking" && (
+              <div
+                className="mt-4 pt-3.5 border-t border-[#F26522]/20 space-y-3"
+                onClick={(e) => e.stopPropagation()}
+              >
+                <p className="text-xs font-bold text-gray-700">Popular Banks:</p>
+
+                {/* Popular Bank Chips */}
+                <div className="grid grid-cols-3 sm:grid-cols-5 gap-2">
+                  {POPULAR_BANKS.map((b) => {
+                    const isSelected = paymentState.bankCode === b.code;
+                    return (
+                      <button
+                        key={b.code}
+                        type="button"
+                        onClick={() => handleBankSelect(b.code)}
+                        className={`py-2 px-2.5 rounded-xl border text-xs font-bold transition-all flex items-center justify-center text-center cursor-pointer ${
+                          isSelected
+                            ? "border-[#052a51] bg-[#052a51] text-white shadow-2xs"
+                            : "border-gray-200 hover:border-gray-300 bg-white text-gray-700"
+                        }`}
+                      >
+                        <span>{b.name}</span>
+                      </button>
+                    );
+                  })}
+                </div>
+
+                {/* Full Bank Dropdown */}
+                <div className="pt-1 space-y-1">
+                  <label className="text-[11px] font-bold text-gray-600 block">
+                    Or select another bank:
+                  </label>
+                  <div className="relative">
+                    <select
+                      value={paymentState.bankCode || ""}
+                      onChange={(e) => handleBankSelect(e.target.value)}
+                      className="w-full h-10 px-3.5 pr-8 rounded-xl border border-gray-300 focus:outline-none focus:border-[#F26522] text-xs font-medium bg-white appearance-none cursor-pointer"
+                    >
+                      <option value="">-- Choose Bank --</option>
+                      {ALL_BANKS.map((b) => (
+                        <option key={b.code} value={b.code}>
+                          {b.name}
+                        </option>
+                      ))}
+                    </select>
+                    <ChevronDown
+                      size={14}
+                      className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none"
+                    />
+                  </div>
+                </div>
+              </div>
+            )}
           </div>
         </div>
 
@@ -388,32 +347,37 @@ export default function PaymentSection({
               : "border-gray-200 hover:border-gray-300 bg-white"
           }`}
         >
-          <div className="p-4 sm:p-5 flex items-start gap-3.5">
-            <input
-              type="radio"
-              name="payment-option"
-              checked={paymentState.method === "cod"}
-              onChange={() => handleSelectMethod("cod")}
-              className="w-4 h-4 accent-[#F26522] mt-1 cursor-pointer shrink-0"
-            />
-            <div className="flex-1 min-w-0 space-y-2">
-              <div className="flex flex-wrap items-center justify-between gap-2">
-                <div className="flex items-center gap-2">
-                  <span className="text-sm sm:text-base font-black text-[#052a51]">
-                    Cash on Delivery (COD)
-                  </span>
-                  <span className="px-2 py-0.5 rounded-md bg-amber-100 text-amber-900 text-[10px] font-black uppercase tracking-wider">
-                    Available on All Items
-                  </span>
-                </div>
-                <div className="flex items-center gap-1 text-xs font-bold text-emerald-700">
-                  <span>💵 Pay at Doorstep</span>
-                </div>
+          <div className="p-4 sm:p-5">
+            <div className="flex items-center gap-3.5">
+              <input
+                type="radio"
+                name="payment-option"
+                checked={paymentState.method === "cod"}
+                onChange={() => handleSelectMethod("cod")}
+                className="w-4 h-4 accent-[#F26522] cursor-pointer shrink-0"
+              />
+              <div className="flex-1 flex items-center justify-between gap-2">
+                <span className="text-sm sm:text-base font-black text-[#052a51]">
+                  Cash on Delivery
+                </span>
+                <span className="text-xs text-gray-500 font-medium">Pay when your order arrives</span>
               </div>
-              <p className="text-xs text-gray-500 leading-relaxed">
-                Pay with cash or scan the delivery driver&apos;s UPI QR code when your tile crates arrive at your doorstep.
-              </p>
             </div>
+
+            {/* Expanded COD Details */}
+            {paymentState.method === "cod" && (
+              <div
+                className="mt-4 pt-3.5 border-t border-[#F26522]/20 space-y-1.5 text-xs text-gray-600"
+                onClick={(e) => e.stopPropagation()}
+              >
+                <p className="font-semibold text-[#052a51]">
+                  💵 Pay at your doorstep with cash or by scanning the driver&apos;s UPI QR code.
+                </p>
+                <p className="text-[11px] text-gray-500">
+                  No online payment is required right now.
+                </p>
+              </div>
+            )}
           </div>
         </div>
       </div>
@@ -473,10 +437,10 @@ export default function PaymentSection({
           )}
         </div>
 
-        {/* Security Guarantee Notice */}
+        {/* Accurate Security Notice */}
         <div className="flex items-center justify-center gap-2 text-[11px] font-bold text-gray-500 pt-1">
           <ShieldCheck size={14} className="text-emerald-600" />
-          <span>🔒 256-bit Bank-Grade Encryption · 100% Safe & Verified</span>
+          <span>🔒 Secure payment processing</span>
         </div>
       </div>
     </div>
