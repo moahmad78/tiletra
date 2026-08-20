@@ -723,6 +723,7 @@ export default function CheckoutPage() {
                               totalAmount={total}
                               customerName={selectedAddress?.name || user?.name}
                               customerPhone={selectedAddress?.phone || user?.phone}
+                              customerEmail={user?.email}
                               onPaymentSuccess={handleQrPaymentSuccess}
                             />
                           </div>

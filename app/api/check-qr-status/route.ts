@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import Razorpay from "razorpay";
 
 export async function GET(req: Request) {
   try {
@@ -9,36 +10,24 @@ export async function GET(req: Request) {
       return NextResponse.json({ error: "Missing qrId parameter" }, { status: 400 });
     }
 
-    const key_id = process.env.RAZORPAY_KEY_ID;
-    const key_secret = process.env.RAZORPAY_KEY_SECRET;
+    const key_id = (process.env.RAZORPAY_KEY_ID || "").trim();
+    const key_secret = (process.env.RAZORPAY_KEY_SECRET || "").trim();
 
     if (!key_id || !key_secret) {
       return NextResponse.json(
-        { error: "Razorpay API credentials not configured" },
+        { error: "Razorpay API credentials not configured on server" },
         { status: 500 }
       );
     }
 
-    const authHeader = "Basic " + Buffer.from(`${key_id}:${key_secret}`).toString("base64");
-
-    const res = await fetch(`https://api.razorpay.com/v1/payment_links/${qrId}`, {
-      headers: {
-        Authorization: authHeader,
-      },
+    const razorpay = new Razorpay({
+      key_id,
+      key_secret,
     });
 
-    if (!res.ok) {
-      const errData = await res.json();
-      return NextResponse.json(
-        { error: errData?.error?.description || "Failed to fetch QR status" },
-        { status: res.status }
-      );
-    }
+    const data: any = await razorpay.paymentLink.fetch(qrId);
 
-    const data = await res.json();
-
-    // Check if status is paid
-    const isPaid = data.status === "paid" || data.amount_paid >= data.amount;
+    const isPaid = data.status === "paid" || (data.amount_paid && data.amount_paid >= data.amount);
     const paymentId = data.payments && data.payments.length > 0 ? data.payments[0]?.payment_id : null;
 
     return NextResponse.json({
@@ -51,9 +40,14 @@ export async function GET(req: Request) {
       updatedAt: data.updated_at,
     });
   } catch (error: any) {
-    console.error("Error checking QR status:", error);
+    console.error("[Check QR Status] Error:", error?.error || error?.message || error);
     return NextResponse.json(
-      { error: error?.message || "Internal server error checking QR status" },
+      {
+        error:
+          error?.error?.description ||
+          error?.message ||
+          "Internal server error checking QR status",
+      },
       { status: 500 }
     );
   }

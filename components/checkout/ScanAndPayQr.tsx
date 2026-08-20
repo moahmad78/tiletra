@@ -22,6 +22,7 @@ interface ScanAndPayQrProps {
   totalAmount: number; // in INR
   customerName?: string;
   customerPhone?: string;
+  customerEmail?: string;
   onPaymentSuccess: (paymentId: string, qrId: string) => void;
   onCancel?: () => void;
 }
@@ -30,6 +31,7 @@ export default function ScanAndPayQr({
   totalAmount,
   customerName,
   customerPhone,
+  customerEmail,
   onPaymentSuccess,
   onCancel,
 }: ScanAndPayQrProps) {
@@ -60,6 +62,9 @@ export default function ScanAndPayQr({
         body: JSON.stringify({
           amount: Math.round(totalAmount * 100), // in paise
           receipt: `rcpt_${Date.now().toString().slice(-8)}`,
+          customerName: customerName || "Customer",
+          customerPhone: customerPhone || "9876543210",
+          customerEmail: customerEmail || "customer@intrihub.com",
           notes: {
             customerName: customerName || "Customer",
             customerPhone: customerPhone || "",

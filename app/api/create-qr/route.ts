@@ -1,19 +1,22 @@
 import { NextResponse } from "next/server";
+import Razorpay from "razorpay";
 import QRCode from "qrcode";
 
 export async function POST(req: Request) {
   try {
-    const { amount, receipt, notes } = await req.json();
-
-    const key_id = process.env.RAZORPAY_KEY_ID;
-    const key_secret = process.env.RAZORPAY_KEY_SECRET;
+    const key_id = (process.env.RAZORPAY_KEY_ID || "").trim();
+    const key_secret = (process.env.RAZORPAY_KEY_SECRET || "").trim();
 
     if (!key_id || !key_secret) {
+      console.error("[Create QR] Missing Razorpay credentials");
       return NextResponse.json(
-        { error: "Razorpay API credentials not configured" },
+        { error: "Razorpay API credentials not configured on server" },
         { status: 500 }
       );
     }
+
+    const body = await req.json();
+    const { amount, receipt, notes, customerName, customerPhone, customerEmail } = body;
 
     const parsedAmount = Math.round(Number(amount));
     if (!parsedAmount || parsedAmount < 100) {
@@ -23,17 +26,22 @@ export async function POST(req: Request) {
       );
     }
 
-    const authHeader = "Basic " + Buffer.from(`${key_id}:${key_secret}`).toString("base64");
-    const expireBy = Math.floor(Date.now() / 1000) + 900; // 15 minutes from now
+    const razorpay = new Razorpay({
+      key_id,
+      key_secret,
+    });
 
-    // 1. Create Razorpay Payment Link / QR
+    const expireBy = Math.floor(Date.now() / 1000) + 16 * 60; // 16 minutes buffer
+
     const payload = {
       amount: parsedAmount,
       currency: "INR",
       accept_partial: false,
       description: `Intrihub Order ${receipt || ""}`,
       customer: {
-        name: "Intrihub Customer",
+        name: customerName || "Intrihub Customer",
+        email: customerEmail || "customer@intrihub.com",
+        contact: (customerPhone || "9876543210").replace(/[^\d+]/g, ""),
       },
       notify: {
         sms: false,
@@ -49,28 +57,13 @@ export async function POST(req: Request) {
       },
     };
 
-    const res = await fetch("https://api.razorpay.com/v1/payment_links", {
-      method: "POST",
-      headers: {
-        Authorization: authHeader,
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify(payload),
-    });
+    console.log("[Create QR] Initiating Razorpay paymentLink.create with key:", key_id);
+    const data: any = await razorpay.paymentLink.create(payload as any);
+    console.log("[Create QR] Razorpay Success:", { id: data.id, short_url: data.short_url });
 
-    if (!res.ok) {
-      const errData = await res.json();
-      console.error("Razorpay Payment Link API Error:", errData);
-      return NextResponse.json(
-        { error: errData?.error?.description || "Failed to generate QR Code from Razorpay" },
-        { status: res.status }
-      );
-    }
-
-    const data = await res.json();
     const paymentUrl = data.short_url;
 
-    // 2. Generate high-resolution QR Code image
+    // Generate high-resolution QR Code image
     const qrDataUrl = await QRCode.toDataURL(paymentUrl, {
       width: 320,
       margin: 1.5,
@@ -91,9 +84,14 @@ export async function POST(req: Request) {
       status: data.status,
     });
   } catch (error: any) {
-    console.error("Error creating QR code:", error);
+    console.error("[Create QR] Error creating QR payment link:", error?.error || error?.message || error);
+    const errDescription =
+      error?.error?.description ||
+      error?.description ||
+      error?.message ||
+      "Failed to generate QR Code from Razorpay";
     return NextResponse.json(
-      { error: error?.message || "Internal server error generating QR code" },
+      { error: errDescription, details: error?.error || null },
       { status: 500 }
     );
   }
