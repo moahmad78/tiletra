@@ -25,54 +25,7 @@ type VendorAuthState = {
   login: (emailOrPhone: string, password?: string) => Promise<{ success: boolean; error?: string; mustChangePassword?: boolean }>;
   logout: () => void;
   setVendor: (vendor: VendorSession | null) => void;
-  quickSwitchVendor: (demoId: string) => void;
 };
-
-// Demo pre-configured vendors for instant zero-friction testing
-export const DEMO_VENDORS: VendorSession[] = [
-  {
-    id: "vnd-001",
-    businessName: "Sri Balaji Electricals & Hardware",
-    slug: "sri-balaji-electricals",
-    contactEmail: "balaji.electricals@intrihub.com",
-    contactPhone: "9845012345",
-    category: "Electricals & Lighting",
-    status: "approved",
-    commissionRate: 12.0,
-    ownerName: "Ramesh Kumar",
-    ownerId: "usr-vnd-001",
-    mustChangePassword: false,
-    lastLogin: new Date().toISOString(),
-  },
-  {
-    id: "vnd-002",
-    businessName: "Royal Ceramics & Sanitaryware",
-    slug: "royal-ceramics",
-    contactEmail: "royal.ceramics@intrihub.com",
-    contactPhone: "9876543210",
-    category: "Sanitary & Bath Fittings",
-    status: "approved",
-    commissionRate: 15.0,
-    ownerName: "Anand Poddar",
-    ownerId: "usr-vnd-002",
-    mustChangePassword: false,
-    lastLogin: new Date().toISOString(),
-  },
-  {
-    id: "vnd-003",
-    businessName: "Apex Plumbing Supplies",
-    slug: "apex-plumbing",
-    contactEmail: "apex.plumbing@intrihub.com",
-    contactPhone: "9123456780",
-    category: "Plumbing & Pipes",
-    status: "pending",
-    commissionRate: 15.0,
-    ownerName: "Vikas Sharma",
-    ownerId: "usr-vnd-003",
-    mustChangePassword: false,
-    lastLogin: new Date().toISOString(),
-  },
-];
 
 export const useVendorAuth = create<VendorAuthState>()(
   persist(
@@ -131,8 +84,6 @@ export const useVendorAuth = create<VendorAuthState>()(
       },
 
       setVendor: (vendor) => set({ vendor, isAuthenticated: Boolean(vendor) }),
-
-      quickSwitchVendor: () => {},
     }),
     {
       name: "intrihub-vendor-auth",

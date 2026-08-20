@@ -722,29 +722,32 @@ export async function deleteVendor(vendorId: string) {
     const productIds = vendor.products.map((p) => p.id);
 
     // Cascade delete vendor data in a safe transaction
-    await prisma.$transaction(async (tx) => {
-      // 1. Delete cart items, variants, attributes, and products
-      if (productIds.length > 0) {
-        await tx.cartItem.deleteMany({ where: { productId: { in: productIds } } });
-        await tx.productAttribute.deleteMany({ where: { productId: { in: productIds } } });
-        await tx.productVariant.deleteMany({ where: { productId: { in: productIds } } });
-        await tx.orderItem.deleteMany({ where: { productId: { in: productIds } } });
-        await tx.product.deleteMany({ where: { id: { in: productIds } } });
-      }
+    await prisma.$transaction(
+      async (tx) => {
+        // 1. Delete cart items, variants, attributes, and products
+        if (productIds.length > 0) {
+          await tx.cartItem.deleteMany({ where: { productId: { in: productIds } } });
+          await tx.productAttribute.deleteMany({ where: { productId: { in: productIds } } });
+          await tx.productVariant.deleteMany({ where: { productId: { in: productIds } } });
+          await tx.orderItem.deleteMany({ where: { productId: { in: productIds } } });
+          await tx.product.deleteMany({ where: { id: { in: productIds } } });
+        }
 
-      // 2. Delete vendor splits, payouts & coupons
-      await tx.vendorOrderSplit.deleteMany({ where: { vendorId } });
-      await tx.payout.deleteMany({ where: { vendorId } });
-      await tx.vendorCoupon.deleteMany({ where: { vendorId } });
+        // 2. Delete vendor splits, payouts & coupons
+        await tx.vendorOrderSplit.deleteMany({ where: { vendorId } });
+        await tx.payout.deleteMany({ where: { vendorId } });
+        await tx.vendorCoupon.deleteMany({ where: { vendorId } });
 
-      // 3. Delete the vendor record
-      await tx.vendor.delete({ where: { id: vendorId } });
+        // 3. Delete the vendor record
+        await tx.vendor.delete({ where: { id: vendorId } });
 
-      // 4. Delete the linked user login account if present
-      if (vendor.ownerId) {
-        await tx.user.delete({ where: { id: vendor.ownerId } }).catch(() => {});
-      }
-    });
+        // 4. Delete the linked user login account if present
+        if (vendor.ownerId) {
+          await tx.user.delete({ where: { id: vendor.ownerId } }).catch(() => {});
+        }
+      },
+      { timeout: 25000, maxWait: 15000 }
+    );
 
     return { success: true, message: `Vendor "${vendor.businessName}" deleted successfully` };
   } catch (error: any) {

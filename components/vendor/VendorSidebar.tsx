@@ -18,7 +18,7 @@ import {
   AlertTriangle,
   Clock,
 } from "lucide-react";
-import { useVendorAuth, DEMO_VENDORS } from "@/lib/vendor-auth";
+import { useVendorAuth } from "@/lib/vendor-auth";
 
 const navItems = [
   { name: "Dashboard", href: "/vendor", icon: LayoutDashboard, exact: true },
@@ -38,7 +38,7 @@ export default function VendorSidebar({
   setCollapsed: (v: boolean) => void;
 }) {
   const pathname = usePathname();
-  const { vendor, quickSwitchVendor } = useVendorAuth();
+  const { vendor } = useVendorAuth();
 
   const getStatusBadge = () => {
     if (!vendor) return null;
@@ -125,24 +125,6 @@ export default function VendorSidebar({
             <span className="text-[10px] font-medium text-white/60">
               Fee: {vendor.commissionRate}%
             </span>
-          </div>
-
-          {/* Quick Demo Switcher */}
-          <div className="mt-2.5 pt-2 border-t border-white/10">
-            <label className="text-[9px] text-white/40 uppercase tracking-wider font-semibold block mb-1">
-              Switch Test Shop:
-            </label>
-            <select
-              value={vendor.id}
-              onChange={(e) => quickSwitchVendor(e.target.value)}
-              className="w-full bg-[#031d38] text-white text-[11px] font-medium rounded-lg px-2 py-1 border border-white/10 focus:outline-hidden focus:border-emerald-500"
-            >
-              {DEMO_VENDORS.map((v) => (
-                <option key={v.id} value={v.id}>
-                  {v.businessName} ({v.status})
-                </option>
-              ))}
-            </select>
           </div>
         </div>
       )}
