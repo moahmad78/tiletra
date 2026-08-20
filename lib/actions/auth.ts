@@ -149,7 +149,7 @@ export async function updateUserProfile(
 
 export async function getDbUser(id: string) {
   try {
-    if (!id) return null;
+    if (!id || id.startsWith("usr-")) return null;
     const user = await prisma.user.findUnique({
       where: { id },
       include: { addresses: true },
@@ -161,9 +161,23 @@ export async function getDbUser(id: string) {
   }
 }
 
+export async function getDbUserByEmail(email: string) {
+  try {
+    if (!email) return null;
+    const user = await prisma.user.findUnique({
+      where: { email: email.trim().toLowerCase() },
+      include: { addresses: true },
+    });
+    return user;
+  } catch (error) {
+    console.error("Error fetching db user by email:", error);
+    return null;
+  }
+}
+
 export async function saveUserAddress(userId: string, address: any) {
   try {
-    if (!userId) return { success: false, error: "User ID required" };
+    if (!userId || userId.startsWith("usr-")) return { success: false, error: "Valid user ID required" };
 
     const userExists = await prisma.user.findUnique({ where: { id: userId } });
     if (!userExists) return { success: false, error: "User not found" };
@@ -192,3 +206,48 @@ export async function saveUserAddress(userId: string, address: any) {
     return { success: false, error: error?.message || "Failed to save address" };
   }
 }
+
+export async function updateUserPhoneInDb(userId: string, phone: string, email?: string) {
+  try {
+    if (!userId && !email) return { success: false, error: "User ID or email required" };
+    const cleanPhone = phone.replace(/\D/g, "").slice(-10);
+    if (cleanPhone.length !== 10) return { success: false, error: "Invalid phone number" };
+
+    // Try to find the user by their DB id first (if it's a real DB id)
+    let userToUpdate = null;
+    if (userId && !userId.startsWith("usr-")) {
+      userToUpdate = await prisma.user.findUnique({ where: { id: userId } });
+    }
+
+    // Fallback: find by email ONLY
+    if (!userToUpdate && email) {
+      userToUpdate = await prisma.user.findUnique({ where: { email: email.trim().toLowerCase() } });
+    }
+
+    if (!userToUpdate) {
+      return { success: false, error: "Account not found. Please log in again." };
+    }
+
+    // Check if phone is already taken by a DIFFERENT real user
+    const takenByOther = await prisma.user.findFirst({
+      where: { phone: cleanPhone, NOT: { id: userToUpdate.id } },
+      select: { id: true, phone: true },
+    });
+    // Only block if the other user has this as a real (non-synthetic) phone
+    if (takenByOther && !takenByOther.phone.startsWith("google_") && !takenByOther.phone.startsWith("email_")) {
+      return { success: false, error: "This mobile number is already linked to another account" };
+    }
+
+    await prisma.user.update({
+      where: { id: userToUpdate.id },
+      data: { phone: cleanPhone, phoneVerified: true },
+    });
+
+    safeRevalidate("/account");
+    return { success: true, userId: userToUpdate.id };
+  } catch (error: any) {
+    console.error("Error updating user phone:", error);
+    return { success: false, error: error?.message || "Failed to update phone" };
+  }
+}
+

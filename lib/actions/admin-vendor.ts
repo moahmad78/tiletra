@@ -509,6 +509,13 @@ export async function createVendorManually(data: {
   }
 }
 
+// Helper: Mask Account Number for list view
+export async function maskAccountNumber(accountNum?: string | null): Promise<string> {
+  if (!accountNum || accountNum.trim().length < 4) return "Not Added";
+  const clean = accountNum.trim();
+  return "XXXX XXXX " + clean.slice(-4);
+}
+
 // 12. Super Admin: Per-Vendor Detail Analytics (/admin/vendors/[id])
 export async function getVendorDetailAnalytics(vendorId: string) {
   try {
@@ -542,6 +549,14 @@ export async function getVendorDetailAnalytics(vendorId: string) {
 
     if (!vendor) return null;
 
+    // Fetch parent orders for vendor splits to enrich with customer info
+    const splitOrderIds = vendor.splits.map((s) => s.orderId);
+    const parentOrders = await prisma.order.findMany({
+      where: { id: { in: splitOrderIds } },
+      include: { items: true },
+    });
+    const orderMap = new Map(parentOrders.map((o) => [o.id, o]));
+
     // Calculate totals
     let totalGrossRevenue = 0;
     let totalCommissionEarned = 0;
@@ -567,14 +582,46 @@ export async function getVendorDetailAnalytics(vendorId: string) {
       .map(([date, data]) => ({ date, ...data }))
       .sort((a, b) => b.date.localeCompare(a.date));
 
-    // Product breakdown
+    // Calculate Low/Critical stock variants
+    let lowStockCount = 0;
+    vendor.products.forEach((p) => {
+      p.variants.forEach((v) => {
+        if (v.stockBoxes < 15) lowStockCount++;
+      });
+    });
+
+    // Enhanced Product breakdown
     const productStats = {
       total: vendor.products.length,
       live: vendor.products.filter((p) => p.approvalStatus === "approved" && p.status === "active").length,
       underReview: vendor.products.filter((p) => p.approvalStatus === "pending").length,
       rejected: vendor.products.filter((p) => p.approvalStatus === "rejected").length,
       paused: vendor.products.filter((p) => p.status === "paused").length,
+      lowStockCount,
     };
+
+    // Enhanced Order Fulfillment breakdown
+    const orderStats = {
+      total: vendor.splits.length,
+      newPending: vendor.splits.filter((s) => s.fulfillmentStatus === "Processing").length,
+      processing: vendor.splits.filter((s) => s.fulfillmentStatus === "Processing").length,
+      dispatched: vendor.splits.filter((s) => s.fulfillmentStatus === "Dispatched").length,
+      delivered: vendor.splits.filter((s) => s.fulfillmentStatus === "Delivered").length,
+      cancelled: vendor.splits.filter((s) => s.fulfillmentStatus === "Cancelled").length,
+    };
+
+    const enrichedSplits = vendor.splits.map((split) => {
+      const parent = orderMap.get(split.orderId);
+      return {
+        ...split,
+        customerName: parent?.customerName || "Customer",
+        customerPhone: parent?.customerPhone || "",
+        customerCity: (parent?.shippingAddress as any)?.city || "Bangalore",
+        paymentStatus: parent?.paymentStatus || "Paid",
+        paymentMethod: parent?.paymentMethod || "Online",
+        orderDate: parent?.createdAt || split.createdAt,
+      };
+    });
 
     return {
       vendor: {
@@ -593,6 +640,12 @@ export async function getVendorDetailAnalytics(vendorId: string) {
         applicationId: vendor.applicationId,
         createdAt: vendor.createdAt,
         owner: vendor.owner,
+        // Bank Details
+        bankAccountHolder: vendor.bankAccountHolder,
+        bankName: vendor.bankName,
+        bankAccountNumber: vendor.bankAccountNumber,
+        bankIfscCode: vendor.bankIfscCode,
+        bankUpiId: vendor.bankUpiId,
       },
       stats: {
         totalOrders: vendor.splits.length,
@@ -601,9 +654,10 @@ export async function getVendorDetailAnalytics(vendorId: string) {
         totalVendorEarnings,
       },
       productStats,
+      orderStats,
       dayWiseTrends,
       products: vendor.products.map(formatProduct),
-      splits: vendor.splits,
+      splits: enrichedSplits,
       payouts: vendor.payouts,
     };
   } catch (error) {

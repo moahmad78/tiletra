@@ -390,6 +390,7 @@ export default function AdminVendorsPage() {
                   <th className="py-3 px-3">Contact</th>
                   <th className="py-3 px-3">Category</th>
                   <th className="py-3 px-3">Commission</th>
+                  <th className="py-3 px-3">Bank Details (Masked)</th>
                   <th className="py-3 px-3">Catalog</th>
                   <th className="py-3 px-3">Status</th>
                   <th className="py-3 px-4 text-right">Actions</th>
@@ -441,6 +442,22 @@ export default function AdminVendorsPage() {
                         <div className="flex items-center gap-1.5">
                           <span className="font-bold text-[#052a51]">{v.commissionRate}%</span>
                         </div>
+                      </td>
+
+                      {/* Bank Details (Masked) */}
+                      <td className="py-3.5 px-3">
+                        {v.bankAccountNumber ? (
+                          <div className="space-y-0.5">
+                            <span className="font-mono text-xs font-bold text-gray-900">
+                              •••• •••• {v.bankAccountNumber.slice(-4)}
+                            </span>
+                            <p className="text-[10px] text-gray-400">{v.bankName || "Bank Added"}</p>
+                          </div>
+                        ) : (
+                          <span className="text-[10px] font-bold text-amber-700 bg-amber-50 px-2 py-0.5 rounded-md border border-amber-200">
+                            Not Added
+                          </span>
+                        )}
                       </td>
 
                       {/* Products Count */}

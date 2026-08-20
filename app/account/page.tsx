@@ -35,6 +35,7 @@ import {
   CheckCircle2,
   AlertCircle,
   Store,
+  ArrowLeft,
 } from "lucide-react";
 import { useSearchParams } from "next/navigation";
 import { Suspense } from "react";
@@ -56,6 +57,7 @@ function AccountPageContent() {
     logout,
     openLoginModal,
     updateProfile,
+    updateUserPhone,
     addAddress,
     updateAddress,
     deleteAddress,
@@ -74,6 +76,7 @@ function AccountPageContent() {
   const [isEditingProfile, setIsEditingProfile] = useState(false);
   const [editName, setEditName] = useState("");
   const [editEmail, setEditEmail] = useState("");
+  const [editPhone, setEditPhone] = useState("");
   const [editGender, setEditGender] = useState<"Male" | "Female" | "Other">("Male");
   const [editAvatar, setEditAvatar] = useState<string | null>(null);
   const [isSaving, setIsSaving] = useState(false);
@@ -106,6 +109,10 @@ function AccountPageContent() {
       setEditName(user.name || "");
       setEditEmail(user.email || "");
       setEditAvatar(user.avatar || null);
+      const realPhone = user.phone && !user.phone.startsWith("google_") && !user.phone.startsWith("email_")
+        ? user.phone.replace(/\D/g, "").slice(-10)
+        : "";
+      setEditPhone(realPhone);
     }
   }, [user]);
 
@@ -139,18 +146,35 @@ function AccountPageContent() {
 
     try {
       setIsSaving(true);
+
+      // Save name / email / avatar
       const res = await updateProfile({
         name: editName.trim(),
         email: editEmail.trim() || undefined,
         avatar: editAvatar,
       });
 
-      if (res.success) {
-        toast.success("Profile details updated successfully!");
-        setIsEditingProfile(false);
-      } else {
+      if (!res.success) {
         toast.error(res.message || "Failed to update profile");
+        return;
       }
+
+      // Save phone if it was entered or changed
+      const cleanEditPhone = editPhone.replace(/\D/g, "").slice(-10);
+      const currentRealPhone = user?.phone && !user.phone.startsWith("google_") && !user.phone.startsWith("email_")
+        ? user.phone.replace(/\D/g, "").slice(-10)
+        : "";
+      if (cleanEditPhone.length === 10 && cleanEditPhone !== currentRealPhone) {
+        const phoneRes = await updateUserPhone(cleanEditPhone);
+        if (!phoneRes.success) {
+          toast.error(phoneRes.message || "Profile saved but phone update failed");
+          setIsEditingProfile(false);
+          return;
+        }
+      }
+
+      toast.success("Profile updated successfully!");
+      setIsEditingProfile(false);
     } catch (err: any) {
       toast.error(err?.message || "Failed to update profile");
     } finally {
@@ -160,7 +184,9 @@ function AccountPageContent() {
 
   const resetAddressForm = () => {
     setAddrName(user?.name || "");
-    setAddrPhone(user?.phone || "");
+    // Only pre-fill phone if it's a real verified number
+    const realPhone = user?.phone && !user.phone.startsWith("google_") && !user.phone.startsWith("email_") ? user.phone.replace(/\D/g, "").slice(-10) : "";
+    setAddrPhone(realPhone);
     setAddrPincode("");
     setAddrLine1("");
     setAddrLine2("");
@@ -222,6 +248,13 @@ function AccountPageContent() {
       toast.success("New delivery address added!");
     }
 
+    // 🔑 Auto-sync phone to user profile so it appears everywhere (badge, checkout, Razorpay)
+    const cleanAddrPhone = addrPhone.replace(/\D/g, "").slice(-10);
+    const userHasRealPhone = user?.phone && !user.phone.startsWith("google_") && !user.phone.startsWith("email_") && user.phone.replace(/\D/g, "").length === 10;
+    if (cleanAddrPhone.length === 10 && !userHasRealPhone) {
+      updateUserPhone(cleanAddrPhone).catch(() => {});
+    }
+
     resetAddressForm();
   };
 
@@ -242,10 +275,28 @@ function AccountPageContent() {
 
   return (
     <>
+        {/* On mobile, if activeTab is 'addresses' or 'gst' or editing profile, show a mobile header with Back button */}
+        {(activeTab !== "profile" || isEditingProfile) && (
+          <div className="block md:hidden mb-4">
+            <button
+              type="button"
+              onClick={() => {
+                setActiveTab("profile");
+                setIsEditingProfile(false);
+              }}
+              className="inline-flex items-center gap-2 px-4 py-2.5 bg-white border border-gray-200 rounded-2xl text-xs font-black text-[#052a51] hover:text-[#F26522] shadow-2xs active:scale-95 transition-all cursor-pointer"
+            >
+              <ArrowLeft size={16} />
+              <span>Back to Account</span>
+            </button>
+          </div>
+        )}
+
         {/* ══════════════════════════════════════════════════════════════
-            MOBILE FLIPKART-STYLE ACCOUNT VIEW (Hidden on md & lg)
+            MOBILE FLIPKART-STYLE ACCOUNT VIEW (Shown on mobile when activeTab is profile and not editing)
         ══════════════════════════════════════════════════════════════ */}
-        <div className="block md:hidden space-y-4">
+        {activeTab === "profile" && !isEditingProfile && (
+          <div className="block md:hidden space-y-4">
           {/* Top Flipkart Blue Profile Hero */}
           <div className="bg-gradient-to-r from-[#052a51] to-[#0a3e74] text-white rounded-3xl p-5 shadow-sm">
             {!mounted || authStatus === "loading" ? (
@@ -300,7 +351,7 @@ function AccountPageContent() {
                   </h1>
                   <p className="text-xs text-blue-100/90 mt-0.5 truncate">
                     {isAuthenticated && user
-                      ? (user.phone && !user.phone.startsWith("google_") ? `+91 ${user.phone}` : user.email || "Customer")
+                      ? (user.phone && !user.phone.startsWith("google_") && !user.phone.startsWith("email_") ? `+91 ${user.phone.replace(/\D/g, "").slice(-10)}` : user.email || "Customer")
                       : "Log in for orders & fast checkout"}
                   </p>
                 </div>
@@ -338,6 +389,92 @@ function AccountPageContent() {
               </span>
             </div>
           </div>
+
+          {/* ── Mobile Edit Profile Sheet ── */}
+          {isAuthenticated && isEditingProfile && (
+            <div className="bg-white rounded-3xl border border-gray-200/90 shadow-xs p-5 space-y-4">
+              <div className="flex items-center justify-between border-b border-gray-100 pb-3">
+                <h3 className="text-sm font-black text-[#052a51]">Edit Profile</h3>
+                <button type="button" onClick={() => setIsEditingProfile(false)} className="p-1 rounded-lg hover:bg-gray-100">
+                  <X size={16} className="text-gray-500" />
+                </button>
+              </div>
+
+              {/* Avatar */}
+              <div className="flex items-center gap-3">
+                {editAvatar ? (
+                  // eslint-disable-next-line @next/next/no-img-element
+                  <img src={editAvatar} alt="Avatar" className="w-14 h-14 rounded-full object-cover border border-gray-200" />
+                ) : (
+                  <div className="w-14 h-14 rounded-full bg-gray-100 text-gray-400 flex items-center justify-center font-black text-lg">
+                    {user?.name?.[0]?.toUpperCase() || <User size={22} />}
+                  </div>
+                )}
+                <div className="flex flex-col gap-1">
+                  <button type="button" onClick={() => fileInputRef.current?.click()} className="text-xs font-bold text-[#F26522] hover:underline text-left">Upload Photo</button>
+                  {editAvatar && <button type="button" onClick={() => setEditAvatar(null)} className="text-[11px] font-semibold text-red-500 hover:underline text-left">Remove</button>}
+                </div>
+              </div>
+
+              {/* Name */}
+              <div>
+                <label className="block text-xs font-bold text-gray-600 mb-1.5">Full Name *</label>
+                <input
+                  type="text"
+                  value={editName}
+                  onChange={(e) => setEditName(e.target.value)}
+                  placeholder="Enter your name"
+                  className="w-full h-11 px-3.5 bg-gray-50 border border-gray-200 rounded-xl text-sm font-bold text-[#052a51] focus:bg-white focus:outline-none focus:border-[#F26522]"
+                />
+              </div>
+
+              {/* Email */}
+              <div>
+                <label className="block text-xs font-bold text-gray-600 mb-1.5">Email Address</label>
+                <input
+                  type="email"
+                  value={editEmail}
+                  onChange={(e) => setEditEmail(e.target.value)}
+                  placeholder="name@example.com"
+                  className="w-full h-11 px-3.5 bg-gray-50 border border-gray-200 rounded-xl text-sm font-bold text-[#052a51] focus:bg-white focus:outline-none focus:border-[#F26522]"
+                />
+              </div>
+
+              {/* Mobile Number */}
+              <div>
+                <label className="block text-xs font-bold text-gray-600 mb-1.5 flex items-center gap-1.5">
+                  Mobile Number
+                  {user?.phone && !user.phone.startsWith("google_") && !user.phone.startsWith("email_") && (
+                    <span className="inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded-full bg-emerald-50 text-emerald-700 text-[9px] font-black uppercase">
+                      <CheckCircle2 size={9} /> Verified
+                    </span>
+                  )}
+                </label>
+                <div className="relative">
+                  <span className="absolute left-3.5 top-1/2 -translate-y-1/2 text-sm font-bold text-gray-400">+91</span>
+                  <input
+                    type="tel"
+                    value={editPhone}
+                    onChange={(e) => setEditPhone(e.target.value.replace(/\D/g, "").slice(0, 10))}
+                    maxLength={10}
+                    placeholder="10-digit mobile"
+                    className="w-full h-11 pl-12 pr-3.5 bg-gray-50 border border-gray-200 rounded-xl text-sm font-bold text-[#052a51] focus:bg-white focus:outline-none focus:border-[#F26522]"
+                  />
+                </div>
+              </div>
+
+              {/* Save everything together */}
+              <button
+                type="button"
+                onClick={handleSaveProfile}
+                disabled={isSaving}
+                className="w-full h-11 bg-[#052a51] hover:bg-[#0b3b6d] text-white text-sm font-black rounded-xl transition-all flex items-center justify-center gap-2 disabled:opacity-50"
+              >
+                {isSaving ? <Loader2 size={14} className="animate-spin" /> : <Check size={14} />}
+                Save Profile
+              </button>
+            </div>
+          )}
 
           {/* Flipkart 2x2 Feature Grid */}
           <div className="grid grid-cols-2 gap-2.5">
@@ -548,11 +685,12 @@ function AccountPageContent() {
             </button>
           )}
         </div>
+        )}
 
       {/* ══════════════════════════════════════════════════════════════
-          DESKTOP FLIPKART-STYLE RIGHT CONTENT AREA (Hidden on mobile)
+          FLIPKART-STYLE CONTENT AREA (Desktop always, Mobile when activeTab !== profile)
       ══════════════════════════════════════════════════════════════ */}
-      <section className="hidden md:block space-y-6">
+      <section className={`${activeTab !== "profile" || isEditingProfile ? "block" : "hidden"} md:block space-y-6`}>
             {/* Hidden File Input for Avatar Upload */}
             <input
               type="file"
@@ -567,7 +705,7 @@ function AccountPageContent() {
             ──────────────────────────────────────────────────────────── */}
             {activeTab === "profile" && (
               <div className="bg-white rounded-3xl p-6 lg:p-8 border border-gray-200/90 shadow-2xs space-y-8">
-                {/* 1. Personal Information */}
+                {/* Personal Information Header */}
                 <div>
                   <div className="flex items-center justify-between border-b border-gray-100 pb-4 mb-6">
                     <h2 className="text-lg font-black text-[#052a51] flex items-center gap-2">
@@ -576,8 +714,19 @@ function AccountPageContent() {
                     {mounted && isAuthenticated && (
                       <button
                         type="button"
-                        onClick={() => setIsEditingProfile(!isEditingProfile)}
-                        className="text-xs font-black text-[#F26522] hover:underline flex items-center gap-1"
+                        onClick={() => {
+                          if (!isEditingProfile && user) {
+                            setEditName(user.name || "");
+                            setEditEmail(user.email || "");
+                            setEditAvatar(user.avatar || null);
+                            const realPhone = user.phone && !user.phone.startsWith("google_") && !user.phone.startsWith("email_")
+                              ? user.phone.replace(/\D/g, "").slice(-10)
+                              : "";
+                            setEditPhone(realPhone);
+                          }
+                          setIsEditingProfile(!isEditingProfile);
+                        }}
+                        className="text-xs font-black text-[#F26522] hover:underline flex items-center gap-1.5 px-3 py-1.5 rounded-xl hover:bg-orange-50 transition-colors cursor-pointer"
                       >
                         <Edit2 size={13} />
                         <span>{isEditingProfile ? "Cancel" : "Edit"}</span>
@@ -586,7 +735,8 @@ function AccountPageContent() {
                   </div>
 
                   {isEditingProfile ? (
-                    <div className="space-y-5">
+                    /* ── EDIT FORM (All fields editable together) ── */
+                    <div className="space-y-6">
                       <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                         <div>
                           <label className="block text-xs font-bold text-gray-600 mb-1.5">
@@ -598,6 +748,7 @@ function AccountPageContent() {
                             onChange={(e) => setEditName(e.target.value)}
                             placeholder="Enter your name"
                             className="w-full h-11 px-3.5 bg-gray-50 border border-gray-200 rounded-xl text-sm font-bold text-[#052a51] focus:bg-white focus:outline-none focus:border-[#F26522]"
+                            required
                           />
                         </div>
 
@@ -623,7 +774,7 @@ function AccountPageContent() {
                       </div>
 
                       {/* Photo selector */}
-                      <div className="flex items-center gap-3 pt-2">
+                      <div className="flex items-center gap-3 pt-1">
                         {editAvatar ? (
                           // eslint-disable-next-line @next/next/no-img-element
                           <img
@@ -640,7 +791,7 @@ function AccountPageContent() {
                           <button
                             type="button"
                             onClick={() => fileInputRef.current?.click()}
-                            className="text-xs font-bold text-[#F26522] hover:underline block"
+                            className="text-xs font-bold text-[#F26522] hover:underline block cursor-pointer"
                           >
                             Upload Custom Photo
                           </button>
@@ -648,7 +799,7 @@ function AccountPageContent() {
                             <button
                               type="button"
                               onClick={() => setEditAvatar(null)}
-                              className="text-[11px] font-semibold text-red-500 hover:underline block mt-0.5"
+                              className="text-[11px] font-semibold text-red-500 hover:underline block mt-0.5 cursor-pointer"
                             >
                               Remove Photo
                             </button>
@@ -656,6 +807,41 @@ function AccountPageContent() {
                         </div>
                       </div>
 
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 pt-1">
+                        {/* Email Address Field */}
+                        <div>
+                          <label className="block text-xs font-bold text-gray-600 mb-1.5">
+                            Email Address
+                          </label>
+                          <input
+                            type="email"
+                            value={editEmail}
+                            onChange={(e) => setEditEmail(e.target.value)}
+                            placeholder="name@example.com"
+                            className="w-full h-11 px-3.5 bg-gray-50 border border-gray-200 rounded-xl text-sm font-bold text-[#052a51] focus:bg-white focus:outline-none focus:border-[#F26522]"
+                          />
+                        </div>
+
+                        {/* Mobile Number Field */}
+                        <div>
+                          <label className="block text-xs font-bold text-gray-600 mb-1.5">
+                            Mobile Number
+                          </label>
+                          <div className="relative">
+                            <span className="absolute left-3.5 top-1/2 -translate-y-1/2 text-sm font-bold text-gray-400">+91</span>
+                            <input
+                              type="tel"
+                              value={editPhone}
+                              onChange={(e) => setEditPhone(e.target.value.replace(/\D/g, "").slice(0, 10))}
+                              maxLength={10}
+                              placeholder="10-digit mobile number"
+                              className="w-full h-11 pl-12 pr-3.5 bg-gray-50 border border-gray-200 rounded-xl text-sm font-bold text-[#052a51] focus:bg-white focus:outline-none focus:border-[#F26522] font-mono"
+                            />
+                          </div>
+                        </div>
+                      </div>
+
+                      {/* Action Buttons */}
                       <div className="flex gap-3 pt-2">
                         <button
                           type="button"
@@ -676,64 +862,71 @@ function AccountPageContent() {
                       </div>
                     </div>
                   ) : (
-                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
-                      <div>
-                        <span className="text-xs font-semibold text-gray-400 block mb-1">Full Name</span>
-                        <p className="text-sm font-black text-[#052a51]">
-                          {mounted && isAuthenticated && user ? user.name || "Customer" : "Not Set"}
-                        </p>
+                    /* ── VIEW MODE (Read-only clean layout) ── */
+                    <div className="space-y-6">
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
+                        <div>
+                          <span className="text-xs font-semibold text-gray-400 block mb-1">Full Name</span>
+                          <p className="text-sm font-black text-[#052a51]">
+                            {mounted && isAuthenticated && user ? user.name || "Customer" : "Not Set"}
+                          </p>
+                        </div>
+                        <div>
+                          <span className="text-xs font-semibold text-gray-400 block mb-1">Your Gender</span>
+                          <p className="text-sm font-black text-[#052a51]">{editGender}</p>
+                        </div>
                       </div>
-                      <div>
-                        <span className="text-xs font-semibold text-gray-400 block mb-1">Your Gender</span>
-                        <p className="text-sm font-black text-[#052a51]">{editGender}</p>
+
+                      {/* Email Address Display */}
+                      <div className="pt-5 border-t border-gray-100">
+                        <div className="flex items-center justify-between mb-2">
+                          <span className="text-xs font-semibold text-gray-400 block">Email Address</span>
+                          {mounted && isAuthenticated && user?.email && (
+                            <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full bg-emerald-50 text-emerald-700 text-[10px] font-black uppercase">
+                              <CheckCircle2 size={12} /> Verified
+                            </span>
+                          )}
+                        </div>
+                        <div className="max-w-md">
+                          <input
+                            type="email"
+                            value={user?.email || "No email linked"}
+                            disabled
+                            className="w-full h-11 px-3.5 bg-gray-50/80 border border-gray-200/80 rounded-xl text-sm font-bold text-[#052a51] opacity-80 cursor-default"
+                          />
+                        </div>
+                      </div>
+
+                      {/* Mobile Number Display */}
+                      <div className="pt-5 border-t border-gray-100">
+                        <div className="flex items-center justify-between mb-2">
+                          <span className="text-xs font-semibold text-gray-400 block">Mobile Number</span>
+                          {mounted && isAuthenticated && user?.phone && !user.phone.startsWith("google_") && !user.phone.startsWith("email_") && (
+                            <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full bg-emerald-50 text-emerald-700 text-[10px] font-black uppercase">
+                              <CheckCircle2 size={12} /> Verified
+                            </span>
+                          )}
+                        </div>
+                        <div className="max-w-md">
+                          {mounted && isAuthenticated && user?.phone && !user.phone.startsWith("google_") && !user.phone.startsWith("email_") ? (
+                            <input
+                              type="text"
+                              value={`+91 ${user.phone.replace(/\D/g, "").slice(-10)}`}
+                              disabled
+                              className="w-full h-11 px-3.5 bg-gray-50/80 border border-gray-200/80 rounded-xl text-sm font-bold text-[#052a51] opacity-80 font-mono cursor-default"
+                            />
+                          ) : (
+                            <p className="text-xs text-amber-600 font-semibold">
+                              No mobile number linked — click <span className="text-[#F26522] font-black">Edit</span> above to add your number
+                            </p>
+                          )}
+                        </div>
                       </div>
                     </div>
                   )}
                 </div>
 
-                {/* 2. Email Address */}
-                <div className="pt-6 border-t border-gray-100">
-                  <div className="flex items-center justify-between mb-3">
-                    <h3 className="text-base font-black text-[#052a51]">Email Address</h3>
-                    {mounted && isAuthenticated && user?.email && (
-                      <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full bg-emerald-50 text-emerald-700 text-[10px] font-black uppercase">
-                        <CheckCircle2 size={12} /> Verified
-                      </span>
-                    )}
-                  </div>
-                  <div className="max-w-md">
-                    <input
-                      type="email"
-                      value={editEmail}
-                      disabled={!isEditingProfile}
-                      onChange={(e) => setEditEmail(e.target.value)}
-                      placeholder="name@example.com"
-                      className="w-full h-11 px-3.5 bg-gray-50 border border-gray-200 rounded-xl text-sm font-bold text-[#052a51] disabled:opacity-75 disabled:bg-gray-50"
-                    />
-                  </div>
-                </div>
-
-                {/* 3. Mobile Number */}
-                <div className="pt-6 border-t border-gray-100">
-                  <div className="flex items-center justify-between mb-3">
-                    <h3 className="text-base font-black text-[#052a51]">Mobile Number</h3>
-                    {mounted && isAuthenticated && (
-                      <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full bg-emerald-50 text-emerald-700 text-[10px] font-black uppercase">
-                        <CheckCircle2 size={12} /> Verified
-                      </span>
-                    )}
-                  </div>
-                  <div className="max-w-md">
-                    <input
-                      type="text"
-                      value={mounted && isAuthenticated && user ? `+91 ${user.phone}` : "+91 Not logged in"}
-                      disabled
-                      className="w-full h-11 px-3.5 bg-gray-50 border border-gray-200 rounded-xl text-sm font-bold text-[#052a51] opacity-75"
-                    />
-                  </div>
-                </div>
-
-                {/* 4. Flipkart-Style Account FAQs */}
+                {/* Account FAQs */}
                 <div className="pt-6 border-t border-gray-100 space-y-4">
                   <h4 className="text-xs font-black text-gray-400 uppercase tracking-wider">
                     Frequently Asked Questions
@@ -819,7 +1012,7 @@ function AccountPageContent() {
                           required
                           value={addrPhone}
                           onChange={(e) => setAddrPhone(e.target.value)}
-                          placeholder="9876543210"
+                          placeholder="Enter 10-digit mobile"
                           className="w-full h-10 px-3 bg-white border border-gray-200 rounded-xl text-xs font-bold text-[#052a51] focus:outline-none focus:border-[#F26522]"
                         />
                       </div>
@@ -1069,5 +1262,103 @@ export default function AccountPage() {
     <Suspense fallback={<div className="w-full h-96 bg-white rounded-2xl animate-pulse" />}>
       <AccountPageContent />
     </Suspense>
+  );
+}
+
+// ── Inline phone add / change widget ──────────────────────────────────────
+function AddPhoneInline({
+  updateUserPhone,
+  currentPhone = "",
+}: {
+  updateUserPhone: (phone: string) => Promise<{ success: boolean; message?: string }>;
+  currentPhone?: string;
+}) {
+  const hasPhone = currentPhone.length === 10;
+  const [editing, setEditing] = useState(!hasPhone); // auto-open input if no phone yet
+  const [ph, setPh] = useState(currentPhone);
+  const [saving, setSaving] = useState(false);
+
+  const handleSave = async () => {
+    const clean = ph.replace(/\D/g, "").slice(-10);
+    if (clean.length !== 10) {
+      toast.error("Enter a valid 10-digit mobile number");
+      return;
+    }
+    if (clean === currentPhone) {
+      setEditing(false);
+      return;
+    }
+    setSaving(true);
+    const res = await updateUserPhone(clean);
+    setSaving(false);
+    if (res.success) {
+      toast.success(hasPhone ? "Mobile number updated!" : "Mobile number linked successfully!");
+      setEditing(false);
+    } else {
+      toast.error(res.message || "Failed to update number");
+    }
+  };
+
+  if (hasPhone && !editing) {
+    // Read-only display with Change button
+    return (
+      <div className="flex items-center gap-3">
+        <input
+          type="text"
+          value={`+91 ${currentPhone}`}
+          disabled
+          className="flex-1 h-11 px-3.5 bg-gray-50 border border-gray-200 rounded-xl text-sm font-bold text-[#052a51] opacity-80"
+        />
+        <button
+          type="button"
+          onClick={() => { setPh(currentPhone); setEditing(true); }}
+          className="h-11 px-4 border border-[#F26522] text-[#F26522] hover:bg-[#F26522]/5 text-xs font-black rounded-xl transition-all flex items-center gap-1.5 shrink-0"
+        >
+          <Edit2 size={12} />
+          Change
+        </button>
+      </div>
+    );
+  }
+
+  // Edit / Add input
+  return (
+    <div className="space-y-2">
+      <div className="flex gap-2">
+        <div className="relative flex-1">
+          <span className="absolute left-3.5 top-1/2 -translate-y-1/2 text-sm font-bold text-gray-400">+91</span>
+          <input
+            type="tel"
+            value={ph}
+            onChange={(e) => setPh(e.target.value.replace(/\D/g, "").slice(0, 10))}
+            placeholder="Enter 10-digit mobile"
+            maxLength={10}
+            autoFocus
+            className="w-full h-11 pl-12 pr-3.5 bg-white border border-[#F26522] rounded-xl text-sm font-bold text-[#052a51] focus:outline-none focus:ring-2 focus:ring-[#F26522]/20"
+          />
+        </div>
+        <button
+          type="button"
+          onClick={handleSave}
+          disabled={saving || ph.replace(/\D/g, "").length !== 10}
+          className="h-11 px-4 bg-[#F26522] hover:bg-[#d95a1e] disabled:bg-gray-200 disabled:text-gray-400 text-white text-xs font-black rounded-xl transition-all flex items-center gap-1.5 shrink-0"
+        >
+          {saving ? <Loader2 size={13} className="animate-spin" /> : <Check size={13} />}
+          Save
+        </button>
+        {hasPhone && (
+          <button
+            type="button"
+            onClick={() => { setPh(currentPhone); setEditing(false); }}
+            className="h-11 px-3 border border-gray-200 hover:bg-gray-50 text-gray-500 text-xs font-bold rounded-xl transition-colors"
+          >
+            <X size={14} />
+          </button>
+        )}
+      </div>
+      {!hasPhone && (
+        <p className="text-[11px] text-gray-400">Add your mobile to get order updates &amp; faster checkout</p>
+      )}
+    </div>
   );
 }

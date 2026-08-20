@@ -2,13 +2,15 @@
 
 import { useState, useEffect } from "react";
 import { useVendorAuth } from "@/lib/vendor-auth";
-import { getVendorProfile, updateVendorProfile } from "@/lib/actions/vendor";
-import { Store, Phone, Mail, MapPin, Building, ShieldCheck, CheckCircle2 } from "lucide-react";
+import { getVendorProfile, updateVendorProfile, updateVendorBankDetails } from "@/lib/actions/vendor";
+import { Store, Phone, Mail, MapPin, Building, ShieldCheck, CheckCircle2, CreditCard, Landmark, QrCode } from "lucide-react";
 import { toast } from "sonner";
 
 export default function VendorSettingsPage() {
   const { vendor, setVendor } = useVendorAuth();
-  const [loading, setLoading] = useState(false);
+  const [profileLoading, setProfileLoading] = useState(false);
+  const [bankLoading, setBankLoading] = useState(false);
+
   const [formData, setFormData] = useState({
     businessName: "",
     contactEmail: "",
@@ -17,9 +19,17 @@ export default function VendorSettingsPage() {
     description: "",
   });
 
+  const [bankData, setBankData] = useState({
+    bankAccountHolder: "",
+    bankName: "",
+    bankAccountNumber: "",
+    bankIfscCode: "",
+    bankUpiId: "",
+  });
+
   useEffect(() => {
     if (vendor?.id) {
-      getVendorProfile(vendor.id).then((v) => {
+      getVendorProfile(vendor.id).then((v: any) => {
         if (v) {
           setFormData({
             businessName: v.businessName || "",
@@ -28,26 +38,25 @@ export default function VendorSettingsPage() {
             businessAddress: v.businessAddress || "",
             description: v.description || "",
           });
-        } else if (vendor) {
-          setFormData({
-            businessName: vendor.businessName || "",
-            contactEmail: vendor.contactEmail || "",
-            contactPhone: vendor.contactPhone || "",
-            businessAddress: "",
-            description: "",
+          setBankData({
+            bankAccountHolder: v.bankAccountHolder || "",
+            bankName: v.bankName || "",
+            bankAccountNumber: v.bankAccountNumber || "",
+            bankIfscCode: v.bankIfscCode || "",
+            bankUpiId: v.bankUpiId || "",
           });
         }
       });
     }
   }, [vendor?.id]);
 
-  const handleSubmit = async (e: React.FormEvent) => {
+  const handleProfileSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!vendor?.id) return;
 
-    setLoading(true);
+    setProfileLoading(true);
     const res = await updateVendorProfile(vendor.id, formData);
-    setLoading(false);
+    setProfileLoading(false);
 
     if (res.success && res.vendor) {
       toast.success("Shop profile updated successfully!");
@@ -62,19 +71,43 @@ export default function VendorSettingsPage() {
     }
   };
 
+  const handleBankSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!vendor?.id) return;
+
+    if (bankData.bankAccountNumber && bankData.bankAccountNumber.length < 6) {
+      toast.error("Please enter a valid bank account number");
+      return;
+    }
+    if (bankData.bankIfscCode && bankData.bankIfscCode.length < 5) {
+      toast.error("Please enter a valid IFSC code (e.g. SBIN0001234)");
+      return;
+    }
+
+    setBankLoading(true);
+    const res = await updateVendorBankDetails(vendor.id, bankData);
+    setBankLoading(false);
+
+    if (res.success) {
+      toast.success("Bank & payout details saved successfully!");
+    } else {
+      toast.error(res.error || "Failed to update bank details");
+    }
+  };
+
   return (
-    <div className="max-w-3xl mx-auto space-y-6">
+    <div className="max-w-4xl mx-auto space-y-8">
       <div>
         <h1 className="text-xl md:text-2xl font-black text-gray-900 tracking-tight">
-          Shop Profile & Settings
+          Shop Profile & Payout Settings
         </h1>
         <p className="text-xs text-gray-500 mt-0.5">
-          Manage your business information and seller contact details
+          Manage your business contact details and bank account for automated payouts
         </p>
       </div>
 
       {/* Seller Account Overview Card */}
-      <div className="bg-white rounded-3xl p-6 border border-gray-200/80 shadow-xs flex items-center justify-between">
+      <div className="bg-white rounded-3xl p-6 border border-gray-200/80 shadow-xs flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div className="flex items-center gap-4">
           <div className="w-14 h-14 rounded-2xl bg-emerald-100 text-emerald-800 font-black text-xl flex items-center justify-center">
             {formData.businessName ? formData.businessName.charAt(0).toUpperCase() : "S"}
@@ -89,13 +122,130 @@ export default function VendorSettingsPage() {
           </div>
         </div>
 
-        <span className="px-3 py-1 rounded-full text-xs font-bold bg-emerald-50 text-emerald-700 border border-emerald-200 flex items-center gap-1">
+        <span className="px-3 py-1 rounded-full text-xs font-bold bg-emerald-50 text-emerald-700 border border-emerald-200 flex items-center gap-1 self-start sm:self-auto">
           <ShieldCheck size={14} /> {vendor?.status?.toUpperCase()}
         </span>
       </div>
 
-      {/* Edit Form */}
-      <form onSubmit={handleSubmit} className="bg-white rounded-3xl p-6 sm:p-8 border border-gray-200/80 shadow-xs space-y-5">
+      {/* Part B: Bank Account & Payout Details Section */}
+      <div className="bg-white rounded-3xl p-6 sm:p-8 border border-gray-200/80 shadow-xs space-y-6">
+        <div className="flex items-start justify-between">
+          <div className="space-y-1">
+            <h2 className="text-base sm:text-lg font-black text-[#052a51] flex items-center gap-2">
+              <Landmark size={20} className="text-emerald-600" />
+              Bank Account & Payout Details
+            </h2>
+            <p className="text-xs text-gray-500">
+              Enter the bank account where you wish to receive weekly payout transfers from your sales.
+            </p>
+          </div>
+
+          <span className={`text-[11px] font-bold px-2.5 py-1 rounded-full border ${
+            bankData.bankAccountNumber
+              ? "bg-emerald-50 text-emerald-700 border-emerald-200"
+              : "bg-amber-50 text-amber-700 border-amber-200"
+          }`}>
+            {bankData.bankAccountNumber ? "Bank Details Active" : "Bank Details Pending"}
+          </span>
+        </div>
+
+        <form onSubmit={handleBankSubmit} className="space-y-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <div>
+              <label className="block text-xs font-bold text-gray-700 uppercase tracking-wider mb-1.5">
+                Account Holder Name *
+              </label>
+              <input
+                type="text"
+                value={bankData.bankAccountHolder}
+                onChange={(e) => setBankData({ ...bankData, bankAccountHolder: e.target.value })}
+                placeholder="e.g. Ramesh Kumar or Sri Balaji Enterprises"
+                className="w-full bg-gray-50 border border-gray-200 rounded-xl px-4 py-3 text-sm font-medium text-gray-800 focus:bg-white focus:border-emerald-500 focus:outline-hidden transition-all"
+                required
+              />
+            </div>
+
+            <div>
+              <label className="block text-xs font-bold text-gray-700 uppercase tracking-wider mb-1.5">
+                Bank Name *
+              </label>
+              <input
+                type="text"
+                value={bankData.bankName}
+                onChange={(e) => setBankData({ ...bankData, bankName: e.target.value })}
+                placeholder="e.g. State Bank of India / HDFC Bank"
+                className="w-full bg-gray-50 border border-gray-200 rounded-xl px-4 py-3 text-sm font-medium text-gray-800 focus:bg-white focus:border-emerald-500 focus:outline-hidden transition-all"
+                required
+              />
+            </div>
+          </div>
+
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <div>
+              <label className="block text-xs font-bold text-gray-700 uppercase tracking-wider mb-1.5">
+                Bank Account Number *
+              </label>
+              <input
+                type="text"
+                value={bankData.bankAccountNumber}
+                onChange={(e) => setBankData({ ...bankData, bankAccountNumber: e.target.value.replace(/\s+/g, "") })}
+                placeholder="e.g. 50100456789012"
+                className="w-full bg-gray-50 border border-gray-200 rounded-xl px-4 py-3 text-sm font-medium text-gray-800 focus:bg-white focus:border-emerald-500 focus:outline-hidden transition-all font-mono"
+                required
+              />
+            </div>
+
+            <div>
+              <label className="block text-xs font-bold text-gray-700 uppercase tracking-wider mb-1.5">
+                IFSC Code *
+              </label>
+              <input
+                type="text"
+                value={bankData.bankIfscCode}
+                onChange={(e) => setBankData({ ...bankData, bankIfscCode: e.target.value.toUpperCase().trim() })}
+                placeholder="e.g. SBIN0001234 / HDFC0001234"
+                maxLength={11}
+                className="w-full bg-gray-50 border border-gray-200 rounded-xl px-4 py-3 text-sm font-medium text-gray-800 focus:bg-white focus:border-emerald-500 focus:outline-hidden transition-all font-mono"
+                required
+              />
+            </div>
+          </div>
+
+          <div>
+            <label className="block text-xs font-bold text-gray-700 uppercase tracking-wider mb-1.5">
+              UPI ID (Optional Alternative Payout)
+            </label>
+            <div className="relative">
+              <QrCode className="absolute left-3.5 top-3.5 text-gray-400" size={18} />
+              <input
+                type="text"
+                value={bankData.bankUpiId}
+                onChange={(e) => setBankData({ ...bankData, bankUpiId: e.target.value.toLowerCase().trim() })}
+                placeholder="e.g. businessname@okaxis / 9845012345@upi"
+                className="w-full bg-gray-50 border border-gray-200 rounded-xl pl-10 pr-4 py-3 text-sm font-medium text-gray-800 focus:bg-white focus:border-emerald-500 focus:outline-hidden transition-all"
+              />
+            </div>
+          </div>
+
+          <div className="pt-2 flex justify-end">
+            <button
+              type="submit"
+              disabled={bankLoading}
+              className="px-8 py-3.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 active:scale-95 text-white font-bold text-sm shadow-md shadow-emerald-600/30 transition-all disabled:opacity-50 cursor-pointer"
+            >
+              {bankLoading ? "Saving Bank Details..." : "Save Bank & Payout Details"}
+            </button>
+          </div>
+        </form>
+      </div>
+
+      {/* Shop Profile Form */}
+      <form onSubmit={handleProfileSubmit} className="bg-white rounded-3xl p-6 sm:p-8 border border-gray-200/80 shadow-xs space-y-5">
+        <h2 className="text-base sm:text-lg font-black text-[#052a51] flex items-center gap-2">
+          <Store size={20} className="text-emerald-600" />
+          Shop Contact & Business Info
+        </h2>
+
         <div>
           <label className="block text-xs font-bold text-gray-700 uppercase tracking-wider mb-1.5">
             Business / Shop Display Name *
@@ -177,10 +327,10 @@ export default function VendorSettingsPage() {
         <div className="pt-2 flex justify-end">
           <button
             type="submit"
-            disabled={loading}
-            className="px-8 py-3.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 active:scale-95 text-white font-bold text-sm shadow-md shadow-emerald-600/30 transition-all disabled:opacity-50"
+            disabled={profileLoading}
+            className="px-8 py-3.5 rounded-xl bg-gray-900 hover:bg-gray-800 active:scale-95 text-white font-bold text-sm shadow-md transition-all disabled:opacity-50 cursor-pointer"
           >
-            {loading ? "Saving Changes..." : "Save Profile Details"}
+            {profileLoading ? "Saving Profile..." : "Save Profile Details"}
           </button>
         </div>
       </form>

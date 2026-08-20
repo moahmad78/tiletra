@@ -547,6 +547,14 @@ model Vendor {
   ownerId         String             @unique
   applicationId   String?
   onboardingPath  String             @default("admin_created") // self_apply | admin_created
+
+  // Bank & Payout Details
+  bankAccountHolder String?
+  bankName          String?
+  bankAccountNumber String?
+  bankIfscCode      String?
+  bankUpiId         String?
+
   createdAt       DateTime           @default(now())
   updatedAt       DateTime           @updatedAt
 

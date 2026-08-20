@@ -99,10 +99,12 @@ export default function AboutPage() {
             <p className="text-white/70 text-sm mt-2 max-w-md">
               Browse 200+ premium designs and get them delivered to your home in 3–7 business days.
             </p>
-            <Link href="/shop" className="mt-6">
-              <button className="px-8 h-12 bg-[#F26522] text-white font-bold rounded-xl hover:bg-[#d95a1e] active:scale-95 transition-all flex items-center gap-2 shadow-md">
-                Browse Shop Catalog <ArrowRight size={16} />
-              </button>
+            <Link
+              href="/shop"
+              className="mt-6 px-8 h-12 bg-[#F26522] text-white font-bold rounded-xl hover:bg-[#d95a1e] active:scale-95 transition-all inline-flex items-center justify-center gap-2 shadow-md cursor-pointer"
+            >
+              <span>Browse Shop Catalog</span>
+              <ArrowRight size={16} />
             </Link>
           </div>
         </div>

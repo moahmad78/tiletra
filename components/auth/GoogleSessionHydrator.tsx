@@ -58,10 +58,19 @@ export default function GoogleSessionHydrator() {
       return;
     }
 
-    if (session && !isAuthenticated) {
+    if (session) {
       try {
         const jsonStr = decodeBase64Url(session);
         const decoded = JSON.parse(jsonStr);
+
+        // Explicit defense-in-depth: Clear old localStorage state before hydrating new user
+        if (typeof window !== "undefined") {
+          try {
+            localStorage.removeItem("tiletra-customer-auth");
+            sessionStorage.clear();
+          } catch {}
+        }
+
         googleSignIn({
           userId: decoded.userId,
           name: decoded.name || decoded.email?.split("@")[0] || "User",
@@ -82,7 +91,7 @@ export default function GoogleSessionHydrator() {
       url.searchParams.delete("google_session");
       router.replace(url.pathname + (url.search || ""));
     }
-  }, [searchParams, isAuthenticated, googleSignIn, router]);
+  }, [searchParams, googleSignIn, router]);
 
   return null;
 }

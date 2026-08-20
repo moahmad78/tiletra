@@ -55,14 +55,17 @@ export default function OrdersPage() {
     async function load() {
       try {
         setLoading(true);
-        if (user?.id || user?.phone) {
+        const hasRealPhone = user?.phone && !user.phone.startsWith("google_") && !user.phone.startsWith("email_");
+        const hasValidDbId = user?.id && !user.id.startsWith("usr-");
+        if (hasValidDbId || hasRealPhone || user?.email) {
           const userOrders = await getCustomerOrders({
-            userId: user?.id,
-            phone: user?.phone,
+            userId: hasValidDbId ? user.id : undefined,
+            phone: hasRealPhone ? user.phone : undefined,
+            email: user?.email,
           });
           setOrders(userOrders);
         } else {
-          // User is confirmed not logged in — show empty state immediately
+          // User is confirmed not logged in or brand new without orders — show empty state
           setOrders([]);
         }
       } catch (err) {
@@ -74,7 +77,7 @@ export default function OrdersPage() {
     }
 
     load();
-  }, [hydrated, user?.id, user?.phone]);
+  }, [hydrated, user?.id, user?.phone, user?.email]);
 
   const getStatusColor = (status: string) => {
     switch (status) {

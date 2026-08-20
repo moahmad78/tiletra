@@ -3,99 +3,155 @@
 import { Suspense } from "react";
 import { useSearchParams } from "next/navigation";
 import Link from "next/link";
-import { CheckCircle, Package, ArrowRight, Banknote, ShieldCheck } from "lucide-react";
+import {
+  CheckCircle2,
+  Package,
+  ArrowRight,
+  Banknote,
+  Truck,
+  Check,
+  ShoppingBag,
+  Home,
+  ShieldCheck,
+} from "lucide-react";
+import Header from "@/components/Header";
+import Footer from "@/components/Footer";
+
+const STEPS = ["Address", "Payment", "Order Done"] as const;
 
 function SuccessContent() {
   const searchParams = useSearchParams();
-  const orderId = searchParams.get("orderId") || "TL-" + Math.floor(100000 + Math.random() * 900000);
+  const orderId =
+    searchParams.get("orderId") || "TL-" + Math.floor(100000 + Math.random() * 900000);
   const method = searchParams.get("method") || "online";
   const total = searchParams.get("total");
 
   const isCod = method.toLowerCase() === "cod";
 
   return (
-    <div className="max-w-lg w-full text-center">
-      <div className="bg-white rounded-3xl p-8 md:p-10 shadow-sm border border-gray-100">
-        <div className={`w-20 h-20 rounded-full flex items-center justify-center mx-auto mb-6 ${
-          isCod ? "bg-amber-100 text-amber-600" : "bg-[#2F7A4F]/10 text-[#2F7A4F]"
-        }`}>
-          {isCod ? <Banknote size={40} /> : <CheckCircle size={40} />}
+    <div className="w-full max-w-[1200px] mx-auto px-3 sm:px-6 lg:px-8 pt-[76px] sm:pt-[84px] md:pt-[175px] lg:pt-[180px] pb-14 flex-1">
+      {/* ── 3-Step Stepper Indicator: All Completed ── */}
+      <div className="w-full max-w-2xl mx-auto bg-white px-3 py-2.5 sm:p-4 rounded-2xl sm:rounded-3xl border border-gray-200/80 shadow-2xs mb-6 sm:mb-10">
+        <div className="flex items-center justify-between">
+          {STEPS.map((s, i) => (
+            <div key={s} className={`flex items-center ${i < STEPS.length - 1 ? "flex-1" : ""}`}>
+              <div className="flex items-center gap-1.5 sm:gap-2.5 shrink-0">
+                <div className="w-7 h-7 sm:w-8 sm:h-8 md:w-9 md:h-9 rounded-xl sm:rounded-2xl flex items-center justify-center font-black text-[11px] sm:text-xs transition-colors shadow-2xs shrink-0 bg-[#2F7A4F] text-white">
+                  <Check size={14} className="sm:w-4 sm:h-4 stroke-[2.5]" />
+                </div>
+                <span className="text-[11px] sm:text-xs font-bold whitespace-nowrap text-[#2F7A4F]">
+                  {s}
+                </span>
+              </div>
+              {i < STEPS.length - 1 && (
+                <div className="flex-1 h-0.5 mx-1.5 sm:mx-3 md:mx-4 min-w-[8px] sm:min-w-[16px] bg-[#2F7A4F]" />
+              )}
+            </div>
+          ))}
         </div>
+      </div>
 
-        <span className={`text-[10px] font-black uppercase tracking-wider px-3 py-1 rounded-full ${
-          isCod ? "bg-amber-100 text-amber-900" : "bg-green-100 text-green-800"
-        }`}>
-          {isCod ? "Cash on Delivery Order" : "Payment Confirmed"}
-        </span>
-
-        <h1 className="text-[28px] md:text-[32px] font-black text-[#052a51] mt-2">
-          Order Successfully Placed!
-        </h1>
-
-        <p className="text-gray-600 mt-2 text-xs md:text-sm leading-relaxed">
-          {isCod
-            ? `Please keep ${total ? "₹" + Number(total).toLocaleString("en-IN") : "cash"} ready to pay our delivery team upon safe arrival at your doorstep.`
-            : "Thank you for your payment! Our warehouse team will begin inspecting and crate-packaging your tiles right away."}
-        </p>
-
-        <div className="mt-6 p-4 bg-[#F3F4F5] rounded-2xl text-left space-y-2">
-          <div className="flex justify-between text-xs sm:text-sm">
-            <span className="text-gray-500 font-medium">Order ID</span>
-            <span className="font-black text-[#052a51]">{orderId}</span>
-          </div>
-          <div className="flex justify-between text-xs sm:text-sm">
-            <span className="text-gray-500 font-medium">Payment Mode</span>
-            <span className="font-bold text-[#052a51]">{isCod ? "Cash on Delivery" : "Online (Prepaid)"}</span>
-          </div>
-          <div className="flex justify-between text-xs sm:text-sm">
-            <span className="text-gray-500 font-medium">Estimated Delivery</span>
-            <span className="font-bold text-[#052a51]">3–5 Business Days</span>
-          </div>
-          <div className="flex justify-between text-xs sm:text-sm">
-            <span className="text-gray-500 font-medium">Status</span>
-            <span className="font-black text-[#2F7A4F]">Processing</span>
-          </div>
-        </div>
-
-        <div className="mt-5 bg-[#052a51]/5 rounded-2xl p-4 text-xs text-gray-600 space-y-2 text-left">
-          <p className="flex items-center gap-2">
-            <Package size={14} className="text-[#F26522] shrink-0" />
-            Confirmation SMS & tracking link sent to your mobile
-          </p>
-          <p className="flex items-center gap-2">
-            <Package size={14} className="text-[#F26522] shrink-0" />
-            Carrier will call 30 minutes before reaching your location
-          </p>
-        </div>
-
-        {/* Complete Your Look Recommendation */}
-        <div className="mt-6 p-4 rounded-2xl bg-gradient-to-br from-[#052a51] to-[#0a3d72] text-white text-left shadow-xs">
-          <span className="text-[10px] font-black uppercase text-[#F26522] tracking-wider">
-            Room Design Inspiration
-          </span>
-          <h3 className="text-sm font-bold mt-0.5">Need design ideas for your newly ordered tiles?</h3>
-          <p className="text-xs text-white/70 mt-1">
-            Explore 200+ homeowner room shots and matching grout styles in our gallery.
-          </p>
-          <Link
-            href="/inspiration"
-            className="inline-flex items-center gap-1 text-xs font-bold text-[#F26522] mt-3 hover:underline"
+      {/* ── Main Order Success Card ── */}
+      <div className="max-w-xl w-full mx-auto">
+        <div className="bg-white rounded-3xl p-6 sm:p-8 md:p-10 shadow-sm border border-gray-200/80 text-center space-y-6">
+          {/* Success Icon */}
+          <div
+            className={`w-16 h-16 sm:w-20 sm:h-20 rounded-full flex items-center justify-center mx-auto shadow-inner ${
+              isCod ? "bg-amber-100 text-amber-600" : "bg-[#2F7A4F]/10 text-[#2F7A4F]"
+            }`}
           >
-            Explore Room Inspiration Gallery →
-          </Link>
-        </div>
+            {isCod ? <Banknote size={36} className="sm:w-10 sm:h-10" /> : <CheckCircle2 size={36} className="sm:w-10 sm:h-10" />}
+          </div>
 
-        <div className="flex flex-col gap-3 mt-6">
-          <Link href="/account/orders">
-            <button className="w-full h-12 bg-[#052a51] text-white font-bold rounded-xl hover:bg-[#041f3d] transition-colors flex items-center justify-center gap-2 text-xs">
-              Track Your Order in My Orders <ArrowRight size={16} />
-            </button>
-          </Link>
-          <Link href="/shop">
-            <button className="w-full h-12 border-2 border-gray-200 text-[#052a51] font-bold rounded-xl hover:border-[#052a51] transition-colors text-xs">
-              Continue Shopping
-            </button>
-          </Link>
+          <div>
+            <span
+              className={`inline-block text-[10px] font-black uppercase tracking-wider px-3 py-1 rounded-full mb-2 ${
+                isCod ? "bg-amber-100 text-amber-900" : "bg-emerald-100 text-emerald-800"
+              }`}
+            >
+              {isCod ? "Cash on Delivery Confirmed" : "Payment & Order Verified"}
+            </span>
+
+            <h1 className="text-2xl sm:text-3xl font-black text-[#052a51] tracking-tight">
+              Order Successfully Placed!
+            </h1>
+
+            <p className="text-gray-500 mt-2 text-xs sm:text-sm leading-relaxed max-w-md mx-auto">
+              {isCod
+                ? `Please keep ${total ? "₹" + Number(total).toLocaleString("en-IN") : "cash"} ready to pay our delivery partner upon crate arrival.`
+                : "Thank you for your payment! Our Bangalore warehouse team has begun crate packaging your tiles."}
+            </p>
+          </div>
+
+          {/* Order Details Box */}
+          <div className="p-4 sm:p-5 bg-gray-50 rounded-2xl text-left space-y-2.5 border border-gray-100">
+            <div className="flex justify-between items-center text-xs sm:text-sm">
+              <span className="text-gray-500 font-medium">Order ID</span>
+              <span className="font-black text-[#052a51] bg-white px-2.5 py-1 rounded-lg border border-gray-200">{orderId}</span>
+            </div>
+            <div className="flex justify-between items-center text-xs sm:text-sm">
+              <span className="text-gray-500 font-medium">Payment Mode</span>
+              <span className="font-bold text-[#052a51]">{isCod ? "Cash on Delivery" : "Online Prepaid"}</span>
+            </div>
+            {total && (
+              <div className="flex justify-between items-center text-xs sm:text-sm">
+                <span className="text-gray-500 font-medium">Total Amount</span>
+                <span className="font-black text-[#052a51]">₹{Number(total).toLocaleString("en-IN")}</span>
+              </div>
+            )}
+            <div className="flex justify-between items-center text-xs sm:text-sm">
+              <span className="text-gray-500 font-medium">Estimated Delivery</span>
+              <span className="font-bold text-[#052a51]">3–5 Business Days</span>
+            </div>
+            <div className="flex justify-between items-center text-xs sm:text-sm pt-1 border-t border-gray-200/60">
+              <span className="text-gray-500 font-medium">Order Status</span>
+              <span className="inline-flex items-center gap-1 font-black text-xs text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded-md">
+                <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
+                Processing
+              </span>
+            </div>
+          </div>
+
+          {/* Delivery Note */}
+          <div className="bg-[#052a51]/5 rounded-2xl p-4 text-xs text-gray-600 space-y-2 text-left">
+            <p className="flex items-center gap-2">
+              <Truck size={14} className="text-[#F26522] shrink-0" />
+              <span>Specialized edge-cushioned wooden crate transport</span>
+            </p>
+            <p className="flex items-center gap-2">
+              <Package size={14} className="text-[#F26522] shrink-0" />
+              <span>Driver will call 30 minutes before arrival</span>
+            </p>
+          </div>
+
+          {/* ── Action Buttons: Track Status vs Continue Shopping ── */}
+          <div className="flex flex-col sm:flex-row gap-3 pt-2">
+            <Link
+              href="/account/orders"
+              className="flex-1 min-h-[48px] px-5 bg-[#052a51] hover:bg-[#0b3b6d] text-white font-bold rounded-xl transition-all flex items-center justify-center gap-2 text-xs sm:text-sm active:scale-95 shadow-sm cursor-pointer"
+            >
+              <Package size={16} />
+              <span>Check Order Status</span>
+            </Link>
+            <Link
+              href="/shop"
+              className="flex-1 min-h-[48px] px-5 bg-[#F26522] hover:bg-[#d95a1e] text-white font-bold rounded-xl transition-all flex items-center justify-center gap-2 text-xs sm:text-sm active:scale-95 shadow-sm cursor-pointer"
+            >
+              <ShoppingBag size={16} />
+              <span>Continue Shopping</span>
+            </Link>
+          </div>
+
+          {/* Home Link */}
+          <div className="pt-2">
+            <Link
+              href="/"
+              className="inline-flex items-center gap-1 text-xs font-bold text-gray-500 hover:text-[#052a51] transition-colors"
+            >
+              <Home size={13} />
+              <span>Back to Home</span>
+            </Link>
+          </div>
         </div>
       </div>
     </div>
@@ -104,10 +160,18 @@ function SuccessContent() {
 
 export default function OrderSuccessPage() {
   return (
-    <main className="min-h-screen bg-[#F3F4F5] flex items-center justify-center px-4 py-16">
-      <Suspense fallback={<div className="text-sm font-bold text-[#052a51]">Loading order status...</div>}>
+    <main className="min-h-screen flex flex-col bg-[#F3F4F5]">
+      <Header />
+      <Suspense
+        fallback={
+          <div className="w-full max-w-md mx-auto py-24 text-center text-sm font-bold text-[#052a51]">
+            Loading order confirmation...
+          </div>
+        }
+      >
         <SuccessContent />
       </Suspense>
+      <Footer />
     </main>
   );
 }

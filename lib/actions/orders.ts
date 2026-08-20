@@ -162,8 +162,8 @@ export async function createOrder(input: CreateOrderInput) {
           create: input.items.map((item) => ({
             productId: item.productId,
             productName: item.productName,
-            variantId: item.variantId,
-            variantDetails: item.variantDetails,
+            variantId: item.variantId || "default",
+            variantDetails: item.variantDetails || "Standard",
             boxQuantity: item.boxQuantity,
             pricePerBox: item.pricePerBox,
             totalPrice: item.totalPrice,
@@ -215,8 +215,71 @@ export async function createOrder(input: CreateOrderInput) {
       console.error("Failed to emit socket new-order event:", e);
     }
 
+    // 5. Multi-Vendor Marketplace: Route & Split Order to Vendors
+    try {
+      const productIds = input.items.map((i) => i.productId).filter(Boolean);
+      if (productIds.length > 0) {
+        const dbProducts = await prisma.product.findMany({
+          where: { id: { in: productIds } },
+          select: {
+            id: true,
+            vendorId: true,
+            vendor: { select: { id: true, commissionRate: true, businessName: true } },
+          },
+        });
+
+        const productVendorMap = new Map<string, { vendorId: string; commissionRate: number }>();
+        for (const p of dbProducts) {
+          if (p.vendorId && p.vendor) {
+            productVendorMap.set(p.id, {
+              vendorId: p.vendorId,
+              commissionRate: p.vendor.commissionRate ?? 15,
+            });
+          }
+        }
+
+        // Group items by vendor
+        const vendorSubtotals = new Map<string, { subtotal: number; commissionRate: number }>();
+        for (const item of input.items) {
+          const vInfo = productVendorMap.get(item.productId);
+          if (vInfo) {
+            const current = vendorSubtotals.get(vInfo.vendorId) || {
+              subtotal: 0,
+              commissionRate: vInfo.commissionRate,
+            };
+            current.subtotal += item.totalPrice || item.pricePerBox * item.boxQuantity;
+            vendorSubtotals.set(vInfo.vendorId, current);
+          }
+        }
+
+        // Create VendorOrderSplit records
+        for (const [vId, vData] of vendorSubtotals.entries()) {
+          const commissionAmount = Number(((vData.subtotal * vData.commissionRate) / 100).toFixed(2));
+          const vendorPayoutAmount = Number((vData.subtotal - commissionAmount).toFixed(2));
+
+          await prisma.vendorOrderSplit.create({
+            data: {
+              orderId: order.id,
+              vendorId: vId,
+              subtotal: vData.subtotal,
+              commissionRate: vData.commissionRate,
+              commissionAmount,
+              vendorPayoutAmount,
+              fulfillmentStatus: "Processing",
+            },
+          });
+
+          safeRevalidate(`/vendor/orders`);
+          safeRevalidate(`/admin/vendors/${vId}`);
+        }
+      }
+    } catch (splitErr) {
+      console.error("Error creating vendor order splits:", splitErr);
+    }
+
     safeRevalidate("/admin/orders");
     safeRevalidate("/account/orders");
+    safeRevalidate("/vendor/orders");
 
     return { success: true, order };
   } catch (error: any) {
@@ -271,25 +334,31 @@ export async function getOrderById(id: string) {
   }
 }
 
-export async function getCustomerOrders(params: { userId?: string; phone?: string }) {
+export async function getCustomerOrders(params: { userId?: string; phone?: string; email?: string }) {
   try {
     const orConditions: any[] = [];
 
-    if (params.userId && params.userId.trim()) {
+    // Match exact userId if valid DB id (not synthetic)
+    if (params.userId && params.userId.trim() && !params.userId.startsWith("usr-")) {
       orConditions.push({ userId: params.userId.trim() });
     }
 
+    // Match real 10-digit phone number only (never synthetic placeholders)
     if (params.phone && params.phone.trim()) {
       const raw = params.phone.trim();
-      const digits = raw.replace(/\D/g, "");
-      orConditions.push({ customerPhone: raw });
-      if (digits.length >= 10) {
-        const last10 = digits.slice(-10);
-        orConditions.push({ customerPhone: last10 });
-        orConditions.push({ customerPhone: `+91 ${last10}` });
-        orConditions.push({ customerPhone: `+91${last10}` });
-        orConditions.push({ customerPhone: { contains: last10 } });
+      if (!raw.startsWith("google_") && !raw.startsWith("email_")) {
+        const digits = raw.replace(/\D/g, "");
+        if (digits.length === 10) {
+          orConditions.push({ customerPhone: digits });
+          orConditions.push({ customerPhone: `+91 ${digits}` });
+          orConditions.push({ customerPhone: `+91${digits}` });
+        }
       }
+    }
+
+    // Match exact customerEmail if provided and valid
+    if (params.email && params.email.trim() && !params.email.includes("example.com")) {
+      orConditions.push({ customerEmail: params.email.trim().toLowerCase() });
     }
 
     if (orConditions.length === 0) return [];

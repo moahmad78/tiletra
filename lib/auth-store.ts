@@ -63,6 +63,7 @@ interface AuthState {
     createdAt?: string;
   }) => Promise<void>;
   updateProfile: (data: { name?: string; email?: string; avatar?: string | null }) => Promise<{ success: boolean; message?: string }>;
+  updateUserPhone: (phone: string) => Promise<{ success: boolean; message?: string }>;
   logout: () => void;
   setHasHydrated: (v: boolean) => void;
 
@@ -120,6 +121,9 @@ export const useAuthStore = create<AuthState>()(
           return { success: false, message: "Invalid OTP. Please enter the 6-digit code." };
         }
 
+        // Explicit defense-in-depth: Clear any existing session before logging in new user
+        set({ user: null, isAuthenticated: false });
+
         try {
           const { upsertCustomerUser } = await import("@/lib/actions/auth");
           const res = await upsertCustomerUser({
@@ -175,9 +179,9 @@ export const useAuthStore = create<AuthState>()(
 
       googleSignIn: async (userData) => {
         const userId = userData.userId || "";
-        const realPhone = userData.phone && !userData.phone.startsWith("google_") ? userData.phone : "";
+        const realPhone = userData.phone && !userData.phone.startsWith("google_") && !userData.phone.startsWith("email_") ? userData.phone.replace(/\D/g, "").slice(-10) : "";
 
-        // 1. Instantly set authenticated state without blocking UI on network requests
+        // 1. Explicit clean session start: wipe any previous user state immediately
         const immediateUser: CustomerUser = {
           id: userId || `usr-google-${Date.now()}`,
           phone: realPhone,
@@ -196,40 +200,53 @@ export const useAuthStore = create<AuthState>()(
           isLoginModalOpen: false,
         });
 
-        // 2. Fetch real DB addresses asynchronously in the background
-        if (userId) {
-          try {
-            const { getDbUser } = await import("@/lib/actions/auth");
-            const dbUser = await getDbUser(userId);
-            if (dbUser && Array.isArray(dbUser.addresses)) {
-              const addresses: CustomerAddress[] = dbUser.addresses.map((a: any) => ({
-                id: a.id,
-                name: userData.name || "Customer",
-                phone: (userData.phone && !userData.phone.startsWith("google_")) ? userData.phone : "",
-                pincode: a.pincode || "",
-                line1: a.street || "",
-                line2: "",
-                city: a.city || "Bangalore",
-                state: a.state || "Karnataka",
-                landmark: a.landmark || "",
-                label: (a.label as any) || "Home",
-                isDefault: Boolean(a.isDefault),
-              }));
-
-              set((state) => {
-                if (!state.user || state.user.id !== userId) return state;
-                return {
-                  user: {
-                    ...state.user,
-                    addresses,
-                    defaultAddressId: addresses.find((a) => a.isDefault)?.id || addresses[0]?.id,
-                  },
-                };
-              });
-            }
-          } catch (e) {
-            console.error("Failed to load user addresses in background:", e);
+        // 2. Fetch real DB data (phone + addresses) for THIS specific user
+        try {
+          const { getDbUser, getDbUserByEmail } = await import("@/lib/actions/auth");
+          let dbUser = null;
+          if (userId && !userId.startsWith("usr-")) {
+            dbUser = await getDbUser(userId);
           }
+          if (!dbUser && userData.email) {
+            dbUser = await getDbUserByEmail(userData.email);
+          }
+
+          if (dbUser) {
+            // Resolve real phone if verified in DB
+            const dbPhone = dbUser.phone && !dbUser.phone.startsWith("google_") && !dbUser.phone.startsWith("email_") ? dbUser.phone.replace(/\D/g, "").slice(-10) : "";
+            const resolvedPhone = dbPhone || realPhone;
+
+            const addresses: CustomerAddress[] = (dbUser.addresses || []).map((a: any) => ({
+              id: a.id,
+              name: dbUser.name || userData.name || "Customer",
+              phone: resolvedPhone,
+              pincode: a.pincode || "",
+              line1: a.street || "",
+              line2: "",
+              city: a.city || "Bangalore",
+              state: a.state || "Karnataka",
+              landmark: a.landmark || "",
+              label: (a.label as any) || "Home",
+              isDefault: Boolean(a.isDefault),
+            }));
+
+            set((state) => {
+              // Safety: only update if state is still this same email/user
+              if (!state.user || (state.user.email && state.user.email !== userData.email)) return state;
+              return {
+                user: {
+                  ...state.user,
+                  id: dbUser.id,
+                  phone: resolvedPhone,
+                  phoneVerified: dbUser.phoneVerified,
+                  addresses,
+                  defaultAddressId: addresses.find((a) => a.isDefault)?.id || addresses[0]?.id,
+                },
+              };
+            });
+          }
+        } catch (e) {
+          console.error("Failed to load user data in background:", e);
         }
       },
 
@@ -252,13 +269,17 @@ export const useAuthStore = create<AuthState>()(
           const { verifyEmailOtp } = await import("@/lib/actions/email-otp");
           const res = await verifyEmailOtp(email, otp);
           if (res.success && res.userId) {
+            // Explicit clean session start
+            set({ user: null, isAuthenticated: false });
+
             const { getDbUser } = await import("@/lib/actions/auth");
             const dbUser = await getDbUser(res.userId);
             if (dbUser) {
+              const realPhone = (dbUser.phone && !dbUser.phone.startsWith("email_") && !dbUser.phone.startsWith("google_")) ? dbUser.phone.replace(/\D/g, "").slice(-10) : "";
               const addresses: CustomerAddress[] = (dbUser.addresses || []).map((a: any) => ({
                 id: a.id,
                 name: dbUser.name || "Customer",
-                phone: (dbUser.phone && !dbUser.phone.startsWith("email_")) ? dbUser.phone : "",
+                phone: realPhone,
                 pincode: a.pincode || "",
                 line1: a.street || "",
                 line2: "",
@@ -271,7 +292,7 @@ export const useAuthStore = create<AuthState>()(
 
               const loggedUser: CustomerUser = {
                 id: dbUser.id,
-                phone: (dbUser.phone && !dbUser.phone.startsWith("email_")) ? dbUser.phone : "",
+                phone: realPhone,
                 name: dbUser.name || email.split("@")[0],
                 email: dbUser.email || email,
                 avatar: dbUser.avatar || undefined,
@@ -335,12 +356,41 @@ export const useAuthStore = create<AuthState>()(
         return { success: true, message: "Profile updated!" };
       },
 
+      updateUserPhone: async (phone: string) => {
+        const cleanPhone = phone.replace(/\D/g, "").slice(-10);
+        if (cleanPhone.length !== 10) return { success: false, message: "Enter a valid 10-digit mobile number" };
+        const currentUser = get().user;
+        if (!currentUser) return { success: false, message: "Not logged in" };
+        try {
+          const { updateUserPhoneInDb } = await import("@/lib/actions/auth");
+          const res = await updateUserPhoneInDb(currentUser.id, cleanPhone, currentUser.email);
+          if (res.success) {
+            set((state) => ({
+              user: state.user
+                ? {
+                    ...state.user,
+                    id: res.userId || state.user.id,
+                    phone: cleanPhone,
+                    phoneVerified: true,
+                  }
+                : null,
+            }));
+            return { success: true, message: "Mobile number linked successfully!" };
+          }
+          return { success: false, message: res.error || "Failed to update phone" };
+        } catch (e: any) {
+          return { success: false, message: e?.message || "Failed to update phone" };
+        }
+      },
+
       logout: () => {
-        set({ user: null, isAuthenticated: false, pendingIntent: null });
+        set({ user: null, isAuthenticated: false, pendingIntent: null, activeOtpCode: null });
         if (typeof window !== "undefined") {
           try {
             localStorage.removeItem("tiletra-customer-auth");
+            sessionStorage.clear();
             document.cookie = "tiletra_session=; max-age=0; path=/;";
+            document.cookie = "oauth_state=; max-age=0; path=/;";
           } catch {}
         }
       },

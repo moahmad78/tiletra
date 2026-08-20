@@ -501,7 +501,7 @@ export async function getVendorDashboardStats(vendorId: string) {
       };
     }
 
-    const [allProducts, lowStockVariants] = await Promise.all([
+    const [allProducts, lowStockVariants, splits] = await Promise.all([
       prisma.product.findMany({
         where: { vendorId },
         select: {
@@ -516,6 +516,14 @@ export async function getVendorDashboardStats(vendorId: string) {
           stockBoxes: { lt: 15 },
         },
       }),
+      prisma.vendorOrderSplit.findMany({
+        where: { vendorId },
+        select: {
+          subtotal: true,
+          vendorPayoutAmount: true,
+          fulfillmentStatus: true,
+        },
+      }),
     ]);
 
     const totalProducts = allProducts.length;
@@ -523,6 +531,8 @@ export async function getVendorDashboardStats(vendorId: string) {
     const pausedProducts = allProducts.filter((p) => p.status === "paused").length;
     const pendingApprovals = allProducts.filter((p) => p.approvalStatus === "pending").length;
     const rejectedProducts = allProducts.filter((p) => p.approvalStatus === "rejected").length;
+    const totalOrders = splits.length;
+    const totalRevenue = splits.reduce((acc, s) => acc + s.vendorPayoutAmount, 0);
 
     return {
       totalProducts,
@@ -531,8 +541,8 @@ export async function getVendorDashboardStats(vendorId: string) {
       pendingApprovals,
       rejectedProducts,
       lowStockCount: lowStockVariants,
-      totalOrders: 0, // Expanded in 8b
-      totalRevenue: 0, // Expanded in 8c
+      totalOrders,
+      totalRevenue,
     };
   } catch (error) {
     console.error("Error getting vendor dashboard stats:", error);
@@ -573,6 +583,145 @@ export async function changeVendorPassword(ownerId: string, newPassword: string)
   } catch (error: any) {
     console.error("changeVendorPassword error:", error);
     return { success: false, error: error?.message || "Failed to update password." };
+  }
+}
+
+// 11. Vendor Payout / Bank Details Update (Part B)
+export async function updateVendorBankDetails(
+  vendorId: string,
+  bankData: {
+    bankAccountHolder?: string;
+    bankName?: string;
+    bankAccountNumber?: string;
+    bankIfscCode?: string;
+    bankUpiId?: string;
+  }
+) {
+  try {
+    if (!vendorId) return { success: false, error: "Vendor ID required" };
+
+    const updated = await prisma.vendor.update({
+      where: { id: vendorId },
+      data: {
+        bankAccountHolder: bankData.bankAccountHolder?.trim() || null,
+        bankName: bankData.bankName?.trim() || null,
+        bankAccountNumber: bankData.bankAccountNumber?.trim() || null,
+        bankIfscCode: bankData.bankIfscCode?.trim().toUpperCase() || null,
+        bankUpiId: bankData.bankUpiId?.trim().toLowerCase() || null,
+      },
+    });
+
+    safeRevalidate("/vendor/settings");
+    safeRevalidate("/vendor/payouts");
+    safeRevalidate(`/admin/vendors/${vendorId}`);
+
+    return {
+      success: true,
+      vendor: updated,
+      message: "Bank and payout details updated successfully!",
+    };
+  } catch (error: any) {
+    console.error("updateVendorBankDetails error:", error);
+    return { success: false, error: error?.message || "Failed to update bank details" };
+  }
+}
+
+// 12. Vendor Orders Query (Strictly Scoped by vendorId)
+export async function getVendorOrders(vendorId: string) {
+  try {
+    if (!vendorId) return [];
+
+    const splits = await prisma.vendorOrderSplit.findMany({
+      where: { vendorId },
+      orderBy: { createdAt: "desc" },
+    });
+
+    const orderIds = splits.map((s) => s.orderId);
+    const parentOrders = await prisma.order.findMany({
+      where: { id: { in: orderIds } },
+      include: {
+        items: true,
+      },
+    });
+
+    const orderMap = new Map(parentOrders.map((o) => [o.id, o]));
+
+    return splits.map((split) => {
+      const parent = orderMap.get(split.orderId);
+      return {
+        id: split.id,
+        orderId: split.orderId,
+        vendorId: split.vendorId,
+        subtotal: split.subtotal,
+        commissionRate: split.commissionRate,
+        commissionAmount: split.commissionAmount,
+        vendorPayoutAmount: split.vendorPayoutAmount,
+        fulfillmentStatus: split.fulfillmentStatus,
+        trackingNumber: split.trackingNumber,
+        courierName: split.courierName,
+        createdAt: split.createdAt,
+        updatedAt: split.updatedAt,
+        parentOrder: parent
+          ? {
+              customerName: parent.customerName,
+              customerPhone: parent.customerPhone,
+              customerEmail: parent.customerEmail,
+              shippingAddress: parent.shippingAddress,
+              paymentStatus: parent.paymentStatus,
+              paymentMethod: parent.paymentMethod,
+              orderStatus: parent.orderStatus,
+              items: parent.items,
+            }
+          : null,
+      };
+    });
+  } catch (error) {
+    console.error("getVendorOrders error:", error);
+    return [];
+  }
+}
+
+// 13. Update Vendor Order Split Fulfillment Status
+export async function updateVendorFulfillmentStatus(
+  splitId: string,
+  vendorId: string,
+  status: "Processing" | "Dispatched" | "Delivered" | "Cancelled",
+  trackingNumber?: string,
+  courierName?: string
+) {
+  try {
+    if (!splitId || !vendorId) {
+      return { success: false, error: "Split ID and Vendor ID are required" };
+    }
+
+    const existing = await prisma.vendorOrderSplit.findFirst({
+      where: { id: splitId, vendorId },
+    });
+
+    if (!existing) {
+      return { success: false, error: "Order split not found or unauthorized" };
+    }
+
+    const updated = await prisma.vendorOrderSplit.update({
+      where: { id: splitId },
+      data: {
+        fulfillmentStatus: status,
+        trackingNumber: trackingNumber !== undefined ? trackingNumber.trim() : existing.trackingNumber,
+        courierName: courierName !== undefined ? courierName.trim() : existing.courierName,
+      },
+    });
+
+    safeRevalidate("/vendor/orders");
+    safeRevalidate(`/admin/vendors/${vendorId}`);
+
+    return {
+      success: true,
+      split: updated,
+      message: `Order status updated to ${status}!`,
+    };
+  } catch (error: any) {
+    console.error("updateVendorFulfillmentStatus error:", error);
+    return { success: false, error: error?.message || "Failed to update fulfillment status" };
   }
 }
 

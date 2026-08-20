@@ -22,7 +22,7 @@ interface LocationPickerProps {
 }
 
 export default function LocationPicker({ onAddressSelected, onCancel }: LocationPickerProps) {
-  const { addAddress, user } = useAuthStore();
+  const { addAddress, user, updateUserPhone } = useAuthStore();
 
   const [detectingGps, setDetectingGps] = useState(false);
   const [coords, setCoords] = useState<{ lat: number; lng: number } | null>({
@@ -31,8 +31,12 @@ export default function LocationPicker({ onAddressSelected, onCancel }: Location
   });
 
   // Form Fields
-  const [name, setName] = useState(user?.name || "");
-  const [phone, setPhone] = useState(user?.phone || "");
+  const [name, setName] = useState(user?.name && !user.name.startsWith("User ") ? user.name : "");
+  const [phone, setPhone] = useState(
+    user?.phone && !user.phone.startsWith("google_") && !user.phone.startsWith("email_")
+      ? user.phone.replace(/\D/g, "").slice(-10)
+      : ""
+  );
   const [pincode, setPincode] = useState("560034");
   const [line1, setLine1] = useState("");
   const [line2, setLine2] = useState("");
@@ -113,9 +117,11 @@ export default function LocationPicker({ onAddressSelected, onCancel }: Location
       return;
     }
 
+    const cleanPhone = phone.replace(/\D/g, "");
+
     const newAddr = addAddress({
       name: name.trim(),
-      phone: phone.replace(/\D/g, ""),
+      phone: cleanPhone,
       pincode: pincode.trim(),
       line1: line1.trim(),
       line2: line2.trim(),
@@ -127,6 +133,20 @@ export default function LocationPicker({ onAddressSelected, onCancel }: Location
       longitude: coords?.lng,
       isDefault: true,
     });
+
+    // 🔑 Auto-sync phone to user profile if they don't have a real number yet
+    // This makes the phone appear everywhere (badge, account, Razorpay prefill) automatically
+    const userHasRealPhone =
+      user?.phone &&
+      !user.phone.startsWith("google_") &&
+      !user.phone.startsWith("email_") &&
+      user.phone.replace(/\D/g, "").length === 10;
+
+    if (!userHasRealPhone) {
+      updateUserPhone(cleanPhone).catch(() => {
+        // Silent fail — address was already saved, phone sync is best-effort
+      });
+    }
 
     toast.success("Address saved!");
     onAddressSelected(newAddr);
@@ -239,7 +259,7 @@ export default function LocationPicker({ onAddressSelected, onCancel }: Location
               maxLength={10}
               value={phone}
               onChange={(e) => setPhone(e.target.value.replace(/\D/g, ""))}
-              placeholder="e.g. 9876543210"
+              placeholder="Enter 10-digit mobile number"
               className="w-full px-3.5 py-2.5 bg-gray-50 border border-gray-200 rounded-xl text-xs font-bold text-[#052a51] focus:bg-white focus:outline-none focus:border-[#F26522]"
             />
           </div>

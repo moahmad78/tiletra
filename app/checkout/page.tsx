@@ -36,8 +36,8 @@ function formatPrice(n: number) {
   return "₹" + n.toLocaleString("en-IN");
 }
 
-const STEPS = ["Address", "Delivery", "Payment"] as const;
-type Step = typeof STEPS[number];
+const STEPS = ["Address", "Payment", "Order Done"] as const;
+type Step = "Address" | "Payment";
 
 export default function CheckoutPage() {
   const router = useRouter();
@@ -109,13 +109,13 @@ export default function CheckoutPage() {
 
   const stepIndex = STEPS.indexOf(step);
 
-  // Address step validation
-  const handleProceedToDelivery = () => {
+  // Address → Payment directly (no delivery review step)
+  const handleProceedToPayment = () => {
     if (!selectedAddress) {
       toast.error("Please select or add a delivery address to continue.");
       return;
     }
-    setStep("Delivery");
+    setStep("Payment");
   };
 
   const [isProcessingPayment, setIsProcessingPayment] = useState(false);
@@ -170,17 +170,20 @@ export default function CheckoutPage() {
 
     const orderId = `TL-${Math.floor(100000 + Math.random() * 900000)}`;
 
+    const rawPhone = selectedAddress.phone?.trim() || (user?.phone && !user.phone.startsWith("google_") && !user.phone.startsWith("email_") ? user.phone : "");
+    const cleanPhone = rawPhone.replace(/\D/g, "").slice(-10);
+
     try {
       const { createOrder } = await import("@/lib/actions/orders");
       const res = await createOrder({
         id: orderId,
         userId: user?.id,
         customerName: selectedAddress.name?.trim() || user?.name || "Customer",
-        customerPhone: selectedAddress.phone?.trim() || user?.phone || "+91 98765 43210",
-        customerEmail: user?.email || "customer@intrihub.com",
+        customerPhone: cleanPhone,
+        customerEmail: user?.email && !user.email.endsWith("@local.dev") ? user.email : "customer@intrihub.com",
         shippingAddress: {
           fullName: selectedAddress.name || user?.name || "Customer",
-          phone: selectedAddress.phone || user?.phone || "+91 98765 43210",
+          phone: selectedAddress.phone?.trim() || cleanPhone,
           street: `${selectedAddress.line1}${selectedAddress.line2 ? `, ${selectedAddress.line2}` : ""}`,
           city: selectedAddress.city || "Bangalore",
           state: selectedAddress.state || "Karnataka",
@@ -492,7 +495,11 @@ export default function CheckoutPage() {
               </div>
               <div className="text-xs">
                 <p className="font-bold text-[#052a51] leading-none">{user.name || "Customer"}</p>
-                <p className="text-[10px] text-gray-500 mt-0.5">+91 {user.phone}</p>
+                {user.phone && !user.phone.startsWith("google_") && !user.phone.startsWith("email_") ? (
+                  <p className="text-[10px] text-gray-500 mt-0.5">+91 {user.phone.slice(-10)}</p>
+                ) : user.email ? (
+                  <p className="text-[10px] text-gray-500 mt-0.5">{user.email}</p>
+                ) : null}
               </div>
             </div>
           )}
@@ -612,22 +619,22 @@ export default function CheckoutPage() {
                       })}
                     </div>
 
-                    {/* Continue Action */}
+                    {/* Proceed CTA */}
                     <button
-                      onClick={handleProceedToDelivery}
-                      className="w-full h-13 mt-6 bg-[#F26522] hover:bg-[#d95a1e] text-white font-black text-sm rounded-2xl shadow-md transition-all flex items-center justify-center gap-2 active:scale-95"
+                      onClick={handleProceedToPayment}
+                      className="w-full min-h-[52px] mt-6 bg-[#F26522] hover:bg-[#d95a1e] text-white font-black text-sm rounded-2xl shadow-md transition-all flex items-center justify-center gap-2 active:scale-95 cursor-pointer"
                     >
-                      <span>Deliver to Selected Address</span>
+                      <span>Continue to Payment</span>
                       <ArrowRight size={18} />
                     </button>
                   </div>
                 ) : (
-                  /* Add New Address with GPS auto-detect component */
+                  /* Add New Address */
                   <LocationPicker
                     onAddressSelected={(newAddr) => {
                       setSelectedAddressId(newAddr.id);
                       setIsAddingNewAddress(false);
-                      setStep("Delivery");
+                      setStep("Payment");
                     }}
                     onCancel={user?.addresses && user.addresses.length > 0 ? () => setIsAddingNewAddress(false) : undefined}
                   />
@@ -635,86 +642,37 @@ export default function CheckoutPage() {
               </div>
             )}
 
-            {/* ── STEP 2: DELIVERY REVIEW ── */}
-            {step === "Delivery" && (
-              <div className="bg-white rounded-3xl p-6 md:p-8 border border-gray-200/80 shadow-xs space-y-6">
-                <div className="flex items-center gap-2.5">
-                  <div className="w-10 h-10 rounded-2xl bg-[#052a51] text-white flex items-center justify-center">
-                    <Truck size={20} />
-                  </div>
-                  <div>
-                    <h2 className="text-xl font-black text-[#052a51]">Specialized Tile Freight</h2>
-                    <p className="text-xs text-gray-500">Delivered in edge-cushioned wooden crates</p>
-                  </div>
-                </div>
-
-                {/* Delivery Option Card */}
-                <div className="p-5 rounded-2xl border-2 border-[#F26522] bg-[#F26522]/5 space-y-2">
-                  <div className="flex justify-between items-start">
-                    <div>
-                      <p className="font-black text-[#052a51] text-sm">Direct Factory Doorstep Delivery</p>
-                      <p className="text-xs text-gray-600 mt-0.5">Estimated Transit Time: 3–5 Business Days</p>
-                    </div>
-                    <span className={`text-base font-black ${deliveryFee === 0 ? "text-[#2F7A4F]" : "text-[#052a51]"}`}>
-                      {deliveryFee === 0 ? "FREE" : formatPrice(deliveryFee)}
-                    </span>
-                  </div>
-                  <p className="text-xs text-gray-500 leading-relaxed pt-2 border-t border-[#F26522]/20">
-                    Your shipment will be handled by our dedicated Bangalore building materials carrier. The driver will call 30 minutes before arrival.
-                  </p>
-                </div>
-
-                {/* Delivering To Card */}
+            {/* ── STEP 2: EMBEDDED PAYMENT SECTION ── */}
+            {step === "Payment" && (
+              <div className="space-y-3">
+                {/* Address summary strip */}
                 {selectedAddress && (
-                  <div className="p-4 rounded-2xl bg-gray-50 border border-gray-200 text-xs">
-                    <div className="flex items-center justify-between mb-1">
-                      <span className="font-bold text-gray-400 uppercase tracking-wider">Shipping To:</span>
-                      <button
-                        type="button"
-                        onClick={() => setStep("Address")}
-                        className="text-[#F26522] font-bold hover:underline"
-                      >
-                        Change Address
-                      </button>
+                  <div className="bg-white rounded-2xl px-4 py-3 border border-gray-200/80 shadow-2xs flex items-start justify-between gap-3">
+                    <div className="flex items-start gap-2.5">
+                      <MapPin size={15} className="text-[#F26522] mt-0.5 shrink-0" />
+                      <div className="text-xs min-w-0">
+                        <p className="font-black text-[#052a51]">{selectedAddress.name} · {selectedAddress.label}</p>
+                        <p className="text-gray-500 mt-0.5 truncate">{selectedAddress.line1}, {selectedAddress.city} — {selectedAddress.pincode}</p>
+                      </div>
                     </div>
-                    <p className="font-bold text-[#052a51]">{selectedAddress.name} ({selectedAddress.label})</p>
-                    <p className="text-gray-600 mt-0.5">
-                      {selectedAddress.line1}, {selectedAddress.city} — {selectedAddress.pincode}
-                    </p>
+                    <button
+                      type="button"
+                      onClick={() => setStep("Address")}
+                      className="text-[#F26522] font-bold text-xs hover:underline shrink-0 min-h-[36px] flex items-center cursor-pointer"
+                    >
+                      Change
+                    </button>
                   </div>
                 )}
-
-                {/* Actions */}
-                <div className="flex items-center gap-3 pt-2">
-                  <button
-                    type="button"
-                    onClick={() => setStep("Address")}
-                    className="h-12 px-4 sm:px-6 border-2 border-gray-200 hover:border-gray-300 text-[#052a51] font-bold rounded-xl text-xs sm:text-sm transition-colors cursor-pointer shrink-0"
-                  >
-                    ← Back
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => setStep("Payment")}
-                    className="flex-1 h-12 bg-[#F26522] hover:bg-[#d95a1e] text-white font-black text-xs sm:text-sm rounded-xl shadow-md transition-all flex items-center justify-center gap-2 active:scale-95 cursor-pointer"
-                  >
-                    <span>Proceed to Payment</span>
-                    <ArrowRight size={16} />
-                  </button>
-                </div>
+                <PaymentSection
+                  totalAmount={total}
+                  paymentState={paymentSelection}
+                  onPaymentStateChange={setPaymentSelection}
+                  isProcessing={isProcessingPayment}
+                  onPaySubmit={handlePaymentSubmit}
+                  onBack={() => setStep("Address")}
+                />
               </div>
-            )}
-
-            {/* ── STEP 3: EMBEDDED TILETRA PAYMENT SECTION ── */}
-            {step === "Payment" && (
-              <PaymentSection
-                totalAmount={total}
-                paymentState={paymentSelection}
-                onPaymentStateChange={setPaymentSelection}
-                isProcessing={isProcessingPayment}
-                onPaySubmit={handlePaymentSubmit}
-                onBack={() => setStep("Delivery")}
-              />
             )}
           </div>
 
@@ -770,6 +728,18 @@ export default function CheckoutPage() {
                 <p className="flex items-center gap-1.5 font-medium">
                   <Truck size={14} className="text-[#F26522]" /> 3–5 Business Days Bangalore Delivery
                 </p>
+                <p className="flex items-center gap-1.5 font-medium">
+                  <CreditCard size={14} className="text-[#052a51]" /> UPI · Cards · COD accepted
+                </p>
+                {deliveryFee === 0 ? (
+                  <p className="flex items-center gap-1.5 font-medium text-[#2F7A4F]">
+                    🎉 FREE delivery on this order!
+                  </p>
+                ) : (
+                  <p className="flex items-center gap-1.5 font-medium">
+                    🚚 Freight: {formatPrice(deliveryFee)} · Add {formatPrice(freeThreshold - subtotal)} more for FREE
+                  </p>
+                )}
               </div>
             </div>
           </div>
