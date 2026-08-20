@@ -22,6 +22,7 @@ import {
   QrCode,
   Smartphone,
   ShoppingBag,
+  CheckCircle2,
 } from "lucide-react";
 import { useCartStore } from "@/lib/cart-store";
 import { useAuthStore, type CustomerAddress } from "@/lib/auth-store";
@@ -69,6 +70,7 @@ export default function CheckoutPage() {
   const [step, setStep] = useState<Step>("Address");
   const [selectedAddressId, setSelectedAddressId] = useState<string>("");
   const [isAddingNewAddress, setIsAddingNewAddress] = useState(false);
+  const [isRedirectingToSuccess, setIsRedirectingToSuccess] = useState(false);
   const [paymentSelection, setPaymentSelection] = useState<PaymentSelectionState>({
     method: "upi",
     upiApp: "gpay",
@@ -232,6 +234,7 @@ export default function CheckoutPage() {
       link: "/account/orders",
     });
 
+    setIsRedirectingToSuccess(true);
     clearCart();
     router.push(`/checkout/success?orderId=${orderId}&method=${method.toLowerCase()}&total=${total}`);
   };
@@ -439,6 +442,25 @@ export default function CheckoutPage() {
               <div className="h-96 bg-white rounded-3xl border border-gray-200/80" />
               <div className="h-96 bg-white rounded-3xl border border-gray-200/80" />
             </div>
+          </div>
+        </div>
+      </main>
+    );
+  }
+
+  if (isRedirectingToSuccess) {
+    return (
+      <main className="min-h-screen flex flex-col bg-[#F3F4F5]">
+        <Header />
+        <div className="w-full max-w-[1200px] mx-auto px-3 sm:px-6 lg:px-8 pt-[76px] sm:pt-[84px] md:pt-[175px] lg:pt-[180px] pb-14 flex-1 flex items-center justify-center">
+          <div className="bg-white rounded-3xl p-10 md:p-14 text-center max-w-md mx-auto shadow-sm border border-gray-100 my-8 space-y-4">
+            <div className="w-16 h-16 rounded-full bg-emerald-50 text-emerald-600 flex items-center justify-center mx-auto animate-pulse">
+              <CheckCircle2 size={36} />
+            </div>
+            <h2 className="text-xl md:text-2xl font-black text-[#052a51]">Order Placed!</h2>
+            <p className="text-gray-500 text-xs sm:text-sm">
+              Redirecting to your order confirmation...
+            </p>
           </div>
         </div>
       </main>
