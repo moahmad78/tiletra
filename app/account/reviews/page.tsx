@@ -13,8 +13,6 @@ import {
   MessageSquare,
 } from "lucide-react";
 import { useReviewsStore, type CustomerReview } from "@/lib/reviews-store";
-import Header from "@/components/Header";
-import Footer from "@/components/Footer";
 import { toast } from "sonner";
 
 export default function MyReviewsPage() {
@@ -53,127 +51,122 @@ export default function MyReviewsPage() {
   };
 
   return (
-    <div className="min-h-screen flex flex-col bg-[#F8F9FA]">
-      <Header />
-
-      <main
-        className="flex-1 max-w-[900px] w-full mx-auto px-4 sm:px-6 md:px-8 pt-[110px] md:pt-[168px] pb-8"
-      >
-        <div className="flex items-center justify-between mb-6">
-          <div className="flex items-center gap-3">
-            <Link
-              href="/account"
-              className="p-2 rounded-xl bg-white border border-gray-200 text-[#052a51] hover:bg-gray-50 transition-colors"
-            >
-              <ArrowLeft size={18} />
-            </Link>
-            <div>
-              <h1 className="text-2xl sm:text-3xl font-black text-[#052a51]">My Reviews</h1>
-              <p className="text-xs text-gray-500">Manage and edit your product ratings</p>
-            </div>
-          </div>
-
+    <div className="space-y-6">
+      {/* Top Header */}
+      <div className="flex items-center justify-between">
+        <div className="flex items-center gap-3">
           <Link
-            href="/account/orders"
-            className="inline-flex items-center gap-1.5 px-3.5 py-2 bg-[#F26522] hover:bg-[#d95a1e] text-white text-xs font-bold rounded-xl shadow-xs transition-colors"
+            href="/account"
+            className="md:hidden p-2 rounded-xl bg-white border border-gray-200 text-[#052a51] hover:bg-gray-50 transition-colors shrink-0"
           >
-            <Plus size={14} />
-            <span>Review Past Orders</span>
+            <ArrowLeft size={18} />
           </Link>
+          <div>
+            <h1 className="text-xl sm:text-2xl font-black text-[#052a51]">My Reviews</h1>
+            <p className="text-xs text-gray-500">Manage and edit your product ratings</p>
+          </div>
         </div>
 
-        {/* Reviews List */}
-        <div className="space-y-4">
-          {reviews.length === 0 ? (
-            <div className="bg-white p-12 rounded-3xl text-center border border-gray-200 text-gray-400">
-              <MessageSquare size={32} className="mx-auto text-gray-300 mb-3" />
-              <p className="font-bold text-[#052a51]">You haven't written any reviews yet</p>
-              <p className="text-xs text-gray-400 mt-1">
-                Delivered tiles can be reviewed from your orders page!
-              </p>
-              <Link
-                href="/account/orders"
-                className="mt-4 inline-block px-4 py-2 bg-[#052a51] text-white text-xs font-bold rounded-xl"
-              >
-                Go to My Orders
-              </Link>
-            </div>
-          ) : (
-            reviews.map((r) => (
-              <div
-                key={r.id}
-                className="bg-white rounded-3xl p-6 border border-gray-200/80 shadow-2xs space-y-4"
-              >
-                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-3 border-b border-gray-100">
-                  <div>
-                    <h3 className="font-black text-[#052a51] text-base">{r.productName}</h3>
-                    <p className="text-xs text-gray-400">Submitted on {r.date}</p>
-                  </div>
+        <Link
+          href="/account/orders"
+          className="inline-flex items-center gap-1.5 px-3.5 py-2 bg-[#F26522] hover:bg-[#d95a1e] text-white text-xs font-bold rounded-xl shadow-xs transition-colors"
+        >
+          <Plus size={14} />
+          <span>Review Past Orders</span>
+        </Link>
+      </div>
 
-                  <div className="flex items-center gap-2">
-                    <span
-                      className={`px-2.5 py-0.5 rounded-full text-[10px] font-extrabold uppercase ${
-                        r.status === "approved"
-                          ? "bg-emerald-50 text-emerald-700 border border-emerald-200"
-                          : r.status === "pending"
-                          ? "bg-amber-50 text-amber-700 border border-amber-200"
-                          : "bg-red-50 text-red-700 border border-red-200"
-                      }`}
-                    >
-                      {r.status === "approved" ? "Live on Store" : "Pending Approval"}
-                    </span>
-
-                    <div className="flex items-center gap-0.5 text-amber-500 bg-amber-50 px-2 py-0.5 rounded-md border border-amber-200">
-                      <Star size={12} className="fill-amber-500 text-amber-500" />
-                      <span className="text-xs font-black text-[#052a51] ml-1">{r.rating}.0</span>
-                    </div>
-                  </div>
+      {/* Reviews List */}
+      <div className="space-y-4">
+        {reviews.length === 0 ? (
+          <div className="bg-white p-12 rounded-3xl text-center border border-gray-200/90 shadow-2xs text-gray-400">
+            <MessageSquare size={32} className="mx-auto text-gray-300 mb-3" />
+            <p className="font-bold text-[#052a51]">You haven't written any reviews yet</p>
+            <p className="text-xs text-gray-400 mt-1">
+              Delivered tiles can be reviewed from your orders page!
+            </p>
+            <Link
+              href="/account/orders"
+              className="mt-4 inline-block px-4 py-2 bg-[#052a51] text-white text-xs font-bold rounded-xl hover:bg-[#0a3e74]"
+            >
+              Go to My Orders
+            </Link>
+          </div>
+        ) : (
+          reviews.map((r) => (
+            <div
+              key={r.id}
+              className="bg-white rounded-3xl p-6 border border-gray-200/90 shadow-2xs space-y-4"
+            >
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-3 border-b border-gray-100">
+                <div>
+                  <h3 className="font-black text-[#052a51] text-base">{r.productName}</h3>
+                  <p className="text-xs text-gray-400">Submitted on {r.date}</p>
                 </div>
 
-                <p className="text-xs text-gray-700 leading-relaxed font-medium">"{r.comment}"</p>
+                <div className="flex items-center gap-2">
+                  <span
+                    className={`px-2.5 py-0.5 rounded-full text-[10px] font-extrabold uppercase ${
+                      r.status === "approved"
+                        ? "bg-emerald-50 text-emerald-700 border border-emerald-200"
+                        : r.status === "pending"
+                        ? "bg-amber-50 text-amber-700 border border-amber-200"
+                        : "bg-red-50 text-red-700 border border-red-200"
+                    }`}
+                  >
+                    {r.status === "approved" ? "Live on Store" : "Pending Approval"}
+                  </span>
 
-                {/* Photos */}
-                {r.images && r.images.length > 0 && (
-                  <div className="flex items-center gap-2 overflow-x-auto py-1">
-                    {r.images.map((img, i) => (
-                      <div
-                        key={i}
-                        className="relative w-16 h-16 rounded-xl overflow-hidden border border-gray-200 bg-gray-50 shrink-0"
-                      >
-                        <Image src={img} alt="" fill className="object-cover" sizes="64px" />
-                      </div>
-                    ))}
-                  </div>
-                )}
-
-                {/* Actions */}
-                <div className="pt-3 border-t border-gray-100 flex items-center justify-between text-xs">
-                  <div className="text-gray-400 text-[11px]">
-                    👍 {r.helpfulCount} helpful votes
-                  </div>
-
-                  <div className="flex items-center gap-2">
-                    <button
-                      onClick={() => handleStartEdit(r)}
-                      className="inline-flex items-center gap-1 px-3 py-1.5 bg-gray-100 hover:bg-gray-200 text-[#052a51] font-bold rounded-xl transition-colors"
-                    >
-                      <Edit size={13} />
-                      <span>Edit</span>
-                    </button>
-                    <button
-                      onClick={() => handleDelete(r.id, r.productName)}
-                      className="p-1.5 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded-xl transition-colors"
-                      title="Delete review"
-                    >
-                      <Trash2 size={15} />
-                    </button>
+                  <div className="flex items-center gap-0.5 text-amber-500 bg-amber-50 px-2 py-0.5 rounded-md border border-amber-200">
+                    <Star size={12} className="fill-amber-500 text-amber-500" />
+                    <span className="text-xs font-black text-[#052a51] ml-1">{r.rating}.0</span>
                   </div>
                 </div>
               </div>
-            ))
-          )}
-        </div>
-      </main>
+
+              <p className="text-xs text-gray-700 leading-relaxed font-medium">"{r.comment}"</p>
+
+              {/* Photos */}
+              {r.images && r.images.length > 0 && (
+                <div className="flex items-center gap-2 overflow-x-auto py-1">
+                  {r.images.map((img, i) => (
+                    <div
+                      key={i}
+                      className="relative w-16 h-16 rounded-xl overflow-hidden border border-gray-200 bg-gray-50 shrink-0"
+                    >
+                      <Image src={img} alt="" fill className="object-cover" sizes="64px" />
+                    </div>
+                  ))}
+                </div>
+              )}
+
+              {/* Actions */}
+              <div className="pt-3 border-t border-gray-100 flex items-center justify-between text-xs">
+                <div className="text-gray-400 text-[11px]">
+                  👍 {r.helpfulCount} helpful votes
+                </div>
+
+                <div className="flex items-center gap-2">
+                  <button
+                    onClick={() => handleStartEdit(r)}
+                    className="inline-flex items-center gap-1 px-3 py-1.5 bg-gray-100 hover:bg-gray-200 text-[#052a51] font-bold rounded-xl transition-colors cursor-pointer"
+                  >
+                    <Edit size={13} />
+                    <span>Edit</span>
+                  </button>
+                  <button
+                    onClick={() => handleDelete(r.id, r.productName)}
+                    className="p-1.5 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded-xl transition-colors cursor-pointer"
+                    title="Delete review"
+                  >
+                    <Trash2 size={15} />
+                  </button>
+                </div>
+              </div>
+            </div>
+          ))
+        )}
+      </div>
 
       {/* Edit Modal */}
       {editingReview && (
@@ -191,7 +184,7 @@ export default function MyReviewsPage() {
                       key={s}
                       type="button"
                       onClick={() => setEditRating(s)}
-                      className="p-1 focus:outline-none"
+                      className="p-1 focus:outline-none cursor-pointer"
                     >
                       <Star
                         size={22}
@@ -217,13 +210,13 @@ export default function MyReviewsPage() {
                 <button
                   type="button"
                   onClick={() => setEditingReview(null)}
-                  className="px-4 py-2 text-xs font-bold text-gray-500 hover:bg-gray-100 rounded-xl"
+                  className="px-4 py-2 text-xs font-bold text-gray-500 hover:bg-gray-100 rounded-xl cursor-pointer"
                 >
                   Cancel
                 </button>
                 <button
                   type="submit"
-                  className="px-5 py-2 bg-[#F26522] hover:bg-[#d95a1e] text-white text-xs font-bold rounded-xl shadow-xs"
+                  className="px-5 py-2 bg-[#F26522] hover:bg-[#d95a1e] text-white text-xs font-bold rounded-xl shadow-xs cursor-pointer"
                 >
                   Save & Resubmit
                 </button>
@@ -232,8 +225,6 @@ export default function MyReviewsPage() {
           </div>
         </div>
       )}
-
-      <Footer />
     </div>
   );
 }

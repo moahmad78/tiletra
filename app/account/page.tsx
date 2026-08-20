@@ -36,17 +36,19 @@ import {
   AlertCircle,
   Store,
 } from "lucide-react";
-import Header from "@/components/Header";
-import Footer from "@/components/Footer";
+import { useSearchParams } from "next/navigation";
+import { Suspense } from "react";
 import { useWishlistStore } from "@/lib/wishlist-store";
 import { useAuthStore, useAuthStatus, type CustomerAddress } from "@/lib/auth-store";
 import { toast } from "sonner";
 
 type TabType = "profile" | "addresses" | "gst" | "payments";
 
-export default function AccountPage() {
+function AccountPageContent() {
   const [mounted, setMounted] = useState(false);
   const authStatus = useAuthStatus();
+  const searchParams = useSearchParams();
+  const tabParam = searchParams.get("tab") as TabType | null;
   const wishlistCount = useWishlistStore((s) => s.items.length);
   const {
     user,
@@ -61,6 +63,12 @@ export default function AccountPage() {
   } = useAuthStore();
 
   const [activeTab, setActiveTab] = useState<TabType>("profile");
+
+  useEffect(() => {
+    if (tabParam && ["profile", "addresses", "gst", "payments"].includes(tabParam)) {
+      setActiveTab(tabParam);
+    }
+  }, [tabParam]);
 
   // Profile Edit State
   const [isEditingProfile, setIsEditingProfile] = useState(false);
@@ -233,10 +241,7 @@ export default function AccountPage() {
   const savedAddresses = user?.addresses || [];
 
   return (
-    <main className="min-h-screen flex flex-col bg-[#F1F3F6]">
-      <Header />
-
-      <div className="w-full max-w-[1340px] mx-auto px-3 sm:px-6 lg:px-8 pt-[76px] sm:pt-[84px] md:pt-[175px] lg:pt-[180px] pb-14 flex-1">
+    <>
         {/* ══════════════════════════════════════════════════════════════
             MOBILE FLIPKART-STYLE ACCOUNT VIEW (Hidden on md & lg)
         ══════════════════════════════════════════════════════════════ */}
@@ -544,228 +549,10 @@ export default function AccountPage() {
           )}
         </div>
 
-        {/* ══════════════════════════════════════════════════════════════
-            DESKTOP FLIPKART-STYLE 2-COLUMN DASHBOARD (Hidden on mobile)
-        ══════════════════════════════════════════════════════════════ */}
-        <div className="hidden md:grid grid-cols-[280px_1fr] lg:grid-cols-[300px_1fr] gap-6 items-start">
-          {/* ── LEFT SIDEBAR (Flipkart Navigation Panel) ── */}
-          <aside className="space-y-4 sticky top-[160px]">
-            {/* User Greeting Card */}
-            <div className="bg-white rounded-2xl p-4 border border-gray-200/90 shadow-2xs flex items-center gap-3.5">
-              {!mounted || authStatus === "loading" ? (
-                <div className="flex items-center gap-3.5 w-full animate-pulse">
-                  <div className="w-14 h-14 rounded-full bg-gray-200 shrink-0" />
-                  <div className="flex-1 space-y-2">
-                    <div className="w-12 h-3 bg-gray-200 rounded" />
-                    <div className="w-28 h-4 bg-gray-200 rounded" />
-                    <div className="w-20 h-3 bg-gray-200 rounded" />
-                  </div>
-                </div>
-              ) : (
-                <>
-                  <div className="relative shrink-0">
-                    {isAuthenticated && user?.avatar ? (
-                      // eslint-disable-next-line @next/next/no-img-element
-                      <img
-                        src={user.avatar}
-                        alt={user.name || "Customer"}
-                        className="w-14 h-14 rounded-full object-cover border-2 border-[#052a51]/20 shadow-xs"
-                      />
-                    ) : (
-                      <div className="w-14 h-14 rounded-full bg-[#052a51] text-white flex items-center justify-center text-xl font-black shadow-xs">
-                        {isAuthenticated && user?.name ? (
-                          user.name[0].toUpperCase()
-                        ) : (
-                          <User size={24} />
-                        )}
-                      </div>
-                    )}
-                    {isAuthenticated && (
-                      <button
-                        onClick={() => {
-                          setActiveTab("profile");
-                          setIsEditingProfile(true);
-                          fileInputRef.current?.click();
-                        }}
-                        className="absolute -bottom-1 -right-1 w-6 h-6 rounded-full bg-[#F26522] text-white flex items-center justify-center shadow-md hover:scale-110 active:scale-95 transition-all"
-                        title="Change Avatar"
-                      >
-                        <Camera size={12} />
-                      </button>
-                    )}
-                  </div>
-
-                  <div className="min-w-0 flex-1">
-                    <span className="text-[11px] text-gray-400 font-semibold uppercase">Hello,</span>
-                    <h2 className="text-base font-black text-[#052a51] truncate">
-                      {isAuthenticated && user ? user.name || "Customer" : "Guest Customer"}
-                    </h2>
-                    <p className="text-xs text-gray-500 font-medium truncate">
-                      {isAuthenticated && user
-                        ? (user.phone && !user.phone.startsWith("google_") ? `+91 ${user.phone}` : user.email || "Customer")
-                        : "Not logged in"}
-                    </p>
-                  </div>
-                  {!isAuthenticated && (
-                    <button
-                      onClick={() => openLoginModal()}
-                      className="px-3 py-1.5 bg-[#F26522] hover:bg-[#d95a1e] text-white text-xs font-black rounded-xl shadow-xs active:scale-95 transition-all shrink-0"
-                    >
-                      Log In
-                    </button>
-                  )}
-                </>
-              )}
-            </div>
-
-            {/* Navigation Menu (Flipkart Sidebar Structure) */}
-            <div className="bg-white rounded-2xl border border-gray-200/90 shadow-2xs overflow-hidden divide-y divide-gray-100">
-              {/* MY ORDERS */}
-              <div className="p-3">
-                <Link
-                  href="/account/orders"
-                  className="flex items-center justify-between p-2.5 rounded-xl hover:bg-gray-50 transition-colors group"
-                >
-                  <div className="flex items-center gap-3">
-                    <Package size={18} className="text-[#052a51] group-hover:text-[#F26522] transition-colors" />
-                    <span className="text-xs font-black text-[#052a51] uppercase tracking-wider group-hover:text-[#F26522] transition-colors">
-                      My Orders
-                    </span>
-                  </div>
-                  <ChevronRight size={16} className="text-gray-400 group-hover:translate-x-0.5 transition-transform" />
-                </Link>
-              </div>
-
-              {/* ACCOUNT SETTINGS */}
-              <div className="p-3 space-y-1">
-                <div className="flex items-center gap-2.5 px-2.5 py-1.5 text-[11px] font-black text-gray-400 uppercase tracking-wider">
-                  <User size={14} className="text-[#F26522]" />
-                  <span>Account Settings</span>
-                </div>
-
-                <button
-                  type="button"
-                  onClick={() => setActiveTab("profile")}
-                  className={`w-full flex items-center justify-between px-3 py-2 rounded-xl text-xs font-bold transition-colors text-left ${
-                    activeTab === "profile"
-                      ? "bg-[#052a51] text-white shadow-2xs"
-                      : "text-gray-700 hover:bg-gray-50"
-                  }`}
-                >
-                  <span>Profile Information</span>
-                  <ChevronRight size={14} className={activeTab === "profile" ? "text-white" : "text-gray-400"} />
-                </button>
-
-                <button
-                  type="button"
-                  onClick={() => setActiveTab("addresses")}
-                  className={`w-full flex items-center justify-between px-3 py-2 rounded-xl text-xs font-bold transition-colors text-left ${
-                    activeTab === "addresses"
-                      ? "bg-[#052a51] text-white shadow-2xs"
-                      : "text-gray-700 hover:bg-gray-50"
-                  }`}
-                >
-                  <span>Manage Addresses ({savedAddresses.length})</span>
-                  <ChevronRight size={14} className={activeTab === "addresses" ? "text-white" : "text-gray-400"} />
-                </button>
-
-                <button
-                  type="button"
-                  onClick={() => setActiveTab("gst")}
-                  className={`w-full flex items-center justify-between px-3 py-2 rounded-xl text-xs font-bold transition-colors text-left ${
-                    activeTab === "gst"
-                      ? "bg-[#052a51] text-white shadow-2xs"
-                      : "text-gray-700 hover:bg-gray-50"
-                  }`}
-                >
-                  <span>PAN & GST Information</span>
-                  <ChevronRight size={14} className={activeTab === "gst" ? "text-white" : "text-gray-400"} />
-                </button>
-              </div>
-
-              {/* MY STUFF */}
-              <div className="p-3 space-y-1">
-                <div className="flex items-center gap-2.5 px-2.5 py-1.5 text-[11px] font-black text-gray-400 uppercase tracking-wider">
-                  <Sparkles size={14} className="text-[#F26522]" />
-                  <span>My Stuff</span>
-                </div>
-
-                <Link
-                  href="/wishlist"
-                  className="flex items-center justify-between px-3 py-2 rounded-xl text-xs font-bold text-gray-700 hover:bg-gray-50 transition-colors group"
-                >
-                  <span className="group-hover:text-[#F26522] transition-colors">My Wishlist</span>
-                  <span className="text-[10px] font-black bg-red-50 text-red-600 px-2 py-0.5 rounded-full">
-                    {mounted ? wishlistCount : 0}
-                  </span>
-                </Link>
-
-                <Link
-                  href="/account/reviews"
-                  className="flex items-center justify-between px-3 py-2 rounded-xl text-xs font-bold text-gray-700 hover:bg-gray-50 transition-colors group"
-                >
-                  <span className="group-hover:text-[#F26522] transition-colors">My Reviews & Ratings</span>
-                  <ChevronRight size={14} className="text-gray-400" />
-                </Link>
-
-                <Link
-                  href="/account/notifications"
-                  className="flex items-center justify-between px-3 py-2 rounded-xl text-xs font-bold text-gray-700 hover:bg-gray-50 transition-colors group"
-                >
-                  <span className="group-hover:text-[#F26522] transition-colors">Notifications</span>
-                  <ChevronRight size={14} className="text-gray-400" />
-                </Link>
-              </div>
-
-              {/* LOGOUT BUTTON */}
-              <div className="p-3">
-                {mounted && isAuthenticated ? (
-                  <button
-                    type="button"
-                    onClick={handleLogout}
-                    className="w-full flex items-center justify-between px-3 py-2.5 rounded-xl text-xs font-black text-red-600 hover:bg-red-50 transition-colors cursor-pointer"
-                  >
-                    <div className="flex items-center gap-2.5">
-                      <LogOut size={16} />
-                      <span>Logout</span>
-                    </div>
-                  </button>
-                ) : (
-                  <button
-                    type="button"
-                    onClick={() => openLoginModal()}
-                    className="w-full flex items-center justify-center gap-2 px-3 py-2.5 rounded-xl text-xs font-black bg-[#F26522] hover:bg-[#d95a1e] text-white shadow-2xs transition-all active:scale-95 cursor-pointer"
-                  >
-                    <LogIn size={15} />
-                    <span>Log In to Account</span>
-                  </button>
-                )}
-              </div>
-            </div>
-
-            {/* Quick Helpline Widget */}
-            <div className="bg-emerald-50 rounded-2xl p-4 border border-emerald-200/80 shadow-2xs space-y-2">
-              <div className="flex items-center gap-2 text-emerald-900 font-black text-xs">
-                <MessageCircle size={16} className="text-[#25D366]" />
-                <span>Dedicated Expert Helpline</span>
-              </div>
-              <p className="text-[11px] text-emerald-800 leading-relaxed">
-                Need product advice or order dispatch updates? Connect with Gulshan Ali Sheikh:
-              </p>
-              <a
-                href="https://wa.me/919198035803?text=Hi%20Gulshan,%20I%20need%20help%20with%20my%20order"
-                target="_blank"
-                rel="noopener noreferrer"
-                className="inline-flex items-center gap-1.5 text-xs font-extrabold text-[#25D366] hover:underline"
-              >
-                <span>WhatsApp: +91 91980 35803</span>
-                <ArrowRight size={12} />
-              </a>
-            </div>
-          </aside>
-
-          {/* ── RIGHT MAIN CONTENT AREA (Interactive Flipkart Panels) ── */}
-          <section className="space-y-6">
+      {/* ══════════════════════════════════════════════════════════════
+          DESKTOP FLIPKART-STYLE RIGHT CONTENT AREA (Hidden on mobile)
+      ══════════════════════════════════════════════════════════════ */}
+      <section className="hidden md:block space-y-6">
             {/* Hidden File Input for Avatar Upload */}
             <input
               type="file"
@@ -1272,11 +1059,15 @@ export default function AccountPage() {
                 </form>
               </div>
             )}
-          </section>
-        </div>
-      </div>
+      </section>
+    </>
+  );
+}
 
-      <Footer />
-    </main>
+export default function AccountPage() {
+  return (
+    <Suspense fallback={<div className="w-full h-96 bg-white rounded-2xl animate-pulse" />}>
+      <AccountPageContent />
+    </Suspense>
   );
 }
