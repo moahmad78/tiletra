@@ -78,8 +78,8 @@ function SuccessContent() {
 
             <p className="text-gray-500 mt-2 text-xs sm:text-sm leading-relaxed max-w-md mx-auto">
               {isCod
-                ? `Please keep ${total ? "₹" + Number(total).toLocaleString("en-IN") : "cash"} ready to pay our delivery partner upon crate arrival.`
-                : "Thank you for your payment! Our Bangalore warehouse team has begun crate packaging your tiles."}
+                ? `Please keep ${total ? "₹" + Number(total).toLocaleString("en-IN") : "cash"} ready to pay our delivery partner upon arrival.`
+                : "Thank you for your payment! Our fulfillment team has begun packaging and preparing your order."}
             </p>
           </div>
 

@@ -247,7 +247,7 @@ export default function Header() {
               </Link>
               <Link href="/shop" onClick={() => setMobileMenuOpen(false)}>
                 <Button className="w-full rounded-xl h-11 text-sm font-bold bg-[#F26522] text-white">
-                  Explore All Tiles
+                  Explore All Supplies
                 </Button>
               </Link>
             </div>

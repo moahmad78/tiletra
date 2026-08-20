@@ -16,7 +16,7 @@ export default function CTA() {
           viewport={{ once: true }}
           className="text-4xl md:text-5xl lg:text-6xl font-bold text-white mb-6 tracking-tight leading-tight"
         >
-          Ready to Transform Your Space with Premium Tiles?
+          Ready to Transform Your Space with Premium Supplies & Materials?
         </motion.h2>
         <motion.p 
           initial={{ opacity: 0, y: 20 }}

@@ -123,13 +123,20 @@ export default function CompactProductCard({
                 </p>
                 <p className="text-[9px] text-gray-400 mt-0.5">/sq.ft</p>
               </>
-            ) : (
+            ) : (product.categorySlug?.includes("tile") || product.categorySlug?.includes("stone")) ? (
               <>
                 <p className="text-[12px] font-black text-[#052a51] leading-none">
                   {formatPrice(getLowestPrice(product))}
                   <span className="text-[9px] font-normal text-gray-500">/sqft</span>
                 </p>
                 <p className="text-[9px] text-gray-400 mt-0.5">{formatPrice(getLowestBoxPrice(product))}/box</p>
+              </>
+            ) : (
+              <>
+                <p className="text-[12px] font-black text-[#052a51] leading-none">
+                  {formatPrice(defaultVariant.pricePerBox)}
+                </p>
+                <p className="text-[9px] text-gray-400 mt-0.5">/box</p>
               </>
             )}
           </div>

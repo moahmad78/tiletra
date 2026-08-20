@@ -517,7 +517,7 @@ export default function ShopCatalogClient({
                 onClick={() => setMobileFiltersOpen(false)}
                 className="flex-[2] h-12 bg-[#052a51] text-white font-bold rounded-xl shadow-md active:scale-95 cursor-pointer"
               >
-                Show {filtered.length} Tiles
+                Show {filtered.length} Products
               </button>
             </div>
           </div>
@@ -533,7 +533,7 @@ export default function ShopCatalogClient({
           />
           <div className="fixed bottom-0 left-0 right-0 z-[70] bg-white rounded-t-3xl shadow-2xl p-6 animate-in slide-in-from-bottom duration-200">
             <div className="flex items-center justify-between mb-4 pb-2 border-b border-gray-100">
-              <h3 className="font-black text-[#052a51] text-base">Sort Tiles By</h3>
+              <h3 className="font-black text-[#052a51] text-base">Sort Products By</h3>
               <button onClick={() => setMobileSortOpen(false)} className="text-gray-400 cursor-pointer">
                 <X size={20} />
               </button>

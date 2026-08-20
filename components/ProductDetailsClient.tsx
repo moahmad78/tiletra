@@ -453,44 +453,46 @@ export default function ProductDetailsClient({
               </div>
             </div>
 
-            {/* ── 4. Room Area Calculator ── */}
-            <div className="bg-[#052a51]/5 rounded-2xl p-3.5 border border-[#052a51]/10 space-y-2.5">
-              <div className="flex items-center justify-between">
-                <span className="text-xs font-black text-[#052a51] flex items-center gap-1.5">
-                  <Calculator size={14} className="text-[#F26522]" />
-                  <span>Room Area Calculator</span>
-                </span>
-                <span className="text-[10px] text-gray-400 font-medium">+10% wastage included</span>
-              </div>
+            {/* ── 4. Room Area Calculator (Only for surface / tile / stone / sqft products) ── */}
+            {isTileProduct && (
+              <div className="bg-[#052a51]/5 rounded-2xl p-3.5 border border-[#052a51]/10 space-y-2.5">
+                <div className="flex items-center justify-between">
+                  <span className="text-xs font-black text-[#052a51] flex items-center gap-1.5">
+                    <Calculator size={14} className="text-[#F26522]" />
+                    <span>Coverage / Area Calculator</span>
+                  </span>
+                  <span className="text-[10px] text-gray-400 font-medium">+10% wastage included</span>
+                </div>
 
-              <div className="flex gap-2">
-                <input
-                  type="number"
-                  value={roomSqft}
-                  onChange={(e) => {
-                    setRoomSqft(e.target.value);
-                    if (e.target.value && parseFloat(e.target.value) > 0) {
-                      const needed = Math.max(1, Math.ceil((parseFloat(e.target.value) * 1.1) / coveragePerUnit));
-                      setQuantity(needed);
-                    }
-                  }}
-                  placeholder="Enter floor/wall area in sq.ft"
-                  className="flex-1 px-3 py-2 bg-white border border-gray-200 rounded-xl text-xs font-semibold text-[#052a51] focus:outline-none focus:border-[#F26522]"
-                />
-                <span className="flex items-center px-3 bg-gray-100 rounded-xl text-xs font-bold text-gray-600">
-                  sq.ft
-                </span>
-              </div>
-
-              {boxesNeeded && (
-                <div className="text-[11px] text-[#052a51] font-semibold flex justify-between pt-1 border-t border-gray-200/60">
-                  <span>Required for {roomSqft} sq.ft (+10% extra):</span>
-                  <span className="font-bold text-[#F26522]">
-                    {boxesNeeded} {unitLabel}{boxesNeeded > 1 ? "s" : ""} ({formatPrice(totalCostForRoom!)})
+                <div className="flex gap-2">
+                  <input
+                    type="number"
+                    value={roomSqft}
+                    onChange={(e) => {
+                      setRoomSqft(e.target.value);
+                      if (e.target.value && parseFloat(e.target.value) > 0) {
+                        const needed = Math.max(1, Math.ceil((parseFloat(e.target.value) * 1.1) / coveragePerUnit));
+                        setQuantity(needed);
+                      }
+                    }}
+                    placeholder="Enter floor/wall area in sq.ft"
+                    className="flex-1 px-3 py-2 bg-white border border-gray-200 rounded-xl text-xs font-semibold text-[#052a51] focus:outline-none focus:border-[#F26522]"
+                  />
+                  <span className="flex items-center px-3 bg-gray-100 rounded-xl text-xs font-bold text-gray-600">
+                    sq.ft
                   </span>
                 </div>
-              )}
-            </div>
+
+                {boxesNeeded && (
+                  <div className="text-[11px] text-[#052a51] font-semibold flex justify-between pt-1 border-t border-gray-200/60">
+                    <span>Required for {roomSqft} sq.ft (+10% extra):</span>
+                    <span className="font-bold text-[#F26522]">
+                      {boxesNeeded} {unitLabel}{boxesNeeded > 1 ? "s" : ""} ({formatPrice(totalCostForRoom!)})
+                    </span>
+                  </div>
+                )}
+              </div>
+            )}
 
             {/* ── 5. Primary Action Buttons (Add to Cart & Buy Now - Side by Side) ── */}
             <div className="flex items-center gap-2.5 pt-1">

@@ -157,13 +157,21 @@ export default function ProductCard({ product }: { product: Product }) {
                 </p>
                 <p className="text-[11px] text-gray-400">Custom Cut</p>
               </>
-            ) : (
+            ) : (product.categorySlug?.includes("tile") || product.categorySlug?.includes("stone")) ? (
               <>
                 <p className="text-[14px] font-black text-[#052a51]">
                   {formatPrice(getLowestPrice(product))}
                   <span className="text-xs font-medium text-gray-500">/sq.ft</span>
                 </p>
                 <p className="text-[11px] text-gray-400">{formatPrice(getLowestBoxPrice(product))}/box</p>
+              </>
+            ) : (
+              <>
+                <p className="text-[14px] font-black text-[#052a51]">
+                  {formatPrice(defaultVariant.pricePerBox)}
+                  <span className="text-xs font-medium text-gray-500">/box</span>
+                </p>
+                <p className="text-[11px] text-gray-400">Standard Pack</p>
               </>
             )}
           </div>

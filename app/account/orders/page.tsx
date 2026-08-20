@@ -156,7 +156,7 @@ export default function OrdersPage() {
             href="/shop"
             className="inline-block px-5 py-2.5 bg-[#F26522] text-white text-xs font-bold rounded-xl shadow-md hover:bg-[#d95a1e]"
           >
-            Explore Tiles
+            Explore Products
           </Link>
         </div>
       ) : (
@@ -224,7 +224,7 @@ export default function OrdersPage() {
                       className="shrink-0 inline-flex items-center gap-1.5 px-3 py-1.5 bg-[#052a51]/5 hover:bg-[#F26522] hover:text-white text-[#052a51] text-xs font-bold rounded-xl transition-all shadow-2xs cursor-pointer"
                     >
                       <Star size={13} className="text-amber-500 fill-amber-500" />
-                      <span>Review Tile</span>
+                      <span>Review Product</span>
                     </button>
                   </div>
                 ))}

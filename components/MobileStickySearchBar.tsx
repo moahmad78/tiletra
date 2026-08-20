@@ -17,7 +17,7 @@ export default function MobileStickySearchBar() {
         >
           <Search size={17} className="text-[#F26522] shrink-0" />
           <span className="text-[13px] font-medium text-gray-500 truncate">
-            Search tiles, e.g. bathroom floor tiles...
+            Search products, e.g. wires, tiles, pipes, hardware...
           </span>
         </button>
       </div>

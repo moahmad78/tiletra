@@ -92,7 +92,7 @@ export default function NotificationPreferencesPage() {
               <div>
                 <h3 className="text-sm font-bold text-[#052a51]">Wishlist Price Drops</h3>
                 <p className="text-xs text-gray-500 mt-0.5">
-                  Notify me when saved tiles get special seasonal discounts
+                  Notify me when saved products get special seasonal discounts
                 </p>
               </div>
             </div>
@@ -113,7 +113,7 @@ export default function NotificationPreferencesPage() {
               <div>
                 <h3 className="text-sm font-bold text-[#052a51]">Back in Stock Alerts</h3>
                 <p className="text-xs text-gray-500 mt-0.5">
-                  Instant alerts when popular out-of-stock tile designs are restocked
+                  Instant alerts when popular out-of-stock products are restocked
                 </p>
               </div>
             </div>

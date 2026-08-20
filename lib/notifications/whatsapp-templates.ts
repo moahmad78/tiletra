@@ -118,7 +118,7 @@ export function generateNotificationMessage<R extends NotificationRole>(
       return [
         `👋 *Welcome to Intrihub, ${ctx.customerName}!*`,
         "",
-        `Thank you for joining India's trusted destination for premium tiles, bath fittings, and building supplies. 🏠✨`,
+        `Thank you for joining India's trusted destination for interior supplies, electrical, plumbing, and building materials. 🏠✨`,
         "",
         `Explore 10,000+ curated products from verified manufacturers with direct factory pricing and doorstep delivery.`,
         "",

@@ -77,7 +77,7 @@ export default function CartPage() {
               href="/shop"
               className="inline-flex items-center gap-1 text-xs font-bold text-[#F26522] hover:underline"
             >
-              <span>+ Add More Tiles</span>
+              <span>+ Add More Products</span>
             </Link>
           )}
         </div>
@@ -89,12 +89,12 @@ export default function CartPage() {
             </div>
             <h2 className="text-xl md:text-2xl font-black text-[#052a51]">Your cart is empty</h2>
             <p className="text-gray-500 text-xs sm:text-sm mt-1.5 leading-relaxed">
-              Explore our tile catalog to add floor, wall, and designer tiles to your cart.
+              Explore our catalog to add tiles, electrical, plumbing, hardware, and supplies to your cart.
             </p>
             <div className="mt-6 flex flex-col sm:flex-row items-center justify-center gap-2.5">
               <Link href="/shop" className="w-full sm:w-auto">
                 <button className="w-full sm:w-auto px-6 h-11 bg-[#F26522] text-white text-xs sm:text-sm font-bold rounded-xl hover:bg-[#d95a1e] active:scale-95 transition-all flex items-center justify-center gap-2 shadow-xs cursor-pointer">
-                  Shop All Tiles <ArrowRight size={15} />
+                  Shop All Products <ArrowRight size={15} />
                 </button>
               </Link>
               <Link href="/" className="w-full sm:w-auto">

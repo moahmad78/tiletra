@@ -60,12 +60,12 @@ export default function WishlistPage() {
             </div>
             <h2 className="text-xl md:text-2xl font-black text-[#052a51]">Your wishlist is empty</h2>
             <p className="text-gray-500 text-xs sm:text-sm mt-1.5 leading-relaxed">
-              Explore our tile collections and tap the heart icon on any design to save your favorites here.
+              Explore our catalog and tap the heart icon on any product to save your favorites here.
             </p>
             <div className="mt-6 flex flex-col sm:flex-row items-center justify-center gap-2.5">
               <Link href="/shop" className="w-full sm:w-auto">
                 <button className="w-full sm:w-auto px-6 h-11 bg-[#F26522] text-white text-xs sm:text-sm font-bold rounded-xl hover:bg-[#d95a1e] active:scale-95 transition-all flex items-center justify-center gap-2 shadow-xs cursor-pointer">
-                  Browse All Tiles <ArrowRight size={15} />
+                  Browse All Products <ArrowRight size={15} />
                 </button>
               </Link>
               <Link href="/" className="w-full sm:w-auto">

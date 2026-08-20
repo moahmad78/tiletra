@@ -83,7 +83,7 @@ export default function MyReviewsPage() {
             <MessageSquare size={32} className="mx-auto text-gray-300 mb-3" />
             <p className="font-bold text-[#052a51]">You haven't written any reviews yet</p>
             <p className="text-xs text-gray-400 mt-1">
-              Delivered tiles can be reviewed from your orders page!
+              Delivered products can be reviewed from your orders page!
             </p>
             <Link
               href="/account/orders"

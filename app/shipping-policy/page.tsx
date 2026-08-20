@@ -41,9 +41,9 @@ export default function ShippingPolicyPage() {
           </div>
 
           <section className="space-y-2">
-            <h2 className="text-lg font-black text-[#052a51]">1. Heavy Freight Nature of Tiles</h2>
+            <h2 className="text-lg font-black text-[#052a51]">1. Heavy Freight & Materials Handling</h2>
             <p>
-              Ceramic and vitrified tiles are heavy, fragile items that require specialized logistics. We pack our tiles in reinforced wooden pallets with corner protection and shock-absorbing foam to guarantee safe transit.
+              Building supplies, tiles, and heavy construction materials require specialized logistics. We pack fragile and heavy orders in reinforced pallets or crates with protective packaging to guarantee safe transit.
             </p>
           </section>
 

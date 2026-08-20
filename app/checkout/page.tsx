@@ -478,12 +478,12 @@ export default function CheckoutPage() {
             </div>
             <h2 className="text-xl md:text-2xl font-black text-[#052a51]">Your cart is empty</h2>
             <p className="text-gray-500 text-xs sm:text-sm mt-1.5 leading-relaxed">
-              Add tiles to your cart before proceeding to checkout.
+              Add items to your cart before proceeding to checkout.
             </p>
             <div className="mt-6">
               <Link href="/shop">
                 <button className="px-6 h-11 bg-[#F26522] text-white text-xs sm:text-sm font-bold rounded-xl hover:bg-[#d95a1e] active:scale-95 transition-all flex items-center justify-center gap-2 shadow-xs mx-auto cursor-pointer">
-                  Shop All Tiles <ArrowRight size={15} />
+                  Shop All Products <ArrowRight size={15} />
                 </button>
               </Link>
             </div>
@@ -577,7 +577,7 @@ export default function CheckoutPage() {
                       <div>
                         <h2 className="text-xl font-black text-[#052a51]">Select Delivery Address</h2>
                         <p className="text-xs text-gray-500 mt-0.5">
-                          Choose where you want your tiles delivered
+                          Choose where you want your order delivered
                         </p>
                       </div>
 

@@ -82,7 +82,7 @@ export default function FAQ() {
               
               {/* Heading */}
               <h3 className="text-3xl lg:text-4xl font-[800] text-white tracking-tight leading-[1.1] mb-4">
-                Ready to Transform Your Space with Premium Tiles?
+                Ready to Transform Your Space with Premium Supplies & Materials?
               </h3>
               
               {/* Description */}

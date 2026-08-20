@@ -20,10 +20,10 @@ export default function AboutPage() {
             Our Story & Mission
           </span>
           <h1 className="text-[36px] sm:text-[46px] md:text-[56px] font-black leading-tight max-w-2xl mx-auto">
-            Quality Tiles for <span className="text-[#F26522]">Strong Spaces</span>
+            Quality Supplies for <span className="text-[#F26522]">Every Space</span>
           </h1>
           <p className="text-white/80 text-base md:text-lg mt-4 max-w-xl mx-auto leading-relaxed">
-            Intrihub is on a mission to simplify interior & construction supply for Indian homeowners, architects, and builders. From high-grade vitrified floor tiles to electrical, plumbing, plywood, and granite, we deliver factory-fresh materials directly to your site.
+            Intrihub is on a mission to simplify interior & construction supply for Indian homeowners, architects, and builders. From electrical and plumbing to tiles, hardware, plywood, and granite, we deliver factory-fresh materials directly to your site.
           </p>
         </div>
       </div>
@@ -80,7 +80,7 @@ export default function AboutPage() {
                 {
                   icon: HeartHandshake,
                   title: "Direct Support",
-                  desc: "Our tile specialists help you estimate quantities and select the right finishes.",
+                  desc: "Our product specialists help you estimate quantities and select the right materials.",
                 },
               ].map(({ icon: Icon, title, desc }) => (
                 <div key={title} className="p-6 bg-gray-50 rounded-2xl border border-gray-100 text-center">
@@ -97,7 +97,7 @@ export default function AboutPage() {
           <div className="bg-[#052a51] text-white p-8 rounded-2xl text-center flex flex-col items-center">
             <h3 className="text-2xl font-black">Ready to build your dream space?</h3>
             <p className="text-white/70 text-sm mt-2 max-w-md">
-              Browse 200+ premium designs and get them delivered to your home in 3–7 business days.
+              Browse 10,000+ curated products across 20+ categories and get them delivered directly to your site.
             </p>
             <Link
               href="/shop"

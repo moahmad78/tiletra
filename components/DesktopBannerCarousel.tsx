@@ -52,7 +52,7 @@ const DEFAULT_DESKTOP_SLIDES: BannerSlide[] = [
     badge: "Fast Freight Across Bangalore",
     headline: "Direct Factory Pricing. Zero Middlemen.",
     subtext: "Free specialized freight delivery on all orders above ₹15,000 with 100% breakage protection.",
-    ctaText: "Calculate Room Sq.Ft",
+    ctaText: "Explore Catalog",
     ctaHref: "/shop",
     image: "/placeholders/banner.svg",
     accentColor: "#F26522",

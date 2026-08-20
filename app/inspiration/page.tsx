@@ -30,8 +30,8 @@ export default function InspirationPage() {
             Room <span className="text-[#F26522]">Inspiration</span> Gallery
           </h1>
           <p className="text-xs sm:text-sm text-gray-500 mt-2 leading-relaxed">
-            See how premium vitrified, ceramic, and porcelain tiles transform real interiors.
-            Tap any room photo to explore the tiles used and estimate your square footage.
+            See how premium materials, surface finishes, and supplies transform real interiors.
+            Tap any room photo to explore the products used and shop the look.
           </p>
         </div>
 

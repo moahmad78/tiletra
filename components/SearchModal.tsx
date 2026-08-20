@@ -127,7 +127,7 @@ export default function SearchModal({
                 onClose();
               }
             }}
-            placeholder="Search tiles, marble, granite, finish, size..."
+            placeholder="Search products, wires, tiles, pipes, hardware, plywood..."
             className="flex-1 text-sm sm:text-base font-semibold text-[#052a51] placeholder-gray-400 focus:outline-none bg-transparent"
           />
           {query && (
@@ -189,7 +189,7 @@ export default function SearchModal({
             <div className="text-center py-10 text-gray-500">
               <p className="text-base font-bold text-[#052a51]">No matching products found for "{query}"</p>
               <p className="text-xs text-gray-400 mt-1 max-w-md mx-auto">
-                Try searching with different keywords like 'marble', 'floor tiles', 'glossy', '600x600', or view all in shop.
+                Try searching with different keywords like 'wire', 'pipe', 'tile', 'plywood', 'switch', or view all in shop.
               </p>
               <div className="mt-4">
                 <Link

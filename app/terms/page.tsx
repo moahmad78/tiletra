@@ -31,7 +31,7 @@ export default function TermsPage() {
           <section>
             <h2 className="text-xl font-bold text-[#052a51] mb-2">2. Products and Pricing</h2>
             <p>
-              All prices listed on Intrihub are inclusive of applicable GST unless stated otherwise. Prices and stock availability are subject to change without prior notice. Tile images on screen may have minor color variations compared to physical tiles due to monitor calibration and ambient lighting.
+              All prices listed on Intrihub are inclusive of applicable GST unless stated otherwise. Prices and stock availability are subject to change without prior notice. Product images on screen may have minor color variations compared to physical materials due to monitor calibration and ambient lighting.
             </p>
           </section>
 

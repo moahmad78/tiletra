@@ -35,7 +35,7 @@ export default function CartAddons() {
       <div className="flex items-center justify-between">
         <div>
           <h3 className="text-base font-black text-[#052a51]">Add These Too</h3>
-          <p className="text-xs text-gray-500">Popular companion tiles & wall accents</p>
+          <p className="text-xs text-gray-500">Popular companion supplies & essentials</p>
         </div>
         <span className="text-[10px] font-black uppercase text-[#F26522] bg-[#F26522]/10 px-2.5 py-0.5 rounded-md">
           Recommended

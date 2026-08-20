@@ -116,11 +116,11 @@ export default function HomeClient({
         {/* 2. Offer Banner */}
         <OfferBanner slides={mobileBannerSlides} />
 
-        {/* 3. Product Row: Trending Tiles */}
+        {/* 3. Product Row: Trending Products */}
         <div className="bg-white my-1 py-1 shadow-2xs">
           <ProductSlider
-            title="Trending Tiles"
-            subtitle="Most viewed and favored by homeowners"
+            title="Trending Products"
+            subtitle="Most viewed and favored by builders & homeowners"
             tag="Trending"
             products={trending}
             viewAllHref="/shop"
@@ -140,7 +140,7 @@ export default function HomeClient({
                     Free Delivery on Orders Above ₹15,000
                   </p>
                   <p className="text-[10px] text-white/70 mt-0.5">
-                    Safe box transit · 3–7 Days Pan-India Delivery
+                    Safe transit · 3–7 Days Pan-India Delivery
                   </p>
                 </div>
               </div>
@@ -152,8 +152,8 @@ export default function HomeClient({
         {/* 6. Product Row: Bestsellers */}
         <div className="bg-white my-1 py-1 shadow-2xs">
           <ProductSlider
-            title="Bestselling Tiles"
-            subtitle="Highest rated designs with proven durability"
+            title="Bestselling Products"
+            subtitle="Highest rated materials with proven quality"
             tag="Top Rated"
             products={bestsellers}
             viewAllHref="/shop"
@@ -183,7 +183,7 @@ export default function HomeClient({
               <h2 className="text-[16px] font-black text-[#052a51] tracking-tight">
                 Room Inspiration
               </h2>
-              <p className="text-xs text-gray-500 mt-0.5">See tiles installed in real spaces</p>
+              <p className="text-xs text-gray-500 mt-0.5">See materials & finishes in real spaces</p>
             </div>
             <Link
               href="/shop"
@@ -243,11 +243,11 @@ export default function HomeClient({
         {/* 2. Continuous Auto-Scrolling Category Row (Desktop Only) */}
         <DesktopCategoryRow categories={categories} />
 
-        {/* 3. Trending Tiles Product Row */}
+        {/* 3. Trending Products Row */}
         <DesktopProductRow
-          title="Trending Tiles"
+          title="Trending Products"
           badge="High Demand"
-          subtitle="Top picked vitrified & glossy subway finishes for home renovations"
+          subtitle="Top picked supplies, materials, and designer finishes for modern renovations"
           products={trending}
           viewAllHref="/shop"
         />
@@ -264,10 +264,10 @@ export default function HomeClient({
                   Bangalore Doorstep Delivery
                 </span>
                 <h3 className="text-xl font-black mt-0.5">
-                  Free Freight Delivery on Tile Orders Above ₹15,000
+                  Free Freight Delivery on Orders Above ₹15,000
                 </h3>
                 <p className="text-xs text-white/70">
-                  Specialized padded crate packaging ensuring zero tile breakages in transit.
+                  Specialized padded protective packaging ensuring zero damage in transit.
                 </p>
               </div>
             </div>
@@ -282,11 +282,11 @@ export default function HomeClient({
           </div>
         </div>
 
-        {/* 5. Bestselling Tiles Product Row */}
+        {/* 5. Bestselling Products Row */}
         <DesktopProductRow
-          title="Bestselling Tiles"
+          title="Bestselling Products"
           badge="Most Popular"
-          subtitle="Consistently 5-star rated by 500+ Bangalore homeowners"
+          subtitle="Consistently 5-star rated by 500+ verified builders & homeowners"
           products={bestsellers}
           viewAllHref="/shop"
         />
@@ -295,7 +295,7 @@ export default function HomeClient({
         <DesktopProductRow
           title="New Arrivals"
           badge="Fresh Stock"
-          subtitle="Freshly manufactured designer Italian marble and stone textures"
+          subtitle="Freshly added electricals, sanitaryware, hardware, and designer surfaces"
           products={newArrivals}
           viewAllHref="/shop"
         />
@@ -316,7 +316,7 @@ export default function HomeClient({
                 Room <span className="text-[#F26522]">Inspiration</span>
               </h2>
               <p className="text-gray-500 mt-3 max-w-md mx-auto">
-                See how our tiles look in real spaces — click any photo to shop the look
+                See how our materials and finishes look in real spaces — click any photo to shop the look
               </p>
             </motion.div>
 
