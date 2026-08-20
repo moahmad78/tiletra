@@ -14,6 +14,12 @@ import {
   CheckSquare,
   Square,
   Loader2,
+  Package,
+  Store,
+  ShieldCheck,
+  Clock,
+  PauseCircle,
+  PlayCircle,
 } from "lucide-react";
 import { getProducts, deleteProduct, createProduct } from "@/lib/actions/products";
 import { getCategories } from "@/lib/actions/categories";
@@ -22,7 +28,6 @@ import type { Product } from "@/lib/data/products";
 import type { Category } from "@/lib/data/categories";
 import { getLowestPrice, getLowestBoxPrice } from "@/lib/data/products";
 import { toast } from "sonner";
-import { Store, ShieldCheck, Clock, PauseCircle, PlayCircle } from "lucide-react";
 
 function formatPrice(n: number) {
   return "₹" + n.toLocaleString("en-IN");
@@ -335,8 +340,24 @@ export default function AdminProductsPage() {
             <tbody className="divide-y divide-gray-100 font-medium">
               {filteredProducts.length === 0 ? (
                 <tr>
-                  <td colSpan={8} className="py-12 text-center text-gray-400 text-sm">
-                    No matching products found for your filters.
+                  <td colSpan={8} className="py-16 text-center">
+                    <div className="max-w-sm mx-auto space-y-3">
+                      <div className="w-12 h-12 rounded-2xl bg-gray-100 text-gray-400 flex items-center justify-center mx-auto">
+                        <Package size={24} />
+                      </div>
+                      <p className="font-bold text-[#052a51] text-sm">No products in catalog yet</p>
+                      <p className="text-xs text-gray-400">
+                        Start building your real inventory by adding your first product or uploading via CSV bulk import.
+                      </p>
+                      <div className="pt-2 flex items-center justify-center gap-2">
+                        <Link
+                          href="/admin/products/new"
+                          className="px-4 py-2 bg-[#F26522] text-white text-xs font-bold rounded-xl shadow-xs hover:bg-[#d95a1e] transition-colors"
+                        >
+                          + Add First Product
+                        </Link>
+                      </div>
+                    </div>
                   </td>
                 </tr>
               ) : (

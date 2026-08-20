@@ -394,16 +394,18 @@ export default function ShopCatalogClient({
             {/* Product Grid */}
             {filtered.length === 0 ? (
               <div className="bg-white rounded-3xl p-12 text-center border border-gray-100 shadow-sm my-6">
-                <p className="text-2xl font-black text-[#052a51]">No matching tiles found</p>
+                <p className="text-2xl font-black text-[#052a51]">No products found</p>
                 <p className="text-gray-500 text-sm mt-2 max-w-sm mx-auto">
-                  Try adjusting your filters or price range to find available tile designs.
+                  New verified inventory will appear here as soon as products are published.
                 </p>
-                <button
-                  onClick={clearFilters}
-                  className="mt-6 px-6 py-2.5 bg-[#F26522] text-white text-sm font-bold rounded-xl hover:bg-[#d95a1e] active:scale-95 transition-all shadow-md cursor-pointer"
-                >
-                  Clear All Filters
-                </button>
+                {activeFilterCount > 0 && (
+                  <button
+                    onClick={clearFilters}
+                    className="mt-6 px-6 py-2.5 bg-[#F26522] text-white text-sm font-bold rounded-xl hover:bg-[#d95a1e] active:scale-95 transition-all shadow-md cursor-pointer"
+                  >
+                    Clear All Filters
+                  </button>
+                )}
               </div>
             ) : (
               <div>
