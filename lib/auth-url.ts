@@ -54,11 +54,13 @@ export function getAuthBaseUrl(request: NextRequest): string {
   const isAllowed = ALLOWED_AUTH_HOSTS.has(candidateHost) || ALLOWED_AUTH_HOSTS.has(hostWithoutPort);
 
   if (candidateHost && isAllowed) {
-    const forwardedProto = request.headers.get("x-forwarded-proto");
     const isLocal = candidateHost.startsWith("localhost") || candidateHost.startsWith("127.0.0.1");
     let proto = isLocal ? "http" : "https";
-    if (forwardedProto) {
-      proto = forwardedProto.split(",")[0].trim();
+    if (isLocal) {
+      const forwardedProto = request.headers.get("x-forwarded-proto");
+      if (forwardedProto) {
+        proto = forwardedProto.split(",")[0].trim();
+      }
     }
     return `${proto}://${candidateHost}`;
   }
