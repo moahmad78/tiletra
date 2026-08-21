@@ -1,16 +1,24 @@
 import { MetadataRoute } from "next";
+import { BASE_SITE_URL } from "@/lib/seo";
 
 export default function robots(): MetadataRoute.Robots {
-  const baseUrl = process.env.NEXT_PUBLIC_APP_URL || "https://intrihub.com";
-
   return {
     rules: [
       {
         userAgent: "*",
         allow: "/",
-        disallow: ["/admin/", "/vendor/", "/api/"],
+        disallow: [
+          "/cart",
+          "/checkout",
+          "/account/",
+          "/admin/",
+          "/vendor/",
+          "/api/",
+          "/upload/",
+        ],
       },
     ],
-    sitemap: `${baseUrl}/sitemap.xml`,
+    sitemap: `${BASE_SITE_URL}/sitemap.xml`,
   };
 }
+

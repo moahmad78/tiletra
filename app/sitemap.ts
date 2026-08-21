@@ -1,38 +1,71 @@
 import { MetadataRoute } from "next";
-import { getProducts } from "@/lib/actions/products";
-import { getCategories } from "@/lib/actions/categories";
+import { prisma } from "@/lib/prisma";
+import { BASE_SITE_URL } from "@/lib/seo";
 
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
-  const baseUrl = process.env.NEXT_PUBLIC_APP_URL || "https://intrihub.com";
-
-  // Static pages
   const staticRoutes: MetadataRoute.Sitemap = [
     {
-      url: `${baseUrl}`,
+      url: `${BASE_SITE_URL}`,
       lastModified: new Date(),
       changeFrequency: "daily",
       priority: 1.0,
     },
     {
-      url: `${baseUrl}/shop`,
+      url: `${BASE_SITE_URL}/shop`,
       lastModified: new Date(),
       changeFrequency: "daily",
       priority: 0.9,
     },
     {
-      url: `${baseUrl}/about`,
+      url: `${BASE_SITE_URL}/about`,
+      lastModified: new Date(),
+      changeFrequency: "monthly",
+      priority: 0.7,
+    },
+    {
+      url: `${BASE_SITE_URL}/contact`,
+      lastModified: new Date(),
+      changeFrequency: "monthly",
+      priority: 0.7,
+    },
+    {
+      url: `${BASE_SITE_URL}/faq`,
       lastModified: new Date(),
       changeFrequency: "monthly",
       priority: 0.6,
     },
     {
-      url: `${baseUrl}/contact`,
+      url: `${BASE_SITE_URL}/inspiration`,
       lastModified: new Date(),
-      changeFrequency: "monthly",
-      priority: 0.6,
+      changeFrequency: "weekly",
+      priority: 0.7,
     },
     {
-      url: `${baseUrl}/faq`,
+      url: `${BASE_SITE_URL}/designs`,
+      lastModified: new Date(),
+      changeFrequency: "weekly",
+      priority: 0.7,
+    },
+    {
+      url: `${BASE_SITE_URL}/shipping-policy`,
+      lastModified: new Date(),
+      changeFrequency: "monthly",
+      priority: 0.5,
+    },
+    {
+      url: `${BASE_SITE_URL}/returns-policy`,
+      lastModified: new Date(),
+      changeFrequency: "monthly",
+      priority: 0.5,
+    },
+    {
+      url: `${BASE_SITE_URL}/terms`,
+      lastModified: new Date(),
+      changeFrequency: "monthly",
+      priority: 0.5,
+    },
+    {
+      url: `${BASE_SITE_URL}/privacy-policy`,
       lastModified: new Date(),
       changeFrequency: "monthly",
       priority: 0.5,
@@ -41,20 +74,29 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
 
   try {
     const [categories, products] = await Promise.all([
-      getCategories(),
-      getProducts({ limit: 100 }),
+      prisma.category.findMany({
+        select: { slug: true, updatedAt: true },
+      }),
+      prisma.product.findMany({
+        where: {
+          approvalStatus: "approved",
+          status: "active",
+        },
+        select: { slug: true, updatedAt: true },
+        take: 5000,
+      }),
     ]);
 
     const categoryRoutes: MetadataRoute.Sitemap = categories.map((cat) => ({
-      url: `${baseUrl}/shop/${cat.slug}`,
-      lastModified: new Date(),
-      changeFrequency: "weekly",
-      priority: 0.8,
+      url: `${BASE_SITE_URL}/shop/${cat.slug}`,
+      lastModified: cat.updatedAt || new Date(),
+      changeFrequency: "daily",
+      priority: 0.85,
     }));
 
     const productRoutes: MetadataRoute.Sitemap = products.map((prod) => ({
-      url: `${baseUrl}/product/${prod.slug}`,
-      lastModified: new Date(),
+      url: `${BASE_SITE_URL}/product/${prod.slug}`,
+      lastModified: prod.updatedAt || new Date(),
       changeFrequency: "weekly",
       priority: 0.8,
     }));
@@ -64,3 +106,4 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     return staticRoutes;
   }
 }
+

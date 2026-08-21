@@ -10,15 +10,45 @@ import GoogleSessionHydrator from "@/components/auth/GoogleSessionHydrator";
 import AddToCartToast from "@/components/cart/AddToCartToast";
 import { Toaster } from "sonner";
 
+import { BASE_SITE_URL, generateOrganizationSchema, generateWebSiteSchema } from "@/lib/seo";
+
 const jakarta = Plus_Jakarta_Sans({
   variable: "--font-jakarta",
   subsets: ["latin"],
 });
 
 export const metadata: Metadata = {
-  metadataBase: new URL(process.env.NEXT_PUBLIC_APP_URL || "https://intrihub.com"),
-  title: "Intrihub | Everything for Every Space.",
-  description: "Intrihub — Everything for Every Space. Shop tiles, electricals, plumbing, hardware, plywood, granite, aluminum doors, and wallpaper online. Delivery across Bangalore & Pan-India.",
+  metadataBase: new URL(BASE_SITE_URL),
+  title: {
+    default: "Intrihub | Everything for Every Space",
+    template: "%s | Intrihub",
+  },
+  description:
+    "Intrihub — Everything for Every Space. Buy electrical, lighting, tiles, flooring, paint, sanitaryware, hardware, plywood, and furniture online with direct site delivery across Bangalore & Pan-India.",
+  keywords: [
+    "interior materials online",
+    "construction supplies bangalore",
+    "tiles and sanitaryware online",
+    "electrical supplies wholesale",
+    "lighting fixtures india",
+    "building materials marketplace",
+    "plywood and hardware online",
+    "Intrihub",
+  ],
+  alternates: {
+    canonical: BASE_SITE_URL,
+  },
+  robots: {
+    index: true,
+    follow: true,
+    googleBot: {
+      index: true,
+      follow: true,
+      "max-video-preview": -1,
+      "max-image-preview": "large",
+      "max-snippet": -1,
+    },
+  },
   icons: {
     icon: [
       { url: "/favicon.ico" },
@@ -32,25 +62,39 @@ export const metadata: Metadata = {
   },
   manifest: "/site.webmanifest",
   openGraph: {
-    title: "Intrihub | Everything for Every Space.",
-    description: "Intrihub — Everything for Every Space. End-to-end interior and construction supplies: tiles, electrical, plumbing, hardware, plywood, granite & more.",
+    title: "Intrihub | Everything for Every Space",
+    description:
+      "Intrihub — India's premier online marketplace for interior & construction materials. Factory-direct delivery for electrical, lighting, tiles, plumbing, and hardware.",
     type: "website",
-    url: process.env.NEXT_PUBLIC_APP_URL || "https://intrihub.com",
-    images: ["/logo/intri-web-logo.png"],
+    url: BASE_SITE_URL,
+    siteName: "Intrihub",
+    locale: "en_IN",
+    images: [
+      {
+        url: "/logo/intri-web-logo.png",
+        width: 1200,
+        height: 630,
+        alt: "Intrihub - Everything for Every Space",
+      },
+    ],
   },
   twitter: {
     card: "summary_large_image",
-    title: "Intrihub | Everything for Every Space.",
-    description: "Intrihub — Everything for Every Space. End-to-end interior and construction supplies.",
+    title: "Intrihub | Everything for Every Space",
+    description:
+      "Intrihub — End-to-end interior & construction materials online marketplace.",
+    images: ["/logo/intri-web-logo.png"],
   },
 };
-
 
 export default function RootLayout({
   children,
 }: Readonly<{
   children: React.ReactNode;
 }>) {
+  const organizationSchema = generateOrganizationSchema();
+  const websiteSchema = generateWebSiteSchema();
+
   return (
     <html
       lang="en"
@@ -74,43 +118,17 @@ export default function RootLayout({
         />
       </head>
       <body className="min-h-full flex flex-col font-sans bg-white text-gray-900 pb-[60px] md:pb-0">
+        {/* Schema.org Structured Data */}
         <script
           type="application/ld+json"
           dangerouslySetInnerHTML={{
-            __html: JSON.stringify({
-              "@context": "https://schema.org",
-              "@type": "Store",
-              "name": "Intrihub",
-              "image": "/placeholders/product.svg",
-              "@id": "",
-              "url": process.env.NEXT_PUBLIC_APP_URL || "https://intrihub.com",
-              "telephone": "+919264920211",
-              "email": "info@intrihub.com",
-              "address": {
-                "@type": "PostalAddress",
-                "streetAddress": "41, 10th A Cross Rd, Janapriya Layout, Classic Paradise Layout, Begur",
-                "addressLocality": "Bengaluru",
-                "addressRegion": "Karnataka",
-                "postalCode": "560114",
-                "addressCountry": "IN"
-              },
-              "geo": {
-                "@type": "GeoCoordinates",
-                "latitude": 12.879,
-                "longitude": 77.625
-              },
-              "founder": {
-                "@type": "Person",
-                "name": "Sahil Sheikh",
-                "jobTitle": "Founder & CEO",
-                "sameAs": "https://www.instagram.com/sahil_sheikh78/"
-              },
-              "priceRange": "$$",
-              "areaServed": {
-                "@type": "City",
-                "name": "Bangalore"
-              }
-            })
+            __html: JSON.stringify(organizationSchema),
+          }}
+        />
+        <script
+          type="application/ld+json"
+          dangerouslySetInnerHTML={{
+            __html: JSON.stringify(websiteSchema),
           }}
         />
         <QuoteModalProvider>

@@ -2,6 +2,15 @@ import Header from "@/components/Header";
 import Footer from "@/components/Footer";
 import AccountSidebar from "@/components/account/AccountSidebar";
 import { Suspense } from "react";
+import { Metadata } from "next";
+
+export const metadata: Metadata = {
+  title: "My Account",
+  robots: {
+    index: false,
+    follow: false,
+  },
+};
 
 export default function AccountLayout({
   children,
