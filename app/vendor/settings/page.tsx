@@ -752,7 +752,7 @@ export default function VendorSettingsPage() {
               <input
                 type="number"
                 min={0}
-                step={50}
+                step="any"
                 placeholder="e.g. 499 (or leave blank to use platform default ₹999)"
                 value={shippingData.customDeliveryFee}
                 onChange={(e) => setShippingData((p) => ({ ...p, customDeliveryFee: e.target.value }))}
@@ -770,7 +770,7 @@ export default function VendorSettingsPage() {
               <input
                 type="number"
                 min={0}
-                step={500}
+                step="any"
                 placeholder="e.g. 10000 (or leave blank to use platform default ₹15,000)"
                 value={shippingData.freeDeliveryThreshold}
                 onChange={(e) => setShippingData((p) => ({ ...p, freeDeliveryThreshold: e.target.value }))}

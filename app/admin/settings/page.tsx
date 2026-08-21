@@ -290,18 +290,20 @@ export default function AdminSettingsPage() {
               <input
                 type="number"
                 value={standardDeliveryFee}
+                disabled={!deliveryFeeEnabled}
                 onChange={(e) => setStandardDeliveryFee(Number(e.target.value))}
                 className="w-full px-3.5 py-2.5 bg-gray-50 border border-gray-200 rounded-xl text-xs font-black text-[#052a51] focus:outline-none focus:border-[#F26522]"
                 min={0}
-                step={50}
+                step="any"
               />
               <div className="flex items-center gap-1.5 mt-2">
                 {[499, 999, 1499].map((fee) => (
                   <button
                     key={fee}
                     type="button"
+                    disabled={!deliveryFeeEnabled}
                     onClick={() => setStandardDeliveryFee(fee)}
-                    className="px-2 py-0.5 rounded-md bg-gray-100 hover:bg-gray-200 text-[10px] font-bold text-gray-700 transition-colors"
+                    className="px-2 py-0.5 rounded-md bg-gray-100 hover:bg-gray-200 text-[10px] font-bold text-gray-700 transition-colors disabled:opacity-50"
                   >
                     ₹{fee}
                   </button>
@@ -319,18 +321,20 @@ export default function AdminSettingsPage() {
               <input
                 type="number"
                 value={freeDeliveryThreshold}
+                disabled={!deliveryFeeEnabled}
                 onChange={(e) => setFreeDeliveryThreshold(Number(e.target.value))}
                 className="w-full px-3.5 py-2.5 bg-gray-50 border border-gray-200 rounded-xl text-xs font-black text-[#052a51] focus:outline-none focus:border-[#F26522]"
                 min={0}
-                step={1000}
+                step="any"
               />
               <div className="flex items-center gap-1.5 mt-2">
                 {[5000, 10000, 15000, 25000].map((th) => (
                   <button
                     key={th}
                     type="button"
+                    disabled={!deliveryFeeEnabled}
                     onClick={() => setFreeDeliveryThreshold(th)}
-                    className="px-2 py-0.5 rounded-md bg-gray-100 hover:bg-gray-200 text-[10px] font-bold text-gray-700 transition-colors"
+                    className="px-2 py-0.5 rounded-md bg-gray-100 hover:bg-gray-200 text-[10px] font-bold text-gray-700 transition-colors disabled:opacity-50"
                   >
                     ₹{(th / 1000)}k
                   </button>
@@ -385,7 +389,7 @@ export default function AdminSettingsPage() {
                 onChange={(e) => setCodMaxLimit(Number(e.target.value))}
                 className="w-full px-3.5 py-2.5 bg-gray-50 border border-gray-200 rounded-xl text-xs font-black text-[#052a51] focus:outline-none focus:border-[#F26522]"
                 min={1000}
-                step={1000}
+                step="any"
               />
               <p className="text-[10px] text-gray-400 mt-1">
                 Orders above ₹{Number(codMaxLimit).toLocaleString("en-IN")} will require online payment.
