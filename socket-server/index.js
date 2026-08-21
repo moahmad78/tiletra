@@ -10,7 +10,7 @@ const server = http.createServer(app);
 const PORT = process.env.PORT || 4001;
 const CORS_ORIGINS = process.env.CORS_ORIGIN
   ? process.env.CORS_ORIGIN.split(',').map((o) => o.trim())
-  : '*';
+  : ['https://intrihub.com', 'https://www.intrihub.com', 'http://localhost:3000', 'http://127.0.0.1:3000'];
 
 // Setup Express Middleware
 app.use(cors({ origin: CORS_ORIGINS }));
@@ -31,7 +31,7 @@ const io = new Server(server, {
 app.get('/', (req, res) => {
   res.json({
     status: 'ok',
-    service: 'Tiletra Socket.IO Relay Server',
+    service: 'Intrihub Socket.IO Relay Server',
     connectedClients: io.engine.clientsCount,
     timestamp: new Date().toISOString(),
   });
@@ -105,6 +105,6 @@ io.on('connection', (socket) => {
 
 // Start Server
 server.listen(PORT, () => {
-  console.log(`🚀 Tiletra Socket.IO Relay Server running on port ${PORT}`);
+  console.log(`🚀 Intrihub Socket.IO Relay Server running on port ${PORT}`);
   console.log(`📡 CORS allowed origins:`, CORS_ORIGINS);
 });

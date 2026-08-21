@@ -15,7 +15,7 @@ export async function GET(request: NextRequest) {
       );
     }
 
-    // 1. Check Tiletra Database first
+    // 1. Check Intrihub Database first
     const existingOrder = await prisma.order.findFirst({
       where: {
         OR: [

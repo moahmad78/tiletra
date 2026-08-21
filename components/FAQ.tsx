@@ -34,7 +34,7 @@ const faqs = [
   },
   {
     question: "Are there any hidden charges in your quotation?",
-    answer: "No. At Tiletra, transparent pricing is a core value. The detailed quotation provided after the free site visit will outline all costs involved. You will never encounter unexpected fees or hidden charges during or after the project."
+    answer: "No. At Intrihub, transparent pricing is a core value. The detailed quotation provided after the free site visit will outline all costs involved. You will never encounter unexpected fees or hidden charges during or after the project."
   },
   {
     question: "Do you take up commercial tiling projects like offices and restaurants?",

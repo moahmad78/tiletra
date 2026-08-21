@@ -168,7 +168,7 @@ export default function PaymentSection({
     });
   };
 
-  const qrUpiPayload = `upi://pay?pa=intrihub@razorpay&pn=Tiletra%20Intrihub&am=${totalAmount}&cu=INR&tn=Order%20${orderId}`;
+  const qrUpiPayload = `upi://pay?pa=intrihub@razorpay&pn=Intrihub&am=${totalAmount}&cu=INR&tn=Order%20${orderId}`;
   const qrImageUrl = `https://api.qrserver.com/v1/create-qr-code/?size=240x240&data=${encodeURIComponent(
     qrUpiPayload
   )}&margin=8`;

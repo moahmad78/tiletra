@@ -28,11 +28,27 @@ app.prepare().then(() => {
     }
   });
 
+  const ALLOWED_CORS_ORIGINS = [
+    "https://intrihub.com",
+    "https://www.intrihub.com",
+    "http://localhost:3000",
+    "http://127.0.0.1:3000",
+    "http://localhost:4001",
+  ];
+
   const io = new SocketIOServer(httpServer, {
     path: "/socket.io",
     cors: {
-      origin: "*",
+      origin: (origin, callback) => {
+        // Allow requests with no origin (like mobile apps, curl, server-to-server)
+        if (!origin) return callback(null, true);
+        if (ALLOWED_CORS_ORIGINS.includes(origin) || origin.endsWith(".intrihub.com")) {
+          return callback(null, true);
+        }
+        return callback(new Error("CORS policy violation: Unauthorized origin"), false);
+      },
       methods: ["GET", "POST"],
+      credentials: true,
     },
     transports: ["websocket", "polling"],
   });

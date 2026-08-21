@@ -53,7 +53,7 @@ export default function TrustStats() {
             viewport={{ once: true }}
             className="text-3xl md:text-5xl font-bold text-gray-900 tracking-tight leading-tight mb-6"
           >
-            The Tiletra Difference: Uncompromising Quality
+            The Intrihub Difference: Uncompromising Quality
           </motion.h2>
           <motion.p 
             initial={{ opacity: 0, y: 20 }}
@@ -62,7 +62,7 @@ export default function TrustStats() {
             transition={{ delay: 0.1 }}
             className="text-lg text-gray-500 leading-relaxed"
           >
-            As a leading tile contractor in Bangalore, Tiletra is synonymous with precision and reliability. We bring over a decade of hands-on experience, premium workmanship, and an unwavering commitment to transforming your spaces into architectural masterpieces. Our track record speaks for itself.
+            As a leading interior and construction marketplace in Bangalore, Intrihub is synonymous with precision and reliability. We bring direct-from-manufacturer supplies, verified vendors, and an unwavering commitment to transforming your spaces into architectural masterpieces. Our track record speaks for itself.
           </motion.p>
         </div>
 

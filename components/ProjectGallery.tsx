@@ -64,7 +64,7 @@ export default function ProjectGallery() {
             >
               <img 
                 src={project.image} 
-                alt={`${project.title} by Tiletra Bangalore`}
+                alt={`${project.title} by Intrihub Bangalore`}
                 className="w-full h-full object-cover transition-transform duration-1000 group-hover:scale-110"
                 onError={(e) => { e.currentTarget.src = "/placeholders/product.svg"; }}
               />

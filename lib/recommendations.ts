@@ -2,7 +2,7 @@
 
 import { products, type Product } from "@/lib/data/products";
 
-const RECENTLY_VIEWED_KEY = "tiletra-recently-viewed";
+const RECENTLY_VIEWED_KEY = "intrihub-recently-viewed";
 
 /**
  * Record a product visit in local storage

@@ -52,7 +52,7 @@ const SEED_NOTIFICATIONS: InAppNotification[] = [
     id: "notif-003",
     type: "promo",
     title: "Weekend Deal: Flat 15% Off Vitrified Tiles",
-    body: "Use code TILETRA10 at checkout on floor tile orders above ₹10,000.",
+    body: "Use code INTRI10 at checkout on floor tile orders above ₹10,000.",
     link: "/shop/floor-tiles",
     read: true,
     createdAt: new Date(Date.now() - 1000 * 60 * 60 * 24 * 2).toISOString(), // 2 days ago
@@ -122,7 +122,7 @@ export const useNotificationsStore = create<NotificationsState>()(
         get().notifications.filter((n) => !n.read).length,
     }),
     {
-      name: "tiletra-notifications",
+      name: "intrihub-notifications",
     }
   )
 );

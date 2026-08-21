@@ -195,13 +195,15 @@ export async function GET(request: NextRequest) {
 
     // Set persistent session cookie
     const isSecure = baseUrl.startsWith("https://");
-    response.cookies.set("tiletra_session", encoded, {
+    response.cookies.set("intrihub_session", encoded, {
       httpOnly: false,
       secure: isSecure,
       sameSite: "lax",
       maxAge: 60 * 60 * 24 * 7, // 7 days
       path: "/",
     });
+    // Clear old legacy cookie
+    response.cookies.set("tiletra_session", "", { maxAge: 0, path: "/" });
 
     return response;
   } catch (err) {

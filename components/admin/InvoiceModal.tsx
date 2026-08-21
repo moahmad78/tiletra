@@ -170,7 +170,7 @@ export default function InvoiceModal({
 
           {/* Footer Note */}
           <div className="mt-10 pt-6 border-t border-gray-100 text-center text-[10px] text-gray-400">
-            Thank you for choosing Tiletra for your space! For queries or delivery coordination, call +91 78709 35277.
+            Thank you for choosing Intrihub for your space! For queries or delivery coordination, call +91 92649 20211.
           </div>
         </div>
       </div>

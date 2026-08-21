@@ -1,8 +1,6 @@
 import { NextRequest } from "next/server";
 
 export const ALLOWED_AUTH_HOSTS = new Set<string>([
-  "tiletra.com",
-  "www.tiletra.com",
   "intrihub.com",
   "www.intrihub.com",
   "localhost:3000",
@@ -31,8 +29,7 @@ if (process.env.RENDER_EXTERNAL_HOSTNAME) {
 /**
  * Derives the trusted base URL dynamically from the incoming request.
  * Strictly validates against an allowlist of permitted domains to prevent
- * open redirect vulnerabilities while allowing tiletra.com, intrihub.com,
- * and localhost to authenticate seamlessly simultaneously.
+ * open redirect vulnerabilities, restricted to intrihub.com and localhost.
  */
 export function getAuthBaseUrl(request: NextRequest): string {
   // 1. Extract host from forwarded headers or host header or request URL
@@ -70,7 +67,7 @@ export function getAuthBaseUrl(request: NextRequest): string {
 
   // 2. Safe fallback when host is unknown or not allowlisted
   if (process.env.NODE_ENV === "production") {
-    return "https://intrihub.com";
+    return "https://www.intrihub.com";
   }
   return "http://localhost:3000";
 }
@@ -79,6 +76,6 @@ export function getOAuthSecret(): string {
   return (
     process.env.NEXTAUTH_SECRET ||
     process.env.GOOGLE_CLIENT_SECRET ||
-    "tiletra-super-secure-oauth-secret-key-2026"
+    "intrihub-super-secure-oauth-secret-key-2026"
   );
 }

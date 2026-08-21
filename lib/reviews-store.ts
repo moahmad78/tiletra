@@ -249,7 +249,7 @@ export const useReviewsStore = create<ReviewsStore>()(
       },
     }),
     {
-      name: "tiletra-customer-reviews",
+      name: "intrihub-customer-reviews",
     }
   )
 );

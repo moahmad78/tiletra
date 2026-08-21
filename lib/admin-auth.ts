@@ -46,29 +46,7 @@ const VALID_CREDENTIALS = [
     },
   },
   {
-    email: "admin@tiletra.in",
-    password: "admin",
-    user: {
-      id: "adm-001",
-      name: "Sahil Sheikh",
-      email: "sahil@intrihub.com",
-      role: "admin" as AdminRole,
-      lastLogin: new Date().toISOString(),
-    },
-  },
-  {
     email: "staff@intrihub.com",
-    password: "staff",
-    user: {
-      id: "adm-002",
-      name: "Operations Staff",
-      email: "staff@intrihub.com",
-      role: "staff" as AdminRole,
-      lastLogin: new Date().toISOString(),
-    },
-  },
-  {
-    email: "staff@tiletra.in",
     password: "staff",
     user: {
       id: "adm-002",
@@ -104,7 +82,7 @@ export const useAdminAuth = create<AdminAuthState>()(
       logout: () => set({ user: null, isAuthenticated: false }),
     }),
     {
-      name: "tiletra-admin-auth",
+      name: "intrihub-admin-auth",
     }
   )
 );

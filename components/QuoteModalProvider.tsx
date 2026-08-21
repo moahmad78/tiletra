@@ -118,7 +118,7 @@ ${fullName}`;
               <div className="flex items-center justify-between px-6 py-5 border-b border-gray-100 bg-gray-50/50">
                 <div>
                   <h2 className="text-2xl font-bold text-[#052a51] tracking-tight">Request Your Free Quote</h2>
-                  <p className="text-sm text-gray-500 mt-1">Fill out the form and our Tiletra team will contact you shortly.</p>
+                  <p className="text-sm text-gray-500 mt-1">Fill out the form and our Intrihub team will contact you shortly.</p>
                 </div>
                 <button
                   onClick={closeModal}

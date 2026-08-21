@@ -23,35 +23,60 @@ export async function POST(req: NextRequest) {
     const uploadedUrls: string[] = [];
     const base64List: string[] = [];
 
+    const ALLOWED_MIME_TYPES = new Set([
+      "image/jpeg",
+      "image/jpg",
+      "image/png",
+      "image/webp",
+      "image/gif",
+      "image/avif",
+    ]);
+
     for (const file of files) {
       if (!file.name) continue;
+
+      const mimeTypeCandidate = file.type?.toLowerCase() || "";
+      const extCandidate = path.extname(file.name).toLowerCase();
+
+      // Explicitly reject SVG / XML files to prevent Stored XSS
+      if (
+        mimeTypeCandidate.includes("svg") ||
+        mimeTypeCandidate.includes("xml") ||
+        extCandidate === ".svg" ||
+        extCandidate === ".xml" ||
+        extCandidate === ".html" ||
+        extCandidate === ".htm" ||
+        !ALLOWED_MIME_TYPES.has(mimeTypeCandidate)
+      ) {
+        return NextResponse.json(
+          {
+            success: false,
+            error: "Security validation failed: Only standard raster image formats (JPEG, PNG, WebP) are allowed. SVG and executable formats are prohibited.",
+          },
+          { status: 400 }
+        );
+      }
 
       const rawBytes = await file.arrayBuffer();
       const rawBuffer = Buffer.from(rawBytes);
 
       let processedBuffer: Buffer = rawBuffer;
-      let mimeType = file.type || "image/jpeg";
+      let mimeType = "image/webp";
       let ext = ".webp";
 
-      const isSvg = file.type === "image/svg+xml" || file.name.endsWith(".svg");
-
-      if (!isSvg) {
-        try {
-          // Optimize image with sharp: resize large photos & convert to webp (compact & fast loading)
-          processedBuffer = await sharp(rawBuffer)
-            .resize({ width: 1600, height: 1600, fit: "inside", withoutEnlargement: true })
-            .webp({ quality: 85 })
-            .toBuffer();
-          mimeType = "image/webp";
-          ext = ".webp";
-        } catch (sharpError) {
-          console.warn("[Upload] Sharp optimization fallback to original:", sharpError);
-          processedBuffer = rawBuffer;
-          ext = path.extname(file.name) || ".jpg";
-        }
-      } else {
-        mimeType = "image/svg+xml";
-        ext = ".svg";
+      try {
+        // Optimize image with sharp: resize large photos & convert to webp (compact & fast loading)
+        processedBuffer = await sharp(rawBuffer)
+          .resize({ width: 1600, height: 1600, fit: "inside", withoutEnlargement: true })
+          .webp({ quality: 85 })
+          .toBuffer();
+        mimeType = "image/webp";
+        ext = ".webp";
+      } catch (sharpError) {
+        console.warn("[Upload] Sharp optimization fallback to original:", sharpError);
+        processedBuffer = rawBuffer;
+        mimeType = mimeTypeCandidate || "image/jpeg";
+        ext = extCandidate || ".jpg";
       }
 
       const sanitizedBase = path.basename(file.name, path.extname(file.name))

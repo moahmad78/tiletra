@@ -143,7 +143,7 @@ export const useCartStore = create<CartState>()(
         ),
     }),
     {
-      name: "tiletra-cart",
+      name: "intrihub-cart",
       partialize: (state) => ({ items: state.items }),
     }
   )

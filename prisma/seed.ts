@@ -205,7 +205,7 @@ async function main() {
   const coupons = [
     {
       id: "cp-001",
-      code: "TILETRA10",
+      code: "INTRI10",
       discountType: "percentage",
       value: 10,
       minOrderValue: 10000,
@@ -266,14 +266,14 @@ async function main() {
   await prisma.user.upsert({
     where: { phone: "+919876543210" },
     update: {
-      name: "Tiletra Admin",
-      email: "admin@tiletra.in",
+      name: "Sahil Sheikh (Admin)",
+      email: "sahil@intrihub.com",
       role: "admin",
       phoneVerified: true,
     },
     create: {
-      name: "Tiletra Admin",
-      email: "admin@tiletra.in",
+      name: "Sahil Sheikh (Admin)",
+      email: "sahil@intrihub.com",
       phone: "+919876543210",
       role: "admin",
       phoneVerified: true,

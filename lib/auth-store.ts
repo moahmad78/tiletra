@@ -387,8 +387,10 @@ export const useAuthStore = create<AuthState>()(
         set({ user: null, isAuthenticated: false, pendingIntent: null, activeOtpCode: null });
         if (typeof window !== "undefined") {
           try {
+            localStorage.removeItem("intrihub-customer-auth");
             localStorage.removeItem("tiletra-customer-auth");
             sessionStorage.clear();
+            document.cookie = "intrihub_session=; max-age=0; path=/;";
             document.cookie = "tiletra_session=; max-age=0; path=/;";
             document.cookie = "oauth_state=; max-age=0; path=/;";
           } catch {}
@@ -472,7 +474,7 @@ export const useAuthStore = create<AuthState>()(
       },
     }),
     {
-      name: "tiletra-customer-auth",
+      name: "intrihub-customer-auth",
       partialize: (state) => ({
         user: state.user,
         isAuthenticated: state.isAuthenticated,

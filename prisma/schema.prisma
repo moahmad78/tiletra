@@ -224,7 +224,7 @@ model Order {
   userId            String?
   customerName      String
   customerPhone     String
-  customerEmail     String          @default("customer@tiletra.in")
+  customerEmail     String          @default("customer@intrihub.com")
   shippingAddress   Json
   subtotal          Float
   deliveryFee       Float           @default(0)

@@ -312,7 +312,7 @@ const SEED_REVIEWS: AdminReview[] = [
     author: "Rajesh Sharma",
     city: "Bangalore",
     rating: 5,
-    comment: "Superb quality tiles! The finish is extremely premium and zero breakages during delivery. Highly recommend Tiletra.",
+    comment: "Superb quality tiles! The finish is extremely premium and zero breakages during delivery. Highly recommend Intrihub.",
     date: "2 weeks ago",
     status: "approved",
   },
@@ -355,7 +355,7 @@ const SEED_REVIEWS: AdminReview[] = [
 const SEED_COUPONS: AdminCoupon[] = [
   {
     id: "cp-001",
-    code: "TILETRA10",
+    code: "INTRI10",
     discountType: "percentage",
     value: 10,
     minOrderValue: 10000,
@@ -637,7 +637,7 @@ export const useAdminStore = create<AdminStore>()(
         }),
     }),
     {
-      name: "tiletra-admin-store",
+      name: "intrihub-admin-store",
     }
   )
 );

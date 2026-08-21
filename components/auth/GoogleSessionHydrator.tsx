@@ -66,6 +66,7 @@ export default function GoogleSessionHydrator() {
         // Explicit defense-in-depth: Clear old localStorage state before hydrating new user
         if (typeof window !== "undefined") {
           try {
+            localStorage.removeItem("intrihub-customer-auth");
             localStorage.removeItem("tiletra-customer-auth");
             sessionStorage.clear();
           } catch {}

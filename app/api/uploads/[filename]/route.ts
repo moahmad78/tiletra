@@ -22,6 +22,19 @@ export async function GET(
       });
     }
 
+    // Helper function to generate safe response headers
+    const getSafeMediaHeaders = (mimeType: string, isStaticPlaceholder: boolean = false) => {
+      const isSafeImage = ["image/webp", "image/jpeg", "image/jpg", "image/png", "image/gif", "image/avif"].includes(mimeType);
+      
+      return {
+        "Content-Type": mimeType,
+        "Cache-Control": isStaticPlaceholder ? "public, max-age=86400" : "public, max-age=31536000, immutable",
+        "X-Content-Type-Options": "nosniff",
+        "Content-Security-Policy": "default-src 'none'; style-src 'unsafe-inline'; sandbox",
+        "Content-Disposition": isSafeImage ? "inline" : "attachment",
+      };
+    };
+
     // 1. Try local disk first (for localhost & cached container images)
     try {
       const localFilePath = path.join(process.cwd(), "public", "uploads", filename);
@@ -32,17 +45,17 @@ export async function GET(
           ? "image/webp"
           : ext === ".png"
           ? "image/png"
-          : ext === ".svg"
-          ? "image/svg+xml"
-          : "image/jpeg";
+          : ext === ".jpg" || ext === ".jpeg"
+          ? "image/jpeg"
+          : ext === ".gif"
+          ? "image/gif"
+          : ext === ".avif"
+          ? "image/avif"
+          : "application/octet-stream";
 
       return new NextResponse(fileBuffer, {
         status: 200,
-        headers: {
-          "Content-Type": mimeType,
-          "Cache-Control": "public, max-age=31536000, immutable",
-          "Content-Disposition": "inline",
-        },
+        headers: getSafeMediaHeaders(mimeType),
       });
     } catch {
       // Local disk read failed or running in serverless / live production environment
@@ -55,13 +68,10 @@ export async function GET(
 
     if (dbFile && dbFile.dataBase64) {
       const imageBuffer = Buffer.from(dbFile.dataBase64, "base64");
+      const safeMime = dbFile.mimeType === "image/svg+xml" ? "application/octet-stream" : (dbFile.mimeType || "image/webp");
       return new NextResponse(imageBuffer, {
         status: 200,
-        headers: {
-          "Content-Type": dbFile.mimeType || "image/webp",
-          "Cache-Control": "public, max-age=31536000, immutable",
-          "Content-Disposition": "inline",
-        },
+        headers: getSafeMediaHeaders(safeMime),
       });
     }
 
@@ -71,22 +81,19 @@ export async function GET(
       const placeholderBuffer = await readFile(placeholderPath);
       return new NextResponse(placeholderBuffer, {
         status: 200,
-        headers: {
-          "Content-Type": "image/svg+xml",
-          "Cache-Control": "public, max-age=86400",
-        },
+        headers: getSafeMediaHeaders("image/svg+xml", true),
       });
     } catch {
       return new NextResponse(FALLBACK_WEBP, {
         status: 200,
-        headers: { "Content-Type": "image/webp" },
+        headers: { "Content-Type": "image/webp", "X-Content-Type-Options": "nosniff" },
       });
     }
   } catch (error: any) {
     console.error("[Media Route Error]:", error);
     return new NextResponse(FALLBACK_WEBP, {
       status: 200,
-      headers: { "Content-Type": "image/webp" },
+      headers: { "Content-Type": "image/webp", "X-Content-Type-Options": "nosniff" },
     });
   }
 }

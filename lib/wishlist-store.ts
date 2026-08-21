@@ -33,7 +33,7 @@ export const useWishlistStore = create<WishlistState>()(
       clearWishlist: () => set({ items: [] }),
     }),
     {
-      name: "tiletra-wishlist",
+      name: "intrihub-wishlist",
     }
   )
 );

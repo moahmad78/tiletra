@@ -161,7 +161,7 @@ export default function AdminHeader({
             {getPageTitle()}
           </h1>
           <p className="text-[11px] text-gray-400 hidden sm:block">
-            Tiletra Operations & Store Management
+            Intrihub Operations & Store Management
           </p>
         </div>
       </div>
