@@ -62,7 +62,7 @@ export default function VendorOrdersPage() {
 
   const handleStatusChange = async (
     splitId: string,
-    newStatus: "Processing" | "Dispatched" | "Delivered" | "Cancelled",
+    newStatus: string,
     tracking?: string,
     courier?: string
   ) => {
@@ -188,15 +188,7 @@ export default function VendorOrdersPage() {
                       <span className="font-mono text-xs font-black text-[#052a51]">
                         #{split.orderId}
                       </span>
-                      <span
-                        className={`text-[10px] font-black uppercase px-2.5 py-0.5 rounded-full ${
-                          split.fulfillmentStatus === "Delivered"
-                            ? "bg-emerald-100 text-emerald-800"
-                            : split.fulfillmentStatus === "Dispatched"
-                            ? "bg-amber-100 text-amber-800"
-                            : split.fulfillmentStatus === "Cancelled"
-                            ? "bg-rose-100 text-rose-800"
-                            : "bg-blue-100 text-blue-800"
+
                       {/* Delivery Method Badge */}
                       <span
                         className={`text-[10px] font-extrabold uppercase px-2 py-0.5 rounded-md flex items-center gap-1 ${
