@@ -16,12 +16,14 @@ import {
 } from "lucide-react";
 import { useVendorAuth } from "@/lib/vendor-auth";
 import { getVendorProfile, getVendorDashboardStats } from "@/lib/actions/vendor";
+import { getVendorPayoutSummary } from "@/lib/actions/payouts";
 import { formatPrice } from "@/lib/formatters";
 
 export default function VendorPayoutsPage() {
   const { vendor } = useVendorAuth();
   const [profile, setProfile] = useState<any | null>(null);
   const [stats, setStats] = useState<any | null>(null);
+  const [payoutSummary, setPayoutSummary] = useState<any | null>(null);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -29,23 +31,25 @@ export default function VendorPayoutsPage() {
       Promise.all([
         getVendorProfile(vendor.id),
         getVendorDashboardStats(vendor.id),
-      ]).then(([p, s]) => {
+        getVendorPayoutSummary(vendor.id),
+      ]).then(([p, s, ps]) => {
         setProfile(p);
         setStats(s);
+        setPayoutSummary(ps);
         setLoading(false);
       });
     }
   }, [vendor?.id]);
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-6 max-w-6xl mx-auto pb-12">
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
           <h1 className="text-xl md:text-2xl font-black text-gray-900 tracking-tight">
             Payouts & Bank Settlement
           </h1>
           <p className="text-xs text-gray-500">
-            Automated scheduled payouts, bank account configuration, and sales reconciliation
+            Automated scheduled weekly payouts, bank account configuration, and sales reconciliation
           </p>
         </div>
 
@@ -61,35 +65,37 @@ export default function VendorPayoutsPage() {
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
         <div className="bg-white rounded-3xl p-6 border border-gray-200/80 shadow-xs">
           <p className="text-xs font-bold text-gray-400 uppercase tracking-wider">
-            Total Orders Fulfilled
-          </p>
-          <h3 className="text-2xl font-black text-gray-900 mt-1">
-            {stats?.totalOrders ?? 0}
-          </h3>
-          <p className="text-[11px] text-gray-500 mt-1 flex items-center gap-1">
-            <Calendar size={12} className="text-emerald-600" /> Settled on Weekly Schedule
-          </p>
-        </div>
-
-        <div className="bg-white rounded-3xl p-6 border border-gray-200/80 shadow-xs">
-          <p className="text-xs font-bold text-gray-400 uppercase tracking-wider">
-            Platform Commission
+            Ready for Next Weekly Payout
           </p>
           <h3 className="text-2xl font-black text-emerald-600 mt-1">
-            {vendor?.commissionRate ?? 15}%
+            {formatPrice(payoutSummary?.readyForPayoutAmount ?? 0)}
           </h3>
-          <p className="text-[11px] text-gray-500 mt-1">Deducted automatically per order split</p>
+          <p className="text-[11px] text-gray-500 mt-1 flex items-center gap-1">
+            <Calendar size={12} className="text-emerald-600" /> {payoutSummary?.unsettledSplitsCount ?? 0} delivered orders ready
+          </p>
         </div>
 
         <div className="bg-white rounded-3xl p-6 border border-gray-200/80 shadow-xs">
           <p className="text-xs font-bold text-gray-400 uppercase tracking-wider">
-            Lifetime Net Earnings
+            In-Progress Deliveries (Est.)
+          </p>
+          <h3 className="text-2xl font-black text-blue-600 mt-1">
+            {formatPrice(payoutSummary?.inProgressEstimatedPayout ?? 0)}
+          </h3>
+          <p className="text-[11px] text-gray-500 mt-1">
+            {payoutSummary?.inProgressCount ?? 0} active orders pending delivery
+          </p>
+        </div>
+
+        <div className="bg-white rounded-3xl p-6 border border-gray-200/80 shadow-xs">
+          <p className="text-xs font-bold text-gray-400 uppercase tracking-wider">
+            Lifetime Settled Payouts
           </p>
           <h3 className="text-2xl font-black text-gray-900 mt-1">
-            {formatPrice(stats?.totalRevenue ?? 0)}
+            {formatPrice(payoutSummary?.lifetimePaidOut ?? stats?.totalRevenue ?? 0)}
           </h3>
           <p className="text-[11px] text-emerald-600 font-semibold mt-1">
-            Net Payout after commission
+            Platform Commission: {vendor?.commissionRate ?? 15}%
           </p>
         </div>
       </div>
@@ -163,17 +169,56 @@ export default function VendorPayoutsPage() {
         )}
       </div>
 
-      {/* Info Card */}
-      <div className="bg-white rounded-3xl p-8 border border-gray-200/80 shadow-xs text-center max-w-xl mx-auto space-y-4">
-        <div className="w-16 h-16 rounded-3xl bg-emerald-50 text-emerald-600 flex items-center justify-center mx-auto">
-          <CreditCard size={32} />
-        </div>
-        <h2 className="text-lg font-bold text-gray-900">
-          Automated Settlement Schedule
-        </h2>
-        <p className="text-xs text-gray-500 leading-relaxed">
-          Payouts reconcile completed customer deliveries minus your shop's {vendor?.commissionRate}% platform commission, deposited directly to your registered bank account every cycle.
-        </p>
+      {/* Historical Payouts Ledger Table */}
+      <div className="bg-white rounded-3xl p-6 sm:p-8 border border-gray-200/80 shadow-xs space-y-4">
+        <h3 className="text-base font-black text-gray-900">Payout Settlement History</h3>
+
+        {!payoutSummary?.pastPayouts || payoutSummary.pastPayouts.length === 0 ? (
+          <div className="py-8 text-center text-xs text-gray-400">
+            No past payout batches yet. Settlements will appear here once weekly cycles execute.
+          </div>
+        ) : (
+          <div className="overflow-x-auto">
+            <table className="w-full text-left text-xs">
+              <thead>
+                <tr className="border-b border-gray-100 text-gray-400 font-bold uppercase text-[10px]">
+                  <th className="py-2.5">Batch ID</th>
+                  <th className="py-2.5">Settlement Period</th>
+                  <th className="py-2.5">Orders Included</th>
+                  <th className="py-2.5">Amount Transferred</th>
+                  <th className="py-2.5">Status</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-gray-50">
+                {payoutSummary.pastPayouts.map((payout: any) => (
+                  <tr key={payout.id} className="text-gray-800">
+                    <td className="py-3 font-mono font-bold text-[#052a51]">
+                      #{payout.id.slice(-8).toUpperCase()}
+                    </td>
+                    <td className="py-3 text-gray-500">
+                      {new Date(payout.periodStart).toLocaleDateString("en-IN")} — {new Date(payout.periodEnd).toLocaleDateString("en-IN")}
+                    </td>
+                    <td className="py-3 font-semibold">{payout.splits?.length || 0} Splits</td>
+                    <td className="py-3 font-black text-emerald-600">{formatPrice(payout.amount)}</td>
+                    <td className="py-3">
+                      <span
+                        className={`text-[10px] font-bold px-2.5 py-1 rounded-md uppercase ${
+                          payout.status === "completed"
+                            ? "bg-emerald-100 text-emerald-800"
+                            : payout.status === "held"
+                            ? "bg-rose-100 text-rose-800"
+                            : "bg-amber-100 text-amber-800"
+                        }`}
+                      >
+                        {payout.status}
+                      </span>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        )}
       </div>
     </div>
   );

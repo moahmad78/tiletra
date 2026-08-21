@@ -63,7 +63,13 @@ export default function VendorSettingsPage() {
   });
 
   // Delivery & Shipping Data
-  const [shippingData, setShippingData] = useState({
+  const [shippingData, setShippingData] = useState<{
+    deliveryMethod: "self" | "platform";
+    deliveryFeeEnabled: boolean;
+    customDeliveryFee: string;
+    freeDeliveryThreshold: string;
+  }>({
+    deliveryMethod: "self",
     deliveryFeeEnabled: true,
     customDeliveryFee: "",
     freeDeliveryThreshold: "",
@@ -113,6 +119,7 @@ export default function VendorSettingsPage() {
             shopPhotoUrl: v.shopPhotoUrl || "",
           });
           setShippingData({
+            deliveryMethod: (v.deliveryMethod === "platform" ? "platform" : "self") as "self" | "platform",
             deliveryFeeEnabled: v.deliveryFeeEnabled !== false,
             customDeliveryFee: v.customDeliveryFee != null ? String(v.customDeliveryFee) : "",
             freeDeliveryThreshold: v.freeDeliveryThreshold != null ? String(v.freeDeliveryThreshold) : "",
@@ -253,6 +260,7 @@ export default function VendorSettingsPage() {
 
     setLoading(true);
     const res = await updateVendorDeliverySettings(vendor.id, {
+      deliveryMethod: shippingData.deliveryMethod,
       deliveryFeeEnabled: shippingData.deliveryFeeEnabled,
       customDeliveryFee: shippingData.customDeliveryFee !== "" ? Number(shippingData.customDeliveryFee) : null,
       freeDeliveryThreshold: shippingData.freeDeliveryThreshold !== "" ? Number(shippingData.freeDeliveryThreshold) : null,
@@ -624,6 +632,84 @@ export default function VendorSettingsPage() {
                 <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-emerald-600"></div>
               </div>
             </label>
+          </div>
+
+          {/* Delivery Method Choice (Self vs Platform) */}
+          <div className="space-y-3">
+            <div>
+              <label className="block text-xs font-bold text-gray-700 uppercase tracking-wider">
+                Fulfillment & Delivery Model *
+              </label>
+              <p className="text-xs text-gray-500 mt-0.5">
+                Choose how your shop fulfills customer orders received on the marketplace.
+              </p>
+            </div>
+
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              {/* Self-Delivery Card */}
+              <div
+                onClick={() => setShippingData((p) => ({ ...p, deliveryMethod: "self" }))}
+                className={`p-5 rounded-2xl border-2 transition-all cursor-pointer relative ${
+                  shippingData.deliveryMethod === "self"
+                    ? "border-emerald-600 bg-emerald-50/40 shadow-sm"
+                    : "border-gray-200 bg-white hover:border-gray-300"
+                }`}
+              >
+                <div className="flex items-start justify-between">
+                  <div className="w-9 h-9 rounded-xl bg-emerald-100 text-emerald-700 flex items-center justify-center font-bold text-sm">
+                    🚚
+                  </div>
+                  <input
+                    type="radio"
+                    name="deliveryMethod"
+                    checked={shippingData.deliveryMethod === "self"}
+                    onChange={() => setShippingData((p) => ({ ...p, deliveryMethod: "self" }))}
+                    className="w-4 h-4 text-emerald-600 focus:ring-emerald-500 cursor-pointer"
+                  />
+                </div>
+                <div className="mt-3">
+                  <h3 className="text-sm font-bold text-gray-900">Self-Delivery (Vendor Courier)</h3>
+                  <p className="text-xs text-gray-600 mt-1 leading-relaxed">
+                    You manage your own logistics, local riders, or 3rd-party couriers. You update dispatch, tracking numbers, and confirm customer delivery yourself.
+                  </p>
+                  <span className="inline-block mt-2.5 text-[10px] font-bold px-2 py-0.5 rounded-md bg-emerald-100 text-emerald-800">
+                    Direct Vendor Control
+                  </span>
+                </div>
+              </div>
+
+              {/* Platform Logistics Card */}
+              <div
+                onClick={() => setShippingData((p) => ({ ...p, deliveryMethod: "platform" }))}
+                className={`p-5 rounded-2xl border-2 transition-all cursor-pointer relative ${
+                  shippingData.deliveryMethod === "platform"
+                    ? "border-blue-600 bg-blue-50/40 shadow-sm"
+                    : "border-gray-200 bg-white hover:border-gray-300"
+                }`}
+              >
+                <div className="flex items-start justify-between">
+                  <div className="w-9 h-9 rounded-xl bg-blue-100 text-blue-700 flex items-center justify-center font-bold text-sm">
+                    🏢
+                  </div>
+                  <input
+                    type="radio"
+                    name="deliveryMethod"
+                    checked={shippingData.deliveryMethod === "platform"}
+                    onChange={() => setShippingData((p) => ({ ...p, deliveryMethod: "platform" }))}
+                    className="w-4 h-4 text-blue-600 focus:ring-blue-500 cursor-pointer"
+                  />
+                </div>
+                <div className="mt-3">
+                  <h3 className="text-sm font-bold text-gray-900">Platform Logistics (Centralized)</h3>
+                  <p className="text-xs text-gray-600 mt-1 leading-relaxed">
+                    Intrihub centralized logistics picks up goods directly from your warehouse/shop and handles doorstep delivery & COD cash collection.
+                  </p>
+                  <span className="inline-block mt-2.5 text-[10px] font-bold px-2 py-0.5 rounded-md bg-blue-100 text-blue-800">
+                    Managed by Intrihub
+                  </span>
+                </div>
+              </div>
+            </div>
           </div>
 
           {/* Status Preview Card */}

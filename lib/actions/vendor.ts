@@ -194,6 +194,7 @@ export async function updateVendorProfile(
 export async function updateVendorDeliverySettings(
   vendorId: string,
   input: {
+    deliveryMethod?: "self" | "platform";
     deliveryFeeEnabled: boolean;
     customDeliveryFee?: number | null;
     freeDeliveryThreshold?: number | null;
@@ -202,13 +203,19 @@ export async function updateVendorDeliverySettings(
   try {
     if (!vendorId) return { success: false, error: "Vendor ID required" };
 
+    const updateData: any = {
+      deliveryFeeEnabled: input.deliveryFeeEnabled,
+      customDeliveryFee: input.customDeliveryFee !== undefined ? input.customDeliveryFee : undefined,
+      freeDeliveryThreshold: input.freeDeliveryThreshold !== undefined ? input.freeDeliveryThreshold : undefined,
+    };
+
+    if (input.deliveryMethod) {
+      updateData.deliveryMethod = input.deliveryMethod;
+    }
+
     const updated = await prisma.vendor.update({
       where: { id: vendorId },
-      data: {
-        deliveryFeeEnabled: input.deliveryFeeEnabled,
-        customDeliveryFee: input.customDeliveryFee !== undefined ? input.customDeliveryFee : undefined,
-        freeDeliveryThreshold: input.freeDeliveryThreshold !== undefined ? input.freeDeliveryThreshold : undefined,
-      } as any,
+      data: updateData,
     });
 
     safeRevalidate("/vendor/settings");
@@ -788,13 +795,46 @@ export async function getVendorOrders(vendorId: string) {
   }
 }
 
-// 13. Update Vendor Order Split Fulfillment Status
+// 13. Vendor Delivery Method Configuration (Self-Delivery vs Platform Logistics)
+export async function updateVendorDeliveryMethod(
+  vendorId: string,
+  deliveryMethod: "self" | "platform"
+) {
+  try {
+    if (!vendorId) return { success: false, error: "Vendor ID is required" };
+
+    const updated = await prisma.vendor.update({
+      where: { id: vendorId },
+      data: {
+        deliveryMethod,
+      },
+    });
+
+    safeRevalidate("/vendor/settings");
+    safeRevalidate("/vendor/orders");
+    safeRevalidate(`/admin/vendors/${vendorId}`);
+
+    return {
+      success: true,
+      vendor: updated,
+      message: `Delivery method updated to ${
+        deliveryMethod === "self" ? "Self-Delivery (Vendor Courier)" : "Platform Centralized Logistics"
+      }!`,
+    };
+  } catch (error: any) {
+    console.error("updateVendorDeliveryMethod error:", error);
+    return { success: false, error: error?.message || "Failed to update delivery method" };
+  }
+}
+
+// 14. Update Vendor Order Split Fulfillment Status (With Commission Finalization upon Delivery)
 export async function updateVendorFulfillmentStatus(
   splitId: string,
   vendorId: string,
-  status: "Processing" | "Dispatched" | "Delivered" | "Cancelled",
+  status: string,
   trackingNumber?: string,
-  courierName?: string
+  courierName?: string,
+  paymentCollected?: boolean
 ) {
   try {
     if (!splitId || !vendorId) {
@@ -809,26 +849,183 @@ export async function updateVendorFulfillmentStatus(
       return { success: false, error: "Order split not found or unauthorized" };
     }
 
+    const normalizedStatus = status.toLowerCase();
+    const isDelivered = normalizedStatus === "delivered";
+
+    const updateData: any = {
+      fulfillmentStatus: normalizedStatus,
+      trackingNumber: trackingNumber !== undefined ? trackingNumber.trim() : existing.trackingNumber,
+      courierName: courierName !== undefined ? courierName.trim() : existing.courierName,
+    };
+
+    if (paymentCollected !== undefined) {
+      updateData.paymentCollected = paymentCollected;
+    }
+
+    // Finalize Commission & Payout calculations when reaching "delivered" status
+    if (isDelivered) {
+      const commissionAmount = Number(((existing.subtotal * existing.commissionRate) / 100).toFixed(2));
+      const vendorPayoutAmount = Number((existing.subtotal - commissionAmount).toFixed(2));
+      updateData.commissionAmount = commissionAmount;
+      updateData.vendorPayoutAmount = vendorPayoutAmount;
+      updateData.deliveredAt = new Date();
+
+      // If online paid or confirmed collected, mark paymentCollected true
+      if (paymentCollected !== false) {
+        updateData.paymentCollected = true;
+      }
+    }
+
     const updated = await prisma.vendorOrderSplit.update({
       where: { id: splitId },
-      data: {
-        fulfillmentStatus: status,
-        trackingNumber: trackingNumber !== undefined ? trackingNumber.trim() : existing.trackingNumber,
-        courierName: courierName !== undefined ? courierName.trim() : existing.courierName,
-      },
+      data: updateData,
     });
 
     safeRevalidate("/vendor/orders");
+    safeRevalidate("/vendor/payouts");
+    safeRevalidate("/admin/orders");
+    safeRevalidate("/admin/deliveries");
     safeRevalidate(`/admin/vendors/${vendorId}`);
 
     return {
       success: true,
       split: updated,
-      message: `Order status updated to ${status}!`,
+      message: `Fulfillment status updated to ${status}!`,
     };
   } catch (error: any) {
     console.error("updateVendorFulfillmentStatus error:", error);
     return { success: false, error: error?.message || "Failed to update fulfillment status" };
+  }
+}
+
+// 15. Super Admin Platform Centralized Logistics Orders Query
+export async function getPlatformDeliveryOrders() {
+  try {
+    const splits = await prisma.vendorOrderSplit.findMany({
+      where: { deliveryMethod: "platform" },
+      orderBy: { createdAt: "desc" },
+      include: {
+        vendor: {
+          select: {
+            id: true,
+            businessName: true,
+            contactPhone: true,
+            contactEmail: true,
+            businessAddress: true,
+          },
+        },
+      },
+    });
+
+    const orderIds = splits.map((s) => s.orderId);
+    const parentOrders = await prisma.order.findMany({
+      where: { id: { in: orderIds } },
+      include: {
+        items: true,
+      },
+    });
+
+    const orderMap = new Map(parentOrders.map((o) => [o.id, o]));
+
+    return splits.map((split) => {
+      const parent = orderMap.get(split.orderId);
+      return {
+        id: split.id,
+        orderId: split.orderId,
+        vendorId: split.vendorId,
+        vendor: split.vendor,
+        subtotal: split.subtotal,
+        commissionRate: split.commissionRate,
+        commissionAmount: split.commissionAmount,
+        vendorPayoutAmount: split.vendorPayoutAmount,
+        deliveryMethod: split.deliveryMethod,
+        fulfillmentStatus: split.fulfillmentStatus,
+        paymentCollected: split.paymentCollected,
+        trackingNumber: split.trackingNumber,
+        courierName: split.courierName,
+        deliveredAt: split.deliveredAt,
+        createdAt: split.createdAt,
+        updatedAt: split.updatedAt,
+        parentOrder: parent
+          ? {
+              customerName: parent.customerName,
+              customerPhone: parent.customerPhone,
+              customerEmail: parent.customerEmail,
+              shippingAddress: parent.shippingAddress,
+              paymentStatus: parent.paymentStatus,
+              paymentMethod: parent.paymentMethod,
+              orderStatus: parent.orderStatus,
+              items: parent.items,
+            }
+          : null,
+      };
+    });
+  } catch (error) {
+    console.error("getPlatformDeliveryOrders error:", error);
+    return [];
+  }
+}
+
+// 16. Super Admin Platform Logistics Status Update (Pickup -> Transit -> Delivery -> Reconcile COD)
+export async function updatePlatformDeliveryStatus(
+  splitId: string,
+  status: string,
+  trackingNumber?: string,
+  courierName?: string,
+  paymentCollected?: boolean
+) {
+  try {
+    if (!splitId) return { success: false, error: "Split ID required" };
+
+    const existing = await prisma.vendorOrderSplit.findUnique({
+      where: { id: splitId },
+    });
+
+    if (!existing) return { success: false, error: "Delivery split not found" };
+
+    const normalizedStatus = status.toLowerCase();
+    const isDelivered = normalizedStatus === "delivered";
+
+    const updateData: any = {
+      fulfillmentStatus: normalizedStatus,
+      trackingNumber: trackingNumber !== undefined ? trackingNumber.trim() : existing.trackingNumber,
+      courierName: courierName !== undefined ? courierName.trim() : existing.courierName,
+    };
+
+    if (paymentCollected !== undefined) {
+      updateData.paymentCollected = paymentCollected;
+    }
+
+    if (isDelivered) {
+      const commissionAmount = Number(((existing.subtotal * existing.commissionRate) / 100).toFixed(2));
+      const vendorPayoutAmount = Number((existing.subtotal - commissionAmount).toFixed(2));
+      updateData.commissionAmount = commissionAmount;
+      updateData.vendorPayoutAmount = vendorPayoutAmount;
+      updateData.deliveredAt = new Date();
+      if (paymentCollected !== false) {
+        updateData.paymentCollected = true;
+      }
+    }
+
+    const updated = await prisma.vendorOrderSplit.update({
+      where: { id: splitId },
+      data: updateData,
+    });
+
+    safeRevalidate("/admin/deliveries");
+    safeRevalidate("/admin/orders");
+    safeRevalidate("/vendor/orders");
+    safeRevalidate("/vendor/payouts");
+    safeRevalidate(`/admin/vendors/${existing.vendorId}`);
+
+    return {
+      success: true,
+      split: updated,
+      message: `Platform delivery updated to ${status}!`,
+    };
+  } catch (error: any) {
+    console.error("updatePlatformDeliveryStatus error:", error);
+    return { success: false, error: error?.message || "Failed to update platform delivery" };
   }
 }
 

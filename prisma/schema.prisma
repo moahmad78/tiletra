@@ -569,6 +569,7 @@ model Vendor {
   kycNotes            String?
 
   // Delivery & Shipping Controls
+  deliveryMethod        String             @default("self") // self | platform (vendor choice)
   deliveryFeeEnabled    Boolean            @default(true)
   customDeliveryFee     Float?             // null means follow store standard fee
   freeDeliveryThreshold Float?             // null means follow store threshold
@@ -612,40 +613,48 @@ model VendorApplication {
 }
 
 model VendorOrderSplit {
-  id                 String   @id @default(cuid())
+  id                 String    @id @default(cuid())
   orderId            String
   vendorId           String
   subtotal           Float
-  commissionRate     Float    @default(15.0)
-  commissionAmount   Float    @default(0)
-  vendorPayoutAmount Float    @default(0)
-  fulfillmentStatus  String   @default("Processing") // Processing | Dispatched | Delivered | Cancelled
+  commissionRate     Float     @default(15.0)
+  commissionAmount   Float     @default(0)
+  vendorPayoutAmount Float     @default(0)
+  deliveryMethod     String    @default("self") // self | platform (captured at order creation)
+  fulfillmentStatus  String    @default("processing") // processing | ready_for_pickup | picked_up | dispatched | out_for_delivery | delivered | cancelled | returned
+  paymentCollected   Boolean   @default(false)  // true once cash/online payment is collected
   trackingNumber     String?
   courierName        String?
-  createdAt          DateTime @default(now())
-  updatedAt          DateTime @updatedAt
+  deliveredAt        DateTime?
+  payoutId           String?
+  createdAt          DateTime  @default(now())
+  updatedAt          DateTime  @updatedAt
 
-  vendor             Vendor   @relation(fields: [vendorId], references: [id], onDelete: Cascade)
+  vendor             Vendor    @relation(fields: [vendorId], references: [id], onDelete: Cascade)
+  payout             Payout?   @relation(fields: [payoutId], references: [id], onDelete: SetNull)
 
   @@index([orderId])
   @@index([vendorId])
   @@index([fulfillmentStatus])
+  @@index([deliveryMethod])
+  @@index([payoutId])
 }
 
 model Payout {
-  id             String    @id @default(cuid())
+  id             String             @id @default(cuid())
   vendorId       String
   amount         Float
-  status         String    @default("pending") // pending | processing | completed | held
+  status         String             @default("pending") // pending | processing | completed | held
   periodStart    DateTime
   periodEnd      DateTime
-  initiatedAt    DateTime  @default(now())
+  initiatedAt    DateTime           @default(now())
   completedAt    DateTime?
   notes          String?
-  createdAt      DateTime  @default(now())
-  updatedAt      DateTime  @updatedAt
+  createdAt      DateTime           @default(now())
+  updatedAt      DateTime           @updatedAt
 
-  vendor         Vendor    @relation(fields: [vendorId], references: [id], onDelete: Cascade)
+  vendor         Vendor             @relation(fields: [vendorId], references: [id], onDelete: Cascade)
+  splits         VendorOrderSplit[]
 
   @@index([vendorId])
   @@index([status])

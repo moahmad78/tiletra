@@ -197,9 +197,32 @@ export default function VendorOrdersPage() {
                             : split.fulfillmentStatus === "Cancelled"
                             ? "bg-rose-100 text-rose-800"
                             : "bg-blue-100 text-blue-800"
+                      {/* Delivery Method Badge */}
+                      <span
+                        className={`text-[10px] font-extrabold uppercase px-2 py-0.5 rounded-md flex items-center gap-1 ${
+                          split.deliveryMethod === "platform"
+                            ? "bg-blue-100 text-blue-800 border border-blue-200"
+                            : "bg-purple-100 text-purple-800 border border-purple-200"
                         }`}
                       >
-                        {split.fulfillmentStatus}
+                        {split.deliveryMethod === "platform" ? "🏢 Platform Logistics" : "🚚 Self-Delivery"}
+                      </span>
+
+                      {/* Fulfillment Status Badge */}
+                      <span
+                        className={`text-[10px] font-extrabold uppercase px-2 py-0.5 rounded-md ${
+                          split.fulfillmentStatus?.toLowerCase() === "delivered"
+                            ? "bg-emerald-100 text-emerald-800"
+                            : split.fulfillmentStatus?.toLowerCase() === "dispatched" || split.fulfillmentStatus?.toLowerCase() === "picked_up"
+                            ? "bg-amber-100 text-amber-800"
+                            : split.fulfillmentStatus?.toLowerCase() === "out_for_delivery"
+                            ? "bg-indigo-100 text-indigo-800"
+                            : split.fulfillmentStatus?.toLowerCase() === "ready_for_pickup"
+                            ? "bg-cyan-100 text-cyan-800"
+                            : "bg-blue-100 text-blue-800"
+                        }`}
+                      >
+                        {split.fulfillmentStatus?.replace(/_/g, " ")}
                       </span>
                       <span className="text-[11px] text-gray-400 font-medium">
                         {new Date(split.createdAt).toLocaleDateString("en-IN", {
@@ -212,49 +235,106 @@ export default function VendorOrdersPage() {
 
                     <p className="text-xs text-gray-600 font-medium">
                       Customer: <strong>{parent?.customerName || "Customer"}</strong> •{" "}
-                      {(parent?.shippingAddress as any)?.city || "Bangalore"}
+                      {(parent?.shippingAddress as any)?.city || "Bangalore"} • Payment:{" "}
+                      <strong className={parent?.paymentMethod === "COD" ? "text-amber-600" : "text-emerald-600"}>
+                        {parent?.paymentMethod || "Online"} ({split.paymentCollected ? "Collected" : "Pending"})
+                      </strong>
                     </p>
                   </div>
 
                   {/* Financials & Actions */}
                   <div className="flex items-center gap-4 flex-wrap justify-between md:justify-end">
                     <div className="text-right">
-                      <p className="text-[10px] text-gray-400 uppercase font-bold">Your Net Payout</p>
+                      <p className="text-[10px] text-gray-400 uppercase font-bold">
+                        {split.fulfillmentStatus?.toLowerCase() === "delivered" ? "Finalized Payout" : "Estimated Payout"}
+                      </p>
                       <p className="text-sm font-black text-emerald-600">
-                        {formatPrice(split.vendorPayoutAmount)}
+                        {formatPrice(
+                          split.vendorPayoutAmount > 0
+                            ? split.vendorPayoutAmount
+                            : split.subtotal - (split.subtotal * (split.commissionRate || 15)) / 100
+                        )}
                       </p>
                       <p className="text-[10px] text-gray-400">
-                        Item Subtotal: {formatPrice(split.subtotal)} (-{split.commissionRate}%)
+                        Subtotal: {formatPrice(split.subtotal)} (-{split.commissionRate}%)
                       </p>
                     </div>
 
                     {/* Status Action Buttons */}
                     <div className="flex items-center gap-1.5">
-                      {split.fulfillmentStatus === "Processing" && (
-                        <button
-                          type="button"
-                          onClick={() => {
-                            setDispatchModalSplit(split);
-                            setCourierName(split.courierName || "Intrihub Logistics");
-                            setTrackingNumber(split.trackingNumber || "");
-                          }}
-                          className="px-3 py-1.5 bg-[#F26522] hover:bg-[#d95a1e] text-white text-xs font-bold rounded-xl shadow-2xs transition-colors flex items-center gap-1 cursor-pointer"
-                        >
-                          <Truck size={13} />
-                          <span>Dispatch</span>
-                        </button>
-                      )}
+                      {/* Platform Logistics Flow */}
+                      {split.deliveryMethod === "platform" ? (
+                        <>
+                          {split.fulfillmentStatus?.toLowerCase() === "processing" && (
+                            <button
+                              type="button"
+                              disabled={updating}
+                              onClick={() => handleStatusChange(split.id, "ready_for_pickup")}
+                              className="px-3 py-1.5 bg-blue-600 hover:bg-blue-700 text-white text-xs font-bold rounded-xl shadow-2xs transition-colors flex items-center gap-1 cursor-pointer disabled:opacity-50"
+                            >
+                              <PackageCheck size={13} />
+                              <span>Ready for Pickup</span>
+                            </button>
+                          )}
+                          {split.fulfillmentStatus?.toLowerCase() === "ready_for_pickup" && (
+                            <span className="px-3 py-1 text-[11px] font-bold text-cyan-700 bg-cyan-50 border border-cyan-200 rounded-xl">
+                              Awaiting Driver Pickup
+                            </span>
+                          )}
+                          {split.fulfillmentStatus?.toLowerCase() === "picked_up" && (
+                            <span className="px-3 py-1 text-[11px] font-bold text-amber-700 bg-amber-50 border border-amber-200 rounded-xl">
+                              In Platform Transit
+                            </span>
+                          )}
+                          {split.fulfillmentStatus?.toLowerCase() === "out_for_delivery" && (
+                            <span className="px-3 py-1 text-[11px] font-bold text-indigo-700 bg-indigo-50 border border-indigo-200 rounded-xl">
+                              Out for Delivery
+                            </span>
+                          )}
+                        </>
+                      ) : (
+                        /* Self Delivery Flow */
+                        <>
+                          {split.fulfillmentStatus?.toLowerCase() === "processing" && (
+                            <button
+                              type="button"
+                              onClick={() => {
+                                setDispatchModalSplit(split);
+                                setCourierName(split.courierName || "Self Delivery");
+                                setTrackingNumber(split.trackingNumber || "");
+                              }}
+                              className="px-3 py-1.5 bg-[#F26522] hover:bg-[#d95a1e] text-white text-xs font-bold rounded-xl shadow-2xs transition-colors flex items-center gap-1 cursor-pointer"
+                            >
+                              <Truck size={13} />
+                              <span>Dispatch</span>
+                            </button>
+                          )}
 
-                      {split.fulfillmentStatus === "Dispatched" && (
-                        <button
-                          type="button"
-                          disabled={updating}
-                          onClick={() => handleStatusChange(split.id, "Delivered")}
-                          className="px-3 py-1.5 bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold rounded-xl shadow-2xs transition-colors flex items-center gap-1 cursor-pointer"
-                        >
-                          <Check size={13} strokeWidth={3} />
-                          <span>Mark Delivered</span>
-                        </button>
+                          {split.fulfillmentStatus?.toLowerCase() === "dispatched" && (
+                            <button
+                              type="button"
+                              disabled={updating}
+                              onClick={() => handleStatusChange(split.id, "out_for_delivery")}
+                              className="px-3 py-1.5 bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-bold rounded-xl shadow-2xs transition-colors flex items-center gap-1 cursor-pointer"
+                            >
+                              <Truck size={13} />
+                              <span>Out for Delivery</span>
+                            </button>
+                          )}
+
+                          {(split.fulfillmentStatus?.toLowerCase() === "dispatched" ||
+                            split.fulfillmentStatus?.toLowerCase() === "out_for_delivery") && (
+                            <button
+                              type="button"
+                              disabled={updating}
+                              onClick={() => handleStatusChange(split.id, "delivered")}
+                              className="px-3 py-1.5 bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold rounded-xl shadow-2xs transition-colors flex items-center gap-1 cursor-pointer"
+                            >
+                              <Check size={13} strokeWidth={3} />
+                              <span>Mark Delivered</span>
+                            </button>
+                          )}
+                        </>
                       )}
 
                       <button

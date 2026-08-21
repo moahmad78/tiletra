@@ -52,131 +52,228 @@ export async function createOrder(input: CreateOrderInput) {
     const cleanPhone = input.customerPhone.replace(/\D/g, "");
     const cleanEmail = input.customerEmail?.trim().toLowerCase() || "";
 
-    // ── Resolve or create User in PostgreSQL to guarantee FK integrity ──
-    let validUserId: string | null = null;
+    // ── Execute everything in an ACID Transaction for Atomic Stock Management & Data Integrity ──
+    const order = await prisma.$transaction(async (tx) => {
+      // 1. Atomic Stock Verification & Decrement (Prevents double-sell race conditions)
+      for (const item of input.items) {
+        if (item.variantId && item.variantId !== "default") {
+          const variant = await tx.productVariant.findUnique({
+            where: { id: item.variantId },
+            include: { product: { select: { name: true, id: true } } },
+          });
 
-    // 1. Check by explicit userId (logged-in session)
-    if (input.userId) {
-      const existingUser = await prisma.user.findUnique({ where: { id: input.userId } });
-      if (existingUser) {
-        validUserId = existingUser.id;
-      }
-    }
+          if (variant) {
+            if (variant.stockBoxes < item.boxQuantity) {
+              const productName = variant.product?.name || item.productName;
+              throw new Error(
+                `Insufficient stock for "${productName}". Only ${variant.stockBoxes} left in stock (requested ${item.boxQuantity}).`
+              );
+            }
 
-    // 2. Check by email (handles Google OAuth users, Email OTP users, returning customers)
-    if (!validUserId && cleanEmail) {
-      const userByEmail = await prisma.user.findUnique({ where: { email: cleanEmail } });
-      if (userByEmail) {
-        validUserId = userByEmail.id;
+            const updatedVariant = await tx.productVariant.update({
+              where: { id: item.variantId },
+              data: {
+                stockBoxes: { decrement: item.boxQuantity },
+                inStock: variant.stockBoxes - item.boxQuantity > 0,
+              },
+            });
 
-        // If user had a synthetic placeholder phone (e.g. google_... or email_...), upgrade to real phone if available
-        if (cleanPhone.length === 10 && (userByEmail.phone.startsWith("google_") || userByEmail.phone.startsWith("email_"))) {
-          const phoneInUse = await prisma.user.findUnique({ where: { phone: cleanPhone } });
-          if (!phoneInUse) {
-            await prisma.user.update({
-              where: { id: userByEmail.id },
-              data: { phone: cleanPhone, name: input.customerName || userByEmail.name },
-            }).catch(() => {});
+            // If this variant reached 0, check if all variants are out of stock
+            if (updatedVariant.stockBoxes <= 0 && variant.productId) {
+              const remainingStock = await tx.productVariant.findFirst({
+                where: { productId: variant.productId, stockBoxes: { gt: 0 } },
+              });
+              if (!remainingStock) {
+                await tx.product.update({
+                  where: { id: variant.productId },
+                  data: { inStock: false },
+                });
+              }
+            }
           }
         }
       }
-    }
 
-    // 3. Check by phone number
-    if (!validUserId && cleanPhone.length === 10) {
-      const userByPhone = await prisma.user.findUnique({ where: { phone: cleanPhone } });
-      if (userByPhone) {
-        validUserId = userByPhone.id;
+      // 2. Resolve or create User in PostgreSQL inside transaction
+      let validUserId: string | null = null;
+      if (input.userId) {
+        const existingUser = await tx.user.findUnique({ where: { id: input.userId } });
+        if (existingUser) validUserId = existingUser.id;
       }
-    }
+      if (!validUserId && cleanEmail) {
+        const userByEmail = await tx.user.findUnique({ where: { email: cleanEmail } });
+        if (userByEmail) validUserId = userByEmail.id;
+      }
+      if (!validUserId && cleanPhone.length === 10) {
+        const userByPhone = await tx.user.findUnique({ where: { phone: cleanPhone } });
+        if (userByPhone) validUserId = userByPhone.id;
+      }
+      if (!validUserId) {
+        try {
+          const newUser = await tx.user.create({
+            data: {
+              phone: cleanPhone.length === 10 ? cleanPhone : `guest_${Date.now()}_${Math.random().toString(36).substring(2, 6)}`,
+              email: cleanEmail || null,
+              name: input.customerName || (cleanPhone.length === 10 ? `Customer ${cleanPhone.slice(-4)}` : "Customer"),
+              role: "customer",
+            },
+          });
+          validUserId = newUser.id;
+        } catch {
+          if (cleanEmail) {
+            const fallbackUser = await tx.user.findUnique({ where: { email: cleanEmail } });
+            if (fallbackUser) validUserId = fallbackUser.id;
+          }
+          if (!validUserId && cleanPhone.length === 10) {
+            const fallbackUser = await tx.user.findUnique({ where: { phone: cleanPhone } });
+            if (fallbackUser) validUserId = fallbackUser.id;
+          }
+        }
+      }
 
-    // 4. If user still doesn't exist, create a new customer user record safely
-    if (!validUserId) {
-      try {
-        const newUser = await prisma.user.create({
-          data: {
-            phone: cleanPhone.length === 10 ? cleanPhone : `guest_${Date.now()}_${Math.random().toString(36).substring(2, 6)}`,
-            email: cleanEmail || null,
-            name: input.customerName || (cleanPhone.length === 10 ? `Customer ${cleanPhone.slice(-4)}` : "Customer"),
-            role: "customer",
+      // 3. Upsert Customer CRM inside transaction
+      await tx.customer.upsert({
+        where: { phone: input.customerPhone },
+        update: {
+          name: input.customerName,
+          email: input.customerEmail || undefined,
+          city: input.shippingAddress.city || "Bangalore",
+          totalOrders: { increment: 1 },
+          totalSpent: { increment: input.total },
+        },
+        create: {
+          name: input.customerName,
+          phone: input.customerPhone,
+          email: input.customerEmail || null,
+          city: input.shippingAddress.city || "Bangalore",
+          totalOrders: 1,
+          totalSpent: input.total,
+          status: "Active",
+        },
+      });
+
+      // 4. Create Parent Order & Items inside transaction
+      const isOnlinePaid = input.paymentMethod !== "COD";
+      const createdOrder = await tx.order.create({
+        data: {
+          id: orderId,
+          userId: validUserId,
+          customerName: input.customerName,
+          customerPhone: input.customerPhone,
+          customerEmail: input.customerEmail || "customer@intrihub.com",
+          shippingAddress: input.shippingAddress as any,
+          subtotal: input.subtotal,
+          deliveryFee: input.deliveryFee,
+          discount: input.discount,
+          total: input.total,
+          paymentStatus: input.paymentStatus || (isOnlinePaid ? "Paid" : "Pending"),
+          paymentMethod: input.paymentMethod,
+          codConfirmed: Boolean(input.codConfirmed),
+          paymentCollected: isOnlinePaid,
+          paymentId: input.paymentId || null,
+          razorpayOrderId: input.razorpayOrderId || null,
+          razorpayPaymentId: input.razorpayPaymentId || null,
+          razorpaySignature: input.razorpaySignature || null,
+          orderStatus: "Processing",
+          estimatedDelivery: "3–5 Business Days",
+          items: {
+            create: input.items.map((item) => ({
+              productId: item.productId,
+              productName: item.productName,
+              variantId: item.variantId || "default",
+              variantDetails: item.variantDetails || "Standard",
+              boxQuantity: item.boxQuantity,
+              pricePerBox: item.pricePerBox,
+              totalPrice: item.totalPrice,
+              image: item.image || "",
+            })),
+          },
+        },
+        include: {
+          items: true,
+        },
+      });
+
+      // 5. Multi-Vendor Marketplace: Route & Split Order to Vendors with Delivery Method capture
+      const productIds = input.items.map((i) => i.productId).filter(Boolean);
+      if (productIds.length > 0) {
+        const dbProducts = await tx.product.findMany({
+          where: { id: { in: productIds } },
+          select: {
+            id: true,
+            vendorId: true,
+            vendor: {
+              select: {
+                id: true,
+                commissionRate: true,
+                businessName: true,
+                deliveryMethod: true,
+              },
+            },
           },
         });
-        validUserId = newUser.id;
-      } catch {
-        // Fallback in case of race condition / unique collision
-        if (cleanEmail) {
-          const fallbackUser = await prisma.user.findUnique({ where: { email: cleanEmail } });
-          if (fallbackUser) validUserId = fallbackUser.id;
+
+        const productVendorMap = new Map<
+          string,
+          { vendorId: string; commissionRate: number; deliveryMethod: string }
+        >();
+        for (const p of dbProducts) {
+          if (p.vendorId && p.vendor) {
+            productVendorMap.set(p.id, {
+              vendorId: p.vendorId,
+              commissionRate: p.vendor.commissionRate ?? 15,
+              deliveryMethod: p.vendor.deliveryMethod || "self",
+            });
+          }
         }
-        if (!validUserId && cleanPhone.length === 10) {
-          const fallbackUser = await prisma.user.findUnique({ where: { phone: cleanPhone } });
-          if (fallbackUser) validUserId = fallbackUser.id;
+
+        // Group items by vendor
+        const vendorSubtotals = new Map<
+          string,
+          { subtotal: number; commissionRate: number; deliveryMethod: string }
+        >();
+        for (const item of input.items) {
+          const vInfo = productVendorMap.get(item.productId);
+          if (vInfo) {
+            const current = vendorSubtotals.get(vInfo.vendorId) || {
+              subtotal: 0,
+              commissionRate: vInfo.commissionRate,
+              deliveryMethod: vInfo.deliveryMethod,
+            };
+            current.subtotal += item.totalPrice || item.pricePerBox * item.boxQuantity;
+            vendorSubtotals.set(vInfo.vendorId, current);
+          }
+        }
+
+        // Create VendorOrderSplit records
+        for (const [vId, vData] of vendorSubtotals.entries()) {
+          // Commission & payout calculated/finalized when fulfillmentStatus reaches "delivered"
+          const commissionAmount = Number(((vData.subtotal * vData.commissionRate) / 100).toFixed(2));
+          const vendorPayoutAmount = Number((vData.subtotal - commissionAmount).toFixed(2));
+
+          await tx.vendorOrderSplit.create({
+            data: {
+              orderId: createdOrder.id,
+              vendorId: vId,
+              subtotal: vData.subtotal,
+              commissionRate: vData.commissionRate,
+              commissionAmount: 0, // finalized upon delivery
+              vendorPayoutAmount: 0, // finalized upon delivery
+              deliveryMethod: vData.deliveryMethod || "self",
+              fulfillmentStatus: "processing",
+              paymentCollected: isOnlinePaid,
+            },
+          });
         }
       }
-    }
 
-    // Create or update customer record in Customer CRM
-    await prisma.customer.upsert({
-      where: { phone: input.customerPhone },
-      update: {
-        name: input.customerName,
-        email: input.customerEmail || undefined,
-        city: input.shippingAddress.city || "Bangalore",
-        totalOrders: { increment: 1 },
-        totalSpent: { increment: input.total },
-      },
-      create: {
-        name: input.customerName,
-        phone: input.customerPhone,
-        email: input.customerEmail || null,
-        city: input.shippingAddress.city || "Bangalore",
-        totalOrders: 1,
-        totalSpent: input.total,
-        status: "Active",
-      },
+      return createdOrder;
+    }, {
+      maxWait: 10000, // wait up to 10s to acquire a connection
+      timeout: 25000, // allow up to 25s for the transaction to complete over remote network
     });
 
-    const order = await prisma.order.create({
-      data: {
-        id: orderId,
-        userId: validUserId,
-        customerName: input.customerName,
-        customerPhone: input.customerPhone,
-        customerEmail: input.customerEmail || "customer@intrihub.com",
-        shippingAddress: input.shippingAddress as any,
-        subtotal: input.subtotal,
-        deliveryFee: input.deliveryFee,
-        discount: input.discount,
-        total: input.total,
-        paymentStatus: input.paymentStatus || (input.paymentMethod === "COD" ? "Pending" : "Paid"),
-        paymentMethod: input.paymentMethod,
-        codConfirmed: Boolean(input.codConfirmed),
-        paymentCollected: input.paymentMethod !== "COD",
-        paymentId: input.paymentId || null,
-        razorpayOrderId: input.razorpayOrderId || null,
-        razorpayPaymentId: input.razorpayPaymentId || null,
-        razorpaySignature: input.razorpaySignature || null,
-        orderStatus: "Processing",
-        estimatedDelivery: "3–5 Business Days",
-        items: {
-          create: input.items.map((item) => ({
-            productId: item.productId,
-            productName: item.productName,
-            variantId: item.variantId || "default",
-            variantDetails: item.variantDetails || "Standard",
-            boxQuantity: item.boxQuantity,
-            pricePerBox: item.pricePerBox,
-            totalPrice: item.totalPrice,
-            image: item.image || "",
-          })),
-        },
-      },
-      include: {
-        items: true,
-      },
-    });
-
-    // Create an Admin Notification
+    // ── Post-Transaction Notifications & Broadcasts ──
     try {
       await prisma.adminNotification.create({
         data: {
@@ -213,68 +310,6 @@ export async function createOrder(input: CreateOrderInput) {
       });
     } catch (e) {
       console.error("Failed to emit socket new-order event:", e);
-    }
-
-    // 5. Multi-Vendor Marketplace: Route & Split Order to Vendors
-    try {
-      const productIds = input.items.map((i) => i.productId).filter(Boolean);
-      if (productIds.length > 0) {
-        const dbProducts = await prisma.product.findMany({
-          where: { id: { in: productIds } },
-          select: {
-            id: true,
-            vendorId: true,
-            vendor: { select: { id: true, commissionRate: true, businessName: true } },
-          },
-        });
-
-        const productVendorMap = new Map<string, { vendorId: string; commissionRate: number }>();
-        for (const p of dbProducts) {
-          if (p.vendorId && p.vendor) {
-            productVendorMap.set(p.id, {
-              vendorId: p.vendorId,
-              commissionRate: p.vendor.commissionRate ?? 15,
-            });
-          }
-        }
-
-        // Group items by vendor
-        const vendorSubtotals = new Map<string, { subtotal: number; commissionRate: number }>();
-        for (const item of input.items) {
-          const vInfo = productVendorMap.get(item.productId);
-          if (vInfo) {
-            const current = vendorSubtotals.get(vInfo.vendorId) || {
-              subtotal: 0,
-              commissionRate: vInfo.commissionRate,
-            };
-            current.subtotal += item.totalPrice || item.pricePerBox * item.boxQuantity;
-            vendorSubtotals.set(vInfo.vendorId, current);
-          }
-        }
-
-        // Create VendorOrderSplit records
-        for (const [vId, vData] of vendorSubtotals.entries()) {
-          const commissionAmount = Number(((vData.subtotal * vData.commissionRate) / 100).toFixed(2));
-          const vendorPayoutAmount = Number((vData.subtotal - commissionAmount).toFixed(2));
-
-          await prisma.vendorOrderSplit.create({
-            data: {
-              orderId: order.id,
-              vendorId: vId,
-              subtotal: vData.subtotal,
-              commissionRate: vData.commissionRate,
-              commissionAmount,
-              vendorPayoutAmount,
-              fulfillmentStatus: "Processing",
-            },
-          });
-
-          safeRevalidate(`/vendor/orders`);
-          safeRevalidate(`/admin/vendors/${vId}`);
-        }
-      }
-    } catch (splitErr) {
-      console.error("Error creating vendor order splits:", splitErr);
     }
 
     safeRevalidate("/admin/orders");
