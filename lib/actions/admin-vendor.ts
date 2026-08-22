@@ -423,8 +423,8 @@ export async function createVendorManually(data: {
     const randomWord = words[Math.floor(Math.random() * words.length)];
     const randomNum = Math.floor(1000 + Math.random() * 9000);
     const plainPassword = data.customPassword?.trim() || `${randomWord}#${randomNum}`;
-    const crypto = await import("crypto");
-    const passwordHash = crypto.createHash("sha256").update(plainPassword).digest("hex");
+    const { hashPassword } = await import("@/lib/password-security");
+    const passwordHash = hashPassword(plainPassword);
     const commissionRate = data.commissionRate !== undefined ? Number(data.commissionRate) : 15.0;
 
     let user = await prisma.user.findFirst({

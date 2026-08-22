@@ -1,8 +1,18 @@
 import { NextRequest, NextResponse } from "next/server";
 import crypto from "crypto";
+import { checkRateLimit } from "@/lib/rate-limit";
 
 export async function POST(request: NextRequest) {
   try {
+    const ip = request.headers.get("x-forwarded-for")?.split(",")[0].trim() || "anonymous";
+    const rateCheck = checkRateLimit(`verify-pay:${ip}`, 20, 60 * 1000);
+    if (!rateCheck.allowed) {
+      return NextResponse.json(
+        { error: "Too many verification requests. Please wait a moment." },
+        { status: 429 }
+      );
+    }
+
     const key_secret = process.env.RAZORPAY_KEY_SECRET;
 
     if (!key_secret) {

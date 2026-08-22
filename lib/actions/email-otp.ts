@@ -23,6 +23,27 @@ export async function sendEmailOtp(
     return { success: false, message: "Please enter a valid email address." };
   }
 
+  const { checkRateLimit } = await import("@/lib/rate-limit");
+
+  // 1. Cooldown limit: 1 request every 60 seconds
+  const cooldownCheck = checkRateLimit(`otp-cooldown:${cleanEmail}`, 1, 60 * 1000);
+  if (!cooldownCheck.allowed) {
+    const secondsRemaining = Math.max(1, Math.ceil((cooldownCheck.resetTime - Date.now()) / 1000));
+    return {
+      success: false,
+      message: `Please wait ${secondsRemaining}s before requesting another verification code.`,
+    };
+  }
+
+  // 2. Hourly rate limit: max 5 OTP requests per hour
+  const hourlyCheck = checkRateLimit(`otp-hourly:${cleanEmail}`, 5, 60 * 60 * 1000);
+  if (!hourlyCheck.allowed) {
+    return {
+      success: false,
+      message: "Too many verification requests. Please try again after an hour.",
+    };
+  }
+
   // Invalidate any previous unused tokens for this email
   await prisma.emailOtpToken.updateMany({
     where: { email: cleanEmail, used: false },
@@ -92,11 +113,14 @@ export async function verifyEmailOtp(
   otp: string
 ): Promise<{ success: boolean; message: string; userId?: string }> {
   const cleanEmail = email.trim().toLowerCase();
+  const cleanOtp = (otp || "").trim();
+
+  const { recordFailedAttempt, resetFailedAttempts } = await import("@/lib/rate-limit");
 
   const token = await prisma.emailOtpToken.findFirst({
     where: {
       email: cleanEmail,
-      otp,
+      otp: cleanOtp,
       used: false,
       expiresAt: { gt: new Date() },
     },
@@ -104,11 +128,27 @@ export async function verifyEmailOtp(
   });
 
   if (!token) {
+    const attempt = recordFailedAttempt(`otp-fail:${cleanEmail}`, 5, 15 * 60 * 1000);
+    if (attempt.locked) {
+      // Invalidate all tokens on excessive failed attempts to prevent brute force
+      await prisma.emailOtpToken.updateMany({
+        where: { email: cleanEmail, used: false },
+        data: { used: true },
+      });
+      return {
+        success: false,
+        message: "Too many failed attempts. Active verification code invalidated. Please request a new code.",
+      };
+    }
+
     return {
       success: false,
-      message: "Invalid or expired OTP. Please request a new code.",
+      message: `Invalid or expired OTP. ${attempt.remainingAttempts} attempt(s) remaining.`,
     };
   }
+
+  // Reset failed attempt counter on success
+  resetFailedAttempts(`otp-fail:${cleanEmail}`);
 
   // Mark token as used
   await prisma.emailOtpToken.update({

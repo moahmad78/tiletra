@@ -32,10 +32,11 @@ export type CreateOrderInput = {
     landmark?: string;
   };
   items: OrderItemInput[];
-  subtotal: number;
-  deliveryFee: number;
-  discount: number;
-  total: number;
+  subtotal?: number;
+  deliveryFee?: number;
+  discount?: number;
+  couponCode?: string;
+  total?: number;
   paymentMethod: string;
   paymentStatus?: string;
   paymentId?: string;
@@ -54,21 +55,42 @@ export async function createOrder(input: CreateOrderInput) {
 
     // ── Execute everything in an ACID Transaction for Atomic Stock Management & Data Integrity ──
     const order = await prisma.$transaction(async (tx) => {
-      // 1. Atomic Stock Verification & Decrement (Prevents double-sell race conditions)
+      // 1. Recalculate Prices Server-Side & Perform Atomic Stock Verification / Decrement
+      let calculatedSubtotal = 0;
+      const verifiedItems: Array<{
+        productId: string;
+        productName: string;
+        variantId: string;
+        variantDetails: string;
+        boxQuantity: number;
+        pricePerBox: number;
+        totalPrice: number;
+        image: string;
+      }> = [];
+
       for (const item of input.items) {
+        let pricePerBox = item.pricePerBox || 0;
+        let productName = item.productName || "Product";
+
         if (item.variantId && item.variantId !== "default") {
           const variant = await tx.productVariant.findUnique({
             where: { id: item.variantId },
-            include: { product: { select: { name: true, id: true } } },
+            include: { product: { select: { name: true, id: true, images: true } } },
           });
 
           if (variant) {
             if (variant.stockBoxes < item.boxQuantity) {
-              const productName = variant.product?.name || item.productName;
+              const pName = variant.product?.name || item.productName;
               throw new Error(
-                `Insufficient stock for "${productName}". Only ${variant.stockBoxes} left in stock (requested ${item.boxQuantity}).`
+                `Insufficient stock for "${pName}". Only ${variant.stockBoxes} left in stock (requested ${item.boxQuantity}).`
               );
             }
+
+            // Server-derived price (cannot be manipulated by client)
+            pricePerBox =
+              variant.pricePerBox ||
+              (variant.pricePerSqft ? variant.pricePerSqft * (variant.sqftPerBox || 1) : item.pricePerBox);
+            if (variant.product?.name) productName = variant.product.name;
 
             const updatedVariant = await tx.productVariant.update({
               where: { id: item.variantId },
@@ -91,6 +113,103 @@ export async function createOrder(input: CreateOrderInput) {
               }
             }
           }
+        } else if (item.productId) {
+          const product = await tx.product.findUnique({ where: { id: item.productId } });
+          if (product) {
+            pricePerBox = product.pricePerSqft || item.pricePerBox;
+            productName = product.name;
+          }
+        }
+
+        const itemTotal = pricePerBox * item.boxQuantity;
+        calculatedSubtotal += itemTotal;
+
+        verifiedItems.push({
+          productId: item.productId,
+          productName,
+          variantId: item.variantId || "default",
+          variantDetails: item.variantDetails || "Standard",
+          boxQuantity: item.boxQuantity,
+          pricePerBox,
+          totalPrice: itemTotal,
+          image: item.image || "",
+        });
+      }
+
+      // 1.1 Server-Side Coupon Verification and Atomic Usage Increment
+      let calculatedDiscount = 0;
+      if (input.couponCode) {
+        const coupon = await tx.coupon.findUnique({
+          where: { code: input.couponCode.toUpperCase().trim() },
+        });
+
+        if (coupon && coupon.isActive) {
+          const isExpired = coupon.validTill && new Date() > new Date(coupon.validTill);
+          const limitReached = coupon.usageLimit && coupon.usedCount >= coupon.usageLimit;
+          const minOrderSatisfied = !coupon.minOrderValue || calculatedSubtotal >= coupon.minOrderValue;
+
+          if (!isExpired && !limitReached && minOrderSatisfied) {
+            if (coupon.discountType === "percentage") {
+              calculatedDiscount = Math.round((calculatedSubtotal * coupon.value) / 100);
+              if (coupon.maxDiscountCap && calculatedDiscount > coupon.maxDiscountCap) {
+                calculatedDiscount = coupon.maxDiscountCap;
+              }
+            } else {
+              calculatedDiscount = coupon.value;
+            }
+
+            // Atomically increment coupon usage count
+            await tx.coupon.update({
+              where: { id: coupon.id },
+              data: { usedCount: { increment: 1 } },
+            });
+          }
+        }
+      } else if (input.discount && input.discount > 0) {
+        calculatedDiscount = Math.min(input.discount, calculatedSubtotal);
+      }
+
+      // 1.2 Server-Side Delivery Fee & Final Order Total Calculation
+      const calculatedDeliveryFee = calculatedSubtotal >= 50000 ? 0 : (input.deliveryFee !== undefined ? input.deliveryFee : 0);
+      const calculatedTotal = Math.max(0, calculatedSubtotal + calculatedDeliveryFee - calculatedDiscount);
+
+      // 1.3 Strict Payment Bypass Prevention: Verify Razorpay Signature for Online Orders
+      let finalPaymentStatus = "Pending";
+      let finalPaymentCollected = false;
+
+      if (input.paymentMethod === "COD") {
+        // COD orders must ALWAYS be pending until manually collected
+        finalPaymentStatus = "Pending";
+        finalPaymentCollected = false;
+      } else {
+        // Online payment: Require valid HMAC-SHA256 signature
+        const keySecret = process.env.RAZORPAY_KEY_SECRET;
+        if (input.razorpayOrderId && input.razorpayPaymentId && input.razorpaySignature && keySecret) {
+          const text = `${input.razorpayOrderId}|${input.razorpayPaymentId}`;
+          const expectedSignature = crypto
+            .createHmac("sha256", keySecret)
+            .update(text)
+            .digest("hex");
+
+          const expectedBuffer = Buffer.from(expectedSignature);
+          const signatureBuffer = Buffer.from(input.razorpaySignature);
+
+          const isMatch =
+            expectedBuffer.length === signatureBuffer.length &&
+            crypto.timingSafeEqual(expectedBuffer, signatureBuffer);
+
+          if (isMatch) {
+            finalPaymentStatus = "Paid";
+            finalPaymentCollected = true;
+          } else {
+            console.warn(`[Security Warning] Payment signature mismatch for order ${orderId}. Defaulting to Pending.`);
+            finalPaymentStatus = "Pending";
+            finalPaymentCollected = false;
+          }
+        } else {
+          // No signature provided: cannot mark as Paid
+          finalPaymentStatus = "Pending";
+          finalPaymentCollected = false;
         }
       }
 
@@ -139,7 +258,7 @@ export async function createOrder(input: CreateOrderInput) {
           email: input.customerEmail || undefined,
           city: input.shippingAddress.city || "Bangalore",
           totalOrders: { increment: 1 },
-          totalSpent: { increment: input.total },
+          totalSpent: { increment: calculatedTotal },
         },
         create: {
           name: input.customerName,
@@ -147,13 +266,12 @@ export async function createOrder(input: CreateOrderInput) {
           email: input.customerEmail || null,
           city: input.shippingAddress.city || "Bangalore",
           totalOrders: 1,
-          totalSpent: input.total,
+          totalSpent: calculatedTotal,
           status: "Active",
         },
       });
 
       // 4. Create Parent Order & Items inside transaction
-      const isOnlinePaid = input.paymentMethod !== "COD";
       const createdOrder = await tx.order.create({
         data: {
           id: orderId,
@@ -162,22 +280,22 @@ export async function createOrder(input: CreateOrderInput) {
           customerPhone: input.customerPhone,
           customerEmail: input.customerEmail || "customer@intrihub.com",
           shippingAddress: input.shippingAddress as any,
-          subtotal: input.subtotal,
-          deliveryFee: input.deliveryFee,
-          discount: input.discount,
-          total: input.total,
-          paymentStatus: input.paymentStatus || (isOnlinePaid ? "Paid" : "Pending"),
+          subtotal: calculatedSubtotal,
+          deliveryFee: calculatedDeliveryFee,
+          discount: calculatedDiscount,
+          total: calculatedTotal,
+          paymentStatus: finalPaymentStatus,
           paymentMethod: input.paymentMethod,
-          codConfirmed: Boolean(input.codConfirmed),
-          paymentCollected: isOnlinePaid,
-          paymentId: input.paymentId || null,
+          codConfirmed: input.paymentMethod === "COD" || Boolean(input.codConfirmed),
+          paymentCollected: finalPaymentCollected,
+          paymentId: input.paymentId || (finalPaymentCollected ? input.razorpayPaymentId : null),
           razorpayOrderId: input.razorpayOrderId || null,
           razorpayPaymentId: input.razorpayPaymentId || null,
           razorpaySignature: input.razorpaySignature || null,
           orderStatus: "Processing",
           estimatedDelivery: "3–5 Business Days",
           items: {
-            create: input.items.map((item) => ({
+            create: verifiedItems.map((item) => ({
               productId: item.productId,
               productName: item.productName,
               variantId: item.variantId || "default",
@@ -195,7 +313,7 @@ export async function createOrder(input: CreateOrderInput) {
       });
 
       // 5. Multi-Vendor Marketplace: Route & Split Order to Vendors with Delivery Method capture
-      const productIds = input.items.map((i) => i.productId).filter(Boolean);
+      const productIds = verifiedItems.map((i) => i.productId).filter(Boolean);
       if (productIds.length > 0) {
         const dbProducts = await tx.product.findMany({
           where: { id: { in: productIds } },
@@ -232,7 +350,7 @@ export async function createOrder(input: CreateOrderInput) {
           string,
           { subtotal: number; commissionRate: number; deliveryMethod: string }
         >();
-        for (const item of input.items) {
+        for (const item of verifiedItems) {
           const vInfo = productVendorMap.get(item.productId);
           if (vInfo) {
             const current = vendorSubtotals.get(vInfo.vendorId) || {
@@ -240,7 +358,7 @@ export async function createOrder(input: CreateOrderInput) {
               commissionRate: vInfo.commissionRate,
               deliveryMethod: vInfo.deliveryMethod,
             };
-            current.subtotal += item.totalPrice || item.pricePerBox * item.boxQuantity;
+            current.subtotal += item.totalPrice;
             vendorSubtotals.set(vInfo.vendorId, current);
           }
         }
@@ -261,7 +379,7 @@ export async function createOrder(input: CreateOrderInput) {
               vendorPayoutAmount: 0, // finalized upon delivery
               deliveryMethod: vData.deliveryMethod || "self",
               fulfillmentStatus: "processing",
-              paymentCollected: isOnlinePaid,
+              paymentCollected: finalPaymentCollected,
             },
           });
         }
@@ -269,8 +387,8 @@ export async function createOrder(input: CreateOrderInput) {
 
       return createdOrder;
     }, {
-      maxWait: 10000, // wait up to 10s to acquire a connection
-      timeout: 25000, // allow up to 25s for the transaction to complete over remote network
+      maxWait: 15000,
+      timeout: 35000,
     });
 
     // ── Post-Transaction Notifications & Broadcasts ──
@@ -616,10 +734,14 @@ export async function createRazorpayOrder({
   amount,
   currency = "INR",
   receipt,
+  items,
+  couponCode,
 }: {
-  amount: number; // in paise
+  amount?: number; // in paise
   currency?: string;
   receipt?: string;
+  items?: Array<{ productId: string; variantId?: string; boxQuantity: number; pricePerBox?: number }>;
+  couponCode?: string;
 }) {
   try {
     const key_id = process.env.RAZORPAY_KEY_ID;
@@ -629,14 +751,58 @@ export async function createRazorpayOrder({
       return { success: false, error: "Razorpay credentials not configured on server" };
     }
 
-    const parsedAmount = typeof amount === "number" ? Math.round(amount) : parseInt(amount, 10);
-    if (!parsedAmount || isNaN(parsedAmount) || parsedAmount < 100) {
+    let calculatedPaise = 0;
+
+    if (items && items.length > 0) {
+      // 1. Recalculate price server-side from database
+      let subtotal = 0;
+      for (const item of items) {
+        let pricePerBox = item.pricePerBox || 0;
+        if (item.variantId && item.variantId !== "default") {
+          const v = await prisma.productVariant.findUnique({ where: { id: item.variantId } });
+          if (v) {
+            pricePerBox = v.pricePerBox || (v.pricePerSqft ? v.pricePerSqft * (v.sqftPerBox || 1) : pricePerBox);
+          }
+        } else if (item.productId) {
+          const p = await prisma.product.findUnique({ where: { id: item.productId } });
+          if (p) {
+            pricePerBox = p.pricePerSqft || pricePerBox;
+          }
+        }
+        subtotal += pricePerBox * item.boxQuantity;
+      }
+
+      // 2. Validate coupon discount server-side
+      let discount = 0;
+      if (couponCode) {
+        const coupon = await prisma.coupon.findUnique({ where: { code: couponCode.toUpperCase().trim() } });
+        if (coupon && coupon.isActive) {
+          const isExpired = coupon.validTill && new Date() > new Date(coupon.validTill);
+          const limitReached = coupon.usageLimit && coupon.usedCount >= coupon.usageLimit;
+          const minOrderSatisfied = !coupon.minOrderValue || subtotal >= coupon.minOrderValue;
+          if (!isExpired && !limitReached && minOrderSatisfied) {
+            discount =
+              coupon.discountType === "percentage"
+                ? Math.min(coupon.maxDiscountCap || Infinity, Math.round((subtotal * coupon.value) / 100))
+                : coupon.value;
+          }
+        }
+      }
+
+      const deliveryFee = subtotal >= 50000 ? 0 : 0;
+      const totalRupees = Math.max(1, subtotal + deliveryFee - discount);
+      calculatedPaise = Math.round(totalRupees * 100);
+    } else if (amount) {
+      calculatedPaise = typeof amount === "number" ? Math.round(amount) : parseInt(amount, 10);
+    }
+
+    if (!calculatedPaise || isNaN(calculatedPaise) || calculatedPaise < 100) {
       return { success: false, error: "Amount must be at least ₹1 (100 paise)" };
     }
 
     const razorpay = new Razorpay({ key_id, key_secret });
     const order = await razorpay.orders.create({
-      amount: parsedAmount,
+      amount: calculatedPaise,
       currency: currency || "INR",
       receipt: receipt || `rcpt_${Date.now().toString().slice(-8)}`,
       payment_capture: true,
@@ -648,6 +814,7 @@ export async function createRazorpayOrder({
       amount: order.amount,
       currency: order.currency,
       receipt: order.receipt,
+      key_id,
     };
   } catch (error: any) {
     console.error("Error creating Razorpay order:", error);

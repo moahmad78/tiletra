@@ -532,6 +532,20 @@ export default function VendorApplyPage() {
                   </div>
                 </div>
 
+                {/* Bot Honeypot Protection (Invisible to humans) */}
+                <div aria-hidden="true" style={{ position: "absolute", left: "-9999px", opacity: 0, height: 0, overflow: "hidden" }}>
+                  <label htmlFor="website_url_hp">Do not fill this field</label>
+                  <input
+                    type="text"
+                    id="website_url_hp"
+                    name="website_url_hp"
+                    tabIndex={-1}
+                    autoComplete="off"
+                    value={(formData as any).website_url_hp || ""}
+                    onChange={(e) => setFormData({ ...formData, website_url_hp: e.target.value } as any)}
+                  />
+                </div>
+
                 {/* Submit Button */}
                 <div className="pt-6 border-t border-gray-100 flex flex-col sm:flex-row items-center justify-between gap-4">
                   <p className="text-xs text-gray-500">

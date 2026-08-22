@@ -10,7 +10,7 @@ import GoogleSessionHydrator from "@/components/auth/GoogleSessionHydrator";
 import AddToCartToast from "@/components/cart/AddToCartToast";
 import { Toaster } from "sonner";
 
-import { BASE_SITE_URL, generateOrganizationSchema, generateWebSiteSchema } from "@/lib/seo";
+import { BASE_SITE_URL, generateOrganizationSchema, generateWebSiteSchema, safeJsonLd } from "@/lib/seo";
 
 const jakarta = Plus_Jakarta_Sans({
   variable: "--font-jakarta",
@@ -122,13 +122,13 @@ export default function RootLayout({
         <script
           type="application/ld+json"
           dangerouslySetInnerHTML={{
-            __html: JSON.stringify(organizationSchema),
+            __html: safeJsonLd(organizationSchema),
           }}
         />
         <script
           type="application/ld+json"
           dangerouslySetInnerHTML={{
-            __html: JSON.stringify(websiteSchema),
+            __html: safeJsonLd(websiteSchema),
           }}
         />
         <QuoteModalProvider>

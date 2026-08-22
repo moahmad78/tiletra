@@ -281,7 +281,7 @@ export default function CheckoutPage() {
         return;
       }
 
-      // 2. Create Razorpay Order on Backend
+      // 2. Create Razorpay Order on Backend (with Server-Side Price Verification)
       const orderAmountPaise = Math.round(total * 100);
       const res = await fetch("/api/create-order", {
         method: "POST",
@@ -290,6 +290,12 @@ export default function CheckoutPage() {
           amount: orderAmountPaise,
           currency: "INR",
           receipt: `rcpt_${Date.now().toString().slice(-8)}`,
+          items: items.map((i) => ({
+            productId: i.product.id,
+            variantId: i.variant.id,
+            boxQuantity: i.quantity,
+            pricePerBox: i.variant.pricePerBox,
+          })),
         }),
       });
 

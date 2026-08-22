@@ -6,6 +6,13 @@
 export const BASE_SITE_URL = "https://www.intrihub.com";
 
 /**
+ * Serializes structured data into safe JSON-LD string with script tag injection escaping
+ */
+export function safeJsonLd(data: any): string {
+  return JSON.stringify(data).replace(/</g, "\\u003c");
+}
+
+/**
  * Normalizes and formats a preferred canonical URL
  * Strips query parameters, trailing slashes, and enforces HTTPS + canonical domain
  */

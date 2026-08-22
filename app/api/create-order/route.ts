@@ -1,57 +1,48 @@
 import { NextRequest, NextResponse } from "next/server";
-import Razorpay from "razorpay";
+import { createRazorpayOrder } from "@/lib/actions/orders";
+import { checkRateLimit } from "@/lib/rate-limit";
 
 export async function POST(request: NextRequest) {
   try {
-    const key_id = process.env.RAZORPAY_KEY_ID;
-    const key_secret = process.env.RAZORPAY_KEY_SECRET;
-
-    if (!key_id || !key_secret) {
+    const ip = request.headers.get("x-forwarded-for")?.split(",")[0].trim() || "anonymous";
+    const rateCheck = checkRateLimit(`create-order:${ip}`, 30, 60 * 1000); // max 30 orders/min per IP
+    if (!rateCheck.allowed) {
       return NextResponse.json(
-        { error: "Razorpay credentials not configured on server" },
-        { status: 500 }
+        { error: "Too many payment initialization requests. Please wait a moment." },
+        { status: 429 }
       );
     }
 
     const body = await request.json();
-    const { amount, currency = "INR", receipt } = body;
+    const { amount, currency = "INR", receipt, items, couponCode } = body;
 
-    // Validate amount
-    const parsedAmount = typeof amount === "number" ? amount : parseInt(amount, 10);
-    if (!parsedAmount || isNaN(parsedAmount) || parsedAmount < 100) {
+    const result = await createRazorpayOrder({
+      amount,
+      currency,
+      receipt,
+      items,
+      couponCode,
+    });
+
+    if (!result.success) {
       return NextResponse.json(
-        { error: "Amount is required and must be at least 100 paise (₹1)" },
+        { error: result.error || "Failed to create Razorpay order" },
         { status: 400 }
       );
     }
 
-    const razorpay = new Razorpay({
-      key_id,
-      key_secret,
-    });
-
-    const options = {
-      amount: parsedAmount, // in paise
-      currency: currency || "INR",
-      receipt: receipt || `rcpt_${Date.now().toString().slice(-8)}`,
-      payment_capture: true,
-    };
-
-    const order = await razorpay.orders.create(options);
-
     return NextResponse.json({
-      order_id: order.id,
-      amount: order.amount,
-      currency: order.currency,
-      receipt: order.receipt,
-      key_id: key_id,
+      order_id: result.order_id,
+      amount: result.amount,
+      currency: result.currency,
+      receipt: result.receipt,
+      key_id: result.key_id || process.env.RAZORPAY_KEY_ID,
     });
   } catch (error: any) {
-    console.error("Error creating Razorpay order:", error);
-    const statusCode = error?.statusCode || error?.status || 500;
+    console.error("Error in create-order route:", error);
     return NextResponse.json(
-      { error: error?.error?.description || error?.message || "Failed to create Razorpay order" },
-      { status: statusCode }
+      { error: error?.message || "Internal server error" },
+      { status: 500 }
     );
   }
 }

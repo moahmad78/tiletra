@@ -2,7 +2,7 @@ import { Metadata } from "next";
 import { getProductBySlug, getProducts } from "@/lib/actions/products";
 import ProductDetailsClient from "@/components/ProductDetailsClient";
 import { notFound } from "next/navigation";
-import { BASE_SITE_URL, getCanonicalUrl, generateProductSchema, generateBreadcrumbSchema } from "@/lib/seo";
+import { BASE_SITE_URL, getCanonicalUrl, generateProductSchema, generateBreadcrumbSchema, safeJsonLd } from "@/lib/seo";
 
 export const revalidate = 60;
 
@@ -109,13 +109,13 @@ export default async function ProductPage({
       <script
         type="application/ld+json"
         dangerouslySetInnerHTML={{
-          __html: JSON.stringify(productSchema),
+          __html: safeJsonLd(productSchema),
         }}
       />
       <script
         type="application/ld+json"
         dangerouslySetInnerHTML={{
-          __html: JSON.stringify(breadcrumbsSchema),
+          __html: safeJsonLd(breadcrumbsSchema),
         }}
       />
       <ProductDetailsClient

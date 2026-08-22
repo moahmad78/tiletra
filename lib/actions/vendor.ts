@@ -624,12 +624,14 @@ export async function getVendorDashboardStats(vendorId: string) {
 export async function changeVendorPassword(ownerId: string, newPassword: string) {
   try {
     if (!ownerId) return { success: false, error: "User ID required" };
-    if (!newPassword || newPassword.trim().length < 6) {
-      return { success: false, error: "Password must be at least 6 characters long." };
+    
+    const { validatePasswordStrength, hashPassword } = await import("@/lib/password-security");
+    const strengthCheck = validatePasswordStrength(newPassword);
+    if (!strengthCheck.valid) {
+      return { success: false, error: strengthCheck.error || "Password does not meet security requirements." };
     }
 
-    const crypto = await import("crypto");
-    const passwordHash = crypto.createHash("sha256").update(newPassword.trim()).digest("hex");
+    const passwordHash = hashPassword(newPassword.trim());
 
     await prisma.user.update({
       where: { id: ownerId },
@@ -1037,6 +1039,13 @@ export async function loginVendor(username: string, password?: string) {
       return { success: false, error: "Please enter your email or phone number" };
     }
 
+    const { isLockedOut, recordFailedAttempt, resetFailedAttempts } = await import("@/lib/rate-limit");
+    const lockoutStatus = isLockedOut(`vendor-auth:${query}`);
+    if (lockoutStatus.locked) {
+      const waitMinutes = Math.ceil(((lockoutStatus.lockoutUntil || Date.now()) - Date.now()) / 60000);
+      return { success: false, error: `Account temporarily locked due to repeated failed logins. Please retry in ${waitMinutes} minute(s).` };
+    }
+
     const cleanPhone = query.replace(/\D/g, "");
 
     const vendor = await prisma.vendor.findFirst({
@@ -1051,16 +1060,30 @@ export async function loginVendor(username: string, password?: string) {
     });
 
     if (!vendor) {
+      recordFailedAttempt(`vendor-auth:${query}`, 5, 15 * 60 * 1000);
       return { success: false, error: "No vendor account found with this email or phone number." };
     }
 
-    if (vendor.owner?.passwordHash && password) {
-      const crypto = await import("crypto");
-      const hash = crypto.createHash("sha256").update(password.trim()).digest("hex");
-      if (vendor.owner.passwordHash !== hash) {
-        return { success: false, error: "Incorrect password. Please check your credentials." };
+    if (vendor.owner?.passwordHash) {
+      if (!password || !password.trim()) {
+        recordFailedAttempt(`vendor-auth:${query}`, 5, 15 * 60 * 1000);
+        return { success: false, error: "Password is required to access vendor portal." };
+      }
+
+      const { verifyPassword } = await import("@/lib/password-security");
+      const isValid = verifyPassword(password.trim(), vendor.owner.passwordHash);
+      if (!isValid) {
+        const attemptResult = recordFailedAttempt(`vendor-auth:${query}`, 5, 15 * 60 * 1000);
+        return {
+          success: false,
+          error: attemptResult.locked
+            ? "Too many failed attempts. Account locked for 15 minutes."
+            : `Incorrect password. ${attemptResult.remainingAttempts} attempt(s) remaining.`,
+        };
       }
     }
+
+    resetFailedAttempts(`vendor-auth:${query}`);
 
     return {
       success: true,

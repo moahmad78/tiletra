@@ -15,11 +15,22 @@ export type VendorApplicationData = {
   aadharDocUrl?: string;
   panDocUrl?: string;
   shopPhotoUrl?: string;
+  website_url_hp?: string; // Honeypot field (must remain empty)
 };
 
 // 1. Submit Public Vendor Application (Path A)
 export async function submitVendorApplication(data: VendorApplicationData) {
   try {
+    // Bot Honeypot Protection: If invisible honeypot field is populated, silently reject bot
+    if (data.website_url_hp && data.website_url_hp.trim().length > 0) {
+      console.warn("[Security] Bot trapped by vendor apply honeypot field:", data.website_url_hp);
+      return {
+        success: true,
+        applicationId: "bot_filtered",
+        message: "Application submitted successfully! Our team will contact you soon.",
+      };
+    }
+
     const cleanPhone = data.phone.replace(/\D/g, "");
     if (cleanPhone.length !== 10) {
       return { success: false, error: "Please enter a valid 10-digit mobile number." };
@@ -28,6 +39,16 @@ export async function submitVendorApplication(data: VendorApplicationData) {
     const email = data.email.toLowerCase().trim();
     if (!email || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
       return { success: false, error: "Please enter a valid email address." };
+    }
+
+    // Rate Limiting: Max 3 applications per email/phone per hour
+    const { checkRateLimit } = await import("@/lib/rate-limit");
+    const rateCheck = checkRateLimit(`vendor-apply:${cleanPhone}`, 3, 60 * 60 * 1000);
+    if (!rateCheck.allowed) {
+      return {
+        success: false,
+        error: "Too many application submissions from this number. Please wait before trying again.",
+      };
     }
 
     if (!data.businessName || data.businessName.trim().length < 2) {

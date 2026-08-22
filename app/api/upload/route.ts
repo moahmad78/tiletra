@@ -3,9 +3,59 @@ import { prisma } from "@/lib/prisma";
 import sharp from "sharp";
 import { writeFile, mkdir } from "fs/promises";
 import path from "path";
+import { checkRateLimit } from "@/lib/rate-limit";
+
+const MAX_FILE_SIZE_BYTES = 10 * 1024 * 1024; // 10MB limit
+
+/**
+ * Validates file buffer magic bytes against authorized binary signatures
+ */
+function isValidMagicBytes(buffer: Buffer): boolean {
+  if (!buffer || buffer.length < 4) return false;
+
+  // JPEG: FF D8 FF
+  if (buffer[0] === 0xff && buffer[1] === 0xd8 && buffer[2] === 0xff) {
+    return true;
+  }
+
+  // PNG: 89 50 4E 47
+  if (buffer[0] === 0x89 && buffer[1] === 0x50 && buffer[2] === 0x4e && buffer[3] === 0x47) {
+    return true;
+  }
+
+  // GIF: 47 49 46 38
+  if (buffer[0] === 0x47 && buffer[1] === 0x49 && buffer[2] === 0x46 && buffer[3] === 0x38) {
+    return true;
+  }
+
+  // WebP: RIFF .... WEBP
+  if (
+    buffer.length >= 12 &&
+    buffer[0] === 0x52 && buffer[1] === 0x49 && buffer[2] === 0x46 && buffer[3] === 0x46 &&
+    buffer[8] === 0x57 && buffer[9] === 0x45 && buffer[10] === 0x42 && buffer[11] === 0x50
+  ) {
+    return true;
+  }
+
+  // PDF: %PDF (25 50 44 46)
+  if (buffer[0] === 0x25 && buffer[1] === 0x50 && buffer[2] === 0x44 && buffer[3] === 0x46) {
+    return true;
+  }
+
+  return false;
+}
 
 export async function POST(req: NextRequest) {
   try {
+    const ip = req.headers.get("x-forwarded-for")?.split(",")[0].trim() || "anonymous";
+    const rateCheck = checkRateLimit(`upload:${ip}`, 30, 60 * 1000);
+    if (!rateCheck.allowed) {
+      return NextResponse.json(
+        { success: false, error: "Upload rate limit exceeded. Please wait before uploading more files." },
+        { status: 429 }
+      );
+    }
+
     const formData = await req.formData();
     const files = formData.getAll("file") as File[];
 
@@ -30,18 +80,27 @@ export async function POST(req: NextRequest) {
       "image/webp",
       "image/gif",
       "image/avif",
+      "application/pdf",
     ]);
 
     for (const file of files) {
       if (!file.name) continue;
 
+      if (file.size > MAX_FILE_SIZE_BYTES) {
+        return NextResponse.json(
+          { success: false, error: `File "${file.name}" exceeds maximum allowed size of 10MB.` },
+          { status: 400 }
+        );
+      }
+
       const mimeTypeCandidate = file.type?.toLowerCase() || "";
       const extCandidate = path.extname(file.name).toLowerCase();
 
-      // Explicitly reject SVG / XML files to prevent Stored XSS
+      // Explicitly reject SVG / XML / HTML to prevent Stored XSS
       if (
         mimeTypeCandidate.includes("svg") ||
         mimeTypeCandidate.includes("xml") ||
+        mimeTypeCandidate.includes("html") ||
         extCandidate === ".svg" ||
         extCandidate === ".xml" ||
         extCandidate === ".html" ||
@@ -51,7 +110,7 @@ export async function POST(req: NextRequest) {
         return NextResponse.json(
           {
             success: false,
-            error: "Security validation failed: Only standard raster image formats (JPEG, PNG, WebP) are allowed. SVG and executable formats are prohibited.",
+            error: "Security validation failed: Only standard raster image formats (JPEG, PNG, WebP) and PDF documents are allowed. SVG and executable formats are prohibited.",
           },
           { status: 400 }
         );
@@ -60,23 +119,41 @@ export async function POST(req: NextRequest) {
       const rawBytes = await file.arrayBuffer();
       const rawBuffer = Buffer.from(rawBytes);
 
+      // Deep inspection: Magic Bytes Verification
+      if (!isValidMagicBytes(rawBuffer)) {
+        return NextResponse.json(
+          {
+            success: false,
+            error: "Security validation failed: File binary header does not match authorized image/document signatures.",
+          },
+          { status: 400 }
+        );
+      }
+
       let processedBuffer: Buffer = rawBuffer;
       let mimeType = "image/webp";
       let ext = ".webp";
 
-      try {
-        // Optimize image with sharp: resize large photos & convert to webp (compact & fast loading)
-        processedBuffer = await sharp(rawBuffer)
-          .resize({ width: 1600, height: 1600, fit: "inside", withoutEnlargement: true })
-          .webp({ quality: 85 })
-          .toBuffer();
-        mimeType = "image/webp";
-        ext = ".webp";
-      } catch (sharpError) {
-        console.warn("[Upload] Sharp optimization fallback to original:", sharpError);
+      // If PDF document, keep original buffer and mime
+      if (extCandidate === ".pdf" || mimeTypeCandidate === "application/pdf") {
         processedBuffer = rawBuffer;
-        mimeType = mimeTypeCandidate || "image/jpeg";
-        ext = extCandidate || ".jpg";
+        mimeType = "application/pdf";
+        ext = ".pdf";
+      } else {
+        try {
+          // Optimize raster image with sharp
+          processedBuffer = await sharp(rawBuffer)
+            .resize({ width: 1600, height: 1600, fit: "inside", withoutEnlargement: true })
+            .webp({ quality: 85 })
+            .toBuffer();
+          mimeType = "image/webp";
+          ext = ".webp";
+        } catch (sharpError) {
+          console.warn("[Upload] Sharp optimization fallback to original:", sharpError);
+          processedBuffer = rawBuffer;
+          mimeType = mimeTypeCandidate || "image/jpeg";
+          ext = extCandidate || ".jpg";
+        }
       }
 
       const sanitizedBase = path.basename(file.name, path.extname(file.name))
