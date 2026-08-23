@@ -51,6 +51,7 @@ export default function AdminCategoriesPage() {
   const [description, setDescription] = useState("");
   const [image, setImage] = useState("");
   const [parentId, setParentId] = useState<string | null>(null);
+  const [calculatorType, setCalculatorType] = useState<string>("none");
 
   const loadCategories = async () => {
     try {
@@ -75,6 +76,7 @@ export default function AdminCategoriesPage() {
     setDescription("");
     setImage("/categories/electrical.jpg");
     setParentId(null);
+    setCalculatorType("none");
     setModalOpen(true);
   };
 
@@ -85,6 +87,7 @@ export default function AdminCategoriesPage() {
     setDescription(cat.description || "");
     setImage(cat.image || "/placeholders/product.svg");
     setParentId((cat as any).parentId || null);
+    setCalculatorType(cat.calculatorType || "none");
     setModalOpen(true);
   };
 
@@ -137,6 +140,7 @@ export default function AdminCategoriesPage() {
         description: description.trim(),
         image: finalImage,
         parentId: parentId || null,
+        calculatorType: calculatorType || "none",
       });
       setSubmitting(false);
 
@@ -154,6 +158,7 @@ export default function AdminCategoriesPage() {
         description: description.trim() || "Curated construction and interior supplies collection.",
         image: finalImage,
         parentId: parentId || null,
+        calculatorType: calculatorType || "none",
       });
       setSubmitting(false);
 
@@ -483,6 +488,26 @@ export default function AdminCategoriesPage() {
                       </option>
                     ))}
                 </select>
+              </div>
+
+              {/* Smart Calculator Configuration */}
+              <div className="p-4 rounded-2xl bg-orange-50/60 border border-orange-200 space-y-1.5">
+                <label className="text-xs font-bold text-[#052a51] uppercase tracking-wider block">
+                  Smart Calculator Formula & Type
+                </label>
+                <select
+                  value={calculatorType}
+                  onChange={(e) => setCalculatorType(e.target.value)}
+                  className="w-full px-4 py-2.5 bg-white border border-gray-200 rounded-xl text-xs font-bold text-[#052a51] focus:outline-none focus:border-[#F26522] cursor-pointer"
+                >
+                  <option value="none">None (Standard Quantity / Hardware / Sanitaryware)</option>
+                  <option value="area_to_boxes">Area → Boxes (Tiles, Stone, Wallpaper - sq.ft coverage)</option>
+                  <option value="area_to_volume">Area → Volume (Paints, Waterproofing - sq.ft/L + coats)</option>
+                  <option value="length_to_units">Length → Units (Wires, Cables, Pipes - meters/coil)</option>
+                </select>
+                <p className="text-[10px] text-gray-500">
+                  Controls automated customer calculation assistance on Product Detail Pages.
+                </p>
               </div>
 
               {/* Modal Buttons */}

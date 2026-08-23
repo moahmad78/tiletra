@@ -8,10 +8,7 @@ import { Search, X, ArrowRight, Tag, Loader2 } from "lucide-react";
 import { searchProducts } from "@/lib/actions/products";
 import { getLowestPrice } from "@/lib/data/products";
 import type { Product } from "@/lib/data/products";
-
-function formatPrice(n: number) {
-  return "₹" + n.toLocaleString("en-IN");
-}
+import { formatPrice, formatUnitLabel } from "@/lib/formatters";
 
 export default function SearchModal({
   isOpen,
@@ -254,13 +251,9 @@ export default function SearchModal({
                   <div className="text-right shrink-0">
                     <p className="text-xs sm:text-sm font-black text-[#052a51]">
                       {formatPrice(getLowestPrice(product))}
-                      {product.unitOfSale && product.unitOfSale !== "box" && product.unitOfSale !== "sqft" ? (
-                        <span className="text-[10px] font-normal text-gray-500 capitalize">/{product.unitOfSale}</span>
-                      ) : product.unitOfSale === "sqft" || product.categorySlug?.includes("tile") || product.categorySlug?.includes("stone") ? (
-                        <span className="text-[10px] font-normal text-gray-500">/sq.ft</span>
-                      ) : (
-                        <span className="text-[10px] font-normal text-gray-500">/box</span>
-                      )}
+                      <span className="text-[10px] font-normal text-gray-500">
+                        {formatUnitLabel(product.unitOfSale || (product.categorySlug?.includes("tile") ? "sqft" : "piece"))}
+                      </span>
                     </p>
                   </div>
                   <ArrowRight size={16} className="text-gray-300 group-hover:text-[#F26522] shrink-0" />

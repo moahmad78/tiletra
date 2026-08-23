@@ -19,6 +19,10 @@ export type CreateProductInput = {
     size: string;
     finish: any;
     color: string;
+    image?: string | null;
+    unit?: string | null;
+    attributeLabel?: string | null;
+    attributeValue?: string | null;
     pricePerBox: number;
     pricePerSqft: number;
     sqftPerBox: number;
@@ -34,6 +38,8 @@ export type CreateProductInput = {
   status?: "active" | "paused" | "draft";
   approvalStatus?: "pending" | "approved" | "rejected";
   rejectionReason?: string | null;
+  coverageRate?: number | null;
+  wastageFactor?: number | null;
 };
 
 import { products as defaultProducts } from "@/lib/data/products";
@@ -370,6 +376,19 @@ export async function createProduct(input: CreateProductInput) {
 
     const cat = await prisma.category.findUnique({ where: { slug: input.categorySlug } });
 
+    let initialApprovalStatus = input.approvalStatus;
+    if (!initialApprovalStatus) {
+      if (input.vendorId) {
+        const vendorRec = await prisma.vendor.findUnique({
+          where: { id: input.vendorId },
+          select: { autoPublishEnabled: true },
+        });
+        initialApprovalStatus = vendorRec?.autoPublishEnabled ? "approved" : "pending";
+      } else {
+        initialApprovalStatus = "approved";
+      }
+    }
+
     const newProduct = await prisma.product.create({
       data: {
         name: input.name,
@@ -398,13 +417,19 @@ export async function createProduct(input: CreateProductInput) {
         specs: input.specs || null,
         vendorId: input.vendorId || null,
         status: input.status || "active",
-        approvalStatus: input.approvalStatus || (input.vendorId ? "pending" : "approved"),
+        approvalStatus: initialApprovalStatus,
         rejectionReason: input.rejectionReason || null,
+        coverageRate: input.coverageRate !== undefined && input.coverageRate !== null ? Number(input.coverageRate) : (primaryVariant.sqftPerBox ? Number(primaryVariant.sqftPerBox) : null),
+        wastageFactor: input.wastageFactor !== undefined && input.wastageFactor !== null ? Number(input.wastageFactor) : 1.1,
         variants: {
           create: input.variants.map((v) => ({
             size: v.size,
             finish: v.finish,
             color: v.color,
+            image: v.image || null,
+            unit: v.unit || null,
+            attributeLabel: v.attributeLabel || null,
+            attributeValue: v.attributeValue || null,
             pricePerBox: Number(v.pricePerBox),
             pricePerSqft: Number(v.pricePerSqft),
             sqftPerBox: Number(v.sqftPerBox),
@@ -512,6 +537,10 @@ export async function createProductsBulk(inputs: CreateProductInput[]) {
                 size: v.size || "Standard",
                 finish: v.finish || "Standard",
                 color: v.color || "Standard",
+                image: v.image || null,
+                unit: v.unit || null,
+                attributeLabel: v.attributeLabel || null,
+                attributeValue: v.attributeValue || null,
                 pricePerBox: Number(v.pricePerBox || 100),
                 pricePerSqft: Number(v.pricePerSqft || v.pricePerBox || 100),
                 sqftPerBox: Number(v.sqftPerBox || 1),
@@ -522,6 +551,10 @@ export async function createProductsBulk(inputs: CreateProductInput[]) {
                   size: "Standard",
                   finish: "Standard",
                   color: "Standard",
+                  image: null,
+                  unit: null,
+                  attributeLabel: null,
+                  attributeValue: null,
                   pricePerBox: 100,
                   pricePerSqft: 100,
                   sqftPerBox: 1,
@@ -597,6 +630,8 @@ export async function updateProduct(id: string, input: Partial<CreateProductInpu
       if (input.manualReviewCount !== null && input.manualReviewCount !== undefined) updateData.reviewCount = Number(input.manualReviewCount);
     }
     if (input.specs !== undefined) updateData.specs = input.specs;
+    if (input.coverageRate !== undefined) updateData.coverageRate = input.coverageRate !== null ? Number(input.coverageRate) : null;
+    if (input.wastageFactor !== undefined) updateData.wastageFactor = input.wastageFactor !== null ? Number(input.wastageFactor) : 1.1;
 
     if (input.variants && input.variants.length > 0) {
       await prisma.productVariant.deleteMany({ where: { productId: id } });
@@ -605,6 +640,10 @@ export async function updateProduct(id: string, input: Partial<CreateProductInpu
           size: v.size,
           finish: v.finish,
           color: v.color,
+          image: v.image || null,
+          unit: v.unit || null,
+          attributeLabel: v.attributeLabel || null,
+          attributeValue: v.attributeValue || null,
           pricePerBox: Number(v.pricePerBox),
           pricePerSqft: Number(v.pricePerSqft),
           sqftPerBox: Number(v.sqftPerBox),

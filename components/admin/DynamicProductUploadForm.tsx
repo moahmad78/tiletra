@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import {
@@ -21,9 +21,13 @@ import {
   Layers3,
   Sliders,
   FileText,
+  ShieldCheck,
 } from "lucide-react";
 import ImageUploadManager from "@/components/admin/ImageUploadManager";
+import VariantEditor from "@/components/admin/VariantEditor";
 import { createProduct } from "@/lib/actions/products";
+import { getVendorProfile } from "@/lib/actions/vendor";
+import type { ProductVariant } from "@/lib/data/products";
 import { toast } from "sonner";
 
 // ── Category Definitions & Dynamic Config ──────────────────────────────
@@ -222,6 +226,23 @@ export default function DynamicProductUploadForm({
   const [isNewArrival, setIsNewArrival] = useState(true);
   const [isTrending, setIsTrending] = useState(true);
 
+  // ── Multi-Variants (Pack / Volume / Size / Colors) ──
+  const [hasMultipleVariants, setHasMultipleVariants] = useState(false);
+  const [customVariants, setCustomVariants] = useState<ProductVariant[]>([]);
+
+  // ── Vendor Auto-Publish & Privilege State ──
+  const [vendorProfile, setVendorProfile] = useState<any | null>(null);
+
+  useEffect(() => {
+    if (vendorId) {
+      getVendorProfile(vendorId).then((v) => setVendorProfile(v));
+    }
+  }, [vendorId]);
+
+  // ── Smart Calculator Estimations ──
+  const [coverageRate, setCoverageRate] = useState<string>("");
+  const [wastagePercent, setWastagePercent] = useState<string>("10");
+
   // ── 3. Images ──
   const [images, setImages] = useState<string[]>([
     "/placeholders/product.svg",
@@ -365,6 +386,39 @@ export default function DynamicProductUploadForm({
     const variantSize = dimensions.lengthSize ||
       (dimensions.height && dimensions.width ? `${dimensions.height}x${dimensions.width}` : "Standard");
 
+    const formattedVariants = hasMultipleVariants && customVariants.length > 0
+      ? customVariants.map((v) => ({
+          size: v.attributeValue || v.size || variantSize,
+          finish: v.finish || selectedTags[0] || "Standard",
+          color: v.color || "Standard",
+          image: v.image || null,
+          unit: unitOfSale || currentCategoryConfig.defaultUnit,
+          attributeLabel: v.attributeLabel || "Option",
+          attributeValue: v.attributeValue || v.size || variantSize,
+          pricePerBox: Number(v.pricePerBox || sellNum),
+          pricePerSqft: Number(v.pricePerSqft || sellNum),
+          sqftPerBox: Number(v.sqftPerBox || 1),
+          stockBoxes: Number(v.stockBoxes || parseInt(stockQty, 10) || 50),
+        }))
+      : [
+          {
+            size: variantSize,
+            finish: selectedTags[0] || "Standard",
+            color: "Standard",
+            image: null,
+            unit: unitOfSale || currentCategoryConfig.defaultUnit,
+            attributeLabel: "Size",
+            attributeValue: variantSize,
+            pricePerBox: sellNum,
+            pricePerSqft: sellNum,
+            sqftPerBox: 1,
+            stockBoxes: parseInt(stockQty, 10) || 50,
+          },
+        ];
+
+    const coverageNum = parseFloat(coverageRate);
+    const wastageNum = (parseFloat(wastagePercent) || 10) / 100 + 1.0;
+
     const res = await createProduct({
       name: productName.trim(),
       categorySlug: currentCategoryConfig.slug,
@@ -374,22 +428,14 @@ export default function DynamicProductUploadForm({
       images: images.length > 0 ? images : ["/placeholders/product.svg"],
       unitOfSale: unitOfSale || currentCategoryConfig.defaultUnit,
       vendorId: vendorId || null,
+      coverageRate: !isNaN(coverageNum) && coverageNum > 0 ? coverageNum : null,
+      wastageFactor: wastageNum,
       isBestseller,
       isNew: isNewArrival,
       isTrending,
       specs: finalSpecs,
       attributes: finalAttributes,
-      variants: [
-        {
-          size: variantSize,
-          finish: selectedTags[0] || "Standard",
-          color: "Standard",
-          pricePerBox: sellNum,
-          pricePerSqft: sellNum,
-          sqftPerBox: 1,
-          stockBoxes: parseInt(stockQty, 10) || 50,
-        },
-      ],
+      variants: formattedVariants,
     });
 
     setLoading(false);
@@ -439,6 +485,54 @@ export default function DynamicProductUploadForm({
           </button>
         </div>
       </div>
+
+      {/* ── Vendor Auto-Publish Status Banner ── */}
+      {vendorId && (
+        <div
+          className={`p-4 sm:p-5 rounded-3xl border flex items-start gap-3.5 transition-all ${
+            vendorProfile?.autoPublishEnabled
+              ? "bg-emerald-50/90 border-emerald-200 text-emerald-950"
+              : "bg-blue-50/90 border-blue-200 text-blue-950"
+          }`}
+        >
+          <div
+            className={`w-9 h-9 rounded-2xl flex items-center justify-center shrink-0 shadow-2xs ${
+              vendorProfile?.autoPublishEnabled
+                ? "bg-emerald-600 text-white"
+                : "bg-blue-600 text-white"
+            }`}
+          >
+            {vendorProfile?.autoPublishEnabled ? (
+              <Zap size={18} />
+            ) : (
+              <ShieldCheck size={18} />
+            )}
+          </div>
+          <div>
+            <div className="flex items-center gap-2">
+              <strong className="text-xs sm:text-sm font-black">
+                {vendorProfile?.autoPublishEnabled
+                  ? "✓ Auto-Publish Enabled — Instant Live Catalog"
+                  : "Standard Catalog Quality Review"}
+              </strong>
+              {vendorProfile?.autoPublishEnabled ? (
+                <span className="px-2 py-0.5 rounded-full text-[10px] font-black uppercase tracking-wider bg-emerald-200/60 text-emerald-800 border border-emerald-300">
+                  Trusted Seller
+                </span>
+              ) : (
+                <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-blue-100 text-blue-800 border border-blue-300">
+                  Admin Approval Required
+                </span>
+              )}
+            </div>
+            <p className="text-xs mt-0.5 opacity-85">
+              {vendorProfile?.autoPublishEnabled
+                ? "Your vendor account has Super Admin verified instant-publishing privileges. Products you submit or modify go live immediately without waiting in the approval queue."
+                : "Your new products will be submitted to the Super Admin review queue before going live on the storefront."}
+            </p>
+          </div>
+        </div>
+      )}
 
       {/* ── Section 1: Category Selector (Master Dynamic Driver) ── */}
       <div className="bg-white p-6 sm:p-8 rounded-3xl border border-gray-200/80 shadow-2xs space-y-4">
@@ -893,6 +987,74 @@ export default function DynamicProductUploadForm({
           </div>
         </div>
 
+        {/* Coverage Rate & Estimator Settings */}
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-5 pt-2 border-t border-gray-100">
+          <div>
+            <label className="block text-xs font-bold text-gray-700 uppercase tracking-wider mb-1.5 flex items-center justify-between">
+              <span>
+                {currentCategoryConfig.slug === "tiles-granite"
+                  ? "Coverage Rate (sq.ft / box)"
+                  : currentCategoryConfig.slug === "paints"
+                  ? "Coverage Rate (sq.ft / litre / coat)"
+                  : currentCategoryConfig.slug === "electrical" || currentCategoryConfig.slug === "electrical-wires"
+                  ? "Length (meters / coil)"
+                  : "Coverage / Yield per Unit (Optional)"}
+              </span>
+              <span className="text-[10px] font-normal text-gray-400">Powers Smart Calculator</span>
+            </label>
+            <input
+              type="number"
+              step="any"
+              min={0}
+              placeholder={
+                currentCategoryConfig.slug === "tiles-granite"
+                  ? "e.g. 16 (sq.ft per box)"
+                  : currentCategoryConfig.slug === "paints"
+                  ? "e.g. 120 (sq.ft per litre)"
+                  : currentCategoryConfig.slug === "electrical" || currentCategoryConfig.slug === "electrical-wires"
+                  ? "e.g. 90 (meters per coil)"
+                  : "e.g. 20"
+              }
+              value={coverageRate}
+              onChange={(e) => setCoverageRate(e.target.value)}
+              className="w-full px-4 py-3 bg-gray-50/70 border border-gray-200 rounded-2xl text-xs font-bold text-gray-800 focus:bg-white focus:outline-none focus:border-[#F26522]"
+            />
+            <p className="text-[10px] text-gray-400 mt-1">
+              {currentCategoryConfig.slug === "tiles-granite"
+                ? "How many sq.ft does one box cover? (e.g. 16 sq.ft for standard 600x600 tiles)"
+                : currentCategoryConfig.slug === "paints"
+                ? "How many sq.ft does one litre cover per coat? (e.g. 120 sq.ft for luxury emulsion)"
+                : currentCategoryConfig.slug === "electrical" || currentCategoryConfig.slug === "electrical-wires"
+                ? "How many meters are in one standard coil? (e.g. 90m for wire coils)"
+                : "Leave empty if product does not need automated calculator"}
+            </p>
+          </div>
+
+          <div>
+            <label className="block text-xs font-bold text-gray-700 uppercase tracking-wider mb-1.5 flex items-center justify-between">
+              <span>Wastage & Buffer Margin (%)</span>
+              <span className="text-[10px] font-normal text-gray-400">Default: 10%</span>
+            </label>
+            <div className="relative">
+              <input
+                type="number"
+                min={0}
+                max={50}
+                placeholder="10"
+                value={wastagePercent}
+                onChange={(e) => setWastagePercent(e.target.value)}
+                className="w-full px-4 py-3 bg-gray-50/70 border border-gray-200 rounded-2xl text-xs font-bold text-gray-800 focus:bg-white focus:outline-none focus:border-[#F26522]"
+              />
+              <span className="absolute right-4 top-1/2 -translate-y-1/2 text-xs font-bold text-gray-400">
+                %
+              </span>
+            </div>
+            <p className="text-[10px] text-gray-400 mt-1">
+              Cutting/application buffer added automatically before rounding up
+            </p>
+          </div>
+        </div>
+
         {/* Badges & Merchandising Toggles */}
         <div className="flex flex-wrap items-center gap-6 pt-2 border-t border-gray-100">
           <label className="flex items-center gap-2.5 cursor-pointer">
@@ -924,6 +1086,64 @@ export default function DynamicProductUploadForm({
             />
             <span className="text-xs font-bold text-gray-700">Feature on Trending Carousel 🚀</span>
           </label>
+        </div>
+
+        {/* ── Multi-Variants (Volume / Litre / Dimension / Colors) Switcher ── */}
+        <div className="pt-4 border-t border-gray-100 space-y-4">
+          <div className="flex items-center justify-between">
+            <div>
+              <h3 className="text-xs font-black text-[#052a51] uppercase tracking-wider">
+                Multiple Sizes / Packs / Litres / Colors
+              </h3>
+              <p className="text-[11px] text-gray-400">
+                Enable if this product has multiple options (e.g., 1L / 4L / 10L / 20L paint or 6mm / 12mm / 19mm plywood)
+              </p>
+            </div>
+            <button
+              type="button"
+              onClick={() => {
+                const nextState = !hasMultipleVariants;
+                setHasMultipleVariants(nextState);
+                if (nextState && customVariants.length === 0) {
+                  const defaultVariantSize = dimensions.lengthSize || (dimensions.height && dimensions.width ? `${dimensions.height}x${dimensions.width}` : "Standard");
+                  setCustomVariants([
+                    {
+                      id: "v-1",
+                      size: defaultVariantSize,
+                      finish: selectedTags[0] || "Standard",
+                      color: "Standard",
+                      image: images[0] || null,
+                      unit: unitOfSale,
+                      attributeLabel: "Size",
+                      attributeValue: defaultVariantSize,
+                      pricePerBox: sellNum || 1000,
+                      pricePerSqft: sellNum || 1000,
+                      sqftPerBox: 1,
+                      stockBoxes: parseInt(stockQty, 10) || 50,
+                      inStock: true,
+                    },
+                  ]);
+                }
+              }}
+              className={`px-3.5 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer ${
+                hasMultipleVariants
+                  ? "bg-[#F26522] text-white shadow-xs"
+                  : "bg-gray-100 text-gray-600 hover:bg-gray-200"
+              }`}
+            >
+              {hasMultipleVariants ? "✓ Multi-Variants Enabled" : "+ Enable Multi-Variants"}
+            </button>
+          </div>
+
+          {hasMultipleVariants && (
+            <div className="pt-2">
+              <VariantEditor
+                variants={customVariants}
+                onChange={setCustomVariants}
+                unitOfSale={unitOfSale}
+              />
+            </div>
+          )}
         </div>
       </div>
 

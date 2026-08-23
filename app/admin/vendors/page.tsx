@@ -448,6 +448,15 @@ export default function AdminVendorsPage() {
                             <p className="text-[10px] text-gray-400 truncate">
                               Owner: {v.owner?.name || "N/A"}
                             </p>
+                            {v.autoPublishEnabled ? (
+                              <span className="inline-flex items-center gap-1 px-1.5 py-0.5 mt-0.5 rounded text-[9px] font-black bg-emerald-50 text-emerald-700 border border-emerald-200">
+                                ⚡ Auto-Publish ON
+                              </span>
+                            ) : (
+                              <span className="inline-flex items-center gap-1 px-1.5 py-0.5 mt-0.5 rounded text-[9px] font-medium text-gray-400">
+                                Standard Review
+                              </span>
+                            )}
                           </div>
                         </div>
                       </td>

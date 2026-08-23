@@ -147,7 +147,9 @@ export default function CartPage() {
                           {item.variant.size} · {item.variant.finish} · {item.variant.color}
                         </p>
                         <p className="text-[11px] text-gray-400 mt-0.5">
-                          {item.variant.sqftPerBox} sq.ft/box · {(item.variant.sqftPerBox * item.quantity).toFixed(0)} sq.ft total
+                          {item.product.unitOfSale === "box" || item.product.unitOfSale === "sqft" || item.product.categorySlug?.includes("tile")
+                            ? `${item.variant.sqftPerBox} sq.ft/box · ${(item.variant.sqftPerBox * item.quantity).toFixed(0)} sq.ft total`
+                            : `${item.quantity} ${item.variant.unit || item.product.unitOfSale || "unit"}${item.quantity > 1 ? "s" : ""}`}
                         </p>
                       </div>
 
@@ -186,7 +188,7 @@ export default function CartPage() {
                           {formatPrice(item.variant.pricePerBox * item.quantity)}
                         </p>
                         <p className="text-[10px] text-gray-400 mt-0.5 font-medium">
-                          {formatPrice(item.variant.pricePerBox)}/box
+                          {formatPrice(item.variant.pricePerBox)}/{item.variant.unit || item.product.unitOfSale || "unit"}
                         </p>
                       </div>
                     </div>
@@ -209,10 +211,12 @@ export default function CartPage() {
                     <span>Subtotal ({items.length} {items.length === 1 ? "item" : "items"})</span>
                     <span className="font-bold text-[#052a51]">{formatPrice(subtotal)}</span>
                   </div>
-                  <div className="flex justify-between text-gray-600">
-                    <span>Total tile coverage</span>
-                    <span className="font-bold text-[#052a51]">{totalSqft.toFixed(0)} sq.ft</span>
-                  </div>
+                  {totalSqft > 0 && items.some((i) => i.product.categorySlug?.includes("tile") || i.product.unitOfSale === "sqft" || i.product.unitOfSale === "box") && (
+                    <div className="flex justify-between text-gray-600">
+                      <span>Total tile coverage</span>
+                      <span className="font-bold text-[#052a51]">{totalSqft.toFixed(0)} sq.ft</span>
+                    </div>
+                  )}
                   <div className="flex justify-between text-gray-600">
                     <span>Delivery charges</span>
                     <span className={`font-bold ${deliveryFee === 0 ? "text-emerald-600" : "text-[#052a51]"}`}>

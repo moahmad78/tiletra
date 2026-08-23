@@ -1,7 +1,7 @@
 export type Finish = "Matte" | "Glossy" | "Textured" | "Satin" | "Polished";
 export type Material = "Ceramic" | "Vitrified" | "Porcelain" | "Natural Stone" | "Mosaic" | "Wood" | "Metal" | "Brass" | "PVC" | "CPVC" | "Vinyl" | "Composite" | "Other";
 
-export type UnitOfSale = "box" | "sqft" | "piece" | "meter" | "coil" | "kg" | "pack" | "roll";
+export type UnitOfSale = "box" | "sqft" | "piece" | "meter" | "coil" | "kg" | "pack" | "roll" | "litre" | "liter" | "can" | "bottle" | "set" | string;
 
 export type ProductAttribute = {
   id?: string;
@@ -11,13 +11,19 @@ export type ProductAttribute = {
 
 export type ProductVariant = {
   id: string;
-  size: string; // e.g. "600x600mm"
-  finish: Finish;
+  size: string; // e.g. "600x600mm", "4L", "19mm x 4x8ft", "Standard"
+  finish: Finish | string;
   color: string;
-  pricePerBox: number; // in INR
-  pricePerSqft: number;
+  image?: string | null;
+  unit?: string | null;
+  attributeLabel?: string | null; // e.g. "Volume", "Dimension", "Color", "Size"
+  attributeValue?: string | null; // e.g. "4L", "19mm x 4x8ft", "Ivory White"
+  pricePerBox: number; // in INR (price for unit / pack / box / can)
+  pricePerSqft: number; // base unit price
   sqftPerBox: number;
+  piecesPerBox?: number;
   stockBoxes: number;
+  inStock?: boolean;
 };
 
 export type Product = {
@@ -45,6 +51,8 @@ export type Product = {
   status?: "active" | "paused" | "draft";
   approvalStatus?: "pending" | "approved" | "rejected";
   rejectionReason?: string | null;
+  coverageRate?: number | null;
+  wastageFactor?: number | null;
   specs: {
     waterAbsorption?: string;
     slipResistance?: string;

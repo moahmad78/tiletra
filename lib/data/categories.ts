@@ -1,3 +1,5 @@
+export type CalculatorType = "none" | "area_to_boxes" | "area_to_volume" | "length_to_units" | string;
+
 export type Category = {
   id: string;
   name: string;
@@ -8,6 +10,7 @@ export type Category = {
   featured: boolean;
   icon?: string;
   parentId?: string | null;
+  calculatorType?: CalculatorType;
 };
 
 export const categories: Category[] = [
@@ -21,6 +24,7 @@ export const categories: Category[] = [
     productCount: 2,
     featured: true,
     icon: "Zap",
+    calculatorType: "length_to_units",
   },
   // ── 2. LIGHTING ────────────────────────────────────
   {
@@ -32,6 +36,7 @@ export const categories: Category[] = [
     productCount: 0,
     featured: true,
     icon: "Sun",
+    calculatorType: "none",
   },
   // ── 3. TILES & STONE ───────────────────────────────
   {
@@ -43,6 +48,7 @@ export const categories: Category[] = [
     productCount: 6,
     featured: true,
     icon: "Grid",
+    calculatorType: "area_to_boxes",
   },
   // ── 4. PAINT & FINISHES ────────────────────────────
   {
@@ -54,6 +60,7 @@ export const categories: Category[] = [
     productCount: 0,
     featured: true,
     icon: "Palette",
+    calculatorType: "area_to_volume",
   },
   // ── 5. FALSE CEILING ───────────────────────────────
   {

@@ -87,6 +87,7 @@ model Category {
   image           String     @default("")
   popularFinishes String[]   @default([])
   popularSizes    String[]   @default([])
+  calculatorType  String     @default("none") // none | area_to_boxes | area_to_volume | length_to_units
   order           Int        @default(0)
   parentId        String?
   createdAt       DateTime   @default(now())
@@ -100,32 +101,34 @@ model Category {
 }
 
 model Product {
-  id           String             @id @default(cuid())
-  name         String
-  slug         String             @unique
-  categoryId   String?
-  categorySlug String             @default("floor-tiles")
-  categoryName String             @default("Floor Tiles")
-  subcategory  String?
-  unitOfSale   String             @default("box") // box | sqft | piece | meter | coil | kg | pack | roll
-  material     String             @default("Vitrified")
-  finish       String             @default("Glossy")
-  size         String             @default("600x600mm")
-  pricePerSqft Float              @default(45)
-  thickness    String             @default("9mm")
-  usage        String             @default("Indoor / Floor")
-  look         String             @default("Marble Look")
-  isTrending   Boolean            @default(false)
-  isBestseller Boolean            @default(false)
-  isNewArrival Boolean            @default(false)
-  inStock      Boolean            @default(true)
-  images       String[]           @default([])
-  description  String             @default("")
-  rating       Float              @default(4.8)
-  reviewCount  Int                @default(12)
-  manualRating Float?
+  id            String             @id @default(cuid())
+  name          String
+  slug          String             @unique
+  categoryId    String?
+  categorySlug  String             @default("floor-tiles")
+  categoryName  String             @default("Floor Tiles")
+  subcategory   String?
+  unitOfSale    String             @default("box") // box | sqft | piece | meter | coil | kg | pack | roll | litre | can
+  material      String             @default("Vitrified")
+  finish        String             @default("Glossy")
+  size          String             @default("600x600mm")
+  pricePerSqft  Float              @default(45)
+  thickness     String             @default("9mm")
+  usage         String             @default("Indoor / Floor")
+  look          String             @default("Marble Look")
+  coverageRate  Float?             // sq.ft per box (tiles), sq.ft per litre (paint), meters per coil (wire)
+  wastageFactor Float?             @default(1.1) // 1.1 = 10% wastage buffer
+  isTrending    Boolean            @default(false)
+  isBestseller  Boolean            @default(false)
+  isNewArrival  Boolean            @default(false)
+  inStock       Boolean            @default(true)
+  images        String[]           @default([])
+  description   String             @default("")
+  rating        Float              @default(4.8)
+  reviewCount   Int                @default(12)
+  manualRating  Float?
   manualReviewCount Int?
-  specs        Json?
+  specs         Json?
 
   // Multi-Vendor fields
   vendorId         String?
@@ -166,22 +169,26 @@ model ProductAttribute {
 }
 
 model ProductVariant {
-  id           String     @id @default(cuid())
-  productId    String
-  size         String
-  finish       String
-  color        String
-  pricePerSqft Float
-  pricePerBox  Float
-  sqftPerBox   Float
-  piecesPerBox Int        @default(4)
-  inStock      Boolean    @default(true)
-  stockBoxes   Int        @default(50)
-  createdAt    DateTime   @default(now())
-  updatedAt    DateTime   @updatedAt
+  id             String     @id @default(cuid())
+  productId      String
+  size           String
+  finish         String
+  color          String
+  image          String?
+  unit           String?
+  attributeLabel String?
+  attributeValue String?
+  pricePerSqft   Float
+  pricePerBox    Float
+  sqftPerBox     Float
+  piecesPerBox   Int        @default(4)
+  inStock        Boolean    @default(true)
+  stockBoxes     Int        @default(50)
+  createdAt      DateTime   @default(now())
+  updatedAt      DateTime   @updatedAt
 
-  product      Product    @relation(fields: [productId], references: [id], onDelete: Cascade)
-  cartItems    CartItem[]
+  product        Product    @relation(fields: [productId], references: [id], onDelete: Cascade)
+  cartItems      CartItem[]
 
   @@index([productId])
 }
@@ -573,6 +580,9 @@ model Vendor {
   deliveryFeeEnabled    Boolean            @default(true)
   customDeliveryFee     Float?             // null means follow store standard fee
   freeDeliveryThreshold Float?             // null means follow store threshold
+
+  // Auto-Publishing Controls (Super Admin permission)
+  autoPublishEnabled    Boolean            @default(false)
 
   createdAt       DateTime           @default(now())
   updatedAt       DateTime           @updatedAt

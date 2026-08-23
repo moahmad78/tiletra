@@ -19,9 +19,14 @@ import {
   ExternalLink,
   Search,
   Check,
+  Loader2,
 } from "lucide-react";
 import { useVendorAuth } from "@/lib/vendor-auth";
-import { getVendorOrders, updateVendorFulfillmentStatus } from "@/lib/actions/vendor";
+import {
+  getVendorOrders,
+  updateVendorFulfillmentStatus,
+  updateVendorFulfillmentBulk,
+} from "@/lib/actions/vendor";
 import { useLiveSync, broadcastLiveEvent } from "@/lib/live-sync";
 import { formatPrice } from "@/lib/formatters";
 import { toast } from "sonner";
@@ -33,6 +38,11 @@ export default function VendorOrdersPage() {
   const [statusFilter, setStatusFilter] = useState<string>("all");
   const [searchQuery, setSearchQuery] = useState("");
   const [expandedOrderId, setExpandedOrderId] = useState<string | null>(null);
+
+  // Multi-select / Bulk fulfillment state
+  const [selectedSplitIds, setSelectedSplitIds] = useState<string[]>([]);
+  const [bulkStatusTarget, setBulkStatusTarget] = useState<string>("ready_for_pickup");
+  const [isBulkUpdating, setIsBulkUpdating] = useState(false);
 
   // Dispatch Tracking Modal State
   const [dispatchModalSplit, setDispatchModalSplit] = useState<any | null>(null);
@@ -95,18 +105,68 @@ export default function VendorOrdersPage() {
     }
   };
 
+  const handleBulkStatusChange = async (statusToSet?: string) => {
+    if (!vendor?.id || selectedSplitIds.length === 0) return;
+    const targetStatus = statusToSet || bulkStatusTarget;
+    const targetIds = [...selectedSplitIds];
+    setIsBulkUpdating(true);
+
+    // Optimistic UI update
+    setOrders((prev) =>
+      prev.map((o) => (targetIds.includes(o.id) ? { ...o, fulfillmentStatus: targetStatus } : o))
+    );
+
+    try {
+      const res = await updateVendorFulfillmentBulk(targetIds, vendor.id, targetStatus);
+      if (res.success) {
+        toast.success(res.message);
+        broadcastLiveEvent("order:status-updated", { updatedSplitIds: targetIds, fulfillmentStatus: targetStatus });
+        broadcastLiveEvent("data:refresh");
+        setSelectedSplitIds([]);
+      } else {
+        toast.error(res.error || "Failed to bulk update orders");
+        loadOrders();
+      }
+    } catch (err: any) {
+      toast.error(err?.message || "Failed to bulk update orders");
+      loadOrders();
+    } finally {
+      setIsBulkUpdating(false);
+    }
+  };
+
   const filteredOrders = orders.filter((order) => {
     const matchesStatus =
       statusFilter === "all" ||
-      order.fulfillmentStatus.toLowerCase() === statusFilter.toLowerCase();
+      order.fulfillmentStatus?.toLowerCase() === statusFilter.toLowerCase();
     const term = searchQuery.toLowerCase().trim();
     const matchesSearch =
       !term ||
-      order.orderId.toLowerCase().includes(term) ||
+      order.orderId?.toLowerCase().includes(term) ||
       order.parentOrder?.customerName?.toLowerCase().includes(term) ||
       order.parentOrder?.customerPhone?.includes(term);
     return matchesStatus && matchesSearch;
   });
+
+  const isAllSelected =
+    filteredOrders.length > 0 &&
+    filteredOrders.every((o) => selectedSplitIds.includes(o.id));
+
+  const handleToggleSelectAll = () => {
+    if (isAllSelected) {
+      const filteredIds = new Set(filteredOrders.map((o) => o.id));
+      setSelectedSplitIds((prev) => prev.filter((id) => !filteredIds.has(id)));
+    } else {
+      const filteredIds = filteredOrders.map((o) => o.id);
+      setSelectedSplitIds((prev) => Array.from(new Set([...prev, ...filteredIds])));
+    }
+  };
+
+  const handleToggleSelectOrder = (id: string) => {
+    setSelectedSplitIds((prev) =>
+      prev.includes(id) ? prev.filter((item) => item !== id) : [...prev, id]
+    );
+  };
 
   return (
     <div className="space-y-6">
@@ -129,7 +189,19 @@ export default function VendorOrdersPage() {
 
       {/* Filter Tabs & Search */}
       <div className="flex flex-col sm:flex-row items-center justify-between gap-3 bg-white p-3 rounded-2xl border border-gray-200/80 shadow-xs">
-        <div className="flex items-center gap-1 overflow-x-auto w-full sm:w-auto">
+        <div className="flex items-center gap-2 overflow-x-auto w-full sm:w-auto">
+          {filteredOrders.length > 0 && (
+            <label className="flex items-center gap-1.5 px-2.5 py-1.5 bg-gray-50 border border-gray-200 rounded-xl text-xs font-bold text-gray-700 cursor-pointer hover:bg-gray-100 transition-colors">
+              <input
+                type="checkbox"
+                checked={isAllSelected}
+                onChange={handleToggleSelectAll}
+                className="w-4 h-4 rounded text-[#F26522] focus:ring-[#F26522] border-gray-300 cursor-pointer accent-[#F26522]"
+              />
+              <span className="text-[11px]">Select All</span>
+            </label>
+          )}
+
           {["all", "processing", "dispatched", "delivered", "cancelled"].map((s) => (
             <button
               key={s}
@@ -157,6 +229,63 @@ export default function VendorOrdersPage() {
         </div>
       </div>
 
+      {/* Floating / Sticky Bulk Fulfillment Actions Bar */}
+      {selectedSplitIds.length > 0 && (
+        <div className="bg-[#052a51] text-white px-4 sm:px-6 py-3.5 rounded-2xl flex flex-wrap items-center justify-between gap-3 border border-[#041f3d] shadow-lg sticky top-3 z-30 animate-in slide-in-from-top-2 duration-150">
+          <div className="flex items-center gap-3 flex-wrap">
+            <span className="px-3 py-1 rounded-xl bg-[#F26522] text-white text-xs font-black shadow-xs">
+              {selectedSplitIds.length} Marked
+            </span>
+            <p className="text-xs font-bold text-white/90 hidden md:block">
+              Bulk Fulfillment Action:
+            </p>
+
+            {/* Quick Bulk Ready for Pickup */}
+            <button
+              type="button"
+              disabled={isBulkUpdating}
+              onClick={() => handleBulkStatusChange("ready_for_pickup")}
+              className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-blue-600 hover:bg-blue-500 text-white rounded-xl text-xs font-black shadow-md transition-all active:scale-95 cursor-pointer disabled:opacity-50"
+            >
+              {isBulkUpdating ? <Loader2 size={13} className="animate-spin" /> : <PackageCheck size={13} />}
+              <span>Ready for Pickup ({selectedSplitIds.length})</span>
+            </button>
+
+            {/* Quick Bulk Dispatched */}
+            <button
+              type="button"
+              disabled={isBulkUpdating}
+              onClick={() => handleBulkStatusChange("dispatched")}
+              className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-[#F26522] hover:bg-[#d95a1e] text-white rounded-xl text-xs font-black shadow-md transition-all active:scale-95 cursor-pointer disabled:opacity-50"
+            >
+              <Truck size={13} />
+              <span>Mark Dispatched ({selectedSplitIds.length})</span>
+            </button>
+
+            {/* Quick Bulk Delivered */}
+            <button
+              type="button"
+              disabled={isBulkUpdating}
+              onClick={() => handleBulkStatusChange("delivered")}
+              className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-emerald-600 hover:bg-emerald-500 text-white rounded-xl text-xs font-black shadow-md transition-all active:scale-95 cursor-pointer disabled:opacity-50"
+            >
+              <Check size={13} strokeWidth={3} />
+              <span>Mark Delivered ({selectedSplitIds.length})</span>
+            </button>
+          </div>
+
+          <div className="flex items-center gap-2">
+            <button
+              type="button"
+              onClick={() => setSelectedSplitIds([])}
+              className="px-3 py-1.5 bg-white/10 hover:bg-white/20 text-white rounded-xl text-xs font-bold transition-colors cursor-pointer"
+            >
+              Deselect All
+            </button>
+          </div>
+        </div>
+      )}
+
       {/* Orders List / Table */}
       {loading ? (
         <div className="bg-white rounded-3xl p-12 border border-gray-200/80 text-center text-xs text-gray-400 font-medium">
@@ -174,20 +303,30 @@ export default function VendorOrdersPage() {
         <div className="space-y-3">
           {filteredOrders.map((split) => {
             const isExpanded = expandedOrderId === split.id;
+            const isSelected = selectedSplitIds.includes(split.id);
             const parent = split.parentOrder;
 
             return (
               <div
                 key={split.id}
-                className="bg-white rounded-3xl border border-gray-200/80 shadow-xs overflow-hidden transition-all hover:border-gray-300"
+                className={`bg-white rounded-3xl border shadow-xs overflow-hidden transition-all hover:border-gray-300 ${
+                  isSelected ? "border-orange-400 ring-2 ring-orange-200" : "border-gray-200/80"
+                }`}
               >
                 {/* Order Row Header */}
                 <div className="p-4 sm:p-5 flex flex-col md:flex-row md:items-center justify-between gap-4">
-                  <div className="space-y-1">
-                    <div className="flex items-center gap-2 flex-wrap">
-                      <span className="font-mono text-xs font-black text-[#052a51]">
-                        #{split.orderId}
-                      </span>
+                  <div className="flex items-start gap-3">
+                    <input
+                      type="checkbox"
+                      checked={isSelected}
+                      onChange={() => handleToggleSelectOrder(split.id)}
+                      className="w-4 h-4 mt-1 rounded text-[#F26522] focus:ring-[#F26522] border-gray-300 cursor-pointer accent-[#F26522]"
+                    />
+                    <div className="space-y-1">
+                      <div className="flex items-center gap-2 flex-wrap">
+                        <span className="font-mono text-xs font-black text-[#052a51]">
+                          #{split.orderId}
+                        </span>
 
                       {/* Delivery Method Badge */}
                       <span
@@ -233,8 +372,9 @@ export default function VendorOrdersPage() {
                       </strong>
                     </p>
                   </div>
+                </div>
 
-                  {/* Financials & Actions */}
+                {/* Financials & Actions */}
                   <div className="flex items-center gap-4 flex-wrap justify-between md:justify-end">
                     <div className="text-right">
                       <p className="text-[10px] text-gray-400 uppercase font-bold">

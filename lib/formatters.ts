@@ -16,6 +16,88 @@ export function formatPrice(n: number | string): string {
   return "₹" + num.toLocaleString("en-IN");
 }
 
+export function formatUnitLabel(unitOfSale?: string | null): string {
+  if (!unitOfSale) return "/sq.ft";
+  const u = unitOfSale.toLowerCase().trim();
+  switch (u) {
+    case "sqft":
+    case "sq.ft":
+    case "sq_ft":
+      return "/sq.ft";
+    case "box":
+      return "/box";
+    case "piece":
+    case "pc":
+      return "/piece";
+    case "meter":
+    case "m":
+    case "metre":
+      return "/meter";
+    case "coil":
+      return "/coil";
+    case "kg":
+      return "/kg";
+    case "pack":
+      return "/pack";
+    case "roll":
+      return "/roll";
+    case "litre":
+    case "liter":
+    case "l":
+      return "/litre";
+    case "can":
+      return "/can";
+    case "bottle":
+      return "/bottle";
+    case "set":
+      return "/set";
+    case "sheet":
+      return "/sheet";
+    default:
+      return `/${unitOfSale}`;
+  }
+}
+
+export function formatUnitName(unitOfSale?: string | null): string {
+  if (!unitOfSale) return "sq.ft";
+  const u = unitOfSale.toLowerCase().trim();
+  switch (u) {
+    case "sqft":
+    case "sq.ft":
+    case "sq_ft":
+      return "sq.ft";
+    case "box":
+      return "box";
+    case "piece":
+    case "pc":
+      return "piece";
+    case "meter":
+    case "m":
+      return "meter";
+    case "coil":
+      return "coil";
+    case "kg":
+      return "kg";
+    case "pack":
+      return "pack";
+    case "roll":
+      return "roll";
+    case "litre":
+    case "liter":
+    case "l":
+      return "litre";
+    case "can":
+      return "can";
+    case "bottle":
+      return "bottle";
+    case "set":
+      return "set";
+    case "sheet":
+      return "sheet";
+    default:
+      return unitOfSale;
+  }
+}
 
 // Helper to convert Prisma product with variants to UI Product type
 export function formatProduct(dbProduct: any): Product {
@@ -24,10 +106,16 @@ export function formatProduct(dbProduct: any): Product {
     size: v.size,
     finish: (v.finish as Finish) || "Glossy",
     color: v.color || "Standard",
+    image: v.image || null,
+    unit: v.unit || null,
+    attributeLabel: v.attributeLabel || null,
+    attributeValue: v.attributeValue || null,
     pricePerBox: Number(v.pricePerBox),
     pricePerSqft: Number(v.pricePerSqft),
     sqftPerBox: Number(v.sqftPerBox),
+    piecesPerBox: v.piecesPerBox ? Number(v.piecesPerBox) : 4,
     stockBoxes: Number(v.stockBoxes ?? 50),
+    inStock: v.inStock ?? true,
   }));
 
   // Fallback variant if none exists
@@ -35,13 +123,18 @@ export function formatProduct(dbProduct: any): Product {
     const pSqft = Number(dbProduct.pricePerSqft || 45);
     variants.push({
       id: `${dbProduct.id}-var-default`,
-      size: dbProduct.size || "600x600mm",
+      size: dbProduct.size || "Standard",
       finish: (dbProduct.finish as Finish) || "Glossy",
       color: "Standard",
-      pricePerBox: Math.round(pSqft * 16),
+      image: null,
+      unit: dbProduct.unitOfSale || "box",
+      attributeLabel: null,
+      attributeValue: null,
+      pricePerBox: Math.round(pSqft * (dbProduct.unitOfSale === "sqft" || dbProduct.unitOfSale === "box" ? 16 : 1)),
       pricePerSqft: pSqft,
-      sqftPerBox: 16,
+      sqftPerBox: dbProduct.unitOfSale === "sqft" || dbProduct.unitOfSale === "box" ? 16 : 1,
       stockBoxes: dbProduct.inStock ? 50 : 0,
+      inStock: dbProduct.inStock ?? true,
     });
   }
 
@@ -95,6 +188,8 @@ export function formatProduct(dbProduct: any): Product {
     status: dbProduct.status || "active",
     approvalStatus: dbProduct.approvalStatus || "approved",
     rejectionReason: dbProduct.rejectionReason || null,
+    coverageRate: dbProduct.coverageRate !== undefined && dbProduct.coverageRate !== null ? Number(dbProduct.coverageRate) : null,
+    wastageFactor: dbProduct.wastageFactor !== undefined && dbProduct.wastageFactor !== null ? Number(dbProduct.wastageFactor) : 1.1,
     specs,
   };
 }

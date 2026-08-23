@@ -49,6 +49,7 @@ import {
   deleteVendor,
   verifyVendorKyc,
 } from "@/lib/actions/admin-vendor";
+import { toggleVendorAutoPublish } from "@/lib/actions/vendor";
 import { formatPrice } from "@/lib/formatters";
 
 export default function VendorDetailDashboardPage() {
@@ -63,6 +64,7 @@ export default function VendorDetailDashboardPage() {
   // Actions & Commission
   const [commissionInput, setCommissionInput] = useState<number>(15.0);
   const [actionLoading, setActionLoading] = useState(false);
+  const [autoPublishLoading, setAutoPublishLoading] = useState(false);
   const [copiedField, setCopiedField] = useState<string | null>(null);
 
   // KYC Inspection & Modal Preview
@@ -100,6 +102,27 @@ export default function VendorDetailDashboardPage() {
     setCopiedField(fieldName);
     toast.success(`Copied ${fieldName} to clipboard`);
     setTimeout(() => setCopiedField(null), 2000);
+  };
+
+  const handleToggleAutoPublish = async (enabled: boolean) => {
+    try {
+      setAutoPublishLoading(true);
+      const res = await toggleVendorAutoPublish(vendorId, enabled);
+      setAutoPublishLoading(false);
+      if (res.success) {
+        toast.success(
+          enabled
+            ? `⚡ Auto-Publish ENABLED for "${data?.vendor?.businessName}". New products will go live instantly.`
+            : `🔒 Auto-Publish DISABLED for "${data?.vendor?.businessName}". Products require admin review.`
+        );
+        loadData();
+      } else {
+        toast.error(res.error || "Failed to update auto-publish setting");
+      }
+    } catch (e: any) {
+      setAutoPublishLoading(false);
+      toast.error(e.message || "Failed to update auto-publish setting");
+    }
   };
 
   const handleUpdateCommission = async () => {
@@ -303,6 +326,123 @@ export default function VendorDetailDashboardPage() {
           >
             <Trash2 size={13} /> Delete Vendor
           </button>
+        </div>
+      </div>
+
+      {/* ── Super Admin Vendor Governance & Auto-Publish Card ── */}
+      <div className="bg-gradient-to-br from-white via-[#052a51]/5 to-orange-50/40 rounded-3xl p-6 sm:p-7 border border-[#052a51]/15 shadow-xs space-y-5">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-[#052a51]/10 pb-4">
+          <div className="flex items-center gap-3">
+            <div className="w-10 h-10 rounded-2xl bg-[#052a51] text-white flex items-center justify-center font-bold shadow-xs">
+              <ShieldCheck size={20} className="text-[#F26522]" />
+            </div>
+            <div>
+              <div className="flex items-center gap-2 flex-wrap">
+                <h2 className="text-base font-black text-[#052a51]">
+                  Vendor Publishing Privileges & Platform Governance
+                </h2>
+                <span className="px-2 py-0.5 rounded-md text-[10px] font-black uppercase tracking-wider bg-[#052a51] text-white">
+                  Super Admin Only
+                </span>
+              </div>
+              <p className="text-xs text-gray-500 mt-0.5">
+                Control catalog approval bypass, platform fee commissions, and marketplace trust levels.
+              </p>
+            </div>
+          </div>
+        </div>
+
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
+          {/* 1. Auto-Publish Toggle Switch */}
+          <div className="p-4 sm:p-5 rounded-2xl bg-white border border-gray-200/90 shadow-2xs space-y-3 flex flex-col justify-between">
+            <div className="flex items-start justify-between gap-3">
+              <div>
+                <div className="flex items-center gap-2">
+                  <span className="text-xs font-black uppercase text-[#052a51] tracking-wider">
+                    Instant Auto-Publish
+                  </span>
+                  {vendor.autoPublishEnabled ? (
+                    <span className="px-2 py-0.5 rounded-full text-[10px] font-black bg-emerald-100 text-emerald-800 border border-emerald-300 flex items-center gap-1">
+                      <span className="w-1.5 h-1.5 rounded-full bg-emerald-600 animate-pulse" />
+                      Active / Bypass ON
+                    </span>
+                  ) : (
+                    <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-gray-100 text-gray-700 border border-gray-300">
+                      Standard Review Required
+                    </span>
+                  )}
+                </div>
+                <p className="text-xs text-gray-600 mt-1">
+                  Skip approval queue — when enabled, this trusted vendor's new and edited products go live immediately on the storefront.
+                </p>
+              </div>
+
+              {/* Custom Toggle Switch */}
+              <button
+                type="button"
+                role="switch"
+                aria-checked={Boolean(vendor.autoPublishEnabled)}
+                disabled={autoPublishLoading}
+                onClick={() => handleToggleAutoPublish(!vendor.autoPublishEnabled)}
+                className={`relative inline-flex h-7 w-13 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none disabled:opacity-50 ${
+                  vendor.autoPublishEnabled ? "bg-emerald-600" : "bg-gray-300"
+                }`}
+              >
+                <span
+                  aria-hidden="true"
+                  className={`pointer-events-none inline-block h-6 w-6 transform rounded-full bg-white shadow-md ring-0 transition duration-200 ease-in-out ${
+                    vendor.autoPublishEnabled ? "translate-x-6" : "translate-x-0"
+                  }`}
+                />
+              </button>
+            </div>
+
+            <div className="pt-2 border-t border-gray-100 flex items-center justify-between text-[11px] text-gray-500">
+              <span>Policy: Immediate Database Evaluation</span>
+              {autoPublishLoading && (
+                <span className="flex items-center gap-1 text-[#F26522] font-bold">
+                  <Loader2 size={12} className="animate-spin" /> Updating policy...
+                </span>
+              )}
+            </div>
+          </div>
+
+          {/* 2. Commission Rate & Fee Controls */}
+          <div className="p-4 sm:p-5 rounded-2xl bg-white border border-gray-200/90 shadow-2xs space-y-3 flex flex-col justify-between">
+            <div>
+              <span className="text-xs font-black uppercase text-[#052a51] tracking-wider block">
+                Platform Commission Fee (%)
+              </span>
+              <p className="text-xs text-gray-600 mt-1">
+                Platform transaction fee automatically deducted from this vendor's order payout splits.
+              </p>
+            </div>
+
+            <div className="flex items-center gap-2 pt-2 border-t border-gray-100">
+              <div className="relative flex-1">
+                <input
+                  type="number"
+                  min={0}
+                  max={100}
+                  step={0.5}
+                  value={commissionInput}
+                  onChange={(e) => setCommissionInput(parseFloat(e.target.value) || 0)}
+                  className="w-full px-3.5 py-2 bg-gray-50 border border-gray-200 rounded-xl text-xs font-bold text-[#052a51] focus:bg-white focus:outline-none focus:border-[#F26522]"
+                />
+                <span className="absolute right-3 top-1/2 -translate-y-1/2 text-xs font-bold text-gray-400">
+                  %
+                </span>
+              </div>
+              <button
+                type="button"
+                disabled={actionLoading}
+                onClick={handleUpdateCommission}
+                className="px-4 py-2 bg-[#052a51] hover:bg-[#073b70] text-white text-xs font-bold rounded-xl transition-all disabled:opacity-50 cursor-pointer whitespace-nowrap shadow-xs"
+              >
+                Save Rate
+              </button>
+            </div>
+          </div>
         </div>
       </div>
 

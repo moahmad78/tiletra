@@ -577,6 +577,51 @@ export async function updateOrderStatus(id: string, orderStatus: string) {
   }
 }
 
+export async function updateOrderStatusBulk(ids: string[], newStatus: string) {
+  try {
+    if (!ids || ids.length === 0) {
+      return { success: false, error: "No order IDs provided for bulk status update" };
+    }
+
+    const result = await prisma.order.updateMany({
+      where: { id: { in: ids } },
+      data: { orderStatus: newStatus },
+    });
+
+    // Real-Time Socket Broadcast
+    try {
+      const { emitSocketEvent } = await import("@/lib/socket-server-emit");
+      for (const id of ids) {
+        await emitSocketEvent({
+          event: "order-status-updated",
+          room: "admin",
+          data: {
+            orderId: id,
+            orderStatus: newStatus,
+            updatedAt: new Date(),
+          },
+        });
+      }
+    } catch (e) {
+      console.error("Failed to emit bulk order-status-updated socket event:", e);
+    }
+
+    safeRevalidate("/admin/orders");
+    safeRevalidate("/admin");
+    safeRevalidate("/account/orders");
+    safeRevalidate("/vendor/orders");
+
+    return {
+      success: true,
+      count: result.count,
+      message: `Successfully marked ${result.count} order(s) as "${newStatus}"`,
+    };
+  } catch (error: any) {
+    console.error("Error bulk updating order status:", error);
+    return { success: false, error: error?.message || "Failed to bulk update order status" };
+  }
+}
+
 export async function updateOrderTracking(
   id: string,
   data: { courierName: string; trackingNumber: string }

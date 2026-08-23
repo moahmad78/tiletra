@@ -5,7 +5,7 @@ import { useRouter, useParams } from "next/navigation";
 import Link from "next/link";
 import { useVendorAuth } from "@/lib/vendor-auth";
 import { getProductById } from "@/lib/actions/products";
-import { updateVendorProduct } from "@/lib/actions/vendor";
+import { updateVendorProduct, getVendorProfile } from "@/lib/actions/vendor";
 import { getCategories } from "@/lib/actions/categories";
 import type { Category } from "@/lib/data/categories";
 import type { Product } from "@/lib/data/products";
@@ -21,6 +21,7 @@ import {
   Sparkles,
   Info,
   Loader2,
+  Zap,
 } from "lucide-react";
 import { toast } from "sonner";
 
@@ -45,6 +46,9 @@ export default function VendorEditProductPage() {
 
   // Dynamic Attributes
   const [attributes, setAttributes] = useState<{ key: string; value: string }[]>([]);
+  const [coverageRate, setCoverageRate] = useState<string>("");
+  const [wastagePercent, setWastagePercent] = useState<string>("10");
+  const [vendorProfile, setVendorProfile] = useState<any | null>(null);
 
   // Variants
   const [variants, setVariants] = useState([
@@ -69,6 +73,10 @@ export default function VendorEditProductPage() {
         ]);
         setCategories(cats);
 
+        if (vendor?.id) {
+          getVendorProfile(vendor.id).then((v) => setVendorProfile(v));
+        }
+
         if (prod) {
           setName(prod.name);
           setCategorySlug(prod.categorySlug || "floor-tiles");
@@ -77,12 +85,18 @@ export default function VendorEditProductPage() {
           setUnitOfSale(prod.unitOfSale || "box");
           setDescription(prod.description || "");
           setImages(prod.images && prod.images.length > 0 ? prod.images : ["/placeholders/product.svg"]);
+          setCoverageRate(prod.coverageRate ? String(prod.coverageRate) : "");
+          setWastagePercent(prod.wastageFactor ? String(Math.round((prod.wastageFactor - 1) * 100)) : "10");
           if (prod.variants && prod.variants.length > 0) {
             setVariants(
               prod.variants.map((v) => ({
                 size: v.size,
                 finish: v.finish,
                 color: v.color,
+                image: v.image || null,
+                unit: v.unit || null,
+                attributeLabel: v.attributeLabel || null,
+                attributeValue: v.attributeValue || null,
                 pricePerBox: v.pricePerBox,
                 pricePerSqft: v.pricePerSqft,
                 sqftPerBox: v.sqftPerBox,
@@ -186,6 +200,8 @@ export default function VendorEditProductPage() {
       description: description.trim(),
       images: images.filter((img) => img.trim().length > 0),
       attributes: cleanAttributes,
+      coverageRate: !isNaN(parseFloat(coverageRate)) && parseFloat(coverageRate) > 0 ? parseFloat(coverageRate) : null,
+      wastageFactor: (parseFloat(wastagePercent) || 10) / 100 + 1.0,
       variants,
     });
     setSaving(false);
@@ -229,16 +245,28 @@ export default function VendorEditProductPage() {
         </div>
       </div>
 
-      {/* Approval Reminder Notice */}
-      <div className="bg-blue-50 border border-blue-200 rounded-2xl p-4 flex items-start gap-3 text-xs text-blue-900">
-        <Clock size={18} className="text-blue-600 shrink-0 mt-0.5" />
-        <div>
-          <strong className="font-bold">Quality & Catalog Review:</strong>
-          <p className="mt-0.5 text-blue-800">
-            Saving changes will resubmit this listing to the Super Admin queue for quick quality verification before going live.
-          </p>
+      {/* Auto-Publish or Approval Notice */}
+      {vendorProfile?.autoPublishEnabled ? (
+        <div className="bg-emerald-50 border border-emerald-200 rounded-2xl p-4 flex items-start gap-3 text-xs text-emerald-950">
+          <Zap size={18} className="text-emerald-600 shrink-0 mt-0.5" />
+          <div>
+            <strong className="font-bold">✓ Auto-Publish Active (Trusted Seller):</strong>
+            <p className="mt-0.5 text-emerald-800">
+              Saving changes will update this listing instantly on the storefront without waiting in the approval queue.
+            </p>
+          </div>
         </div>
-      </div>
+      ) : (
+        <div className="bg-blue-50 border border-blue-200 rounded-2xl p-4 flex items-start gap-3 text-xs text-blue-900">
+          <Clock size={18} className="text-blue-600 shrink-0 mt-0.5" />
+          <div>
+            <strong className="font-bold">Quality & Catalog Review:</strong>
+            <p className="mt-0.5 text-blue-800">
+              Saving changes will resubmit this listing to the Super Admin queue for quick quality verification before going live.
+            </p>
+          </div>
+        </div>
+      )}
 
       <form onSubmit={handleSubmit} className="space-y-6">
         {/* Basic Information */}
@@ -527,6 +555,52 @@ export default function VendorEditProductPage() {
                 </div>
               </div>
             ))}
+          </div>
+
+          {/* Smart Calculator Estimator Settings */}
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 pt-4 border-t border-gray-100">
+            <div>
+              <label className="text-xs font-bold text-gray-800 uppercase tracking-wider block mb-1.5 flex justify-between">
+                <span>Coverage / Length Rate</span>
+                <span className="text-[10px] text-gray-400 font-normal">Powers Calculator</span>
+              </label>
+              <input
+                type="number"
+                step="any"
+                min={0}
+                value={coverageRate}
+                onChange={(e) => setCoverageRate(e.target.value)}
+                placeholder="e.g. 16 for tiles, 120 for paint, 90 for wire"
+                className="w-full px-4 py-2.5 bg-gray-50 border border-gray-200 rounded-xl text-xs font-bold text-gray-800 focus:bg-white focus:outline-none focus:border-emerald-600"
+              />
+              <p className="text-[10px] text-gray-400 mt-1">
+                Sq.ft/box (Tiles), Sq.ft/Litre (Paint), Meters/coil (Wires)
+              </p>
+            </div>
+
+            <div>
+              <label className="text-xs font-bold text-gray-800 uppercase tracking-wider block mb-1.5 flex justify-between">
+                <span>Wastage Buffer Margin (%)</span>
+                <span className="text-[10px] text-gray-400 font-normal">Default: 10%</span>
+              </label>
+              <div className="relative">
+                <input
+                  type="number"
+                  min={0}
+                  max={50}
+                  value={wastagePercent}
+                  onChange={(e) => setWastagePercent(e.target.value)}
+                  placeholder="10"
+                  className="w-full px-4 py-2.5 bg-gray-50 border border-gray-200 rounded-xl text-xs font-bold text-gray-800 focus:bg-white focus:outline-none focus:border-emerald-600"
+                />
+                <span className="absolute right-4 top-1/2 -translate-y-1/2 text-xs font-bold text-gray-400">
+                  %
+                </span>
+              </div>
+              <p className="text-[10px] text-gray-400 mt-1">
+                Cutting/application buffer added automatically before rounding
+              </p>
+            </div>
           </div>
         </div>
 

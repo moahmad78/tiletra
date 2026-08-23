@@ -38,7 +38,10 @@ import FrequentlyBoughtTogether from "@/components/suggestions/FrequentlyBoughtT
 import RecentlyViewedSlider from "@/components/suggestions/RecentlyViewedSlider";
 import SuggestedItemsSection from "@/components/suggestions/SuggestedItemsSection";
 import { showCartToast } from "@/lib/cart-toast-store";
+import VariantSelector from "@/components/products/VariantSelector";
+import SmartCalculator from "@/components/products/SmartCalculator";
 import { toast } from "sonner";
+import { formatUnitLabel, formatUnitName } from "@/lib/formatters";
 
 function formatPrice(n: number) {
   return "₹" + n.toLocaleString("en-IN");
@@ -60,9 +63,9 @@ export default function ProductDetailsClient({
   const [selectedVariant, setSelectedVariant] = useState<ProductVariant>(
     definedProduct.variants[0] || {
       id: "v-default",
-      size: "600x600mm",
+      size: "Standard",
       finish: "Glossy",
-      color: "White",
+      color: "Standard",
       pricePerBox: 2400,
       pricePerSqft: 60,
       sqftPerBox: 40,
@@ -77,26 +80,48 @@ export default function ProductDetailsClient({
   const [reviewsOpen, setReviewsOpen] = useState(false);
   const [mounted, setMounted] = useState(false);
 
+  // Dynamic gallery images including variant specific images
   const allGalleryImages = useMemo(() => {
     const raw =
       definedProduct.images && definedProduct.images.length > 0
         ? definedProduct.images.filter(Boolean)
         : [];
 
-    if (raw.length > 1) return raw;
+    const variantImages = (definedProduct.variants || [])
+      .map((v) => v.image)
+      .filter((img): img is string => Boolean(img && typeof img === "string"));
 
-    const base =
-      raw[0] ||
-      "/placeholders/product.svg";
+    const combined = Array.from(new Set([
+      ...(selectedVariant.image ? [selectedVariant.image] : []),
+      ...raw,
+      ...variantImages,
+    ]));
 
-    // Provide high-res multi-angle / contextual mockup perspectives for Flipkart experience
-    return [
-      base,
-      "/placeholders/product.svg",
-      "/placeholders/product.svg",
-      "/placeholders/product.svg",
-    ];
-  }, [definedProduct.images]);
+    if (combined.length > 0) return combined;
+
+    return ["/placeholders/product.svg"];
+  }, [definedProduct.images, definedProduct.variants, selectedVariant.image]);
+
+  const handleSelectVariant = (v: ProductVariant) => {
+    setSelectedVariant(v);
+    if (v.image) {
+      const idx = allGalleryImages.indexOf(v.image);
+      if (idx !== -1) {
+        setActiveImage(idx);
+      } else {
+        setActiveImage(0);
+      }
+    }
+  };
+
+  const handleSelectImage = (imgUrl: string) => {
+    const idx = allGalleryImages.indexOf(imgUrl);
+    if (idx !== -1) {
+      setActiveImage(idx);
+    } else {
+      setActiveImage(0);
+    }
+  };
 
   // Touch & Drag swipe support for gallery
   const [touchStartX, setTouchStartX] = useState<number | null>(null);
@@ -192,11 +217,13 @@ export default function ProductDetailsClient({
       : 40;
 
   const isTileProduct =
-    definedProduct.categorySlug.includes("tile") ||
-    definedProduct.categorySlug.includes("stone") ||
+    definedProduct.categorySlug?.includes("tile") ||
+    definedProduct.categorySlug?.includes("stone") ||
+    definedProduct.unitOfSale === "sqft" ||
     definedProduct.unitOfSale === "box" ||
     (!definedProduct.unitOfSale && definedProduct.material === "Vitrified");
-  const unitLabel = definedProduct.unitOfSale || "box";
+
+  const unitLabel = formatUnitName(selectedVariant.unit || definedProduct.unitOfSale || (isTileProduct ? "box" : "piece"));
 
   return (
     <main className="min-h-screen flex flex-col bg-[#F8F9FA]">
@@ -384,34 +411,13 @@ export default function ProductDetailsClient({
               </div>
             </div>
 
-            {/* ── 2. Variant / Size Selector (If multiple exist) ── */}
-            {definedProduct.variants.length > 1 && (
-              <div className="space-y-2">
-                <p className="text-xs font-bold text-[#052a51] uppercase tracking-wider">
-                  Select Size / Option: <span className="text-[#F26522] normal-case">{selectedVariant.size}</span>
-                </p>
-                <div className="flex flex-wrap gap-2">
-                  {[...new Set(definedProduct.variants.map((v) => v.size))].map((size) => {
-                    const v = definedProduct.variants.find((vv) => vv.size === size)!;
-                    const isSelected = selectedVariant.size === size;
-                    return (
-                      <button
-                        key={size}
-                        type="button"
-                        onClick={() => setSelectedVariant(v)}
-                        className={`px-3.5 py-2 text-xs font-bold rounded-xl border-2 transition-all active:scale-95 cursor-pointer whitespace-nowrap ${
-                          isSelected
-                            ? "border-[#F26522] bg-[#F26522]/10 text-[#F26522] shadow-xs"
-                            : "border-gray-200 text-[#052a51] hover:border-gray-400 bg-white"
-                        }`}
-                      >
-                        {size}
-                      </button>
-                    );
-                  })}
-                </div>
-              </div>
-            )}
+            {/* ── 2. Flipkart-Style Dynamic Variant Selector (Color Swatches, Volume Chips, Dimensions) ── */}
+            <VariantSelector
+              product={definedProduct}
+              selectedVariant={selectedVariant}
+              onSelectVariant={handleSelectVariant}
+              onSelectImage={handleSelectImage}
+            />
 
             {/* ── 3. Quantity Stepper + Dynamic Total ── */}
             <div className="space-y-2">
@@ -453,46 +459,17 @@ export default function ProductDetailsClient({
               </div>
             </div>
 
-            {/* ── 4. Room Area Calculator (Only for surface / tile / stone / sqft products) ── */}
-            {isTileProduct && (
-              <div className="bg-[#052a51]/5 rounded-2xl p-3.5 border border-[#052a51]/10 space-y-2.5">
-                <div className="flex items-center justify-between">
-                  <span className="text-xs font-black text-[#052a51] flex items-center gap-1.5">
-                    <Calculator size={14} className="text-[#F26522]" />
-                    <span>Coverage / Area Calculator</span>
-                  </span>
-                  <span className="text-[10px] text-gray-400 font-medium">+10% wastage included</span>
-                </div>
-
-                <div className="flex gap-2">
-                  <input
-                    type="number"
-                    value={roomSqft}
-                    onChange={(e) => {
-                      setRoomSqft(e.target.value);
-                      if (e.target.value && parseFloat(e.target.value) > 0) {
-                        const needed = Math.max(1, Math.ceil((parseFloat(e.target.value) * 1.1) / coveragePerUnit));
-                        setQuantity(needed);
-                      }
-                    }}
-                    placeholder="Enter floor/wall area in sq.ft"
-                    className="flex-1 px-3 py-2 bg-white border border-gray-200 rounded-xl text-xs font-semibold text-[#052a51] focus:outline-none focus:border-[#F26522]"
-                  />
-                  <span className="flex items-center px-3 bg-gray-100 rounded-xl text-xs font-bold text-gray-600">
-                    sq.ft
-                  </span>
-                </div>
-
-                {boxesNeeded && (
-                  <div className="text-[11px] text-[#052a51] font-semibold flex justify-between pt-1 border-t border-gray-200/60">
-                    <span>Required for {roomSqft} sq.ft (+10% extra):</span>
-                    <span className="font-bold text-[#F26522]">
-                      {boxesNeeded} {unitLabel}{boxesNeeded > 1 ? "s" : ""} ({formatPrice(totalCostForRoom!)})
-                    </span>
-                  </div>
-                )}
-              </div>
-            )}
+            {/* ── 4. Smart Category-Aware Calculator (Area→Boxes, Area→Volume, Length→Units) ── */}
+            <SmartCalculator
+              product={definedProduct}
+              selectedVariant={selectedVariant}
+              onApplyQuantity={(newQty, matchedVariant) => {
+                setQuantity(newQty);
+                if (matchedVariant) {
+                  handleSelectVariant(matchedVariant);
+                }
+              }}
+            />
 
             {/* ── 5. Primary Action Buttons (Add to Cart & Buy Now - Side by Side) ── */}
             <div className="flex items-center gap-2.5 pt-1">

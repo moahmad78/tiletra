@@ -1,32 +1,72 @@
 "use client";
 
 import { useState } from "react";
-import { Plus, Trash2, Copy, Sparkles } from "lucide-react";
+import { Plus, Trash2, Copy, Sparkles, Image as ImageIcon, Check } from "lucide-react";
 import type { ProductVariant, Finish } from "@/lib/data/products";
 
 interface VariantEditorProps {
   variants: ProductVariant[];
   onChange: (variants: ProductVariant[]) => void;
+  unitOfSale?: string;
 }
 
-const FINISH_OPTIONS: Finish[] = ["Matte", "Glossy", "Textured", "Satin", "Polished"];
-const SIZE_OPTIONS = ["300x300mm", "300x600mm", "600x600mm", "800x800mm", "1200x600mm", "200x200mm", "100x100mm"];
+const FINISH_OPTIONS: string[] = [
+  "Standard",
+  "Matte",
+  "Glossy",
+  "Textured",
+  "Satin",
+  "Polished",
+  "Metallic",
+  "Rustic",
+];
+
+const PRESET_OPTIONS: Record<string, string[]> = {
+  paint: ["1L", "4L", "10L", "20L", "500ml", "200ml"],
+  plywood: [
+    "6mm x 4x8ft",
+    "9mm x 4x8ft",
+    "12mm x 4x8ft",
+    "16mm x 4x8ft",
+    "19mm x 4x8ft",
+    "25mm x 4x8ft",
+  ],
+  tiles: [
+    "300x300mm",
+    "300x600mm",
+    "600x600mm",
+    "800x800mm",
+    "1200x600mm",
+    "200x200mm",
+    "100x100mm",
+  ],
+  electrical: ["1.0 sq.mm (90m)", "1.5 sq.mm (90m)", "2.5 sq.mm (90m)", "4.0 sq.mm (90m)", "6.0 sq.mm (90m)"],
+  hardware: ["Pack of 10", "Pack of 25", "Pack of 50", "Pack of 100", "Single Piece"],
+};
 
 export default function VariantEditor({
   variants,
   onChange,
+  unitOfSale = "unit",
 }: VariantEditorProps) {
   const handleAddVariant = () => {
     const newId = `v-${Date.now().toString().slice(-5)}`;
+    const lastVariant = variants[variants.length - 1];
+
     const newVariant: ProductVariant = {
       id: newId,
-      size: "600x600mm",
-      finish: "Matte",
-      color: "White",
-      pricePerBox: 2400,
-      pricePerSqft: 60,
-      sqftPerBox: 40,
-      stockBoxes: 100,
+      size: lastVariant ? `${lastVariant.size} (Option)` : "Standard",
+      finish: lastVariant?.finish || "Standard",
+      color: lastVariant?.color || "Standard",
+      image: null,
+      unit: unitOfSale,
+      attributeLabel: lastVariant?.attributeLabel || "Option",
+      attributeValue: lastVariant?.attributeValue || "Standard",
+      pricePerBox: lastVariant?.pricePerBox || 1000,
+      pricePerSqft: lastVariant?.pricePerSqft || 1000,
+      sqftPerBox: lastVariant?.sqftPerBox || 1,
+      stockBoxes: 50,
+      inStock: true,
     };
     onChange([...variants, newVariant]);
   };
@@ -45,7 +85,14 @@ export default function VariantEditor({
       const sqft = field === "sqftPerBox" ? Number(value) : current.sqftPerBox;
       if (sqft > 0) {
         current.pricePerSqft = Math.round(boxPrice / sqft);
+      } else {
+        current.pricePerSqft = boxPrice;
       }
+    }
+
+    // Keep size and attributeValue in sync if user modifies size
+    if (field === "size") {
+      current.attributeValue = value;
     }
 
     updated[index] = current;
@@ -69,62 +116,73 @@ export default function VariantEditor({
 
   return (
     <div className="space-y-4">
-      <div className="flex items-center justify-between">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
         <div>
-          <h4 className="text-sm font-bold text-[#052a51]">Size & Finish Variants</h4>
+          <h4 className="text-sm font-black text-[#052a51] flex items-center gap-2">
+            <span>Product Variants & Options</span>
+            <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-orange-100 text-[#F26522]">
+              {variants.length} {variants.length === 1 ? "Option" : "Options"}
+            </span>
+          </h4>
           <p className="text-xs text-gray-400">
-            Define tile dimensions, pricing per box/sq.ft, and stock quantity
+            Define volume/size (1L, 4L, 19mm, 600x600mm), color swatches, prices, stock, and variant images
           </p>
         </div>
         <button
           type="button"
           onClick={handleAddVariant}
-          className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-[#052a51] text-white text-xs font-bold rounded-xl hover:bg-[#041f3d] active:scale-95 transition-all shadow-xs"
+          className="inline-flex items-center gap-1.5 px-3.5 py-2 bg-[#052a51] text-white text-xs font-bold rounded-xl hover:bg-[#041f3d] active:scale-95 transition-all shadow-xs shrink-0 cursor-pointer"
         >
           <Plus size={14} />
-          <span>Add Variant</span>
+          <span>Add Variant / Size</span>
         </button>
       </div>
 
       {/* Responsive Table of Variants */}
       <div className="overflow-x-auto border border-gray-200 rounded-2xl bg-white shadow-2xs">
-        <table className="w-full text-left text-xs border-collapse min-w-[700px]">
+        <table className="w-full text-left text-xs border-collapse min-w-[750px]">
           <thead>
             <tr className="bg-gray-50 border-b border-gray-200 text-gray-500 font-bold uppercase tracking-wider text-[10px]">
-              <th className="py-3 px-3">Size</th>
-              <th className="py-3 px-3">Finish</th>
+              <th className="py-3 px-3">Option / Size / Volume</th>
               <th className="py-3 px-3">Color</th>
-              <th className="py-3 px-3">Sq.ft / Box</th>
-              <th className="py-3 px-3">Price / Box (₹)</th>
-              <th className="py-3 px-3">Rate / Sq.ft (₹)</th>
-              <th className="py-3 px-3">Stock (Boxes)</th>
+              <th className="py-3 px-3">Finish</th>
+              <th className="py-3 px-3">Price / Pack (₹)</th>
+              <th className="py-3 px-3">Stock ({unitOfSale}s)</th>
+              <th className="py-3 px-3">Variant Image URL</th>
               <th className="py-3 px-3 text-right">Actions</th>
             </tr>
           </thead>
           <tbody className="divide-y divide-gray-100 font-medium">
             {variants.map((v, i) => (
               <tr key={v.id || i} className="hover:bg-gray-50/50 transition-colors">
-                {/* Size */}
+                {/* Size / Volume / Option */}
                 <td className="p-2.5">
-                  <select
-                    value={v.size}
+                  <input
+                    type="text"
+                    value={v.attributeValue || v.size}
                     onChange={(e) => handleUpdateVariant(i, "size", e.target.value)}
-                    className="w-full px-2.5 py-1.5 bg-gray-50 border border-gray-200 rounded-lg text-xs font-bold text-[#052a51] focus:outline-none focus:border-[#F26522]"
-                  >
-                    {SIZE_OPTIONS.map((s) => (
-                      <option key={s} value={s}>
-                        {s}
-                      </option>
-                    ))}
-                  </select>
+                    className="w-36 px-2.5 py-1.5 bg-gray-50 border border-gray-200 rounded-lg text-xs font-bold text-[#052a51] focus:outline-none focus:border-[#F26522]"
+                    placeholder="e.g. 4L, 19mm, 600x600mm"
+                  />
+                </td>
+
+                {/* Color */}
+                <td className="p-2.5">
+                  <input
+                    type="text"
+                    value={v.color}
+                    onChange={(e) => handleUpdateVariant(i, "color", e.target.value)}
+                    className="w-28 px-2.5 py-1.5 bg-gray-50 border border-gray-200 rounded-lg text-xs font-bold text-[#052a51] focus:outline-none focus:border-[#F26522]"
+                    placeholder="e.g. White, Teak"
+                  />
                 </td>
 
                 {/* Finish */}
                 <td className="p-2.5">
                   <select
-                    value={v.finish}
-                    onChange={(e) => handleUpdateVariant(i, "finish", e.target.value as Finish)}
-                    className="w-full px-2.5 py-1.5 bg-gray-50 border border-gray-200 rounded-lg text-xs font-bold text-[#052a51] focus:outline-none focus:border-[#F26522]"
+                    value={v.finish || "Standard"}
+                    onChange={(e) => handleUpdateVariant(i, "finish", e.target.value)}
+                    className="w-28 px-2.5 py-1.5 bg-gray-50 border border-gray-200 rounded-lg text-xs font-bold text-[#052a51] focus:outline-none focus:border-[#F26522]"
                   >
                     {FINISH_OPTIONS.map((f) => (
                       <option key={f} value={f}>
@@ -134,47 +192,18 @@ export default function VariantEditor({
                   </select>
                 </td>
 
-                {/* Color */}
-                <td className="p-2.5">
-                  <input
-                    type="text"
-                    value={v.color}
-                    onChange={(e) => handleUpdateVariant(i, "color", e.target.value)}
-                    className="w-24 px-2.5 py-1.5 bg-gray-50 border border-gray-200 rounded-lg text-xs font-bold text-[#052a51] focus:outline-none focus:border-[#F26522]"
-                    placeholder="e.g. White"
-                  />
-                </td>
-
-                {/* Sq.ft / Box */}
-                <td className="p-2.5">
-                  <input
-                    type="number"
-                    value={v.sqftPerBox}
-                    onChange={(e) => handleUpdateVariant(i, "sqftPerBox", Number(e.target.value))}
-                    className="w-20 px-2.5 py-1.5 bg-gray-50 border border-gray-200 rounded-lg text-xs font-bold text-[#052a51] focus:outline-none focus:border-[#F26522]"
-                    min={1}
-                  />
-                </td>
-
-                {/* Price / Box */}
+                {/* Price / Pack */}
                 <td className="p-2.5">
                   <input
                     type="number"
                     value={v.pricePerBox}
                     onChange={(e) => handleUpdateVariant(i, "pricePerBox", Number(e.target.value))}
                     className="w-24 px-2.5 py-1.5 bg-gray-50 border border-gray-200 rounded-lg text-xs font-black text-[#052a51] focus:outline-none focus:border-[#F26522]"
-                    min={100}
+                    min={1}
                   />
                 </td>
 
-                {/* Price / Sq.ft */}
-                <td className="p-2.5">
-                  <span className="font-extrabold text-[#F26522] text-xs px-2 py-1 bg-[#F26522]/10 rounded-md">
-                    ₹{v.pricePerSqft}
-                  </span>
-                </td>
-
-                {/* Stock Boxes */}
+                {/* Stock Boxes / Units */}
                 <td className="p-2.5">
                   <input
                     type="number"
@@ -189,12 +218,30 @@ export default function VariantEditor({
                   />
                 </td>
 
+                {/* Variant Image URL */}
+                <td className="p-2.5">
+                  <div className="flex items-center gap-1.5">
+                    <input
+                      type="text"
+                      value={v.image || ""}
+                      onChange={(e) => handleUpdateVariant(i, "image", e.target.value || null)}
+                      className="w-36 px-2 py-1.5 bg-gray-50 border border-gray-200 rounded-lg text-[11px] font-medium text-gray-700 focus:outline-none focus:border-[#F26522]"
+                      placeholder="https://... or /path"
+                    />
+                    {v.image && (
+                      <div className="w-7 h-7 rounded-md border border-gray-200 overflow-hidden shrink-0">
+                        <img src={v.image} alt="variant" className="w-full h-full object-cover" />
+                      </div>
+                    )}
+                  </div>
+                </td>
+
                 {/* Actions */}
                 <td className="p-2.5 text-right space-x-1">
                   <button
                     type="button"
                     onClick={() => handleDuplicateVariant(i)}
-                    className="p-1.5 text-gray-400 hover:text-[#052a51] rounded-lg hover:bg-gray-100"
+                    className="p-1.5 text-gray-400 hover:text-[#052a51] rounded-lg hover:bg-gray-100 cursor-pointer"
                     title="Duplicate variant"
                   >
                     <Copy size={13} />
@@ -203,7 +250,7 @@ export default function VariantEditor({
                     <button
                       type="button"
                       onClick={() => handleRemoveVariant(i)}
-                      className="p-1.5 text-gray-400 hover:text-red-500 rounded-lg hover:bg-red-50"
+                      className="p-1.5 text-gray-400 hover:text-red-500 rounded-lg hover:bg-red-50 cursor-pointer"
                       title="Remove variant"
                     >
                       <Trash2 size={13} />

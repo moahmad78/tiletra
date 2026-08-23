@@ -13,10 +13,15 @@ import {
   CheckSquare,
   Square,
   MinusSquare,
+  CheckCircle2,
+  Check,
+  Truck,
+  PackageCheck,
 } from "lucide-react";
 import {
   getOrders,
   updateOrderStatus,
+  updateOrderStatusBulk,
   deleteOrder,
   deleteOrdersBulk,
 } from "@/lib/actions/orders";
@@ -48,8 +53,10 @@ export default function AdminOrdersPage() {
   const [orderToDelete, setOrderToDelete] = useState<any | null>(null);
   const [isDeleting, setIsDeleting] = useState(false);
 
-  // Multi-select / Bulk delete state
+  // Multi-select / Bulk management state
   const [selectedOrderIds, setSelectedOrderIds] = useState<string[]>([]);
+  const [bulkStatusTarget, setBulkStatusTarget] = useState<string>("Confirmed");
+  const [isBulkUpdating, setIsBulkUpdating] = useState(false);
   const [showBulkDeleteModal, setShowBulkDeleteModal] = useState(false);
   const [isBulkDeleting, setIsBulkDeleting] = useState(false);
 
@@ -141,6 +148,39 @@ export default function AdminOrdersPage() {
     } else {
       toast.error(res.error || "Failed to update status");
       loadOrders();
+    }
+  };
+
+  // Bulk Status Update / Approval
+  const handleBulkStatusUpdate = async (statusToSet?: string) => {
+    const targetStatus = statusToSet || bulkStatusTarget;
+    if (selectedOrderIds.length === 0) return;
+
+    const count = selectedOrderIds.length;
+    const targetIds = [...selectedOrderIds];
+    setIsBulkUpdating(true);
+
+    // Optimistic UI update
+    setOrders((prev) =>
+      prev.map((o) => (targetIds.includes(o.id) ? { ...o, orderStatus: targetStatus } : o))
+    );
+
+    try {
+      const res = await updateOrderStatusBulk(targetIds, targetStatus);
+      if (res.success) {
+        toast.success(res.message || `Successfully marked ${count} orders as "${targetStatus}"`);
+        broadcastLiveEvent("order:status-updated", { updatedIds: targetIds, orderStatus: targetStatus });
+        broadcastLiveEvent("data:refresh");
+        setSelectedOrderIds([]);
+      } else {
+        toast.error(res.error || "Failed to bulk update orders");
+        loadOrders();
+      }
+    } catch (err: any) {
+      toast.error(err?.message || "Failed to bulk update orders");
+      loadOrders();
+    } finally {
+      setIsBulkUpdating(false);
     }
   };
 
@@ -290,14 +330,55 @@ export default function AdminOrdersPage() {
       <div className="bg-white rounded-2xl border border-gray-200/80 shadow-2xs overflow-hidden relative">
         {/* Floating / Sticky Bulk Actions Bar */}
         {selectedOrderIds.length > 0 && (
-          <div className="bg-[#052a51] text-white px-5 py-3.5 flex flex-wrap items-center justify-between gap-3 border-b border-[#041f3d] animate-in slide-in-from-top-2 duration-150 sticky top-0 z-30">
-            <div className="flex items-center gap-3">
-              <span className="px-2.5 py-1 rounded-lg bg-[#F26522] text-white text-xs font-black">
-                {selectedOrderIds.length} Selected
+          <div className="bg-[#052a51] text-white px-4 sm:px-6 py-3.5 flex flex-wrap items-center justify-between gap-3 border-b border-[#041f3d] animate-in slide-in-from-top-2 duration-150 sticky top-0 z-30 shadow-lg">
+            <div className="flex items-center gap-3 flex-wrap">
+              <span className="px-3 py-1 rounded-xl bg-[#F26522] text-white text-xs font-black shadow-xs">
+                {selectedOrderIds.length} Marked
               </span>
-              <p className="text-xs font-bold text-white/90 hidden sm:block">
-                Marked orders ready for batch management
+              <p className="text-xs font-bold text-white/90 hidden md:block">
+                Bulk Action for selected orders:
               </p>
+
+              {/* 1-Click Bulk Approve / Confirm */}
+              <button
+                type="button"
+                disabled={isBulkUpdating}
+                onClick={() => handleBulkStatusUpdate("Confirmed")}
+                className="inline-flex items-center gap-1.5 px-3.5 py-1.5 bg-emerald-600 hover:bg-emerald-500 text-white rounded-xl text-xs font-black shadow-md transition-all active:scale-95 cursor-pointer disabled:opacity-50"
+                title="Approve & Confirm all marked orders"
+              >
+                {isBulkUpdating ? (
+                  <Loader2 size={14} className="animate-spin" />
+                ) : (
+                  <CheckCircle2 size={14} />
+                )}
+                <span>Approve / Confirm ({selectedOrderIds.length})</span>
+              </button>
+
+              {/* Bulk Status Select Dropdown + Apply */}
+              <div className="flex items-center gap-1.5 bg-white/10 p-1 rounded-xl border border-white/15">
+                <select
+                  value={bulkStatusTarget}
+                  onChange={(e) => setBulkStatusTarget(e.target.value)}
+                  disabled={isBulkUpdating}
+                  className="bg-transparent text-white text-xs font-bold px-2 py-1 focus:outline-none cursor-pointer rounded-lg [&>option]:text-gray-900 [&>option]:bg-white"
+                >
+                  <option value="Confirmed">Mark as Confirmed (Approve)</option>
+                  <option value="Dispatched">Mark as Dispatched</option>
+                  <option value="Out for Delivery">Mark Out for Delivery</option>
+                  <option value="Delivered">Mark as Delivered</option>
+                  <option value="Processing">Mark as Processing</option>
+                  <option value="Cancelled">Mark as Cancelled</option>
+                </select>
+                <button
+                  type="button"
+                  disabled={isBulkUpdating}
+                  onClick={() => handleBulkStatusUpdate()}
+                  className="px-2.5 py-1 bg-white/20 hover:bg-white/30 text-white text-xs font-bold rounded-lg transition-colors cursor-pointer disabled:opacity-50"
+                >
+                  Apply
+                </button>
+              </div>
             </div>
 
             <div className="flex items-center gap-2">
@@ -312,10 +393,10 @@ export default function AdminOrdersPage() {
               <button
                 type="button"
                 onClick={() => setShowBulkDeleteModal(true)}
-                className="inline-flex items-center gap-1.5 px-4 py-1.5 bg-red-600 hover:bg-red-700 text-white rounded-xl text-xs font-black shadow-md transition-all active:scale-95 cursor-pointer"
+                className="inline-flex items-center gap-1.5 px-3.5 py-1.5 bg-red-600 hover:bg-red-700 text-white rounded-xl text-xs font-black shadow-md transition-all active:scale-95 cursor-pointer"
               >
                 <Trash2 size={14} />
-                <span>Delete Marked ({selectedOrderIds.length})</span>
+                <span className="hidden sm:inline">Delete Marked</span> ({selectedOrderIds.length})
               </button>
             </div>
           </div>
@@ -417,20 +498,34 @@ export default function AdminOrdersPage() {
                       </td>
 
                       <td className="py-3.5 px-4">
-                        <select
-                          value={order.orderStatus}
-                          onChange={(e) => handleStatusChange(order.id, e.target.value)}
-                          className={`px-2.5 py-1.5 rounded-xl text-xs font-bold border focus:outline-none cursor-pointer ${getStatusBadge(
-                            order.orderStatus
-                          )}`}
-                        >
-                          <option value="Processing">Processing</option>
-                          <option value="Confirmed">Confirmed</option>
-                          <option value="Dispatched">Dispatched</option>
-                          <option value="Out for Delivery">Out for Delivery</option>
-                          <option value="Delivered">Delivered</option>
-                          <option value="Cancelled">Cancelled</option>
-                        </select>
+                        <div className="flex items-center gap-2">
+                          <select
+                            value={order.orderStatus}
+                            onChange={(e) => handleStatusChange(order.id, e.target.value)}
+                            className={`px-2.5 py-1.5 rounded-xl text-xs font-bold border focus:outline-none cursor-pointer ${getStatusBadge(
+                              order.orderStatus
+                            )}`}
+                          >
+                            <option value="Processing">Processing</option>
+                            <option value="Confirmed">Confirmed</option>
+                            <option value="Dispatched">Dispatched</option>
+                            <option value="Out for Delivery">Out for Delivery</option>
+                            <option value="Delivered">Delivered</option>
+                            <option value="Cancelled">Cancelled</option>
+                          </select>
+
+                          {order.orderStatus === "Processing" && (
+                            <button
+                              type="button"
+                              onClick={() => handleStatusChange(order.id, "Confirmed")}
+                              className="px-2 py-1 bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg text-[11px] font-bold shadow-2xs transition-all active:scale-95 flex items-center gap-1 cursor-pointer"
+                              title="Quick Approve / Confirm Order"
+                            >
+                              <Check size={12} strokeWidth={3} />
+                              <span>Approve</span>
+                            </button>
+                          )}
+                        </div>
                       </td>
 
                       <td className="py-3.5 px-4 text-right">

@@ -41,6 +41,8 @@ export default function EditProductPage({
   const [images, setImages] = useState<string[]>([]);
   const [variants, setVariants] = useState<ProductVariant[]>([]);
   const [specs, setSpecs] = useState<any>({});
+  const [coverageRate, setCoverageRate] = useState<string>("");
+  const [wastagePercent, setWastagePercent] = useState<string>("10");
 
   useEffect(() => {
     async function load() {
@@ -69,6 +71,8 @@ export default function EditProductPage({
           setVariants(p.variants);
           setAttributes(p.attributes || []);
           setSpecs(p.specs || {});
+          setCoverageRate(p.coverageRate ? String(p.coverageRate) : "");
+          setWastagePercent(p.wastageFactor ? String(Math.round((p.wastageFactor - 1) * 100)) : "10");
         }
       } catch (err) {
         console.error("Error loading product for editing:", err);
@@ -129,10 +133,16 @@ export default function EditProductPage({
       images,
       unitOfSale,
       attributes,
+      coverageRate: !isNaN(parseFloat(coverageRate)) && parseFloat(coverageRate) > 0 ? parseFloat(coverageRate) : null,
+      wastageFactor: (parseFloat(wastagePercent) || 10) / 100 + 1.0,
       variants: variants.map((v) => ({
         size: v.size,
         finish: v.finish,
         color: v.color,
+        image: v.image || null,
+        unit: v.unit || unitOfSale,
+        attributeLabel: v.attributeLabel || null,
+        attributeValue: v.attributeValue || null,
         pricePerBox: Number(v.pricePerBox),
         pricePerSqft: Number(v.pricePerSqft || v.pricePerBox),
         sqftPerBox: Number(v.sqftPerBox || 1),
@@ -335,7 +345,53 @@ export default function EditProductPage({
       {/* ── Section 4: Variants, Sizes & Pricing ── */}
       <div className="bg-white p-6 rounded-2xl border border-gray-200/80 shadow-2xs space-y-4">
         <h3 className="text-base font-black text-[#052a51]">4. Options, Pricing & Inventory</h3>
-        <VariantEditor variants={variants} onChange={setVariants} />
+        <VariantEditor variants={variants} onChange={setVariants} unitOfSale={unitOfSale} />
+
+        {/* Coverage & Smart Calculator Configuration */}
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 pt-4 border-t border-gray-100">
+          <div>
+            <label className="text-xs font-bold text-[#052a51] uppercase tracking-wider block mb-1.5 flex justify-between">
+              <span>Coverage / Length Rate</span>
+              <span className="text-[10px] text-gray-400 font-normal">Powers Calculator</span>
+            </label>
+            <input
+              type="number"
+              step="any"
+              min={0}
+              value={coverageRate}
+              onChange={(e) => setCoverageRate(e.target.value)}
+              placeholder="e.g. 16 for tiles, 120 for paint, 90 for wire"
+              className="w-full px-4 py-2.5 bg-gray-50 border border-gray-200 rounded-xl text-xs font-bold text-gray-800 focus:bg-white focus:outline-none focus:border-[#F26522]"
+            />
+            <p className="text-[10px] text-gray-400 mt-1">
+              Sq.ft per box (Tiles), Sq.ft/Litre (Paint), Meters per coil (Wires)
+            </p>
+          </div>
+
+          <div>
+            <label className="text-xs font-bold text-[#052a51] uppercase tracking-wider block mb-1.5 flex justify-between">
+              <span>Wastage Buffer Margin (%)</span>
+              <span className="text-[10px] text-gray-400 font-normal">Default: 10%</span>
+            </label>
+            <div className="relative">
+              <input
+                type="number"
+                min={0}
+                max={50}
+                value={wastagePercent}
+                onChange={(e) => setWastagePercent(e.target.value)}
+                placeholder="10"
+                className="w-full px-4 py-2.5 bg-gray-50 border border-gray-200 rounded-xl text-xs font-bold text-gray-800 focus:bg-white focus:outline-none focus:border-[#F26522]"
+              />
+              <span className="absolute right-4 top-1/2 -translate-y-1/2 text-xs font-bold text-gray-400">
+                %
+              </span>
+            </div>
+            <p className="text-[10px] text-gray-400 mt-1">
+              Cutting/application buffer added automatically before rounding
+            </p>
+          </div>
+        </div>
       </div>
 
       {/* ── Section 5: Badges & Tags ── */}

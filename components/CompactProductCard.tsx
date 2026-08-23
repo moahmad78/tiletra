@@ -5,14 +5,12 @@ import Link from "next/link";
 import Image from "next/image";
 import { Plus, Heart, Check } from "lucide-react";
 import { getLowestPrice, getLowestBoxPrice, type Product } from "@/lib/data/products";
+import { formatPrice, formatUnitLabel } from "@/lib/formatters";
 import { useCartStore } from "@/lib/cart-store";
 import { useWishlistStore } from "@/lib/wishlist-store";
 import { showCartToast } from "@/lib/cart-toast-store";
 import { cn } from "@/lib/utils";
 
-function formatPrice(n: number) {
-  return "₹" + n.toLocaleString("en-IN");
-}
 
 export default function CompactProductCard({
   product,
@@ -112,9 +110,9 @@ export default function CompactProductCard({
             {product.unitOfSale && product.unitOfSale !== "box" && product.unitOfSale !== "sqft" ? (
               <>
                 <p className="text-[12px] font-black text-[#052a51] leading-none">
-                  {formatPrice(defaultVariant.pricePerBox)}
+                  {formatPrice(defaultVariant.pricePerBox || defaultVariant.pricePerSqft)}
                 </p>
-                <p className="text-[9px] text-gray-400 mt-0.5 capitalize">/{product.unitOfSale}</p>
+                <p className="text-[9px] text-gray-400 mt-0.5">{formatUnitLabel(product.unitOfSale)}</p>
               </>
             ) : product.unitOfSale === "sqft" ? (
               <>
@@ -127,16 +125,16 @@ export default function CompactProductCard({
               <>
                 <p className="text-[12px] font-black text-[#052a51] leading-none">
                   {formatPrice(getLowestPrice(product))}
-                  <span className="text-[9px] font-normal text-gray-500">/sqft</span>
+                  <span className="text-[9px] font-normal text-gray-500">/sq.ft</span>
                 </p>
                 <p className="text-[9px] text-gray-400 mt-0.5">{formatPrice(getLowestBoxPrice(product))}/box</p>
               </>
             ) : (
               <>
                 <p className="text-[12px] font-black text-[#052a51] leading-none">
-                  {formatPrice(defaultVariant.pricePerBox)}
+                  {formatPrice(defaultVariant.pricePerBox || defaultVariant.pricePerSqft)}
                 </p>
-                <p className="text-[9px] text-gray-400 mt-0.5">/box</p>
+                <p className="text-[9px] text-gray-400 mt-0.5">{formatUnitLabel(product.unitOfSale || "piece")}</p>
               </>
             )}
           </div>

@@ -380,30 +380,36 @@ export async function createVendorProduct(vendorId: string, input: CreateProduct
       return { success: false, error: "Your vendor account is suspended. Contact support." };
     }
 
-    // Force vendorId and pending approval status for vendor submissions
+    // Determine auto-publish status directly from DB record
+    const isAutoPublish = Boolean(vendor.autoPublishEnabled);
+    const approvalStatus = isAutoPublish ? "approved" : (input.approvalStatus || "pending");
+
+    // Force vendorId and status for vendor submissions
     const res = await createProduct({
       ...input,
       vendorId: vendor.id,
-      status: "active",
-      approvalStatus: "pending",
+      status: input.status || "active",
+      approvalStatus,
       rejectionReason: null,
     });
 
     if (res.success && res.product) {
       try {
-        await prisma.adminNotification.create({
-          data: {
-            title: "New Product Awaiting Approval",
-            message: `Vendor "${vendor.businessName}" submitted "${res.product.name}" for catalog approval.`,
-            type: "new_order",
-            link: "/admin/product-approvals",
-            metadata: {
-              productId: res.product.id,
-              vendorId: vendor.id,
-              vendorName: vendor.businessName,
+        if (!isAutoPublish) {
+          await prisma.adminNotification.create({
+            data: {
+              title: "New Product Awaiting Approval",
+              message: `Vendor "${vendor.businessName}" submitted "${res.product.name}" for catalog approval.`,
+              type: "new_order",
+              link: "/admin/product-approvals",
+              metadata: {
+                productId: res.product.id,
+                vendorId: vendor.id,
+                vendorName: vendor.businessName,
+              },
             },
-          },
-        });
+          });
+        }
       } catch (notifErr) {
         console.error("Error creating admin notification:", notifErr);
       }
@@ -422,7 +428,7 @@ export async function createVendorProduct(vendorId: string, input: CreateProduct
   }
 }
 
-// 6. Vendor Update Product (Verifies ownership, resets approval if edited)
+// 6. Vendor Update Product (Verifies ownership, auto-publishes if enabled else resets approval)
 export async function updateVendorProduct(
   vendorId: string,
   productId: string,
@@ -442,15 +448,18 @@ export async function updateVendorProduct(
       return { success: false, error: "Unauthorized: You do not own this product" };
     }
 
-    // Resubmit for approval upon modifications
+    const isAutoPublish = Boolean(vendor.autoPublishEnabled);
+    const approvalStatus = isAutoPublish ? "approved" : "pending";
+
+    // Resubmit for approval upon modifications if auto-publish is false
     const res = await updateProduct(productId, {
       ...input,
       vendorId: vendor.id,
-      approvalStatus: "pending",
+      approvalStatus,
       rejectionReason: null,
     });
 
-    if (res.success && res.product) {
+    if (res.success && res.product && !isAutoPublish) {
       try {
         await prisma.adminNotification.create({
           data: {
@@ -480,6 +489,50 @@ export async function updateVendorProduct(
   } catch (error: any) {
     console.error("Error updating vendor product:", error);
     return { success: false, error: error?.message || "Failed to update product" };
+  }
+}
+
+// 6.1 Super Admin Toggle Vendor Auto-Publish Setting with Audit Trail
+export async function toggleVendorAutoPublish(
+  vendorId: string,
+  autoPublishEnabled: boolean,
+  adminUserId?: string
+) {
+  try {
+    const vendor = await prisma.vendor.update({
+      where: { id: vendorId },
+      data: { autoPublishEnabled },
+    });
+
+    // Write to Audit Log
+    try {
+      await prisma.auditLog.create({
+        data: {
+          action: "VENDOR_AUTO_PUBLISH_TOGGLED",
+          entity: "Vendor",
+          entityId: vendor.id,
+          userId: adminUserId || null,
+          details: {
+            vendorName: vendor.businessName,
+            autoPublishEnabled,
+            updatedBy: adminUserId ? "Admin" : "Super Admin",
+            timestamp: new Date().toISOString(),
+          },
+        },
+      });
+    } catch (auditErr) {
+      console.error("Audit log creation error:", auditErr);
+    }
+
+    safeRevalidate("/admin/vendors");
+    safeRevalidate(`/admin/vendors/${vendorId}`);
+    safeRevalidate("/vendor/products/new");
+    safeRevalidate("/vendor/products");
+
+    return { success: true, vendor };
+  } catch (error: any) {
+    console.error("Error toggling vendor auto-publish:", error);
+    return { success: false, error: error?.message || "Failed to toggle auto-publish" };
   }
 }
 
@@ -897,6 +950,67 @@ export async function updateVendorFulfillmentStatus(
   } catch (error: any) {
     console.error("updateVendorFulfillmentStatus error:", error);
     return { success: false, error: error?.message || "Failed to update fulfillment status" };
+  }
+}
+
+// 14b. Bulk Update Vendor Order Split Fulfillment Status
+export async function updateVendorFulfillmentBulk(
+  splitIds: string[],
+  vendorId: string,
+  status: string
+) {
+  try {
+    if (!splitIds || splitIds.length === 0 || !vendorId) {
+      return { success: false, error: "Split IDs and Vendor ID are required" };
+    }
+
+    const normalizedStatus = status.toLowerCase();
+    const isDelivered = normalizedStatus === "delivered";
+
+    const splits = await prisma.vendorOrderSplit.findMany({
+      where: { id: { in: splitIds }, vendorId },
+    });
+
+    if (splits.length === 0) {
+      return { success: false, error: "No matching order splits found" };
+    }
+
+    let updatedCount = 0;
+    for (const split of splits) {
+      const updateData: any = {
+        fulfillmentStatus: normalizedStatus,
+      };
+
+      if (isDelivered) {
+        const commissionAmount = Number(((split.subtotal * split.commissionRate) / 100).toFixed(2));
+        const vendorPayoutAmount = Number((split.subtotal - commissionAmount).toFixed(2));
+        updateData.commissionAmount = commissionAmount;
+        updateData.vendorPayoutAmount = vendorPayoutAmount;
+        updateData.deliveredAt = new Date();
+        updateData.paymentCollected = true;
+      }
+
+      await prisma.vendorOrderSplit.update({
+        where: { id: split.id },
+        data: updateData,
+      });
+      updatedCount++;
+    }
+
+    safeRevalidate("/vendor/orders");
+    safeRevalidate("/vendor/payouts");
+    safeRevalidate("/admin/orders");
+    safeRevalidate("/admin/deliveries");
+    safeRevalidate(`/admin/vendors/${vendorId}`);
+
+    return {
+      success: true,
+      count: updatedCount,
+      message: `Successfully updated ${updatedCount} order(s) to "${status}"!`,
+    };
+  } catch (error: any) {
+    console.error("updateVendorFulfillmentBulk error:", error);
+    return { success: false, error: error?.message || "Failed to bulk update fulfillment status" };
   }
 }
 

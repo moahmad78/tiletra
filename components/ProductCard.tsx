@@ -7,11 +7,12 @@ import { motion } from "framer-motion";
 import { Star, Heart, ShoppingBag } from "lucide-react";
 import { getLowestPrice, getLowestBoxPrice } from "@/lib/data/products";
 import type { Product } from "@/lib/data/products";
+import { formatPrice, formatUnitLabel } from "@/lib/formatters";
 import { useCartStore } from "@/lib/cart-store";
 import { useWishlistStore } from "@/lib/wishlist-store";
 import { showCartToast } from "@/lib/cart-toast-store";
 
-function formatPrice(n: number) {
+function formatPriceInternal(n: number) {
   return "₹" + n.toLocaleString("en-IN");
 }
 
@@ -144,10 +145,12 @@ export default function ProductCard({ product }: { product: Product }) {
             {product.unitOfSale && product.unitOfSale !== "box" && product.unitOfSale !== "sqft" ? (
               <>
                 <p className="text-[14px] font-black text-[#052a51]">
-                  {formatPrice(defaultVariant.pricePerBox)}
-                  <span className="text-xs font-medium text-gray-500 capitalize">/{product.unitOfSale}</span>
+                  {formatPrice(defaultVariant.pricePerBox || defaultVariant.pricePerSqft)}
+                  <span className="text-xs font-medium text-gray-500">{formatUnitLabel(product.unitOfSale)}</span>
                 </p>
-                <p className="text-[11px] text-gray-400">Standard Pack</p>
+                <p className="text-[11px] text-gray-400">
+                  {product.variants.length > 1 ? `${product.variants.length} options` : "Standard Pack"}
+                </p>
               </>
             ) : product.unitOfSale === "sqft" ? (
               <>
@@ -168,10 +171,12 @@ export default function ProductCard({ product }: { product: Product }) {
             ) : (
               <>
                 <p className="text-[14px] font-black text-[#052a51]">
-                  {formatPrice(defaultVariant.pricePerBox)}
-                  <span className="text-xs font-medium text-gray-500">/box</span>
+                  {formatPrice(defaultVariant.pricePerBox || defaultVariant.pricePerSqft)}
+                  <span className="text-xs font-medium text-gray-500">{formatUnitLabel(product.unitOfSale || "piece")}</span>
                 </p>
-                <p className="text-[11px] text-gray-400">Standard Pack</p>
+                <p className="text-[11px] text-gray-400">
+                  {product.variants.length > 1 ? `${product.variants.length} options` : "Standard Pack"}
+                </p>
               </>
             )}
           </div>

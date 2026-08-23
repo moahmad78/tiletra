@@ -4,6 +4,21 @@ import { prisma } from "@/lib/prisma";
 import { safeRevalidate } from "@/lib/formatters";
 import { categories as defaultCategories, getCategoryBySlug as getStaticCategoryBySlug, type Category } from "@/lib/data/categories";
 
+function inferCalculatorType(slug: string, dbType?: string | null): string {
+  if (dbType && dbType !== "none") return dbType;
+  const s = slug.toLowerCase();
+  if (s.includes("tile") || s.includes("stone") || s.includes("granite") || s.includes("marble") || s.includes("wallpaper")) {
+    return "area_to_boxes";
+  }
+  if (s.includes("paint") || s.includes("finish") || s.includes("chemical") || s.includes("primer") || s.includes("emulsion")) {
+    return "area_to_volume";
+  }
+  if (s.includes("wire") || s.includes("cable") || s.includes("electrical") || s.includes("pipe") || s.includes("conduit")) {
+    return "length_to_units";
+  }
+  return dbType || "none";
+}
+
 export async function getCategories(): Promise<Category[]> {
   try {
     const dbCategories = await prisma.category.findMany({
@@ -16,7 +31,7 @@ export async function getCategories(): Promise<Category[]> {
     });
 
     if (dbCategories.length > 0) {
-      return dbCategories.map((c) => ({
+      return dbCategories.map((c: any) => ({
         id: c.id,
         name: c.name,
         slug: c.slug,
@@ -26,6 +41,7 @@ export async function getCategories(): Promise<Category[]> {
         featured: true,
         parentId: c.parentId || null,
         icon: c.icon || "Grid",
+        calculatorType: inferCalculatorType(c.slug, c.calculatorType),
       }));
     }
   } catch (error) {
@@ -57,6 +73,7 @@ export async function getCategoryBySlug(slug: string): Promise<Category | null> 
         featured: true,
         parentId: c.parentId || null,
         icon: c.icon || "Grid",
+        calculatorType: inferCalculatorType(c.slug, (c as any).calculatorType),
       };
     }
   } catch (error) {
@@ -74,6 +91,7 @@ export async function createCategory(data: {
   description?: string;
   image?: string;
   parentId?: string | null;
+  calculatorType?: string;
 }) {
   try {
     const slug = data.slug || data.name.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-+|-+$/g, "");
@@ -87,6 +105,7 @@ export async function createCategory(data: {
         image: data.image || "/placeholders/product.svg",
         order: count,
         parentId: data.parentId || null,
+        calculatorType: data.calculatorType || "none",
       },
     });
 
@@ -106,6 +125,7 @@ export async function updateCategory(id: string, data: {
   description?: string;
   image?: string;
   parentId?: string | null;
+  calculatorType?: string;
 }) {
   try {
     const category = await prisma.category.update({

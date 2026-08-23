@@ -263,22 +263,22 @@ export default function ShopCatalogClient({
 
       <hr className="border-gray-100" />
 
-      {/* Price per sqft */}
+      {/* Price Range Filter */}
       <div>
         <h3 className="font-bold text-[#052a51] text-sm mb-3">
-          Price: ₹{priceRange[0]} – ₹{priceRange[1]} <span className="text-xs font-normal text-gray-500">/sq.ft</span>
+          Price Range: ₹{priceRange[0]} – ₹{priceRange[1]}
         </h3>
         <input
           type="range"
           min={0}
-          max={300}
+          max={5000}
           value={priceRange[1]}
           onChange={(e) => setPriceRange([priceRange[0], parseInt(e.target.value)])}
           className="w-full accent-[#F26522] cursor-pointer"
         />
         <div className="flex justify-between text-xs text-gray-400 mt-1 font-medium">
           <span>₹0</span>
-          <span>₹300/sq.ft</span>
+          <span>₹5,000+</span>
         </div>
       </div>
 

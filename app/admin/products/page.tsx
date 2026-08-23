@@ -27,11 +27,8 @@ import { getAdminVendors } from "@/lib/actions/admin-vendor";
 import type { Product } from "@/lib/data/products";
 import type { Category } from "@/lib/data/categories";
 import { getLowestPrice, getLowestBoxPrice } from "@/lib/data/products";
+import { formatPrice, formatUnitLabel } from "@/lib/formatters";
 import { toast } from "sonner";
-
-function formatPrice(n: number) {
-  return "₹" + n.toLocaleString("en-IN");
-}
 
 export default function AdminProductsPage() {
   const [products, setProducts] = useState<Product[]>([]);
@@ -437,12 +434,14 @@ export default function AdminProductsPage() {
                       {/* Pricing */}
                       <td className="py-3 px-4">
                         <span className="font-black text-[#052a51]">
-                          {formatPrice(getLowestPrice(p))}
-                          <span className="text-[10px] text-gray-400 font-normal">/sqft</span>
+                          {formatPrice(p.variants?.[0]?.pricePerBox || getLowestPrice(p))}
+                          <span className="text-[10px] text-gray-400 font-normal">{formatUnitLabel(p.unitOfSale)}</span>
                         </span>
-                        <p className="text-[10px] text-gray-400">
-                          {formatPrice(getLowestBoxPrice(p))}/box
-                        </p>
+                        {p.unitOfSale === "sqft" || p.categorySlug?.includes("tile") ? (
+                          <p className="text-[10px] text-gray-400">
+                            {formatPrice(getLowestBoxPrice(p))}/box
+                          </p>
+                        ) : null}
                       </td>
 
                       {/* Stock */}

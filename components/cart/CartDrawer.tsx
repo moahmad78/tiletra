@@ -179,10 +179,12 @@ export default function CartDrawer() {
 
             {/* Footer */}
             <div className="border-t border-gray-100 px-6 py-5 space-y-3">
-              <div className="flex justify-between text-sm text-gray-600">
-                <span>Total coverage</span>
-                <span className="font-medium">{totalSqft.toFixed(0)} sq.ft</span>
-              </div>
+              {totalSqft > 0 && items.some((i) => i.product.categorySlug?.includes("tile") || i.product.unitOfSale === "sqft" || i.product.unitOfSale === "box") && (
+                <div className="flex justify-between text-sm text-gray-600">
+                  <span>Total tile coverage</span>
+                  <span className="font-medium">{totalSqft.toFixed(0)} sq.ft</span>
+                </div>
+              )}
               <div className="flex justify-between text-base font-bold text-[#052a51]">
                 <span>Subtotal</span>
                 <span>{formatPrice(subtotal)}</span>

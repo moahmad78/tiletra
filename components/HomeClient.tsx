@@ -18,7 +18,6 @@ import type { Product } from "@/lib/data/products";
 import { useCartStore } from "@/lib/cart-store";
 import { useWishlistStore } from "@/lib/wishlist-store";
 import Header from "@/components/Header";
-import WhyChooseUs from "@/components/WhyChooseUs";
 import Footer from "@/components/Footer";
 import CategoryIconRow from "@/components/CategoryIconRow";
 import OfferBanner, { type MobileBannerSlide } from "@/components/OfferBanner";
@@ -356,9 +355,6 @@ export default function HomeClient({
             </div>
           </div>
         </section>
-
-        {/* ── WHY CHOOSE US ────────────────────────────────────────── */}
-        <WhyChooseUs />
 
         {/* ── SAMPLE CTA BANNER ────────────────────────────────────── */}
         <section className="py-16 bg-[#052a51]">
