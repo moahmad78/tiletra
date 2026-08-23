@@ -638,6 +638,7 @@ export async function getVendorDetailAnalytics(vendorId: string) {
         commissionRate: vendor.commissionRate,
         onboardingPath: vendor.onboardingPath,
         applicationId: vendor.applicationId,
+        autoPublishEnabled: Boolean(vendor.autoPublishEnabled),
         createdAt: vendor.createdAt,
         owner: vendor.owner,
         // Bank Details
@@ -646,6 +647,17 @@ export async function getVendorDetailAnalytics(vendorId: string) {
         bankAccountNumber: vendor.bankAccountNumber,
         bankIfscCode: vendor.bankIfscCode,
         bankUpiId: vendor.bankUpiId,
+        // KYC Details
+        kycStatus: vendor.kycStatus,
+        kycNotes: vendor.kycNotes,
+        panNumber: vendor.panNumber,
+        panDocUrl: vendor.panDocUrl,
+        aadharNumber: vendor.aadharNumber,
+        aadharDocUrl: vendor.aadharDocUrl,
+        gstDocUrl: vendor.gstDocUrl,
+        chequeDocUrl: vendor.chequeDocUrl,
+        tradeLicenseDocUrl: vendor.tradeLicenseDocUrl,
+        shopPhotoUrl: vendor.shopPhotoUrl,
       },
       stats: {
         totalOrders: vendor.splits.length,

@@ -107,6 +107,16 @@ export default function VendorDetailDashboardPage() {
   const handleToggleAutoPublish = async (enabled: boolean) => {
     try {
       setAutoPublishLoading(true);
+      // Immediate optimistic update
+      setData((prev: any) =>
+        prev && prev.vendor
+          ? {
+              ...prev,
+              vendor: { ...prev.vendor, autoPublishEnabled: enabled },
+            }
+          : prev
+      );
+
       const res = await toggleVendorAutoPublish(vendorId, enabled);
       setAutoPublishLoading(false);
       if (res.success) {
@@ -118,10 +128,12 @@ export default function VendorDetailDashboardPage() {
         loadData();
       } else {
         toast.error(res.error || "Failed to update auto-publish setting");
+        loadData();
       }
     } catch (e: any) {
       setAutoPublishLoading(false);
       toast.error(e.message || "Failed to update auto-publish setting");
+      loadData();
     }
   };
 
@@ -384,14 +396,14 @@ export default function VendorDetailDashboardPage() {
                 aria-checked={Boolean(vendor.autoPublishEnabled)}
                 disabled={autoPublishLoading}
                 onClick={() => handleToggleAutoPublish(!vendor.autoPublishEnabled)}
-                className={`relative inline-flex h-7 w-13 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none disabled:opacity-50 ${
-                  vendor.autoPublishEnabled ? "bg-emerald-600" : "bg-gray-300"
+                className={`relative inline-flex h-7 w-14 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none disabled:opacity-50 ${
+                  vendor.autoPublishEnabled ? "bg-emerald-600 shadow-sm" : "bg-gray-300"
                 }`}
               >
                 <span
                   aria-hidden="true"
-                  className={`pointer-events-none inline-block h-6 w-6 transform rounded-full bg-white shadow-md ring-0 transition duration-200 ease-in-out ${
-                    vendor.autoPublishEnabled ? "translate-x-6" : "translate-x-0"
+                  className={`pointer-events-none inline-block h-6 w-6 transform rounded-full bg-white shadow-md transition duration-200 ease-in-out ${
+                    vendor.autoPublishEnabled ? "translate-x-7" : "translate-x-0"
                   }`}
                 />
               </button>
