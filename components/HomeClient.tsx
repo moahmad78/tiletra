@@ -27,32 +27,7 @@ import DesktopBannerCarousel, { type BannerSlide } from "@/components/DesktopBan
 import DesktopProductRow from "@/components/DesktopProductRow";
 import DesktopCategoryRow from "@/components/DesktopCategoryRow";
 
-const roomInspirations = [
-  {
-    title: "Master Bathroom",
-    tag: "Onyx Black Marble",
-    image: "/placeholders/product.svg",
-    slug: "/shop/bathroom-tiles",
-  },
-  {
-    title: "Modern Kitchen",
-    tag: "White Metro Splashback",
-    image: "/placeholders/product.svg",
-    slug: "/shop/kitchen-tiles",
-  },
-  {
-    title: "Living Room",
-    tag: "Calacatta Marble Effect",
-    image: "/placeholders/product.svg",
-    slug: "/shop/floor-tiles",
-  },
-  {
-    title: "Outdoor Patio",
-    tag: "Slate Grey Porcelain",
-    image: "/placeholders/product.svg",
-    slug: "/shop/outdoor-tiles",
-  },
-];
+
 
 interface HomeClientProps {
   categories: Category[];
@@ -175,49 +150,7 @@ export default function HomeClient({
           <RecentlyViewedSlider />
         </div>
 
-        {/* 8. Room Inspiration */}
-        <section className="bg-white my-1 py-3 px-4 shadow-2xs">
-          <div className="flex items-center justify-between mb-2">
-            <div>
-              <h2 className="text-[16px] font-black text-[#052a51] tracking-tight">
-                Room Inspiration
-              </h2>
-              <p className="text-xs text-gray-500 mt-0.5">See materials & finishes in real spaces</p>
-            </div>
-            <Link
-              href="/shop"
-              className="text-xs font-bold text-[#F26522] flex items-center gap-0.5"
-            >
-              All Looks <ChevronRight size={14} />
-            </Link>
-          </div>
 
-          <div className="flex gap-3 overflow-x-auto snap-x snap-mandatory pt-1 pb-2 scrollbar-none">
-            {roomInspirations.map((room) => (
-              <Link
-                key={room.title}
-                href={room.slug}
-                className="w-[200px] shrink-0 snap-start rounded-2xl overflow-hidden relative shadow-xs group"
-                style={{ height: "140px" }}
-              >
-                <Image
-                  src={room.image}
-                  alt={room.title}
-                  fill
-                  className="object-cover group-hover:scale-105 transition-transform"
-                  sizes="200px"
-                />
-                <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/30 to-transparent" />
-                <div className="absolute bottom-2 left-2.5 right-2.5 text-white">
-                  <p className="text-xs font-bold leading-tight drop-shadow-xs">{room.title}</p>
-                  <p className="text-[10px] text-[#F26522] font-semibold mt-0.5 truncate">
-                    {room.tag}
-                  </p>
-                </div>
-              </Link>
-            ))}
-          </div>
-        </section>
 
         {/* Mini Trust Badges on Mobile */}
         <div className="px-4 py-4 grid grid-cols-2 gap-2 text-[11px] text-[#052a51] font-bold">
@@ -299,62 +232,7 @@ export default function HomeClient({
           viewAllHref="/shop"
         />
 
-        {/* ── ROOM INSPIRATION ─────────────────────────────────────── */}
-        <section className="py-20 bg-[#F3F4F5]">
-          <div className="w-full max-w-[1400px] mx-auto px-[20px] md:px-[24px] lg:px-[32px]">
-            <motion.div
-              initial={{ opacity: 0, y: 20 }}
-              whileInView={{ opacity: 1, y: 0 }}
-              viewport={{ once: true }}
-              className="text-center mb-12"
-            >
-              <p className="text-sm font-bold text-[#F26522] uppercase tracking-[3px] mb-3">
-                Real Homes
-              </p>
-              <h2 className="text-[36px] md:text-[44px] font-black text-[#052a51] leading-tight">
-                Room <span className="text-[#F26522]">Inspiration</span>
-              </h2>
-              <p className="text-gray-500 mt-3 max-w-md mx-auto">
-                See how our materials and finishes look in real spaces — click any photo to shop the look
-              </p>
-            </motion.div>
 
-            <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-              {roomInspirations.map((room, i) => (
-                <motion.div
-                  key={room.title}
-                  initial={{ opacity: 0, y: 20 }}
-                  whileInView={{ opacity: 1, y: 0 }}
-                  viewport={{ once: true }}
-                  transition={{ delay: i * 0.08 }}
-                >
-                  <Link href={room.slug}>
-                    <div
-                      className="group relative rounded-2xl overflow-hidden cursor-pointer"
-                      style={{ height: i % 2 === 0 ? "320px" : "260px" }}
-                    >
-                      <Image
-                        src={room.image}
-                        alt={room.title}
-                        fill
-                        className="object-cover transition-transform duration-500 group-hover:scale-105"
-                        sizes="(max-width: 768px) 50vw, 25vw"
-                      />
-                      <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/20 to-transparent" />
-                      <div className="absolute bottom-0 left-0 right-0 p-4 text-white transform translate-y-2 group-hover:translate-y-0 transition-transform">
-                        <p className="text-sm font-bold">{room.title}</p>
-                        <div className="flex items-center gap-1 mt-1 opacity-0 group-hover:opacity-100 transition-opacity">
-                          <span className="text-[11px] text-white/80">Shop: {room.tag}</span>
-                          <ArrowRight size={11} className="text-[#F26522]" />
-                        </div>
-                      </div>
-                    </div>
-                  </Link>
-                </motion.div>
-              ))}
-            </div>
-          </div>
-        </section>
 
         {/* ── SAMPLE CTA BANNER ────────────────────────────────────── */}
         <section className="py-16 bg-[#052a51]">

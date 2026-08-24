@@ -4,21 +4,20 @@ import { useState, useRef, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { motion, AnimatePresence } from "framer-motion";
 import {
-  X, Phone, Mail, ShieldCheck, ArrowRight, Sparkles,
+  X, Mail, ShieldCheck, ArrowRight,
   CheckCircle2, RotateCw, ChevronLeft,
 } from "lucide-react";
 import { useAuthStore, useAuthHydrated, useAuthStatus } from "@/lib/auth-store";
 import { useCartStore } from "@/lib/cart-store";
 import { toast } from "sonner";
 
-type LoginTab = "choose" | "phone" | "email";
+type LoginTab = "choose" | "email";
 type OtpStep = "input" | "otp";
 
 export default function LoginModal() {
   const router = useRouter();
   const {
     isLoginModalOpen, closeLoginModal,
-    sendOtp, verifyOtp,
     sendEmailOtp, verifyEmailOtp,
     pendingIntent,
   } = useAuthStore();
@@ -27,9 +26,6 @@ export default function LoginModal() {
   // Tab / step state
   const [tab, setTab] = useState<LoginTab>("choose");
   const [step, setStep] = useState<OtpStep>("input");
-
-  // Phone flow
-  const [phone, setPhone] = useState("");
 
   // Email flow
   const [email, setEmail] = useState("");
@@ -47,7 +43,6 @@ export default function LoginModal() {
     if (!isLoginModalOpen) {
       setTab("choose");
       setStep("input");
-      setPhone("");
       setEmail("");
       setOtp(["", "", "", "", "", ""]);
       setLoading(false);
@@ -112,28 +107,6 @@ export default function LoginModal() {
     window.location.href = `/api/auth/google${params}`;
   };
 
-  // ─── Phone OTP ────────────────────────────────────────────────────────────
-
-  const handlePhoneSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    const clean = phone.replace(/\D/g, "");
-    if (clean.length !== 10) { toast.error("Enter a valid 10-digit number"); return; }
-
-    setLoading(true);
-    const res = await sendOtp(clean);
-    setLoading(false);
-
-    if (res.success) {
-      toast.success(res.message);
-      setStep("otp");
-      setTimer(60);
-      setCanResend(false);
-      setTimeout(() => otpInputsRef.current[0]?.focus(), 100);
-    } else {
-      toast.error(res.message);
-    }
-  };
-
   // ─── Email OTP ────────────────────────────────────────────────────────────
 
   const handleEmailSubmit = async (e: React.FormEvent) => {
@@ -159,7 +132,7 @@ export default function LoginModal() {
     }
   };
 
-  // ─── OTP input handling (shared, 6 digits) ────────────────────────────────
+  // ─── OTP input handling (6 digits) ────────────────────────────────────────
 
   const handleOtpChange = (index: number, val: string) => {
     if (val.length > 1) {
@@ -194,14 +167,7 @@ export default function LoginModal() {
     if (code.length !== 6) { toast.error("Enter all 6 digits"); return; }
 
     setLoading(true);
-    let res: { success: boolean; message: string };
-
-    if (tab === "phone") {
-      res = await verifyOtp(phone.replace(/\D/g, ""), code);
-    } else {
-      res = await verifyEmailOtp(email.trim().toLowerCase(), code);
-    }
-
+    const res = await verifyEmailOtp(email.trim().toLowerCase(), code);
     setLoading(false);
 
     if (res.success) {
@@ -218,32 +184,23 @@ export default function LoginModal() {
     setTimer(60);
     setOtp(["", "", "", "", "", ""]);
 
-    if (tab === "phone") {
-      const res = await sendOtp(phone.replace(/\D/g, ""));
-      if (res.success) toast.success("New OTP sent to +91 " + phone);
-    } else {
-      const res = await sendEmailOtp(email.trim().toLowerCase());
-      if (res.success) toast.success("New OTP sent to " + email);
-    }
+    const res = await sendEmailOtp(email.trim().toLowerCase());
+    if (res.success) toast.success("New OTP sent to " + email);
   };
 
   // ─── UI ───────────────────────────────────────────────────────────────────
 
-  const isPhoneOtp = tab === "phone";
-  const sentTo = isPhoneOtp ? `+91 ${phone}` : email;
   const headerTitle =
     tab === "choose" ? "Login to Continue"
-    : step === "input" ? (isPhoneOtp ? "Enter Mobile Number" : "Enter Email Address")
+    : step === "input" ? "Enter Email Address"
     : "Enter Verification Code";
 
   const headerSubtitle =
     tab === "choose"
       ? "Choose how you'd like to continue. Your orders and saved addresses will be linked to your account."
       : step === "input"
-        ? isPhoneOtp
-          ? "We'll send a 6-digit code to your number."
-          : "We'll send a 6-digit code to your inbox."
-        : `Code sent to ${sentTo}`;
+        ? "We'll send a 6-digit code to your email inbox."
+        : `Code sent to ${email}`;
 
   return (
     <div className="fixed inset-0 z-50 flex items-end md:items-center justify-center p-0 md:p-4">
@@ -337,20 +294,6 @@ export default function LoginModal() {
                   <div className="flex-grow border-t border-gray-200" />
                 </div>
 
-                {/* Phone */}
-                <button
-                  id="login-phone-btn"
-                  type="button"
-                  onClick={() => setTab("phone")}
-                  className="w-full h-[52px] bg-gray-50 hover:bg-gray-100 border border-gray-200 rounded-2xl text-sm font-bold text-[#052a51] flex items-center gap-3 px-4 transition-colors"
-                >
-                  <div className="w-8 h-8 rounded-xl bg-[#052a51]/10 flex items-center justify-center shrink-0">
-                    <Phone size={16} className="text-[#052a51]" />
-                  </div>
-                  <span className="text-[14px]">Continue with Phone</span>
-                  <ArrowRight size={16} className="ml-auto text-gray-400" />
-                </button>
-
                 {/* Email */}
                 <button
                   id="login-email-btn"
@@ -361,7 +304,7 @@ export default function LoginModal() {
                   <div className="w-8 h-8 rounded-xl bg-[#052a51]/10 flex items-center justify-center shrink-0">
                     <Mail size={16} className="text-[#052a51]" />
                   </div>
-                  <span className="text-[14px]">Continue with Email</span>
+                  <span className="text-[14px]">Continue with Email OTP</span>
                   <ArrowRight size={16} className="ml-auto text-gray-400" />
                 </button>
 
@@ -372,43 +315,6 @@ export default function LoginModal() {
                   <a href="/privacy-policy" className="text-[#052a51] underline font-semibold">Privacy Policy</a>.
                 </p>
               </div>
-            )}
-
-            {/* ── PHONE INPUT ── */}
-            {tab === "phone" && step === "input" && (
-              <form onSubmit={handlePhoneSubmit} className="space-y-4">
-                <div>
-                  <label className="block text-xs font-bold text-[#052a51] uppercase tracking-wider mb-2">
-                    Mobile Number
-                  </label>
-                  <div className="flex rounded-2xl border-2 border-gray-200 focus-within:border-[#F26522] transition-colors overflow-hidden bg-gray-50 focus-within:bg-white">
-                    <span className="flex items-center gap-1.5 px-3.5 bg-gray-100/80 text-xs font-black text-[#052a51] border-r border-gray-200 select-none">
-                      🇮🇳 +91
-                    </span>
-                    <input
-                      id="login-phone-input"
-                      type="tel"
-                      inputMode="numeric"
-                      maxLength={10}
-                      value={phone}
-                      onChange={(e) => setPhone(e.target.value.replace(/\D/g, ""))}
-                      placeholder="Enter 10-digit number"
-                      autoFocus
-                      className="w-full px-3.5 py-3.5 bg-transparent text-base font-bold text-[#052a51] placeholder-gray-400 focus:outline-none tracking-wider"
-                    />
-                  </div>
-                </div>
-
-                <button
-                  type="submit"
-                  disabled={phone.replace(/\D/g, "").length !== 10 || loading}
-                  className="w-full h-12 bg-[#F26522] hover:bg-[#d95a1e] text-white font-black text-sm rounded-xl shadow-md transition-all flex items-center justify-center gap-2 active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed"
-                >
-                  {loading ? <RotateCw size={18} className="animate-spin" /> : (
-                    <><span>Send Code</span><ArrowRight size={16} /></>
-                  )}
-                </button>
-              </form>
             )}
 
             {/* ── EMAIL INPUT ── */}
@@ -446,12 +352,12 @@ export default function LoginModal() {
               </form>
             )}
 
-            {/* ── OTP STEP (shared for phone & email) ── */}
+            {/* ── OTP STEP (Email OTP verification) ── */}
             {step === "otp" && (
               <div className="space-y-5">
                 <div className="flex items-center justify-between">
                   <span className="text-xs font-bold text-[#052a51]">
-                    {isPhoneOtp ? `OTP sent to +91 ${phone}` : `OTP sent to ${email}`}
+                    OTP sent to {email}
                   </span>
                   <button
                     type="button"
@@ -480,19 +386,10 @@ export default function LoginModal() {
                   ))}
                 </div>
 
-                {/* Dev hint (phone only — email goes to real inbox) */}
-                {isPhoneOtp && (
-                  <div className="p-3 bg-amber-50 rounded-xl border border-amber-200/80 flex items-center gap-2 text-xs text-amber-900 font-semibold">
-                    <Sparkles size={15} className="text-[#F26522] shrink-0" />
-                    <span>Demo mode — enter <strong>123456</strong></span>
-                  </div>
-                )}
-                {!isPhoneOtp && (
-                  <div className="p-3 bg-blue-50 rounded-xl border border-blue-200/80 flex items-center gap-2 text-xs text-blue-900 font-semibold">
-                    <Mail size={15} className="text-blue-600 shrink-0" />
-                    <span>Check your inbox (or spam folder) for the 6-digit code.</span>
-                  </div>
-                )}
+                <div className="p-3 bg-blue-50 rounded-xl border border-blue-200/80 flex items-center gap-2 text-xs text-blue-900 font-semibold">
+                  <Mail size={15} className="text-blue-600 shrink-0" />
+                  <span>Check your inbox (or spam folder) for the 6-digit code.</span>
+                </div>
 
                 <button
                   type="button"

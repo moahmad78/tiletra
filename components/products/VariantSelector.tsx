@@ -28,11 +28,14 @@ const COLOR_HEX_MAP: Record<string, string> = {
   "dark grey": "#404040",
   "light grey": "#D3D3D3",
   "charcoal grey": "#36454F",
+  charcoal: "#36454F",
   beige: "#F5F5DC",
   cream: "#FFFDD0",
   brown: "#8B4513",
   "teak brown": "#654321",
+  teak: "#654321",
   "walnut brown": "#4A3319",
+  walnut: "#4A3319",
   terracotta: "#E2725B",
   blue: "#1E88E5",
   "royal blue": "#4169E1",
@@ -67,33 +70,83 @@ export default function VariantSelector({
   }
 
   // 1. Group & analyze variants
-  const { hasColors, hasSizesOrVolumes, distinctColors, distinctSizes } = useMemo(() => {
-    const colors = Array.from(
-      new Set(
-        variants
-          .map((v) => v.color?.trim())
-          .filter((c): c is string => Boolean(c && c !== "Standard" && c !== "default"))
-      )
-    );
+  const { distinctColors, distinctSizes, isMultiDimensional, hasColors, hasSizes } = useMemo(() => {
+    const rawColors = variants
+      .map((v) => v.color?.trim())
+      .filter((c): c is string => Boolean(c && c !== "Standard" && c !== "default" && c !== "None"));
 
-    const sizes = Array.from(
-      new Set(
-        variants
-          .map((v) => (v.attributeValue || v.size)?.trim())
-          .filter((s): s is string => Boolean(s && s !== "Standard" && s !== "default"))
-      )
-    );
+    const rawSizes = variants
+      .map((v) => (v.attributeValue || v.size)?.trim())
+      .filter((s): s is string => Boolean(s && s !== "Standard" && s !== "default" && s !== "None"));
+
+    const colors = Array.from(new Set(rawColors));
+    const sizes = Array.from(new Set(rawSizes));
+
+    const multi = colors.length > 1 && sizes.length > 1;
 
     return {
-      hasColors: colors.length > 1,
-      hasSizesOrVolumes: sizes.length > 1 || (!colors.length && variants.length > 1),
       distinctColors: colors,
       distinctSizes: sizes,
+      isMultiDimensional: multi,
+      hasColors: colors.length > 1,
+      hasSizes: sizes.length > 1 || (!colors.length && variants.length > 1),
     };
   }, [variants]);
 
-  // Handler when clicking a variant
-  const handleVariantClick = (v: ProductVariant) => {
+  // Handler when selecting a color in a multi-dimensional product
+  const handleColorClick = (colorName: string) => {
+    // 1. Try to find variant with matching color AND current selected size
+    const currentSize = selectedVariant.attributeValue || selectedVariant.size;
+    const match = variants.find(
+      (v) =>
+        v.color?.toLowerCase().trim() === colorName.toLowerCase().trim() &&
+        (v.attributeValue || v.size)?.toLowerCase().trim() === currentSize?.toLowerCase().trim()
+    );
+
+    if (match) {
+      onSelectVariant(match);
+      if (match.image && onSelectImage) onSelectImage(match.image);
+      return;
+    }
+
+    // 2. Fallback: first variant with that color
+    const fallback = variants.find(
+      (v) => v.color?.toLowerCase().trim() === colorName.toLowerCase().trim()
+    );
+    if (fallback) {
+      onSelectVariant(fallback);
+      if (fallback.image && onSelectImage) onSelectImage(fallback.image);
+    }
+  };
+
+  // Handler when selecting a size / volume in a multi-dimensional product
+  const handleSizeClick = (sizeValue: string) => {
+    // 1. Try to find variant with matching size AND current selected color
+    const currentColor = selectedVariant.color;
+    const match = variants.find(
+      (v) =>
+        (v.attributeValue || v.size)?.toLowerCase().trim() === sizeValue.toLowerCase().trim() &&
+        v.color?.toLowerCase().trim() === currentColor?.toLowerCase().trim()
+    );
+
+    if (match) {
+      onSelectVariant(match);
+      if (match.image && onSelectImage) onSelectImage(match.image);
+      return;
+    }
+
+    // 2. Fallback: first variant with that size
+    const fallback = variants.find(
+      (v) => (v.attributeValue || v.size)?.toLowerCase().trim() === sizeValue.toLowerCase().trim()
+    );
+    if (fallback) {
+      onSelectVariant(fallback);
+      if (fallback.image && onSelectImage) onSelectImage(fallback.image);
+    }
+  };
+
+  // Handler for direct 1D variant click
+  const handleDirectVariantClick = (v: ProductVariant) => {
     onSelectVariant(v);
     if (v.image && onSelectImage) {
       onSelectImage(v.image);
@@ -128,8 +181,122 @@ export default function VariantSelector({
 
   return (
     <div className="space-y-4 pt-1">
-      {/* ── 1. Color Variants (Swatch Style) ── */}
-      {hasColors && (
+      {/* ── CASE A: MULTI-DIMENSIONAL COMBINATION (e.g. Color AND Volume) ── */}
+      {isMultiDimensional ? (
+        <>
+          {/* 1. Color Swatches Row */}
+          <div className="space-y-2">
+            <div className="flex items-center justify-between">
+              <label className="text-xs font-black text-[#052a51] uppercase tracking-wider flex items-center gap-1.5">
+                <span>Color:</span>
+                <span className="text-[#F26522] normal-case font-bold">{selectedVariant.color}</span>
+              </label>
+            </div>
+
+            <div className="flex flex-wrap gap-2.5">
+              {distinctColors.map((col) => {
+                const isSelected = selectedVariant.color?.toLowerCase().trim() === col.toLowerCase().trim();
+                const colorKey = col.toLowerCase().trim();
+                const hex = COLOR_HEX_MAP[colorKey] || "#CBD5E1";
+                const isLight = ["white", "ivory white", "pearl white", "offwhite", "off white", "cream", "yellow"].includes(colorKey);
+                
+                // Representative variant for image/stock
+                const repVariant = variants.find((v) => v.color?.toLowerCase().trim() === colorKey);
+                const isOutOfStock = repVariant ? repVariant.stockBoxes <= 0 : false;
+
+                return (
+                  <button
+                    key={col}
+                    type="button"
+                    onClick={() => handleColorClick(col)}
+                    className={`group relative flex items-center gap-2 pl-2 pr-3 py-1.5 rounded-xl border-2 transition-all cursor-pointer ${
+                      isSelected
+                        ? "border-[#F26522] bg-orange-50/60 shadow-xs ring-2 ring-orange-200"
+                        : "border-gray-200 bg-white hover:border-gray-300"
+                    } ${isOutOfStock ? "opacity-60" : ""}`}
+                  >
+                    <span
+                      className="w-5 h-5 rounded-full border border-black/15 shadow-2xs flex items-center justify-center shrink-0 overflow-hidden relative"
+                      style={{ backgroundColor: hex }}
+                    >
+                      {repVariant?.image ? (
+                        <img src={repVariant.image} alt={col} className="w-full h-full object-cover" />
+                      ) : null}
+                      {isSelected && (
+                        <Check size={11} className={isLight ? "text-gray-900" : "text-white"} strokeWidth={3} />
+                      )}
+                    </span>
+
+                    <span className="text-xs font-bold text-[#052a51]">{col}</span>
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+
+          {/* 2. Volume / Dimension Chips Row */}
+          <div className="space-y-2">
+            <div className="flex items-center justify-between">
+              <label className="text-xs font-black text-[#052a51] uppercase tracking-wider flex items-center gap-1.5">
+                <span>{primaryAttributeLabel}:</span>
+                <span className="text-[#F26522] normal-case font-bold">
+                  {selectedVariant.attributeValue || selectedVariant.size}
+                </span>
+              </label>
+              <span className="text-[11px] text-gray-400 font-medium">
+                Price updates dynamically
+              </span>
+            </div>
+
+            <div className="flex flex-wrap gap-2">
+              {distinctSizes.map((sz) => {
+                const currentVal = selectedVariant.attributeValue || selectedVariant.size;
+                const isSelected = currentVal?.toLowerCase().trim() === sz.toLowerCase().trim();
+
+                // Find variant matching current color + this size to show its price
+                const matchingVariant = variants.find(
+                  (v) =>
+                    (v.attributeValue || v.size)?.toLowerCase().trim() === sz.toLowerCase().trim() &&
+                    v.color?.toLowerCase().trim() === selectedVariant.color?.toLowerCase().trim()
+                ) || variants.find((v) => (v.attributeValue || v.size)?.toLowerCase().trim() === sz.toLowerCase().trim());
+
+                const price = matchingVariant?.pricePerBox || selectedVariant.pricePerBox;
+                const isOutOfStock = matchingVariant ? matchingVariant.stockBoxes <= 0 : false;
+
+                return (
+                  <button
+                    key={sz}
+                    type="button"
+                    onClick={() => handleSizeClick(sz)}
+                    className={`group relative flex items-center gap-2 px-3.5 py-2 rounded-xl border-2 transition-all active:scale-95 cursor-pointer ${
+                      isSelected
+                        ? "border-[#F26522] bg-[#F26522]/10 text-[#052a51] shadow-xs ring-2 ring-[#F26522]/20 font-black"
+                        : "border-gray-200 hover:border-gray-300 bg-white text-[#052a51] font-bold"
+                    } ${isOutOfStock ? "opacity-50 line-through" : ""}`}
+                  >
+                    {matchingVariant?.image && (
+                      <img
+                        src={matchingVariant.image}
+                        alt={sz}
+                        className="w-5 h-5 rounded-md object-cover border border-gray-200"
+                      />
+                    )}
+
+                    <span className="text-xs">{sz}</span>
+
+                    <span className={`text-[11px] px-1.5 py-0.5 rounded-md ${
+                      isSelected ? "bg-[#F26522] text-white font-black" : "bg-gray-100 text-gray-600 font-semibold"
+                    }`}>
+                      {formatPrice(price)}
+                    </span>
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+        </>
+      ) : hasColors && !hasSizes ? (
+        /* ── CASE B: COLOR-ONLY VARIANTS ── */
         <div className="space-y-2">
           <div className="flex items-center justify-between">
             <label className="text-xs font-black text-[#052a51] uppercase tracking-wider flex items-center gap-1.5">
@@ -140,7 +307,7 @@ export default function VariantSelector({
 
           <div className="flex flex-wrap gap-2.5">
             {variants.map((v) => {
-              const isSelected = selectedVariant.id === v.id || (selectedVariant.color === v.color && (!hasSizesOrVolumes || selectedVariant.size === v.size));
+              const isSelected = selectedVariant.id === v.id;
               const colorKey = (v.color || "").toLowerCase().trim();
               const hex = COLOR_HEX_MAP[colorKey] || "#CBD5E1";
               const isLight = ["white", "ivory white", "pearl white", "offwhite", "off white", "cream", "yellow"].includes(colorKey);
@@ -150,14 +317,13 @@ export default function VariantSelector({
                 <button
                   key={v.id}
                   type="button"
-                  onClick={() => handleVariantClick(v)}
+                  onClick={() => handleDirectVariantClick(v)}
                   className={`group relative flex items-center gap-2 pl-2 pr-3 py-1.5 rounded-xl border-2 transition-all cursor-pointer ${
                     isSelected
                       ? "border-[#F26522] bg-orange-50/60 shadow-xs ring-2 ring-orange-200"
                       : "border-gray-200 bg-white hover:border-gray-300"
                   } ${isOutOfStock ? "opacity-60" : ""}`}
                 >
-                  {/* Swatch circle / image thumbnail */}
                   <span
                     className="w-5 h-5 rounded-full border border-black/15 shadow-2xs flex items-center justify-center shrink-0 overflow-hidden relative"
                     style={{ backgroundColor: hex }}
@@ -170,9 +336,7 @@ export default function VariantSelector({
                     )}
                   </span>
 
-                  <span className="text-xs font-bold text-[#052a51]">
-                    {v.color}
-                  </span>
+                  <span className="text-xs font-bold text-[#052a51]">{v.color}</span>
 
                   {v.pricePerBox !== selectedVariant.pricePerBox && (
                     <span className="text-[10px] text-gray-500 font-semibold">
@@ -184,10 +348,8 @@ export default function VariantSelector({
             })}
           </div>
         </div>
-      )}
-
-      {/* ── 2. Size / Volume / Dimension Variants (Chip Style) ── */}
-      {hasSizesOrVolumes && (
+      ) : (
+        /* ── CASE C: SIZE / VOLUME / DIMENSION CHIPS (Default) ── */
         <div className="space-y-2">
           <div className="flex items-center justify-between">
             <label className="text-xs font-black text-[#052a51] uppercase tracking-wider flex items-center gap-1.5">
@@ -211,14 +373,13 @@ export default function VariantSelector({
                 <button
                   key={v.id}
                   type="button"
-                  onClick={() => handleVariantClick(v)}
+                  onClick={() => handleDirectVariantClick(v)}
                   className={`group relative flex items-center gap-2 px-3.5 py-2 rounded-xl border-2 transition-all active:scale-95 cursor-pointer ${
                     isSelected
                       ? "border-[#F26522] bg-[#F26522]/10 text-[#052a51] shadow-xs ring-2 ring-[#F26522]/20 font-black"
                       : "border-gray-200 hover:border-gray-300 bg-white text-[#052a51] font-bold"
                   } ${isOutOfStock ? "opacity-50 line-through" : ""}`}
                 >
-                  {/* Variant image thumbnail if available */}
                   {v.image && (
                     <img
                       src={v.image}

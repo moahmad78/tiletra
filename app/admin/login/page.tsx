@@ -11,8 +11,8 @@ export default function AdminLoginPage() {
   const router = useRouter();
   const { login } = useAdminAuth();
 
-  const [email, setEmail] = useState("sahil@intrihub.com");
-  const [password, setPassword] = useState("sahil@7814");
+  const [email, setEmail] = useState("moahmadmail92@gmail.com");
+  const [password, setPassword] = useState("admin");
   const [loading, setLoading] = useState(false);
 
   const handleSubmit = (e: React.FormEvent) => {
@@ -24,26 +24,19 @@ export default function AdminLoginPage() {
       setLoading(false);
 
       if (success) {
-        toast.success("Welcome back, Sahil! Signed in to Intrihub Admin Portal.");
+        toast.success("Welcome back! Signed in to Intrihub Admin Portal.");
         router.push("/admin");
       } else {
-        toast.error("Invalid credentials. Use sahil@intrihub.com / sahil@7814");
+        toast.error("Invalid credentials. Please check your login details.");
       }
     }, 300);
   };
 
-  const handleQuickLogin = (role: "admin" | "staff") => {
-    if (role === "admin") {
-      setEmail("sahil@intrihub.com");
-      setPassword("sahil@7814");
-      login("sahil@intrihub.com", "sahil@7814");
-      toast.success("Logged in as Sahil Sheikh (Founder & CEO)");
-    } else {
-      setEmail("staff@intrihub.com");
-      setPassword("staff");
-      login("staff@intrihub.com", "staff");
-      toast.success("Logged in as Operations Staff");
-    }
+  const handleQuickLogin = () => {
+    setEmail("moahmadmail92@gmail.com");
+    setPassword("admin");
+    login("moahmadmail92@gmail.com", "admin");
+    toast.success("Logged in as Super Admin");
     router.push("/admin");
   };
 
@@ -79,7 +72,7 @@ export default function AdminLoginPage() {
                 required
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
-                placeholder="sahil@intrihub.com"
+                placeholder="moahmadmail92@gmail.com"
                 className="w-full pl-10 pr-4 py-3 bg-gray-50 border border-gray-200 rounded-xl text-sm font-semibold text-[#052a51] focus:outline-none focus:border-[#F26522] transition-colors"
               />
             </div>
@@ -115,24 +108,16 @@ export default function AdminLoginPage() {
         {/* Quick Demo Credentials */}
         <div className="mt-8 pt-6 border-t border-gray-100">
           <p className="text-[11px] font-bold text-gray-400 uppercase tracking-wider text-center mb-3">
-            Quick Fill Accounts
+            Quick Fill Account
           </p>
-          <div className="grid grid-cols-2 gap-2">
+          <div>
             <button
               type="button"
-              onClick={() => handleQuickLogin("admin")}
-              className="p-2.5 bg-gray-50 hover:bg-gray-100 border border-gray-200 rounded-xl text-xs font-bold text-[#052a51] transition-colors flex flex-col items-center gap-0.5 cursor-pointer"
+              onClick={handleQuickLogin}
+              className="w-full p-2.5 bg-gray-50 hover:bg-gray-100 border border-gray-200 rounded-xl text-xs font-bold text-[#052a51] transition-colors flex flex-col items-center gap-0.5 cursor-pointer"
             >
-              <span className="text-[#F26522]">Founder & CEO</span>
-              <span className="text-[10px] text-gray-400">sahil@intrihub.com</span>
-            </button>
-            <button
-              type="button"
-              onClick={() => handleQuickLogin("staff")}
-              className="p-2.5 bg-gray-50 hover:bg-gray-100 border border-gray-200 rounded-xl text-xs font-bold text-[#052a51] transition-colors flex flex-col items-center gap-0.5 cursor-pointer"
-            >
-              <span>Staff Account</span>
-              <span className="text-[10px] text-gray-400">staff@intrihub.com</span>
+              <span className="text-[#F26522]">Super Admin</span>
+              <span className="text-[10px] text-gray-400">moahmadmail92@gmail.com</span>
             </button>
           </div>
         </div>
@@ -143,7 +128,7 @@ export default function AdminLoginPage() {
             href="/"
             className="text-xs text-gray-400 hover:text-[#052a51] font-semibold transition-colors"
           >
-            ← Return to Customer Storefront
+            ← Return to Intrihub Storefront
           </Link>
         </div>
       </div>

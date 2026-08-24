@@ -405,6 +405,23 @@ export async function createOrder(input: CreateOrderInput) {
       console.error("Failed to create admin notification:", e);
     }
 
+    // Customer In-App Notification (strictly per-user DB record)
+    if (order.userId && !order.userId.startsWith("usr-")) {
+      try {
+        await prisma.notification.create({
+          data: {
+            userId: order.userId,
+            title: `Order #${order.id} Confirmed!`,
+            message: `Thank you for your order! Your ${order.items?.length || 1} item(s) are being prepared for dispatch.`,
+            type: "order_placed",
+            link: "/account/orders",
+          },
+        });
+      } catch (e) {
+        console.error("Failed to create customer notification:", e);
+      }
+    }
+
     // Real-Time Socket Broadcast to Admin Room (Phase 5b PRD)
     try {
       const { emitSocketEvent } = await import("@/lib/socket-server-emit");
@@ -564,6 +581,33 @@ export async function updateOrderStatus(id: string, orderStatus: string) {
       });
     } catch (e) {
       console.error("Failed to emit order-status-updated socket event:", e);
+    }
+
+    // Customer In-App Notification
+    if (order.userId && !order.userId.startsWith("usr-")) {
+      try {
+        const statusLabel =
+          orderStatus === "dispatched" || orderStatus === "shipped"
+            ? "Dispatched"
+            : orderStatus === "delivered"
+            ? "Delivered"
+            : orderStatus === "cancelled"
+            ? "Cancelled"
+            : "Updated";
+        await prisma.notification.create({
+          data: {
+            userId: order.userId,
+            title: `Order #${order.id} ${statusLabel}!`,
+            message: `Your order status has been updated to ${orderStatus.toUpperCase()}.${
+              order.trackingNumber ? ` Tracking Number: ${order.trackingNumber}` : ""
+            }`,
+            type: "order_status",
+            link: "/account/orders",
+          },
+        });
+      } catch (e) {
+        console.error("Failed to create status update customer notification:", e);
+      }
     }
 
     safeRevalidate("/admin/orders");

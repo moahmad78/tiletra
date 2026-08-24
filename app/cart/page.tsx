@@ -125,7 +125,7 @@ export default function CartPage() {
                 >
                   <div className="relative w-20 h-20 sm:w-24 sm:h-24 rounded-xl overflow-hidden flex-shrink-0 bg-gray-100 border border-gray-100">
                     <Image
-                      src={item.product.images[0]}
+                      src={item.variant.image || item.product.images[0] || "/placeholders/product.svg"}
                       alt={item.product.name}
                       fill
                       className="object-cover"
@@ -144,7 +144,7 @@ export default function CartPage() {
                           </h3>
                         </Link>
                         <p className="text-xs text-gray-500 mt-0.5">
-                          {item.variant.size} · {item.variant.finish} · {item.variant.color}
+                          {[item.variant.attributeValue || item.variant.size, item.variant.color !== "Standard" && item.variant.color, item.variant.finish !== "Standard" && item.variant.finish].filter(Boolean).join(" · ")}
                         </p>
                         <p className="text-[11px] text-gray-400 mt-0.5">
                           {item.product.unitOfSale === "box" || item.product.unitOfSale === "sqft" || item.product.categorySlug?.includes("tile")

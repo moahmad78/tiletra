@@ -59,7 +59,7 @@ export async function POST(req: Request) {
 
     if (!vendor) {
       recordFailedAttempt(`vendor-auth:${query}`, 5, 15 * 60 * 1000);
-      return NextResponse.json({ error: "No vendor account found with this email or phone number." }, { status: 404 });
+      return NextResponse.json({ error: "Invalid credentials. Please check your email or password." }, { status: 401 });
     }
 
     // 3. Strict Password Verification
@@ -82,7 +82,7 @@ export async function POST(req: Request) {
           );
         }
         return NextResponse.json(
-          { error: `Incorrect password. ${attemptResult.remainingAttempts} attempt(s) remaining before lockout.` },
+          { error: "Invalid credentials. Please check your email or password." },
           { status: 401 }
         );
       }

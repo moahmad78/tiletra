@@ -68,16 +68,18 @@ export default async function ProductPage({
   params: Promise<{ slug: string }>;
 }) {
   const { slug } = await params;
-  const product = await getProductBySlug(slug);
+  const [product, allProducts] = await Promise.all([
+    getProductBySlug(slug),
+    getProducts(),
+  ]);
 
   if (!product) {
     notFound();
   }
 
-  const relatedProducts = await getProducts({
-    categorySlug: product.categorySlug,
-    limit: 4,
-  }).then((prods) => prods.filter((p) => p.id !== product.id).slice(0, 3));
+  const relatedProducts = allProducts
+    .filter((p) => p.categorySlug === product.categorySlug && p.id !== product.id)
+    .slice(0, 6);
 
   const minPrice = product.variants?.length
     ? Math.min(...product.variants.map((v) => v.pricePerBox || v.pricePerSqft || 0))
@@ -121,6 +123,7 @@ export default async function ProductPage({
       <ProductDetailsClient
         product={product}
         relatedProducts={relatedProducts}
+        allProducts={allProducts}
       />
     </>
   );

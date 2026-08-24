@@ -24,7 +24,7 @@ export default function VendorLoginPage() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!identifier.trim()) {
-      toast.error("Please enter your registered email or phone");
+      toast.error("Please enter your registered email address");
       return;
     }
 
@@ -102,14 +102,14 @@ export default function VendorLoginPage() {
           <form onSubmit={handleSubmit} className="space-y-4">
             <div>
               <label className="block text-xs font-bold text-gray-700 uppercase tracking-wider mb-1.5">
-                Email or 10-Digit Mobile
+                Registered Email Address
               </label>
               <div className="relative">
                 <input
-                  type="text"
+                  type="email"
                   value={identifier}
                   onChange={(e) => setIdentifier(e.target.value)}
-                  placeholder="e.g. balaji.electricals@intrihub.com or 9845012345"
+                  placeholder="e.g. balaji.electricals@intrihub.com"
                   className="w-full bg-gray-50 border border-gray-200 rounded-xl px-4 py-3 text-sm font-medium text-gray-800 placeholder-gray-400 focus:bg-white focus:border-[#052a51] focus:outline-hidden transition-all"
                   required
                 />

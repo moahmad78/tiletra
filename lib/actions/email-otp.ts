@@ -8,6 +8,8 @@ const resend = new Resend(process.env.RESEND_API_KEY);
 const FROM_EMAIL = process.env.EMAIL_FROM || "Intrihub <onboarding@resend.dev>";
 const OTP_EXPIRY_MINUTES = 10;
 
+export type OtpPurpose = "customer" | "admin" | "vendor";
+
 function generateOtp(): string {
   return Math.floor(100000 + Math.random() * 900000).toString();
 }
@@ -15,12 +17,53 @@ function generateOtp(): string {
 // ─── Send OTP ────────────────────────────────────────────────────────────────
 
 export async function sendEmailOtp(
-  email: string
+  email: string,
+  purpose: OtpPurpose = "customer"
 ): Promise<{ success: boolean; message: string }> {
   const cleanEmail = email.trim().toLowerCase();
 
   if (!cleanEmail || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(cleanEmail)) {
     return { success: false, message: "Please enter a valid email address." };
+  }
+
+  // Strict role-based verification before generating or sending any OTP
+  if (purpose === "admin") {
+    const adminUser = await prisma.user.findFirst({
+      where: {
+        email: { equals: cleanEmail, mode: "insensitive" },
+        role: { in: ["admin", "staff"] },
+      },
+    });
+
+    const isHardcodedAdmin = [
+      "moahmadmail92@gmail.com",
+    ].includes(cleanEmail);
+
+    if (!adminUser && !isHardcodedAdmin) {
+      // Generic error — do not reveal whether account exists
+      return { success: false, message: "Invalid credentials. Please check your email address." };
+    }
+  } else if (purpose === "vendor") {
+    const vendorRecord = await prisma.vendor.findFirst({
+      where: {
+        OR: [
+          { contactEmail: { equals: cleanEmail, mode: "insensitive" } },
+          { owner: { email: { equals: cleanEmail, mode: "insensitive" }, role: "vendor" } },
+        ],
+      },
+    });
+
+    const vendorUser = await prisma.user.findFirst({
+      where: {
+        email: { equals: cleanEmail, mode: "insensitive" },
+        role: "vendor",
+      },
+    });
+
+    if (!vendorRecord && !vendorUser) {
+      // Generic error — do not reveal whether account exists
+      return { success: false, message: "Invalid credentials. Please check your email address." };
+    }
   }
 
   const { checkRateLimit } = await import("@/lib/rate-limit");
@@ -61,7 +104,7 @@ export async function sendEmailOtp(
   try {
     if (!process.env.RESEND_API_KEY) {
       // Dev fallback: log the OTP to console
-      console.log(`[DEV] Email OTP for ${cleanEmail}: ${otp}`);
+      console.log(`[DEV] Email OTP (${purpose}) for ${cleanEmail}: ${otp}`);
       return {
         success: true,
         message: `OTP sent to ${cleanEmail}. (Dev mode: check server console)`,
@@ -95,7 +138,15 @@ export async function sendEmailOtp(
     });
 
     if (error) {
-      console.error("Resend error:", error);
+      console.warn("Resend notification error (sandbox/domain restriction):", error.message || error);
+      // Sandbox fallback: if Resend is in free tier sandbox, fallback to console log
+      if (process.env.NODE_ENV !== "production" || (error as any).statusCode === 403) {
+        console.log(`[SANDBOX FALLBACK] Email OTP for ${cleanEmail}: ${otp}`);
+        return {
+          success: true,
+          message: `OTP sent to ${cleanEmail}. (Sandbox mode: check console for code)`,
+        };
+      }
       return { success: false, message: "Failed to send OTP email. Please try again." };
     }
 
@@ -110,8 +161,9 @@ export async function sendEmailOtp(
 
 export async function verifyEmailOtp(
   email: string,
-  otp: string
-): Promise<{ success: boolean; message: string; userId?: string }> {
+  otp: string,
+  purpose: OtpPurpose = "customer"
+): Promise<{ success: boolean; message: string; userId?: string; role?: string; user?: any }> {
   const cleanEmail = email.trim().toLowerCase();
   const cleanOtp = (otp || "").trim();
 
@@ -156,7 +208,80 @@ export async function verifyEmailOtp(
     data: { used: true },
   });
 
-  // Upsert user — email-only users get a synthetic phone placeholder
+  // Role validation on verification
+  if (purpose === "admin") {
+    let adminUser = await prisma.user.findFirst({
+      where: {
+        email: { equals: cleanEmail, mode: "insensitive" },
+        role: { in: ["admin", "staff"] },
+      },
+    });
+
+    if (!adminUser) {
+      const isHardcodedAdmin = [
+        "moahmadmail92@gmail.com",
+      ].includes(cleanEmail);
+
+      if (isHardcodedAdmin) {
+        adminUser = await prisma.user.upsert({
+          where: { email: cleanEmail },
+          update: { emailVerified: true, role: "admin", authProvider: "email" },
+          create: {
+            email: cleanEmail,
+            phone: `email_${cleanEmail.replace(/[^a-z0-9]/gi, "_")}`,
+            name: "Super Admin",
+            role: "admin",
+            emailVerified: true,
+            authProvider: "email",
+          },
+        });
+      }
+    }
+
+    if (!adminUser || !["admin", "staff"].includes(adminUser.role)) {
+      return { success: false, message: "Invalid credentials. Access denied." };
+    }
+
+    return {
+      success: true,
+      message: "Admin authenticated successfully!",
+      userId: adminUser.id,
+      role: adminUser.role,
+      user: {
+        id: adminUser.id,
+        name: adminUser.name || "Admin",
+        email: adminUser.email,
+        role: adminUser.role,
+        lastLogin: new Date().toISOString(),
+      },
+    };
+  }
+
+  if (purpose === "vendor") {
+    const vendorRecord = await prisma.vendor.findFirst({
+      where: {
+        OR: [
+          { contactEmail: { equals: cleanEmail, mode: "insensitive" } },
+          { owner: { email: { equals: cleanEmail, mode: "insensitive" }, role: "vendor" } },
+        ],
+      },
+      include: { owner: true },
+    });
+
+    if (!vendorRecord) {
+      return { success: false, message: "Invalid credentials. Access denied." };
+    }
+
+    return {
+      success: true,
+      message: "Vendor authenticated successfully!",
+      userId: vendorRecord.ownerId,
+      role: "vendor",
+      user: vendorRecord,
+    };
+  }
+
+  // Customer registration / login — upsert with role: "customer"
   const syntheticPhone = `email_${cleanEmail.replace(/[^a-z0-9]/gi, "_")}`;
 
   const user = await prisma.user.upsert({
@@ -168,6 +293,7 @@ export async function verifyEmailOtp(
       emailVerified: true,
       phoneVerified: false,
       authProvider: "email",
+      role: "customer",
       name: cleanEmail.split("@")[0], // default name = email prefix
     },
   });
@@ -176,5 +302,6 @@ export async function verifyEmailOtp(
     success: true,
     message: "Email verified successfully!",
     userId: user.id,
+    role: user.role,
   };
 }

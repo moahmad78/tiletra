@@ -200,11 +200,11 @@ export default function CheckoutPage() {
           productId: i.product.id,
           productName: i.product.name,
           variantId: i.variant.id,
-          variantDetails: `${i.variant.size} · ${i.variant.finish} · ${i.variant.color}`,
+          variantDetails: [i.variant.attributeValue || i.variant.size, i.variant.color !== "Standard" && i.variant.color, i.variant.finish !== "Standard" && i.variant.finish].filter(Boolean).join(" · "),
           boxQuantity: i.quantity,
           pricePerBox: i.variant.pricePerBox,
           totalPrice: i.variant.pricePerBox * i.quantity,
-          image: i.product.images[0] || "/placeholders/product.svg",
+          image: i.variant.image || i.product.images[0] || "/placeholders/product.svg",
         })),
         subtotal,
         deliveryFee,
@@ -237,14 +237,19 @@ export default function CheckoutPage() {
       // Ignore broadcast errors
     }
 
-    // In-app notification
-    const { addNotification } = useNotificationsStore.getState();
-    addNotification({
-      type: "order_placed",
-      title: `Order ${orderId} Placed (${method === "COD" ? "Cash on Delivery" : "Online Paid"})!`,
-      body: `Thank you, ${selectedAddress.name}! Your order for ${items.length} item(s) is scheduled for safe crate dispatch.`,
-      link: "/account/orders",
-    });
+    // In-app notification for logged-in user
+    if (user?.id) {
+      const { addNotification } = useNotificationsStore.getState();
+      await addNotification(
+        {
+          type: "order_placed",
+          title: `Order ${orderId} Placed (${method === "COD" ? "Cash on Delivery" : "Online Paid"})!`,
+          body: `Thank you, ${selectedAddress.name}! Your order for ${items.length} item(s) is scheduled for safe crate dispatch.`,
+          link: "/account/orders",
+        },
+        user.id
+      );
+    }
 
     setIsRedirectingToSuccess(true);
     clearCart();
@@ -732,7 +737,7 @@ export default function CheckoutPage() {
                     <div className="flex-1 pr-2">
                       <p className="font-black text-[#052a51] line-clamp-1">{item.product.name}</p>
                       <p className="text-gray-400 mt-0.5">
-                        {item.variant.size} · {item.quantity} box(es)
+                        {[item.variant.attributeValue || item.variant.size, item.variant.color !== "Standard" && item.variant.color, item.variant.finish !== "Standard" && item.variant.finish].filter(Boolean).join(" · ")} · {item.quantity} {item.variant.unit || item.product.unitOfSale || "unit"}{item.quantity > 1 ? "s" : ""}
                       </p>
                     </div>
                     <p className="font-bold text-[#052a51]">

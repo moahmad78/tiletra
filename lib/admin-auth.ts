@@ -21,38 +21,16 @@ type AdminAuthState = {
   logout: () => void;
 };
 
-// Default owner credentials for easy testing & secure access
+// Owner credentials for secure access
 const VALID_CREDENTIALS = [
   {
-    email: "sahil@intrihub.com",
-    password: "sahil@7814",
-    user: {
-      id: "adm-001",
-      name: "Sahil Sheikh",
-      email: "sahil@intrihub.com",
-      role: "admin" as AdminRole,
-      lastLogin: new Date().toISOString(),
-    },
-  },
-  {
-    email: "admin@intrihub.com",
+    email: "moahmadmail92@gmail.com",
     password: "admin",
     user: {
       id: "adm-001",
-      name: "Sahil Sheikh",
-      email: "sahil@intrihub.com",
+      name: "Super Admin",
+      email: "moahmadmail92@gmail.com",
       role: "admin" as AdminRole,
-      lastLogin: new Date().toISOString(),
-    },
-  },
-  {
-    email: "staff@intrihub.com",
-    password: "staff",
-    user: {
-      id: "adm-002",
-      name: "Operations Staff",
-      email: "staff@intrihub.com",
-      role: "staff" as AdminRole,
       lastLogin: new Date().toISOString(),
     },
   },
@@ -61,7 +39,7 @@ const VALID_CREDENTIALS = [
 export const useAdminAuth = create<AdminAuthState>()(
   persist(
     (set) => ({
-      user: VALID_CREDENTIALS[0].user, // Pre-authenticated for frictionless testing
+      user: VALID_CREDENTIALS[0].user,
       isAuthenticated: true,
 
       login: (email, password) => {

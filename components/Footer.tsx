@@ -37,7 +37,7 @@ export default function Footer() {
 
   return (
     <>
-      <footer className="bg-[#02152b] text-white/70 pt-[60px] pb-[85px] md:pb-[30px] border-t border-white/10 block">
+      <footer className="bg-[#02152b] text-white/70 pt-[60px] pb-[30px] border-t border-white/10 hidden md:block">
         <div className="w-full max-w-[1400px] mx-auto px-[20px] md:px-[24px] lg:px-[32px]">
 
           {/* Top Grid */}

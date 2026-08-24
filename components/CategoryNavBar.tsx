@@ -7,7 +7,6 @@ import {
   ChevronDown,
   ChevronLeft,
   ChevronRight,
-  Sparkles,
   ArrowRight,
   Flame,
   ArrowUpRight,
@@ -284,15 +283,6 @@ export default function CategoryNavBar() {
 
           {/* 2. Right Side Dedicated Fixed Slot */}
           <div className="flex items-center gap-2 pl-3 border-l border-gray-200 shrink-0">
-            {/* Room Inspiration Quick Link */}
-            <Link
-              href="/inspiration"
-              className="flex items-center gap-1 px-2.5 py-1.5 rounded-lg text-[#F26522] hover:bg-[#F26522]/10 transition-colors whitespace-nowrap font-black text-[12px] shrink-0"
-            >
-              <Sparkles size={13} className="shrink-0" />
-              <span>Inspiration</span>
-            </Link>
-
             {/* Explore All Supplies CTA */}
             <Link
               href="/shop"

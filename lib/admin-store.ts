@@ -498,7 +498,7 @@ export const useAdminStore = create<AdminStore>()(
         subheadline: "Discover 200+ premium floor, wall, bathroom & kitchen tiles. Browse by room, choose your size & finish, and order directly to your door.",
         ctaText: "Shop All Tiles",
         ctaHref: "/shop",
-        secondaryCtaText: "View Inspiration",
+        secondaryCtaText: "Explore Catalog",
         secondaryCtaHref: "/shop",
         bgImage: "/placeholders/product.svg",
       },

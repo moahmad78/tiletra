@@ -14,9 +14,12 @@ import {
   CheckCircle,
 } from "lucide-react";
 import { useNotificationsStore } from "@/lib/notifications-store";
+import { useAuthStore } from "@/lib/auth-store";
 import { toast } from "sonner";
+import { LogIn } from "lucide-react";
 
 export default function NotificationPreferencesPage() {
+  const { user, isAuthenticated, openLoginModal } = useAuthStore();
   const preferences = useNotificationsStore((s) => s.preferences);
   const updatePreferences = useNotificationsStore((s) => s.updatePreferences);
 
@@ -37,6 +40,27 @@ export default function NotificationPreferencesPage() {
     });
     toast.success("Notification preferences saved!");
   };
+
+  if (!isAuthenticated || !user) {
+    return (
+      <div className="bg-white rounded-3xl p-8 border border-gray-200/90 shadow-2xs text-center max-w-md mx-auto my-12">
+        <div className="w-14 h-14 rounded-2xl bg-[#052a51]/5 text-[#052a51] flex items-center justify-center mx-auto mb-4">
+          <Bell size={24} />
+        </div>
+        <h2 className="text-lg font-black text-[#052a51]">Sign in required</h2>
+        <p className="text-xs text-gray-500 mt-1 mb-6">
+          Please log in to manage your notification alerts and preferences.
+        </p>
+        <button
+          onClick={() => openLoginModal()}
+          className="inline-flex items-center gap-2 px-6 py-3 bg-[#052a51] hover:bg-[#F26522] text-white text-xs font-bold rounded-xl shadow-md transition-all active:scale-95"
+        >
+          <LogIn size={15} />
+          <span>Log In / Register</span>
+        </button>
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-6">

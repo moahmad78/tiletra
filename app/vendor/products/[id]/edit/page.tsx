@@ -10,6 +10,7 @@ import { getCategories } from "@/lib/actions/categories";
 import type { Category } from "@/lib/data/categories";
 import type { Product } from "@/lib/data/products";
 import ImageUploadManager from "@/components/admin/ImageUploadManager";
+import VariantEditor from "@/components/admin/VariantEditor";
 import {
   ArrowLeft,
   Plus,
@@ -425,137 +426,11 @@ export default function VendorEditProductPage() {
 
         {/* Variants & Pricing */}
         <div className="bg-white rounded-3xl p-6 border border-gray-200/80 shadow-xs space-y-4">
-          <div className="flex items-center justify-between">
-            <div>
-              <h2 className="text-sm font-black text-gray-900 uppercase tracking-wider">
-                4. Pricing & Inventory Variants
-              </h2>
-              <p className="text-xs text-gray-500 mt-0.5">
-                Define sizes, finishes, colors, rates per unit, and available warehouse stock
-              </p>
-            </div>
-            <button
-              type="button"
-              onClick={handleAddVariant}
-              className="text-xs font-bold text-emerald-600 hover:text-emerald-700 flex items-center gap-1 bg-emerald-50 px-3 py-1.5 rounded-xl cursor-pointer"
-            >
-              <Plus size={14} /> Add Variant
-            </button>
-          </div>
-
-          <div className="space-y-4">
-            {variants.map((v, idx) => (
-              <div
-                key={idx}
-                className="p-4 rounded-2xl border border-gray-200 bg-gray-50/50 space-y-3 relative"
-              >
-                <div className="flex items-center justify-between">
-                  <span className="text-xs font-black uppercase text-gray-700 tracking-wider">
-                    Variant #{idx + 1}
-                  </span>
-                  {variants.length > 1 && (
-                    <button
-                      type="button"
-                      onClick={() => handleRemoveVariant(idx)}
-                      className="text-xs text-rose-600 hover:text-rose-700 font-bold flex items-center gap-1 cursor-pointer"
-                    >
-                      <Trash2 size={13} /> Remove
-                    </button>
-                  )}
-                </div>
-
-                <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-                  <div>
-                    <label className="block text-[10px] font-bold text-gray-500 uppercase mb-1">
-                      Size / Dimension
-                    </label>
-                    <input
-                      type="text"
-                      value={v.size}
-                      onChange={(e) => handleVariantChange(idx, "size", e.target.value)}
-                      placeholder="e.g. 600x600mm / 1-Inch"
-                      className="w-full bg-white border border-gray-200 rounded-xl px-3 py-2 text-xs font-medium text-gray-800"
-                    />
-                  </div>
-
-                  <div>
-                    <label className="block text-[10px] font-bold text-gray-500 uppercase mb-1">
-                      Finish / Type
-                    </label>
-                    <input
-                      type="text"
-                      value={v.finish}
-                      onChange={(e) => handleVariantChange(idx, "finish", e.target.value)}
-                      placeholder="e.g. Glossy / Matte"
-                      className="w-full bg-white border border-gray-200 rounded-xl px-3 py-2 text-xs font-medium text-gray-800"
-                    />
-                  </div>
-
-                  <div>
-                    <label className="block text-[10px] font-bold text-gray-500 uppercase mb-1">
-                      Color / Shade
-                    </label>
-                    <input
-                      type="text"
-                      value={v.color}
-                      onChange={(e) => handleVariantChange(idx, "color", e.target.value)}
-                      placeholder="e.g. White / Silver"
-                      className="w-full bg-white border border-gray-200 rounded-xl px-3 py-2 text-xs font-medium text-gray-800"
-                    />
-                  </div>
-
-                  <div>
-                    <label className="block text-[10px] font-bold text-gray-500 uppercase mb-1">
-                      Price per {unitOfSale} (₹) *
-                    </label>
-                    <input
-                      type="number"
-                      value={v.pricePerBox}
-                      onChange={(e) => handleVariantChange(idx, "pricePerBox", Number(e.target.value))}
-                      className="w-full bg-white border border-gray-200 rounded-xl px-3 py-2 text-xs font-bold text-gray-900"
-                      required
-                    />
-                  </div>
-
-                  <div>
-                    <label className="block text-[10px] font-bold text-gray-500 uppercase mb-1">
-                      Price per Sqft (₹)
-                    </label>
-                    <input
-                      type="number"
-                      value={v.pricePerSqft}
-                      onChange={(e) => handleVariantChange(idx, "pricePerSqft", Number(e.target.value))}
-                      className="w-full bg-white border border-gray-200 rounded-xl px-3 py-2 text-xs font-medium text-gray-800"
-                    />
-                  </div>
-
-                  <div>
-                    <label className="block text-[10px] font-bold text-gray-500 uppercase mb-1">
-                      Sqft per {unitOfSale}
-                    </label>
-                    <input
-                      type="number"
-                      value={v.sqftPerBox}
-                      onChange={(e) => handleVariantChange(idx, "sqftPerBox", Number(e.target.value))}
-                      className="w-full bg-white border border-gray-200 rounded-xl px-3 py-2 text-xs font-medium text-gray-800"
-                    />
-                  </div>
-
-                  <div>
-                    <label className="block text-[10px] font-bold text-gray-500 uppercase mb-1">
-                      Available Stock ({unitOfSale}s)
-                    </label>
-                    <input
-                      type="number"
-                      value={v.stockBoxes}
-                      onChange={(e) => handleVariantChange(idx, "stockBoxes", Number(e.target.value))}
-                      className="w-full bg-white border border-gray-200 rounded-xl px-3 py-2 text-xs font-medium text-gray-800"
-                    />
-                  </div>
-                </div>
-              </div>
-            ))}
-          </div>
+          <VariantEditor
+            variants={variants as any}
+            onChange={setVariants as any}
+            unitOfSale={unitOfSale}
+          />
 
           {/* Smart Calculator Estimator Settings */}
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 pt-4 border-t border-gray-100">

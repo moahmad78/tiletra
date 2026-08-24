@@ -116,7 +116,7 @@ export default function CartDrawer() {
                     {/* Image */}
                     <div className="relative w-20 h-20 rounded-xl overflow-hidden flex-shrink-0 bg-gray-100">
                       <Image
-                        src={item.product.images[0]}
+                        src={item.variant.image || item.product.images[0] || "/placeholders/product.svg"}
                         alt={item.product.name}
                         fill
                         className="object-cover"
@@ -130,7 +130,7 @@ export default function CartDrawer() {
                         {item.product.name}
                       </p>
                       <p className="text-xs text-gray-500 mt-0.5">
-                        {item.variant.size} · {item.variant.finish}
+                        {[item.variant.attributeValue || item.variant.size, item.variant.color !== "Standard" && item.variant.color, item.variant.finish !== "Standard" && item.variant.finish].filter(Boolean).join(" · ")}
                       </p>
                       <p className="text-xs text-gray-400 mt-0.5">
                         {isTile

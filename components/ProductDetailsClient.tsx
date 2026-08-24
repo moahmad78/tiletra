@@ -32,11 +32,11 @@ import { useAuthStore } from "@/lib/auth-store";
 import { trackProductView } from "@/lib/recommendations";
 import Header from "@/components/Header";
 import Footer from "@/components/Footer";
-import ProductCard from "@/components/ProductCard";
+import CompactProductCard from "@/components/CompactProductCard";
 import ReviewSection from "@/components/reviews/ReviewSection";
 import FrequentlyBoughtTogether from "@/components/suggestions/FrequentlyBoughtTogether";
 import RecentlyViewedSlider from "@/components/suggestions/RecentlyViewedSlider";
-import SuggestedItemsSection from "@/components/suggestions/SuggestedItemsSection";
+import DiscoverMoreSection from "@/components/suggestions/DiscoverMoreSection";
 import { showCartToast } from "@/lib/cart-toast-store";
 import VariantSelector from "@/components/products/VariantSelector";
 import SmartCalculator from "@/components/products/SmartCalculator";
@@ -50,11 +50,13 @@ function formatPrice(n: number) {
 interface ProductDetailsClientProps {
   product: Product;
   relatedProducts: Product[];
+  allProducts?: Product[];
 }
 
 export default function ProductDetailsClient({
   product: definedProduct,
   relatedProducts,
+  allProducts,
 }: ProductDetailsClientProps) {
   const router = useRouter();
   const { addItem } = useCartStore();
@@ -627,41 +629,60 @@ export default function ProductDetailsClient({
           <FrequentlyBoughtTogether product={definedProduct} />
         </div>
 
-        {/* ── Related Products ── */}
+        {/* ── Related Products (Same Category) ── */}
         {relatedProducts.length > 0 && (
-          <div className="mt-16 mb-8">
-            <div className="flex items-center justify-between mb-6">
+          <div className="mt-14 mb-8 bg-white rounded-3xl p-5 sm:p-7 border border-gray-200/80 shadow-2xs space-y-4 sm:space-y-5">
+            <div className="flex items-center justify-between flex-wrap gap-2">
               <div>
                 <span className="text-[10px] font-black text-[#F26522] uppercase tracking-wider bg-[#F26522]/10 px-2.5 py-0.5 rounded-md">
                   Similar Designs
                 </span>
-                <h2 className="text-xl sm:text-2xl font-black text-[#052a51] mt-1">
+                <h2 className="text-lg sm:text-xl font-black text-[#052a51] mt-1">
                   You May Also Like
                 </h2>
+                <p className="text-xs text-gray-500 mt-0.5">
+                  More top picks in {definedProduct.categoryName || "this category"}
+                </p>
               </div>
               <Link
                 href={`/shop/${definedProduct.categorySlug}`}
-                className="text-xs font-bold text-[#F26522] hover:underline flex items-center gap-1"
+                className="text-xs font-bold text-[#F26522] hover:underline flex items-center gap-1 shrink-0"
               >
-                View all in {definedProduct.categoryName} <ArrowRight size={14} />
+                <span>View all in {definedProduct.categoryName}</span>
+                <ArrowRight size={14} />
               </Link>
             </div>
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
+
+            {/* Mobile Swipeable Slider */}
+            <div className="md:hidden flex gap-3 overflow-x-auto snap-x snap-mandatory pt-1 pb-2 scrollbar-none">
               {relatedProducts.map((p) => (
-                <ProductCard key={p.id} product={p} />
+                <div key={p.id} className="snap-start shrink-0">
+                  <CompactProductCard product={p} />
+                </div>
+              ))}
+            </div>
+
+            {/* Desktop Grid Layout */}
+            <div className="hidden md:grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-6 gap-4 pt-1">
+              {relatedProducts.map((p) => (
+                <CompactProductCard key={p.id} product={p} className="w-full h-full" />
               ))}
             </div>
           </div>
         )}
 
-        {/* ── Recently Viewed Slider ── */}
-        <div className="mt-12 mb-6">
-          <RecentlyViewedSlider currentProductId={definedProduct.id} />
+        {/* ── Discover More Across Intrihub (Cross-Category Shuffle) ── */}
+        <div className="mt-10 mb-8">
+          <DiscoverMoreSection
+            currentProductId={definedProduct.id}
+            excludedProductIds={relatedProducts.map((p) => p.id)}
+            catalog={allProducts}
+          />
         </div>
 
-        {/* ── Suggested Items Mix (Flipkart Style) ── */}
-        <div className="mb-10">
-          <SuggestedItemsSection currentProductId={definedProduct.id} />
+        {/* ── Recently Viewed Slider ── */}
+        <div className="mt-8 mb-10">
+          <RecentlyViewedSlider currentProductId={definedProduct.id} />
         </div>
       </div>
 

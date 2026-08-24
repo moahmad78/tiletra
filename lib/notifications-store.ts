@@ -2,6 +2,14 @@
 
 import { create } from "zustand";
 import { persist } from "zustand/middleware";
+import {
+  getCustomerNotifications,
+  getUnreadCustomerNotificationCount,
+  markCustomerNotificationAsRead,
+  markAllCustomerNotificationsAsRead,
+  deleteCustomerNotification,
+  createCustomerNotification,
+} from "@/lib/actions/notifications";
 
 export type NotificationType =
   | "order_placed"
@@ -9,10 +17,13 @@ export type NotificationType =
   | "price_drop"
   | "back_in_stock"
   | "review_reminder"
-  | "promo";
+  | "promo"
+  | "info"
+  | "general";
 
 export type InAppNotification = {
   id: string;
+  userId?: string;
   type: NotificationType;
   title: string;
   body: string;
@@ -29,46 +40,23 @@ export type NotificationPreferences = {
   reviewReminders: boolean;
 };
 
-const SEED_NOTIFICATIONS: InAppNotification[] = [
-  {
-    id: "notif-001",
-    type: "order_status",
-    title: "Order TL-849201 Dispatched!",
-    body: "Your Calacatta Marble Effect tiles have been dispatched via Delhivery Freight (DEL-TL-849201).",
-    link: "/account/orders",
-    read: false,
-    createdAt: new Date(Date.now() - 1000 * 60 * 45).toISOString(), // 45m ago
-  },
-  {
-    id: "notif-002",
-    type: "review_reminder",
-    title: "How do your new tiles look?",
-    body: "Your Arctic White Subway tiles were delivered 3 days ago. Share a photo review and help homeowners!",
-    link: "/product/arctic-white-subway-wall",
-    read: false,
-    createdAt: new Date(Date.now() - 1000 * 60 * 60 * 3).toISOString(), // 3h ago
-  },
-  {
-    id: "notif-003",
-    type: "promo",
-    title: "Weekend Deal: Flat 15% Off Vitrified Tiles",
-    body: "Use code INTRI10 at checkout on floor tile orders above ₹10,000.",
-    link: "/shop/floor-tiles",
-    read: true,
-    createdAt: new Date(Date.now() - 1000 * 60 * 60 * 24 * 2).toISOString(), // 2 days ago
-  },
-];
-
 type NotificationsState = {
+  currentUserId: string | null;
   notifications: InAppNotification[];
+  unreadCount: number;
+  isLoading: boolean;
   preferences: NotificationPreferences;
 
   // Actions
-  addNotification: (notif: Omit<InAppNotification, "id" | "read" | "createdAt">) => void;
-  markAsRead: (id: string) => void;
-  markAllAsRead: () => void;
-  deleteNotification: (id: string) => void;
-  clearAll: () => void;
+  fetchForUser: (userId: string | null | undefined) => Promise<void>;
+  addNotification: (
+    notif: Omit<InAppNotification, "id" | "read" | "createdAt">,
+    userIdOverride?: string
+  ) => Promise<void>;
+  markAsRead: (id: string) => Promise<void>;
+  markAllAsRead: () => Promise<void>;
+  deleteNotification: (id: string) => Promise<void>;
+  reset: () => void;
   updatePreferences: (updates: Partial<NotificationPreferences>) => void;
   getUnreadCount: () => number;
 };
@@ -76,7 +64,10 @@ type NotificationsState = {
 export const useNotificationsStore = create<NotificationsState>()(
   persist(
     (set, get) => ({
-      notifications: SEED_NOTIFICATIONS,
+      currentUserId: null,
+      notifications: [],
+      unreadCount: 0,
+      isLoading: false,
       preferences: {
         orderUpdates: true,
         priceDrops: true,
@@ -85,44 +76,142 @@ export const useNotificationsStore = create<NotificationsState>()(
         reviewReminders: true,
       },
 
-      addNotification: (data) => {
-        const id = `notif-${Date.now().toString().slice(-6)}`;
-        const newNotif: InAppNotification = {
-          ...data,
-          id,
-          read: false,
-          createdAt: new Date().toISOString(),
-        };
-        set((s) => ({ notifications: [newNotif, ...s.notifications] }));
+      fetchForUser: async (userId) => {
+        if (!userId) {
+          set({ currentUserId: null, notifications: [], unreadCount: 0, isLoading: false });
+          return;
+        }
+
+        set({ isLoading: true });
+        try {
+          const [list, count] = await Promise.all([
+            getCustomerNotifications(userId, 20),
+            getUnreadCustomerNotificationCount(userId),
+          ]);
+
+          set({
+            currentUserId: userId,
+            notifications: list as InAppNotification[],
+            unreadCount: count,
+            isLoading: false,
+          });
+        } catch (err) {
+          console.error("Failed to fetch customer notifications:", err);
+          set({ isLoading: false });
+        }
       },
 
-      markAsRead: (id) =>
-        set((s) => ({
-          notifications: s.notifications.map((n) =>
-            n.id === id ? { ...n, read: true } : n
-          ),
-        })),
+      addNotification: async (data, userIdOverride) => {
+        const userId = userIdOverride || get().currentUserId;
+        if (!userId) return;
 
-      markAllAsRead: () =>
+        try {
+          const res = await createCustomerNotification({
+            userId,
+            title: data.title,
+            message: data.body,
+            type: data.type,
+            link: data.link,
+          });
+
+          const newNotif: InAppNotification = {
+            ...data,
+            id: res.notification?.id || `notif-${Date.now()}`,
+            userId,
+            read: false,
+            createdAt: new Date().toISOString(),
+          };
+
+          set((s) => ({
+            notifications: [newNotif, ...s.notifications.filter((n) => n.id !== newNotif.id)],
+            unreadCount: s.unreadCount + 1,
+          }));
+        } catch (err) {
+          console.error("Error creating customer notification:", err);
+        }
+      },
+
+      markAsRead: async (id) => {
+        const userId = get().currentUserId;
+        set((s) => {
+          const notif = s.notifications.find((n) => n.id === id);
+          const wasUnread = notif && !notif.read;
+          return {
+            notifications: s.notifications.map((n) =>
+              n.id === id ? { ...n, read: true } : n
+            ),
+            unreadCount: wasUnread ? Math.max(0, s.unreadCount - 1) : s.unreadCount,
+          };
+        });
+
+        if (userId) {
+          try {
+            await markCustomerNotificationAsRead(id, userId);
+          } catch (err) {
+            console.error("Failed to mark notification as read on server:", err);
+          }
+        }
+      },
+
+      markAllAsRead: async () => {
+        const userId = get().currentUserId;
         set((s) => ({
           notifications: s.notifications.map((n) => ({ ...n, read: true })),
-        })),
+          unreadCount: 0,
+        }));
 
-      deleteNotification: (id) =>
-        set((s) => ({
-          notifications: s.notifications.filter((n) => n.id !== id),
-        })),
+        if (userId) {
+          try {
+            await markAllCustomerNotificationsAsRead(userId);
+          } catch (err) {
+            console.error("Failed to mark all notifications as read on server:", err);
+          }
+        }
+      },
 
-      clearAll: () => set({ notifications: [] }),
+      deleteNotification: async (id) => {
+        const userId = get().currentUserId;
+        set((s) => {
+          const notif = s.notifications.find((n) => n.id === id);
+          const wasUnread = notif && !notif.read;
+          return {
+            notifications: s.notifications.filter((n) => n.id !== id),
+            unreadCount: wasUnread ? Math.max(0, s.unreadCount - 1) : s.unreadCount,
+          };
+        });
+
+        if (userId) {
+          try {
+            await deleteCustomerNotification(id, userId);
+          } catch (err) {
+            console.error("Failed to delete notification on server:", err);
+          }
+        }
+      },
+
+      reset: () => {
+        set({
+          currentUserId: null,
+          notifications: [],
+          unreadCount: 0,
+          isLoading: false,
+        });
+      },
 
       updatePreferences: (updates) =>
         set((s) => ({ preferences: { ...s.preferences, ...updates } })),
 
-      getUnreadCount: () =>
-        get().notifications.filter((n) => !n.read).length,
+      getUnreadCount: () => {
+        const state = get();
+        if (!state.currentUserId) return 0;
+        return state.unreadCount;
+      },
     }),
     {
-      name: "intrihub-notifications",
+      name: "intrihub-notifications-v2",
+      partialize: (state) => ({
+        preferences: state.preferences,
+      }),
     }
   )
 );
