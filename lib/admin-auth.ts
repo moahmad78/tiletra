@@ -17,50 +17,36 @@ export type AdminUser = {
 type AdminAuthState = {
   user: AdminUser | null;
   isAuthenticated: boolean;
-  login: (email: string, password: string) => boolean;
+  setSession: (user: { id: string; name: string; email: string; role: string }) => void;
   logout: () => void;
 };
-
-// Owner credentials for secure access
-const VALID_CREDENTIALS = [
-  {
-    email: "moahmadmail92@gmail.com",
-    password: "admin",
-    user: {
-      id: "adm-001",
-      name: "Super Admin",
-      email: "moahmadmail92@gmail.com",
-      role: "admin" as AdminRole,
-      lastLogin: new Date().toISOString(),
-    },
-  },
-];
 
 export const useAdminAuth = create<AdminAuthState>()(
   persist(
     (set) => ({
-      user: VALID_CREDENTIALS[0].user,
-      isAuthenticated: true,
+      user: null,
+      isAuthenticated: false,
 
-      login: (email, password) => {
-        const match = VALID_CREDENTIALS.find(
-          (c) => c.email.toLowerCase() === email.toLowerCase().trim() && c.password === password
-        );
-        if (match) {
-          const userWithTimestamp = {
-            ...match.user,
-            lastLogin: new Date().toISOString(),
-          };
-          set({ user: userWithTimestamp, isAuthenticated: true });
-          return true;
-        }
-        return false;
+      setSession: (user) => {
+        const adminUser: AdminUser = {
+          id: user.id,
+          name: user.name,
+          email: user.email,
+          role: (user.role as AdminRole) || "admin",
+          lastLogin: new Date().toISOString(),
+        };
+        set({ user: adminUser, isAuthenticated: true });
       },
 
-      logout: () => set({ user: null, isAuthenticated: false }),
+      logout: () => {
+        set({ user: null, isAuthenticated: false });
+        if (typeof window !== "undefined") {
+          document.cookie = "intrihub_admin_session=; path=/; max-age=0;";
+        }
+      },
     }),
     {
-      name: "intrihub-admin-auth",
+      name: "intrihub-admin-auth-v2",
     }
   )
 );

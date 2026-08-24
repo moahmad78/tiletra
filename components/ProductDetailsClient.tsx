@@ -632,24 +632,16 @@ export default function ProductDetailsClient({
         {/* ── Related Products (Same Category) ── */}
         {relatedProducts.length > 0 && (
           <div className="mt-14 mb-8 bg-white rounded-3xl p-5 sm:p-7 border border-gray-200/80 shadow-2xs space-y-4 sm:space-y-5">
-            <div className="flex items-center justify-between flex-wrap gap-2">
-              <div>
-                <span className="text-[10px] font-black text-[#F26522] uppercase tracking-wider bg-[#F26522]/10 px-2.5 py-0.5 rounded-md">
-                  Similar Designs
-                </span>
-                <h2 className="text-lg sm:text-xl font-black text-[#052a51] mt-1">
-                  You May Also Like
-                </h2>
-                <p className="text-xs text-gray-500 mt-0.5">
-                  More top picks in {definedProduct.categoryName || "this category"}
-                </p>
-              </div>
+            <div className="flex items-center justify-between gap-2">
+              <h2 className="text-base sm:text-lg font-black text-[#052a51] tracking-tight">
+                Similar Products
+              </h2>
               <Link
                 href={`/shop/${definedProduct.categorySlug}`}
                 className="text-xs font-bold text-[#F26522] hover:underline flex items-center gap-1 shrink-0"
               >
-                <span>View all in {definedProduct.categoryName}</span>
-                <ArrowRight size={14} />
+                <span>View all</span>
+                <ArrowRight size={13} />
               </Link>
             </div>
 

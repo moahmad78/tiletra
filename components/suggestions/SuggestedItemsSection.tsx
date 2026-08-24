@@ -7,15 +7,13 @@ interface SuggestedItemsProps {
   currentProductId?: string;
   excludedProductIds?: string[];
   title?: string;
-  subtitle?: string;
   catalog?: Product[];
 }
 
 export default function SuggestedItemsSection({
   currentProductId,
   excludedProductIds = [],
-  title = "Discover More at Intrihub",
-  subtitle = "Popular materials & finishes from across our 20 departments",
+  title = "Suggested for You",
   catalog,
 }: SuggestedItemsProps) {
   return (
@@ -23,7 +21,6 @@ export default function SuggestedItemsSection({
       currentProductId={currentProductId}
       excludedProductIds={excludedProductIds}
       title={title}
-      subtitle={subtitle}
       catalog={catalog}
     />
   );

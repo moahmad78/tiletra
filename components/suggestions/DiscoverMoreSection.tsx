@@ -1,8 +1,8 @@
 "use client";
 
-import { useState, useEffect, useMemo } from "react";
+import { useState, useEffect, useMemo, useRef } from "react";
 import Link from "next/link";
-import { Sparkles, ArrowRight, Compass } from "lucide-react";
+import { ArrowRight, ChevronDown, Sparkles } from "lucide-react";
 import CompactProductCard from "@/components/CompactProductCard";
 import { products as defaultProducts, type Product } from "@/lib/data/products";
 
@@ -10,19 +10,18 @@ interface DiscoverMoreSectionProps {
   currentProductId?: string;
   excludedProductIds?: string[];
   title?: string;
-  subtitle?: string;
   catalog?: Product[];
 }
 
 export default function DiscoverMoreSection({
   currentProductId,
   excludedProductIds = [],
-  title = "Discover More at Intrihub",
-  subtitle = "Popular materials & finishes from across our 20 departments",
+  title = "Suggested for You",
   catalog = defaultProducts,
 }: DiscoverMoreSectionProps) {
-  const [shuffledProducts, setShuffledProducts] = useState<Product[]>([]);
   const [mounted, setMounted] = useState(false);
+  const [allSuggestedProducts, setAllSuggestedProducts] = useState<Product[]>([]);
+  const [visibleCount, setVisibleCount] = useState(16);
 
   useEffect(() => {
     setMounted(true);
@@ -38,85 +37,107 @@ export default function DiscoverMoreSection({
 
     if (pool.length === 0) return;
 
-    // Group by category for high cross-category diversity
+    // Group by category to ensure rich cross-category variety
     const categoryMap = new Map<string, Product[]>();
     for (const p of pool) {
-      const list = categoryMap.get(p.categorySlug) || [];
+      const catKey = p.categorySlug || "other";
+      const list = categoryMap.get(catKey) || [];
       list.push(p);
-      categoryMap.set(p.categorySlug, list);
+      categoryMap.set(catKey, list);
     }
 
-    // Shuffle inside each category
+    // Shuffle inside each category bucket
     const categoriesArray = Array.from(categoryMap.keys()).sort(() => Math.random() - 0.5);
     const categoryQueues = categoriesArray.map((catKey) => {
       const items = [...(categoryMap.get(catKey) || [])];
       return items.sort(() => Math.random() - 0.5);
     });
 
-    // Round-robin selection across different categories
-    const selected: Product[] = [];
-    let round = 0;
-    const maxRounds = 5;
-    while (selected.length < 12 && round < maxRounds) {
-      let addedInRound = false;
+    // Round-robin selection across diverse categories so all products are included
+    const shuffled: Product[] = [];
+    let hasItems = true;
+    while (hasItems) {
+      hasItems = false;
       for (const queue of categoryQueues) {
-        if (queue.length > 0 && selected.length < 12) {
-          const item = queue.shift()!;
-          selected.push(item);
-          addedInRound = true;
+        if (queue.length > 0) {
+          shuffled.push(queue.shift()!);
+          hasItems = true;
         }
       }
-      if (!addedInRound) break;
-      round++;
     }
 
-    setShuffledProducts(selected);
+    setAllSuggestedProducts(shuffled);
   }, [catalog, currentProductId, excludedProductIds]);
 
-  if (!mounted || shuffledProducts.length === 0) return null;
+  if (!mounted || allSuggestedProducts.length === 0) return null;
+
+  // Horizontal Quick Swipe list (Top 10-12 items)
+  const horizontalProducts = allSuggestedProducts.slice(0, 12);
+
+  // Vertical Infinite/Expanding Grid items
+  const gridProducts = allSuggestedProducts.slice(0, visibleCount);
+  const hasMore = visibleCount < allSuggestedProducts.length;
 
   return (
-    <section className="bg-white rounded-3xl p-5 sm:p-7 border border-gray-200/80 shadow-2xs space-y-5">
-      {/* Header */}
-      <div className="flex items-center justify-between flex-wrap gap-2">
-        <div>
-          <span className="text-[10px] font-black uppercase tracking-wider text-[#F26522] bg-[#F26522]/10 px-2.5 py-0.5 rounded-md">
-            Explore Broader Catalog
-          </span>
-          <h3 className="text-lg sm:text-xl font-black text-[#052a51] mt-1">
-            {title}
-          </h3>
-          <p className="text-xs text-gray-500 mt-0.5">{subtitle}</p>
-        </div>
+    <section className="bg-white rounded-3xl p-4 sm:p-6 border border-gray-200/80 shadow-2xs space-y-4">
+      {/* ── Minimalist Clean Header (No bulky paragraphs or subtitles) ── */}
+      <div className="flex items-center justify-between">
+        <h3 className="text-base sm:text-lg font-black text-[#052a51] tracking-tight">
+          {title}
+        </h3>
 
         <Link
           href="/shop"
           className="text-xs font-bold text-[#F26522] hover:underline flex items-center gap-1 group"
         >
-          <span>Explore All 20 Categories</span>
+          <span>View All</span>
           <ArrowRight size={13} className="group-hover:translate-x-0.5 transition-transform" />
         </Link>
       </div>
 
-      {/* Mobile Swipeable Slider */}
-      <div className="md:hidden flex gap-3 overflow-x-auto snap-x snap-mandatory pt-1 pb-2 scrollbar-none">
-        {shuffledProducts.map((product) => (
-          <div key={product.id} className="snap-start shrink-0">
+      {/* ── 1. Horizontal Left-Right Swipe Slider ── */}
+      <div className="flex gap-2.5 sm:gap-3 overflow-x-auto snap-x snap-mandatory pt-1 pb-2 no-scrollbar scroll-smooth">
+        {horizontalProducts.map((product) => (
+          <div key={`h-${product.id}`} className="snap-start shrink-0">
             <CompactProductCard product={product} />
           </div>
         ))}
       </div>
 
-      {/* Desktop Grid Layout */}
-      <div className="hidden md:grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-6 gap-4 pt-1">
-        {shuffledProducts.map((product) => (
-          <CompactProductCard
-            key={product.id}
-            product={product}
-            className="w-full h-full"
-          />
+      {/* Divider */}
+      <div className="relative py-1">
+        <div className="absolute inset-0 flex items-center">
+          <div className="w-full border-t border-gray-100" />
+        </div>
+        <div className="relative flex justify-center">
+          <span className="bg-white px-3 text-[10px] font-black uppercase text-gray-400 tracking-wider">
+            More to Explore
+          </span>
+        </div>
+      </div>
+
+      {/* ── 2. Continuous Vertical 2-Column Grid (All Catalog Items) ── */}
+      <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-4 gap-2.5 sm:gap-3.5">
+        {gridProducts.map((product) => (
+          <div key={`g-${product.id}`} className="h-full">
+            <CompactProductCard product={product} className="w-full h-full" />
+          </div>
         ))}
       </div>
+
+      {/* Load More Continuous Feed Action */}
+      {hasMore && (
+        <div className="pt-2 text-center">
+          <button
+            type="button"
+            onClick={() => setVisibleCount((prev) => prev + 16)}
+            className="w-full sm:w-auto px-6 py-3 bg-gray-50 hover:bg-gray-100 border border-gray-200 rounded-2xl text-xs font-bold text-[#052a51] hover:text-[#F26522] transition-all flex items-center justify-center gap-2 mx-auto cursor-pointer shadow-2xs active:scale-98"
+          >
+            <span>Load More Items ({allSuggestedProducts.length - visibleCount} remaining)</span>
+            <ChevronDown size={14} />
+          </button>
+        </div>
+      )}
     </section>
   );
 }
