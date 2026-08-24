@@ -5,18 +5,18 @@ import { safeRevalidate } from "@/lib/formatters";
 import { categories as defaultCategories, getCategoryBySlug as getStaticCategoryBySlug, type Category } from "@/lib/data/categories";
 
 function inferCalculatorType(slug: string, dbType?: string | null): string {
-  if (dbType && dbType !== "none") return dbType;
   const s = slug.toLowerCase();
-  if (s.includes("tile") || s.includes("stone") || s.includes("granite") || s.includes("marble") || s.includes("wallpaper")) {
-    return "area_to_boxes";
+  const isTileStoneOrGranite =
+    s.includes("tile") ||
+    s.includes("stone") ||
+    s.includes("granite") ||
+    s.includes("marble");
+
+  if (isTileStoneOrGranite) {
+    return dbType && dbType !== "none" ? dbType : "area_to_boxes";
   }
-  if (s.includes("paint") || s.includes("finish") || s.includes("chemical") || s.includes("primer") || s.includes("emulsion")) {
-    return "area_to_volume";
-  }
-  if (s.includes("wire") || s.includes("cable") || s.includes("electrical") || s.includes("pipe") || s.includes("conduit")) {
-    return "length_to_units";
-  }
-  return dbType || "none";
+
+  return "none";
 }
 
 export async function getCategories(): Promise<Category[]> {

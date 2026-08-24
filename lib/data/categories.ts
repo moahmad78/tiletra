@@ -24,7 +24,7 @@ export const categories: Category[] = [
     productCount: 2,
     featured: true,
     icon: "Zap",
-    calculatorType: "length_to_units",
+    calculatorType: "none",
   },
   // ── 2. LIGHTING ────────────────────────────────────
   {
@@ -60,7 +60,7 @@ export const categories: Category[] = [
     productCount: 0,
     featured: true,
     icon: "Palette",
-    calculatorType: "area_to_volume",
+    calculatorType: "none",
   },
   // ── 5. FALSE CEILING ───────────────────────────────
   {

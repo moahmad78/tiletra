@@ -29,54 +29,26 @@ export default function SmartCalculator({
   category,
   onApplyQuantity,
 }: SmartCalculatorProps) {
-  // Determine calculator type
+  // Determine calculator type - strictly restricted to Tiles & Stone / Granite
   const calculatorType = useMemo(() => {
-    // 1. From category object if available
+    const slug = (product.categorySlug || "").toLowerCase();
+    const isTileStoneOrGranite =
+      slug.includes("tile") ||
+      slug.includes("stone") ||
+      slug.includes("granite") ||
+      slug.includes("marble");
+
+    // If not tiles, stone, or granite, strictly disable calculator
+    if (!isTileStoneOrGranite) {
+      return "none";
+    }
+
     if (category?.calculatorType && category.calculatorType !== "none") {
       return category.calculatorType;
     }
 
-    // 2. Infer from product categorySlug or unitOfSale
-    const slug = (product.categorySlug || "").toLowerCase();
-    const unit = (product.unitOfSale || "").toLowerCase();
-
-    if (
-      slug.includes("tile") ||
-      slug.includes("stone") ||
-      slug.includes("granite") ||
-      slug.includes("marble") ||
-      slug.includes("wallpaper") ||
-      unit === "sqft" ||
-      unit === "box"
-    ) {
-      return "area_to_boxes";
-    }
-
-    if (
-      slug.includes("paint") ||
-      slug.includes("finish") ||
-      slug.includes("emulsion") ||
-      slug.includes("primer") ||
-      unit === "litre" ||
-      unit === "liter" ||
-      unit === "can"
-    ) {
-      return "area_to_volume";
-    }
-
-    if (
-      slug.includes("wire") ||
-      slug.includes("cable") ||
-      slug.includes("electrical") ||
-      slug.includes("pipe") ||
-      unit === "coil" ||
-      unit === "meter"
-    ) {
-      return "length_to_units";
-    }
-
-    return "none";
-  }, [category, product.categorySlug, product.unitOfSale]);
+    return "area_to_boxes";
+  }, [category, product.categorySlug]);
 
   // Determine coverage rate per unit / litre / coil
   const effectiveCoverageRate = useMemo(() => {
