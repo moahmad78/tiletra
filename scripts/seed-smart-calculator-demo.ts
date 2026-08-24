@@ -9,10 +9,10 @@ async function main() {
     { slug: "tiles-stone", name: "Tiles & Stone", calculatorType: "area_to_boxes" },
     { slug: "floor-tiles", name: "Floor Tiles", calculatorType: "area_to_boxes" },
     { slug: "wall-tiles", name: "Wall Tiles", calculatorType: "area_to_boxes" },
-    { slug: "paint-finishes", name: "Paint & Finishes", calculatorType: "area_to_volume" },
-    { slug: "paints", name: "Paints", calculatorType: "area_to_volume" },
-    { slug: "electrical", name: "Electrical", calculatorType: "length_to_units" },
-    { slug: "electrical-wires", name: "Wires & Cables", calculatorType: "length_to_units" },
+    { slug: "paint-finishes", name: "Paint & Finishes", calculatorType: "none" },
+    { slug: "paints", name: "Paints", calculatorType: "none" },
+    { slug: "electrical", name: "Electrical", calculatorType: "none" },
+    { slug: "electrical-wires", name: "Wires & Cables", calculatorType: "none" },
     { slug: "hardware", name: "Hardware & Fittings", calculatorType: "none" },
   ];
 
