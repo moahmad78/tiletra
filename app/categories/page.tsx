@@ -1,5 +1,6 @@
 import { Metadata } from "next";
 import { getCategories } from "@/lib/actions/categories";
+import { getProducts } from "@/lib/actions/products";
 import CategoriesClient from "./CategoriesClient";
 import { getCanonicalUrl } from "@/lib/seo";
 
@@ -15,7 +16,10 @@ export const metadata: Metadata = {
 };
 
 export default async function CategoriesPage() {
-  const categories = await getCategories();
+  const [categories, products] = await Promise.all([
+    getCategories(),
+    getProducts({ limit: 300 }),
+  ]);
 
-  return <CategoriesClient categories={categories} />;
+  return <CategoriesClient categories={categories} initialProducts={products} />;
 }
