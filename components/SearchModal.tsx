@@ -8,7 +8,7 @@ import { Search, X, ArrowRight, Tag, Loader2 } from "lucide-react";
 import { searchProducts } from "@/lib/actions/products";
 import { getLowestPrice } from "@/lib/data/products";
 import type { Product } from "@/lib/data/products";
-import { formatPrice, formatUnitLabel } from "@/lib/formatters";
+import { formatPrice, formatUnitLabel, getProductPriceInfo } from "@/lib/formatters";
 
 export default function SearchModal({
   isOpen,
@@ -249,12 +249,21 @@ export default function SearchModal({
                     </p>
                   </div>
                   <div className="text-right shrink-0">
-                    <p className="text-xs sm:text-sm font-black text-[#052a51]">
-                      {formatPrice(getLowestPrice(product))}
-                      <span className="text-[10px] font-normal text-gray-500">
-                        {formatUnitLabel(product.unitOfSale || (product.categorySlug?.includes("tile") ? "sqft" : "piece"))}
-                      </span>
-                    </p>
+                    {(() => {
+                      const priceInfo = getProductPriceInfo(product);
+                      return (
+                        <div className="flex flex-col items-end">
+                          <span className="text-xs sm:text-sm font-black text-[#052a51]">
+                            {priceInfo.formattedPrice}
+                          </span>
+                          {priceInfo.discountPercent > 0 && (
+                            <span className="text-[10px] font-bold text-emerald-600">
+                              {priceInfo.discountPercent}% off
+                            </span>
+                          )}
+                        </div>
+                      );
+                    })()}
                   </div>
                   <ArrowRight size={16} className="text-gray-300 group-hover:text-[#F26522] shrink-0" />
                 </Link>

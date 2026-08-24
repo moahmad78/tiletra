@@ -5,7 +5,7 @@ import Link from "next/link";
 import Image from "next/image";
 import { Plus, Heart, Check } from "lucide-react";
 import { getLowestPrice, getLowestBoxPrice, type Product } from "@/lib/data/products";
-import { formatPrice, formatUnitLabel } from "@/lib/formatters";
+import { formatPrice, formatUnitLabel, getProductPriceInfo } from "@/lib/formatters";
 import { useCartStore } from "@/lib/cart-store";
 import { useWishlistStore } from "@/lib/wishlist-store";
 import { showCartToast } from "@/lib/cart-toast-store";
@@ -105,39 +105,27 @@ export default function CompactProductCard({
           </p>
         </div>
 
-        <div className="flex items-end justify-between mt-2 pt-1.5 border-t border-gray-50">
-          <div>
-            {product.unitOfSale && product.unitOfSale !== "box" && product.unitOfSale !== "sqft" ? (
-              <>
-                <p className="text-[12px] font-black text-[#052a51] leading-none">
-                  {formatPrice(defaultVariant.pricePerBox || defaultVariant.pricePerSqft)}
-                </p>
-                <p className="text-[9px] text-gray-400 mt-0.5">{formatUnitLabel(product.unitOfSale)}</p>
-              </>
-            ) : product.unitOfSale === "sqft" ? (
-              <>
-                <p className="text-[12px] font-black text-[#052a51] leading-none">
-                  {formatPrice(defaultVariant.pricePerSqft || defaultVariant.pricePerBox)}
-                </p>
-                <p className="text-[9px] text-gray-400 mt-0.5">/sq.ft</p>
-              </>
-            ) : (product.categorySlug?.includes("tile") || product.categorySlug?.includes("stone")) ? (
-              <>
-                <p className="text-[12px] font-black text-[#052a51] leading-none">
-                  {formatPrice(getLowestPrice(product))}
-                  <span className="text-[9px] font-normal text-gray-500">/sq.ft</span>
-                </p>
-                <p className="text-[9px] text-gray-400 mt-0.5">{formatPrice(getLowestBoxPrice(product))}/box</p>
-              </>
-            ) : (
-              <>
-                <p className="text-[12px] font-black text-[#052a51] leading-none">
-                  {formatPrice(defaultVariant.pricePerBox || defaultVariant.pricePerSqft)}
-                </p>
-                <p className="text-[9px] text-gray-400 mt-0.5">{formatUnitLabel(product.unitOfSale || "piece")}</p>
-              </>
-            )}
-          </div>
+        <div className="flex items-center justify-between mt-2 pt-1.5 border-t border-gray-50 gap-1.5">
+          {(() => {
+            const priceInfo = getProductPriceInfo(product, defaultVariant);
+            return (
+              <div className="flex items-baseline gap-1.5 flex-wrap min-w-0">
+                <span className="text-[13px] sm:text-[14px] font-black text-[#052a51] leading-none tracking-tight">
+                  {priceInfo.formattedPrice}
+                </span>
+                {priceInfo.discountPercent > 0 && (
+                  <>
+                    <span className="text-[10px] text-gray-400 line-through leading-none">
+                      {priceInfo.formattedMrp}
+                    </span>
+                    <span className="text-[10px] font-black text-emerald-600 leading-none">
+                      {priceInfo.discountPercent}% off
+                    </span>
+                  </>
+                )}
+              </div>
+            );
+          })()}
 
           <button
             onClick={handleAddToCart}

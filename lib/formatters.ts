@@ -16,6 +16,33 @@ export function formatPrice(n: number | string): string {
   return "₹" + num.toLocaleString("en-IN");
 }
 
+export function getProductPriceInfo(product: Product, variant?: ProductVariant | null) {
+  const v = variant || (product?.variants && product.variants.length > 0 ? product.variants[0] : null);
+  const price =
+    v?.pricePerBox ||
+    v?.pricePerSqft ||
+    (product as any)?.price ||
+    499;
+
+  const existingMrp =
+    (v as any)?.originalPrice ||
+    (v as any)?.mrp ||
+    (product as any)?.originalPrice ||
+    (product as any)?.mrp ||
+    null;
+
+  const mrp = existingMrp && existingMrp > price ? existingMrp : Math.round(price * 1.35);
+  const discountPercent = mrp > price ? Math.round(((mrp - price) / mrp) * 100) : 0;
+
+  return {
+    price,
+    mrp,
+    discountPercent,
+    formattedPrice: formatPrice(price),
+    formattedMrp: formatPrice(mrp),
+  };
+}
+
 export function formatUnitLabel(unitOfSale?: string | null): string {
   if (!unitOfSale) return "/sq.ft";
   const u = unitOfSale.toLowerCase().trim();

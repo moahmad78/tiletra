@@ -5,9 +5,8 @@ import Link from "next/link";
 import Image from "next/image";
 import { motion } from "framer-motion";
 import { Star, Heart, ShoppingBag } from "lucide-react";
-import { getLowestPrice, getLowestBoxPrice } from "@/lib/data/products";
-import type { Product } from "@/lib/data/products";
-import { formatPrice, formatUnitLabel } from "@/lib/formatters";
+import { getLowestPrice, getLowestBoxPrice, type Product } from "@/lib/data/products";
+import { formatPrice, formatUnitLabel, getProductPriceInfo } from "@/lib/formatters";
 import { useCartStore } from "@/lib/cart-store";
 import { useWishlistStore } from "@/lib/wishlist-store";
 import { showCartToast } from "@/lib/cart-toast-store";
@@ -140,46 +139,27 @@ export default function ProductCard({ product }: { product: Product }) {
           })()}
         </div>
 
-        <div className="flex items-center justify-between mt-4 pt-3 border-t border-gray-50">
-          <div>
-            {product.unitOfSale && product.unitOfSale !== "box" && product.unitOfSale !== "sqft" ? (
-              <>
-                <p className="text-[14px] font-black text-[#052a51]">
-                  {formatPrice(defaultVariant.pricePerBox || defaultVariant.pricePerSqft)}
-                  <span className="text-xs font-medium text-gray-500">{formatUnitLabel(product.unitOfSale)}</span>
-                </p>
-                <p className="text-[11px] text-gray-400">
-                  {product.variants.length > 1 ? `${product.variants.length} options` : "Standard Pack"}
-                </p>
-              </>
-            ) : product.unitOfSale === "sqft" ? (
-              <>
-                <p className="text-[14px] font-black text-[#052a51]">
-                  {formatPrice(defaultVariant.pricePerSqft || defaultVariant.pricePerBox)}
-                  <span className="text-xs font-medium text-gray-500">/sq.ft</span>
-                </p>
-                <p className="text-[11px] text-gray-400">Custom Cut</p>
-              </>
-            ) : (product.categorySlug?.includes("tile") || product.categorySlug?.includes("stone")) ? (
-              <>
-                <p className="text-[14px] font-black text-[#052a51]">
-                  {formatPrice(getLowestPrice(product))}
-                  <span className="text-xs font-medium text-gray-500">/sq.ft</span>
-                </p>
-                <p className="text-[11px] text-gray-400">{formatPrice(getLowestBoxPrice(product))}/box</p>
-              </>
-            ) : (
-              <>
-                <p className="text-[14px] font-black text-[#052a51]">
-                  {formatPrice(defaultVariant.pricePerBox || defaultVariant.pricePerSqft)}
-                  <span className="text-xs font-medium text-gray-500">{formatUnitLabel(product.unitOfSale || "piece")}</span>
-                </p>
-                <p className="text-[11px] text-gray-400">
-                  {product.variants.length > 1 ? `${product.variants.length} options` : "Standard Pack"}
-                </p>
-              </>
-            )}
-          </div>
+        <div className="flex items-center justify-between mt-4 pt-3 border-t border-gray-50 gap-2">
+          {(() => {
+            const priceInfo = getProductPriceInfo(product, defaultVariant);
+            return (
+              <div className="flex items-baseline gap-2 flex-wrap min-w-0">
+                <span className="text-[15px] sm:text-base font-black text-[#052a51] tracking-tight">
+                  {priceInfo.formattedPrice}
+                </span>
+                {priceInfo.discountPercent > 0 && (
+                  <>
+                    <span className="text-xs text-gray-400 line-through">
+                      {priceInfo.formattedMrp}
+                    </span>
+                    <span className="text-xs font-black text-emerald-600">
+                      {priceInfo.discountPercent}% off
+                    </span>
+                  </>
+                )}
+              </div>
+            );
+          })()}
           <button
             onClick={handleAddToCart}
             className="px-3.5 py-2 bg-[#F26522] text-white text-xs font-bold rounded-xl hover:bg-[#d95a1e] active:scale-95 transition-all flex items-center gap-1.5 shadow-sm hover:shadow whitespace-nowrap shrink-0"

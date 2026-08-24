@@ -40,8 +40,7 @@ import DiscoverMoreSection from "@/components/suggestions/DiscoverMoreSection";
 import { showCartToast } from "@/lib/cart-toast-store";
 import VariantSelector from "@/components/products/VariantSelector";
 import SmartCalculator from "@/components/products/SmartCalculator";
-import { toast } from "sonner";
-import { formatUnitLabel, formatUnitName } from "@/lib/formatters";
+import { formatUnitLabel, formatUnitName, getProductPriceInfo } from "@/lib/formatters";
 
 function formatPrice(n: number) {
   return "₹" + n.toLocaleString("en-IN");
@@ -379,39 +378,37 @@ export default function ProductDetailsClient({
               })()}
             </div>
 
-            {/* ── 1. Consolidated Prominent Price & Stock ── */}
-            <div className="bg-[#F8F9FA] rounded-2xl p-4 sm:p-5 border border-gray-100 space-y-2">
-              <div className="flex items-baseline gap-2.5 flex-wrap">
-                <span className="text-3xl sm:text-4xl font-black text-[#052a51]">
-                  {formatPrice(selectedVariant.pricePerBox)}
-                </span>
-                <span className="text-xs sm:text-sm font-bold text-gray-500">
-                  per {unitLabel} <span className="text-gray-400 font-normal">(incl. all taxes)</span>
-                </span>
-              </div>
+            {/* ── 1. Flipkart-Style Prominent Price, MRP & Off % ── */}
+            {(() => {
+              const priceInfo = getProductPriceInfo(definedProduct, selectedVariant);
+              return (
+                <div className="bg-[#F8F9FA] rounded-2xl p-4 sm:p-5 border border-gray-100 space-y-2">
+                  <div className="flex items-baseline gap-3 flex-wrap">
+                    <span className="text-3xl sm:text-4xl font-black text-[#052a51] tracking-tight">
+                      {formatPrice(selectedVariant.pricePerBox)}
+                    </span>
+                    {priceInfo.discountPercent > 0 && (
+                      <>
+                        <span className="text-base sm:text-lg text-gray-400 line-through font-medium">
+                          {priceInfo.formattedMrp}
+                        </span>
+                        <span className="text-base sm:text-lg font-black text-emerald-600">
+                          {priceInfo.discountPercent}% off
+                        </span>
+                      </>
+                    )}
+                  </div>
 
-              <div className="flex flex-wrap items-center gap-x-3 gap-y-1.5 pt-2 border-t border-gray-200/60 text-xs sm:text-sm text-gray-600">
-                {isTileProduct ? (
-                  <>
-                    <span>
-                      <strong className="text-[#052a51]">{formatPrice(selectedVariant.pricePerSqft)}</strong>/sq.ft
-                    </span>
+                  <div className="flex items-center gap-2 text-xs text-gray-500 font-medium pt-1 border-t border-gray-200/60">
+                    <span>Inclusive of all taxes</span>
                     <span className="text-gray-300">·</span>
-                    <span>
-                      <strong className="text-[#052a51]">{selectedVariant.sqftPerBox} sq.ft</strong>/box
+                    <span className={isOutOfStock ? "text-red-500 font-bold" : "text-[#2F7A4F] font-bold"}>
+                      {isOutOfStock ? "Out of stock" : `In stock (${selectedVariant.stockBoxes} ${unitLabel}s available)`}
                     </span>
-                  </>
-                ) : (
-                  <span>
-                    Unit of sale: <strong className="text-[#052a51] capitalize">{unitLabel}</strong>
-                  </span>
-                )}
-                <span className="text-gray-300">·</span>
-                <span className={isOutOfStock ? "text-red-500 font-bold" : "text-[#2F7A4F] font-bold"}>
-                  {isOutOfStock ? "Out of stock" : `In stock (${selectedVariant.stockBoxes} ${unitLabel}s available)`}
-                </span>
-              </div>
-            </div>
+                  </div>
+                </div>
+              );
+            })()}
 
             {/* ── 2. Flipkart-Style Dynamic Variant Selector (Color Swatches, Volume Chips, Dimensions) ── */}
             <VariantSelector
