@@ -18,6 +18,7 @@ export type ProductVariant = {
   unit?: string | null;
   attributeLabel?: string | null; // e.g. "Volume", "Dimension", "Color", "Size"
   attributeValue?: string | null; // e.g. "4L", "19mm x 4x8ft", "Ivory White"
+  weightKg?: number | null; // in kg (e.g. 2.5, 18, 4)
   pricePerBox: number; // in INR (price for unit / pack / box / can)
   pricePerSqft: number; // base unit price
   sqftPerBox: number;

@@ -178,6 +178,7 @@ model ProductVariant {
   unit           String?
   attributeLabel String?
   attributeValue String?
+  weightKg       Float?     @default(2.5) // in kilograms (e.g. 2.5kg per box, 18kg per plywood sheet)
   pricePerSqft   Float
   pricePerBox    Float
   sqftPerBox     Float
@@ -409,9 +410,13 @@ model StoreSettings {
   whatsappNumber        String   @default("+91 78709 35277")
   email                 String   @default("info@intrihub.com")
   address               String   @default("Intrihub Central Supply Hub, Begur, Bengaluru, Karnataka 560114")
+  gstNumber             String?  @default("29AABCT1234F1Z8")
   freeDeliveryThreshold Float    @default(15000)
   standardDeliveryFee   Float    @default(999)
   deliveryFeeEnabled    Boolean  @default(true)
+  bikeDeliveryRate      Float    @default(99)
+  fourWheelerDeliveryRate Float  @default(349)
+  weightThresholdKg     Float    @default(20)
   autoAcceptOrders      Boolean  @default(true)
   lowStockThreshold     Int      @default(10)
   codEnabled            Boolean  @default(true)

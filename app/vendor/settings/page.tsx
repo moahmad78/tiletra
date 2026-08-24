@@ -973,10 +973,27 @@ export default function VendorSettingsPage() {
               <p className="text-xs text-gray-500">Required if claiming GST input credit or for current accounts</p>
             </div>
 
+            <div>
+              <label className="block text-xs font-bold text-gray-700 uppercase tracking-wider mb-1.5">
+                Vendor GST Identification Number (GSTIN)
+              </label>
+              <input
+                type="text"
+                maxLength={15}
+                placeholder="e.g. 29ABCDE1234F1Z5"
+                value={kycData.gstNumber}
+                onChange={(e) => setKycData({ ...kycData, gstNumber: e.target.value.toUpperCase() })}
+                className="w-full bg-white border border-gray-200 rounded-xl px-4 py-2.5 text-xs font-mono font-bold text-gray-800 uppercase focus:border-emerald-500 focus:outline-hidden"
+              />
+              <p className="text-[10px] text-gray-400 mt-1">
+                🔒 Stored for administrative compliance, vendor payout records & TDS reporting. (Not displayed on customer invoices).
+              </p>
+            </div>
+
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div>
                 <label className="block text-xs font-bold text-gray-700 uppercase tracking-wider mb-1.5">
-                  GST Certificate File
+                  GST Certificate File (PDF / Image)
                 </label>
                 <div className="flex items-center gap-2">
                   <label className="flex-1 py-2.5 px-4 bg-white hover:bg-gray-50 border border-dashed border-gray-300 rounded-xl text-xs font-bold text-gray-700 flex items-center justify-center gap-2 cursor-pointer transition-colors">

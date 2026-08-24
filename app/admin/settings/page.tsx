@@ -16,13 +16,17 @@ export default function AdminSettingsPage() {
   const [saving, setSaving] = useState(false);
 
   const [storeName, setStoreName] = useState("Intrihub");
+  const [gstNumber, setGstNumber] = useState("29AABCT1234F1Z8");
   const [contactPhone, setContactPhone] = useState("+91 78709 35277");
   const [whatsappNumber, setWhatsappNumber] = useState("+91 78709 35277");
   const [email, setEmail] = useState("info@intrihub.com");
-  const [address, setAddress] = useState("Intrihub Central Logistics Hub, Hosur Road, Bangalore, Karnataka - 560068");
+  const [address, setAddress] = useState("Intrihub Central Supply Hub, Begur, Bangalore, Karnataka - 560114");
   const [freeDeliveryThreshold, setFreeDeliveryThreshold] = useState(15000);
   const [standardDeliveryFee, setStandardDeliveryFee] = useState(999);
   const [deliveryFeeEnabled, setDeliveryFeeEnabled] = useState(true);
+  const [bikeDeliveryRate, setBikeDeliveryRate] = useState(99);
+  const [fourWheelerDeliveryRate, setFourWheelerDeliveryRate] = useState(349);
+  const [weightThresholdKg, setWeightThresholdKg] = useState(20);
   const [lowStockThreshold, setLowStockThreshold] = useState(25);
   const [codEnabled, setCodEnabled] = useState(true);
   const [codMaxLimit, setCodMaxLimit] = useState(25000);
@@ -35,6 +39,7 @@ export default function AdminSettingsPage() {
         const s: any = await getStoreSettings();
         if (s) {
           setStoreName(s.storeName);
+          setGstNumber(s.gstNumber || "29AABCT1234F1Z8");
           setContactPhone(s.contactPhone);
           setWhatsappNumber(s.whatsappNumber);
           setEmail(s.email);
@@ -42,6 +47,9 @@ export default function AdminSettingsPage() {
           setFreeDeliveryThreshold(s.freeDeliveryThreshold);
           setStandardDeliveryFee(s.standardDeliveryFee);
           setDeliveryFeeEnabled(s.deliveryFeeEnabled !== false);
+          setBikeDeliveryRate(s.bikeDeliveryRate ?? 99);
+          setFourWheelerDeliveryRate(s.fourWheelerDeliveryRate ?? 349);
+          setWeightThresholdKg(s.weightThresholdKg ?? 20);
           setLowStockThreshold(s.lowStockThreshold);
           setCodEnabled(s.codEnabled);
           setCodMaxLimit(s.codMaxLimit);
@@ -66,6 +74,7 @@ export default function AdminSettingsPage() {
 
     const res = await updateStoreSettings({
       storeName,
+      gstNumber,
       contactPhone,
       whatsappNumber,
       email,
@@ -73,6 +82,9 @@ export default function AdminSettingsPage() {
       freeDeliveryThreshold: Number(freeDeliveryThreshold),
       standardDeliveryFee: Number(standardDeliveryFee),
       deliveryFeeEnabled,
+      bikeDeliveryRate: Number(bikeDeliveryRate),
+      fourWheelerDeliveryRate: Number(fourWheelerDeliveryRate),
+      weightThresholdKg: Number(weightThresholdKg),
       lowStockThreshold: Number(lowStockThreshold),
       codEnabled,
       codMaxLimit: Number(codMaxLimit),
@@ -81,7 +93,7 @@ export default function AdminSettingsPage() {
     setSaving(false);
 
     if (res.success) {
-      toast.success("Store settings & delivery charges updated successfully!");
+      toast.success("Store settings, GST & delivery charges updated successfully!");
     } else {
       toast.error(res.error || "Failed to update settings");
     }
@@ -170,16 +182,32 @@ export default function AdminSettingsPage() {
             </div>
           </div>
 
-          <div>
-            <label className="text-xs font-bold text-[#052a51] uppercase tracking-wider block mb-1.5">
-              Warehouse / Office Address
-            </label>
-            <textarea
-              rows={2}
-              value={address}
-              onChange={(e) => setAddress(e.target.value)}
-              className="w-full px-3.5 py-2.5 bg-gray-50 border border-gray-200 rounded-xl text-xs text-gray-700 focus:outline-none focus:border-[#F26522]"
-            />
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <div>
+              <label className="text-xs font-bold text-[#052a51] uppercase tracking-wider block mb-1.5">
+                Platform GST Number (GSTIN)
+              </label>
+              <input
+                type="text"
+                value={gstNumber}
+                onChange={(e) => setGstNumber(e.target.value)}
+                placeholder="e.g. 29AABCT1234F1Z8"
+                className="w-full px-3.5 py-2.5 bg-gray-50 border border-gray-200 rounded-xl text-xs font-black text-[#052a51] uppercase tracking-wider focus:outline-none focus:border-[#F26522]"
+              />
+              <p className="text-[10px] text-gray-400 mt-1">Printed on official customer bills & tax invoices.</p>
+            </div>
+
+            <div>
+              <label className="text-xs font-bold text-[#052a51] uppercase tracking-wider block mb-1.5">
+                Warehouse / Office Address
+              </label>
+              <textarea
+                rows={2}
+                value={address}
+                onChange={(e) => setAddress(e.target.value)}
+                className="w-full px-3.5 py-2.5 bg-gray-50 border border-gray-200 rounded-xl text-xs text-gray-700 focus:outline-none focus:border-[#F26522]"
+              />
+            </div>
           </div>
 
           {/* Executive & Department Support Desks */}
@@ -345,7 +373,7 @@ export default function AdminSettingsPage() {
 
             <div>
               <label className="text-xs font-bold text-[#052a51] uppercase tracking-wider block mb-1.5">
-                Low Stock Threshold (Boxes)
+                Low Stock Threshold (Units)
               </label>
               <input
                 type="number"
@@ -355,6 +383,65 @@ export default function AdminSettingsPage() {
                 min={1}
               />
               <p className="text-[10px] text-gray-400 mt-2">Triggers low-inventory warning alerts on admin dashboard.</p>
+            </div>
+          </div>
+
+          {/* ── Vehicle-Based Delivery Rates (Part C PRD) ── */}
+          <div className="pt-4 border-t border-gray-100 space-y-3">
+            <div className="flex items-center justify-between">
+              <h4 className="text-xs font-black text-[#052a51] uppercase tracking-wider">
+                Vehicle-Based Weight Delivery Slabs (Bike vs 4-Wheeler / Truck)
+              </h4>
+              <span className="text-[10px] font-bold text-emerald-700 bg-emerald-50 border border-emerald-200 px-2 py-0.5 rounded-md">
+                Auto-Selected at Checkout
+              </span>
+            </div>
+
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+              <div>
+                <label className="text-xs font-bold text-[#052a51] uppercase tracking-wider block mb-1.5">
+                  🛵 Bike Delivery Rate (₹)
+                </label>
+                <input
+                  type="number"
+                  value={bikeDeliveryRate}
+                  onChange={(e) => setBikeDeliveryRate(Number(e.target.value))}
+                  className="w-full px-3.5 py-2.5 bg-gray-50 border border-gray-200 rounded-xl text-xs font-black text-[#052a51] focus:outline-none focus:border-[#F26522]"
+                  min={0}
+                  step="any"
+                />
+                <p className="text-[10px] text-gray-400 mt-1">For light orders under weight threshold.</p>
+              </div>
+
+              <div>
+                <label className="text-xs font-bold text-[#052a51] uppercase tracking-wider block mb-1.5">
+                  🚚 4-Wheeler / Truck Rate (₹)
+                </label>
+                <input
+                  type="number"
+                  value={fourWheelerDeliveryRate}
+                  onChange={(e) => setFourWheelerDeliveryRate(Number(e.target.value))}
+                  className="w-full px-3.5 py-2.5 bg-gray-50 border border-gray-200 rounded-xl text-xs font-black text-[#052a51] focus:outline-none focus:border-[#F26522]"
+                  min={0}
+                  step="any"
+                />
+                <p className="text-[10px] text-gray-400 mt-1">For heavy orders exceeding weight threshold.</p>
+              </div>
+
+              <div>
+                <label className="text-xs font-bold text-[#052a51] uppercase tracking-wider block mb-1.5">
+                  ⚖️ Weight Cutoff Threshold (kg)
+                </label>
+                <input
+                  type="number"
+                  value={weightThresholdKg}
+                  onChange={(e) => setWeightThresholdKg(Number(e.target.value))}
+                  className="w-full px-3.5 py-2.5 bg-gray-50 border border-gray-200 rounded-xl text-xs font-black text-[#052a51] focus:outline-none focus:border-[#F26522]"
+                  min={1}
+                  step="0.5"
+                />
+                <p className="text-[10px] text-gray-400 mt-1">Orders above this weight switch to 4-Wheeler.</p>
+              </div>
             </div>
           </div>
         </div>

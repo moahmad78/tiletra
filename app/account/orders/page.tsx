@@ -3,11 +3,13 @@
 import { useState, useEffect } from "react";
 import Link from "next/link";
 import Image from "next/image";
-import { Truck, ArrowLeft, Star, Loader2, ShoppingBag, LogIn } from "lucide-react";
+import { Truck, ArrowLeft, Star, Loader2, ShoppingBag, LogIn, FileText, Download } from "lucide-react";
 import { useAuthStore, useAuthHydrated } from "@/lib/auth-store";
 import { getCustomerOrders } from "@/lib/actions/orders";
 import { useSocket } from "@/lib/socket";
 import WriteReviewModal from "@/components/reviews/WriteReviewModal";
+import OrderTrackingModal from "@/components/orders/OrderTrackingModal";
+import OrderInvoiceModal from "@/components/orders/OrderInvoiceModal";
 import { toast } from "sonner";
 
 function formatPrice(n: number) {
@@ -21,6 +23,8 @@ export default function OrdersPage() {
   // Start in loading state — show skeleton until we know hydration status
   const [loading, setLoading] = useState(true);
   const [reviewProduct, setReviewProduct] = useState<{ id: string; name: string } | null>(null);
+  const [selectedTrackingOrder, setSelectedTrackingOrder] = useState<any>(null);
+  const [selectedInvoiceOrder, setSelectedInvoiceOrder] = useState<any>(null);
 
   const cleanPhone = user?.phone ? user.phone.replace(/\D/g, "") : "";
   const userRoom = user?.id ? `user:${user.id}` : cleanPhone ? `phone:${cleanPhone}` : null;
@@ -107,7 +111,7 @@ export default function OrdersPage() {
           </Link>
           <div>
             <h1 className="text-xl sm:text-2xl font-black text-[#052a51]">My Orders</h1>
-            <p className="text-xs text-gray-500">Track shipments, deliveries, and order history</p>
+            <p className="text-xs text-gray-500">Track shipments, deliveries, and download invoices</p>
           </div>
         </div>
 
@@ -171,7 +175,7 @@ export default function OrdersPage() {
                 <div>
                   <div className="flex items-center gap-2">
                     <span className="text-xs font-bold text-gray-400">Order ID:</span>
-                    <span className="text-sm font-black text-[#052a51]">{order.id}</span>
+                    <span className="text-sm font-black text-[#052a51]">#{order.id}</span>
                   </div>
                   <p className="text-xs text-gray-400 mt-0.5">
                     Placed on {new Date(order.createdAt).toLocaleDateString("en-IN", {
@@ -212,7 +216,7 @@ export default function OrdersPage() {
                         <h3 className="text-sm font-bold text-[#052a51] line-clamp-1">{item.productName}</h3>
                         <p className="text-xs text-gray-500">{item.variantDetails}</p>
                         <p className="text-xs text-gray-400 mt-0.5">
-                          Qty: {item.boxQuantity} box(es) · {formatPrice(item.pricePerBox)}/box
+                          Qty: {item.boxQuantity || item.quantity || 1} · {formatPrice(item.pricePerBox || item.price || 0)}
                         </p>
                       </div>
                     </div>
@@ -224,41 +228,72 @@ export default function OrdersPage() {
                       className="shrink-0 inline-flex items-center gap-1.5 px-3 py-1.5 bg-[#052a51]/5 hover:bg-[#F26522] hover:text-white text-[#052a51] text-xs font-bold rounded-xl transition-all shadow-2xs cursor-pointer"
                     >
                       <Star size={13} className="text-amber-500 fill-amber-500" />
-                      <span>Review Product</span>
+                      <span>Review</span>
                     </button>
                   </div>
                 ))}
               </div>
 
-              {/* Order Footer & Tracking info */}
-              <div className="p-4 bg-gray-50 rounded-2xl flex flex-col sm:flex-row sm:items-center justify-between gap-3 text-xs text-gray-600">
-                <div className="flex items-center gap-2">
-                  <Truck size={16} className="text-[#F26522]" />
+              {/* ── Order Action Buttons & Tracking info (Side by Side) ── */}
+              <div className="p-4 bg-gray-50 rounded-2xl flex flex-col md:flex-row md:items-center justify-between gap-4 border border-gray-100">
+                <div className="flex items-center gap-2 text-xs text-gray-600">
+                  <Truck size={16} className="text-[#F26522] shrink-0" />
                   <span>
                     Estimated Delivery: <strong className="text-[#052a51]">{order.estimatedDelivery || "3–5 Business Days"}</strong>
                   </span>
                 </div>
-                <a
-                  href="https://wa.me/919198035803?text=Hi%20Gulshan,%20I%20need%20assistance%20with%20my%20order"
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="font-bold text-[#F26522] hover:underline"
-                >
-                  Need help with order? Contact Support →
-                </a>
+
+                {/* Two Clear Buttons: Track Order & Download Bill */}
+                <div className="flex items-center gap-2.5 flex-wrap">
+                  <button
+                    type="button"
+                    onClick={() => setSelectedTrackingOrder(order)}
+                    className="flex-1 sm:flex-initial inline-flex items-center justify-center gap-1.5 px-4 py-2.5 rounded-xl bg-white hover:bg-orange-50 text-[#F26522] border border-orange-200 font-bold text-xs transition-all shadow-2xs active:scale-95 cursor-pointer"
+                  >
+                    <Truck size={14} />
+                    <span>Track Order</span>
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={() => setSelectedInvoiceOrder(order)}
+                    className="flex-1 sm:flex-initial inline-flex items-center justify-center gap-1.5 px-4 py-2.5 rounded-xl bg-[#052a51] hover:bg-[#041f3d] text-white font-bold text-xs transition-all shadow-xs active:scale-95 cursor-pointer"
+                  >
+                    <Download size={14} />
+                    <span>Download Bill</span>
+                  </button>
+                </div>
               </div>
             </div>
           ))}
         </div>
       )}
 
-      {/* Review Modal Trigger */}
+      {/* Review Modal */}
       {reviewProduct && (
         <WriteReviewModal
           productId={reviewProduct.id}
           productName={reviewProduct.name}
           isOpen={Boolean(reviewProduct)}
           onClose={() => setReviewProduct(null)}
+        />
+      )}
+
+      {/* Live Order Tracking Modal */}
+      {selectedTrackingOrder && (
+        <OrderTrackingModal
+          order={selectedTrackingOrder}
+          isOpen={Boolean(selectedTrackingOrder)}
+          onClose={() => setSelectedTrackingOrder(null)}
+        />
+      )}
+
+      {/* Official Tax Invoice / Bill Modal */}
+      {selectedInvoiceOrder && (
+        <OrderInvoiceModal
+          order={selectedInvoiceOrder}
+          isOpen={Boolean(selectedInvoiceOrder)}
+          onClose={() => setSelectedInvoiceOrder(null)}
         />
       )}
     </div>

@@ -137,6 +137,7 @@ export function formatProduct(dbProduct: any): Product {
     unit: v.unit || null,
     attributeLabel: v.attributeLabel || null,
     attributeValue: v.attributeValue || null,
+    weightKg: v.weightKg ? Number(v.weightKg) : null,
     pricePerBox: Number(v.pricePerBox),
     pricePerSqft: Number(v.pricePerSqft),
     sqftPerBox: Number(v.sqftPerBox),

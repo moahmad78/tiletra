@@ -32,6 +32,7 @@ type CartState = {
   getTotalBoxes: () => number;
   getSubtotal: () => number;
   getTotalSqft: () => number;
+  getTotalWeightKg: () => number;
 };
 
 const triggerDbSync = async (items: CartItem[]) => {
@@ -141,6 +142,21 @@ export const useCartStore = create<CartState>()(
           (sum, i) => sum + i.variant.sqftPerBox * i.quantity,
           0
         ),
+      getTotalWeightKg: () =>
+        get().items.reduce((sum, i) => {
+          const vWeight = (i.variant as any)?.weightKg;
+          const pWeight = (i.product as any)?.weightKg;
+          const defaultWeight =
+            i.product.categorySlug?.includes("tile") || i.product.categorySlug?.includes("stone")
+              ? 12.0
+              : i.product.categorySlug?.includes("plywood") || i.product.categorySlug?.includes("board")
+              ? 18.0
+              : i.product.categorySlug?.includes("paint")
+              ? 4.5
+              : 2.0;
+          const weight = vWeight ?? pWeight ?? defaultWeight;
+          return sum + weight * i.quantity;
+        }, 0),
     }),
     {
       name: "intrihub-cart",

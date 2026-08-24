@@ -50,6 +50,9 @@ export default function CheckoutPage() {
     freeDeliveryThreshold: number;
     standardDeliveryFee: number;
     deliveryFeeEnabled: boolean;
+    bikeDeliveryRate: number;
+    fourWheelerDeliveryRate: number;
+    weightThresholdKg: number;
     codEnabled: boolean;
     codMaxLimit: number;
     codBlockedPincodes: string[];
@@ -57,15 +60,29 @@ export default function CheckoutPage() {
     freeDeliveryThreshold: 15000,
     standardDeliveryFee: 999,
     deliveryFeeEnabled: true,
+    bikeDeliveryRate: 99,
+    fourWheelerDeliveryRate: 349,
+    weightThresholdKg: 20,
     codEnabled: true,
     codMaxLimit: 25000,
     codBlockedPincodes: ["560099", "560088"],
   });
 
+  const totalWeight = useCartStore((s) => (s.getTotalWeightKg ? s.getTotalWeightKg() : 0));
   const isDeliveryFeeEnabled = storeSettings.deliveryFeeEnabled !== false;
   const freeThreshold = storeSettings.freeDeliveryThreshold ?? 15000;
-  const standardFee = storeSettings.standardDeliveryFee ?? 999;
-  const deliveryFee = !isDeliveryFeeEnabled ? 0 : (subtotal >= freeThreshold ? 0 : standardFee);
+  const weightThreshold = storeSettings.weightThresholdKg ?? 20;
+  const bikeRate = storeSettings.bikeDeliveryRate ?? 99;
+  const fourWheelerRate = storeSettings.fourWheelerDeliveryRate ?? 349;
+
+  // Vehicle-based determination based on total cart weight
+  const isHeavyOrder = totalWeight > weightThreshold;
+  const vehicleLabel = isHeavyOrder ? "4-Wheeler / Truck" : "Bike Express";
+  const vehicleRate = isHeavyOrder ? fourWheelerRate : bikeRate;
+
+  // Free delivery threshold overrides vehicle freight
+  const isFreeDelivery = subtotal >= freeThreshold;
+  const deliveryFee = !isDeliveryFeeEnabled ? 0 : (isFreeDelivery ? 0 : vehicleRate);
   const total = subtotal + deliveryFee;
 
   const { user, isAuthenticated, openLoginModal } = useAuthStore();
@@ -91,6 +108,9 @@ export default function CheckoutPage() {
           freeDeliveryThreshold: s.freeDeliveryThreshold ?? 15000,
           standardDeliveryFee: s.standardDeliveryFee ?? 999,
           deliveryFeeEnabled: s.deliveryFeeEnabled !== false,
+          bikeDeliveryRate: s.bikeDeliveryRate ?? 99,
+          fourWheelerDeliveryRate: s.fourWheelerDeliveryRate ?? 349,
+          weightThresholdKg: s.weightThresholdKg ?? 20,
           codEnabled: s.codEnabled ?? true,
           codMaxLimit: s.codMaxLimit ?? 25000,
           codBlockedPincodes: s.codBlockedPincodes ?? ["560099", "560088"],
@@ -751,11 +771,14 @@ export default function CheckoutPage() {
 
               <div className="space-y-2 text-xs">
                 <div className="flex justify-between text-gray-600">
-                  <span>Subtotal</span>
+                  <span>Subtotal ({items.length} items)</span>
                   <span className="font-bold">{formatPrice(subtotal)}</span>
                 </div>
-                <div className="flex justify-between text-gray-600">
-                  <span>Freight Delivery</span>
+                <div className="flex justify-between items-start text-gray-600">
+                  <div>
+                    <span>Delivery ({vehicleLabel})</span>
+                    <p className="text-[10px] text-gray-400">Total wt: {totalWeight.toFixed(1)} kg</p>
+                  </div>
                   <span className={`font-bold ${deliveryFee === 0 ? "text-[#2F7A4F]" : ""}`}>
                     {deliveryFee === 0 ? "FREE" : formatPrice(deliveryFee)}
                   </span>
@@ -771,18 +794,15 @@ export default function CheckoutPage() {
                   <ShieldCheck size={14} className="text-[#2F7A4F]" /> 100% Breakage-proof crate packaging
                 </p>
                 <p className="flex items-center gap-1.5 font-medium">
-                  <Truck size={14} className="text-[#F26522]" /> 3–5 Business Days Bangalore Delivery
-                </p>
-                <p className="flex items-center gap-1.5 font-medium">
-                  <CreditCard size={14} className="text-[#052a51]" /> UPI · Cards · COD accepted
+                  <Truck size={14} className="text-[#F26522]" /> {vehicleLabel} ({totalWeight > weightThreshold ? ">" + weightThreshold + "kg heavy" : "<=" + weightThreshold + "kg standard"})
                 </p>
                 {deliveryFee === 0 ? (
                   <p className="flex items-center gap-1.5 font-medium text-[#2F7A4F]">
-                    🎉 FREE delivery on this order!
+                    🎉 FREE delivery applied (Order over {formatPrice(freeThreshold)})
                   </p>
                 ) : (
-                  <p className="flex items-center gap-1.5 font-medium">
-                    🚚 Freight: {formatPrice(deliveryFee)} · Add {formatPrice(freeThreshold - subtotal)} more for FREE
+                  <p className="flex items-center gap-1.5 font-medium text-gray-500">
+                    🚚 Add {formatPrice(freeThreshold - subtotal)} more for FREE delivery
                   </p>
                 )}
               </div>

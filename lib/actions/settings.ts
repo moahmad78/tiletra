@@ -14,9 +14,13 @@ export async function getStoreSettings() {
           whatsappNumber: "+91 78709 35277",
           email: "info@intrihub.com",
           address: "Intrihub Central Supply Hub, Begur, Bangalore, Karnataka - 560114",
+          gstNumber: "29AABCT1234F1Z8",
           freeDeliveryThreshold: 15000,
           standardDeliveryFee: 999,
           deliveryFeeEnabled: true,
+          bikeDeliveryRate: 99,
+          fourWheelerDeliveryRate: 349,
+          weightThresholdKg: 20,
           lowStockThreshold: 25,
           codEnabled: true,
           codMaxLimit: 25000,
@@ -37,9 +41,13 @@ export async function updateStoreSettings(data: {
   whatsappNumber?: string;
   email?: string;
   address?: string;
+  gstNumber?: string;
   freeDeliveryThreshold?: number;
   standardDeliveryFee?: number;
   deliveryFeeEnabled?: boolean;
+  bikeDeliveryRate?: number;
+  fourWheelerDeliveryRate?: number;
+  weightThresholdKg?: number;
   lowStockThreshold?: number;
   codEnabled?: boolean;
   codMaxLimit?: number;
