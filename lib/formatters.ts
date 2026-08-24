@@ -22,24 +22,26 @@ export function getProductPriceInfo(product: Product, variant?: ProductVariant |
     v?.pricePerBox ||
     v?.pricePerSqft ||
     (product as any)?.price ||
+    (product as any)?.pricePerSqft ||
     499;
 
   const existingMrp =
-    (v as any)?.originalPrice ||
-    (v as any)?.mrp ||
-    (product as any)?.originalPrice ||
-    (product as any)?.mrp ||
+    (v as any)?.mrp ??
+    (v as any)?.originalPrice ??
+    product?.mrp ??
+    (product as any)?.originalPrice ??
     null;
 
-  const mrp = existingMrp && existingMrp > price ? existingMrp : Math.round(price * 1.35);
-  const discountPercent = mrp > price ? Math.round(((mrp - price) / mrp) * 100) : 0;
+  const hasDiscount = existingMrp !== null && Number(existingMrp) > price;
+  const mrp = hasDiscount ? Number(existingMrp) : null;
+  const discountPercent = hasDiscount && mrp ? Math.round(((mrp - price) / mrp) * 100) : 0;
 
   return {
     price,
     mrp,
     discountPercent,
     formattedPrice: formatPrice(price),
-    formattedMrp: formatPrice(mrp),
+    formattedMrp: mrp ? formatPrice(mrp) : null,
   };
 }
 
@@ -138,6 +140,7 @@ export function formatProduct(dbProduct: any): Product {
     attributeLabel: v.attributeLabel || null,
     attributeValue: v.attributeValue || null,
     weightKg: v.weightKg ? Number(v.weightKg) : null,
+    mrp: v.mrp ? Number(v.mrp) : null,
     pricePerBox: Number(v.pricePerBox),
     pricePerSqft: Number(v.pricePerSqft),
     sqftPerBox: Number(v.sqftPerBox),
@@ -158,6 +161,7 @@ export function formatProduct(dbProduct: any): Product {
       unit: dbProduct.unitOfSale || "box",
       attributeLabel: null,
       attributeValue: null,
+      mrp: dbProduct.mrp ? Number(dbProduct.mrp) : null,
       pricePerBox: Math.round(pSqft * (dbProduct.unitOfSale === "sqft" || dbProduct.unitOfSale === "box" ? 16 : 1)),
       pricePerSqft: pSqft,
       sqftPerBox: dbProduct.unitOfSale === "sqft" || dbProduct.unitOfSale === "box" ? 16 : 1,
@@ -194,6 +198,8 @@ export function formatProduct(dbProduct: any): Product {
     description: dbProduct.description || "",
     material: (dbProduct.material as Material) || "Vitrified",
     unitOfSale: (dbProduct.unitOfSale as any) || "box",
+    mrp: dbProduct.mrp ? Number(dbProduct.mrp) : null,
+    pricePerSqft: dbProduct.pricePerSqft ? Number(dbProduct.pricePerSqft) : undefined,
     attributes,
     images: Array.isArray(dbProduct.images) && dbProduct.images.length > 0
       ? dbProduct.images.map((img: string) => (typeof img === "string" && img.includes("unsplash.com") ? "/placeholders/product.svg" : img))

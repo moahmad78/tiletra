@@ -386,6 +386,9 @@ export default function DynamicProductUploadForm({
     const variantSize = dimensions.lengthSize ||
       (dimensions.height && dimensions.width ? `${dimensions.height}x${dimensions.width}` : "Standard");
 
+    const parsedMrp = parseFloat(mrpPrice);
+    const mrpVal = !isNaN(parsedMrp) && parsedMrp > 0 ? parsedMrp : null;
+
     const formattedVariants = hasMultipleVariants && customVariants.length > 0
       ? customVariants.map((v) => ({
           size: v.attributeValue || v.size || variantSize,
@@ -395,6 +398,8 @@ export default function DynamicProductUploadForm({
           unit: unitOfSale || currentCategoryConfig.defaultUnit,
           attributeLabel: v.attributeLabel || "Option",
           attributeValue: v.attributeValue || v.size || variantSize,
+          mrp: v.mrp !== undefined && v.mrp !== null ? Number(v.mrp) : mrpVal,
+          weightKg: v.weightKg !== undefined && v.weightKg !== null ? Number(v.weightKg) : 2.5,
           pricePerBox: Number(v.pricePerBox || sellNum),
           pricePerSqft: Number(v.pricePerSqft || sellNum),
           sqftPerBox: Number(v.sqftPerBox || 1),
@@ -409,6 +414,8 @@ export default function DynamicProductUploadForm({
             unit: unitOfSale || currentCategoryConfig.defaultUnit,
             attributeLabel: "Size",
             attributeValue: variantSize,
+            mrp: mrpVal,
+            weightKg: 2.5,
             pricePerBox: sellNum,
             pricePerSqft: sellNum,
             sqftPerBox: 1,
@@ -427,6 +434,7 @@ export default function DynamicProductUploadForm({
       description: fullDescription || `${productName} — High quality certified material available with expedited delivery.`,
       images: images.length > 0 ? images : ["/placeholders/product.svg"],
       unitOfSale: unitOfSale || currentCategoryConfig.defaultUnit,
+      mrp: mrpVal,
       vendorId: vendorId || null,
       coverageRate: !isNaN(coverageNum) && coverageNum > 0 ? coverageNum : null,
       wastageFactor: wastageNum,
@@ -906,8 +914,9 @@ export default function DynamicProductUploadForm({
         <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-5">
           {/* MRP Price */}
           <div>
-            <label className="block text-xs font-bold text-gray-700 uppercase tracking-wider mb-1.5">
-              MRP Price (₹) *
+            <label className="block text-xs font-bold text-gray-700 uppercase tracking-wider mb-1.5 flex items-center justify-between">
+              <span>MRP Price (₹)</span>
+              <span className="text-[10px] text-gray-400 font-normal">Optional</span>
             </label>
             <div className="relative">
               <span className="absolute left-3.5 top-1/2 -translate-y-1/2 text-gray-400 font-bold text-sm">
@@ -915,15 +924,14 @@ export default function DynamicProductUploadForm({
               </span>
               <input
                 type="number"
-                required
-                min={1}
-                placeholder="e.g. 1500"
+                min={0}
+                placeholder="e.g. 1500 (leave blank if no discount)"
                 value={mrpPrice}
                 onChange={(e) => setMrpPrice(e.target.value)}
                 className="w-full pl-8 pr-4 py-3 bg-gray-50/70 border border-gray-200 rounded-2xl text-sm font-black text-gray-900 focus:bg-white focus:outline-none focus:border-[#F26522]"
               />
             </div>
-            <p className="text-[10px] text-gray-400 mt-1">Maximum retail printed price</p>
+            <p className="text-[10px] text-gray-400 mt-1">Strikethrough list price for discount display</p>
           </div>
 
           {/* Selling Price */}

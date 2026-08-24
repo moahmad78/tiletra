@@ -143,6 +143,8 @@ export default function EditProductPage({
         unit: v.unit || unitOfSale,
         attributeLabel: v.attributeLabel || null,
         attributeValue: v.attributeValue || null,
+        mrp: v.mrp ? Number(v.mrp) : null,
+        weightKg: v.weightKg ? Number(v.weightKg) : 2.5,
         pricePerBox: Number(v.pricePerBox),
         pricePerSqft: Number(v.pricePerSqft || v.pricePerBox),
         sqftPerBox: Number(v.sqftPerBox || 1),

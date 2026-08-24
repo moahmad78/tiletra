@@ -14,6 +14,7 @@ export type CreateProductInput = {
   description: string;
   images: string[];
   unitOfSale?: string;
+  mrp?: number | null;
   attributes?: { key: string; value: string }[];
   variants: {
     size: string;
@@ -23,6 +24,8 @@ export type CreateProductInput = {
     unit?: string | null;
     attributeLabel?: string | null;
     attributeValue?: string | null;
+    mrp?: number | null;
+    weightKg?: number | null;
     pricePerBox: number;
     pricePerSqft: number;
     sqftPerBox: number;
@@ -410,6 +413,7 @@ export async function createProduct(input: CreateProductInput) {
         isTrending: Boolean(input.isTrending),
         images: input.images.length > 0 ? input.images : ["/placeholders/product.svg"],
         description: input.description,
+        mrp: input.mrp !== undefined && input.mrp !== null ? Number(input.mrp) : null,
         rating: input.manualRating !== undefined && input.manualRating !== null ? Number(input.manualRating) : 4.8,
         reviewCount: input.manualReviewCount !== undefined && input.manualReviewCount !== null ? Number(input.manualReviewCount) : 0,
         manualRating: input.manualRating !== undefined && input.manualRating !== null ? Number(input.manualRating) : null,
@@ -430,6 +434,8 @@ export async function createProduct(input: CreateProductInput) {
             unit: v.unit || null,
             attributeLabel: v.attributeLabel || null,
             attributeValue: v.attributeValue || null,
+            mrp: v.mrp !== undefined && v.mrp !== null ? Number(v.mrp) : null,
+            weightKg: v.weightKg !== undefined && v.weightKg !== null ? Number(v.weightKg) : 2.5,
             pricePerBox: Number(v.pricePerBox),
             pricePerSqft: Number(v.pricePerSqft),
             sqftPerBox: Number(v.sqftPerBox),
@@ -630,6 +636,7 @@ export async function updateProduct(id: string, input: Partial<CreateProductInpu
       if (input.manualReviewCount !== null && input.manualReviewCount !== undefined) updateData.reviewCount = Number(input.manualReviewCount);
     }
     if (input.specs !== undefined) updateData.specs = input.specs;
+    if (input.mrp !== undefined) updateData.mrp = input.mrp !== null ? Number(input.mrp) : null;
     if (input.coverageRate !== undefined) updateData.coverageRate = input.coverageRate !== null ? Number(input.coverageRate) : null;
     if (input.wastageFactor !== undefined) updateData.wastageFactor = input.wastageFactor !== null ? Number(input.wastageFactor) : 1.1;
 
@@ -644,6 +651,8 @@ export async function updateProduct(id: string, input: Partial<CreateProductInpu
           unit: v.unit || null,
           attributeLabel: v.attributeLabel || null,
           attributeValue: v.attributeValue || null,
+          mrp: v.mrp !== undefined && v.mrp !== null ? Number(v.mrp) : null,
+          weightKg: v.weightKg !== undefined && v.weightKg !== null ? Number(v.weightKg) : 2.5,
           pricePerBox: Number(v.pricePerBox),
           pricePerSqft: Number(v.pricePerSqft),
           sqftPerBox: Number(v.sqftPerBox),

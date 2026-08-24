@@ -228,6 +228,7 @@ export default function VariantEditor({
               <th className="py-3 px-3">Color / Shade</th>
               <th className="py-3 px-3">Finish</th>
               <th className="py-3 px-3">Price (₹)</th>
+              <th className="py-3 px-3">MRP (₹)</th>
               <th className="py-3 px-3">Weight (kg)</th>
               <th className="py-3 px-3">Stock ({unitOfSale}s)</th>
               <th className="py-3 px-3">Variant Image URL</th>
@@ -297,6 +298,24 @@ export default function VariantEditor({
                     onChange={(e) => handleUpdateVariant(i, "pricePerBox", Number(e.target.value))}
                     className="w-24 px-2.5 py-1.5 bg-gray-50 border border-gray-200 rounded-lg text-xs font-black text-[#052a51] focus:outline-none focus:border-[#F26522]"
                     min={1}
+                  />
+                </td>
+
+                {/* MRP (Optional) */}
+                <td className="p-2.5">
+                  <input
+                    type="number"
+                    value={v.mrp ?? ""}
+                    onChange={(e) =>
+                      handleUpdateVariant(
+                        i,
+                        "mrp",
+                        e.target.value !== "" ? Number(e.target.value) : undefined
+                      )
+                    }
+                    className="w-24 px-2.5 py-1.5 bg-gray-50 border border-gray-200 rounded-lg text-xs font-bold text-gray-500 focus:outline-none focus:border-[#F26522]"
+                    placeholder="Optional"
+                    min={0}
                   />
                 </td>
 

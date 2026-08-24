@@ -19,6 +19,7 @@ export type ProductVariant = {
   attributeLabel?: string | null; // e.g. "Volume", "Dimension", "Color", "Size"
   attributeValue?: string | null; // e.g. "4L", "19mm x 4x8ft", "Ivory White"
   weightKg?: number | null; // in kg (e.g. 2.5, 18, 4)
+  mrp?: number | null; // List price / MRP in INR (optional original price for discount calculation)
   pricePerBox: number; // in INR (price for unit / pack / box / can)
   pricePerSqft: number; // base unit price
   sqftPerBox: number;
@@ -37,6 +38,8 @@ export type Product = {
   material: Material;
   images: string[];
   unitOfSale?: UnitOfSale;
+  mrp?: number | null; // Product level MRP
+  pricePerSqft?: number; // Base unit price
   attributes?: ProductAttribute[];
   variants: ProductVariant[];
   rating: number;

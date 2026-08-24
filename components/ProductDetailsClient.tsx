@@ -384,9 +384,14 @@ export default function ProductDetailsClient({
               return (
                 <div className="bg-[#F8F9FA] rounded-2xl p-4 sm:p-5 border border-gray-100 space-y-2">
                   <div className="flex items-baseline gap-3 flex-wrap">
-                    <span className="text-3xl sm:text-4xl font-black text-[#052a51] tracking-tight">
-                      {formatPrice(selectedVariant.pricePerBox)}
-                    </span>
+                    <div className="flex items-baseline">
+                      <span className="text-3xl sm:text-4xl font-black text-[#052a51] tracking-tight">
+                        {formatPrice(selectedVariant.pricePerBox)}
+                      </span>
+                      <span className="text-sm sm:text-base font-bold text-gray-500 ml-1">
+                        /{selectedVariant.unit || definedProduct.unitOfSale || "unit"}
+                      </span>
+                    </div>
                     {priceInfo.discountPercent > 0 && (
                       <>
                         <span className="text-base sm:text-lg text-gray-400 line-through font-medium">

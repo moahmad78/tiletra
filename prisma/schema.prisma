@@ -113,6 +113,7 @@ model Product {
   finish        String             @default("Glossy")
   size          String             @default("600x600mm")
   pricePerSqft  Float              @default(45)
+  mrp           Float?             // List price / MRP in INR (optional original price for discount calculation)
   thickness     String             @default("9mm")
   usage         String             @default("Indoor / Floor")
   look          String             @default("Marble Look")
@@ -179,6 +180,7 @@ model ProductVariant {
   attributeLabel String?
   attributeValue String?
   weightKg       Float?     @default(2.5) // in kilograms (e.g. 2.5kg per box, 18kg per plywood sheet)
+  mrp            Float?     // List price / MRP in INR for variant
   pricePerSqft   Float
   pricePerBox    Float
   sqftPerBox     Float
