@@ -4,6 +4,7 @@ import { useState, useEffect } from "react";
 import { usePathname, useRouter } from "next/navigation";
 import AdminSidebar from "@/components/admin/AdminSidebar";
 import AdminHeader from "@/components/admin/AdminHeader";
+import AdminInactivityGuard from "@/components/admin/AdminInactivityGuard";
 import { useAdminAuth } from "@/lib/admin-auth";
 
 export default function AdminLayout({
@@ -34,6 +35,9 @@ export default function AdminLayout({
 
   return (
     <div className="min-h-screen bg-[#F3F4F5] flex">
+      {/* 10-Minute Inactivity Auto-Logout Guard */}
+      <AdminInactivityGuard />
+
       {/* Desktop Sidebar */}
       <div className="hidden md:block">
         <AdminSidebar collapsed={collapsed} setCollapsed={setCollapsed} />

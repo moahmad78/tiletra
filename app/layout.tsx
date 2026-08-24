@@ -16,6 +16,8 @@ import { BASE_SITE_URL, generateOrganizationSchema, generateWebSiteSchema, safeJ
 const jakarta = Plus_Jakarta_Sans({
   variable: "--font-jakarta",
   subsets: ["latin"],
+  display: "swap",
+  fallback: ["system-ui", "-apple-system", "BlinkMacSystemFont", "Segoe UI", "sans-serif"],
 });
 
 export const metadata: Metadata = {
