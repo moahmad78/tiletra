@@ -60,6 +60,9 @@ export default function AdminSidebar({
     pendingVendors: 0,
     pendingProducts: 0,
     inquiriesCount: 0,
+    pendingOrders: 0,
+    pendingReviews: 0,
+    lowStock: 0,
   });
 
   const fetchStats = useCallback(async () => {
@@ -69,6 +72,9 @@ export default function AdminSidebar({
         pendingVendors: res.pendingVendors,
         pendingProducts: res.pendingProducts,
         inquiriesCount: res.inquiriesCount,
+        pendingOrders: res.pendingOrders,
+        pendingReviews: res.pendingReviews,
+        lowStock: res.lowStock,
       });
     } catch {
       // Ignore
@@ -81,20 +87,10 @@ export default function AdminSidebar({
     enableFocusRefresh: true,
   });
 
-  const pendingOrdersCount = orders.filter(
-    (o) => o.orderStatus === "Processing" || o.orderStatus === "Confirmed"
-  ).length;
-
-  const lowStockCount = products.filter((p) =>
-    p.variants.some((v) => v.stockBoxes < 15)
-  ).length;
-
-  const pendingReviewsCount = reviews.filter((r) => r.status === "pending").length;
-
   const badges: Record<string, number> = {
-    pendingOrders: pendingOrdersCount,
-    lowStock: lowStockCount,
-    pendingReviews: pendingReviewsCount,
+    pendingOrders: marketplaceStats.pendingOrders,
+    lowStock: marketplaceStats.lowStock,
+    pendingReviews: marketplaceStats.pendingReviews,
     pendingVendors: marketplaceStats.pendingVendors,
     pendingProducts: marketplaceStats.pendingProducts,
     inquiriesCount: marketplaceStats.inquiriesCount,

@@ -355,6 +355,9 @@ export async function getAdminMarketplaceStats() {
       pendingProducts,
       totalVendorProducts,
       inquiriesCount,
+      pendingOrders,
+      pendingReviews,
+      lowStock,
     ] = await Promise.all([
       prisma.vendor.count(),
       prisma.vendor.count({ where: { status: "pending" } }),
@@ -362,6 +365,9 @@ export async function getAdminMarketplaceStats() {
       prisma.product.count({ where: { approvalStatus: "pending" } }),
       prisma.product.count({ where: { vendorId: { not: null } } }),
       prisma.vendorApplication.count({ where: { status: "new_inquiry" } }),
+      prisma.order.count({ where: { orderStatus: { in: ["Processing", "Confirmed"] } } }),
+      prisma.review.count({ where: { status: "pending" } }),
+      prisma.productVariant.count({ where: { stockBoxes: { lt: 15 } } }),
     ]);
 
     return {
@@ -371,6 +377,9 @@ export async function getAdminMarketplaceStats() {
       pendingProducts,
       totalVendorProducts,
       inquiriesCount,
+      pendingOrders,
+      pendingReviews,
+      lowStock,
     };
   } catch (error) {
     console.error("Error fetching admin marketplace stats:", error);
@@ -381,6 +390,9 @@ export async function getAdminMarketplaceStats() {
       pendingProducts: 0,
       totalVendorProducts: 0,
       inquiriesCount: 0,
+      pendingOrders: 0,
+      pendingReviews: 0,
+      lowStock: 0,
     };
   }
 }

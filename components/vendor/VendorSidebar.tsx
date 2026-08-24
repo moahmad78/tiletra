@@ -21,12 +21,20 @@ import {
 } from "lucide-react";
 import { useVendorAuth } from "@/lib/vendor-auth";
 
-const navItems = [
+type VendorNavItem = {
+  name: string;
+  href: string;
+  icon: any;
+  exact?: boolean;
+  badge?: string;
+};
+
+const navItems: VendorNavItem[] = [
   { name: "Dashboard", href: "/vendor", icon: LayoutDashboard, exact: true },
   { name: "My Products", href: "/vendor/products", icon: Package },
-  { name: "Orders & Fulfillment", href: "/vendor/orders", icon: ShoppingBag, badge: "8b" },
+  { name: "Orders & Fulfillment", href: "/vendor/orders", icon: ShoppingBag },
   { name: "Inventory Stock", href: "/vendor/inventory", icon: Boxes },
-  { name: "Payouts & Earnings", href: "/vendor/payouts", icon: CreditCard, badge: "8c" },
+  { name: "Payouts & Earnings", href: "/vendor/payouts", icon: CreditCard },
   { name: "Customer Reviews", href: "/vendor/reviews", icon: MessageSquare },
   { name: "Shop Profile & KYC", href: "/vendor/settings", icon: Store },
   { name: "Support & Helpline", href: "/vendor/help", icon: Headphones },
