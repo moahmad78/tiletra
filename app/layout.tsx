@@ -8,6 +8,7 @@ import BottomTabBar from "@/components/BottomTabBar";
 import LoginModal from "@/components/auth/LoginModal";
 import GoogleSessionHydrator from "@/components/auth/GoogleSessionHydrator";
 import AddToCartToast from "@/components/cart/AddToCartToast";
+import PwaInstallPrompt from "@/components/pwa/PwaInstallPrompt";
 import { Toaster } from "sonner";
 
 import { BASE_SITE_URL, generateOrganizationSchema, generateWebSiteSchema, safeJsonLd } from "@/lib/seo";
@@ -137,6 +138,7 @@ export default function RootLayout({
           <AddToCartToast />
           <BottomTabBar />
           <LoginModal />
+          <PwaInstallPrompt />
           <Toaster position="top-center" richColors />
           <Suspense fallback={null}>
             <GoogleSessionHydrator />
