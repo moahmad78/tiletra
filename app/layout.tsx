@@ -8,6 +8,7 @@ import CartDrawer from "@/components/cart/CartDrawer";
 import BottomTabBar from "@/components/BottomTabBar";
 import LoginModal from "@/components/auth/LoginModal";
 import GoogleSessionHydrator from "@/components/auth/GoogleSessionHydrator";
+import GoogleAnalyticsTracker from "@/components/analytics/GoogleAnalyticsTracker";
 import AddToCartToast from "@/components/cart/AddToCartToast";
 import PwaInstallPrompt from "@/components/pwa/PwaInstallPrompt";
 import { Toaster } from "sonner";
@@ -160,6 +161,7 @@ export default function RootLayout({
           <Toaster position="top-center" richColors />
           <Suspense fallback={null}>
             <GoogleSessionHydrator />
+            <GoogleAnalyticsTracker measurementId={gaMeasurementId} />
           </Suspense>
         </QuoteModalProvider>
       </body>
