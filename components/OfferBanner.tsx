@@ -127,6 +127,8 @@ export default function OfferBanner({ slides }: { slides?: MobileBannerSlide[] }
                   className="object-cover"
                   sizes="(max-width: 768px) 100vw, 50vw"
                   priority={index === 0}
+                  fetchPriority={index === 0 ? "high" : "auto"}
+                  loading={index === 0 ? "eager" : "lazy"}
                 />
 
                 {/* Gradient overlay */}
@@ -157,17 +159,21 @@ export default function OfferBanner({ slides }: { slides?: MobileBannerSlide[] }
           );
         })}
 
-        {/* Dot Indicators */}
-        <div className="absolute bottom-2 right-3 z-20 flex items-center gap-1.5 bg-black/30 backdrop-blur-xs px-2 py-0.5 rounded-full">
+        {/* Dot Indicators (with accessible touch target) */}
+        <div className="absolute bottom-2 right-3 z-20 flex items-center gap-1 bg-black/30 backdrop-blur-xs px-1.5 py-0.5 rounded-full">
           {bannerSlides.map((_, i) => (
             <button
               key={i}
               onClick={() => setCurrent(i)}
               aria-label={`Slide ${i + 1}`}
-              className={`h-1.5 rounded-full transition-all duration-300 cursor-pointer ${
-                i === current ? "w-4 bg-[#F26522]" : "w-1.5 bg-white/60"
-              }`}
-            />
+              className="p-1 flex items-center justify-center cursor-pointer group"
+            >
+              <span
+                className={`h-1.5 rounded-full block transition-transform duration-300 ${
+                  i === current ? "w-4 bg-[#F26522]" : "w-1.5 bg-white/60 group-hover:bg-white"
+                }`}
+              />
+            </button>
           ))}
         </div>
       </div>

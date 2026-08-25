@@ -51,11 +51,13 @@ export default function Footer() {
                   <img
                     src="/logo/intri-web-logo.png"
                     alt="Intrihub Logo"
+                    width={150}
+                    height={32}
                     className="h-8 w-auto object-contain"
                   />
                 </Link>
               </div>
-              <p className="text-sm leading-relaxed mb-4">
+              <p className="text-sm leading-relaxed mb-4 text-white/80">
                 <strong>Everything for Every Space.</strong> India's complete interior & construction supply platform — tiles, electrical, plumbing, hardware, plywood, granite, aluminum doors & wallpaper delivered directly to your site.
               </p>
               
@@ -117,7 +119,7 @@ export default function Footer() {
 
             {/* Shop Categories */}
             <div>
-              <h4 className="text-white font-bold text-sm uppercase tracking-[2px] mb-5">Shop Categories</h4>
+              <h3 className="text-white font-bold text-sm uppercase tracking-[2px] mb-5">Shop Categories</h3>
               <ul className="space-y-2.5">
                 {shopLinks.map(({ label, href }) => (
                   <li key={href}>
@@ -135,7 +137,7 @@ export default function Footer() {
 
             {/* Help */}
             <div>
-              <h4 className="text-white font-bold text-sm uppercase tracking-[2px] mb-5">Help & Info</h4>
+              <h3 className="text-white font-bold text-sm uppercase tracking-[2px] mb-5">Help & Info</h3>
               <ul className="space-y-3">
                 {helpLinks.map(({ label, href }) => (
                   <li key={href}>
@@ -153,7 +155,7 @@ export default function Footer() {
 
             {/* Contact */}
             <div>
-              <h4 className="text-white font-bold text-sm uppercase tracking-[2px] mb-5">Contact Us</h4>
+              <h3 className="text-white font-bold text-sm uppercase tracking-[2px] mb-5">Contact Us</h3>
               <ul className="space-y-4 text-sm">
                 <li>
                   <RotatingFooterContact />

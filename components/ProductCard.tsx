@@ -53,7 +53,7 @@ export default function ProductCard({ product }: { product: Product }) {
               alt={product.name}
               fill
               className="object-cover transition-transform duration-500 group-hover:scale-110"
-              sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 25vw"
+              sizes="(max-width: 640px) 280px, (max-width: 1024px) 240px, 300px"
             />
             {/* Badges */}
             <div className="absolute top-3 left-3 flex flex-col gap-1.5 z-10 pointer-events-none">
@@ -155,12 +155,12 @@ export default function ProductCard({ product }: { product: Product }) {
                   )}
                 </div>
                 {priceInfo.formattedMrp && (
-                  <span className="text-xs text-gray-400 line-through">
+                  <span className="text-xs text-gray-500 line-through">
                     {priceInfo.formattedMrp}
                   </span>
                 )}
                 {priceInfo.discountPercent > 0 && (
-                  <span className="text-xs font-black text-emerald-600">
+                  <span className="text-xs font-black text-emerald-700">
                     {priceInfo.discountPercent}% off
                   </span>
                 )}

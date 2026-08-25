@@ -156,7 +156,7 @@ export default function DesktopCategoryRow({ categories }: DesktopCategoryRowPro
                         fill
                         loading="eager"
                         className="object-cover group-hover:scale-108 transition-transform duration-300"
-                        sizes="(max-width: 768px) 155px, 175px"
+                        sizes="175px"
                       />
                       <div className="absolute inset-0 bg-gradient-to-t from-black/20 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
                     </div>
@@ -165,7 +165,7 @@ export default function DesktopCategoryRow({ categories }: DesktopCategoryRowPro
                       <p className="text-xs sm:text-sm font-bold text-[#052a51] group-hover:text-[#F26522] transition-colors leading-tight line-clamp-1">
                         {cat.name}
                       </p>
-                      <span className="text-[11px] text-gray-400 font-semibold mt-1 inline-flex items-center gap-0.5 group-hover:text-[#F26522] transition-colors">
+                      <span className="text-[11px] text-gray-500 font-semibold mt-1 inline-flex items-center gap-0.5 group-hover:text-[#F26522] transition-colors">
                         {cat.productCount > 0 ? `${cat.productCount} Items` : "Explore"}
                         <ArrowRight size={10} className="opacity-0 group-hover:opacity-100 transition-opacity" />
                       </span>
@@ -181,6 +181,7 @@ export default function DesktopCategoryRow({ categories }: DesktopCategoryRowPro
                 <Link
                   key={`d2-${cat.slug}`}
                   href={`/shop/${cat.slug}`}
+                  tabIndex={-1}
                   className="shrink-0 w-[155px] sm:w-[165px] lg:w-[175px] group"
                 >
                   <div className="bg-white rounded-2xl p-2 border border-gray-200/90 shadow-2xs hover:shadow-md hover:border-[#F26522] transition-all text-center flex flex-col h-full active:scale-98">
@@ -191,7 +192,7 @@ export default function DesktopCategoryRow({ categories }: DesktopCategoryRowPro
                         fill
                         loading="eager"
                         className="object-cover group-hover:scale-108 transition-transform duration-300"
-                        sizes="(max-width: 768px) 155px, 175px"
+                        sizes="175px"
                       />
                       <div className="absolute inset-0 bg-gradient-to-t from-black/20 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
                     </div>
@@ -200,7 +201,7 @@ export default function DesktopCategoryRow({ categories }: DesktopCategoryRowPro
                       <p className="text-xs sm:text-sm font-bold text-[#052a51] group-hover:text-[#F26522] transition-colors leading-tight line-clamp-1">
                         {cat.name}
                       </p>
-                      <span className="text-[11px] text-gray-400 font-semibold mt-1 inline-flex items-center gap-0.5 group-hover:text-[#F26522] transition-colors">
+                      <span className="text-[11px] text-gray-500 font-semibold mt-1 inline-flex items-center gap-0.5 group-hover:text-[#F26522] transition-colors">
                         {cat.productCount > 0 ? `${cat.productCount} Items` : "Explore"}
                         <ArrowRight size={10} className="opacity-0 group-hover:opacity-100 transition-opacity" />
                       </span>
@@ -216,6 +217,7 @@ export default function DesktopCategoryRow({ categories }: DesktopCategoryRowPro
                 <Link
                   key={`d3-${cat.slug}`}
                   href={`/shop/${cat.slug}`}
+                  tabIndex={-1}
                   className="shrink-0 w-[155px] sm:w-[165px] lg:w-[175px] group"
                 >
                   <div className="bg-white rounded-2xl p-2 border border-gray-200/90 shadow-2xs hover:shadow-md hover:border-[#F26522] transition-all text-center flex flex-col h-full active:scale-98">
@@ -226,7 +228,7 @@ export default function DesktopCategoryRow({ categories }: DesktopCategoryRowPro
                         fill
                         loading="eager"
                         className="object-cover group-hover:scale-108 transition-transform duration-300"
-                        sizes="(max-width: 768px) 155px, 175px"
+                        sizes="175px"
                       />
                       <div className="absolute inset-0 bg-gradient-to-t from-black/20 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
                     </div>
@@ -235,7 +237,7 @@ export default function DesktopCategoryRow({ categories }: DesktopCategoryRowPro
                       <p className="text-xs sm:text-sm font-bold text-[#052a51] group-hover:text-[#F26522] transition-colors leading-tight line-clamp-1">
                         {cat.name}
                       </p>
-                      <span className="text-[11px] text-gray-400 font-semibold mt-1 inline-flex items-center gap-0.5 group-hover:text-[#F26522] transition-colors">
+                      <span className="text-[11px] text-gray-500 font-semibold mt-1 inline-flex items-center gap-0.5 group-hover:text-[#F26522] transition-colors">
                         {cat.productCount > 0 ? `${cat.productCount} Items` : "Explore"}
                         <ArrowRight size={10} className="opacity-0 group-hover:opacity-100 transition-opacity" />
                       </span>

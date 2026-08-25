@@ -100,6 +100,8 @@ export default function Header() {
                 <img
                   src="/logo/intri-web-logo.png"
                   alt="Intrihub Logo"
+                  width={150}
+                  height={40}
                   className="h-[30px] sm:h-[34px] md:h-[40px] w-auto object-contain transition-all duration-300 group-hover:scale-105"
                 />
               </Link>
@@ -114,7 +116,7 @@ export default function Header() {
                 className="w-full h-9 bg-gray-100/90 hover:bg-gray-100 border border-gray-200/80 rounded-full px-3 flex items-center gap-2 text-left transition-all shadow-2xs group active:scale-[0.99]"
               >
                 <Search size={14} className="text-[#F26522] shrink-0" />
-                <span className="text-xs text-gray-400 group-hover:text-gray-500 font-medium truncate">
+                <span className="text-xs text-gray-600 group-hover:text-gray-800 font-medium truncate">
                   Search tiles, wires, pipes, plywood...
                 </span>
               </button>
@@ -125,13 +127,14 @@ export default function Header() {
               <button
                 type="button"
                 onClick={() => setSearchOpen(true)}
+                aria-label="Search catalog"
                 className="w-full h-11 bg-gray-50 hover:bg-gray-100/80 border border-gray-200 hover:border-[#F26522] rounded-2xl px-4 flex items-center justify-between text-left transition-all shadow-2xs group"
               >
-                <div className="flex items-center gap-2.5 text-gray-400 group-hover:text-gray-600 text-xs font-semibold">
-                  <Search size={16} className="text-gray-400 group-hover:text-[#F26522] transition-colors" />
+                <div className="flex items-center gap-2.5 text-gray-600 group-hover:text-gray-800 text-xs font-semibold">
+                  <Search size={16} className="text-gray-500 group-hover:text-[#F26522] transition-colors" />
                   <span>Search tiles, electrical, plumbing, hardware, plywood, granite...</span>
                 </div>
-                <span className="text-[10px] font-bold text-gray-400 bg-white border border-gray-200 px-2 py-0.5 rounded-md shadow-2xs">
+                <span className="text-[10px] font-bold text-gray-600 bg-white border border-gray-300 px-2 py-0.5 rounded-md shadow-2xs">
                   ⌘K
                 </span>
               </button>

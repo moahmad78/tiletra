@@ -195,6 +195,7 @@ export default function CategoryIconRow({ categories }: { categories?: Category[
               <Link
                 key={`s2-${cat.slug}`}
                 href={`/shop/${cat.slug}`}
+                tabIndex={-1}
                 onClick={(e) => {
                   if (isDraggingRef.current) e.preventDefault();
                 }}
@@ -229,6 +230,7 @@ export default function CategoryIconRow({ categories }: { categories?: Category[
               <Link
                 key={`s3-${cat.slug}`}
                 href={`/shop/${cat.slug}`}
+                tabIndex={-1}
                 onClick={(e) => {
                   if (isDraggingRef.current) e.preventDefault();
                 }}

@@ -104,8 +104,10 @@ export default function DesktopBannerCarousel({ slides }: { slides?: BannerSlide
                 alt={slide.headline}
                 fill
                 priority={index === 0}
+                fetchPriority={index === 0 ? "high" : "auto"}
+                loading={index === 0 ? "eager" : "lazy"}
                 className="object-cover"
-                sizes="1400px"
+                sizes="(max-width: 1400px) 100vw, 1400px"
               />
 
               {/* Gradient Scrim for Readability */}
@@ -166,17 +168,21 @@ export default function DesktopBannerCarousel({ slides }: { slides?: BannerSlide
           <ChevronRight size={22} />
         </button>
 
-        {/* Dot Indicators */}
-        <div className="absolute bottom-4 left-1/2 -translate-x-1/2 z-30 flex items-center gap-2">
+        {/* Dot Indicators (with accessible 24px+ touch targets) */}
+        <div className="absolute bottom-4 left-1/2 -translate-x-1/2 z-30 flex items-center gap-1 bg-black/30 backdrop-blur-xs px-2 py-1 rounded-full">
           {bannerSlides.map((_, i) => (
             <button
               key={i}
               onClick={() => setCurrent(i)}
               aria-label={`Go to slide ${i + 1}`}
-              className={`h-2 rounded-full transition-all duration-300 cursor-pointer ${
-                i === current ? "w-7 bg-[#F26522]" : "w-2 bg-white/50 hover:bg-white"
-              }`}
-            />
+              className="p-1.5 flex items-center justify-center cursor-pointer group"
+            >
+              <span
+                className={`h-2 rounded-full block transition-transform duration-300 ${
+                  i === current ? "w-6 bg-[#F26522]" : "w-2 bg-white/60 group-hover:bg-white"
+                }`}
+              />
+            </button>
           ))}
         </div>
       </div>

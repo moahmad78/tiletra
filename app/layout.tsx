@@ -122,6 +122,14 @@ export default function RootLayout({
           }}
         />
 
+        {/* Preconnect to High-Priority Asset & Image CDNs */}
+        <link rel="preconnect" href="https://images.unsplash.com" crossOrigin="anonymous" />
+        <link rel="preconnect" href="https://images.orientbell.com" crossOrigin="anonymous" />
+        <link rel="preconnect" href="https://rukmini1.flixcart.com" crossOrigin="anonymous" />
+        <link rel="preconnect" href="https://5.imimg.com" crossOrigin="anonymous" />
+        <link rel="preconnect" href="https://encrypted-tbn0.gstatic.com" crossOrigin="anonymous" />
+        <link rel="preconnect" href="https://www.googletagmanager.com" crossOrigin="anonymous" />
+
         {/* Google Analytics 4 (gtag.js) */}
         <script
           async

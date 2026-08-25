@@ -115,18 +115,18 @@ export default function CompactProductCard({
                     {priceInfo.formattedPrice}
                   </span>
                   {priceInfo.unitSuffix && (
-                    <span className="text-[10px] font-semibold text-gray-400 leading-none ml-0.5">
+                    <span className="text-[10px] font-semibold text-gray-500 leading-none ml-0.5">
                       /{priceInfo.unitSuffix}
                     </span>
                   )}
                 </div>
                 {priceInfo.formattedMrp && (
-                  <span className="text-[10px] text-gray-400 line-through leading-none">
+                  <span className="text-[10px] text-gray-500 line-through leading-none">
                     {priceInfo.formattedMrp}
                   </span>
                 )}
                 {priceInfo.discountPercent > 0 && (
-                  <span className="text-[10px] font-black text-emerald-600 leading-none">
+                  <span className="text-[10px] font-black text-emerald-700 leading-none">
                     {priceInfo.discountPercent}% off
                   </span>
                 )}
