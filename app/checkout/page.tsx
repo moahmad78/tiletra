@@ -21,6 +21,8 @@ import AddressStep from "@/components/checkout-v2/AddressStep";
 import DeliveryStep from "@/components/checkout-v2/DeliveryStep";
 import PaymentStep, { type PaymentData } from "@/components/checkout-v2/PaymentStep";
 import OrderSummaryV2 from "@/components/checkout-v2/OrderSummaryV2";
+import Header from "@/components/Header";
+import Footer from "@/components/Footer";
 import { toast } from "sonner";
 
 export default function CheckoutPage() {
@@ -445,27 +447,32 @@ export default function CheckoutPage() {
   // If cart is empty, show empty state
   if (items.length === 0) {
     return (
-      <div className="min-h-[70vh] flex flex-col items-center justify-center px-4 py-12 text-center">
-        <div className="w-20 h-20 bg-orange-50 rounded-full flex items-center justify-center text-[#F26522] mb-4">
-          <ShoppingBag size={36} />
+      <main className="min-h-screen flex flex-col bg-[#F3F4F5] pt-[56px] md:pt-[124px]">
+        <Header />
+        <div className="flex-1 min-h-[60vh] flex flex-col items-center justify-center px-4 py-12 text-center">
+          <div className="w-20 h-20 bg-orange-50 rounded-full flex items-center justify-center text-[#F26522] mb-4">
+            <ShoppingBag size={36} />
+          </div>
+          <h2 className="text-2xl font-black text-[#052a51] mb-2">Your Cart is Empty</h2>
+          <p className="text-sm text-gray-500 max-w-sm mb-6">
+            Add tiles, granite, sanitaryware, or paints to your cart before proceeding to checkout.
+          </p>
+          <Link
+            href="/shop"
+            className="px-8 py-3.5 bg-[#052a51] hover:bg-[#041f3d] text-white text-sm font-black rounded-2xl shadow-md transition-all cursor-pointer"
+          >
+            Explore Catalog
+          </Link>
         </div>
-        <h2 className="text-2xl font-black text-[#052a51] mb-2">Your Cart is Empty</h2>
-        <p className="text-sm text-gray-500 max-w-sm mb-6">
-          Add tiles, granite, sanitaryware, or paints to your cart before proceeding to checkout.
-        </p>
-        <Link
-          href="/shop"
-          className="px-8 py-3.5 bg-[#052a51] hover:bg-[#041f3d] text-white text-sm font-black rounded-2xl shadow-md transition-all cursor-pointer"
-        >
-          Explore Catalog
-        </Link>
-      </div>
+        <Footer />
+      </main>
     );
   }
 
   return (
-    <div className="min-h-screen bg-gray-50/60 pb-16 pt-6">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 space-y-6">
+    <main className="min-h-screen flex flex-col bg-[#F3F4F5] pt-[56px] md:pt-[124px]">
+      <Header />
+      <div className="w-full max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 sm:py-8 flex-1 space-y-6">
         {/* Top Header */}
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-3">
@@ -612,6 +619,7 @@ export default function CheckoutPage() {
           </div>
         </div>
       </div>
-    </div>
+      <Footer />
+    </main>
   );
 }
