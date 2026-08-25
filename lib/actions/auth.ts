@@ -117,16 +117,53 @@ export async function updateUserProfile(
   data: { name?: string; email?: string; avatar?: string | null }
 ) {
   try {
-    if (!userId) return { success: false, error: "User ID required" };
+    const cleanEmail = data.email?.trim().toLowerCase();
+    let userToUpdate = null;
 
-    const updated = await prisma.user.update({
-      where: { id: userId },
-      data: {
-        name: data.name !== undefined ? data.name : undefined,
-        email: data.email !== undefined ? data.email : undefined,
-        avatar: data.avatar !== undefined ? data.avatar : undefined,
-      },
-    });
+    // 1. Try finding by database ID if it's a real DB ID
+    if (userId && !userId.startsWith("usr-")) {
+      userToUpdate = await prisma.user.findUnique({ where: { id: userId } });
+    }
+
+    // 2. Fallback: find by email if ID lookup missed
+    if (!userToUpdate && cleanEmail) {
+      userToUpdate = await prisma.user.findUnique({
+        where: { email: cleanEmail },
+      });
+    }
+
+    let updated;
+    if (userToUpdate) {
+      updated = await prisma.user.update({
+        where: { id: userToUpdate.id },
+        data: {
+          name: data.name !== undefined ? data.name.trim() : undefined,
+          email: cleanEmail || undefined,
+          avatar: data.avatar !== undefined ? data.avatar : undefined,
+        },
+      });
+    } else if (cleanEmail) {
+      // 3. Upsert if record not in DB yet
+      const syntheticPhone = `email_${cleanEmail.replace(/[^a-z0-9]/gi, "_")}`;
+      updated = await prisma.user.upsert({
+        where: { email: cleanEmail },
+        update: {
+          name: data.name !== undefined ? data.name.trim() : undefined,
+          avatar: data.avatar !== undefined ? data.avatar : undefined,
+        },
+        create: {
+          email: cleanEmail,
+          phone: syntheticPhone,
+          name: data.name?.trim() || cleanEmail.split("@")[0],
+          avatar: data.avatar || null,
+          role: "customer",
+          emailVerified: true,
+          authProvider: "email",
+        },
+      });
+    } else {
+      return { success: false, error: "User record not found" };
+    }
 
     safeRevalidate("/account");
     safeRevalidate("/account/orders");

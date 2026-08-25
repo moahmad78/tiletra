@@ -322,33 +322,45 @@ export const useAuthStore = create<AuthState>()(
         const currentUser = get().user;
         if (!currentUser) return { success: false, message: "Not logged in" };
 
+        const targetName = data.name !== undefined ? data.name.trim() : currentUser.name;
+        const targetEmail = data.email !== undefined ? data.email.trim().toLowerCase() : currentUser.email;
+        const targetAvatar = data.avatar !== undefined ? (data.avatar || undefined) : currentUser.avatar;
+
         try {
           const { updateUserProfile } = await import("@/lib/actions/auth");
-          const res = await updateUserProfile(currentUser.id, data);
+          const res = await updateUserProfile(currentUser.id, {
+            name: targetName,
+            email: targetEmail,
+            avatar: targetAvatar,
+          });
+
           if (res.success && res.user) {
             set((state) => ({
               user: state.user
                 ? {
                     ...state.user,
-                    name: res.user.name || state.user.name,
-                    email: res.user.email || state.user.email,
-                    avatar: res.user.avatar !== undefined ? (res.user.avatar || undefined) : state.user.avatar,
+                    id: res.user.id || state.user.id,
+                    name: res.user.name || targetName,
+                    email: res.user.email || targetEmail,
+                    avatar: res.user.avatar !== undefined ? (res.user.avatar || undefined) : targetAvatar,
+                    phone: res.user.phone || state.user.phone,
                   }
                 : null,
             }));
             return { success: true, message: "Profile updated successfully!" };
           }
         } catch (e: any) {
-          console.error("Failed to update profile:", e);
+          console.error("Failed to update profile on backend:", e);
         }
 
+        // Local state update fallback
         set((state) => ({
           user: state.user
             ? {
                 ...state.user,
-                name: data.name !== undefined ? data.name : state.user.name,
-                email: data.email !== undefined ? data.email : state.user.email,
-                avatar: data.avatar !== undefined ? (data.avatar || undefined) : state.user.avatar,
+                name: targetName,
+                email: targetEmail,
+                avatar: targetAvatar,
               }
             : null,
         }));
