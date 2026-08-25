@@ -52,46 +52,43 @@ export default function DeliveryStep({
   const calculatedFee = isFreeDelivery ? 0 : isBikeDelivery ? bikeRate : fourWheelerRate;
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-4 sm:space-y-6">
       <div>
-        <h3 className="text-base font-black text-[#052a51] flex items-center gap-2">
+        <h3 className="text-base sm:text-lg font-black text-[#052a51] flex items-center gap-2">
           <Truck size={18} className="text-[#F26522]" />
           Delivery & Logistics Method
         </h3>
-        <p className="text-xs text-gray-500 mt-0.5">
-          Calculated automatically based on your order value, total shipment weight, and vehicle capacity.
-        </p>
       </div>
 
       {/* Selected Vehicle Card */}
-      <div className="p-5 sm:p-6 bg-gradient-to-br from-white to-orange-50/30 rounded-3xl border-2 border-[#052a51] shadow-xs space-y-4">
-        <div className="flex items-start justify-between gap-4">
+      <div className="p-4 sm:p-6 bg-gradient-to-br from-white to-orange-50/20 rounded-2xl sm:rounded-3xl border-2 border-[#052a51] shadow-2xs space-y-3.5">
+        <div className="flex items-center justify-between gap-3">
           <div className="flex items-center gap-3">
-            <div className="p-3 bg-[#052a51] text-white rounded-2xl shrink-0 shadow-2xs">
+            <div className="p-2.5 sm:p-3 bg-[#052a51] text-white rounded-xl sm:rounded-2xl shrink-0 shadow-2xs">
               {isFreeDelivery ? (
-                <Sparkles size={24} className="text-amber-300" />
+                <Sparkles size={20} className="text-amber-300" />
               ) : isBikeDelivery ? (
-                <Bike size={24} className="text-orange-300" />
+                <Bike size={20} className="text-orange-300" />
               ) : (
-                <Truck size={24} className="text-orange-300" />
+                <Truck size={20} className="text-orange-300" />
               )}
             </div>
             <div>
-              <div className="flex items-center gap-2">
+              <div className="flex items-center gap-1.5 flex-wrap">
                 <h4 className="text-sm sm:text-base font-black text-[#052a51]">
                   {isFreeDelivery
-                    ? "Express Free Dispatch"
+                    ? "Free Delivery"
                     : isBikeDelivery
-                    ? "Two-Wheeler Express Courier"
-                    : "Heavy Logistics 4-Wheeler Truck"}
+                    ? "Express Bike Courier"
+                    : "4-Wheeler Logistics"}
                 </h4>
-                <span className="text-[10px] font-black uppercase text-[#2F7A4F] bg-green-50 px-2 py-0.5 rounded-full border border-green-200">
-                  Active Slab
+                <span className="text-[9px] font-black uppercase text-[#2F7A4F] bg-green-50 px-1.5 py-0.2 rounded-full border border-green-200">
+                  Active
                 </span>
               </div>
-              <p className="text-xs text-gray-600 font-medium mt-0.5 flex items-center gap-1.5">
-                <Clock size={13} className="text-[#F26522]" />
-                <span>Estimated Delivery: 2–4 Business Days across Bangalore & Hub Areas</span>
+              <p className="text-xs text-gray-500 font-medium mt-0.5 flex items-center gap-1">
+                <Clock size={12} className="text-[#F26522]" />
+                <span>Est. Delivery: 2–4 Days</span>
               </p>
             </div>
           </div>
@@ -113,64 +110,56 @@ export default function DeliveryStep({
         </div>
 
         {/* Calculation Logic Info Box */}
-        <div className="p-3.5 bg-white rounded-2xl border border-gray-200/80 text-xs space-y-1.5">
+        <div className="p-3 bg-white rounded-xl border border-gray-200/80 text-xs space-y-1">
           <div className="flex items-center justify-between text-gray-600">
-            <span>Total Shipment Weight:</span>
-            <span className="font-bold text-[#052a51]">{totalWeightKg.toFixed(1)} kg ({items.length} item{items.length > 1 ? "s" : ""})</span>
-          </div>
-          <div className="flex items-center justify-between text-gray-600">
-            <span>Vehicle Slab Rule:</span>
+            <span>Shipment Weight:</span>
             <span className="font-bold text-[#052a51]">
-              {isFreeDelivery
-                ? `Order Value (₹${subtotal.toLocaleString("en-IN")}) ≥ ₹${freeThreshold.toLocaleString("en-IN")}`
-                : totalWeightKg <= weightThreshold
-                ? `Weight (${totalWeightKg.toFixed(1)} kg) ≤ ${weightThreshold} kg (Bike)`
-                : `Weight (${totalWeightKg.toFixed(1)} kg) > ${weightThreshold} kg (4-Wheeler)`}
+              {totalWeightKg.toFixed(1)} kg ({items.length} item{items.length > 1 ? "s" : ""})
             </span>
           </div>
           <div className="flex items-center justify-between pt-1 border-t border-gray-100 font-bold">
-            <span className="text-[#052a51]">Applicable Delivery Fee:</span>
+            <span className="text-[#052a51]">Delivery Fee:</span>
             <span className={isFreeDelivery ? "text-[#2F7A4F]" : "text-[#F26522]"}>
-              {isFreeDelivery ? "₹0 (FREE DELIVERY APPLIED)" : `₹${calculatedFee}`}
+              {isFreeDelivery ? "FREE" : `₹${calculatedFee}`}
             </span>
           </div>
         </div>
 
         {/* Features Checklist */}
-        <div className="grid grid-cols-1 sm:grid-cols-3 gap-2.5 pt-1 text-xs text-gray-600">
-          <div className="flex items-center gap-1.5">
-            <PackageCheck size={14} className="text-[#2F7A4F]" />
-            <span>Fragile-Safe Packaging</span>
+        <div className="flex items-center gap-3 sm:gap-6 pt-1 text-[11px] font-medium text-gray-600 flex-wrap">
+          <div className="flex items-center gap-1">
+            <PackageCheck size={13} className="text-[#2F7A4F]" />
+            <span>Safe Packaging</span>
           </div>
-          <div className="flex items-center gap-1.5">
-            <ShieldCheck size={14} className="text-[#2F7A4F]" />
-            <span>Transit Insurance Included</span>
+          <div className="flex items-center gap-1">
+            <ShieldCheck size={13} className="text-[#2F7A4F]" />
+            <span>Transit Insurance</span>
           </div>
-          <div className="flex items-center gap-1.5">
-            <CheckCircle2 size={14} className="text-[#2F7A4F]" />
-            <span>Live SMS/OTP Tracking</span>
+          <div className="flex items-center gap-1">
+            <CheckCircle2 size={13} className="text-[#2F7A4F]" />
+            <span>Live Tracking</span>
           </div>
         </div>
       </div>
 
       {/* Action Buttons */}
-      <div className="flex items-center justify-between pt-2">
+      <div className="flex items-center justify-between pt-1">
         <button
           type="button"
           onClick={onBackToAddress}
-          className="px-4 py-2.5 text-xs font-bold text-gray-600 hover:text-gray-900 flex items-center gap-1.5 cursor-pointer"
+          className="px-3.5 py-2 text-xs font-bold text-gray-600 hover:text-gray-900 flex items-center gap-1 cursor-pointer"
         >
-          <ArrowLeft size={14} />
-          <span>Back to Address</span>
+          <ArrowLeft size={13} />
+          <span>Back</span>
         </button>
 
         <button
           type="button"
           onClick={onProceedToPayment}
-          className="px-7 py-3 bg-[#F26522] hover:bg-[#d95a1e] text-white font-black text-xs sm:text-sm rounded-2xl shadow-md transition-all flex items-center justify-center gap-2 cursor-pointer active:scale-95"
+          className="px-6 py-2.5 sm:px-7 sm:py-3 bg-[#F26522] hover:bg-[#d95a1e] text-white font-black text-xs sm:text-sm rounded-xl sm:rounded-2xl shadow-sm transition-all flex items-center justify-center gap-1.5 cursor-pointer active:scale-95"
         >
-          <span>Proceed to Payment</span>
-          <ArrowRight size={16} />
+          <span>Proceed to Pay</span>
+          <ArrowRight size={15} />
         </button>
       </div>
     </div>
