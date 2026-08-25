@@ -98,6 +98,7 @@ export default function RootLayout({
 }>) {
   const organizationSchema = generateOrganizationSchema();
   const websiteSchema = generateWebSiteSchema();
+  const gaMeasurementId = process.env.NEXT_PUBLIC_GA_MEASUREMENT_ID || "G-SXS2EF0WM1";
 
   return (
     <html
@@ -122,9 +123,9 @@ export default function RootLayout({
         />
       </head>
       <body className="min-h-full flex flex-col font-sans bg-white text-gray-900 pb-[60px] md:pb-0">
-        {/* Google tag (gtag.js) */}
+        {/* Google Analytics 4 (gtag.js) */}
         <Script
-          src="https://www.googletagmanager.com/gtag/js?id=G-SXS2EF0WM1"
+          src={`https://www.googletagmanager.com/gtag/js?id=${gaMeasurementId}`}
           strategy="afterInteractive"
         />
         <Script id="google-analytics" strategy="afterInteractive">
@@ -132,7 +133,7 @@ export default function RootLayout({
             window.dataLayer = window.dataLayer || [];
             function gtag(){dataLayer.push(arguments);}
             gtag('js', new Date());
-            gtag('config', 'G-SXS2EF0WM1');
+            gtag('config', '${gaMeasurementId}');
           `}
         </Script>
 
