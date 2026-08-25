@@ -110,18 +110,25 @@ export default function CompactProductCard({
             const priceInfo = getProductPriceInfo(product, defaultVariant);
             return (
               <div className="flex items-baseline gap-1.5 flex-wrap min-w-0">
-                <span className="text-[13px] sm:text-[14px] font-black text-[#052a51] leading-none tracking-tight">
-                  {priceInfo.formattedPrice}
-                </span>
+                <div className="flex items-baseline">
+                  <span className="text-[13px] sm:text-[14px] font-black text-[#052a51] leading-none tracking-tight">
+                    {priceInfo.formattedPrice}
+                  </span>
+                  {priceInfo.unitSuffix && (
+                    <span className="text-[10px] font-semibold text-gray-400 leading-none ml-0.5">
+                      /{priceInfo.unitSuffix}
+                    </span>
+                  )}
+                </div>
+                {priceInfo.formattedMrp && (
+                  <span className="text-[10px] text-gray-400 line-through leading-none">
+                    {priceInfo.formattedMrp}
+                  </span>
+                )}
                 {priceInfo.discountPercent > 0 && (
-                  <>
-                    <span className="text-[10px] text-gray-400 line-through leading-none">
-                      {priceInfo.formattedMrp}
-                    </span>
-                    <span className="text-[10px] font-black text-emerald-600 leading-none">
-                      {priceInfo.discountPercent}% off
-                    </span>
-                  </>
+                  <span className="text-[10px] font-black text-emerald-600 leading-none">
+                    {priceInfo.discountPercent}% off
+                  </span>
                 )}
               </div>
             );

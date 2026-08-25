@@ -9,6 +9,7 @@ import { updateVendorProduct, getVendorProfile } from "@/lib/actions/vendor";
 import { getCategories } from "@/lib/actions/categories";
 import type { Category } from "@/lib/data/categories";
 import type { Product } from "@/lib/data/products";
+import { UNIT_OF_SALE_OPTIONS } from "@/lib/units";
 import ImageUploadManager from "@/components/admin/ImageUploadManager";
 import VariantEditor from "@/components/admin/VariantEditor";
 import {
@@ -329,18 +330,16 @@ export default function VendorEditProductPage() {
                 Unit of Sale *
               </label>
               <select
+                required
                 value={unitOfSale}
                 onChange={(e) => setUnitOfSale(e.target.value)}
-                className="w-full bg-gray-50 border border-gray-200 rounded-xl px-4 py-3 text-sm font-medium text-gray-800 focus:bg-white focus:border-emerald-500 focus:outline-hidden transition-all"
+                className="w-full bg-gray-50 border border-gray-200 rounded-xl px-4 py-3 text-sm font-medium text-gray-800 focus:bg-white focus:border-emerald-500 focus:outline-hidden transition-all cursor-pointer"
               >
-                <option value="box">Box (Tiles/Hardware)</option>
-                <option value="piece">Piece / Unit</option>
-                <option value="sqft">Sq. Ft.</option>
-                <option value="meter">Meter (Pipes/Wires)</option>
-                <option value="coil">Coil (90m wire)</option>
-                <option value="kg">Kilogram (Adhesives/Grout)</option>
-                <option value="pack">Pack (Fasteners/Screws)</option>
-                <option value="roll">Roll (Waterproofing membrane)</option>
+                {UNIT_OF_SALE_OPTIONS.map((opt) => (
+                  <option key={opt.value} value={opt.value}>
+                    {opt.label}
+                  </option>
+                ))}
               </select>
             </div>
           </div>

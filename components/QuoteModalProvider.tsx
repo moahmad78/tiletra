@@ -144,12 +144,12 @@ ${fullName}`;
                     <h3 className="text-3xl font-bold text-[#052a51] mb-2">Thank you!</h3>
                     <p className="text-gray-600 mb-8 text-lg">Your email client has been opened to send the inquiry. Our team will contact you shortly.</p>
                     <div className="flex gap-4">
-                      <a href="tel:+917870935277" className="w-full">
+                      <a href="tel:+919264920211" className="w-full">
                         <Button className="w-full px-6 h-12 bg-[#052a51] hover:bg-[#031b36] text-white rounded-xl font-bold">
                           Call Now
                         </Button>
                       </a>
-                      <a href="https://wa.me/917870935277" target="_blank" rel="noopener noreferrer" className="w-full">
+                      <a href="https://wa.me/919264920211" target="_blank" rel="noopener noreferrer" className="w-full">
                         <Button className="w-full px-6 h-12 bg-[#25D366] hover:bg-[#20b858] text-white rounded-xl font-bold">
                           WhatsApp Us
                         </Button>

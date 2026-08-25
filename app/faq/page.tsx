@@ -35,7 +35,7 @@ export default function FAQPage() {
           <p className="text-gray-500 text-sm mt-1">Our customer support team is available Mon-Sat, 9AM to 8PM.</p>
           <div className="flex flex-wrap items-center justify-center gap-3 mt-5">
             <a
-              href="https://wa.me/917870935277"
+              href="https://wa.me/919264920211"
               target="_blank"
               rel="noopener noreferrer"
               className="px-6 h-11 bg-[#25D366] text-white text-sm font-bold rounded-xl flex items-center gap-2 hover:opacity-90 active:scale-95 transition-all shadow-sm"

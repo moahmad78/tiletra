@@ -144,18 +144,25 @@ export default function ProductCard({ product }: { product: Product }) {
             const priceInfo = getProductPriceInfo(product, defaultVariant);
             return (
               <div className="flex items-baseline gap-2 flex-wrap min-w-0">
-                <span className="text-[15px] sm:text-base font-black text-[#052a51] tracking-tight">
-                  {priceInfo.formattedPrice}
-                </span>
+                <div className="flex items-baseline">
+                  <span className="text-[15px] sm:text-base font-black text-[#052a51] tracking-tight">
+                    {priceInfo.formattedPrice}
+                  </span>
+                  {priceInfo.unitSuffix && (
+                    <span className="text-[11px] sm:text-xs font-semibold text-gray-500 ml-0.5">
+                      /{priceInfo.unitSuffix}
+                    </span>
+                  )}
+                </div>
+                {priceInfo.formattedMrp && (
+                  <span className="text-xs text-gray-400 line-through">
+                    {priceInfo.formattedMrp}
+                  </span>
+                )}
                 {priceInfo.discountPercent > 0 && (
-                  <>
-                    <span className="text-xs text-gray-400 line-through">
-                      {priceInfo.formattedMrp}
-                    </span>
-                    <span className="text-xs font-black text-emerald-600">
-                      {priceInfo.discountPercent}% off
-                    </span>
-                  </>
+                  <span className="text-xs font-black text-emerald-600">
+                    {priceInfo.discountPercent}% off
+                  </span>
                 )}
               </div>
             );

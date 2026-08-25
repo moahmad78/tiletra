@@ -388,19 +388,21 @@ export default function ProductDetailsClient({
                       <span className="text-3xl sm:text-4xl font-black text-[#052a51] tracking-tight">
                         {formatPrice(selectedVariant.pricePerBox)}
                       </span>
-                      <span className="text-sm sm:text-base font-bold text-gray-500 ml-1">
-                        /{selectedVariant.unit || definedProduct.unitOfSale || "unit"}
-                      </span>
+                      {priceInfo.unitSuffix && (
+                        <span className="text-sm sm:text-base font-bold text-gray-500 ml-1">
+                          /{priceInfo.unitSuffix}
+                        </span>
+                      )}
                     </div>
+                    {priceInfo.formattedMrp && (
+                      <span className="text-base sm:text-lg text-gray-400 line-through font-medium">
+                        {priceInfo.formattedMrp}
+                      </span>
+                    )}
                     {priceInfo.discountPercent > 0 && (
-                      <>
-                        <span className="text-base sm:text-lg text-gray-400 line-through font-medium">
-                          {priceInfo.formattedMrp}
-                        </span>
-                        <span className="text-base sm:text-lg font-black text-emerald-600">
-                          {priceInfo.discountPercent}% off
-                        </span>
-                      </>
+                      <span className="text-base sm:text-lg font-black text-emerald-600">
+                        {priceInfo.discountPercent}% off
+                      </span>
                     )}
                   </div>
 

@@ -10,6 +10,7 @@ import AttributeEditor from "@/components/admin/AttributeEditor";
 import { getProductById, updateProduct, deleteProduct } from "@/lib/actions/products";
 import { getCategories } from "@/lib/actions/categories";
 import type { Product, Material, ProductVariant, UnitOfSale, ProductAttribute } from "@/lib/data/products";
+import { UNIT_OF_SALE_OPTIONS, getDefaultUnitOfSale } from "@/lib/units";
 import type { Category } from "@/lib/data/categories";
 import { toast } from "sonner";
 
@@ -280,18 +281,16 @@ export default function EditProductPage({
               Unit of Sale *
             </label>
             <select
+              required
               value={unitOfSale}
               onChange={(e) => setUnitOfSale(e.target.value as UnitOfSale)}
-              className="w-full px-3.5 py-2.5 bg-gray-50 border border-gray-200 rounded-xl text-sm font-bold text-[#052a51] focus:outline-none focus:border-[#F26522] cursor-pointer capitalize"
+              className="w-full px-3.5 py-2.5 bg-gray-50 border border-gray-200 rounded-xl text-sm font-bold text-[#052a51] focus:outline-none focus:border-[#F26522] cursor-pointer"
             >
-              <option value="box">Box (Tiles & Flooring)</option>
-              <option value="sqft">Sq.ft (Cut Stone & Granite)</option>
-              <option value="piece">Piece (Switches, Pipes, Basins, Doors)</option>
-              <option value="meter">Meter (Aluminum Sections & Conduit)</option>
-              <option value="coil">Coil (Wires & Cables)</option>
-              <option value="kg">Kilogram (Cement & Adhesives)</option>
-              <option value="pack">Pack (Screws, Hinges, Fasteners)</option>
-              <option value="roll">Roll (Wallpaper & Waterproofing)</option>
+              {UNIT_OF_SALE_OPTIONS.map((opt) => (
+                <option key={opt.value} value={opt.value}>
+                  {opt.label}
+                </option>
+              ))}
             </select>
           </div>
 

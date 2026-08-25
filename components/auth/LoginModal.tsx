@@ -222,28 +222,29 @@ export default function LoginModal() {
         {/* Mobile drag handle */}
         <div className="md:hidden w-12 h-1.5 bg-gray-300 rounded-full mx-auto mt-3 mb-1" />
 
-        {/* Close / Back */}
-        {tab !== "choose" ? (
-          <button
-            onClick={goBack}
-            aria-label="Go back"
-            className="absolute top-4 left-4 z-20 w-8 h-8 rounded-full bg-gray-100 hover:bg-gray-200 text-gray-600 flex items-center justify-center transition-colors"
-          >
-            <ChevronLeft size={16} />
-          </button>
-        ) : null}
+        {/* Close Button */}
         <button
           onClick={closeLoginModal}
           aria-label="Close modal"
-          className="absolute top-4 right-4 z-20 w-8 h-8 rounded-full bg-gray-100 hover:bg-gray-200 text-gray-600 flex items-center justify-center transition-colors"
+          className="absolute top-4 right-4 z-20 w-8 h-8 rounded-full bg-white/10 hover:bg-white/20 text-white flex items-center justify-center transition-colors cursor-pointer"
         >
           <X size={16} />
         </button>
 
         {/* Header */}
         <div className="bg-gradient-to-br from-[#052a51] to-[#0a3869] text-white p-6 pt-7 md:pt-6">
-          <div className="flex items-center gap-2 mb-2">
-            <span className="px-2.5 py-0.5 rounded-md bg-[#F26522] text-[10px] font-black uppercase tracking-wider">
+          <div className="flex items-center gap-2 mb-2 pr-10">
+            {tab !== "choose" && (
+              <button
+                type="button"
+                onClick={goBack}
+                aria-label="Go back"
+                className="w-7 h-7 rounded-full bg-white/10 hover:bg-white/20 text-white flex items-center justify-center transition-colors cursor-pointer shrink-0"
+              >
+                <ChevronLeft size={16} />
+              </button>
+            )}
+            <span className="px-2.5 py-0.5 rounded-md bg-[#F26522] text-[10px] font-black uppercase tracking-wider shrink-0">
               Intrihub
             </span>
             <span className="text-xs text-white/70 font-semibold flex items-center gap-1">

@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useMemo, useRef } from "react";
 import Link from "next/link";
-import { ArrowRight, ChevronDown, Sparkles } from "lucide-react";
+import { ArrowRight, Sparkles } from "lucide-react";
 import CompactProductCard from "@/components/CompactProductCard";
 import { products as defaultProducts, type Product } from "@/lib/data/products";
 
@@ -21,7 +21,6 @@ export default function DiscoverMoreSection({
 }: DiscoverMoreSectionProps) {
   const [mounted, setMounted] = useState(false);
   const [allSuggestedProducts, setAllSuggestedProducts] = useState<Product[]>([]);
-  const [visibleCount, setVisibleCount] = useState(16);
 
   useEffect(() => {
     setMounted(true);
@@ -74,13 +73,9 @@ export default function DiscoverMoreSection({
   // Horizontal Quick Swipe list (Top 10-12 items)
   const horizontalProducts = allSuggestedProducts.slice(0, 12);
 
-  // Vertical Infinite/Expanding Grid items
-  const gridProducts = allSuggestedProducts.slice(0, visibleCount);
-  const hasMore = visibleCount < allSuggestedProducts.length;
-
   return (
     <section className="bg-white rounded-3xl p-4 sm:p-6 border border-gray-200/80 shadow-2xs space-y-4">
-      {/* ── Minimalist Clean Header (No bulky paragraphs or subtitles) ── */}
+      {/* ── Minimalist Clean Header ── */}
       <div className="flex items-center justify-between">
         <h3 className="text-base sm:text-lg font-black text-[#052a51] tracking-tight">
           {title}
@@ -116,28 +111,14 @@ export default function DiscoverMoreSection({
         </div>
       </div>
 
-      {/* ── 2. Continuous Vertical 2-Column Grid (All Catalog Items) ── */}
+      {/* ── 2. All Suggested Items Grid (Phone & Desktop) ── */}
       <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-4 gap-2.5 sm:gap-3.5">
-        {gridProducts.map((product) => (
+        {allSuggestedProducts.map((product) => (
           <div key={`g-${product.id}`} className="h-full">
             <CompactProductCard product={product} className="w-full h-full" />
           </div>
         ))}
       </div>
-
-      {/* Load More Continuous Feed Action */}
-      {hasMore && (
-        <div className="pt-2 text-center">
-          <button
-            type="button"
-            onClick={() => setVisibleCount((prev) => prev + 16)}
-            className="w-full sm:w-auto px-6 py-3 bg-gray-50 hover:bg-gray-100 border border-gray-200 rounded-2xl text-xs font-bold text-[#052a51] hover:text-[#F26522] transition-all flex items-center justify-center gap-2 mx-auto cursor-pointer shadow-2xs active:scale-98"
-          >
-            <span>Load More Items ({allSuggestedProducts.length - visibleCount} remaining)</span>
-            <ChevronDown size={14} />
-          </button>
-        </div>
-      )}
     </section>
   );
 }

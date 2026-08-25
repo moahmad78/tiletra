@@ -39,8 +39,8 @@ export default function CTA() {
             Book Free Site Visit
             <ArrowRight size={20} />
           </a>
-          <a href="tel:+917870935277" className="w-full sm:w-auto inline-flex items-center justify-center px-10 py-5 bg-transparent border border-white/30 text-white rounded-full font-bold text-lg hover:bg-white/10 hover:border-white/50 transition-all duration-500">
-            Call +91 78709 35277
+          <a href="tel:+919264920211" className="w-full sm:w-auto inline-flex items-center justify-center px-10 py-5 bg-transparent border border-white/30 text-white rounded-full font-bold text-lg hover:bg-white/10 hover:border-white/50 transition-all duration-500">
+            Call +91 92649 20211
           </a>
         </motion.div>
 

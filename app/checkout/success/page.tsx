@@ -22,7 +22,7 @@ const STEPS = ["Address", "Payment", "Order Done"] as const;
 function SuccessContent() {
   const searchParams = useSearchParams();
   const orderId =
-    searchParams.get("orderId") || "TL-" + Math.floor(100000 + Math.random() * 900000);
+    searchParams.get("orderId") || "IH-" + Math.floor(100000 + Math.random() * 900000);
   const method = searchParams.get("method") || "online";
   const total = searchParams.get("total");
 

@@ -10,8 +10,8 @@ export async function getStoreSettings() {
       settings = await prisma.storeSettings.create({
         data: {
           storeName: "Intrihub",
-          contactPhone: "+91 78709 35277",
-          whatsappNumber: "+91 78709 35277",
+          contactPhone: "+91 92649 20211",
+          whatsappNumber: "+91 92649 20211",
           email: "info@intrihub.com",
           address: "Intrihub Central Supply Hub, Begur, Bangalore, Karnataka - 560114",
           gstNumber: "29AABCT1234F1Z8",

@@ -833,10 +833,14 @@ export async function createRazorpayOrder({
   couponCode?: string;
 }) {
   try {
-    const key_id = process.env.RAZORPAY_KEY_ID;
-    const key_secret = process.env.RAZORPAY_KEY_SECRET;
+    const key_id = (process.env.RAZORPAY_KEY_ID || "").trim().replace(/^["']|["']$/g, "");
+    const key_secret = (process.env.RAZORPAY_KEY_SECRET || "").trim().replace(/^["']|["']$/g, "");
 
     if (!key_id || !key_secret) {
+      console.error("[Razorpay Order] Missing credentials in environment:", {
+        hasKeyId: Boolean(key_id),
+        hasKeySecret: Boolean(key_secret),
+      });
       return { success: false, error: "Razorpay credentials not configured on server" };
     }
 
@@ -906,7 +910,15 @@ export async function createRazorpayOrder({
       key_id,
     };
   } catch (error: any) {
-    console.error("Error creating Razorpay order:", error);
+    console.error("[Razorpay Order] ❌ FULL Razorpay Error Details:", {
+      code: error?.error?.code || error?.code,
+      description: error?.error?.description || error?.description || error?.message,
+      source: error?.error?.source,
+      step: error?.error?.step,
+      reason: error?.error?.reason,
+      field: error?.error?.field,
+      statusCode: error?.statusCode,
+    });
     return {
       success: false,
       error: error?.error?.description || error?.message || "Failed to create Razorpay order",

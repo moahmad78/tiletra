@@ -28,20 +28,10 @@ export async function sendEmailOtp(
 
   // Strict role-based verification before generating or sending any OTP
   if (purpose === "admin") {
-    const adminUser = await prisma.user.findFirst({
-      where: {
-        email: { equals: cleanEmail, mode: "insensitive" },
-        role: { in: ["admin", "staff"] },
-      },
-    });
-
-    const isHardcodedAdmin = [
-      "moahmadmail92@gmail.com",
-    ].includes(cleanEmail);
-
-    if (!adminUser && !isHardcodedAdmin) {
+    const { STRICT_ADMIN_EMAIL } = await import("@/lib/admin-constants");
+    if (cleanEmail !== STRICT_ADMIN_EMAIL.toLowerCase()) {
       // Generic error — do not reveal whether account exists
-      return { success: false, message: "Invalid credentials. Please check your email address." };
+      return { success: false, message: "Invalid credentials. Access denied." };
     }
   } else if (purpose === "vendor") {
     const vendorRecord = await prisma.vendor.findFirst({
@@ -87,10 +77,12 @@ export async function sendEmailOtp(
     };
   }
 
-  // Invalidate any previous unused tokens for this email
-  await prisma.emailOtpToken.updateMany({
-    where: { email: cleanEmail, used: false },
-    data: { used: true },
+  // Clean up expired tokens for this email
+  await prisma.emailOtpToken.deleteMany({
+    where: {
+      email: cleanEmail,
+      expiresAt: { lt: new Date() },
+    },
   });
 
   const otp = generateOtp();
@@ -107,7 +99,7 @@ export async function sendEmailOtp(
       console.log(`[DEV] Email OTP (${purpose}) for ${cleanEmail}: ${otp}`);
       return {
         success: true,
-        message: `OTP sent to ${cleanEmail}. (Dev mode: check server console)`,
+        message: "OTP sent successfully",
       };
     }
 
@@ -144,13 +136,13 @@ export async function sendEmailOtp(
         console.log(`[SANDBOX FALLBACK] Email OTP for ${cleanEmail}: ${otp}`);
         return {
           success: true,
-          message: `OTP sent to ${cleanEmail}. (Sandbox mode: check console for code)`,
+          message: "OTP sent successfully",
         };
       }
       return { success: false, message: "Failed to send OTP email. Please try again." };
     }
 
-    return { success: true, message: `OTP sent to ${cleanEmail}` };
+    return { success: true, message: "OTP sent successfully" };
   } catch (err) {
     console.error("sendEmailOtp error:", err);
     return { success: false, message: "Failed to send OTP. Please try again." };
@@ -202,45 +194,31 @@ export async function verifyEmailOtp(
   // Reset failed attempt counter on success
   resetFailedAttempts(`otp-fail:${cleanEmail}`);
 
-  // Mark token as used
-  await prisma.emailOtpToken.update({
-    where: { id: token.id },
+  // Mark ALL active tokens for this email as used immediately to prevent replay
+  await prisma.emailOtpToken.updateMany({
+    where: { email: cleanEmail, used: false },
     data: { used: true },
   });
 
   // Role validation on verification
   if (purpose === "admin") {
-    let adminUser = await prisma.user.findFirst({
-      where: {
-        email: { equals: cleanEmail, mode: "insensitive" },
-        role: { in: ["admin", "staff"] },
-      },
-    });
-
-    if (!adminUser) {
-      const isHardcodedAdmin = [
-        "moahmadmail92@gmail.com",
-      ].includes(cleanEmail);
-
-      if (isHardcodedAdmin) {
-        adminUser = await prisma.user.upsert({
-          where: { email: cleanEmail },
-          update: { emailVerified: true, role: "admin", authProvider: "email" },
-          create: {
-            email: cleanEmail,
-            phone: `email_${cleanEmail.replace(/[^a-z0-9]/gi, "_")}`,
-            name: "Super Admin",
-            role: "admin",
-            emailVerified: true,
-            authProvider: "email",
-          },
-        });
-      }
-    }
-
-    if (!adminUser || !["admin", "staff"].includes(adminUser.role)) {
+    const { STRICT_ADMIN_EMAIL } = await import("@/lib/admin-constants");
+    if (cleanEmail !== STRICT_ADMIN_EMAIL.toLowerCase()) {
       return { success: false, message: "Invalid credentials. Access denied." };
     }
+
+    const adminUser = await prisma.user.upsert({
+      where: { email: cleanEmail },
+      update: { emailVerified: true, role: "admin", authProvider: "email" },
+      create: {
+        email: cleanEmail,
+        phone: `email_${cleanEmail.replace(/[^a-z0-9]/gi, "_")}`,
+        name: "Super Admin",
+        role: "admin",
+        emailVerified: true,
+        authProvider: "email",
+      },
+    });
 
     return {
       success: true,

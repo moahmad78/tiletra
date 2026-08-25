@@ -99,7 +99,7 @@ export default function FAQ() {
                   Get Free Quote
                 </button>
                 <a 
-                  href="tel:+917870935277" 
+                  href="tel:+919264920211" 
                   className="w-full flex items-center justify-center h-[56px] bg-transparent border border-white/20 hover:bg-white/10 text-white rounded-[14px] font-bold text-lg transition-all"
                 >
                   Call Now

@@ -234,35 +234,76 @@ export default function HomeClient({
 
 
 
-        {/* ── SAMPLE CTA BANNER ────────────────────────────────────── */}
-        <section className="py-16 bg-[#052a51]">
-          <div className="w-full max-w-[1400px] mx-auto px-[20px] md:px-[24px] lg:px-[32px]">
-            <div className="flex flex-col md:flex-row items-center justify-between gap-8">
+        {/* ── QUICK COMMERCE DISPATCH & SITE DELIVERY BANNER ──────────────── */}
+        <section className="relative overflow-hidden py-12 md:py-16 bg-gradient-to-r from-[#031b34] via-[#052a51] to-[#08386a] border-y border-white/10 text-white">
+          {/* Subtle Ambient Glow Orbs */}
+          <div className="absolute -top-24 -left-24 w-80 h-80 bg-[#F26522]/15 rounded-full blur-3xl pointer-events-none" />
+          <div className="absolute -bottom-24 -right-24 w-80 h-80 bg-[#2F7A4F]/20 rounded-full blur-3xl pointer-events-none" />
+
+          <div className="relative w-full max-w-[1400px] mx-auto px-[20px] md:px-[24px] lg:px-[32px]">
+            <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-8 md:gap-12">
               <motion.div
-                initial={{ opacity: 0, x: -20 }}
-                whileInView={{ opacity: 1, x: 0 }}
+                initial={{ opacity: 0, y: 15 }}
+                whileInView={{ opacity: 1, y: 0 }}
                 viewport={{ once: true }}
+                className="max-w-2xl space-y-4"
               >
-                <p className="text-sm font-bold text-[#F26522] uppercase tracking-[3px] mb-2">
-                  Not sure yet?
-                </p>
-                <h2 className="text-[28px] md:text-[36px] font-black text-white leading-tight">
-                  Order a free sample first
+                <div className="inline-flex items-center gap-2 px-3 py-1 bg-white/10 backdrop-blur-md rounded-full border border-white/15 text-[11px] font-black uppercase tracking-wider text-amber-300">
+                  <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
+                  <span>⚡ Quick Commerce Express Site Delivery</span>
+                </div>
+
+                <h2 className="text-[26px] sm:text-[32px] md:text-[40px] font-black text-white leading-tight tracking-tight">
+                  Need Materials Fast? <br className="hidden sm:inline" />
+                  <span className="text-transparent bg-clip-text bg-gradient-to-r from-[#F26522] via-orange-300 to-amber-300">
+                    Get Same-Day Direct Site Dispatch
+                  </span>
                 </h2>
-                <p className="text-white/70 mt-2 max-w-md">
-                  Get a tile sample delivered to your home before you commit. Touch it, see it in your light, and order with confidence.
+
+                <p className="text-sm md:text-base text-white/80 leading-relaxed max-w-xl font-medium">
+                  Order Tiles, Granite, Paints, Plywood & Hardware with real-time GPS tracking, verified wholesale rates, and guaranteed damage-free unloading directly at your project.
                 </p>
+
+                {/* Quick-Commerce Feature Badges */}
+                <div className="grid grid-cols-2 sm:grid-cols-3 gap-2.5 pt-2 text-xs font-bold text-white/90">
+                  <div className="flex items-center gap-2 p-2 rounded-xl bg-white/5 border border-white/10 backdrop-blur-xs">
+                    <span className="text-[#F26522] text-sm font-black">⚡</span>
+                    <span>2–4 Hr Dispatch</span>
+                  </div>
+                  <div className="flex items-center gap-2 p-2 rounded-xl bg-white/5 border border-white/10 backdrop-blur-xs">
+                    <span className="text-[#2F7A4F] text-sm font-black">✓</span>
+                    <span>Free Above ₹15,000</span>
+                  </div>
+                  <div className="flex items-center gap-2 p-2 rounded-xl bg-white/5 border border-white/10 backdrop-blur-xs col-span-2 sm:col-span-1">
+                    <span className="text-amber-400 text-sm font-black">★</span>
+                    <span>Wholesale Rates</span>
+                  </div>
+                </div>
               </motion.div>
+
               <motion.div
-                initial={{ opacity: 0, x: 20 }}
-                whileInView={{ opacity: 1, x: 0 }}
+                initial={{ opacity: 0, scale: 0.95 }}
+                whileInView={{ opacity: 1, scale: 1 }}
                 viewport={{ once: true }}
+                className="flex flex-col sm:flex-row lg:flex-col gap-3 shrink-0"
               >
-                <Link href="/shop">
-                  <button className="h-14 px-8 bg-[#F26522] text-white font-bold text-base rounded-2xl hover:bg-[#d95a1e] transition-all hover:-translate-y-1 hover:shadow-xl whitespace-nowrap flex items-center gap-2 cursor-pointer">
-                    Request a Sample <ArrowRight size={18} />
+                <Link href="/shop" className="w-full sm:w-auto">
+                  <button className="w-full sm:w-auto h-13 px-8 bg-[#F26522] hover:bg-[#d95a1e] text-white font-black text-sm md:text-base rounded-2xl shadow-lg shadow-orange-500/25 transition-all hover:-translate-y-0.5 active:scale-95 flex items-center justify-center gap-2.5 cursor-pointer whitespace-nowrap">
+                    <span>Order for Instant Dispatch</span>
+                    <ArrowRight size={18} />
                   </button>
                 </Link>
+
+                <a
+                  href="https://wa.me/919264920211?text=Hi%20Intrihub,%20I%20need%20urgent%20building%20materials%20delivery%20to%20my%20site."
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="w-full sm:w-auto"
+                >
+                  <button className="w-full sm:w-auto h-12 px-6 bg-white/10 hover:bg-white/15 border border-white/20 text-white font-bold text-xs md:text-sm rounded-2xl transition-all flex items-center justify-center gap-2 cursor-pointer backdrop-blur-md">
+                    <span>💬 WhatsApp Quick Order Desk</span>
+                  </button>
+                </a>
               </motion.div>
             </div>
           </div>

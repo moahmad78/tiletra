@@ -61,10 +61,12 @@ export async function validateAdminCredentialsAndSendOtp(formData: {
     };
   }
 
-  // 4. Invalidate prior unused OTP tokens
-  await prisma.emailOtpToken.updateMany({
-    where: { email: cleanEmail, used: false },
-    data: { used: true },
+  // 4. Clean expired tokens for this email
+  await prisma.emailOtpToken.deleteMany({
+    where: {
+      email: cleanEmail,
+      expiresAt: { lt: new Date() },
+    },
   });
 
   // 5. Generate and store 6-digit OTP
@@ -166,9 +168,9 @@ export async function verifyAdmin2FaOtp(data: {
     };
   }
 
-  // 3. Mark token as used
-  await prisma.emailOtpToken.update({
-    where: { id: token.id },
+  // 3. Mark ALL active tokens for this email as used immediately to prevent replay
+  await prisma.emailOtpToken.updateMany({
+    where: { email: cleanEmail, used: false },
     data: { used: true },
   });
 

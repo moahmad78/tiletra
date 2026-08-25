@@ -16,6 +16,41 @@ export function formatPrice(n: number | string): string {
   return "₹" + num.toLocaleString("en-IN");
 }
 
+export function getPriceUnitSuffix(
+  product?: { unitOfSale?: string | null; categorySlug?: string | null; categoryName?: string | null } | null
+): string {
+  if (!product) return "";
+  const unit = (product.unitOfSale || "").toLowerCase().trim();
+  const catSlug = (product.categorySlug || "").toLowerCase().trim();
+  const catName = (product.categoryName || "").toLowerCase().trim();
+
+  // 1. Granite products -> "sqft"
+  if (
+    unit === "sqft" ||
+    unit === "sq.ft" ||
+    unit === "sq_ft" ||
+    catSlug === "granite" ||
+    catSlug.includes("granite") ||
+    catName.includes("granite")
+  ) {
+    return "sqft";
+  }
+
+  // 2. Tiles & Stone products -> "box"
+  if (
+    unit === "box" ||
+    catSlug === "tiles-stone" ||
+    catSlug === "tiles" ||
+    catSlug.includes("tile") ||
+    catName.includes("tile")
+  ) {
+    return "box";
+  }
+
+  // 3. All other categories -> no unit text appears
+  return "";
+}
+
 export function getProductPriceInfo(product: Product, variant?: ProductVariant | null) {
   const v = variant || (product?.variants && product.variants.length > 0 ? product.variants[0] : null);
   const price =
@@ -32,14 +67,23 @@ export function getProductPriceInfo(product: Product, variant?: ProductVariant |
     (product as any)?.originalPrice ??
     null;
 
-  const hasDiscount = existingMrp !== null && Number(existingMrp) > price;
-  const mrp = hasDiscount ? Number(existingMrp) : null;
+  let mrp: number | null = null;
+  if (existingMrp !== null && Number(existingMrp) > price) {
+    mrp = Number(existingMrp);
+  } else if (existingMrp === null || existingMrp === undefined || Number(existingMrp) <= price) {
+    // Default retail benchmark MRP (+30% rounded) so strikethrough price is always present
+    mrp = Math.round(price * 1.3);
+  }
+
+  const hasDiscount = mrp !== null && mrp > price;
   const discountPercent = hasDiscount && mrp ? Math.round(((mrp - price) / mrp) * 100) : 0;
+  const unitSuffix = getPriceUnitSuffix(product);
 
   return {
     price,
     mrp,
     discountPercent,
+    unitSuffix,
     formattedPrice: formatPrice(price),
     formattedMrp: mrp ? formatPrice(mrp) : null,
   };

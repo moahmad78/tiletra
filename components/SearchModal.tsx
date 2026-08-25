@@ -253,9 +253,16 @@ export default function SearchModal({
                       const priceInfo = getProductPriceInfo(product);
                       return (
                         <div className="flex flex-col items-end">
-                          <span className="text-xs sm:text-sm font-black text-[#052a51]">
-                            {priceInfo.formattedPrice}
-                          </span>
+                          <div className="flex items-baseline gap-0.5">
+                            <span className="text-xs sm:text-sm font-black text-[#052a51]">
+                              {priceInfo.formattedPrice}
+                            </span>
+                            {priceInfo.unitSuffix && (
+                              <span className="text-[10px] font-semibold text-gray-400">
+                                /{priceInfo.unitSuffix}
+                              </span>
+                            )}
+                          </div>
                           {priceInfo.discountPercent > 0 && (
                             <span className="text-[10px] font-bold text-emerald-600">
                               {priceInfo.discountPercent}% off

@@ -23,7 +23,7 @@ import PaymentStep, { type PaymentData } from "@/components/checkout-v2/PaymentS
 import OrderSummaryV2 from "@/components/checkout-v2/OrderSummaryV2";
 import { toast } from "sonner";
 
-export default function CheckoutPage() {
+export default function CheckoutV2Page() {
   const router = useRouter();
   const { user, isAuthenticated, openLoginModal } = useAuthStore();
   const { items, clearCart, getSubtotal, getTotalWeightKg } = useCartStore();
@@ -77,7 +77,7 @@ export default function CheckoutPage() {
           });
         }
       } catch (err) {
-        console.warn("[Checkout] Could not load store settings:", err);
+        console.warn("[Checkout-V2] Could not load store settings:", err);
       }
     }
     loadSettings();
@@ -276,7 +276,7 @@ export default function CheckoutPage() {
         await completeOrderInDb("COD", "Pending");
         toast.success("Cash on Delivery order placed successfully!");
       } catch (err: any) {
-        console.error("[Checkout] COD error:", err);
+        console.error("[Checkout-V2] COD error:", err);
         toast.error(err?.message || "Failed to place COD order");
       } finally {
         isPayingRef.current = false;
@@ -315,7 +315,7 @@ export default function CheckoutPage() {
 
       const orderData = await res.json();
       if (!res.ok || !orderData.order_id) {
-        console.error("[Checkout] Server Order Creation Error:", orderData);
+        console.error("[Checkout-V2] Server Order Creation Error:", orderData);
         toast.error(orderData.error || "Failed to initiate online payment order");
         isPayingRef.current = false;
         setIsProcessingPayment(false);
@@ -386,7 +386,7 @@ export default function CheckoutPage() {
               toast.error(verifyData.error || "Payment signature verification failed");
             }
           } catch (e: any) {
-            console.error("[Checkout] Verification error:", e);
+            console.error("[Checkout-V2] Verification error:", e);
             toast.error("Failed to verify payment with server");
           } finally {
             isPayingRef.current = false;
@@ -421,7 +421,7 @@ export default function CheckoutPage() {
       activeRzpRef.current = rzp;
 
       rzp.on("payment.failed", function (response: any) {
-        console.error("[Checkout] ❌ Razorpay Client Payment Failed Event:", {
+        console.error("[Checkout-V2] ❌ Razorpay Client Payment Failed Event:", {
           error: response?.error,
           code: response?.error?.code,
           description: response?.error?.description,
@@ -436,7 +436,7 @@ export default function CheckoutPage() {
 
       rzp.open();
     } catch (err: any) {
-      console.error("[Checkout] Payment error:", err);
+      console.error("[Checkout-V2] Payment error:", err);
       toast.error(err?.message || "An unexpected error occurred during payment");
       isPayingRef.current = false;
       setIsProcessingPayment(false);
@@ -452,7 +452,7 @@ export default function CheckoutPage() {
       });
       toast.success("QR Payment confirmed!");
     } catch (err: any) {
-      console.error("[Checkout] QR fulfillment error:", err);
+      console.error("[Checkout-V2] QR fulfillment error:", err);
       toast.error(err?.message || "Failed to finalize order");
     } finally {
       isPayingRef.current = false;

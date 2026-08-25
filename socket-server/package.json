@@ -1,7 +1,7 @@
 {
-  "name": "tiletra-socket-server",
+  "name": "intrihub-socket-server",
   "version": "1.0.0",
-  "description": "Real-time WebSocket Relay Server for Tiletra Admin and Customer Storefront",
+  "description": "Real-time WebSocket Relay Server for Intrihub Admin and Customer Storefront",
   "main": "index.js",
   "scripts": {
     "start": "node index.js",

@@ -140,7 +140,7 @@ export default function Hero() {
               >
                 Get Free Quote <ArrowRight className="ml-1 sm:ml-2 w-4 h-4 sm:w-5 sm:h-5 hidden sm:inline-block" />
               </Button>
-              <a href="tel:+917870935277" className="flex-1 sm:flex-none sm:w-auto">
+              <a href="tel:+919264920211" className="flex-1 sm:flex-none sm:w-auto">
                 <Button
                   size="lg"
                   className="w-full sm:px-8 bg-[#052a51]/80 hover:bg-[#031b36] backdrop-blur-md text-white rounded-[14px] h-[50px] sm:h-[56px] font-bold text-[14px] sm:text-lg border border-white/10 hover:-translate-y-1 transition-all whitespace-nowrap"

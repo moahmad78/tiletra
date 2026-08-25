@@ -1,7 +1,7 @@
 "use client";
 
-import { useState, useEffect } from "react";
-import { X, Printer, Download, Package, ShieldCheck, CheckCircle2 } from "lucide-react";
+import React, { useState, useEffect } from "react";
+import { X, Printer, Package } from "lucide-react";
 import { getStoreSettings } from "@/lib/actions/settings";
 
 interface OrderInvoiceModalProps {
@@ -37,10 +37,13 @@ export default function OrderInvoiceModal({
   if (!isOpen || !order) return null;
 
   const handlePrint = () => {
-    window.print();
+    if (typeof window !== "undefined") {
+      window.scrollTo(0, 0);
+      window.print();
+    }
   };
 
-  const invoiceNumber = `INV-${order.id.replace("TL-", "").replace("ord_", "").toUpperCase()}`;
+  const invoiceNumber = `INV-${(order.id || "").replace("IH-", "").replace("TL-", "").replace("ord_", "").toUpperCase()}`;
   const orderDate = new Date(order.createdAt || Date.now()).toLocaleDateString("en-IN", {
     day: "numeric",
     month: "long",
@@ -70,40 +73,107 @@ export default function OrderInvoiceModal({
       : "Site Delivery Address";
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 sm:p-6 md:p-8 bg-black/65 backdrop-blur-xs print:p-0 print:bg-white print:static">
+    <div className="invoice-print-backdrop fixed inset-0 z-50 flex items-center justify-center p-4 sm:p-6 md:p-8 bg-black/65 backdrop-blur-xs">
       <style jsx global>{`
         @media print {
-          body * {
-            visibility: hidden;
+          @page {
+            size: A4 portrait;
+            margin: 12mm 15mm 15mm 15mm;
           }
-          #printable-invoice,
-          #printable-invoice * {
-            visibility: visible;
+
+          html, body {
+            margin: 0 !important;
+            padding: 0 !important;
+            height: auto !important;
+            min-height: 0 !important;
+            max-height: none !important;
+            background: #ffffff !important;
+            color: #052a51 !important;
+            font-size: 11px !important;
+            -webkit-print-color-adjust: exact !important;
+            print-color-adjust: exact !important;
+            overflow: visible !important;
           }
-          #printable-invoice {
-            position: absolute;
-            left: 0;
-            top: 0;
-            width: 100%;
-            padding: 20px;
-            margin: 0;
-            background: white;
-            box-shadow: none;
-            border: none;
-          }
-          .no-print {
+
+          /* Hide everything in the page except the invoice modal */
+          header, footer, nav, aside, .no-print, [role="navigation"], [role="banner"], [role="complementary"] {
             display: none !important;
+          }
+
+          .invoice-print-backdrop {
+            position: static !important;
+            display: block !important;
+            padding: 0 !important;
+            margin: 0 !important;
+            background: transparent !important;
+            backdrop-filter: none !important;
+            inset: auto !important;
+            width: 100% !important;
+            max-width: 100% !important;
+            height: auto !important;
+            min-height: 0 !important;
+            max-height: none !important;
+            overflow: visible !important;
+            box-shadow: none !important;
+            border: none !important;
+          }
+
+          .invoice-print-card {
+            position: static !important;
+            display: block !important;
+            width: 100% !important;
+            max-width: 100% !important;
+            height: auto !important;
+            min-height: 0 !important;
+            max-height: none !important;
+            overflow: visible !important;
+            border: none !important;
+            box-shadow: none !important;
+            border-radius: 0 !important;
+            padding: 0 !important;
+            margin: 0 !important;
+            background: #ffffff !important;
+          }
+
+          .invoice-print-body {
+            position: static !important;
+            display: block !important;
+            width: 100% !important;
+            height: auto !important;
+            max-height: none !important;
+            overflow: visible !important;
+            padding: 0 !important;
+            margin: 0 !important;
+          }
+
+          .invoice-avoid-break {
+            break-inside: avoid !important;
+            page-break-inside: avoid !important;
+          }
+
+          table.invoice-table {
+            width: 100% !important;
+            border-collapse: collapse !important;
+          }
+
+          table.invoice-table thead {
+            display: table-header-group !important;
+          }
+
+          table.invoice-table tr {
+            break-inside: avoid !important;
+            page-break-inside: avoid !important;
           }
         }
       `}</style>
 
-      <div className="bg-white w-full max-w-3xl rounded-3xl shadow-2xl border border-gray-100 flex flex-col max-h-[92vh] overflow-hidden animate-in fade-in zoom-in-95 duration-200 print:max-h-none print:overflow-visible print:border-none print:shadow-none">
+      <div className="invoice-print-card bg-white w-full max-w-3xl rounded-3xl shadow-2xl border border-gray-100 flex flex-col max-h-[92vh] overflow-hidden animate-in fade-in zoom-in-95 duration-200">
         {/* Top Actions Bar (Hidden on print) */}
         <div className="px-6 py-4 border-b border-gray-100 flex items-center justify-between bg-gray-50 no-print">
           <div className="flex items-center gap-2">
             <Package size={18} className="text-[#F26522]" />
             <h3 className="font-black text-[#052a51] text-sm">
-              Tax Invoice: {order.id}
+              Tax Invoice: #{order.id}
             </h3>
           </div>
 
@@ -128,9 +198,9 @@ export default function OrderInvoiceModal({
         </div>
 
         {/* ── Printable Invoice Document ── */}
-        <div id="printable-invoice" className="flex-1 overflow-y-auto p-6 sm:p-10 text-[#052a51] bg-white">
+        <div className="invoice-print-body flex-1 overflow-y-auto p-6 sm:p-10 text-[#052a51] bg-white">
           {/* Header */}
-          <div className="flex flex-col sm:flex-row justify-between items-start gap-4 pb-6 border-b-2 border-gray-100">
+          <div className="invoice-avoid-break flex flex-col sm:flex-row justify-between items-start gap-4 pb-6 border-b-2 border-gray-100">
             <div>
               {/* eslint-disable-next-line @next/next/no-img-element */}
               <img
@@ -148,7 +218,7 @@ export default function OrderInvoiceModal({
                     GSTIN: {gstNumber}
                   </strong>
                 )}
-                Email: support@intrihub.com · Phone: +91 78709 35277
+                Email: support@intrihub.com · Phone: +91 92649 20211
               </p>
             </div>
 
@@ -168,7 +238,7 @@ export default function OrderInvoiceModal({
           </div>
 
           {/* Billed To / Shipping Address */}
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-6 py-5 border-b border-gray-100 text-xs">
+          <div className="invoice-avoid-break grid grid-cols-1 sm:grid-cols-2 gap-6 py-5 border-b border-gray-100 text-xs">
             <div>
               <span className="font-black text-gray-400 uppercase tracking-wider block mb-1">
                 Billed / Shipped To:
@@ -204,14 +274,14 @@ export default function OrderInvoiceModal({
 
           {/* Line Items Table */}
           <div className="py-6">
-            <table className="w-full text-left text-xs">
+            <table className="invoice-table w-full text-left text-xs">
               <thead>
                 <tr className="border-b-2 border-gray-200 text-gray-500 font-bold uppercase text-[10px] tracking-wider">
                   <th className="py-2.5">#</th>
                   <th className="py-2.5">Item & Description</th>
-                  <th className="py-2.5 text-center">Qty (Units)</th>
+                  <th className="py-2.5 text-center">Qty</th>
                   <th className="py-2.5 text-right">Unit Price</th>
-                  <th className="py-2.5 text-right">Total</th>
+                  <th className="py-2.5 text-right">Total Amount</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-gray-100 font-medium">
@@ -238,7 +308,7 @@ export default function OrderInvoiceModal({
           </div>
 
           {/* Summary Totals & GST Breakdown */}
-          <div className="border-t-2 border-gray-200 pt-4 flex flex-col items-end text-xs space-y-1.5">
+          <div className="invoice-avoid-break border-t-2 border-gray-200 pt-4 flex flex-col items-end text-xs space-y-1.5">
             <div className="flex justify-between w-72 text-gray-600">
               <span>Taxable Value (Excl. GST):</span>
               <span className="font-semibold">{formatPrice(taxableValue)}</span>
@@ -272,12 +342,12 @@ export default function OrderInvoiceModal({
               <span className="text-[#F26522]">{formatPrice(total)}</span>
             </div>
             <p className="text-[10px] text-gray-400 pt-1 text-right">
-              Amount in words: Indian Rupees Only
+              Amount in words: Indian Rupees Only (GST Included).
             </p>
           </div>
 
           {/* Terms & Footer */}
-          <div className="mt-8 pt-4 border-t border-gray-100 text-center text-[10px] text-gray-400 space-y-1">
+          <div className="invoice-avoid-break mt-8 pt-4 border-t border-gray-100 text-center text-[10px] text-gray-400 space-y-1">
             <p className="font-bold text-gray-500">
               Thank you for shopping with Intrihub — Everything for Every Space!
             </p>

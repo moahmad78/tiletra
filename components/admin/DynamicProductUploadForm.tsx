@@ -28,6 +28,7 @@ import VariantEditor from "@/components/admin/VariantEditor";
 import { createProduct } from "@/lib/actions/products";
 import { getVendorProfile } from "@/lib/actions/vendor";
 import type { ProductVariant } from "@/lib/data/products";
+import { UNIT_OF_SALE_OPTIONS, getDefaultUnitOfSale } from "@/lib/units";
 import { toast } from "sonner";
 
 // ── Category Definitions & Dynamic Config ──────────────────────────────
@@ -976,22 +977,21 @@ export default function DynamicProductUploadForm({
           {/* Unit of Sale */}
           <div>
             <label className="block text-xs font-bold text-gray-700 uppercase tracking-wider mb-1.5">
-              Unit of Sale
+              Unit of Sale *
             </label>
             <select
+              required
               value={unitOfSale}
               onChange={(e) => setUnitOfSale(e.target.value)}
               className="w-full px-4 py-3 bg-gray-50/70 border border-gray-200 rounded-2xl text-xs font-bold text-gray-800 focus:bg-white focus:outline-none focus:border-[#F26522] cursor-pointer"
             >
-              <option value="piece">Piece (Pcs)</option>
-              <option value="box">Box (Tiles / Screws)</option>
-              <option value="coil">Coil / Roll (Wires)</option>
-              <option value="litre">Litre / Bucket (Paints)</option>
-              <option value="sheet">Sheet / Board (Plywood)</option>
-              <option value="sqft">Square Feet (Sq.ft)</option>
-              <option value="meter">Meter (Pipes/Cables)</option>
+              {UNIT_OF_SALE_OPTIONS.map((opt) => (
+                <option key={opt.value} value={opt.value}>
+                  {opt.label}
+                </option>
+              ))}
             </select>
-            <p className="text-[10px] text-gray-400 mt-1">Billing & cart decrement unit</p>
+            <p className="text-[10px] text-gray-400 mt-1">Billing, cart & price suffix unit</p>
           </div>
         </div>
 
