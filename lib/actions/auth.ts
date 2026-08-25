@@ -114,10 +114,10 @@ export async function upsertCustomerUser(data: {
 
 export async function updateUserProfile(
   userId: string,
-  data: { name?: string; email?: string; avatar?: string | null }
+  data: { name?: string | null; email?: string | null; avatar?: string | null }
 ) {
   try {
-    const cleanEmail = data.email?.trim().toLowerCase();
+    const cleanEmail = data.email?.trim().toLowerCase() || undefined;
     let userToUpdate = null;
 
     // 1. Try finding by database ID if it's a real DB ID
@@ -132,12 +132,14 @@ export async function updateUserProfile(
       });
     }
 
+    const cleanName = data.name !== undefined ? (data.name?.trim() || null) : undefined;
+
     let updated;
     if (userToUpdate) {
       updated = await prisma.user.update({
         where: { id: userToUpdate.id },
         data: {
-          name: data.name !== undefined ? data.name.trim() : undefined,
+          name: cleanName !== undefined ? cleanName : undefined,
           email: cleanEmail || undefined,
           avatar: data.avatar !== undefined ? data.avatar : undefined,
         },
@@ -148,13 +150,13 @@ export async function updateUserProfile(
       updated = await prisma.user.upsert({
         where: { email: cleanEmail },
         update: {
-          name: data.name !== undefined ? data.name.trim() : undefined,
+          name: cleanName !== undefined ? cleanName : undefined,
           avatar: data.avatar !== undefined ? data.avatar : undefined,
         },
         create: {
           email: cleanEmail,
           phone: syntheticPhone,
-          name: data.name?.trim() || cleanEmail.split("@")[0],
+          name: cleanName || cleanEmail.split("@")[0],
           avatar: data.avatar || null,
           role: "customer",
           emailVerified: true,

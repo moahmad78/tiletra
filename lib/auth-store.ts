@@ -62,7 +62,7 @@ interface AuthState {
     phoneVerified?: boolean;
     createdAt?: string;
   }) => Promise<void>;
-  updateProfile: (data: { name?: string; email?: string; avatar?: string | null }) => Promise<{ success: boolean; message?: string }>;
+  updateProfile: (data: { name?: string | null; email?: string | null; avatar?: string | null }) => Promise<{ success: boolean; message?: string }>;
   updateUserPhone: (phone: string) => Promise<{ success: boolean; message?: string }>;
   logout: () => void;
   setHasHydrated: (v: boolean) => void;
@@ -322,8 +322,8 @@ export const useAuthStore = create<AuthState>()(
         const currentUser = get().user;
         if (!currentUser) return { success: false, message: "Not logged in" };
 
-        const targetName = data.name !== undefined ? data.name.trim() : currentUser.name;
-        const targetEmail = data.email !== undefined ? data.email.trim().toLowerCase() : currentUser.email;
+        const targetName = data.name !== undefined ? (data.name?.trim() || "") : currentUser.name;
+        const targetEmail = data.email !== undefined ? (data.email?.trim().toLowerCase() || "") : currentUser.email;
         const targetAvatar = data.avatar !== undefined ? (data.avatar || undefined) : currentUser.avatar;
 
         try {
