@@ -1,15 +1,19 @@
 "use client";
 
-import React, { useState } from "react";
+import React from "react";
 import {
-  Smartphone,
   CreditCard,
-  Building2,
   Banknote,
-  Lock,
   ShieldCheck,
+  Lock,
   ArrowLeft,
-  ChevronRight,
+  CheckCircle2,
+  Sparkles,
+  Smartphone,
+  Building2,
+  QrCode,
+  Truck,
+  Check,
 } from "lucide-react";
 import {
   UpiIcon,
@@ -22,18 +26,12 @@ import {
   NetBankingIcon,
   CodCashBadge,
 } from "@/components/checkout/PaymentIcons";
-import UpiIntentButtons, { type UpiSubOption } from "./UpiIntentButtons";
-import UpiCollectForm from "./UpiCollectForm";
-import UpiQrForm from "./UpiQrForm";
-import CardPaymentForm from "./CardPaymentForm";
-import NetBankingForm from "./NetBankingForm";
-import CodForm from "./CodForm";
 
-export type PaymentMethod = "upi" | "card" | "netbanking" | "cod";
+export type PaymentMethod = "online" | "cod" | "upi" | "card" | "netbanking";
 
 export interface PaymentData {
   method: PaymentMethod;
-  upiApp?: UpiSubOption;
+  upiApp?: string;
   vpa?: string;
   cardNumber?: string;
   cardExpiry?: string;
@@ -49,7 +47,7 @@ interface PaymentStepProps {
   paymentData: PaymentData;
   onPaymentDataChange: (data: PaymentData) => void;
   onTriggerPayment: () => void;
-  onQrPaymentSuccess: (paymentId: string) => void;
+  onQrPaymentSuccess?: (paymentId: string) => void;
   onBackToDelivery: () => void;
   isProcessing: boolean;
 }
@@ -61,306 +59,253 @@ export default function PaymentStep({
   paymentData,
   onPaymentDataChange,
   onTriggerPayment,
-  onQrPaymentSuccess,
   onBackToDelivery,
   isProcessing,
 }: PaymentStepProps) {
-  const [upiSubOption, setUpiSubOption] = useState<UpiSubOption>(paymentData.upiApp || "gpay");
-  const [vpa, setVpa] = useState(paymentData.vpa || "");
-  const [cardNumber, setCardNumber] = useState(paymentData.cardNumber || "");
-  const [cardExpiry, setCardExpiry] = useState(paymentData.cardExpiry || "");
-  const [cardCvv, setCardCvv] = useState(paymentData.cardCvv || "");
-  const [cardName, setCardName] = useState(paymentData.cardName || "");
-  const [selectedBank, setSelectedBank] = useState(paymentData.bankCode || "SBIN");
+  // Normalize method to either "online" or "cod"
+  const isOnline = paymentData.method !== "cod";
+  const formattedTotal = "₹" + totalAmount.toLocaleString("en-IN");
 
-  const handleSelectMethod = (method: PaymentMethod) => {
+  const handleSelectOnline = () => {
     onPaymentDataChange({
       ...paymentData,
-      method,
-      upiApp: method === "upi" ? upiSubOption : undefined,
+      method: "online",
     });
   };
 
-  const handleSelectUpiSubOption = (option: UpiSubOption) => {
-    setUpiSubOption(option);
+  const handleSelectCod = () => {
     onPaymentDataChange({
       ...paymentData,
-      method: "upi",
-      upiApp: option,
+      method: "cod",
     });
   };
-
-  const CATEGORIES: {
-    id: PaymentMethod;
-    title: string;
-    subtext: string;
-    icon: React.ReactNode;
-    badge?: string;
-  }[] = [
-    {
-      id: "upi",
-      title: "UPI",
-      subtext: "Google Pay, PhonePe, Paytm, QR",
-      icon: <Smartphone size={18} />,
-      badge: "Instant",
-    },
-    {
-      id: "card",
-      title: "Credit / Debit Card",
-      subtext: "Visa, Mastercard, RuPay & more",
-      icon: <CreditCard size={18} />,
-    },
-    {
-      id: "netbanking",
-      title: "Net Banking",
-      subtext: "50+ Supported Indian Banks",
-      icon: <Building2 size={18} />,
-    },
-    {
-      id: "cod",
-      title: "Cash on Delivery",
-      subtext: "Pay at site upon arrival",
-      icon: <Banknote size={18} />,
-    },
-  ];
 
   return (
-    <div className="space-y-6">
-      {/* Mobile Horizontal Tabs */}
-      <div className="md:hidden flex items-center gap-2 overflow-x-auto pb-2 scrollbar-none">
-        {CATEGORIES.map((cat) => {
-          const isSelected = paymentData.method === cat.id;
-          return (
-            <button
-              key={cat.id}
-              type="button"
-              onClick={() => handleSelectMethod(cat.id)}
-              className={`px-3.5 py-2.5 rounded-2xl text-xs font-bold whitespace-nowrap flex items-center gap-2 shrink-0 transition-all border ${
-                isSelected
-                  ? "bg-[#052a51] text-white border-[#052a51] shadow-2xs"
-                  : "bg-white text-gray-700 border-gray-200"
-              }`}
-            >
-              <span>{cat.icon}</span>
-              <span>{cat.title}</span>
-              {cat.badge && (
-                <span className="text-[9px] bg-[#F26522] text-white px-1.5 py-0.2 rounded font-black">
-                  {cat.badge}
-                </span>
-              )}
-            </button>
-          );
-        })}
+    <div className="bg-white rounded-3xl border border-gray-200/80 shadow-xs p-5 sm:p-7 space-y-6">
+      {/* Header */}
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 pb-4 border-b border-gray-100">
+        <div>
+          <div className="flex items-center gap-2">
+            <span className="w-6 h-6 rounded-full bg-[#052a51] text-white flex items-center justify-center text-xs font-black">
+              3
+            </span>
+            <h2 className="text-xl sm:text-2xl font-black text-gray-900 tracking-tight">
+              Payment Method
+            </h2>
+          </div>
+          <p className="text-xs sm:text-sm text-gray-500 mt-1">
+            Choose your preferred payment option to complete Order #{orderId}
+          </p>
+        </div>
+
+        <div className="flex items-center gap-1.5 text-xs font-bold text-emerald-700 bg-emerald-50 border border-emerald-200/60 px-3 py-1.5 rounded-full self-start sm:self-auto">
+          <ShieldCheck size={15} className="text-emerald-600" />
+          <span>256-Bit Bank Grade Security</span>
+        </div>
       </div>
 
-      {/* Main 2-Panel Layout on Desktop */}
-      <div className="bg-white rounded-3xl border border-gray-200/80 shadow-xs overflow-hidden">
-        <div className="grid grid-cols-1 md:grid-cols-12 min-h-[460px]">
-          {/* Left Panel: Payment Method Selector (Desktop) */}
-          <div className="hidden md:flex md:col-span-5 bg-gray-50/70 border-r border-gray-200/80 p-4 flex-col justify-between">
-            <div className="space-y-2">
-              <p className="text-[11px] font-black uppercase tracking-wider text-gray-400 px-3 py-1">
-                Select Payment Mode
-              </p>
-              {CATEGORIES.map((cat) => {
-                const isSelected = paymentData.method === cat.id;
-                return (
-                  <button
-                    key={cat.id}
-                    type="button"
-                    onClick={() => handleSelectMethod(cat.id)}
-                    className={`w-full p-3.5 rounded-2xl text-left transition-all flex items-center justify-between cursor-pointer border ${
-                      isSelected
-                        ? "bg-white border-[#052a51] shadow-2xs text-[#052a51]"
-                        : "bg-transparent border-transparent hover:bg-white/70 text-gray-600"
-                    }`}
-                  >
-                    <div className="flex items-center gap-3">
-                      <div
-                        className={`p-2 rounded-xl ${
-                          isSelected ? "bg-[#052a51] text-white" : "bg-gray-100 text-gray-600"
-                        }`}
-                      >
-                        {cat.icon}
-                      </div>
-                      <div>
-                        <div className="flex items-center gap-2">
-                          <p className="text-xs sm:text-sm font-black">{cat.title}</p>
-                          {cat.badge && (
-                            <span className="text-[9px] font-black bg-[#F26522] text-white px-1.5 py-0.2 rounded">
-                              {cat.badge}
-                            </span>
-                          )}
-                        </div>
-                        <p className="text-[11px] text-gray-400 font-medium">{cat.subtext}</p>
-                      </div>
-                    </div>
-                    <ChevronRight
-                      size={16}
-                      className={isSelected ? "text-[#052a51]" : "text-gray-300"}
-                    />
-                  </button>
-                );
-              })}
-            </div>
-
-            <div className="p-3 bg-white rounded-2xl border border-gray-200/60 text-[11px] text-gray-500 space-y-1 mt-4">
-              <p className="flex items-center gap-1.5 font-bold text-[#052a51]">
-                <Lock size={12} className="text-[#2F7A4F]" />
-                Bank-Grade 256-Bit Security
-              </p>
-              <p className="text-[10px] text-gray-400 leading-tight">
-                Direct integration with Razorpay PCI-DSS certified gateway.
-              </p>
-            </div>
+      {/* Two Simplified Stacked Option Cards */}
+      <div className="space-y-4">
+        {/* OPTION 1: ONLINE PAYMENT */}
+        <div
+          onClick={handleSelectOnline}
+          className={`relative rounded-2xl border-2 transition-all cursor-pointer overflow-hidden ${
+            isOnline
+              ? "border-[#052a51] bg-[#052a51]/[0.02] shadow-md ring-2 ring-[#052a51]/10"
+              : "border-gray-200 hover:border-gray-300 bg-white hover:bg-gray-50/50"
+          }`}
+        >
+          {/* Recommended Tag */}
+          <div className="absolute top-0 right-0">
+            <span className="inline-flex items-center gap-1 bg-gradient-to-r from-[#052a51] to-[#0A3D6B] text-white text-[10px] sm:text-xs font-extrabold px-3 py-1 rounded-bl-xl shadow-xs">
+              <Sparkles size={11} className="text-amber-300" /> Recommended
+            </span>
           </div>
 
-          {/* Right Panel: Selected Payment Form Content */}
-          <div className="md:col-span-7 p-5 sm:p-7 flex flex-col justify-between space-y-6">
-            {/* UPI Option */}
-            {paymentData.method === "upi" && (
-              <div className="space-y-5">
-                <div>
-                  <h3 className="text-sm sm:text-base font-black text-[#052a51]">
-                    Pay using Unified Payments Interface (UPI)
+          <div className="p-4 sm:p-6">
+            <div className="flex items-start gap-3.5 sm:gap-4">
+              {/* Radio Indicator */}
+              <div className="pt-0.5">
+                <div
+                  className={`w-5 h-5 rounded-full border-2 flex items-center justify-center transition-all ${
+                    isOnline
+                      ? "border-[#052a51] bg-[#052a51]"
+                      : "border-gray-300 bg-white"
+                  }`}
+                >
+                  {isOnline && <div className="w-2 h-2 rounded-full bg-white" />}
+                </div>
+              </div>
+
+              {/* Text & Icon Content */}
+              <div className="flex-1 pr-16 sm:pr-24">
+                <div className="flex items-center gap-2 flex-wrap">
+                  <h3 className="text-base sm:text-lg font-black text-gray-900">
+                    Online Payment
                   </h3>
-                  <p className="text-xs text-gray-500 mt-0.5">
-                    Select your UPI app, enter a UPI ID, or scan the dynamic QR code
-                  </p>
+                  <span className="text-[10px] font-black uppercase tracking-wider bg-emerald-100 text-emerald-800 px-2 py-0.5 rounded-full">
+                    Instant & Zero Extra Fee
+                  </span>
                 </div>
 
-                <UpiIntentButtons
-                  selectedSubOption={upiSubOption}
-                  onSelectSubOption={handleSelectUpiSubOption}
-                />
+                <p className="text-xs sm:text-sm text-gray-600 font-medium mt-1">
+                  Pay securely via UPI (Google Pay, PhonePe, Paytm, CRED), Credit/Debit Card, Net Banking, or QR Code.
+                </p>
 
-                {upiSubOption === "other" && (
-                  <UpiCollectForm
-                    vpa={vpa}
-                    onVpaChange={(newVpa) => {
-                      setVpa(newVpa);
-                      onPaymentDataChange({ ...paymentData, vpa: newVpa });
-                    }}
-                    onSubmit={onTriggerPayment}
-                    isProcessing={isProcessing}
-                    totalAmount={totalAmount}
-                  />
-                )}
+                {/* Visual Payment Badges */}
+                <div className="flex items-center gap-2 sm:gap-3 flex-wrap mt-3 pt-3 border-t border-gray-100">
+                  <div className="flex items-center gap-1.5 bg-gray-50 border border-gray-200/80 px-2.5 py-1 rounded-lg">
+                    <UpiIcon className="h-3.5 w-auto" />
+                    <span className="text-[11px] font-bold text-gray-700">UPI / QR</span>
+                  </div>
+                  <div className="flex items-center gap-1 bg-gray-50 border border-gray-200/80 px-2.5 py-1 rounded-lg">
+                    <GPayIcon className="h-3.5 w-auto" />
+                    <PhonePeIcon className="h-3.5 w-auto" />
+                    <PaytmIcon className="h-3.5 w-auto" />
+                  </div>
+                  <div className="flex items-center gap-1 bg-gray-50 border border-gray-200/80 px-2.5 py-1 rounded-lg">
+                    <VisaIcon className="h-3 w-auto" />
+                    <MastercardIcon className="h-3.5 w-auto" />
+                    <RuPayIcon className="h-3 w-auto" />
+                  </div>
+                  <div className="flex items-center gap-1 bg-gray-50 border border-gray-200/80 px-2.5 py-1 rounded-lg">
+                    <Building2 size={13} className="text-gray-600" />
+                    <span className="text-[11px] font-bold text-gray-700">50+ Banks</span>
+                  </div>
+                </div>
 
-                {upiSubOption === "qr" && (
-                  <UpiQrForm
-                    totalAmount={totalAmount}
-                    orderId={orderId}
-                    onPaymentSuccess={onQrPaymentSuccess}
-                  />
-                )}
-
-                {["gpay", "phonepe", "paytm"].includes(upiSubOption) && (
-                  <div className="space-y-4">
-                    <div className="p-4 bg-orange-50/60 border border-[#F26522]/20 rounded-2xl text-xs text-gray-700 space-y-1.5">
-                      <p className="font-bold text-[#052a51]">
-                        Direct App Authorization (
-                        {upiSubOption === "gpay"
-                          ? "Google Pay"
-                          : upiSubOption === "phonepe"
-                          ? "PhonePe"
-                          : "Paytm"}
-                        )
-                      </p>
-                      <p className="text-[11px] text-gray-600 leading-relaxed">
-                        On mobile, tapping Pay will seamlessly launch your UPI application. On desktop, a secure authorization request or QR will open for instant one-click approval.
-                      </p>
-                    </div>
-
-                    <button
-                      type="button"
-                      onClick={onTriggerPayment}
-                      disabled={isProcessing}
-                      className="w-full h-12 bg-[#F26522] hover:bg-[#d95a1e] text-white font-black text-xs sm:text-sm rounded-2xl shadow-md transition-all flex items-center justify-center gap-2 active:scale-95 disabled:opacity-50 cursor-pointer"
-                    >
-                      <span>
-                        {isProcessing
-                          ? "Connecting to UPI..."
-                          : `Pay ₹${totalAmount.toLocaleString("en-IN")} via ${
-                              upiSubOption === "gpay"
-                                ? "Google Pay"
-                                : upiSubOption === "phonepe"
-                                ? "PhonePe"
-                                : "Paytm"
-                            }`}
-                      </span>
-                    </button>
+                {/* Selected Details Preview */}
+                {isOnline && (
+                  <div className="mt-3.5 bg-blue-50/60 border border-blue-100 rounded-xl p-3 text-xs text-blue-900 flex items-start gap-2">
+                    <CheckCircle2 size={15} className="text-blue-600 shrink-0 mt-0.5" />
+                    <span>
+                      Clicking <strong>Pay {formattedTotal}</strong> will open the secure Razorpay payment window with all UPI, Card, Net Banking & Wallet options preloaded for you.
+                    </span>
                   </div>
                 )}
               </div>
-            )}
+            </div>
+          </div>
+        </div>
 
-            {/* Card Option */}
-            {paymentData.method === "card" && (
-              <CardPaymentForm
-                totalAmount={totalAmount}
-                cardNumber={cardNumber}
-                cardExpiry={cardExpiry}
-                cardCvv={cardCvv}
-                cardName={cardName}
-                onCardNumberChange={(val) => {
-                  setCardNumber(val);
-                  onPaymentDataChange({ ...paymentData, cardNumber: val });
-                }}
-                onCardExpiryChange={(val) => {
-                  setCardExpiry(val);
-                  onPaymentDataChange({ ...paymentData, cardExpiry: val });
-                }}
-                onCardCvvChange={(val) => {
-                  setCardCvv(val);
-                  onPaymentDataChange({ ...paymentData, cardCvv: val });
-                }}
-                onCardNameChange={(val) => {
-                  setCardName(val);
-                  onPaymentDataChange({ ...paymentData, cardName: val });
-                }}
-                onSubmit={onTriggerPayment}
-                isProcessing={isProcessing}
-              />
-            )}
+        {/* OPTION 2: CASH ON DELIVERY */}
+        <div
+          onClick={handleSelectCod}
+          className={`relative rounded-2xl border-2 transition-all cursor-pointer overflow-hidden ${
+            !isOnline
+              ? "border-[#052a51] bg-[#052a51]/[0.02] shadow-md ring-2 ring-[#052a51]/10"
+              : "border-gray-200 hover:border-gray-300 bg-white hover:bg-gray-50/50"
+          }`}
+        >
+          <div className="p-4 sm:p-6">
+            <div className="flex items-start gap-3.5 sm:gap-4">
+              {/* Radio Indicator */}
+              <div className="pt-0.5">
+                <div
+                  className={`w-5 h-5 rounded-full border-2 flex items-center justify-center transition-all ${
+                    !isOnline
+                      ? "border-[#052a51] bg-[#052a51]"
+                      : "border-gray-300 bg-white"
+                  }`}
+                >
+                  {!isOnline && <div className="w-2 h-2 rounded-full bg-white" />}
+                </div>
+              </div>
 
-            {/* Net Banking Option */}
-            {paymentData.method === "netbanking" && (
-              <NetBankingForm
-                selectedBank={selectedBank}
-                onSelectBank={(code) => {
-                  setSelectedBank(code);
-                  onPaymentDataChange({ ...paymentData, bankCode: code });
-                }}
-                onSubmit={onTriggerPayment}
-                isProcessing={isProcessing}
-                totalAmount={totalAmount}
-              />
-            )}
+              {/* Text & Icon Content */}
+              <div className="flex-1">
+                <div className="flex items-center gap-2 flex-wrap">
+                  <h3 className="text-base sm:text-lg font-black text-gray-900">
+                    Cash on Delivery (COD)
+                  </h3>
+                  <span className="text-[10px] font-black uppercase tracking-wider bg-amber-100 text-amber-900 px-2 py-0.5 rounded-full">
+                    Pay at Doorstep / Site
+                  </span>
+                </div>
 
-            {/* Cash on Delivery Option */}
-            {paymentData.method === "cod" && (
-              <CodForm
-                totalAmount={totalAmount}
-                pincode={pincode}
-                onSubmit={onTriggerPayment}
-                isProcessing={isProcessing}
-              />
-            )}
+                <p className="text-xs sm:text-sm text-gray-600 font-medium mt-1">
+                  Pay in cash or via UPI scanning directly to the delivery partner upon receiving materials at your delivery site.
+                </p>
+
+                {/* Pincode Availability Indicator */}
+                <div className="flex items-center gap-2 mt-3 pt-3 border-t border-gray-100 flex-wrap">
+                  <div className="flex items-center gap-1.5 text-xs font-bold text-emerald-700 bg-emerald-50 border border-emerald-200/60 px-2.5 py-1 rounded-lg">
+                    <Check size={13} className="text-emerald-600" />
+                    <span>Available for {pincode ? `PIN ${pincode}` : "your delivery address"}</span>
+                  </div>
+                  <div className="flex items-center gap-1.5 text-xs font-medium text-gray-500">
+                    <Truck size={13} />
+                    <span>Verified dispatch to site</span>
+                  </div>
+                </div>
+
+                {/* Selected Details Preview */}
+                {!isOnline && (
+                  <div className="mt-3.5 bg-amber-50/70 border border-amber-200/60 rounded-xl p-3 text-xs text-amber-900 flex items-start gap-2">
+                    <Banknote size={15} className="text-amber-700 shrink-0 mt-0.5" />
+                    <span>
+                      Please ensure the exact amount of <strong>{formattedTotal}</strong> or an active UPI app is available at the time of delivery.
+                    </span>
+                  </div>
+                )}
+              </div>
+            </div>
           </div>
         </div>
       </div>
 
-      {/* Back button */}
-      <div className="flex items-center justify-start pt-1">
+      {/* Action CTA & Navigation */}
+      <div className="pt-4 border-t border-gray-100 flex flex-col-reverse sm:flex-row items-center justify-between gap-3">
         <button
           type="button"
           onClick={onBackToDelivery}
-          className="px-4 py-2 text-xs font-bold text-gray-600 hover:text-gray-900 flex items-center gap-1.5 cursor-pointer"
+          disabled={isProcessing}
+          className="w-full sm:w-auto inline-flex items-center justify-center gap-2 px-5 py-3 rounded-2xl text-sm font-bold text-gray-700 bg-gray-100 hover:bg-gray-200 transition-colors disabled:opacity-50 cursor-pointer"
         >
-          <ArrowLeft size={14} />
-          <span>Back to Delivery Options</span>
+          <ArrowLeft size={16} />
+          Back to Delivery
         </button>
+
+        <button
+          type="button"
+          onClick={onTriggerPayment}
+          disabled={isProcessing}
+          className={`w-full sm:w-auto inline-flex items-center justify-center gap-2 px-8 py-3.5 rounded-2xl text-sm sm:text-base font-black text-white shadow-md transition-all cursor-pointer disabled:opacity-60 disabled:cursor-not-allowed ${
+            isOnline
+              ? "bg-[#052a51] hover:bg-[#0A3D6B] active:scale-[0.99]"
+              : "bg-[#F26522] hover:bg-[#d95315] active:scale-[0.99]"
+          }`}
+        >
+          {isProcessing ? (
+            <>
+              <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+              <span>Processing Order...</span>
+            </>
+          ) : isOnline ? (
+            <>
+              <Lock size={16} />
+              <span>Pay {formattedTotal} Securely</span>
+            </>
+          ) : (
+            <>
+              <Truck size={16} />
+              <span>Place Cash on Delivery Order ({formattedTotal})</span>
+            </>
+          )}
+        </button>
+      </div>
+
+      {/* Security & Trust Footer */}
+      <div className="pt-2 flex items-center justify-center gap-6 text-[11px] font-semibold text-gray-400">
+        <span className="flex items-center gap-1">
+          <ShieldCheck size={13} className="text-emerald-500" /> 100% Purchase Protection
+        </span>
+        <span className="hidden sm:inline">•</span>
+        <span className="flex items-center gap-1">
+          <Lock size={12} className="text-gray-400" /> Razorpay Verified Gateway
+        </span>
+        <span className="hidden sm:inline">•</span>
+        <span>Instant Order Confirmation</span>
       </div>
     </div>
   );

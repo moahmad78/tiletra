@@ -46,12 +46,9 @@ export default function CheckoutPage() {
   const [couponCode, setCouponCode] = useState("");
   const [discountAmount, setDiscountAmount] = useState(0);
 
-  // Payment Selection State
+  // Payment Selection State (Simplified: Online Payment vs COD)
   const [paymentData, setPaymentData] = useState<PaymentData>({
-    method: "upi",
-    upiApp: "gpay",
-    vpa: "",
-    bankCode: "SBIN",
+    method: "online",
   });
 
   const [isProcessingPayment, setIsProcessingPayment] = useState(false);
@@ -331,14 +328,7 @@ export default function CheckoutPage() {
       const razorpayKey =
         orderData.key_id ||
         process.env.NEXT_PUBLIC_RAZORPAY_KEY_ID ||
-        "rzp_live_TRwZ7JnWhHsutK";
-
-      const rzpMethod =
-        paymentData.method === "card"
-          ? "card"
-          : paymentData.method === "netbanking"
-          ? "netbanking"
-          : "upi";
+        "rzp_live_TU11DGRRHXy1CH";
 
       const options: any = {
         key: razorpayKey,
@@ -352,7 +342,6 @@ export default function CheckoutPage() {
           name: customerName,
           email: customerEmail,
           contact: normalizedPhone || undefined,
-          method: rzpMethod,
         },
         theme: {
           color: "#052a51",
@@ -401,13 +390,6 @@ export default function CheckoutPage() {
           },
         },
       };
-
-      if (paymentData.method === "netbanking" && paymentData.bankCode) {
-        options.prefill.bank = paymentData.bankCode;
-      }
-      if (paymentData.method === "upi" && paymentData.vpa) {
-        options.prefill.vpa = paymentData.vpa;
-      }
 
       if (activeRzpRef.current) {
         try {
