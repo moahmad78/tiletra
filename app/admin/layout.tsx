@@ -33,6 +33,15 @@ export default function AdminLayout({
     return <div className="min-h-screen bg-[#F3F4F5]">{children}</div>;
   }
 
+  // Block dashboard content for unauthenticated users while redirecting
+  if (!isAuthenticated) {
+    return (
+      <div className="min-h-screen bg-[#F3F4F5] flex items-center justify-center">
+        <div className="w-8 h-8 border-3 border-[#052a51] border-t-transparent rounded-full animate-spin" />
+      </div>
+    );
+  }
+
   return (
     <div className="min-h-screen bg-[#F3F4F5] flex">
       {/* 10-Minute Inactivity Auto-Logout Guard */}

@@ -23,7 +23,7 @@ export default function AdminInactivityGuard() {
     if (now - lastThrottleRef.current > 2000) {
       lastThrottleRef.current = now;
       try {
-        localStorage.setItem(STORAGE_KEY, now.toString());
+        sessionStorage.setItem(STORAGE_KEY, now.toString());
       } catch {}
       warnedRef.current = false;
     }
@@ -32,7 +32,7 @@ export default function AdminInactivityGuard() {
   const handleAutoLogout = useCallback(() => {
     logout();
     try {
-      localStorage.removeItem(STORAGE_KEY);
+      sessionStorage.removeItem(STORAGE_KEY);
     } catch {}
     toast.error("Session expired due to 10 minutes of inactivity. Please log in again.", {
       duration: 6000,
@@ -47,9 +47,11 @@ export default function AdminInactivityGuard() {
     }
 
     // Initialize last active timestamp if not already set
-    const stored = localStorage.getItem(STORAGE_KEY);
+    const stored = typeof window !== "undefined" ? sessionStorage.getItem(STORAGE_KEY) : null;
     if (!stored) {
-      localStorage.setItem(STORAGE_KEY, Date.now().toString());
+      try {
+        sessionStorage.setItem(STORAGE_KEY, Date.now().toString());
+      } catch {}
     }
 
     // Activity event listeners
@@ -71,7 +73,7 @@ export default function AdminInactivityGuard() {
 
     // Check inactivity periodically
     const interval = setInterval(() => {
-      const lastActiveStr = localStorage.getItem(STORAGE_KEY);
+      const lastActiveStr = typeof window !== "undefined" ? sessionStorage.getItem(STORAGE_KEY) : null;
       const lastActive = lastActiveStr ? parseInt(lastActiveStr, 10) : Date.now();
       const idleTime = Date.now() - lastActive;
 
