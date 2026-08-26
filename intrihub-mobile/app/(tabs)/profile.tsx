@@ -15,6 +15,7 @@ import { useRouter } from "expo-router";
 import {
   User,
   MapPin,
+  Heart,
   Bell,
   PhoneCall,
   MessageCircle,
@@ -104,6 +105,17 @@ export default function ProfileScreen() {
         {/* Section: Account Actions */}
         <View style={styles.menuGroup}>
           <Text style={styles.groupTitle}>ACCOUNT & PREFERENCES</Text>
+
+          <TouchableOpacity
+            style={styles.menuItem}
+            onPress={() => router.push("/wishlist" as any)}
+          >
+            <View style={styles.menuLeft}>
+              <Heart size={20} color={COLORS.accentOrange} />
+              <Text style={styles.menuLabel}>My Wishlist</Text>
+            </View>
+            <ChevronRight size={18} color={COLORS.textMuted} />
+          </TouchableOpacity>
 
           <TouchableOpacity
             style={styles.menuItem}

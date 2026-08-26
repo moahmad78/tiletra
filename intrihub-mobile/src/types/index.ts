@@ -48,6 +48,7 @@ export interface ProductVariant {
   thickness?: string | null;
   pricePerSqft?: number | null;
   pricePerBox?: number | null;
+  mrp?: number | null;
   sqftPerBox?: number | null;
   piecesPerBox?: number | null;
   stockBoxes: number;

@@ -28,6 +28,7 @@ import {
 } from "lucide-react-native";
 import { getProductDetails } from "../../src/api/products";
 import { useCartStore } from "../../src/store/cartStore";
+import { useWishlistStore } from "../../src/store/wishlistStore";
 import { ProductVariant } from "../../src/types";
 import { ProductCard } from "../../src/components/ProductCard";
 import { COLORS, SPACING, RADIUS, SHADOWS } from "../../src/constants/theme";
@@ -39,6 +40,7 @@ export default function ProductDetailScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
   const router = useRouter();
   const { addItem, getItemCount } = useCartStore();
+  const { isWishlisted, toggleWishlist } = useWishlistStore();
 
   const [activeImageIndex, setActiveImageIndex] = useState(0);
   const [selectedVariant, setSelectedVariant] = useState<ProductVariant | null>(null);
@@ -54,6 +56,7 @@ export default function ProductDetailScreen() {
   });
 
   const product = data?.product;
+  const wishlisted = isWishlisted(product?.id || "");
   const relatedProducts = data?.relatedProducts || [];
   const cartItemCount = getItemCount();
 
@@ -125,6 +128,17 @@ export default function ProductDetailScreen() {
         <View style={styles.navRight}>
           <TouchableOpacity
             style={styles.navIconBtn}
+            onPress={() => toggleWishlist(product)}
+          >
+            <Heart
+              size={22}
+              color={wishlisted ? "#ef4444" : COLORS.text}
+              fill={wishlisted ? "#ef4444" : "transparent"}
+            />
+          </TouchableOpacity>
+
+          <TouchableOpacity
+            style={styles.navIconBtn}
             onPress={() => router.push("/(tabs)/cart")}
           >
             <ShoppingBag size={22} color={COLORS.text} />
@@ -172,9 +186,9 @@ export default function ProductDetailScreen() {
 
         {/* Product Details Header */}
         <View style={styles.detailsCard}>
-          {/* Vendor */}
+          {/* Category / Seller Badge */}
           <Text style={styles.vendorLabel}>
-            {product.vendor?.businessName || "Intrihub Direct"}
+            {product.categoryName || "Intrihub Direct"}
           </Text>
 
           <Text style={styles.productName}>{product.name}</Text>
