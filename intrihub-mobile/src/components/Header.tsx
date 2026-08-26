@@ -1,13 +1,13 @@
-import React from "react";
+import React, { useEffect } from "react";
 import { View, Text, StyleSheet, TouchableOpacity, Platform, StatusBar } from "react-native";
 import { Image } from "expo-image";
 import { LinearGradient } from "expo-linear-gradient";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useRouter } from "expo-router";
-import { Search, ShoppingBag, MapPin, ChevronDown } from "lucide-react-native";
+import { Search, Bell, MapPin, ChevronDown } from "lucide-react-native";
 import { COLORS, SPACING, RADIUS, SHADOWS } from "../constants/theme";
 import { useAuthStore } from "../store/authStore";
-import { useCartStore } from "../store/cartStore";
+import { useNotificationStore } from "../store/notificationStore";
 import { AnimatedSearchPlaceholder } from "./AnimatedSearchPlaceholder";
 
 interface HeaderProps {
@@ -23,8 +23,14 @@ export const Header: React.FC<HeaderProps> = ({
 }) => {
   const router = useRouter();
   const insets = useSafeAreaInsets();
-  const { selectedAddress } = useAuthStore();
-  const itemCount = useCartStore((state) => state.getItemCount());
+  const { selectedAddress, isAuthenticated } = useAuthStore();
+  const { unreadCount, fetchUnreadCount } = useNotificationStore();
+
+  useEffect(() => {
+    if (isAuthenticated) {
+      fetchUnreadCount();
+    }
+  }, [isAuthenticated]);
 
   const addressLabel = selectedAddress
     ? `${selectedAddress.city} - ${selectedAddress.pincode}`
@@ -47,7 +53,7 @@ export const Header: React.FC<HeaderProps> = ({
         end={{ x: 0.5, y: 1 }}
         style={[styles.gradientContainer, { paddingTop: topPadding }]}
       >
-        {/* Top Solid White Zone: Logo + Location + Cart */}
+        {/* Top Solid White Zone: Logo + Location + Notification Bell */}
         <View style={styles.topRow}>
           <TouchableOpacity
             style={styles.brandContainer}
@@ -75,17 +81,17 @@ export const Header: React.FC<HeaderProps> = ({
             <ChevronDown size={13} color={COLORS.primary} />
           </TouchableOpacity>
 
-          {/* Cart Icon with badge */}
+          {/* Notification Bell Icon with unread count badge */}
           <TouchableOpacity
-            style={styles.cartButton}
-            onPress={() => router.push("/(tabs)/cart")}
+            style={styles.notifButton}
+            onPress={() => router.push("/notifications" as any)}
             activeOpacity={0.8}
           >
-            <View style={styles.cartIconWrapper}>
-              <ShoppingBag size={21} color={COLORS.primary} />
-              {itemCount > 0 && (
+            <View style={styles.notifIconWrapper}>
+              <Bell size={21} color={COLORS.primary} />
+              {unreadCount > 0 && (
                 <View style={styles.badge}>
-                  <Text style={styles.badgeText}>{itemCount > 99 ? "99+" : itemCount}</Text>
+                  <Text style={styles.badgeText}>{unreadCount > 99 ? "99+" : unreadCount}</Text>
                 </View>
               )}
             </View>
@@ -152,10 +158,10 @@ const styles = StyleSheet.create({
     marginHorizontal: 4,
     flexShrink: 1,
   },
-  cartButton: {
+  notifButton: {
     padding: 4,
   },
-  cartIconWrapper: {
+  notifIconWrapper: {
     width: 36,
     height: 36,
     borderRadius: RADIUS.full,

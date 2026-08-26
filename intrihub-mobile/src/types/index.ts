@@ -158,3 +158,15 @@ export interface OfferBanner {
   image: string;
   bgGradient?: string;
 }
+
+export interface AppNotification {
+  id: string;
+  userId: string;
+  title: string;
+  message: string;
+  type: string; // "order_status" | "order" | "offer" | "promo" | "general" | "info"
+  isRead: boolean;
+  link?: string | null;
+  createdAt: string;
+}
+
