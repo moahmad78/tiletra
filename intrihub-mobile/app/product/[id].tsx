@@ -10,10 +10,12 @@ import {
   Platform,
   StatusBar,
   TextInput,
+  FlatList,
+  Share,
 } from "react-native";
 import { Image } from "expo-image";
 import { useLocalSearchParams, useRouter } from "expo-router";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useInfiniteQuery } from "@tanstack/react-query";
 import {
   ArrowLeft,
   Share2,
@@ -23,13 +25,13 @@ import {
   Truck,
   Calculator,
   ShoppingBag,
-  Building,
   Check,
+  Sparkles,
 } from "lucide-react-native";
-import { getProductDetails } from "../../src/api/products";
+import { getProductDetails, getProducts } from "../../src/api/products";
 import { useCartStore } from "../../src/store/cartStore";
 import { useWishlistStore } from "../../src/store/wishlistStore";
-import { ProductVariant } from "../../src/types";
+import { Product, ProductVariant } from "../../src/types";
 import { ProductCard } from "../../src/components/ProductCard";
 import { COLORS, SPACING, RADIUS, SHADOWS } from "../../src/constants/theme";
 import { getImageUrl } from "../../src/constants/config";
@@ -76,6 +78,7 @@ export default function ProductDetailScreen() {
   const [quantity, setQuantity] = useState(1);
   const [addedToast, setAddedToast] = useState(false);
 
+  // 1. Fetch Current Product Details
   const { data, isLoading, error } = useQuery({
     queryKey: ["mobile-product-details", id],
     queryFn: () => getProductDetails(id),
@@ -84,8 +87,39 @@ export default function ProductDetailScreen() {
 
   const product = data?.product;
   const wishlisted = isWishlisted(product?.id || "");
-  const relatedProducts = data?.relatedProducts || [];
   const cartItemCount = getItemCount();
+
+  // 2. Fetch Similar Products in the same category (excludes current product)
+  const { data: similarData, isLoading: similarLoading } = useQuery({
+    queryKey: ["mobile-similar-products", product?.categorySlug, id],
+    queryFn: () => getProducts({ category: product?.categorySlug, limit: 14 }),
+    enabled: Boolean(product?.categorySlug),
+  });
+
+  const similarProducts = (similarData?.products || []).filter(
+    (p: Product) => p.id !== id
+  );
+
+  // 3. Infinite Query for Full Catalog Below (You May Also Like)
+  const {
+    data: infiniteCatalogData,
+    fetchNextPage,
+    hasNextPage,
+    isFetchingNextPage,
+  } = useInfiniteQuery({
+    queryKey: ["mobile-explore-catalog-infinite", id],
+    queryFn: ({ pageParam = 1 }) => getProducts({ page: pageParam, limit: 12 }),
+    initialPageParam: 1,
+    getNextPageParam: (lastPage) => {
+      if (lastPage.pagination?.hasMore) {
+        return lastPage.pagination.page + 1;
+      }
+      return undefined;
+    },
+  });
+
+  const catalogProducts =
+    infiniteCatalogData?.pages.flatMap((page) => page.products) || [];
 
   // Pricing calculation matching Home page ProductCard
   const activeVariant = selectedVariant || product?.variants?.[0] || null;
@@ -120,8 +154,8 @@ export default function ProductDetailScreen() {
     setCalculatorArea(text);
     const sqft = parseFloat(text);
     if (!isNaN(sqft) && sqft > 0) {
-      const coverageRate = product?.coverageRate || 15.5; // default sqft per box
-      const wastage = product?.wastageFactor || 1.1; // 10% buffer
+      const coverageRate = product?.coverageRate || 15.5;
+      const wastage = product?.wastageFactor || 1.1;
       const requiredBoxes = Math.ceil((sqft * wastage) / coverageRate);
       setCalculatedBoxes(requiredBoxes);
       setQuantity(requiredBoxes);
@@ -143,6 +177,22 @@ export default function ProductDetailScreen() {
     router.push("/(tabs)/cart");
   };
 
+  const handleShare = async () => {
+    if (!product) return;
+    try {
+      await Share.share({
+        message: `Check out ${product.name} on Intrihub: https://www.intrihub.com/product/${product.id}`,
+        title: product.name,
+      });
+    } catch {}
+  };
+
+  const handleEndReached = () => {
+    if (hasNextPage && !isFetchingNextPage) {
+      fetchNextPage();
+    }
+  };
+
   if (isLoading) {
     return (
       <View style={styles.loadingContainer}>
@@ -162,236 +212,310 @@ export default function ProductDetailScreen() {
     );
   }
 
+  // Header component for primary FlatList
+  const renderHeader = () => (
+    <View>
+      {/* Product Image Gallery */}
+      <View style={styles.galleryWrapper}>
+        <ScrollView
+          horizontal
+          pagingEnabled
+          showsHorizontalScrollIndicator={false}
+          onScroll={(e) => {
+            const slide = Math.round(e.nativeEvent.contentOffset.x / width);
+            setActiveImageIndex(slide);
+          }}
+          scrollEventThrottle={16}
+        >
+          {images.map((img, idx) => (
+            <Image
+              key={idx}
+              source={{ uri: img }}
+              style={styles.galleryImage}
+              contentFit="cover"
+            />
+          ))}
+        </ScrollView>
+
+        {/* Dots Indicator */}
+        {images.length > 1 && (
+          <View style={styles.dotsRow}>
+            {images.map((_, idx) => (
+              <View
+                key={idx}
+                style={[
+                  styles.galleryDot,
+                  activeImageIndex === idx && styles.activeGalleryDot,
+                ]}
+              />
+            ))}
+          </View>
+        )}
+      </View>
+
+      {/* Product Details Card */}
+      <View style={styles.detailsCard}>
+        <Text style={styles.categoryBadge}>
+          {product.categoryName || "Direct Supply"}
+        </Text>
+
+        <Text style={styles.productName}>{product.name}</Text>
+
+        {/* Rating */}
+        <View style={styles.ratingRow}>
+          <View style={styles.ratingBadge}>
+            <Star size={12} color="#f59e0b" fill="#f59e0b" />
+            <Text style={styles.ratingText}>{product.rating?.toFixed(1) || "4.8"}</Text>
+          </View>
+          <Text style={styles.ratingCount}>({product.reviewCount || 12} Verified Reviews)</Text>
+        </View>
+
+        {/* Pricing Row matching Home Page */}
+        <View style={styles.pricingRow}>
+          <Text style={styles.pricePerSqft}>{formattedPrice}</Text>
+          {unitSuffix ? <Text style={styles.unitText}>/{unitSuffix}</Text> : null}
+
+          {formattedMrp && (
+            <Text style={styles.mrpText}>{formattedMrp}</Text>
+          )}
+
+          {discountPercent > 0 && (
+            <View style={styles.discountPill}>
+              <Text style={styles.discountText}>{discountPercent}% OFF</Text>
+            </View>
+          )}
+        </View>
+
+        <Text style={styles.taxNote}>Inclusive of all taxes • Factory Direct Pricing</Text>
+      </View>
+
+      {/* Area & Box Calculator Tool */}
+      <View style={styles.calculatorCard}>
+        <View style={styles.calcHeader}>
+          <Calculator size={18} color={COLORS.primary} />
+          <Text style={styles.calcTitle}>Area & Box Calculator</Text>
+        </View>
+        <Text style={styles.calcSub}>
+          Enter your floor or wall area to auto-calculate required boxes (includes 10% cutting wastage)
+        </Text>
+
+        <View style={styles.calcInputRow}>
+          <TextInput
+            style={styles.calcInput}
+            placeholder="e.g. 250"
+            placeholderTextColor="#94a3b8"
+            keyboardType="numeric"
+            value={calculatorArea}
+            onChangeText={handleCalculateBoxes}
+          />
+          <Text style={styles.calcUnit}>sq.ft</Text>
+        </View>
+
+        {calculatedBoxes !== null && (
+          <View style={styles.calcResultBox}>
+            <Text style={styles.calcResultText}>
+              Required: <Text style={styles.boldPrimary}>{calculatedBoxes} Boxes</Text>
+            </Text>
+            <Text style={styles.calcResultSub}>
+              Estimated: ₹{(calculatedBoxes * (product.pricePerSqft * (product.coverageRate || 15.5))).toLocaleString("en-IN")}
+            </Text>
+          </View>
+        )}
+      </View>
+
+      {/* Available Sizes & Finishes (Variants) */}
+      {product.variants && product.variants.length > 0 && (
+        <View style={styles.sectionCard}>
+          <Text style={styles.sectionHeading}>Available Sizes & Finishes</Text>
+          <View style={styles.variantsRow}>
+            {product.variants.map((v) => {
+              const isSelected =
+                selectedVariant?.id === v.id || (!selectedVariant && v.id === product.variants![0].id);
+              return (
+                <TouchableOpacity
+                  key={v.id}
+                  style={[styles.variantChip, isSelected && styles.activeVariantChip]}
+                  onPress={() => setSelectedVariant(v)}
+                >
+                  <Text
+                    style={[
+                      styles.variantChipText,
+                      isSelected && styles.activeVariantChipText,
+                    ]}
+                  >
+                    {v.name || `${v.size} - ${v.finish}`}
+                  </Text>
+                  {v.pricePerSqft && (
+                    <Text
+                      style={[
+                        styles.variantPriceText,
+                        isSelected && styles.activeVariantPriceText,
+                      ]}
+                    >
+                      ₹{v.pricePerSqft}/sq.ft
+                    </Text>
+                  )}
+                </TouchableOpacity>
+              );
+            })}
+          </View>
+        </View>
+      )}
+
+      {/* Product Specifications */}
+      <View style={styles.sectionCard}>
+        <Text style={styles.sectionHeading}>Specifications</Text>
+        <View style={styles.specRow}>
+          <Text style={styles.specKey}>Category</Text>
+          <Text style={styles.specValue}>{product.categoryName}</Text>
+        </View>
+        <View style={styles.specRow}>
+          <Text style={styles.specKey}>Material</Text>
+          <Text style={styles.specValue}>{product.material}</Text>
+        </View>
+        <View style={styles.specRow}>
+          <Text style={styles.specKey}>Finish</Text>
+          <Text style={styles.specValue}>{product.finish}</Text>
+        </View>
+        <View style={styles.specRow}>
+          <Text style={styles.specKey}>Dimensions</Text>
+          <Text style={styles.specValue}>{product.size}</Text>
+        </View>
+        <View style={styles.specRow}>
+          <Text style={styles.specKey}>Thickness</Text>
+          <Text style={styles.specValue}>{product.thickness}</Text>
+        </View>
+        {product.look ? (
+          <View style={styles.specRow}>
+            <Text style={styles.specKey}>Look & Feel</Text>
+            <Text style={styles.specValue}>{product.look}</Text>
+          </View>
+        ) : null}
+      </View>
+
+      {/* Product Overview Description */}
+      {product.description ? (
+        <View style={styles.sectionCard}>
+          <Text style={styles.sectionHeading}>Product Overview</Text>
+          <Text style={styles.descriptionText}>{product.description}</Text>
+        </View>
+      ) : null}
+
+      {/* TASK 1: Similar Products Horizontal Carousel (Same Category, excludes current) */}
+      {similarProducts.length > 0 && (
+        <View style={styles.similarSection}>
+          <View style={styles.similarSectionHeader}>
+            <View>
+              <Text style={styles.sectionHeading}>Similar Products</Text>
+              <Text style={styles.similarSub}>
+                More choices in {product.categoryName || "this category"}
+              </Text>
+            </View>
+          </View>
+          <ScrollView
+            horizontal
+            showsHorizontalScrollIndicator={false}
+            contentContainerStyle={styles.similarScrollContent}
+          >
+            {similarProducts.map((p) => (
+              <ProductCard key={p.id} product={p as any} horizontal />
+            ))}
+          </ScrollView>
+        </View>
+      )}
+
+      {/* TASK 2: Explore More Products Header */}
+      <View style={styles.exploreCatalogHeader}>
+        <View style={styles.exploreCatalogTitleRow}>
+          <Sparkles size={16} color={COLORS.accentOrange} style={{ marginRight: 6 }} />
+          <Text style={styles.exploreCatalogTitle}>You May Also Like</Text>
+        </View>
+        <Text style={styles.exploreCatalogSubtitle}>
+          Explore full construction & interior supply catalog
+        </Text>
+      </View>
+    </View>
+  );
+
   return (
     <View style={styles.container}>
-      {/* Top Navbar */}
+      {/* Top Floating Navbar */}
       <View style={styles.navbar}>
-        <TouchableOpacity style={styles.navIconBtn} onPress={() => router.back()}>
-          <ArrowLeft size={22} color={COLORS.text} />
+        <TouchableOpacity
+          style={styles.navIconBtn}
+          onPress={() => router.back()}
+          activeOpacity={0.8}
+        >
+          <ArrowLeft size={20} color={COLORS.text} />
         </TouchableOpacity>
 
         <View style={styles.navRight}>
           <TouchableOpacity
             style={styles.navIconBtn}
-            onPress={() => toggleWishlist(product)}
+            onPress={handleShare}
+            activeOpacity={0.8}
+          >
+            <Share2 size={19} color={COLORS.text} />
+          </TouchableOpacity>
+
+          <TouchableOpacity
+            style={styles.navIconBtn}
+            onPress={() => product && toggleWishlist(product as any)}
+            activeOpacity={0.8}
           >
             <Heart
-              size={22}
-              color={wishlisted ? "#ef4444" : COLORS.text}
-              fill={wishlisted ? "#ef4444" : "transparent"}
+              size={20}
+              color={wishlisted ? COLORS.accentRed : COLORS.text}
+              fill={wishlisted ? COLORS.accentRed : "none"}
             />
           </TouchableOpacity>
 
           <TouchableOpacity
             style={styles.navIconBtn}
             onPress={() => router.push("/(tabs)/cart")}
+            activeOpacity={0.8}
           >
-            <ShoppingBag size={22} color={COLORS.text} />
+            <ShoppingBag size={20} color={COLORS.text} />
             {cartItemCount > 0 && (
-              <View style={styles.cartBadge}>
-                <Text style={styles.cartBadgeText}>{cartItemCount}</Text>
+              <View style={styles.navBadge}>
+                <Text style={styles.navBadgeText}>{cartItemCount}</Text>
               </View>
             )}
           </TouchableOpacity>
         </View>
       </View>
 
-      <ScrollView style={styles.scroll} showsVerticalScrollIndicator={false}>
-        {/* Image Gallery */}
-        <View style={styles.galleryWrapper}>
-          <ScrollView
-            horizontal
-            pagingEnabled
-            showsHorizontalScrollIndicator={false}
-            onScroll={(e) => {
-              const slide = Math.round(e.nativeEvent.contentOffset.x / width);
-              setActiveImageIndex(slide);
-            }}
-          >
-            {images.map((img, idx) => (
-              <Image key={idx} source={{ uri: img }} style={styles.galleryImage} contentFit="cover" />
-            ))}
-          </ScrollView>
-
-          {/* Dots Indicator */}
-          {images.length > 1 && (
-            <View style={styles.dotsRow}>
-              {images.map((_, idx) => (
-                <View
-                  key={idx}
-                  style={[
-                    styles.galleryDot,
-                    activeImageIndex === idx && styles.activeGalleryDot,
-                  ]}
-                />
-              ))}
-            </View>
-          )}
-        </View>
-
-        {/* Product Details Header */}
-        <View style={styles.detailsCard}>
-          {/* Category / Seller Badge */}
-          <Text style={styles.vendorLabel}>
-            {product.categoryName || "Intrihub Direct"}
-          </Text>
-
-          <Text style={styles.productName}>{product.name}</Text>
-
-          {/* Rating */}
-          <View style={styles.ratingRow}>
-            <View style={styles.ratingBadge}>
-              <Star size={12} color="#f59e0b" fill="#f59e0b" />
-              <Text style={styles.ratingText}>{product.rating?.toFixed(1) || "4.8"}</Text>
-            </View>
-            <Text style={styles.ratingCount}>({product.reviewCount || 12} Verified Reviews)</Text>
+      {/* Root Infinite-Scroll FlatList (Zero Nesting Conflict) */}
+      <FlatList
+        data={catalogProducts}
+        keyExtractor={(item: Product, idx) => `${item.id}-${idx}`}
+        numColumns={2}
+        ListHeaderComponent={renderHeader}
+        renderItem={({ item }: { item: Product }) => (
+          <View style={styles.gridCardWrapper}>
+            <ProductCard product={item} />
           </View>
-
-          {/* Pricing Row matching Home Page */}
-          <View style={styles.pricingRow}>
-            <Text style={styles.pricePerSqft}>{formattedPrice}</Text>
-            {unitSuffix ? <Text style={styles.unitText}>/{unitSuffix}</Text> : null}
-
-            {formattedMrp && (
-              <Text style={styles.mrpText}>{formattedMrp}</Text>
-            )}
-
-            {discountPercent > 0 && (
-              <View style={styles.discountPill}>
-                <Text style={styles.discountText}>{discountPercent}% OFF</Text>
+        )}
+        onEndReached={handleEndReached}
+        onEndReachedThreshold={0.5}
+        contentContainerStyle={styles.listContent}
+        showsVerticalScrollIndicator={false}
+        ListFooterComponent={
+          <View style={styles.footerContainer}>
+            {isFetchingNextPage ? (
+              <View style={styles.footerLoading}>
+                <ActivityIndicator size="small" color={COLORS.primary} />
+                <Text style={styles.footerLoadingText}>Loading more products...</Text>
               </View>
-            )}
-          </View>
-
-          <Text style={styles.taxNote}>Inclusive of all taxes • Factory Direct Pricing</Text>
-        </View>
-
-        {/* Tile / Area Calculator Tool */}
-        <View style={styles.calculatorCard}>
-          <View style={styles.calcHeader}>
-            <Calculator size={18} color={COLORS.primary} />
-            <Text style={styles.calcTitle}>Area & Box Calculator</Text>
-          </View>
-          <Text style={styles.calcSub}>
-            Enter your floor or wall area to auto-calculate required boxes (includes 10% cutting wastage)
-          </Text>
-
-          <View style={styles.calcInputRow}>
-            <TextInput
-              style={styles.calcInput}
-              placeholder="e.g. 250"
-              placeholderTextColor="#94a3b8"
-              keyboardType="numeric"
-              value={calculatorArea}
-              onChangeText={handleCalculateBoxes}
-            />
-            <Text style={styles.calcUnit}>sq.ft</Text>
-          </View>
-
-          {calculatedBoxes !== null && (
-            <View style={styles.calcResultBox}>
-              <Text style={styles.calcResultText}>
-                Required: <Text style={styles.boldPrimary}>{calculatedBoxes} Boxes</Text>
+            ) : !hasNextPage && catalogProducts.length > 0 ? (
+              <Text style={styles.endOfListText}>
+                You've reached the end of the collection
               </Text>
-              <Text style={styles.calcResultSub}>
-                Estimated: ₹{(calculatedBoxes * (product.pricePerSqft * (product.coverageRate || 15.5))).toLocaleString("en-IN")}
-              </Text>
-            </View>
-          )}
-        </View>
-
-        {/* Variants Selector */}
-        {product.variants && product.variants.length > 0 && (
-          <View style={styles.sectionCard}>
-            <Text style={styles.sectionHeading}>Available Sizes & Finishes</Text>
-            <View style={styles.variantsRow}>
-              {product.variants.map((v) => {
-                const isSelected =
-                  selectedVariant?.id === v.id || (!selectedVariant && v.id === product.variants![0].id);
-                return (
-                  <TouchableOpacity
-                    key={v.id}
-                    style={[styles.variantChip, isSelected && styles.activeVariantChip]}
-                    onPress={() => setSelectedVariant(v)}
-                  >
-                    <Text
-                      style={[
-                        styles.variantChipText,
-                        isSelected && styles.activeVariantChipText,
-                      ]}
-                    >
-                      {v.name || `${v.size} - ${v.finish}`}
-                    </Text>
-                    {v.pricePerSqft && (
-                      <Text
-                        style={[
-                          styles.variantPriceText,
-                          isSelected && styles.activeVariantPriceText,
-                        ]}
-                      >
-                        ₹{v.pricePerSqft}/sq.ft
-                      </Text>
-                    )}
-                  </TouchableOpacity>
-                );
-              })}
-            </View>
+            ) : null}
+            <View style={{ height: 90 }} />
           </View>
-        )}
-
-        {/* Product Specifications */}
-        <View style={styles.sectionCard}>
-          <Text style={styles.sectionHeading}>Specifications</Text>
-          <View style={styles.specRow}>
-            <Text style={styles.specKey}>Category</Text>
-            <Text style={styles.specValue}>{product.categoryName}</Text>
-          </View>
-          <View style={styles.specRow}>
-            <Text style={styles.specKey}>Material</Text>
-            <Text style={styles.specValue}>{product.material}</Text>
-          </View>
-          <View style={styles.specRow}>
-            <Text style={styles.specKey}>Finish</Text>
-            <Text style={styles.specValue}>{product.finish}</Text>
-          </View>
-          <View style={styles.specRow}>
-            <Text style={styles.specKey}>Dimensions</Text>
-            <Text style={styles.specValue}>{product.size}</Text>
-          </View>
-          <View style={styles.specRow}>
-            <Text style={styles.specKey}>Thickness</Text>
-            <Text style={styles.specValue}>{product.thickness}</Text>
-          </View>
-          {product.look ? (
-            <View style={styles.specRow}>
-              <Text style={styles.specKey}>Look & Feel</Text>
-              <Text style={styles.specValue}>{product.look}</Text>
-            </View>
-          ) : null}
-        </View>
-
-        {/* Description */}
-        {product.description ? (
-          <View style={styles.sectionCard}>
-            <Text style={styles.sectionHeading}>Product Overview</Text>
-            <Text style={styles.descriptionText}>{product.description}</Text>
-          </View>
-        ) : null}
-
-        {/* Related Products */}
-        {relatedProducts.length > 0 && (
-          <View style={styles.relatedSection}>
-            <Text style={styles.sectionHeading}>Similar Products</Text>
-            <ScrollView horizontal showsHorizontalScrollIndicator={false}>
-              {relatedProducts.map((p) => (
-                <ProductCard key={p.id} product={p as any} horizontal />
-              ))}
-            </ScrollView>
-          </View>
-        )}
-
-        <View style={{ height: 100 }} />
-      </ScrollView>
+        }
+      />
 
       {/* Added to Cart Toast Notification */}
       {addedToast && (
@@ -452,14 +576,15 @@ const styles = StyleSheet.create({
   },
   navbar: {
     flexDirection: "row",
-    justifyContent: "space-between",
     alignItems: "center",
-    paddingTop: Platform.OS === "android" ? (StatusBar.currentHeight || 24) + 6 : 12,
-    paddingBottom: 10,
-    paddingHorizontal: SPACING.lg,
+    justifyContent: "space-between",
     backgroundColor: COLORS.surface,
+    paddingTop: Platform.OS === "android" ? (StatusBar.currentHeight || 24) + 6 : 14,
+    paddingBottom: 10,
+    paddingHorizontal: SPACING.md,
     borderBottomWidth: 1,
-    borderColor: COLORS.border,
+    borderBottomColor: COLORS.border,
+    zIndex: 50,
   },
   navIconBtn: {
     width: 38,
@@ -468,11 +593,13 @@ const styles = StyleSheet.create({
     backgroundColor: COLORS.surfaceSecondary,
     alignItems: "center",
     justifyContent: "center",
+    position: "relative",
   },
   navRight: {
     flexDirection: "row",
+    gap: 8,
   },
-  cartBadge: {
+  navBadge: {
     position: "absolute",
     top: -2,
     right: -2,
@@ -484,31 +611,29 @@ const styles = StyleSheet.create({
     justifyContent: "center",
     paddingHorizontal: 3,
   },
-  cartBadgeText: {
+  navBadgeText: {
     color: COLORS.textWhite,
     fontSize: 9,
-    fontWeight: "800",
+    fontWeight: "900",
   },
-  scroll: {
-    flex: 1,
+  listContent: {
+    paddingBottom: 30,
   },
   galleryWrapper: {
     width,
-    height: 320,
+    height: width * 0.9,
     backgroundColor: COLORS.surfaceSecondary,
     position: "relative",
   },
   galleryImage: {
     width,
-    height: 320,
+    height: width * 0.9,
   },
   dotsRow: {
     position: "absolute",
     bottom: 12,
-    left: 0,
-    right: 0,
+    alignSelf: "center",
     flexDirection: "row",
-    justifyContent: "center",
   },
   galleryDot: {
     width: 6,
@@ -527,10 +652,10 @@ const styles = StyleSheet.create({
     borderBottomWidth: 1,
     borderColor: COLORS.border,
   },
-  vendorLabel: {
+  categoryBadge: {
     fontSize: 11,
     fontWeight: "800",
-    color: COLORS.textMuted,
+    color: COLORS.accentOrange,
     textTransform: "uppercase",
     marginBottom: 4,
   },
@@ -604,34 +729,36 @@ const styles = StyleSheet.create({
   },
   calculatorCard: {
     backgroundColor: "rgba(5, 42, 81, 0.04)",
-    margin: SPACING.lg,
+    margin: SPACING.md,
     padding: SPACING.md,
     borderRadius: RADIUS.md,
     borderWidth: 1,
-    borderColor: "rgba(5, 42, 81, 0.12)",
+    borderColor: "rgba(5, 42, 81, 0.1)",
   },
   calcHeader: {
     flexDirection: "row",
     alignItems: "center",
+    gap: 6,
     marginBottom: 4,
   },
   calcTitle: {
     fontSize: 14,
     fontWeight: "800",
     color: COLORS.primary,
-    marginLeft: 6,
   },
   calcSub: {
-    fontSize: 11,
-    color: COLORS.textSecondary,
+    fontSize: 11.5,
+    color: COLORS.textMuted,
     marginBottom: 10,
-    lineHeight: 15,
+    lineHeight: 16,
   },
   calcInputRow: {
     flexDirection: "row",
     alignItems: "center",
+    gap: 8,
   },
   calcInput: {
+    flex: 1,
     backgroundColor: COLORS.surface,
     borderWidth: 1,
     borderColor: COLORS.border,
@@ -639,53 +766,52 @@ const styles = StyleSheet.create({
     paddingHorizontal: 12,
     paddingVertical: 8,
     fontSize: 14,
-    width: 120,
+    fontWeight: "700",
+    color: COLORS.text,
   },
   calcUnit: {
     fontSize: 13,
     fontWeight: "700",
     color: COLORS.textSecondary,
-    marginLeft: 8,
   },
   calcResultBox: {
-    backgroundColor: COLORS.surface,
-    borderRadius: RADIUS.sm,
-    padding: 10,
     marginTop: 10,
-    borderWidth: 1,
-    borderColor: COLORS.border,
+    paddingTop: 10,
+    borderTopWidth: 1,
+    borderTopColor: "rgba(5, 42, 81, 0.08)",
   },
   calcResultText: {
     fontSize: 13,
-    fontWeight: "700",
     color: COLORS.text,
   },
   boldPrimary: {
+    fontWeight: "800",
     color: COLORS.primary,
-    fontWeight: "900",
   },
   calcResultSub: {
-    fontSize: 11,
+    fontSize: 11.5,
     color: COLORS.textMuted,
     marginTop: 2,
   },
   sectionCard: {
     backgroundColor: COLORS.surface,
-    padding: SPACING.lg,
-    marginTop: SPACING.sm,
-    borderTopWidth: 1,
-    borderBottomWidth: 1,
+    marginHorizontal: SPACING.md,
+    marginBottom: SPACING.md,
+    padding: SPACING.md,
+    borderRadius: RADIUS.md,
+    borderWidth: 1,
     borderColor: COLORS.border,
   },
   sectionHeading: {
-    fontSize: 14,
+    fontSize: 15,
     fontWeight: "800",
-    color: COLORS.text,
-    marginBottom: 10,
+    color: COLORS.primary,
+    marginBottom: 8,
   },
   variantsRow: {
     flexDirection: "row",
     flexWrap: "wrap",
+    gap: 8,
   },
   variantChip: {
     backgroundColor: COLORS.surfaceSecondary,
@@ -693,13 +819,11 @@ const styles = StyleSheet.create({
     borderColor: COLORS.border,
     paddingHorizontal: 12,
     paddingVertical: 8,
-    borderRadius: RADIUS.md,
-    marginRight: 8,
-    marginBottom: 8,
+    borderRadius: RADIUS.sm,
   },
   activeVariantChip: {
-    borderColor: COLORS.primary,
     backgroundColor: "rgba(5, 42, 81, 0.08)",
+    borderColor: COLORS.primary,
   },
   variantChipText: {
     fontSize: 12,
@@ -708,9 +832,10 @@ const styles = StyleSheet.create({
   },
   activeVariantChipText: {
     color: COLORS.primary,
+    fontWeight: "800",
   },
   variantPriceText: {
-    fontSize: 10,
+    fontSize: 10.5,
     color: COLORS.textMuted,
     marginTop: 2,
   },
@@ -721,84 +846,108 @@ const styles = StyleSheet.create({
   specRow: {
     flexDirection: "row",
     justifyContent: "space-between",
-    paddingVertical: 8,
+    paddingVertical: 7,
     borderBottomWidth: 1,
-    borderColor: COLORS.borderLight,
+    borderBottomColor: "rgba(0,0,0,0.04)",
   },
   specKey: {
-    fontSize: 12,
-    color: COLORS.textSecondary,
+    fontSize: 12.5,
+    color: COLORS.textMuted,
   },
   specValue: {
-    fontSize: 12,
+    fontSize: 12.5,
     fontWeight: "700",
     color: COLORS.text,
   },
   descriptionText: {
     fontSize: 13,
     color: COLORS.textSecondary,
-    lineHeight: 19,
+    lineHeight: 20,
   },
-  vendorCard: {
-    flexDirection: "row",
-    alignItems: "center",
+
+  // Similar Products Carousel
+  similarSection: {
     backgroundColor: COLORS.surface,
-    padding: SPACING.lg,
-    marginTop: SPACING.sm,
+    paddingVertical: SPACING.md,
     borderTopWidth: 1,
     borderBottomWidth: 1,
     borderColor: COLORS.border,
+    marginBottom: SPACING.md,
   },
-  vendorInfo: {
-    marginLeft: 12,
+  similarSectionHeader: {
+    paddingHorizontal: SPACING.md,
+    marginBottom: 10,
   },
-  vendorCardTitle: {
-    fontSize: 10,
+  similarSub: {
+    fontSize: 11.5,
     color: COLORS.textMuted,
-    fontWeight: "700",
-    textTransform: "uppercase",
+    marginTop: 1,
   },
-  vendorCardName: {
-    fontSize: 14,
-    fontWeight: "800",
-    color: COLORS.primary,
+  similarScrollContent: {
+    paddingHorizontal: SPACING.md,
+    paddingBottom: 4,
   },
-  vendorCardSub: {
-    fontSize: 11,
-    color: COLORS.textSecondary,
+
+  // Explore Catalog Header (Infinite Scroll)
+  exploreCatalogHeader: {
+    paddingHorizontal: SPACING.md,
+    paddingTop: 12,
+    paddingBottom: 8,
   },
-  relatedSection: {
-    padding: SPACING.lg,
-  },
-  toast: {
-    position: "absolute",
-    bottom: 74,
-    alignSelf: "center",
-    backgroundColor: COLORS.primary,
+  exploreCatalogTitleRow: {
     flexDirection: "row",
     alignItems: "center",
-    paddingHorizontal: 16,
-    paddingVertical: 10,
-    borderRadius: RADIUS.full,
-    ...SHADOWS.md,
   },
-  toastText: {
-    color: COLORS.textWhite,
+  exploreCatalogTitle: {
+    fontSize: 17,
+    fontWeight: "900",
+    color: COLORS.primary,
+  },
+  exploreCatalogSubtitle: {
     fontSize: 12,
-    fontWeight: "700",
-    marginLeft: 6,
+    color: COLORS.textMuted,
+    marginTop: 2,
   },
+  gridCardWrapper: {
+    flex: 1,
+    padding: 4,
+    maxWidth: "50%",
+  },
+  footerContainer: {
+    alignItems: "center",
+    justifyContent: "center",
+    paddingTop: 16,
+  },
+  footerLoading: {
+    flexDirection: "row",
+    alignItems: "center",
+  },
+  footerLoadingText: {
+    fontSize: 12,
+    color: COLORS.textMuted,
+    marginLeft: 8,
+  },
+  endOfListText: {
+    fontSize: 12,
+    color: COLORS.textMuted,
+    fontWeight: "600",
+    paddingVertical: 8,
+  },
+
+  // Sticky Bottom Bar
   bottomBar: {
     position: "absolute",
     bottom: 0,
     left: 0,
     right: 0,
     backgroundColor: COLORS.surface,
-    borderTopWidth: 1,
-    borderColor: COLORS.border,
-    paddingHorizontal: SPACING.lg,
-    paddingVertical: 10,
     flexDirection: "row",
+    paddingHorizontal: SPACING.md,
+    paddingTop: 10,
+    paddingBottom: Platform.OS === "ios" ? 28 : 12,
+    borderTopWidth: 1,
+    borderTopColor: COLORS.border,
+    gap: 10,
     ...SHADOWS.lg,
   },
   cartActionBtn: {
@@ -809,27 +958,45 @@ const styles = StyleSheet.create({
     backgroundColor: COLORS.surfaceSecondary,
     borderWidth: 1.5,
     borderColor: COLORS.primary,
-    borderRadius: RADIUS.md,
     paddingVertical: 12,
-    marginRight: 10,
+    borderRadius: RADIUS.md,
+    gap: 6,
   },
   cartActionText: {
     fontSize: 14,
     fontWeight: "800",
     color: COLORS.primary,
-    marginLeft: 6,
   },
   buyActionBtn: {
     flex: 1,
     alignItems: "center",
     justifyContent: "center",
     backgroundColor: COLORS.accentOrange,
-    borderRadius: RADIUS.md,
     paddingVertical: 12,
+    borderRadius: RADIUS.md,
   },
   buyActionText: {
     fontSize: 14,
     fontWeight: "800",
     color: COLORS.textWhite,
+  },
+  toast: {
+    position: "absolute",
+    bottom: 80,
+    alignSelf: "center",
+    backgroundColor: COLORS.primary,
+    flexDirection: "row",
+    alignItems: "center",
+    paddingHorizontal: 16,
+    paddingVertical: 10,
+    borderRadius: RADIUS.full,
+    gap: 8,
+    ...SHADOWS.md,
+    zIndex: 999,
+  },
+  toastText: {
+    color: COLORS.textWhite,
+    fontWeight: "700",
+    fontSize: 13,
   },
 });
