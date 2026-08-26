@@ -48,11 +48,11 @@ export default function ProfileScreen() {
   }, [isAuthenticated]);
 
   const handleSupportCall = () => {
-    Linking.openURL("tel:+917870935277");
+    Linking.openURL("tel:9264920211");
   };
 
   const handleSupportWhatsApp = () => {
-    Linking.openURL("https://wa.me/917870935277?text=Hello%20Intrihub%20Support");
+    Linking.openURL("https://wa.me/919264920211?text=Hello%20Intrihub%20Support");
   };
 
   const handlePrivacyPolicy = () => {

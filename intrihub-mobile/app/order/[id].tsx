@@ -247,7 +247,7 @@ export default function OrderDetailScreen() {
         {/* Support Helpline CTA */}
         <TouchableOpacity
           style={styles.supportBtn}
-          onPress={() => Linking.openURL("tel:+917870935277")}
+          onPress={() => Linking.openURL("tel:9264920211")}
         >
           <PhoneCall size={18} color={COLORS.primary} />
           <Text style={styles.supportBtnText}>Need Help with this Order? Call Support</Text>
