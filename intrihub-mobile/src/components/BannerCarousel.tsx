@@ -1,4 +1,4 @@
-import { useState, useRef } from "react";
+import { useState, useRef, useEffect } from "react";
 import { View, Text, StyleSheet, Dimensions, FlatList, TouchableOpacity } from "react-native";
 import { Image } from "expo-image";
 import { LinearGradient } from "expo-linear-gradient";
@@ -17,7 +17,10 @@ interface BannerCarouselProps {
 
 export const BannerCarousel: React.FC<BannerCarouselProps> = ({ banners }) => {
   const router = useRouter();
+  const flatListRef = useRef<FlatList>(null);
   const [activeIndex, setActiveIndex] = useState(0);
+  const activeIndexRef = useRef(0);
+  const isInteracting = useRef(false);
 
   const defaultBanners: OfferBanner[] = [
     {
@@ -51,9 +54,33 @@ export const BannerCarousel: React.FC<BannerCarouselProps> = ({ banners }) => {
 
   const data = banners && banners.length > 0 ? banners : defaultBanners;
 
+  // Auto-rotate every 4 seconds
+  useEffect(() => {
+    if (data.length <= 1) return;
+
+    const interval = setInterval(() => {
+      if (!isInteracting.current && flatListRef.current) {
+        const nextIndex = (activeIndexRef.current + 1) % data.length;
+        activeIndexRef.current = nextIndex;
+        setActiveIndex(nextIndex);
+        try {
+          flatListRef.current.scrollToIndex({
+            index: nextIndex,
+            animated: true,
+          });
+        } catch {
+          // In case list isn't rendered yet
+        }
+      }
+    }, 4000);
+
+    return () => clearInterval(interval);
+  }, [data.length]);
+
   return (
     <View style={styles.container}>
       <FlatList
+        ref={flatListRef}
         data={data}
         keyExtractor={(item) => item.id}
         horizontal
@@ -61,9 +88,29 @@ export const BannerCarousel: React.FC<BannerCarouselProps> = ({ banners }) => {
         showsHorizontalScrollIndicator={false}
         snapToInterval={BANNER_WIDTH + SPACING.md}
         decelerationRate="fast"
-        onScroll={(e) => {
+        getItemLayout={(_, index) => ({
+          length: BANNER_WIDTH + SPACING.md,
+          offset: (BANNER_WIDTH + SPACING.md) * index,
+          index,
+        })}
+        onTouchStart={() => {
+          isInteracting.current = true;
+        }}
+        onTouchEnd={() => {
+          isInteracting.current = false;
+        }}
+        onScrollBeginDrag={() => {
+          isInteracting.current = true;
+        }}
+        onScrollEndDrag={() => {
+          isInteracting.current = false;
+        }}
+        onMomentumScrollEnd={(e) => {
+          isInteracting.current = false;
           const slide = Math.round(e.nativeEvent.contentOffset.x / (BANNER_WIDTH + SPACING.md));
-          setActiveIndex(slide);
+          const safeSlide = Math.max(0, Math.min(slide, data.length - 1));
+          activeIndexRef.current = safeSlide;
+          setActiveIndex(safeSlide);
         }}
         renderItem={({ item }) => (
           <TouchableOpacity
@@ -101,8 +148,14 @@ export const BannerCarousel: React.FC<BannerCarouselProps> = ({ banners }) => {
       {/* Pagination Indicator Dots */}
       <View style={styles.pagination}>
         {data.map((_, index) => (
-          <View
+          <TouchableOpacity
             key={index}
+            onPress={() => {
+              activeIndexRef.current = index;
+              setActiveIndex(index);
+              flatListRef.current?.scrollToIndex({ index, animated: true });
+            }}
+            hitSlop={{ top: 10, bottom: 10, left: 5, right: 5 }}
             style={[styles.dot, activeIndex === index ? styles.activeDot : styles.inactiveDot]}
           />
         ))}

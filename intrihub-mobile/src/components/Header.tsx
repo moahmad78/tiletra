@@ -1,4 +1,5 @@
 import { View, Text, StyleSheet, TouchableOpacity, Platform, StatusBar } from "react-native";
+import { Image } from "expo-image";
 import { useRouter } from "expo-router";
 import { Search, ShoppingBag, MapPin, ChevronDown } from "lucide-react-native";
 import { COLORS, SPACING, RADIUS } from "../constants/theme";
@@ -28,10 +29,18 @@ export const Header: React.FC<HeaderProps> = ({
     <View style={styles.container}>
       {/* Top Bar: Brand + Location + Cart */}
       <View style={styles.topRow}>
-        <View style={styles.brandContainer}>
-          <Text style={styles.brandTitle}>INTRIHUB</Text>
-          <Text style={styles.brandSubtitle}>MARKETPLACE</Text>
-        </View>
+        <TouchableOpacity
+          style={styles.brandContainer}
+          onPress={() => router.push("/(tabs)/home")}
+          activeOpacity={0.85}
+        >
+          <Image
+            source={require("../../assets/intri-web-logo.png")}
+            style={styles.brandLogo}
+            contentFit="contain"
+            transition={150}
+          />
+        </TouchableOpacity>
 
         {/* Location Selector Pill */}
         <TouchableOpacity
@@ -94,20 +103,12 @@ const styles = StyleSheet.create({
     marginBottom: 10,
   },
   brandContainer: {
-    marginRight: 10,
+    marginRight: 8,
+    justifyContent: "center",
   },
-  brandTitle: {
-    color: COLORS.textWhite,
-    fontSize: 18,
-    fontWeight: "900",
-    letterSpacing: 1.2,
-  },
-  brandSubtitle: {
-    color: COLORS.accent,
-    fontSize: 8,
-    fontWeight: "700",
-    letterSpacing: 1,
-    marginTop: -2,
+  brandLogo: {
+    width: 110,
+    height: 28,
   },
   locationPill: {
     flex: 1,
