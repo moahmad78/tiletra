@@ -56,6 +56,18 @@ export async function updateProfile(data: { name?: string; email?: string; avata
   return res.data;
 }
 
+export async function loginWithGoogle(params: {
+  idToken?: string;
+  accessToken?: string;
+  profile?: { email?: string; name?: string; avatar?: string };
+}): Promise<AuthResponse> {
+  const res = await apiClient.post<AuthResponse>("/api/mobile/auth/google", params);
+  if (res.data.success && res.data.tokens) {
+    await setStoredTokens(res.data.tokens.accessToken, res.data.tokens.refreshToken);
+  }
+  return res.data;
+}
+
 export async function logout(): Promise<void> {
   await clearStoredTokens();
 }
