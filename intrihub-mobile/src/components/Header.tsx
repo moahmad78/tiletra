@@ -8,6 +8,7 @@ import { Search, ShoppingBag, MapPin, ChevronDown } from "lucide-react-native";
 import { COLORS, SPACING, RADIUS, SHADOWS } from "../constants/theme";
 import { useAuthStore } from "../store/authStore";
 import { useCartStore } from "../store/cartStore";
+import { AnimatedSearchPlaceholder } from "./AnimatedSearchPlaceholder";
 
 interface HeaderProps {
   showSearch?: boolean;
@@ -94,10 +95,8 @@ export const Header: React.FC<HeaderProps> = ({
           activeOpacity={0.9}
           onPress={onSearchPress || (() => router.push("/(tabs)/categories"))}
         >
-          <Search size={18} color={COLORS.textMuted} />
-          <Text style={styles.searchPlaceholder}>
-            Search tiles, sanitaries, paints, adhesives...
-          </Text>
+          <Search size={18} color={COLORS.textMuted} style={{ marginRight: 8 }} />
+          <AnimatedSearchPlaceholder />
         </TouchableOpacity>
       )}
     </LinearGradient>
