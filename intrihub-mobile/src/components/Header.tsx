@@ -169,7 +169,7 @@ export const Header: React.FC<HeaderProps> = ({
               (() =>
                 router.push({
                   pathname: "/(tabs)/categories",
-                  params: { autoFocus: "true" },
+                  params: { autoFocus: Date.now().toString() },
                 } as any))
             }
           >

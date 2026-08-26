@@ -1,4 +1,4 @@
-import React, { useState, useRef, useEffect } from "react";
+import React, { useState, useRef, useEffect, useCallback } from "react";
 import {
   View,
   Text,
@@ -13,10 +13,11 @@ import {
   Modal,
   Keyboard,
   TouchableWithoutFeedback,
+  InteractionManager,
 } from "react-native";
 import { Image } from "expo-image";
 import { useQuery } from "@tanstack/react-query";
-import { useRouter, useLocalSearchParams } from "expo-router";
+import { useRouter, useLocalSearchParams, useFocusEffect } from "expo-router";
 import {
   Search,
   X,
@@ -46,16 +47,31 @@ export default function CategoriesScreen() {
   const [tempCategory, setTempCategory] = useState<Category | null>(null);
   const [activeSort, setActiveSort] = useState<"popular" | "price_asc" | "price_desc" | "rating">("popular");
 
-  // Auto-focus keyboard when navigated from header search bar
-  useEffect(() => {
-    if (params?.focus === "true" || params?.autoFocus === "true") {
-      const timer = setTimeout(() => {
-        inputRef.current?.focus();
-        setIsSearchFocused(true);
-      }, 150);
-      return () => clearTimeout(timer);
-    }
-  }, [params?.focus, params?.autoFocus]);
+  // Robust Auto-focus keyboard on screen focus when navigated via search bar
+  useFocusEffect(
+    useCallback(() => {
+      if (params?.focus || params?.autoFocus) {
+        // Run after tab navigation transition completes
+        const task = InteractionManager.runAfterInteractions(() => {
+          setTimeout(() => {
+            inputRef.current?.focus();
+            setIsSearchFocused(true);
+          }, 80);
+        });
+
+        // Backup timer for guaranteed native focus
+        const backupTimer = setTimeout(() => {
+          inputRef.current?.focus();
+          setIsSearchFocused(true);
+        }, 220);
+
+        return () => {
+          task.cancel();
+          clearTimeout(backupTimer);
+        };
+      }
+    }, [params?.focus, params?.autoFocus])
+  );
 
   // Debounce search query (300ms) for live suggestions
   useEffect(() => {

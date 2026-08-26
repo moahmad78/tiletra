@@ -180,7 +180,12 @@ export default function HomeScreen() {
   return (
     <View style={styles.container}>
       <Header
-        onSearchPress={() => router.push("/(tabs)/categories")}
+        onSearchPress={() =>
+          router.push({
+            pathname: "/(tabs)/categories",
+            params: { autoFocus: Date.now().toString() },
+          } as any)
+        }
         onAddressPress={() => setAddressModalVisible(true)}
       />
 
