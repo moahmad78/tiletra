@@ -10,6 +10,7 @@ import {
   Platform,
   ScrollView,
 } from "react-native";
+import { Image } from "expo-image";
 import { useRouter } from "expo-router";
 import * as WebBrowser from "expo-web-browser";
 import * as Google from "expo-auth-session/providers/google";
@@ -256,6 +257,14 @@ export default function LoginScreen() {
 
         {/* Brand Banner */}
         <View style={styles.brandSection}>
+          <View style={styles.logoRow}>
+            <Image
+              source={require("../../assets/intri-web-logo.png")}
+              style={styles.brandLogo}
+              contentFit="contain"
+              transition={150}
+            />
+          </View>
           <Text style={styles.brandTitle}>
             {step === "input" ? "Welcome to Intrihub" : "Verify Your Email"}
           </Text>
@@ -412,6 +421,12 @@ export default function LoginScreen() {
           <Text style={styles.termsLink}>Terms of Use</Text> and{" "}
           <Text style={styles.termsLink}>Privacy Policy</Text>.
         </Text>
+
+        {/* Founder & Developer Credit Footer */}
+        <View style={styles.creditSection}>
+          <Text style={styles.creditText}>Developed by Sahil Sheikh</Text>
+          <Text style={styles.creditText}>Founder & CEO — Sahil Sheikh</Text>
+        </View>
       </ScrollView>
     </KeyboardAvoidingView>
   );
@@ -470,6 +485,14 @@ const styles = StyleSheet.create({
   },
   brandSection: {
     marginBottom: 24,
+  },
+  logoRow: {
+    alignItems: "flex-start",
+    marginBottom: 14,
+  },
+  brandLogo: {
+    width: 140,
+    height: 38,
   },
   brandTitle: {
     fontSize: 24,
@@ -677,11 +700,22 @@ const styles = StyleSheet.create({
     fontSize: 11,
     color: COLORS.textMuted,
     textAlign: "center",
-    marginTop: 24,
+    marginTop: 20,
     lineHeight: 16,
   },
   termsLink: {
     color: COLORS.primary,
     fontWeight: "700",
+  },
+  creditSection: {
+    marginTop: 18,
+    paddingBottom: 24,
+    alignItems: "center",
+  },
+  creditText: {
+    fontSize: 11,
+    fontWeight: "500",
+    color: COLORS.textMuted,
+    lineHeight: 16,
   },
 });
