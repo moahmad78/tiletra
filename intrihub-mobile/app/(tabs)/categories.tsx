@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useRef, useEffect } from "react";
 import {
   View,
   Text,
@@ -13,7 +13,7 @@ import {
   Modal,
 } from "react-native";
 import { useQuery } from "@tanstack/react-query";
-import { useRouter } from "expo-router";
+import { useRouter, useLocalSearchParams } from "expo-router";
 import { Search, X, SlidersHorizontal, Check, RefreshCw } from "lucide-react-native";
 import { ProductCard } from "../../src/components/ProductCard";
 import { AnimatedSearchPlaceholder } from "../../src/components/AnimatedSearchPlaceholder";
@@ -23,12 +23,25 @@ import { Category, Product } from "../../src/types";
 
 export default function CategoriesScreen() {
   const router = useRouter();
-  const [searchQuery, setSearchQuery] = useState("");
+  const params = useLocalSearchParams<{ focus?: string; q?: string }>();
+  const inputRef = useRef<TextInput>(null);
+
+  const [searchQuery, setSearchQuery] = useState(params?.q || "");
   const [isSearchFocused, setIsSearchFocused] = useState(false);
   const [selectedCategory, setSelectedCategory] = useState<Category | null>(null);
   const [modalVisible, setModalVisible] = useState(false);
   const [tempCategory, setTempCategory] = useState<Category | null>(null);
   const [activeSort, setActiveSort] = useState<"popular" | "price_asc" | "price_desc" | "rating">("popular");
+
+  // Auto-focus when navigated from header or search icon
+  useEffect(() => {
+    if (params?.focus === "true") {
+      const timer = setTimeout(() => {
+        inputRef.current?.focus();
+      }, 150);
+      return () => clearTimeout(timer);
+    }
+  }, [params?.focus]);
 
   // Fetch Categories
   const { data: catData, isLoading: catLoading } = useQuery({
@@ -81,35 +94,44 @@ export default function CategoriesScreen() {
     <View style={styles.container}>
       {/* Top Search Header */}
       <View style={styles.header}>
-        <View style={styles.searchBar}>
+        <TouchableOpacity
+          style={styles.searchBar}
+          activeOpacity={1}
+          onPress={() => inputRef.current?.focus()}
+        >
           <Search size={18} color={COLORS.textMuted} style={{ marginRight: 6 }} />
           {/* Animated placeholder when empty & not focused */}
           {!isSearchFocused && !searchQuery ? (
-            <TouchableOpacity
-              style={styles.placeholderTouch}
-              activeOpacity={1}
-              onPress={() => setIsSearchFocused(true)}
-            >
+            <View style={styles.placeholderTouch} pointerEvents="none">
               <AnimatedSearchPlaceholder />
-            </TouchableOpacity>
+            </View>
           ) : null}
           <TextInput
-            style={[styles.searchInput, !isSearchFocused && !searchQuery ? styles.hiddenInput : null]}
+            ref={inputRef}
+            style={[
+              styles.searchInput,
+              !isSearchFocused && !searchQuery ? styles.hiddenInput : null,
+            ]}
             placeholder={isSearchFocused ? "Search tiles, sanitaries, adhesives..." : ""}
-            placeholderTextColor={COLORS.textMuted}
+            placeholderTextColor="#94a3b8"
             value={searchQuery}
             onChangeText={setSearchQuery}
             onFocus={() => setIsSearchFocused(true)}
             onBlur={() => setIsSearchFocused(false)}
             returnKeyType="search"
-            autoFocus={isSearchFocused}
           />
           {searchQuery ? (
-            <TouchableOpacity onPress={() => setSearchQuery("")} hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}>
+            <TouchableOpacity
+              onPress={() => {
+                setSearchQuery("");
+                inputRef.current?.focus();
+              }}
+              hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+            >
               <X size={16} color={COLORS.textMuted} />
             </TouchableOpacity>
           ) : null}
-        </View>
+        </TouchableOpacity>
       </View>
 
       {/* Horizontal Sort & Filter Bar (E-Commerce Standard) */}
@@ -186,7 +208,13 @@ export default function CategoriesScreen() {
       {/* Active Filter Tag & Count Header */}
       <View style={styles.resultsInfoRow}>
         <Text style={styles.resultsCountText}>
-          {productsLoading ? "Loading products..." : `${products.length} Products`}
+          {productsLoading
+            ? "Searching products..."
+            : (productsData as any)?.isFallback
+            ? `Top results related to "${searchQuery}"`
+            : searchQuery.trim()
+            ? `${products.length} Products found for "${searchQuery}"`
+            : `${products.length} Products`}
         </Text>
 
         {selectedCategory && (

@@ -103,7 +103,14 @@ export const Header: React.FC<HeaderProps> = ({
           <TouchableOpacity
             style={[styles.searchBar, SHADOWS.sm]}
             activeOpacity={0.9}
-            onPress={onSearchPress || (() => router.push("/(tabs)/categories"))}
+            onPress={
+              onSearchPress ||
+              (() =>
+                router.push({
+                  pathname: "/(tabs)/categories",
+                  params: { focus: "true" },
+                } as any))
+            }
           >
             <Search size={18} color={COLORS.textMuted} style={{ marginRight: 8 }} />
             <AnimatedSearchPlaceholder />

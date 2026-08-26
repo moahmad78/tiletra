@@ -20,46 +20,75 @@ export async function GET(req: NextRequest) {
     const isTrending = searchParams.get("trending") === "true";
     const isBestseller = searchParams.get("bestseller") === "true";
     const isNewArrival = searchParams.get("newArrival") === "true";
-    const sortBy = searchParams.get("sort") || "popular"; // popular, price_asc, price_desc, rating, newest
+    const sortBy = searchParams.get("sort") || "popular";
     const page = Math.max(1, parseInt(searchParams.get("page") || "1", 10));
-    const limit = Math.min(50, Math.max(1, parseInt(searchParams.get("limit") || "20", 10)));
+    const limit = Math.min(50, Math.max(1, parseInt(searchParams.get("limit") || "40", 10)));
     const skip = (page - 1) * limit;
 
-    const where: any = {
+    const baseWhere: any = {
       status: "active",
       approvalStatus: "approved",
     };
 
-    if (q) {
-      where.OR = [
-        { name: { contains: q, mode: "insensitive" } },
-        { description: { contains: q, mode: "insensitive" } },
-        { categoryName: { contains: q, mode: "insensitive" } },
-        { material: { contains: q, mode: "insensitive" } },
-        { finish: { contains: q, mode: "insensitive" } },
-      ];
-    }
-
     if (categorySlug) {
-      where.categorySlug = categorySlug;
+      baseWhere.categorySlug = categorySlug;
     }
 
     if (subcategory) {
-      where.subcategory = subcategory;
+      baseWhere.subcategory = subcategory;
     }
 
     if (minPrice !== undefined || maxPrice !== undefined) {
-      where.pricePerSqft = {};
-      if (minPrice !== undefined) where.pricePerSqft.gte = minPrice;
-      if (maxPrice !== undefined) where.pricePerSqft.lte = maxPrice;
+      baseWhere.pricePerSqft = {};
+      if (minPrice !== undefined) baseWhere.pricePerSqft.gte = minPrice;
+      if (maxPrice !== undefined) baseWhere.pricePerSqft.lte = maxPrice;
     }
 
-    if (finish) where.finish = { equals: finish, mode: "insensitive" };
-    if (material) where.material = { equals: material, mode: "insensitive" };
-    if (vendorId) where.vendorId = vendorId;
-    if (isTrending) where.isTrending = true;
-    if (isBestseller) where.isBestseller = true;
-    if (isNewArrival) where.isNewArrival = true;
+    if (finish) baseWhere.finish = { equals: finish, mode: "insensitive" };
+    if (material) baseWhere.material = { equals: material, mode: "insensitive" };
+    if (vendorId) baseWhere.vendorId = vendorId;
+    if (isTrending) baseWhere.isTrending = true;
+    if (isBestseller) baseWhere.isBestseller = true;
+    if (isNewArrival) baseWhere.isNewArrival = true;
+
+    let where = { ...baseWhere };
+
+    if (q) {
+      const words = q.split(/\s+/).filter((w) => w.length > 0);
+      
+      const buildWordOr = (term: string) => [
+        { name: { contains: term, mode: "insensitive" } },
+        { description: { contains: term, mode: "insensitive" } },
+        { categoryName: { contains: term, mode: "insensitive" } },
+        { categorySlug: { contains: term, mode: "insensitive" } },
+        { subcategory: { contains: term, mode: "insensitive" } },
+        { material: { contains: term, mode: "insensitive" } },
+        { finish: { contains: term, mode: "insensitive" } },
+        { look: { contains: term, mode: "insensitive" } },
+        { usage: { contains: term, mode: "insensitive" } },
+        {
+          variants: {
+            some: {
+              name: { contains: term, mode: "insensitive" },
+            },
+          },
+        },
+      ];
+
+      if (words.length > 1) {
+        // Match full phrase OR any individual word
+        where.AND = [
+          {
+            OR: [
+              ...buildWordOr(q),
+              ...words.map((w) => ({ OR: buildWordOr(w) })),
+            ],
+          },
+        ];
+      } else {
+        where.OR = buildWordOr(q);
+      }
+    }
 
     let orderBy: any = { createdAt: "desc" };
     if (sortBy === "price_asc") orderBy = { pricePerSqft: "asc" };
@@ -67,7 +96,7 @@ export async function GET(req: NextRequest) {
     else if (sortBy === "rating") orderBy = { rating: "desc" };
     else if (sortBy === "popular") orderBy = [{ isTrending: "desc" }, { isBestseller: "desc" }, { rating: "desc" }];
 
-    const [products, totalCount] = await Promise.all([
+    let [products, totalCount] = await Promise.all([
       prisma.product.findMany({
         where,
         orderBy,
@@ -90,9 +119,39 @@ export async function GET(req: NextRequest) {
       prisma.product.count({ where }),
     ]);
 
+    // If query returned 0 products, provide smart fallback (popular / active items)
+    let isFallback = false;
+    if (products.length === 0 && q) {
+      isFallback = true;
+      const fallbackProducts = await prisma.product.findMany({
+        where: {
+          status: "active",
+          approvalStatus: "approved",
+        },
+        orderBy: [{ isBestseller: "desc" }, { isTrending: "desc" }, { rating: "desc" }],
+        take: 20,
+        include: {
+          vendor: {
+            select: {
+              id: true,
+              businessName: true,
+              slug: true,
+              logo: true,
+            },
+          },
+          variants: {
+            take: 10,
+          },
+        },
+      });
+      products = fallbackProducts;
+      totalCount = fallbackProducts.length;
+    }
+
     return mobileApiResponse({
       success: true,
       products,
+      isFallback,
       pagination: {
         total: totalCount,
         page,
