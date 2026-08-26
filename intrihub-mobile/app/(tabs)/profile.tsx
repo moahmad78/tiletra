@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import {
   View,
   Text,
@@ -10,6 +10,7 @@ import {
   Linking,
   Switch,
 } from "react-native";
+import { Image } from "expo-image";
 import { useRouter } from "expo-router";
 import {
   User,
@@ -24,14 +25,26 @@ import {
   Building,
 } from "lucide-react-native";
 import { useAuthStore } from "../../src/store/authStore";
+import { getProfile } from "../../src/api/auth";
 import { AddressModal } from "../../src/components/AddressModal";
 import { COLORS, SPACING, RADIUS, SHADOWS } from "../../src/constants/theme";
 
 export default function ProfileScreen() {
   const router = useRouter();
-  const { user, isAuthenticated, logout } = useAuthStore();
+  const { user, isAuthenticated, setUser, logout } = useAuthStore();
   const [addressModalVisible, setAddressModalVisible] = useState(false);
   const [orderPushEnabled, setOrderPushEnabled] = useState(true);
+
+  // Sync latest user profile on mount if logged in
+  useEffect(() => {
+    if (isAuthenticated) {
+      getProfile().then((res) => {
+        if (res.success && res.user) {
+          setUser(res.user);
+        }
+      }).catch(() => {});
+    }
+  }, [isAuthenticated]);
 
   const handleSupportCall = () => {
     Linking.openURL("tel:+917870935277");
@@ -56,15 +69,21 @@ export default function ProfileScreen() {
         {/* User Card */}
         {isAuthenticated && user ? (
           <View style={[styles.userCard, SHADOWS.sm]}>
-            <View style={styles.avatarCircle}>
-              <Text style={styles.avatarInitial}>
-                {user.name ? user.name.charAt(0).toUpperCase() : "U"}
-              </Text>
-            </View>
+            {user.avatar ? (
+              <Image source={{ uri: user.avatar }} style={styles.avatarImage} contentFit="cover" />
+            ) : (
+              <View style={styles.avatarCircle}>
+                <Text style={styles.avatarInitial}>
+                  {user.name ? user.name.charAt(0).toUpperCase() : user.email ? user.email.charAt(0).toUpperCase() : "U"}
+                </Text>
+              </View>
+            )}
             <View style={styles.userInfo}>
-              <Text style={styles.userName}>{user.name || "Customer"}</Text>
-              <Text style={styles.userPhone}>+91 {user.phone}</Text>
+              <Text style={styles.userName}>{user.name || "Intrihub Customer"}</Text>
               {user.email ? <Text style={styles.userEmail}>{user.email}</Text> : null}
+              {user.phone && !user.phone.startsWith("google_") && !user.phone.startsWith("email_") ? (
+                <Text style={styles.userPhone}>+91 {user.phone}</Text>
+              ) : null}
             </View>
           </View>
         ) : (
@@ -207,6 +226,12 @@ const styles = StyleSheet.create({
     backgroundColor: COLORS.primary,
     alignItems: "center",
     justifyContent: "center",
+  },
+  avatarImage: {
+    width: 52,
+    height: 52,
+    borderRadius: RADIUS.full,
+    backgroundColor: COLORS.surfaceSecondary,
   },
   avatarInitial: {
     color: COLORS.textWhite,

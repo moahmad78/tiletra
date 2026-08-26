@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import {
   View,
   Text,
@@ -13,9 +13,10 @@ import {
 import { useRouter } from "expo-router";
 import * as WebBrowser from "expo-web-browser";
 import * as Google from "expo-auth-session/providers/google";
-import { ArrowLeft, ShieldCheck, Mail, Phone, Lock } from "lucide-react-native";
-import { COLORS, SPACING, RADIUS } from "../../src/constants/theme";
-import { sendOtp, verifyOtp, loginWithPhoneOrEmail, loginWithGoogle } from "../../src/api/auth";
+import Svg, { Path } from "react-native-svg";
+import { ArrowLeft, ShieldCheck, Mail, ArrowRight, RotateCw, Lock, ChevronLeft } from "lucide-react-native";
+import { COLORS, SPACING, RADIUS, SHADOWS } from "../../src/constants/theme";
+import { sendOtp, verifyOtp, loginWithGoogle } from "../../src/api/auth";
 import { useAuthStore } from "../../src/store/authStore";
 
 WebBrowser.maybeCompleteAuthSession();
@@ -23,19 +24,42 @@ WebBrowser.maybeCompleteAuthSession();
 // Google Client ID shared with the Intrihub web application
 const GOOGLE_CLIENT_ID = "602084779648-k1gfeq3u4vein82tvt93d1iv5t43b8oh.apps.googleusercontent.com";
 
+function GoogleIcon() {
+  return (
+    <Svg width={20} height={20} viewBox="0 0 24 24">
+      <Path
+        fill="#4285F4"
+        d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"
+      />
+      <Path
+        fill="#34A853"
+        d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"
+      />
+      <Path
+        fill="#FBBC05"
+        d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.06H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.94l2.85-2.22.81-.63z"
+      />
+      <Path
+        fill="#EA4335"
+        d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.06l3.66 2.84c.87-2.6 3.3-4.52 6.16-4.52z"
+      />
+    </Svg>
+  );
+}
+
 export default function LoginScreen() {
   const router = useRouter();
   const { setUser } = useAuthStore();
 
-  const [authMode, setAuthMode] = useState<"phone" | "email">("phone");
   const [step, setStep] = useState<"input" | "otp">("input");
-  const [phone, setPhone] = useState("");
   const [email, setEmail] = useState("");
   const [name, setName] = useState("");
   const [otp, setOtp] = useState("");
   const [loading, setLoading] = useState(false);
   const [googleLoading, setGoogleLoading] = useState(false);
   const [error, setError] = useState("");
+  const [timer, setTimer] = useState(60);
+  const [canResend, setCanResend] = useState(false);
 
   // Google OAuth Request
   const [request, response, promptAsync] = Google.useAuthRequest({
@@ -43,6 +67,17 @@ export default function LoginScreen() {
     webClientId: GOOGLE_CLIENT_ID,
     scopes: ["profile", "email"],
   });
+
+  // Countdown timer for OTP
+  useEffect(() => {
+    if (step !== "otp") return;
+    if (timer <= 0) {
+      setCanResend(true);
+      return;
+    }
+    const interval = setInterval(() => setTimer((t) => t - 1), 1000);
+    return () => clearInterval(interval);
+  }, [step, timer]);
 
   // Handle Google OAuth Response
   useEffect(() => {
@@ -77,34 +112,10 @@ export default function LoginScreen() {
     handleGoogleResponse();
   }, [response]);
 
-  const handlePhoneSubmit = async () => {
-    setError("");
-    const cleanPhone = phone.replace(/\D/g, "");
-    if (cleanPhone.length !== 10) {
-      setError("Please enter a valid 10-digit mobile number");
-      return;
-    }
-
-    setLoading(true);
-    try {
-      const res = await loginWithPhoneOrEmail(cleanPhone, name.trim() || undefined);
-      if (res.success && res.user) {
-        setUser(res.user);
-        router.back();
-      } else {
-        setError(res.error || "Failed to sign in with phone number");
-      }
-    } catch (err: any) {
-      setError(err?.response?.data?.error || err.message || "Network error. Please try again.");
-    } finally {
-      setLoading(false);
-    }
-  };
-
   const handleEmailSubmit = async () => {
     setError("");
     const cleanEmail = email.trim().toLowerCase();
-    if (!cleanEmail || !cleanEmail.includes("@") || !cleanEmail.includes(".")) {
+    if (!cleanEmail || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(cleanEmail)) {
       setError("Please enter a valid email address");
       return;
     }
@@ -114,11 +125,13 @@ export default function LoginScreen() {
       const res = await sendOtp(cleanEmail);
       if (res.success) {
         setStep("otp");
+        setTimer(60);
+        setCanResend(false);
       } else {
         setError(res.error || "Failed to send verification code. Please try again.");
       }
     } catch (err: any) {
-      setError(err?.response?.data?.error || err.message || "Failed to send OTP. Please try again.");
+      setError(err?.response?.data?.error || err.message || "Network error. Please try again.");
     } finally {
       setLoading(false);
     }
@@ -144,10 +157,30 @@ export default function LoginScreen() {
         setUser(res.user);
         router.back();
       } else {
-        setError(res.error || "Invalid verification code");
+        setError(res.error || "Invalid verification code. Please try again.");
       }
     } catch (err: any) {
       setError(err?.response?.data?.error || err.message || "Failed to verify code");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleResendOtp = async () => {
+    if (!canResend || loading) return;
+    setError("");
+    setLoading(true);
+    try {
+      const res = await sendOtp(email.trim().toLowerCase());
+      if (res.success) {
+        setTimer(60);
+        setCanResend(false);
+        setOtp("");
+      } else {
+        setError(res.error || "Failed to resend code");
+      }
+    } catch (err: any) {
+      setError("Failed to resend verification code");
     } finally {
       setLoading(false);
     }
@@ -168,146 +201,56 @@ export default function LoginScreen() {
       style={styles.container}
     >
       <ScrollView contentContainerStyle={styles.scrollContent} keyboardShouldPersistTaps="handled">
-        {/* Top Header */}
-        <TouchableOpacity style={styles.backButton} onPress={() => router.back()}>
-          <ArrowLeft size={22} color={COLORS.text} />
-        </TouchableOpacity>
+        {/* Top Header Row */}
+        <View style={styles.topNav}>
+          <TouchableOpacity
+            style={styles.backButton}
+            onPress={() => {
+              if (step === "otp") {
+                setStep("input");
+                setOtp("");
+                setError("");
+              } else {
+                router.back();
+              }
+            }}
+          >
+            {step === "otp" ? (
+              <ChevronLeft size={20} color={COLORS.text} />
+            ) : (
+              <ArrowLeft size={20} color={COLORS.text} />
+            )}
+          </TouchableOpacity>
+
+          <View style={styles.badgeRow}>
+            <View style={styles.intriBadge}>
+              <Text style={styles.intriBadgeText}>INTRIHUB</Text>
+            </View>
+            <View style={styles.secureBadge}>
+              <ShieldCheck size={13} color={COLORS.accentOrange} style={{ marginRight: 4 }} />
+              <Text style={styles.secureBadgeText}>Secure Login</Text>
+            </View>
+          </View>
+        </View>
 
         {/* Brand Banner */}
         <View style={styles.brandSection}>
-          <View style={styles.iconCircle}>
-            <ShieldCheck size={36} color={COLORS.primary} />
-          </View>
-          <Text style={styles.brandTitle}>Welcome to Intrihub</Text>
+          <Text style={styles.brandTitle}>
+            {step === "input" ? "Welcome to Intrihub" : "Verify Your Email"}
+          </Text>
           <Text style={styles.brandSubtitle}>
-            India's interior & construction supply marketplace
+            {step === "input"
+              ? "India's interior & construction supply marketplace"
+              : `We've sent a 6-digit verification code to ${email}`}
           </Text>
         </View>
 
-        {/* Error Message */}
+        {/* Error Alert */}
         {error ? <Text style={styles.errorText}>{error}</Text> : null}
 
         {step === "input" ? (
-          <View style={styles.formCard}>
-            <Text style={styles.formHeading}>Sign In or Register</Text>
-            <Text style={styles.formSub}>Enter your details to proceed with your orders</Text>
-
-            {/* Mode Switcher: Phone vs Email Tabs */}
-            <View style={styles.toggleContainer}>
-              <TouchableOpacity
-                style={[styles.toggleBtn, authMode === "phone" && styles.toggleBtnActive]}
-                onPress={() => {
-                  setAuthMode("phone");
-                  setError("");
-                }}
-                activeOpacity={0.8}
-              >
-                <Phone
-                  size={15}
-                  color={authMode === "phone" ? COLORS.primary : COLORS.textMuted}
-                  style={{ marginRight: 6 }}
-                />
-                <Text style={[styles.toggleText, authMode === "phone" && styles.toggleTextActive]}>
-                  Phone Number
-                </Text>
-              </TouchableOpacity>
-
-              <TouchableOpacity
-                style={[styles.toggleBtn, authMode === "email" && styles.toggleBtnActive]}
-                onPress={() => {
-                  setAuthMode("email");
-                  setError("");
-                }}
-                activeOpacity={0.8}
-              >
-                <Mail
-                  size={15}
-                  color={authMode === "email" ? COLORS.primary : COLORS.textMuted}
-                  style={{ marginRight: 6 }}
-                />
-                <Text style={[styles.toggleText, authMode === "email" && styles.toggleTextActive]}>
-                  Email Address
-                </Text>
-              </TouchableOpacity>
-            </View>
-
-            {/* Optional Full Name Field */}
-            <Text style={styles.label}>Full Name (Optional)</Text>
-            <TextInput
-              style={styles.input}
-              placeholder="e.g. Rahul Sharma"
-              value={name}
-              onChangeText={setName}
-            />
-
-            {/* Phone Input View */}
-            {authMode === "phone" ? (
-              <View>
-                <Text style={styles.label}>10-Digit Mobile Number *</Text>
-                <View style={styles.inputWithIcon}>
-                  <Text style={styles.countryCode}>+91</Text>
-                  <TextInput
-                    style={styles.inputIconText}
-                    placeholder="Enter mobile number"
-                    value={phone}
-                    onChangeText={setPhone}
-                    keyboardType="phone-pad"
-                    maxLength={10}
-                  />
-                </View>
-
-                <TouchableOpacity
-                  style={styles.primaryButton}
-                  onPress={handlePhoneSubmit}
-                  disabled={loading || googleLoading}
-                  activeOpacity={0.85}
-                >
-                  {loading ? (
-                    <ActivityIndicator color={COLORS.textWhite} />
-                  ) : (
-                    <Text style={styles.primaryButtonText}>Continue with Phone</Text>
-                  )}
-                </TouchableOpacity>
-              </View>
-            ) : (
-              /* Email Input View */
-              <View>
-                <Text style={styles.label}>Email Address *</Text>
-                <View style={styles.inputWithIcon}>
-                  <Mail size={18} color={COLORS.textMuted} style={styles.fieldIcon} />
-                  <TextInput
-                    style={styles.inputIconText}
-                    placeholder="name@example.com"
-                    value={email}
-                    onChangeText={setEmail}
-                    autoCapitalize="none"
-                    keyboardType="email-address"
-                  />
-                </View>
-
-                <TouchableOpacity
-                  style={styles.primaryButton}
-                  onPress={handleEmailSubmit}
-                  disabled={loading || googleLoading}
-                  activeOpacity={0.85}
-                >
-                  {loading ? (
-                    <ActivityIndicator color={COLORS.textWhite} />
-                  ) : (
-                    <Text style={styles.primaryButtonText}>Send Verification Code</Text>
-                  )}
-                </TouchableOpacity>
-              </View>
-            )}
-
-            {/* Divider */}
-            <View style={styles.dividerRow}>
-              <View style={styles.dividerLine} />
-              <Text style={styles.dividerText}>OR</Text>
-              <View style={styles.dividerLine} />
-            </View>
-
-            {/* Continue with Google Button */}
+          <View style={[styles.formCard, SHADOWS.sm]}>
+            {/* 1. Continue with Google Button (Top Primary) */}
             <TouchableOpacity
               style={styles.googleButton}
               onPress={handleGooglePress}
@@ -317,24 +260,75 @@ export default function LoginScreen() {
               {googleLoading ? (
                 <ActivityIndicator color={COLORS.primary} size="small" />
               ) : (
-                <View style={styles.googleBtnContent}>
-                  <View style={styles.googleIconBadge}>
-                    <Text style={styles.googleGText}>G</Text>
+                <>
+                  <View style={styles.googleLeft}>
+                    <GoogleIcon />
+                    <Text style={styles.googleButtonText}>Continue with Google</Text>
                   </View>
-                  <Text style={styles.googleButtonText}>Continue with Google</Text>
+                  <View style={styles.fastestBadge}>
+                    <Text style={styles.fastestText}>FASTEST</Text>
+                  </View>
+                </>
+              )}
+            </TouchableOpacity>
+
+            {/* 2. Divider */}
+            <View style={styles.dividerRow}>
+              <View style={styles.dividerLine} />
+              <Text style={styles.dividerText}>OR</Text>
+              <View style={styles.dividerLine} />
+            </View>
+
+            {/* 3. Email Input */}
+            <Text style={styles.label}>Work or Personal Email *</Text>
+            <View style={styles.inputWithIcon}>
+              <Mail size={18} color={COLORS.textMuted} style={styles.fieldIcon} />
+              <TextInput
+                style={styles.inputIconText}
+                placeholder="name@example.com"
+                value={email}
+                onChangeText={setEmail}
+                autoCapitalize="none"
+                keyboardType="email-address"
+                autoCorrect={false}
+              />
+            </View>
+
+            {/* Optional Full Name Input */}
+            <Text style={styles.label}>Full Name (Optional)</Text>
+            <TextInput
+              style={styles.input}
+              placeholder="e.g. Rahul Sharma"
+              value={name}
+              onChangeText={setName}
+            />
+
+            {/* 4. Continue with Email Button */}
+            <TouchableOpacity
+              style={styles.primaryButton}
+              onPress={handleEmailSubmit}
+              disabled={loading || googleLoading}
+              activeOpacity={0.85}
+            >
+              {loading ? (
+                <ActivityIndicator color={COLORS.textWhite} size="small" />
+              ) : (
+                <View style={styles.btnRow}>
+                  <Text style={styles.primaryButtonText}>Continue with Email OTP</Text>
+                  <ArrowRight size={16} color={COLORS.textWhite} style={{ marginLeft: 8 }} />
                 </View>
               )}
             </TouchableOpacity>
           </View>
         ) : (
           /* OTP Verification Step */
-          <View style={styles.formCard}>
+          <View style={[styles.formCard, SHADOWS.sm]}>
             <View style={styles.otpHeaderIcon}>
-              <Lock size={28} color={COLORS.primary} />
+              <Lock size={26} color={COLORS.primary} />
             </View>
             <Text style={styles.formHeading}>Enter 6-Digit Code</Text>
             <Text style={styles.formSub}>
-              We have sent a verification code to <Text style={styles.highlight}>{email}</Text>
+              Enter the code sent to <Text style={styles.highlight}>{email}</Text>
             </Text>
 
             <TextInput
@@ -354,24 +348,48 @@ export default function LoginScreen() {
               activeOpacity={0.85}
             >
               {loading ? (
-                <ActivityIndicator color={COLORS.textWhite} />
+                <ActivityIndicator color={COLORS.textWhite} size="small" />
               ) : (
                 <Text style={styles.primaryButtonText}>Verify & Sign In</Text>
               )}
             </TouchableOpacity>
 
+            {/* Resend Timer / Action */}
+            <View style={styles.resendRow}>
+              {canResend ? (
+                <TouchableOpacity
+                  onPress={handleResendOtp}
+                  disabled={loading}
+                  style={styles.resendBtn}
+                >
+                  <RotateCw size={14} color={COLORS.primary} style={{ marginRight: 6 }} />
+                  <Text style={styles.resendText}>Resend Code</Text>
+                </TouchableOpacity>
+              ) : (
+                <Text style={styles.timerText}>
+                  Resend code in <Text style={styles.timerCount}>{timer}s</Text>
+                </Text>
+              )}
+            </View>
+
             <TouchableOpacity
               style={styles.changeBtn}
-              onPress={() => setStep("input")}
+              onPress={() => {
+                setStep("input");
+                setOtp("");
+                setError("");
+              }}
               disabled={loading}
             >
-              <Text style={styles.changeBtnText}>Change Email Address</Text>
+              <Text style={styles.changeBtnText}>Back to Email Entry</Text>
             </TouchableOpacity>
           </View>
         )}
 
         <Text style={styles.termsText}>
-          By continuing, you agree to Intrihub's Terms of Use and Privacy Policy.
+          By continuing, you agree to Intrihub's{"\n"}
+          <Text style={styles.termsLink}>Terms of Use</Text> and{" "}
+          <Text style={styles.termsLink}>Privacy Policy</Text>.
         </Text>
       </ScrollView>
     </KeyboardAvoidingView>
@@ -385,42 +403,64 @@ const styles = StyleSheet.create({
   },
   scrollContent: {
     padding: SPACING.xl,
-    paddingTop: Platform.OS === "android" ? 48 : 24,
+    paddingTop: Platform.OS === "android" ? 44 : 20,
+  },
+  topNav: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    marginBottom: 20,
   },
   backButton: {
-    width: 40,
-    height: 40,
+    width: 38,
+    height: 38,
     borderRadius: RADIUS.full,
     backgroundColor: COLORS.surface,
     alignItems: "center",
     justifyContent: "center",
-    marginBottom: 16,
     borderWidth: 1,
     borderColor: COLORS.border,
   },
-  brandSection: {
+  badgeRow: {
+    flexDirection: "row",
     alignItems: "center",
+  },
+  intriBadge: {
+    backgroundColor: COLORS.accentOrange,
+    paddingHorizontal: 8,
+    paddingVertical: 3,
+    borderRadius: RADIUS.sm,
+    marginRight: 8,
+  },
+  intriBadgeText: {
+    color: COLORS.textWhite,
+    fontSize: 10,
+    fontWeight: "900",
+    letterSpacing: 0.5,
+  },
+  secureBadge: {
+    flexDirection: "row",
+    alignItems: "center",
+  },
+  secureBadgeText: {
+    fontSize: 12,
+    fontWeight: "700",
+    color: COLORS.textSecondary,
+  },
+  brandSection: {
     marginBottom: 24,
   },
-  iconCircle: {
-    width: 60,
-    height: 60,
-    borderRadius: RADIUS.full,
-    backgroundColor: "rgba(5, 42, 81, 0.08)",
-    alignItems: "center",
-    justifyContent: "center",
-    marginBottom: 10,
-  },
   brandTitle: {
-    fontSize: 22,
+    fontSize: 24,
     fontWeight: "900",
     color: COLORS.primary,
+    letterSpacing: -0.5,
   },
   brandSubtitle: {
     fontSize: 13,
     color: COLORS.textSecondary,
-    marginTop: 3,
-    textAlign: "center",
+    marginTop: 4,
+    lineHeight: 18,
   },
   errorText: {
     backgroundColor: "#fee2e2",
@@ -434,115 +474,43 @@ const styles = StyleSheet.create({
   },
   formCard: {
     backgroundColor: COLORS.surface,
-    borderRadius: RADIUS.lg,
+    borderRadius: RADIUS.xl,
     padding: SPACING.xl,
     borderWidth: 1,
     borderColor: COLORS.border,
   },
-  formHeading: {
-    fontSize: 17,
-    fontWeight: "800",
-    color: COLORS.text,
-  },
-  formSub: {
-    fontSize: 12,
-    color: COLORS.textSecondary,
-    marginTop: 4,
-    marginBottom: 18,
-  },
-  toggleContainer: {
-    flexDirection: "row",
-    backgroundColor: COLORS.surfaceSecondary,
-    borderRadius: RADIUS.md,
-    padding: 4,
-    marginBottom: 18,
-    borderWidth: 1,
-    borderColor: COLORS.border,
-  },
-  toggleBtn: {
-    flex: 1,
+  googleButton: {
     flexDirection: "row",
     alignItems: "center",
-    justifyContent: "center",
-    paddingVertical: 9,
+    justifyContent: "space-between",
+    backgroundColor: COLORS.surface,
+    borderRadius: RADIUS.lg,
+    borderWidth: 1.5,
+    borderColor: COLORS.border,
+    paddingHorizontal: 16,
+    paddingVertical: 13,
+  },
+  googleLeft: {
+    flexDirection: "row",
+    alignItems: "center",
+  },
+  googleButtonText: {
+    color: COLORS.primary,
+    fontSize: 14,
+    fontWeight: "800",
+    marginLeft: 12,
+  },
+  fastestBadge: {
+    backgroundColor: COLORS.accentOrange,
+    paddingHorizontal: 7,
+    paddingVertical: 2.5,
     borderRadius: RADIUS.sm,
   },
-  toggleBtnActive: {
-    backgroundColor: COLORS.surface,
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.1,
-    shadowRadius: 2,
-    elevation: 2,
-  },
-  toggleText: {
-    fontSize: 12,
-    fontWeight: "600",
-    color: COLORS.textMuted,
-  },
-  toggleTextActive: {
-    color: COLORS.primary,
-    fontWeight: "800",
-  },
-  highlight: {
-    fontWeight: "700",
-    color: COLORS.primary,
-  },
-  label: {
-    fontSize: 12,
-    fontWeight: "700",
-    color: COLORS.textSecondary,
-    marginBottom: 6,
-  },
-  input: {
-    backgroundColor: COLORS.surfaceSecondary,
-    borderRadius: RADIUS.md,
-    borderWidth: 1,
-    borderColor: COLORS.border,
-    paddingHorizontal: 12,
-    paddingVertical: 11,
-    fontSize: 14,
-    color: COLORS.text,
-    marginBottom: 14,
-  },
-  inputWithIcon: {
-    flexDirection: "row",
-    alignItems: "center",
-    backgroundColor: COLORS.surfaceSecondary,
-    borderRadius: RADIUS.md,
-    borderWidth: 1,
-    borderColor: COLORS.border,
-    paddingHorizontal: 12,
-    marginBottom: 18,
-  },
-  countryCode: {
-    fontSize: 14,
-    fontWeight: "700",
-    color: COLORS.text,
-    marginRight: 10,
-    borderRightWidth: 1,
-    borderRightColor: COLORS.border,
-    paddingRight: 8,
-  },
-  fieldIcon: {
-    marginRight: 8,
-  },
-  inputIconText: {
-    flex: 1,
-    paddingVertical: 11,
-    fontSize: 14,
-    color: COLORS.text,
-  },
-  primaryButton: {
-    backgroundColor: COLORS.primary,
-    borderRadius: RADIUS.md,
-    paddingVertical: 13,
-    alignItems: "center",
-  },
-  primaryButtonText: {
+  fastestText: {
     color: COLORS.textWhite,
-    fontSize: 14,
-    fontWeight: "800",
+    fontSize: 9,
+    fontWeight: "900",
+    letterSpacing: 0.5,
   },
   dividerRow: {
     flexDirection: "row",
@@ -556,42 +524,63 @@ const styles = StyleSheet.create({
   },
   dividerText: {
     fontSize: 11,
-    fontWeight: "700",
+    fontWeight: "800",
     color: COLORS.textMuted,
     marginHorizontal: 12,
+    letterSpacing: 0.8,
   },
-  googleButton: {
-    backgroundColor: COLORS.surface,
+  label: {
+    fontSize: 12,
+    fontWeight: "700",
+    color: COLORS.textSecondary,
+    marginBottom: 6,
+  },
+  inputWithIcon: {
+    flexDirection: "row",
+    alignItems: "center",
+    backgroundColor: COLORS.surfaceSecondary,
     borderRadius: RADIUS.md,
     borderWidth: 1,
     borderColor: COLORS.border,
+    paddingHorizontal: 12,
+    marginBottom: 14,
+  },
+  fieldIcon: {
+    marginRight: 8,
+  },
+  inputIconText: {
+    flex: 1,
     paddingVertical: 11,
+    fontSize: 14,
+    color: COLORS.text,
+  },
+  input: {
+    backgroundColor: COLORS.surfaceSecondary,
+    borderRadius: RADIUS.md,
+    borderWidth: 1,
+    borderColor: COLORS.border,
+    paddingHorizontal: 12,
+    paddingVertical: 11,
+    fontSize: 14,
+    color: COLORS.text,
+    marginBottom: 18,
+  },
+  primaryButton: {
+    backgroundColor: COLORS.primary,
+    borderRadius: RADIUS.md,
+    paddingVertical: 13,
     alignItems: "center",
     justifyContent: "center",
   },
-  googleBtnContent: {
+  btnRow: {
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "center",
   },
-  googleIconBadge: {
-    width: 22,
-    height: 22,
-    borderRadius: RADIUS.full,
-    backgroundColor: "#ea4335",
-    alignItems: "center",
-    justifyContent: "center",
-    marginRight: 10,
-  },
-  googleGText: {
-    color: "#fff",
-    fontSize: 13,
-    fontWeight: "900",
-  },
-  googleButtonText: {
-    color: COLORS.text,
-    fontSize: 13,
-    fontWeight: "700",
+  primaryButtonText: {
+    color: COLORS.textWhite,
+    fontSize: 14,
+    fontWeight: "800",
   },
   otpHeaderIcon: {
     width: 48,
@@ -600,20 +589,59 @@ const styles = StyleSheet.create({
     backgroundColor: "rgba(5, 42, 81, 0.08)",
     alignItems: "center",
     justifyContent: "center",
+    alignSelf: "center",
     marginBottom: 12,
+  },
+  formHeading: {
+    fontSize: 18,
+    fontWeight: "800",
+    color: COLORS.text,
+    textAlign: "center",
+  },
+  formSub: {
+    fontSize: 12,
+    color: COLORS.textSecondary,
+    marginTop: 4,
+    marginBottom: 18,
+    textAlign: "center",
+  },
+  highlight: {
+    fontWeight: "700",
+    color: COLORS.primary,
   },
   otpInput: {
     backgroundColor: COLORS.surfaceSecondary,
     borderRadius: RADIUS.md,
-    borderWidth: 1,
+    borderWidth: 1.5,
     borderColor: COLORS.primary,
     paddingVertical: 13,
-    fontSize: 22,
+    fontSize: 24,
     fontWeight: "800",
     color: COLORS.primary,
     textAlign: "center",
     letterSpacing: 8,
     marginBottom: 18,
+  },
+  resendRow: {
+    alignItems: "center",
+    marginTop: 14,
+  },
+  resendBtn: {
+    flexDirection: "row",
+    alignItems: "center",
+  },
+  resendText: {
+    color: COLORS.primary,
+    fontSize: 12,
+    fontWeight: "800",
+  },
+  timerText: {
+    fontSize: 12,
+    color: COLORS.textMuted,
+  },
+  timerCount: {
+    fontWeight: "800",
+    color: COLORS.primary,
   },
   changeBtn: {
     alignItems: "center",
@@ -628,7 +656,11 @@ const styles = StyleSheet.create({
     fontSize: 11,
     color: COLORS.textMuted,
     textAlign: "center",
-    marginTop: 22,
+    marginTop: 24,
     lineHeight: 16,
+  },
+  termsLink: {
+    color: COLORS.primary,
+    fontWeight: "700",
   },
 });
