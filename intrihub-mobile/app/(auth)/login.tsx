@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect } from "react";
 import {
   View,
   Text,
@@ -186,13 +186,34 @@ export default function LoginScreen() {
     }
   };
 
-  const handleGooglePress = () => {
+  const handleGooglePress = async () => {
     setError("");
     if (!request) {
       setError("Google Sign-In is initializing. Please try again in a moment.");
       return;
     }
-    promptAsync();
+
+    try {
+      if (Platform.OS === "web") {
+        // Try popup prompt with graceful catch for browser popup blockers
+        const result = await promptAsync();
+        if (result?.type === "error" && (result as any).error?.message?.includes("Popup")) {
+          // If popup is blocked by browser, redirect to website auth endpoint directly
+          if (typeof window !== "undefined") {
+            window.location.href = "https://www.intrihub.com/api/auth/google";
+          }
+        }
+      } else {
+        await promptAsync();
+      }
+    } catch (err: any) {
+      console.warn("Google Sign-In prompt notice:", err?.message);
+      if (Platform.OS === "web" && typeof window !== "undefined") {
+        window.location.href = "https://www.intrihub.com/api/auth/google";
+      } else {
+        setError(err?.message || "Google Sign-In requires an Android Development Build APK or allowed popups.");
+      }
+    }
   };
 
   return (
