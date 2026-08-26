@@ -420,6 +420,18 @@ export async function createOrder(input: CreateOrderInput) {
       } catch (e) {
         console.error("Failed to create customer notification:", e);
       }
+
+      // Dispatch Mobile Push Notification safely
+      try {
+        const { sendPushToUser } = await import("@/lib/push-notifications");
+        await sendPushToUser(order.userId, {
+          title: `Order #${order.id} Confirmed!`,
+          body: `Your order for ₹${order.total.toLocaleString("en-IN")} has been placed successfully.`,
+          data: { orderId: order.id, type: "order_placed" },
+        });
+      } catch (e) {
+        console.warn("Mobile push notification error:", e);
+      }
     }
 
     // Real-Time Socket Broadcast to Admin Room (Phase 5b PRD)
@@ -607,6 +619,28 @@ export async function updateOrderStatus(id: string, orderStatus: string) {
         });
       } catch (e) {
         console.error("Failed to create status update customer notification:", e);
+      }
+
+      // Dispatch Mobile Push Notification
+      try {
+        const { sendPushToUser } = await import("@/lib/push-notifications");
+        const statusLabel =
+          orderStatus === "dispatched" || orderStatus === "shipped"
+            ? "Dispatched"
+            : orderStatus === "delivered"
+            ? "Delivered"
+            : orderStatus === "cancelled"
+            ? "Cancelled"
+            : `Updated to ${orderStatus}`;
+        await sendPushToUser(order.userId, {
+          title: `Order #${order.id} ${statusLabel}!`,
+          body: `Your order status is now ${orderStatus.toUpperCase()}.${
+            order.trackingNumber ? ` Tracking: ${order.trackingNumber}` : ""
+          }`,
+          data: { orderId: order.id, type: "order_status", status: orderStatus },
+        });
+      } catch (e) {
+        console.warn("Mobile push notification error on status update:", e);
       }
     }
 

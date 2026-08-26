@@ -711,4 +711,20 @@ model UploadedFile {
   @@index([fileName])
 }
 
+// ----------------------------------------------------
+// 14. Mobile Device Push Tokens
+// ----------------------------------------------------
+model MobilePushToken {
+  id        String   @id @default(cuid())
+  userId    String
+  token     String   @unique
+  platform  String   @default("android") // android | ios
+  deviceId  String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([userId])
+}
+
+
 

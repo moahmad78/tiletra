@@ -5,7 +5,14 @@ import Header from "@/components/Header";
 import Footer from "@/components/Footer";
 import CategoryCatalogClient from "@/components/CategoryCatalogClient";
 import { notFound } from "next/navigation";
-import { BASE_SITE_URL, getCanonicalUrl, generateBreadcrumbSchema, safeJsonLd } from "@/lib/seo";
+import {
+  BASE_SITE_URL,
+  getCanonicalUrl,
+  generateBreadcrumbSchema,
+  generateItemListSchema,
+  generateFAQSchema,
+  safeJsonLd,
+} from "@/lib/seo";
 
 export const revalidate = 60;
 
@@ -80,12 +87,46 @@ export default async function CategoryPage({
     { name: category.name, url: `/shop/${category.slug}` },
   ]);
 
+  const itemListSchema = generateItemListSchema(
+    categoryProducts.map((p, idx) => ({
+      name: p.name,
+      url: `/product/${p.slug}`,
+      image: p.images?.[0],
+      position: idx + 1,
+    }))
+  );
+
+  const categoryFaqs = [
+    {
+      question: `What is the standard delivery timeline for ${category.name}?`,
+      answer: `Most ${category.name} orders are dispatched within 24 to 48 hours, with doorstep delivery across Bangalore in 2–4 business days and Pan-India in 4–7 business days.`,
+    },
+    {
+      question: `Can I get bulk contractor discounts on ${category.name}?`,
+      answer: `Yes, Intrihub offers tiered trade discounts, GST tax invoices for input credit, and dedicated project supply managers for contractors, builders, and designers.`,
+    },
+  ];
+
+  const faqSchema = generateFAQSchema(categoryFaqs);
+
   return (
     <>
       <script
         type="application/ld+json"
         dangerouslySetInnerHTML={{
           __html: safeJsonLd(breadcrumbsSchema),
+        }}
+      />
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{
+          __html: safeJsonLd(itemListSchema),
+        }}
+      />
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{
+          __html: safeJsonLd(faqSchema),
         }}
       />
       <main className="min-h-screen flex flex-col bg-[#F3F4F5] pt-[56px] md:pt-[175px] lg:pt-[180px]">
@@ -106,4 +147,3 @@ export default async function CategoryPage({
     </>
   );
 }
-

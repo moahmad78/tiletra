@@ -22,6 +22,10 @@ const shopLinks = [
 ];
 
 const helpLinks = [
+  { label: "Buying Guides & Calculators", href: "/guides" },
+  { label: "For Architects", href: "/for-architects" },
+  { label: "For Interior Designers", href: "/for-interior-designers" },
+  { label: "For Contractors", href: "/for-contractors" },
   { label: "About Us", href: "/about" },
   { label: "Contact Us", href: "/contact" },
   { label: "FAQ", href: "/faq" },

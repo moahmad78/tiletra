@@ -27,7 +27,24 @@ export function middleware(request: NextRequest) {
     });
   }
 
-  // 2. Canonical apex-to-www or consistent SSL preservation if applicable
+  // 2. Canonical apex-to-www (intrihub.com -> www.intrihub.com) & HTTP->HTTPS enforcement
+  const forwardedProto = request.headers.get("x-forwarded-proto");
+  const isApexIntrihub = host === "intrihub.com";
+  const isHttp = forwardedProto === "http";
+
+  if (isApexIntrihub || (host === "www.intrihub.com" && isHttp)) {
+    const pathname = request.nextUrl.pathname;
+    const search = request.nextUrl.search;
+    const destination = `https://www.intrihub.com${pathname}${search}`;
+
+    return NextResponse.redirect(destination, {
+      status: 301,
+      headers: {
+        "Cache-Control": "public, max-age=31536000, immutable",
+      },
+    });
+  }
+
   return NextResponse.next();
 }
 

@@ -192,3 +192,83 @@ export function generateProductSchema(product: {
 
   return schema;
 }
+
+/**
+ * Article / Guide Schema.org structured data
+ */
+export function generateArticleSchema(guide: {
+  title: string;
+  description: string;
+  slug: string;
+  publishedTime: string;
+  modifiedTime?: string;
+  images?: string[];
+  authorName?: string;
+}) {
+  const guideUrl = getCanonicalUrl(`/guides/${guide.slug}`);
+  const images =
+    guide.images && guide.images.length > 0
+      ? guide.images.map((img) =>
+          img.startsWith("http") ? img : `${BASE_SITE_URL}${img.startsWith("/") ? img : `/${img}`}`
+        )
+      : [`${BASE_SITE_URL}/logo/intri-web-logo.png`];
+
+  return {
+    "@context": "https://schema.org",
+    "@type": "Article",
+    "@id": `${guideUrl}#article`,
+    headline: guide.title,
+    description: guide.description,
+    image: images,
+    datePublished: guide.publishedTime,
+    dateModified: guide.modifiedTime || guide.publishedTime,
+    author: {
+      "@type": "Organization",
+      name: guide.authorName || "Intrihub Editorial & Technical Team",
+      url: BASE_SITE_URL,
+    },
+    publisher: {
+      "@id": `${BASE_SITE_URL}/#organization`,
+    },
+    mainEntityOfPage: {
+      "@type": "WebPage",
+      "@id": guideUrl,
+    },
+  };
+}
+
+/**
+ * FAQPage Schema.org structured data
+ */
+export function generateFAQSchema(faqs: Array<{ question: string; answer: string }>) {
+  return {
+    "@context": "https://schema.org",
+    "@type": "FAQPage",
+    mainEntity: faqs.map((faq) => ({
+      "@type": "Question",
+      name: faq.question,
+      acceptedAnswer: {
+        "@type": "Answer",
+        text: faq.answer,
+      },
+    })),
+  };
+}
+
+/**
+ * ItemList Schema.org structured data for Categories & Collections
+ */
+export function generateItemListSchema(items: Array<{ name: string; url: string; image?: string; position?: number }>) {
+  return {
+    "@context": "https://schema.org",
+    "@type": "ItemList",
+    itemListElement: items.map((item, idx) => ({
+      "@type": "ListItem",
+      position: item.position || idx + 1,
+      name: item.name,
+      url: item.url.startsWith("http") ? item.url : `${BASE_SITE_URL}${item.url}`,
+      image: item.image ? (item.image.startsWith("http") ? item.image : `${BASE_SITE_URL}${item.image}`) : undefined,
+    })),
+  };
+}
+
