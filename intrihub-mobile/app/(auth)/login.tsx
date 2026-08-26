@@ -9,6 +9,7 @@ import {
   KeyboardAvoidingView,
   Platform,
   ScrollView,
+  Linking,
 } from "react-native";
 import { Image } from "expo-image";
 import { useRouter } from "expo-router";
@@ -217,6 +218,20 @@ export default function LoginScreen() {
     }
   };
 
+  const handleTermsOfUse = () => {
+    const url = "https://www.intrihub.com/terms";
+    Linking.openURL(url).catch(() => {
+      WebBrowser.openBrowserAsync(url).catch(() => {});
+    });
+  };
+
+  const handlePrivacyPolicy = () => {
+    const url = "https://www.intrihub.com/privacy";
+    Linking.openURL(url).catch(() => {
+      WebBrowser.openBrowserAsync(url).catch(() => {});
+    });
+  };
+
   return (
     <KeyboardAvoidingView
       behavior={Platform.OS === "ios" ? "padding" : "height"}
@@ -421,8 +436,14 @@ export default function LoginScreen() {
 
         <Text style={styles.termsText}>
           By continuing, you agree to Intrihub's{"\n"}
-          <Text style={styles.termsLink}>Terms of Use</Text> and{" "}
-          <Text style={styles.termsLink}>Privacy Policy</Text>.
+          <Text style={styles.termsLink} onPress={handleTermsOfUse}>
+            Terms of Use
+          </Text>{" "}
+          and{" "}
+          <Text style={styles.termsLink} onPress={handlePrivacyPolicy}>
+            Privacy Policy
+          </Text>
+          .
         </Text>
 
         {/* Founder & Developer Credit Footer */}
@@ -709,6 +730,7 @@ const styles = StyleSheet.create({
   termsLink: {
     color: COLORS.primary,
     fontWeight: "700",
+    textDecorationLine: "underline",
   },
   creditSection: {
     marginTop: 18,
