@@ -36,6 +36,33 @@ import { getImageUrl } from "../../src/constants/config";
 
 const { width } = Dimensions.get("window");
 
+function getPriceUnitSuffix(product: any): string {
+  const unit = (product?.unitOfSale || "").toLowerCase().trim();
+  const catSlug = (product?.categorySlug || "").toLowerCase().trim();
+  const catName = (product?.categoryName || "").toLowerCase().trim();
+
+  if (
+    unit === "sqft" ||
+    unit === "sq.ft" ||
+    unit === "sq_ft" ||
+    catSlug.includes("granite") ||
+    catName.includes("granite")
+  ) {
+    return "sqft";
+  }
+
+  if (
+    unit === "box" ||
+    catSlug.includes("tile") ||
+    catName.includes("tile") ||
+    catSlug === "tiles-stone"
+  ) {
+    return "box";
+  }
+
+  return unit ? unit : "";
+}
+
 export default function ProductDetailScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
   const router = useRouter();
@@ -59,6 +86,29 @@ export default function ProductDetailScreen() {
   const wishlisted = isWishlisted(product?.id || "");
   const relatedProducts = data?.relatedProducts || [];
   const cartItemCount = getItemCount();
+
+  // Pricing calculation matching Home page ProductCard
+  const activeVariant = selectedVariant || product?.variants?.[0] || null;
+  const price =
+    activeVariant?.pricePerBox ||
+    activeVariant?.pricePerSqft ||
+    product?.pricePerSqft ||
+    499;
+
+  const existingMrp = activeVariant?.mrp ?? product?.mrp ?? null;
+  let mrp: number | null = null;
+  if (existingMrp !== null && Number(existingMrp) > price) {
+    mrp = Number(existingMrp);
+  } else {
+    mrp = Math.round(price * 1.3);
+  }
+
+  const hasDiscount = mrp !== null && mrp > price;
+  const discountPercent = hasDiscount && mrp ? Math.round(((mrp - price) / mrp) * 100) : 0;
+  const unitSuffix = product ? getPriceUnitSuffix(product) : "";
+
+  const formattedPrice = "₹" + price.toLocaleString("en-IN");
+  const formattedMrp = mrp ? "₹" + mrp.toLocaleString("en-IN") : null;
 
   const rawImages =
     product?.images && product.images.length > 0
@@ -111,11 +161,6 @@ export default function ProductDetailScreen() {
       </View>
     );
   }
-
-  const discountPercent =
-    product.mrp && product.mrp > product.pricePerSqft
-      ? Math.round(((product.mrp - product.pricePerSqft) / product.mrp) * 100)
-      : null;
 
   return (
     <View style={styles.container}>
@@ -202,23 +247,23 @@ export default function ProductDetailScreen() {
             <Text style={styles.ratingCount}>({product.reviewCount || 12} Verified Reviews)</Text>
           </View>
 
-          {/* Pricing */}
+          {/* Pricing Row matching Home Page */}
           <View style={styles.pricingRow}>
-            <Text style={styles.pricePerSqft}>₹{product.pricePerSqft}</Text>
-            <Text style={styles.unitText}>/{product.unitOfSale}</Text>
+            <Text style={styles.pricePerSqft}>{formattedPrice}</Text>
+            {unitSuffix ? <Text style={styles.unitText}>/{unitSuffix}</Text> : null}
 
-            {product.mrp && product.mrp > product.pricePerSqft && (
-              <Text style={styles.mrpText}>₹{product.mrp}</Text>
+            {formattedMrp && (
+              <Text style={styles.mrpText}>{formattedMrp}</Text>
             )}
 
-            {discountPercent !== null && (
+            {discountPercent > 0 && (
               <View style={styles.discountPill}>
                 <Text style={styles.discountText}>{discountPercent}% OFF</Text>
               </View>
             )}
           </View>
 
-          <Text style={styles.taxNote}>Inclusive of all taxes • Bulk pricing available</Text>
+          <Text style={styles.taxNote}>Inclusive of all taxes • Factory Direct Pricing</Text>
         </View>
 
         {/* Tile / Area Calculator Tool */}
@@ -332,18 +377,6 @@ export default function ProductDetailScreen() {
             <Text style={styles.descriptionText}>{product.description}</Text>
           </View>
         ) : null}
-
-        {/* Vendor Card */}
-        {product.vendor && (
-          <View style={styles.vendorCard}>
-            <Building size={24} color={COLORS.primary} />
-            <View style={styles.vendorInfo}>
-              <Text style={styles.vendorCardTitle}>Sold & Fulfilled by</Text>
-              <Text style={styles.vendorCardName}>{product.vendor.businessName}</Text>
-              <Text style={styles.vendorCardSub}>Verified Intrihub Marketplace Seller</Text>
-            </View>
-          </View>
-        )}
 
         {/* Related Products */}
         {relatedProducts.length > 0 && (
@@ -553,7 +586,7 @@ const styles = StyleSheet.create({
     marginLeft: 10,
   },
   discountPill: {
-    backgroundColor: COLORS.accentOrange,
+    backgroundColor: "#059669",
     paddingHorizontal: 8,
     paddingVertical: 2,
     borderRadius: RADIUS.sm,
