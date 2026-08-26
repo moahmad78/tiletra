@@ -27,6 +27,7 @@ import { useAuthStore } from "../src/store/authStore";
 import { createCheckoutOrder, verifyCheckoutPayment } from "../src/api/orders";
 import { AddressModal } from "../src/components/AddressModal";
 import { COLORS, SPACING, RADIUS, SHADOWS } from "../src/constants/theme";
+import { getImageUrl } from "../src/constants/config";
 
 export default function CheckoutScreen() {
   const router = useRouter();
@@ -258,9 +259,7 @@ export default function CheckoutScreen() {
             <View key={item.id} style={styles.itemMiniRow}>
               <Image
                 source={{
-                  uri:
-                    item.product.images?.[0] ||
-                    "https://images.unsplash.com/photo-1590381105924-c72589b9ef3f?w=600",
+                  uri: getImageUrl(item.product.images?.[0]),
                 }}
                 style={styles.itemMiniImg}
                 contentFit="cover"

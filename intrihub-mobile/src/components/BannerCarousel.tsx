@@ -5,6 +5,7 @@ import { LinearGradient } from "expo-linear-gradient";
 import { useRouter } from "expo-router";
 import { OfferBanner } from "../types";
 import { COLORS, SPACING, RADIUS } from "../constants/theme";
+import { getImageUrl } from "../constants/config";
 
 const { width } = Dimensions.get("window");
 const BANNER_WIDTH = width - SPACING.lg * 2;
@@ -74,7 +75,7 @@ export const BannerCarousel: React.FC<BannerCarouselProps> = ({ banners }) => {
               }
             }}
           >
-            <Image source={{ uri: item.image }} style={styles.bannerImage} contentFit="cover" transition={200} />
+            <Image source={{ uri: getImageUrl(item.image) }} style={styles.bannerImage} contentFit="cover" transition={200} />
             <LinearGradient
               colors={["rgba(5, 42, 81, 0.2)", "rgba(5, 42, 81, 0.85)"]}
               style={styles.gradient}

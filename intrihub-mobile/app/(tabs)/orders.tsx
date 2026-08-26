@@ -18,6 +18,7 @@ import { getOrders } from "../../src/api/orders";
 import { useAuthStore } from "../../src/store/authStore";
 import { socketService } from "../../src/store/socketStore";
 import { COLORS, SPACING, RADIUS, SHADOWS } from "../../src/constants/theme";
+import { getImageUrl } from "../../src/constants/config";
 import { Order } from "../../src/types";
 
 export default function OrdersScreen() {
@@ -134,7 +135,7 @@ export default function OrdersScreen() {
                 <View style={styles.itemRow}>
                   {firstItem?.image ? (
                     <Image
-                      source={{ uri: firstItem.image }}
+                      source={{ uri: getImageUrl(firstItem.image) }}
                       style={styles.thumbImage}
                       contentFit="cover"
                     />

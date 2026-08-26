@@ -4,6 +4,7 @@ import { useRouter } from "expo-router";
 import { Star, Plus, Check } from "lucide-react-native";
 import { Product } from "../types";
 import { COLORS, SPACING, RADIUS, SHADOWS } from "../constants/theme";
+import { getImageUrl } from "../constants/config";
 import { useCartStore } from "../store/cartStore";
 
 interface ProductCardProps {
@@ -16,7 +17,7 @@ export const ProductCard: React.FC<ProductCardProps> = ({ product, horizontal = 
   const { items, addItem } = useCartStore();
 
   const isAdded = items.some((i) => i.product.id === product.id);
-  const mainImage = product.images?.[0] || "https://images.unsplash.com/photo-1590381105924-c72589b9ef3f?w=600";
+  const mainImage = getImageUrl(product.images?.[0]);
 
   // Calculate discount percentage
   const discountPercent =

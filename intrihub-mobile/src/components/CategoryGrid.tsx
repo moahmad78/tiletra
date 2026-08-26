@@ -15,6 +15,7 @@ import {
 } from "lucide-react-native";
 import { Category } from "../types";
 import { COLORS, SPACING, RADIUS } from "../constants/theme";
+import { getImageUrl } from "../constants/config";
 
 interface CategoryGridProps {
   categories: Category[];
@@ -62,7 +63,7 @@ export const CategoryGrid: React.FC<CategoryGridProps> = ({ categories, mode = "
           >
             <View style={styles.iconCircle}>
               {cat.image ? (
-                <Image source={{ uri: cat.image }} style={styles.catImage} contentFit="cover" />
+                <Image source={{ uri: getImageUrl(cat.image) }} style={styles.catImage} contentFit="cover" />
               ) : (
                 getIconComponent(cat.slug)
               )}
@@ -87,7 +88,7 @@ export const CategoryGrid: React.FC<CategoryGridProps> = ({ categories, mode = "
         >
           <View style={styles.gridIconBox}>
             {cat.image ? (
-              <Image source={{ uri: cat.image }} style={styles.catImage} contentFit="cover" />
+              <Image source={{ uri: getImageUrl(cat.image) }} style={styles.catImage} contentFit="cover" />
             ) : (
               getIconComponent(cat.slug)
             )}

@@ -13,6 +13,7 @@ import { Trash2, Plus, Minus, ShieldCheck, ArrowRight, ShoppingBag, Truck } from
 import { useCartStore } from "../../src/store/cartStore";
 import { useAuthStore } from "../../src/store/authStore";
 import { COLORS, SPACING, RADIUS, SHADOWS } from "../../src/constants/theme";
+import { getImageUrl } from "../../src/constants/config";
 
 export default function CartScreen() {
   const router = useRouter();
@@ -98,9 +99,7 @@ export default function CartScreen() {
         {/* Cart Items List */}
         <View style={styles.itemsList}>
           {items.map((item) => {
-            const mainImage =
-              item.product.images?.[0] ||
-              "https://images.unsplash.com/photo-1590381105924-c72589b9ef3f?w=600";
+            const mainImage = getImageUrl(item.product.images?.[0]);
             return (
               <View key={item.id} style={[styles.itemCard, SHADOWS.sm]}>
                 <Image

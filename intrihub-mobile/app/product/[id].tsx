@@ -31,6 +31,7 @@ import { useCartStore } from "../../src/store/cartStore";
 import { ProductVariant } from "../../src/types";
 import { ProductCard } from "../../src/components/ProductCard";
 import { COLORS, SPACING, RADIUS, SHADOWS } from "../../src/constants/theme";
+import { getImageUrl } from "../../src/constants/config";
 
 const { width } = Dimensions.get("window");
 
@@ -56,10 +57,11 @@ export default function ProductDetailScreen() {
   const relatedProducts = data?.relatedProducts || [];
   const cartItemCount = getItemCount();
 
-  const images =
+  const rawImages =
     product?.images && product.images.length > 0
       ? product.images
       : ["https://images.unsplash.com/photo-1590381105924-c72589b9ef3f?w=800"];
+  const images = rawImages.map((img) => getImageUrl(img));
 
   const handleCalculateBoxes = (text: string) => {
     setCalculatorArea(text);
