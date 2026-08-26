@@ -235,6 +235,7 @@ export default function ProductDetailScreen() {
             <TextInput
               style={styles.calcInput}
               placeholder="e.g. 250"
+              placeholderTextColor="#94a3b8"
               keyboardType="numeric"
               value={calculatorArea}
               onChangeText={handleCalculateBoxes}

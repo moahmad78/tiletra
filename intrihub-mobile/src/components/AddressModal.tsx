@@ -113,6 +113,7 @@ export const AddressModal: React.FC<AddressModalProps> = ({ visible, onClose, on
                 <TextInput
                   style={styles.input}
                   placeholder="e.g. #42, Green Glen Layout, Bellandur"
+                  placeholderTextColor="#94a3b8"
                   value={street}
                   onChangeText={setStreet}
                 />
@@ -121,6 +122,7 @@ export const AddressModal: React.FC<AddressModalProps> = ({ visible, onClose, on
                 <TextInput
                   style={styles.input}
                   placeholder="e.g. Near HDFC Bank"
+                  placeholderTextColor="#94a3b8"
                   value={landmark}
                   onChangeText={setLandmark}
                 />
@@ -131,6 +133,7 @@ export const AddressModal: React.FC<AddressModalProps> = ({ visible, onClose, on
                     <TextInput
                       style={styles.input}
                       placeholder="560103"
+                      placeholderTextColor="#94a3b8"
                       keyboardType="numeric"
                       maxLength={6}
                       value={pincode}
@@ -142,6 +145,7 @@ export const AddressModal: React.FC<AddressModalProps> = ({ visible, onClose, on
                     <TextInput
                       style={styles.input}
                       placeholder="Bangalore"
+                      placeholderTextColor="#94a3b8"
                       value={city}
                       onChangeText={setCity}
                     />

@@ -316,6 +316,7 @@ export default function LoginScreen() {
               <TextInput
                 style={styles.inputIconText}
                 placeholder="name@example.com"
+                placeholderTextColor="#94a3b8"
                 value={email}
                 onChangeText={setEmail}
                 autoCapitalize="none"
@@ -329,6 +330,7 @@ export default function LoginScreen() {
             <TextInput
               style={styles.input}
               placeholder="e.g. Rahul Sharma"
+              placeholderTextColor="#94a3b8"
               value={name}
               onChangeText={setName}
             />
@@ -364,6 +366,7 @@ export default function LoginScreen() {
             <TextInput
               style={styles.otpInput}
               placeholder="••••••"
+              placeholderTextColor="#94a3b8"
               value={otp}
               onChangeText={setOtp}
               keyboardType="numeric"
