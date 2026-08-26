@@ -36,75 +36,83 @@ export const Header: React.FC<HeaderProps> = ({
   );
 
   return (
-    <LinearGradient
-      colors={["#FFFFFF", "#F1F6FB", "#0A3B6F", "#052A51"]}
-      locations={[0, 0.32, 0.72, 1.0]}
-      start={{ x: 0.5, y: 0 }}
-      end={{ x: 0.5, y: 1 }}
-      style={[styles.container, { paddingTop: topPadding }]}
-    >
-      {/* Top Row: Logo + Delivery Location + Cart */}
-      <View style={styles.topRow}>
-        <TouchableOpacity
-          style={styles.brandContainer}
-          onPress={() => router.push("/(tabs)/home")}
-          activeOpacity={0.85}
-        >
-          <Image
-            source={require("../../assets/intri-web-logo.png")}
-            style={styles.brandLogo}
-            contentFit="contain"
-            transition={150}
-          />
-        </TouchableOpacity>
+    <View style={styles.outerContainer}>
+      {/* Ensure dark status bar icons on top white canvas */}
+      <StatusBar barStyle="dark-content" backgroundColor="#FFFFFF" />
 
-        {/* Location Selector Pill */}
-        <TouchableOpacity
-          style={styles.locationPill}
-          onPress={onAddressPress || (() => router.push("/(tabs)/profile"))}
-          activeOpacity={0.8}
-        >
-          <MapPin size={13} color={COLORS.accentOrange} />
-          <Text style={styles.locationText} numberOfLines={1}>
-            {addressLabel}
-          </Text>
-          <ChevronDown size={13} color={COLORS.primary} />
-        </TouchableOpacity>
+      <LinearGradient
+        colors={["#FFFFFF", "#FFFFFF", "#F0F5FA", "#0C3C6E", "#052A51"]}
+        locations={[0, 0.46, 0.58, 0.86, 1.0]}
+        start={{ x: 0.5, y: 0 }}
+        end={{ x: 0.5, y: 1 }}
+        style={[styles.gradientContainer, { paddingTop: topPadding }]}
+      >
+        {/* Top Solid White Zone: Logo + Location + Cart */}
+        <View style={styles.topRow}>
+          <TouchableOpacity
+            style={styles.brandContainer}
+            onPress={() => router.push("/(tabs)/home")}
+            activeOpacity={0.85}
+          >
+            <Image
+              source={require("../../assets/intri-web-logo.png")}
+              style={styles.brandLogo}
+              contentFit="contain"
+              transition={150}
+            />
+          </TouchableOpacity>
 
-        {/* Cart Icon with badge */}
-        <TouchableOpacity
-          style={styles.cartButton}
-          onPress={() => router.push("/(tabs)/cart")}
-          activeOpacity={0.8}
-        >
-          <View style={styles.cartIconWrapper}>
-            <ShoppingBag size={21} color={COLORS.primary} />
-            {itemCount > 0 && (
-              <View style={styles.badge}>
-                <Text style={styles.badgeText}>{itemCount > 99 ? "99+" : itemCount}</Text>
-              </View>
-            )}
-          </View>
-        </TouchableOpacity>
-      </View>
+          {/* Location Selector Pill */}
+          <TouchableOpacity
+            style={styles.locationPill}
+            onPress={onAddressPress || (() => router.push("/(tabs)/profile"))}
+            activeOpacity={0.8}
+          >
+            <MapPin size={13} color={COLORS.accentOrange} />
+            <Text style={styles.locationText} numberOfLines={1}>
+              {addressLabel}
+            </Text>
+            <ChevronDown size={13} color={COLORS.primary} />
+          </TouchableOpacity>
 
-      {/* Search Trigger Bar */}
-      {showSearch && (
-        <TouchableOpacity
-          style={[styles.searchBar, SHADOWS.sm]}
-          activeOpacity={0.9}
-          onPress={onSearchPress || (() => router.push("/(tabs)/categories"))}
-        >
-          <Search size={18} color={COLORS.textMuted} style={{ marginRight: 8 }} />
-          <AnimatedSearchPlaceholder />
-        </TouchableOpacity>
-      )}
-    </LinearGradient>
+          {/* Cart Icon with badge */}
+          <TouchableOpacity
+            style={styles.cartButton}
+            onPress={() => router.push("/(tabs)/cart")}
+            activeOpacity={0.8}
+          >
+            <View style={styles.cartIconWrapper}>
+              <ShoppingBag size={21} color={COLORS.primary} />
+              {itemCount > 0 && (
+                <View style={styles.badge}>
+                  <Text style={styles.badgeText}>{itemCount > 99 ? "99+" : itemCount}</Text>
+                </View>
+              )}
+            </View>
+          </TouchableOpacity>
+        </View>
+
+        {/* Search Trigger Bar (Sitting in Navy Zone) */}
+        {showSearch && (
+          <TouchableOpacity
+            style={[styles.searchBar, SHADOWS.sm]}
+            activeOpacity={0.9}
+            onPress={onSearchPress || (() => router.push("/(tabs)/categories"))}
+          >
+            <Search size={18} color={COLORS.textMuted} style={{ marginRight: 8 }} />
+            <AnimatedSearchPlaceholder />
+          </TouchableOpacity>
+        )}
+      </LinearGradient>
+    </View>
   );
 };
 
 const styles = StyleSheet.create({
-  container: {
+  outerContainer: {
+    backgroundColor: "#FFFFFF",
+  },
+  gradientContainer: {
     paddingBottom: 14,
     paddingHorizontal: SPACING.lg,
     borderBottomLeftRadius: RADIUS.xl,
@@ -115,6 +123,7 @@ const styles = StyleSheet.create({
     alignItems: "center",
     justifyContent: "space-between",
     marginBottom: 10,
+    backgroundColor: "transparent",
   },
   brandContainer: {
     marginRight: 6,
@@ -186,12 +195,5 @@ const styles = StyleSheet.create({
     marginTop: 4,
     borderWidth: 1,
     borderColor: "rgba(255, 255, 255, 0.15)",
-  },
-  searchPlaceholder: {
-    color: COLORS.textMuted,
-    fontSize: 13,
-    marginLeft: 9,
-    flex: 1,
-    fontWeight: "500",
   },
 });
