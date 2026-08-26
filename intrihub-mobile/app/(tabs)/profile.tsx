@@ -56,7 +56,7 @@ export default function ProfileScreen() {
   };
 
   const handlePrivacyPolicy = () => {
-    Linking.openURL("https://intrihub.com/privacy");
+    router.push("/privacy" as any);
   };
 
   return (

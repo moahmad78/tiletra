@@ -226,10 +226,7 @@ export default function LoginScreen() {
   };
 
   const handlePrivacyPolicy = () => {
-    const url = "https://www.intrihub.com/privacy";
-    Linking.openURL(url).catch(() => {
-      WebBrowser.openBrowserAsync(url).catch(() => {});
-    });
+    router.push("/privacy" as any);
   };
 
   return (
