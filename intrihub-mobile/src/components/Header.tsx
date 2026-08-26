@@ -1,5 +1,13 @@
-import React, { useEffect } from "react";
-import { View, Text, StyleSheet, TouchableOpacity, Platform, StatusBar } from "react-native";
+import React, { useEffect, useRef } from "react";
+import {
+  View,
+  Text,
+  StyleSheet,
+  TouchableOpacity,
+  Platform,
+  StatusBar,
+  Animated,
+} from "react-native";
 import { Image } from "expo-image";
 import { LinearGradient } from "expo-linear-gradient";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
@@ -26,11 +34,43 @@ export const Header: React.FC<HeaderProps> = ({
   const { selectedAddress, isAuthenticated } = useAuthStore();
   const { unreadCount, fetchUnreadCount } = useNotificationStore();
 
+  const shakeAnim = useRef(new Animated.Value(0)).current;
+
   useEffect(() => {
     if (isAuthenticated) {
       fetchUnreadCount();
     }
   }, [isAuthenticated]);
+
+  // Periodic Shake / Ring animation when unreadCount > 0
+  useEffect(() => {
+    if (unreadCount <= 0) {
+      shakeAnim.setValue(0);
+      return;
+    }
+
+    const runShakeBurst = () => {
+      Animated.sequence([
+        Animated.timing(shakeAnim, { toValue: -16, duration: 75, useNativeDriver: true }),
+        Animated.timing(shakeAnim, { toValue: 16, duration: 75, useNativeDriver: true }),
+        Animated.timing(shakeAnim, { toValue: -12, duration: 65, useNativeDriver: true }),
+        Animated.timing(shakeAnim, { toValue: 12, duration: 65, useNativeDriver: true }),
+        Animated.timing(shakeAnim, { toValue: -6, duration: 55, useNativeDriver: true }),
+        Animated.timing(shakeAnim, { toValue: 6, duration: 55, useNativeDriver: true }),
+        Animated.timing(shakeAnim, { toValue: 0, duration: 50, useNativeDriver: true }),
+      ]).start();
+    };
+
+    // Trigger initial burst
+    runShakeBurst();
+
+    // Repeat every 3.5 seconds
+    const interval = setInterval(runShakeBurst, 3500);
+    return () => {
+      clearInterval(interval);
+      shakeAnim.setValue(0);
+    };
+  }, [unreadCount]);
 
   const addressLabel = selectedAddress
     ? `${selectedAddress.city} - ${selectedAddress.pincode}`
@@ -40,6 +80,8 @@ export const Header: React.FC<HeaderProps> = ({
     insets.top + (Platform.OS === "android" ? 6 : 4),
     Platform.OS === "android" ? (StatusBar.currentHeight || 24) + 6 : 14
   );
+
+  const bellColor = unreadCount > 0 ? COLORS.accentOrange : COLORS.primary;
 
   return (
     <View style={styles.outerContainer}>
@@ -81,14 +123,33 @@ export const Header: React.FC<HeaderProps> = ({
             <ChevronDown size={13} color={COLORS.primary} />
           </TouchableOpacity>
 
-          {/* Notification Bell Icon with unread count badge */}
+          {/* Notification Bell Icon with unread count badge + Shake Animation */}
           <TouchableOpacity
             style={styles.notifButton}
             onPress={() => router.push("/notifications" as any)}
             activeOpacity={0.8}
           >
-            <View style={styles.notifIconWrapper}>
-              <Bell size={21} color={COLORS.primary} />
+            <View
+              style={[
+                styles.notifIconWrapper,
+                unreadCount > 0 && styles.notifIconWrapperActive,
+              ]}
+            >
+              <Animated.View
+                style={{
+                  transform: [
+                    {
+                      rotate: shakeAnim.interpolate({
+                        inputRange: [-16, 16],
+                        outputRange: ["-16deg", "16deg"],
+                      }),
+                    },
+                  ],
+                }}
+              >
+                <Bell size={21} color={bellColor} />
+              </Animated.View>
+
               {unreadCount > 0 && (
                 <View style={styles.badge}>
                   <Text style={styles.badgeText}>{unreadCount > 99 ? "99+" : unreadCount}</Text>
@@ -108,7 +169,7 @@ export const Header: React.FC<HeaderProps> = ({
               (() =>
                 router.push({
                   pathname: "/(tabs)/categories",
-                  params: { focus: "true" },
+                  params: { autoFocus: "true" },
                 } as any))
             }
           >
@@ -178,6 +239,10 @@ const styles = StyleSheet.create({
     alignItems: "center",
     justifyContent: "center",
     position: "relative",
+  },
+  notifIconWrapperActive: {
+    backgroundColor: "rgba(242, 101, 34, 0.08)",
+    borderColor: "rgba(242, 101, 34, 0.2)",
   },
   badge: {
     position: "absolute",
