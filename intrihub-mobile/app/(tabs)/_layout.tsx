@@ -1,10 +1,13 @@
 import { Tabs } from "expo-router";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { Home, Grid, ShoppingBag, Package, User } from "lucide-react-native";
 import { COLORS } from "../../src/constants/theme";
 import { useCartStore } from "../../src/store/cartStore";
 
 export default function TabLayout() {
+  const insets = useSafeAreaInsets();
   const cartItemCount = useCartStore((state) => state.getItemCount());
+  const bottomInset = Math.max(insets.bottom, 10);
 
   return (
     <Tabs
@@ -16,8 +19,8 @@ export default function TabLayout() {
           backgroundColor: COLORS.surface,
           borderTopColor: COLORS.border,
           borderTopWidth: 1,
-          height: 60,
-          paddingBottom: 8,
+          height: 56 + bottomInset,
+          paddingBottom: bottomInset,
           paddingTop: 6,
         },
         tabBarLabelStyle: {
