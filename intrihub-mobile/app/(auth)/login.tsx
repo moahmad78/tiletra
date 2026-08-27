@@ -35,7 +35,7 @@ const GOOGLE_ANDROID_CLIENT_ID =
 
 const GOOGLE_IOS_CLIENT_ID =
   process.env.EXPO_PUBLIC_GOOGLE_IOS_CLIENT_ID ||
-  GOOGLE_WEB_CLIENT_ID;
+  "602084779648-omckasog9cejsf7d0p84d0aomanm7c5d.apps.googleusercontent.com";
 
 function GoogleIcon() {
   return (
