@@ -9,9 +9,14 @@ import {
   StatusBar,
   Linking,
   Switch,
+  Modal,
+  TextInput,
+  ActivityIndicator,
+  Alert,
 } from "react-native";
 import { Image } from "expo-image";
 import { useRouter } from "expo-router";
+import * as ImagePicker from "expo-image-picker";
 import {
   User,
   MapPin,
@@ -19,14 +24,17 @@ import {
   Bell,
   PhoneCall,
   MessageCircle,
-  FileText,
   LogOut,
   ChevronRight,
   ShieldCheck,
-  Building,
+  Edit2,
+  Camera,
+  X,
+  Check,
 } from "lucide-react-native";
 import { useAuthStore } from "../../src/store/authStore";
-import { getProfile } from "../../src/api/auth";
+import { getProfile, updateProfile } from "../../src/api/auth";
+import { uploadProductImage } from "../../src/api/vendor";
 import { AddressModal } from "../../src/components/AddressModal";
 import { COLORS, SPACING, RADIUS, SHADOWS } from "../../src/constants/theme";
 
@@ -34,18 +42,102 @@ export default function ProfileScreen() {
   const router = useRouter();
   const { user, isAuthenticated, setUser, logout } = useAuthStore();
   const [addressModalVisible, setAddressModalVisible] = useState(false);
+  const [editProfileModalVisible, setEditProfileModalVisible] = useState(false);
   const [orderPushEnabled, setOrderPushEnabled] = useState(true);
+
+  // Edit Profile Form State
+  const [editName, setEditName] = useState("");
+  const [editEmail, setEditEmail] = useState("");
+  const [editAvatar, setEditAvatar] = useState("");
+  const [savingProfile, setSavingProfile] = useState(false);
+  const [uploadingAvatar, setUploadingAvatar] = useState(false);
 
   // Sync latest user profile on mount if logged in
   useEffect(() => {
     if (isAuthenticated) {
-      getProfile().then((res) => {
-        if (res.success && res.user) {
-          setUser(res.user);
-        }
-      }).catch(() => {});
+      getProfile()
+        .then((res) => {
+          if (res.success && res.user) {
+            setUser(res.user);
+          }
+        })
+        .catch(() => {});
     }
   }, [isAuthenticated]);
+
+  const handleOpenEditModal = () => {
+    if (user) {
+      setEditName(user.name || "");
+      setEditEmail(user.email || "");
+      setEditAvatar(user.avatar || "");
+      setEditProfileModalVisible(true);
+    }
+  };
+
+  const handlePickAvatar = async () => {
+    try {
+      const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
+      if (status !== "granted") {
+        Alert.alert("Permission Required", "Gallery permission is required to select a profile picture.");
+        return;
+      }
+
+      const result = await ImagePicker.launchImageLibraryAsync({
+        mediaTypes: ImagePicker.MediaTypeOptions.Images,
+        allowsEditing: true,
+        aspect: [1, 1],
+        quality: 0.8,
+      });
+
+      if (!result.canceled && result.assets?.[0]?.uri) {
+        const asset = result.assets[0];
+        setUploadingAvatar(true);
+        const res = await uploadProductImage(
+          asset.uri,
+          asset.fileName || `avatar-${Date.now()}.jpg`,
+          asset.mimeType || "image/jpeg"
+        );
+        setUploadingAvatar(false);
+
+        if (res.success && res.url) {
+          setEditAvatar(res.url);
+        } else {
+          Alert.alert("Upload Error", res.error || "Failed to upload photo.");
+        }
+      }
+    } catch (e: any) {
+      setUploadingAvatar(false);
+      Alert.alert("Error", e?.message || "Could not pick image");
+    }
+  };
+
+  const handleSaveProfile = async () => {
+    if (!editName.trim()) {
+      Alert.alert("Name Required", "Please enter your name.");
+      return;
+    }
+
+    setSavingProfile(true);
+    try {
+      const res = await updateProfile({
+        name: editName.trim(),
+        email: editEmail.trim() || undefined,
+        avatar: editAvatar || undefined,
+      });
+
+      if (res.success && res.user) {
+        setUser(res.user);
+        setEditProfileModalVisible(false);
+        Alert.alert("Profile Updated", "Your profile details have been saved successfully.");
+      } else {
+        Alert.alert("Update Failed", res.error || "Could not update profile details.");
+      }
+    } catch (err: any) {
+      Alert.alert("Error", err?.message || "Failed to update profile.");
+    } finally {
+      setSavingProfile(false);
+    }
+  };
 
   const handleSupportCall = () => {
     Linking.openURL("tel:9264920211");
@@ -70,21 +162,33 @@ export default function ProfileScreen() {
         {/* User Card */}
         {isAuthenticated && user ? (
           <View style={[styles.userCard, SHADOWS.sm]}>
-            {user.avatar ? (
-              <Image source={{ uri: user.avatar }} style={styles.avatarImage} contentFit="cover" />
-            ) : (
-              <View style={styles.avatarCircle}>
-                <Text style={styles.avatarInitial}>
-                  {user.name ? user.name.charAt(0).toUpperCase() : user.email ? user.email.charAt(0).toUpperCase() : "U"}
-                </Text>
+            <View style={styles.userCardMain}>
+              {user.avatar ? (
+                <Image source={{ uri: user.avatar }} style={styles.avatarImage} contentFit="cover" />
+              ) : (
+                <View style={styles.avatarCircle}>
+                  <Text style={styles.avatarInitial}>
+                    {user.name ? user.name.charAt(0).toUpperCase() : user.email ? user.email.charAt(0).toUpperCase() : "U"}
+                  </Text>
+                </View>
+              )}
+              <View style={styles.userInfo}>
+                <Text style={styles.userName}>{user.name || "Intrihub Customer"}</Text>
+                {user.email ? <Text style={styles.userEmail}>{user.email}</Text> : null}
+                {user.phone && !user.phone.startsWith("google_") && !user.phone.startsWith("email_") ? (
+                  <Text style={styles.userPhone}>+91 {user.phone}</Text>
+                ) : null}
               </View>
-            )}
-            <View style={styles.userInfo}>
-              <Text style={styles.userName}>{user.name || "Intrihub Customer"}</Text>
-              {user.email ? <Text style={styles.userEmail}>{user.email}</Text> : null}
-              {user.phone && !user.phone.startsWith("google_") && !user.phone.startsWith("email_") ? (
-                <Text style={styles.userPhone}>+91 {user.phone}</Text>
-              ) : null}
+
+              {/* Edit Profile Button */}
+              <TouchableOpacity
+                style={styles.editProfileBtn}
+                onPress={handleOpenEditModal}
+                activeOpacity={0.8}
+              >
+                <Edit2 size={15} color={COLORS.primary} />
+                <Text style={styles.editProfileBtnText}>Edit</Text>
+              </TouchableOpacity>
             </View>
           </View>
         ) : (
@@ -105,6 +209,19 @@ export default function ProfileScreen() {
         {/* Section: Account Actions */}
         <View style={styles.menuGroup}>
           <Text style={styles.groupTitle}>ACCOUNT & PREFERENCES</Text>
+
+          {isAuthenticated && (
+            <TouchableOpacity
+              style={styles.menuItem}
+              onPress={handleOpenEditModal}
+            >
+              <View style={styles.menuLeft}>
+                <User size={20} color={COLORS.accentBlue} />
+                <Text style={styles.menuLabel}>Edit Profile & Photo</Text>
+              </View>
+              <ChevronRight size={18} color={COLORS.textMuted} />
+            </TouchableOpacity>
+          )}
 
           <TouchableOpacity
             style={styles.menuItem}
@@ -157,7 +274,7 @@ export default function ProfileScreen() {
               <MessageCircle size={20} color={COLORS.accentGreen} />
               <Text style={styles.menuLabel}>Chat on WhatsApp</Text>
             </View>
-            <Text style={styles.supportHint}>+91 78709 35277</Text>
+            <Text style={styles.supportHint}>+91 92649 20211</Text>
           </TouchableOpacity>
 
           <TouchableOpacity style={styles.menuItem} onPress={handleSupportCall}>
@@ -191,6 +308,112 @@ export default function ProfileScreen() {
         </View>
       </ScrollView>
 
+      {/* Edit Profile Modal */}
+      <Modal visible={editProfileModalVisible} animationType="slide" transparent>
+        <View style={styles.modalOverlay}>
+          <View style={styles.modalSheet}>
+            <View style={styles.modalHeader}>
+              <Text style={styles.modalTitle}>Edit Profile</Text>
+              <TouchableOpacity
+                onPress={() => setEditProfileModalVisible(false)}
+                style={styles.modalCloseBtn}
+              >
+                <X size={20} color={COLORS.text} />
+              </TouchableOpacity>
+            </View>
+
+            <ScrollView showsVerticalScrollIndicator={false}>
+              {/* Avatar Picker */}
+              <View style={styles.avatarPickerSection}>
+                <TouchableOpacity
+                  style={styles.avatarPickerWrapper}
+                  onPress={handlePickAvatar}
+                  disabled={uploadingAvatar}
+                  activeOpacity={0.8}
+                >
+                  {editAvatar ? (
+                    <Image source={{ uri: editAvatar }} style={styles.modalAvatarImg} contentFit="cover" />
+                  ) : (
+                    <View style={styles.modalAvatarPlaceholder}>
+                      <Text style={styles.modalAvatarInitial}>
+                        {editName ? editName.charAt(0).toUpperCase() : "U"}
+                      </Text>
+                    </View>
+                  )}
+                  <View style={styles.cameraIconBadge}>
+                    {uploadingAvatar ? (
+                      <ActivityIndicator size="small" color={COLORS.textWhite} />
+                    ) : (
+                      <Camera size={14} color={COLORS.textWhite} />
+                    )}
+                  </View>
+                </TouchableOpacity>
+                <Text style={styles.avatarPickerHint}>Tap to change photo</Text>
+              </View>
+
+              {/* Name Field */}
+              <View style={styles.modalInputGroup}>
+                <Text style={styles.modalInputLabel}>Full Name</Text>
+                <TextInput
+                  style={styles.modalTextInput}
+                  placeholder="Enter your full name"
+                  placeholderTextColor={COLORS.textMuted}
+                  value={editName}
+                  onChangeText={setEditName}
+                />
+              </View>
+
+              {/* Email Field */}
+              <View style={styles.modalInputGroup}>
+                <Text style={styles.modalInputLabel}>Email Address</Text>
+                <TextInput
+                  style={styles.modalTextInput}
+                  placeholder="Enter your email address"
+                  placeholderTextColor={COLORS.textMuted}
+                  keyboardType="email-address"
+                  autoCapitalize="none"
+                  value={editEmail}
+                  onChangeText={setEditEmail}
+                />
+              </View>
+
+              {/* Phone Field (Read-only if exists) */}
+              {user?.phone && (
+                <View style={styles.modalInputGroup}>
+                  <Text style={styles.modalInputLabel}>Phone Number</Text>
+                  <TextInput
+                    style={[styles.modalTextInput, styles.readOnlyInput]}
+                    value={
+                      user.phone.startsWith("google_") || user.phone.startsWith("email_")
+                        ? "Linked via Account"
+                        : `+91 ${user.phone}`
+                    }
+                    editable={false}
+                  />
+                </View>
+              )}
+
+              {/* Save Button */}
+              <TouchableOpacity
+                style={[styles.modalSaveBtn, savingProfile && styles.modalSaveBtnDisabled]}
+                onPress={handleSaveProfile}
+                disabled={savingProfile}
+                activeOpacity={0.85}
+              >
+                {savingProfile ? (
+                  <ActivityIndicator size="small" color={COLORS.textWhite} />
+                ) : (
+                  <>
+                    <Check size={18} color={COLORS.textWhite} />
+                    <Text style={styles.modalSaveBtnText}>Save Profile Changes</Text>
+                  </>
+                )}
+              </TouchableOpacity>
+            </ScrollView>
+          </View>
+        </View>
+      </Modal>
+
       {/* Address Modal */}
       <AddressModal
         visible={addressModalVisible}
@@ -221,15 +444,17 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   userCard: {
-    flexDirection: "row",
-    alignItems: "center",
     backgroundColor: COLORS.surface,
-    padding: SPACING.lg,
+    padding: SPACING.md,
     marginHorizontal: SPACING.lg,
     marginTop: SPACING.lg,
-    borderRadius: RADIUS.md,
+    borderRadius: RADIUS.lg,
     borderWidth: 1,
     borderColor: COLORS.border,
+  },
+  userCardMain: {
+    flexDirection: "row",
+    alignItems: "center",
   },
   avatarCircle: {
     width: 52,
@@ -268,6 +493,22 @@ const styles = StyleSheet.create({
     fontSize: 12,
     color: COLORS.textMuted,
     marginTop: 1,
+  },
+  editProfileBtn: {
+    flexDirection: "row",
+    alignItems: "center",
+    backgroundColor: "#eff6ff",
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderRadius: RADIUS.full,
+    gap: 4,
+    borderWidth: 1,
+    borderColor: "#bfdbfe",
+  },
+  editProfileBtnText: {
+    fontSize: 12,
+    fontWeight: "800",
+    color: COLORS.primary,
   },
   guestCard: {
     backgroundColor: COLORS.surface,
@@ -371,5 +612,121 @@ const styles = StyleSheet.create({
     fontSize: 10,
     color: COLORS.textMuted,
     marginTop: 2,
+  },
+  modalOverlay: {
+    flex: 1,
+    backgroundColor: "rgba(0,0,0,0.5)",
+    justifyContent: "flex-end",
+  },
+  modalSheet: {
+    backgroundColor: COLORS.surface,
+    borderTopLeftRadius: RADIUS.xl,
+    borderTopRightRadius: RADIUS.xl,
+    padding: SPACING.lg,
+    maxHeight: "85%",
+  },
+  modalHeader: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+    paddingBottom: SPACING.md,
+    borderBottomWidth: 1,
+    borderColor: COLORS.border,
+    marginBottom: SPACING.md,
+  },
+  modalTitle: {
+    fontSize: 17,
+    fontWeight: "800",
+    color: COLORS.text,
+  },
+  modalCloseBtn: {
+    padding: 4,
+  },
+  avatarPickerSection: {
+    alignItems: "center",
+    marginVertical: SPACING.md,
+  },
+  avatarPickerWrapper: {
+    position: "relative",
+  },
+  modalAvatarImg: {
+    width: 80,
+    height: 80,
+    borderRadius: RADIUS.full,
+  },
+  modalAvatarPlaceholder: {
+    width: 80,
+    height: 80,
+    borderRadius: RADIUS.full,
+    backgroundColor: COLORS.primary,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  modalAvatarInitial: {
+    fontSize: 32,
+    fontWeight: "800",
+    color: COLORS.textWhite,
+  },
+  cameraIconBadge: {
+    position: "absolute",
+    bottom: 0,
+    right: 0,
+    backgroundColor: COLORS.accentOrange,
+    width: 26,
+    height: 26,
+    borderRadius: RADIUS.full,
+    alignItems: "center",
+    justifyContent: "center",
+    borderWidth: 2,
+    borderColor: COLORS.surface,
+  },
+  avatarPickerHint: {
+    fontSize: 11,
+    color: COLORS.textMuted,
+    marginTop: 6,
+    fontWeight: "600",
+  },
+  modalInputGroup: {
+    marginBottom: SPACING.md,
+  },
+  modalInputLabel: {
+    fontSize: 13,
+    fontWeight: "700",
+    color: COLORS.text,
+    marginBottom: 6,
+  },
+  modalTextInput: {
+    backgroundColor: COLORS.surfaceSecondary,
+    borderWidth: 1,
+    borderColor: COLORS.border,
+    borderRadius: RADIUS.md,
+    paddingHorizontal: SPACING.md,
+    paddingVertical: 10,
+    fontSize: 14,
+    color: COLORS.text,
+  },
+  readOnlyInput: {
+    color: COLORS.textMuted,
+    backgroundColor: "#f8fafc",
+  },
+  modalSaveBtn: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    backgroundColor: COLORS.primary,
+    paddingVertical: 14,
+    borderRadius: RADIUS.lg,
+    gap: 8,
+    marginTop: SPACING.md,
+    marginBottom: SPACING.lg,
+    ...SHADOWS.md,
+  },
+  modalSaveBtnDisabled: {
+    opacity: 0.6,
+  },
+  modalSaveBtnText: {
+    color: COLORS.textWhite,
+    fontSize: 15,
+    fontWeight: "800",
   },
 });
