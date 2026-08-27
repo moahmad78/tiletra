@@ -236,11 +236,7 @@ export default function LoginScreen() {
 
       if (res.success && res.user) {
         setUser(res.user);
-        if (res.user.role === "vendor") {
-          router.replace("/(vendor)/dashboard" as any);
-        } else {
-          router.replace("/(tabs)/home" as any);
-        }
+        router.replace("/(tabs)/home" as any);
       } else {
         setError(res.error || "Invalid verification code. Please try again.");
       }
@@ -307,11 +303,7 @@ export default function LoginScreen() {
             const userObj = JSON.parse(decodeURIComponent(userRaw));
             await setStoredTokens(accessToken, refreshToken);
             setUser(userObj);
-            if (userObj.role === "vendor") {
-              router.replace("/(vendor)/dashboard" as any);
-            } else {
-              router.replace("/(tabs)/home" as any);
-            }
+            router.replace("/(tabs)/home" as any);
             return;
           }
         }
