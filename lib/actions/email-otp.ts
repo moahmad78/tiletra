@@ -77,12 +77,29 @@ async function deliverEmail({
     try {
       const fromAddress = getFormattedFromEmail();
       console.log(`[EMAIL_SEND_STARTED] transport=Resend to=${maskEmail(to)} from=${fromAddress}`);
-      const { data, error } = await resend.emails.send({
+      let { data, error } = await resend.emails.send({
         from: fromAddress,
         to,
         subject,
         html,
       });
+
+      // If custom domain is pending DNS verification on Resend, retry with sandbox sender
+      if (error && error.message && error.message.includes("not verified") && !fromAddress.includes("onboarding@resend.dev")) {
+        console.warn(`[EMAIL_PROVIDER_RESPONSE] transport=Resend custom domain pending DNS, falling back to sandbox sender`);
+        const fallbackRes = await resend.emails.send({
+          from: "Intrihub <onboarding@resend.dev>",
+          to,
+          subject,
+          html,
+        });
+        if (!fallbackRes.error) {
+          data = fallbackRes.data;
+          error = null;
+        } else {
+          error = fallbackRes.error;
+        }
+      }
 
       if (error) {
         console.warn(`[EMAIL_PROVIDER_RESPONSE] transport=Resend status=rejected error=${error.message || JSON.stringify(error)}`);
@@ -168,22 +185,33 @@ export async function sendEmailOtp(
     };
   }
 
-  // Invalidate any previous OTP tokens for this email to prevent reuse
-  await prisma.emailOtpToken.deleteMany({
-    where: { email: cleanEmail },
-  });
-
+  console.log(`[OTP_GENERATION_STARTED] email=${maskEmail(cleanEmail)}`);
   const otp = generateSecureOtp();
   const expiresAt = new Date(Date.now() + OTP_EXPIRY_MINUTES * 60 * 1000);
 
-  console.log(`[OTP_GENERATED] email=${maskEmail(cleanEmail)} expiresIn=${OTP_EXPIRY_MINUTES * 60}s`);
+  // Store OTP token in Database
+  try {
+    // Invalidate any previous OTP tokens for this email
+    await prisma.emailOtpToken.deleteMany({
+      where: { email: cleanEmail },
+    });
 
-  // Store OTP token in DB
-  await prisma.emailOtpToken.create({
-    data: { email: cleanEmail, otp, expiresAt },
-  });
-
-  console.log(`[OTP_STORED] email=${maskEmail(cleanEmail)}`);
+    await prisma.emailOtpToken.create({
+      data: {
+        email: cleanEmail,
+        otp,
+        expiresAt,
+        used: false,
+      },
+    });
+    console.log(`[OTP_STORAGE_SUCCESS] email=${maskEmail(cleanEmail)} expiresIn=${OTP_EXPIRY_MINUTES * 60}s`);
+  } catch (dbErr: any) {
+    console.error(`[OTP_STORAGE_FAILED] email=${maskEmail(cleanEmail)} error=${dbErr?.message}`);
+    return {
+      success: false,
+      message: "Failed to initialize verification code. Database error occurred.",
+    };
+  }
 
   // Professional Email Template
   const emailHtml = `
@@ -216,6 +244,7 @@ export async function sendEmailOtp(
   `;
 
   // Deliver Email through configured provider
+  console.log(`[RESEND_SEND_STARTED] email=${maskEmail(cleanEmail)}`);
   const deliveryResult = await deliverEmail({
     to: cleanEmail,
     subject: "Your Intrihub Login Verification Code",
@@ -223,16 +252,14 @@ export async function sendEmailOtp(
   });
 
   if (!deliveryResult.success) {
-    console.warn(`[OTP_SEND_FALLBACK] email=${maskEmail(cleanEmail)} reason=${deliveryResult.error}`);
-    // Graceful fallback: never crash or block user login flow
+    console.error(`[RESEND_SEND_FAILED] email=${maskEmail(cleanEmail)} reason=${deliveryResult.error}`);
     return {
-      success: true,
-      message: "Verification code sent to your email address.",
-      expiresIn: OTP_EXPIRY_MINUTES * 60,
+      success: false,
+      message: deliveryResult.error || "Unable to send verification code email right now. Please try again.",
     };
   }
 
-  console.log(`[OTP_SEND_SUCCESS] email=${maskEmail(cleanEmail)} provider=${deliveryResult.provider}`);
+  console.log(`[RESEND_SEND_SUCCESS] email=${maskEmail(cleanEmail)} provider=${deliveryResult.provider}`);
   return {
     success: true,
     message: "OTP sent successfully to your email address.",
@@ -250,7 +277,7 @@ export async function verifyEmailOtp(
   const cleanEmail = (email || "").trim().toLowerCase();
   const cleanOtp = (otp || "").trim();
 
-  console.log(`[OTP_VERIFY_STARTED] email=${maskEmail(cleanEmail)} purpose=${purpose}`);
+  console.log(`[OTP_VERIFICATION_STARTED] email=${maskEmail(cleanEmail)} purpose=${purpose}`);
 
   if (!cleanEmail || !cleanOtp || cleanOtp.length !== 6) {
     return { success: false, message: "Please enter a valid 6-digit verification code." };
@@ -258,7 +285,7 @@ export async function verifyEmailOtp(
 
   const { recordFailedAttempt, resetFailedAttempts } = await import("@/lib/rate-limit");
 
-  let token = await prisma.emailOtpToken.findFirst({
+  const token = await prisma.emailOtpToken.findFirst({
     where: {
       email: cleanEmail,
       otp: cleanOtp,
@@ -268,21 +295,9 @@ export async function verifyEmailOtp(
     orderBy: { createdAt: "desc" },
   });
 
-  // Universal testing/sandbox fallback
-  if (!token && cleanOtp === "123456") {
-    token = {
-      id: "test-token",
-      email: cleanEmail,
-      otp: "123456",
-      used: false,
-      expiresAt: new Date(Date.now() + 600000),
-      createdAt: new Date(),
-    } as any;
-  }
-
   if (!token) {
     const attempt = recordFailedAttempt(`otp-fail:${cleanEmail}`, 5, 15 * 60 * 1000);
-    console.warn(`[OTP_VERIFY_FAILED] email=${maskEmail(cleanEmail)} remainingAttempts=${attempt.remainingAttempts}`);
+    console.warn(`[OTP_VERIFICATION_FAILED] email=${maskEmail(cleanEmail)} remainingAttempts=${attempt.remainingAttempts}`);
 
     if (attempt.locked) {
       // Invalidate all tokens for this email on excessive failed attempts

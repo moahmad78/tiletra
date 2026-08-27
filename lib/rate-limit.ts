@@ -132,3 +132,11 @@ export function recordFailedAttempt(
 export function resetFailedAttempts(key: string): void {
   lockoutStore.delete(key);
 }
+
+/**
+ * Resets rate limit counters for a key
+ */
+export function resetRateLimit(key: string): void {
+  rateLimitStore.delete(key);
+}
+

@@ -43,7 +43,7 @@ model User {
   @@index([role])
 }
 
-// Email OTP token store (expires after 10 minutes)
+// Email OTP token store (5-minute expiry)
 model EmailOtpToken {
   id        String   @id @default(cuid())
   email     String
@@ -53,6 +53,8 @@ model EmailOtpToken {
   createdAt DateTime @default(now())
 
   @@index([email])
+  @@index([expiresAt])
+  @@index([used])
 }
 
 model Address {
