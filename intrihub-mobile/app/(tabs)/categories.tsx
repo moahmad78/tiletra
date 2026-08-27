@@ -473,29 +473,6 @@ export default function CategoriesScreen() {
         </ScrollView>
       </View>
 
-      {/* Active Filter Tag & Count Header */}
-      <View style={styles.resultsInfoRow}>
-        <Text style={styles.resultsCountText}>
-          {productsLoading
-            ? "Searching products..."
-            : (productsData as any)?.isFallback
-            ? `Top results related to "${searchQuery}"`
-            : searchQuery.trim()
-            ? `${products.length} Products found for "${searchQuery}"`
-            : `${products.length} Products`}
-        </Text>
-
-        {selectedCategory && (
-          <TouchableOpacity
-            style={styles.activeFilterTag}
-            onPress={handleClearCategory}
-            activeOpacity={0.8}
-          >
-            <Text style={styles.activeFilterTagText}>{selectedCategory.name}</Text>
-            <X size={12} color={COLORS.primary} style={{ marginLeft: 4 }} />
-          </TouchableOpacity>
-        )}
-      </View>
 
       {/* Full-Width 2-Column Product Grid (No Sidebar!) */}
       {productsLoading ? (
