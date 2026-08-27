@@ -21,7 +21,7 @@
       "package": "com.intrihub.app",
       "adaptiveIcon": {
         "foregroundImage": "./assets/adaptive-icon.png",
-        "backgroundColor": "#052a51"
+        "backgroundColor": "#FFFFFF"
       },
       "permissions": [
         "RECEIVE_BOOT_COMPLETED",
