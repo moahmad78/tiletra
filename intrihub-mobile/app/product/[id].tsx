@@ -1,4 +1,4 @@
-import { useState, useRef } from "react";
+import React, { useState, useRef, useMemo } from "react";
 import {
   View,
   Text,
@@ -65,6 +65,112 @@ function getPriceUnitSuffix(product: any): string {
   return unit ? unit : "";
 }
 
+const ProductGallery = React.memo(function ProductGallery({
+  images,
+  width,
+}: {
+  images: string[];
+  width: number;
+}) {
+  const [activeIndex, setActiveIndex] = useState(0);
+  const scrollRef = useRef<ScrollView>(null);
+
+  const handleScrollEnd = (e: any) => {
+    const offsetX = e.nativeEvent.contentOffset.x;
+    const idx = Math.round(offsetX / width);
+    if (idx >= 0 && idx < images.length && idx !== activeIndex) {
+      setActiveIndex(idx);
+    }
+  };
+
+  return (
+    <View style={[styles.galleryWrapper, { width, height: width * 0.9 }]}>
+      <ScrollView
+        ref={scrollRef}
+        horizontal
+        pagingEnabled
+        nestedScrollEnabled
+        showsHorizontalScrollIndicator={false}
+        bounces={false}
+        overScrollMode="never"
+        scrollEventThrottle={16}
+        onMomentumScrollEnd={handleScrollEnd}
+        style={{ width, height: width * 0.9 }}
+      >
+        {images.map((item, idx) => (
+          <View key={`product-img-${idx}-${item}`} style={{ width, height: width * 0.9 }}>
+            <Image
+              source={{ uri: item }}
+              style={[styles.galleryImage, { width, height: width * 0.9 }]}
+              contentFit="cover"
+              cachePolicy="memory-disk"
+            />
+          </View>
+        ))}
+      </ScrollView>
+
+      {/* Gallery Image Counter Badge */}
+      {images.length > 1 && (
+        <View style={styles.galleryCounterBadge}>
+          <Text style={styles.galleryCounterText}>
+            {activeIndex + 1} / {images.length}
+          </Text>
+        </View>
+      )}
+
+      {/* Left Arrow Navigation Button */}
+      {images.length > 1 && activeIndex > 0 && (
+        <TouchableOpacity
+          style={[styles.galleryNavBtn, styles.galleryNavBtnLeft]}
+          onPress={() => {
+            const prev = activeIndex - 1;
+            scrollRef.current?.scrollTo({ x: prev * width, animated: true });
+            setActiveIndex(prev);
+          }}
+          activeOpacity={0.85}
+        >
+          <ChevronLeft size={18} color="#FFFFFF" />
+        </TouchableOpacity>
+      )}
+
+      {/* Right Arrow Navigation Button */}
+      {images.length > 1 && activeIndex < images.length - 1 && (
+        <TouchableOpacity
+          style={[styles.galleryNavBtn, styles.galleryNavBtnRight]}
+          onPress={() => {
+            const next = activeIndex + 1;
+            scrollRef.current?.scrollTo({ x: next * width, animated: true });
+            setActiveIndex(next);
+          }}
+          activeOpacity={0.85}
+        >
+          <ChevronRight size={18} color="#FFFFFF" />
+        </TouchableOpacity>
+      )}
+
+      {/* Dots Indicator */}
+      {images.length > 1 && (
+        <View style={styles.dotsRow}>
+          {images.map((_, idx) => (
+            <TouchableOpacity
+              key={`gallery-dot-${idx}`}
+              activeOpacity={0.8}
+              onPress={() => {
+                scrollRef.current?.scrollTo({ x: idx * width, animated: true });
+                setActiveIndex(idx);
+              }}
+              style={[
+                styles.galleryDot,
+                activeIndex === idx && styles.activeGalleryDot,
+              ]}
+            />
+          ))}
+        </View>
+      )}
+    </View>
+  );
+});
+
 export default function ProductDetailScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
   const router = useRouter();
@@ -72,8 +178,6 @@ export default function ProductDetailScreen() {
   const { addItem, getItemCount } = useCartStore();
   const { isWishlisted, toggleWishlist } = useWishlistStore();
 
-  const galleryScrollRef = useRef<ScrollView>(null);
-  const [activeImageIndex, setActiveImageIndex] = useState(0);
   const [selectedVariant, setSelectedVariant] = useState<ProductVariant | null>(null);
   const [calculatorArea, setCalculatorArea] = useState("");
   const [calculatedBoxes, setCalculatedBoxes] = useState<number | null>(null);
@@ -218,91 +322,7 @@ export default function ProductDetailScreen() {
   const renderHeader = () => (
     <View>
       {/* Product Image Gallery */}
-      <View style={[styles.galleryWrapper, { width, height: width * 0.9 }]}>
-        <ScrollView
-          ref={galleryScrollRef}
-          horizontal
-          pagingEnabled
-          nestedScrollEnabled
-          showsHorizontalScrollIndicator={false}
-          bounces={false}
-          overScrollMode="never"
-          scrollEventThrottle={16}
-          onMomentumScrollEnd={(e) => {
-            const index = Math.round(e.nativeEvent.contentOffset.x / width);
-            setActiveImageIndex(index);
-          }}
-        >
-          {images.map((item, idx) => (
-            <View key={`gallery-img-${idx}`} style={{ width, height: width * 0.9 }}>
-              <Image
-                source={{ uri: item }}
-                style={[styles.galleryImage, { width, height: width * 0.9 }]}
-                contentFit="cover"
-              />
-            </View>
-          ))}
-        </ScrollView>
-
-        {/* Gallery Image Counter Badge */}
-        {images.length > 1 && (
-          <View style={styles.galleryCounterBadge}>
-            <Text style={styles.galleryCounterText}>
-              {activeImageIndex + 1} / {images.length}
-            </Text>
-          </View>
-        )}
-
-        {/* Left Arrow Navigation Button */}
-        {images.length > 1 && activeImageIndex > 0 && (
-          <TouchableOpacity
-            style={[styles.galleryNavBtn, styles.galleryNavBtnLeft]}
-            onPress={() => {
-              const prev = activeImageIndex - 1;
-              galleryScrollRef.current?.scrollTo({ x: prev * width, animated: true });
-              setActiveImageIndex(prev);
-            }}
-            activeOpacity={0.85}
-          >
-            <ChevronLeft size={18} color="#FFFFFF" />
-          </TouchableOpacity>
-        )}
-
-        {/* Right Arrow Navigation Button */}
-        {images.length > 1 && activeImageIndex < images.length - 1 && (
-          <TouchableOpacity
-            style={[styles.galleryNavBtn, styles.galleryNavBtnRight]}
-            onPress={() => {
-              const next = activeImageIndex + 1;
-              galleryScrollRef.current?.scrollTo({ x: next * width, animated: true });
-              setActiveImageIndex(next);
-            }}
-            activeOpacity={0.85}
-          >
-            <ChevronRight size={18} color="#FFFFFF" />
-          </TouchableOpacity>
-        )}
-
-        {/* Dots Indicator */}
-        {images.length > 1 && (
-          <View style={styles.dotsRow}>
-            {images.map((_, idx) => (
-              <TouchableOpacity
-                key={idx}
-                activeOpacity={0.8}
-                onPress={() => {
-                  galleryScrollRef.current?.scrollTo({ x: idx * width, animated: true });
-                  setActiveImageIndex(idx);
-                }}
-                style={[
-                  styles.galleryDot,
-                  activeImageIndex === idx && styles.activeGalleryDot,
-                ]}
-              />
-            ))}
-          </View>
-        )}
-      </View>
+      <ProductGallery images={images} width={width} />
 
       {/* Product Details Card */}
       <View style={styles.detailsCard}>
