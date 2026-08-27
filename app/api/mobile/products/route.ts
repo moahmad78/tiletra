@@ -9,7 +9,13 @@ export async function OPTIONS() {
 export async function GET(req: NextRequest) {
   try {
     const { searchParams } = new URL(req.url);
-    const q = searchParams.get("q")?.trim() || "";
+    const q = (
+      searchParams.get("q") ||
+      searchParams.get("search") ||
+      searchParams.get("query") ||
+      ""
+    ).trim();
+
     const categorySlug = searchParams.get("category") || searchParams.get("categorySlug");
     const subcategory = searchParams.get("subcategory");
     const minPrice = searchParams.get("minPrice") ? parseFloat(searchParams.get("minPrice")!) : undefined;
@@ -25,33 +31,31 @@ export async function GET(req: NextRequest) {
     const limit = Math.min(50, Math.max(1, parseInt(searchParams.get("limit") || "40", 10)));
     const skip = (page - 1) * limit;
 
-    const baseWhere: any = {
+    const where: any = {
       status: "active",
       approvalStatus: "approved",
     };
 
-    if (categorySlug) {
-      baseWhere.categorySlug = categorySlug;
+    if (categorySlug && !q) {
+      where.categorySlug = categorySlug;
     }
 
     if (subcategory) {
-      baseWhere.subcategory = subcategory;
+      where.subcategory = subcategory;
     }
 
     if (minPrice !== undefined || maxPrice !== undefined) {
-      baseWhere.pricePerSqft = {};
-      if (minPrice !== undefined) baseWhere.pricePerSqft.gte = minPrice;
-      if (maxPrice !== undefined) baseWhere.pricePerSqft.lte = maxPrice;
+      where.pricePerSqft = {};
+      if (minPrice !== undefined) where.pricePerSqft.gte = minPrice;
+      if (maxPrice !== undefined) where.pricePerSqft.lte = maxPrice;
     }
 
-    if (finish) baseWhere.finish = { equals: finish, mode: "insensitive" };
-    if (material) baseWhere.material = { equals: material, mode: "insensitive" };
-    if (vendorId) baseWhere.vendorId = vendorId;
-    if (isTrending) baseWhere.isTrending = true;
-    if (isBestseller) baseWhere.isBestseller = true;
-    if (isNewArrival) baseWhere.isNewArrival = true;
-
-    let where = { ...baseWhere };
+    if (finish) where.finish = { equals: finish, mode: "insensitive" };
+    if (material) where.material = { equals: material, mode: "insensitive" };
+    if (vendorId) where.vendorId = vendorId;
+    if (isTrending) where.isTrending = true;
+    if (isBestseller) where.isBestseller = true;
+    if (isNewArrival) where.isNewArrival = true;
 
     if (q) {
       const words = q.split(/\s+/).filter((w) => w.length > 0);
@@ -66,28 +70,16 @@ export async function GET(req: NextRequest) {
         { finish: { contains: term, mode: "insensitive" } },
         { look: { contains: term, mode: "insensitive" } },
         { usage: { contains: term, mode: "insensitive" } },
-        {
-          variants: {
-            some: {
-              name: { contains: term, mode: "insensitive" },
-            },
-          },
-        },
       ];
 
+      // Combine full phrase and individual word search terms into a clean flat OR
+      const orList: any[] = [...buildWordOr(q)];
       if (words.length > 1) {
-        // Match full phrase OR any individual word
-        where.AND = [
-          {
-            OR: [
-              ...buildWordOr(q),
-              ...words.map((w) => ({ OR: buildWordOr(w) })),
-            ],
-          },
-        ];
-      } else {
-        where.OR = buildWordOr(q);
+        for (const w of words) {
+          orList.push(...buildWordOr(w));
+        }
       }
+      where.OR = orList;
     }
 
     let orderBy: any = { createdAt: "desc" };
@@ -119,7 +111,7 @@ export async function GET(req: NextRequest) {
       prisma.product.count({ where }),
     ]);
 
-    // If query returned 0 products, provide smart fallback (popular / active items)
+    // If a search query yielded 0 exact results, fallback to active items
     let isFallback = false;
     if (products.length === 0 && q) {
       isFallback = true;

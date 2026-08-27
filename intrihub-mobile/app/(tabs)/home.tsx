@@ -134,8 +134,8 @@ export default function HomeScreen() {
       <View style={styles.trustBanner}>
         <View style={styles.trustItem}>
           <Shield size={20} color={COLORS.primary} />
-          <Text style={styles.trustTitle}>Direct from Factory</Text>
-          <Text style={styles.trustSub}>Zero middleman markup</Text>
+          <Text style={styles.trustTitle}>Everything, Every Space</Text>
+          <Text style={styles.trustSub}>India's top supply marketplace</Text>
         </View>
         <View style={styles.trustDivider} />
         <View style={styles.trustItem}>

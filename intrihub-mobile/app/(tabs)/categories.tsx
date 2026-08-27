@@ -1,4 +1,4 @@
-import React, { useState, useRef, useEffect, useCallback } from "react";
+import React, { useState, useRef, useEffect, useCallback, useMemo } from "react";
 import {
   View,
   Text,
@@ -51,7 +51,6 @@ export default function CategoriesScreen() {
   useFocusEffect(
     useCallback(() => {
       if (params?.focus || params?.autoFocus) {
-        // Run after tab navigation transition completes
         const task = InteractionManager.runAfterInteractions(() => {
           setTimeout(() => {
             inputRef.current?.focus();
@@ -59,7 +58,6 @@ export default function CategoriesScreen() {
           }, 80);
         });
 
-        // Backup timer for guaranteed native focus
         const backupTimer = setTimeout(() => {
           inputRef.current?.focus();
           setIsSearchFocused(true);
@@ -73,21 +71,16 @@ export default function CategoriesScreen() {
     }, [params?.focus, params?.autoFocus])
   );
 
-  // Debounce search query (300ms) for live suggestions
+  // Fast 150ms debounce for server refinement
   useEffect(() => {
     const timer = setTimeout(() => {
       const trimmed = searchQuery.trim();
       setDebouncedSearch(trimmed);
-      if (trimmed.length >= 1 && isSearchFocused) {
-        setShowSuggestions(true);
-      } else {
-        setShowSuggestions(false);
-      }
-    }, 300);
+    }, 150);
     return () => clearTimeout(timer);
-  }, [searchQuery, isSearchFocused]);
+  }, [searchQuery]);
 
-  // Fetch Categories
+  // 1. Fetch Categories
   const { data: catData, isLoading: catLoading } = useQuery({
     queryKey: ["mobile-categories"],
     queryFn: getCategories,
@@ -95,16 +88,49 @@ export default function CategoriesScreen() {
 
   const categories = catData?.categories || [];
 
-  // Live Suggestions Query (debounced, up to 8 products)
-  const { data: suggestionsData, isLoading: suggestionsLoading } = useQuery({
+  // 2. Prefetch Compact Catalog for 0ms instant client-side typeahead
+  const { data: compactCatalogData } = useQuery({
+    queryKey: ["mobile-compact-catalog"],
+    queryFn: () => getProducts({ limit: 100 }),
+    staleTime: 1000 * 60 * 5, // 5 minutes cache
+  });
+
+  const compactCatalog = compactCatalogData?.products || [];
+
+  // Instant Client-side Filter (0ms response on single keystroke)
+  const clientMatches = useMemo(() => {
+    const trimmed = searchQuery.trim().toLowerCase();
+    if (!trimmed) return [];
+    return compactCatalog.filter(
+      (p) =>
+        p.name.toLowerCase().includes(trimmed) ||
+        p.categoryName?.toLowerCase().includes(trimmed) ||
+        p.material?.toLowerCase().includes(trimmed) ||
+        p.finish?.toLowerCase().includes(trimmed) ||
+        p.description?.toLowerCase().includes(trimmed)
+    );
+  }, [searchQuery, compactCatalog]);
+
+  // 3. Server Live Suggestions Query (debounced 150ms)
+  const { data: suggestionsData, isFetching: suggestionsFetching } = useQuery({
     queryKey: ["mobile-search-suggestions", debouncedSearch],
-    queryFn: () => getProducts({ q: debouncedSearch, limit: 8 }),
+    queryFn: () => getProducts({ q: debouncedSearch, limit: 10 }),
     enabled: Boolean(debouncedSearch && debouncedSearch.length >= 1 && isSearchFocused),
   });
 
-  const suggestions = suggestionsData?.products || [];
+  const serverSuggestions = suggestionsData?.products || [];
 
-  // Main Browse / Filtered Products Query
+  // Merge client and server suggestions
+  const mergedSuggestions = useMemo(() => {
+    const map = new Map<string, Product>();
+    serverSuggestions.forEach((p) => map.set(p.id, p));
+    clientMatches.forEach((p) => {
+      if (!map.has(p.id)) map.set(p.id, p);
+    });
+    return Array.from(map.values()).slice(0, 8);
+  }, [clientMatches, serverSuggestions]);
+
+  // 4. Main Browse / Filtered Products Query
   const {
     data: productsData,
     isLoading: productsLoading,
@@ -119,7 +145,8 @@ export default function CategoriesScreen() {
     queryFn: () =>
       getProducts({
         q: searchQuery.trim() || undefined,
-        category: selectedCategory?.slug,
+        // When searching with text, search globally across all categories
+        category: searchQuery.trim() ? undefined : selectedCategory?.slug,
         sort: activeSort,
         limit: 40,
       }),
@@ -129,8 +156,8 @@ export default function CategoriesScreen() {
 
   // Matching categories in live suggestion dropdown
   const matchingCategories = categories.filter((c) =>
-    debouncedSearch
-      ? c.name.toLowerCase().includes(debouncedSearch.toLowerCase())
+    searchQuery.trim()
+      ? c.name.toLowerCase().includes(searchQuery.trim().toLowerCase())
       : false
   );
 
@@ -202,6 +229,8 @@ export default function CategoriesScreen() {
               setSearchQuery(text);
               if (text.trim().length >= 1) {
                 setShowSuggestions(true);
+              } else {
+                setShowSuggestions(false);
               }
             }}
             onFocus={() => {
@@ -211,7 +240,6 @@ export default function CategoriesScreen() {
               }
             }}
             onBlur={() => {
-              // Delay blur to allow suggestion row taps
               setTimeout(() => {
                 setIsSearchFocused(false);
                 setShowSuggestions(false);
@@ -238,111 +266,115 @@ export default function CategoriesScreen() {
         {/* Live Search Suggestions Dropdown Overlay */}
         {showSuggestions && searchQuery.trim().length >= 1 && (
           <View style={[styles.suggestionsDropdown, SHADOWS.lg]}>
-            {suggestionsLoading ? (
-              <View style={styles.suggestionsLoading}>
-                <ActivityIndicator size="small" color={COLORS.primary} />
-                <Text style={styles.suggestionsLoadingText}>Searching catalog...</Text>
-              </View>
-            ) : (
-              <ScrollView
-                keyboardShouldPersistTaps="handled"
-                nestedScrollEnabled
-                style={styles.suggestionsScroll}
-                showsVerticalScrollIndicator={false}
-              >
-                {/* Matching Category Chips */}
-                {matchingCategories.length > 0 && (
-                  <View style={styles.matchingCatSection}>
-                    <Text style={styles.suggestionSectionLabel}>Categories</Text>
-                    <View style={styles.matchingCatRow}>
-                      {matchingCategories.map((cat) => (
-                        <TouchableOpacity
-                          key={cat.id}
-                          style={styles.matchingCatChip}
-                          onPress={() => handleSelectCategorySuggestion(cat)}
-                        >
-                          <Sparkles size={11} color={COLORS.accentOrange} style={{ marginRight: 4 }} />
-                          <Text style={styles.matchingCatChipText}>{cat.name}</Text>
-                        </TouchableOpacity>
-                      ))}
-                    </View>
+            <ScrollView
+              keyboardShouldPersistTaps="handled"
+              nestedScrollEnabled
+              style={styles.suggestionsScroll}
+              showsVerticalScrollIndicator={false}
+            >
+              {/* Matching Category Chips */}
+              {matchingCategories.length > 0 && (
+                <View style={styles.matchingCatSection}>
+                  <Text style={styles.suggestionSectionLabel}>Categories</Text>
+                  <View style={styles.matchingCatRow}>
+                    {matchingCategories.map((cat) => (
+                      <TouchableOpacity
+                        key={cat.id}
+                        style={styles.matchingCatChip}
+                        onPress={() => handleSelectCategorySuggestion(cat)}
+                      >
+                        <Sparkles size={11} color={COLORS.accentOrange} style={{ marginRight: 4 }} />
+                        <Text style={styles.matchingCatChipText}>{cat.name}</Text>
+                      </TouchableOpacity>
+                    ))}
                   </View>
-                )}
+                </View>
+              )}
 
-                {/* Matching Products List */}
-                {suggestions.length > 0 ? (
-                  <>
+              {/* Matching Products List */}
+              {mergedSuggestions.length > 0 ? (
+                <>
+                  <View style={styles.suggestionSectionHeaderRow}>
                     <Text style={styles.suggestionSectionLabel}>Matching Products</Text>
-                    {suggestions.map((p) => {
-                      const img = p.images?.[0]
-                        ? getImageUrl(p.images[0])
-                        : "https://images.unsplash.com/photo-1590381105924-c72589b9ef3f?w=200";
-                      const price =
-                        p.variants?.[0]?.pricePerBox ||
-                        p.variants?.[0]?.pricePerSqft ||
-                        p.pricePerSqft ||
-                        499;
-                      const unit = p.unitOfSale || "sqft";
-
-                      return (
-                        <TouchableOpacity
-                          key={p.id}
-                          style={styles.suggestionRow}
-                          onPress={() => handleSelectSuggestion(p)}
-                          activeOpacity={0.7}
-                        >
-                          <Image
-                            source={{ uri: img }}
-                            style={styles.suggestionThumb}
-                            contentFit="cover"
-                          />
-                          <View style={styles.suggestionInfo}>
-                            <Text style={styles.suggestionTitle} numberOfLines={1}>
-                              {p.name}
-                            </Text>
-                            <Text style={styles.suggestionSub} numberOfLines={1}>
-                              {p.categoryName || "Direct Supply"} {p.size ? `• ${p.size}` : ""}
-                            </Text>
-                          </View>
-                          <View style={styles.suggestionPriceBox}>
-                            <Text style={styles.suggestionPrice}>₹{price.toLocaleString("en-IN")}</Text>
-                            <Text style={styles.suggestionUnit}>/{unit}</Text>
-                          </View>
-                          <ChevronRight size={16} color={COLORS.textMuted} style={{ marginLeft: 6 }} />
-                        </TouchableOpacity>
-                      );
-                    })}
-
-                    {/* Bottom "See all results" button */}
-                    <TouchableOpacity
-                      style={styles.seeAllBtn}
-                      onPress={handleSeeAllResults}
-                      activeOpacity={0.8}
-                    >
-                      <Text style={styles.seeAllText}>
-                        See all results for "{searchQuery}"
-                      </Text>
-                      <ChevronRight size={14} color={COLORS.primary} />
-                    </TouchableOpacity>
-                  </>
-                ) : (
-                  <View style={styles.noSuggestionsBox}>
-                    <Text style={styles.noSuggestionsText}>
-                      No direct matches for "{searchQuery}"
-                    </Text>
-                    <Text style={styles.noSuggestionsSub}>
-                      Press search or tap below to explore related materials
-                    </Text>
-                    <TouchableOpacity
-                      style={styles.exploreFallbackBtn}
-                      onPress={handleSeeAllResults}
-                    >
-                      <Text style={styles.exploreFallbackText}>View Catalog Items</Text>
-                    </TouchableOpacity>
+                    {suggestionsFetching && (
+                      <ActivityIndicator size="small" color={COLORS.primary} style={{ marginLeft: 6 }} />
+                    )}
                   </View>
-                )}
-              </ScrollView>
-            )}
+
+                  {mergedSuggestions.map((p) => {
+                    const img = p.images?.[0]
+                      ? getImageUrl(p.images[0])
+                      : "https://images.unsplash.com/photo-1590381105924-c72589b9ef3f?w=200";
+                    const price =
+                      p.variants?.[0]?.pricePerBox ||
+                      p.variants?.[0]?.pricePerSqft ||
+                      p.pricePerSqft ||
+                      499;
+                    const unit = p.unitOfSale || "sqft";
+
+                    return (
+                      <TouchableOpacity
+                        key={p.id}
+                        style={styles.suggestionRow}
+                        onPress={() => handleSelectSuggestion(p)}
+                        activeOpacity={0.7}
+                      >
+                        <Image
+                          source={{ uri: img }}
+                          style={styles.suggestionThumb}
+                          contentFit="cover"
+                        />
+                        <View style={styles.suggestionInfo}>
+                          <Text style={styles.suggestionTitle} numberOfLines={1}>
+                            {p.name}
+                          </Text>
+                          <Text style={styles.suggestionSub} numberOfLines={1}>
+                            {p.categoryName || "Direct Supply"} {p.size ? `• ${p.size}` : ""}
+                          </Text>
+                        </View>
+                        <View style={styles.suggestionPriceBox}>
+                          <Text style={styles.suggestionPrice}>₹{price.toLocaleString("en-IN")}</Text>
+                          <Text style={styles.suggestionUnit}>/{unit}</Text>
+                        </View>
+                        <ChevronRight size={16} color={COLORS.textMuted} style={{ marginLeft: 6 }} />
+                      </TouchableOpacity>
+                    );
+                  })}
+
+                  {/* Bottom "See all results" button */}
+                  <TouchableOpacity
+                    style={styles.seeAllBtn}
+                    onPress={handleSeeAllResults}
+                    activeOpacity={0.8}
+                  >
+                    <Text style={styles.seeAllText}>
+                      See all results for "{searchQuery}"
+                    </Text>
+                    <ChevronRight size={14} color={COLORS.primary} />
+                  </TouchableOpacity>
+                </>
+              ) : suggestionsFetching ? (
+                <View style={styles.suggestionsLoading}>
+                  <ActivityIndicator size="small" color={COLORS.primary} />
+                  <Text style={styles.suggestionsLoadingText}>Searching catalog...</Text>
+                </View>
+              ) : (
+                <View style={styles.noSuggestionsBox}>
+                  <Text style={styles.noSuggestionsText}>
+                    No direct matches for "{searchQuery}"
+                  </Text>
+                  <Text style={styles.noSuggestionsSub}>
+                    Press search or tap below to explore related materials
+                  </Text>
+                  <TouchableOpacity
+                    style={styles.exploreFallbackBtn}
+                    onPress={handleSeeAllResults}
+                  >
+                    <Text style={styles.exploreFallbackText}>View Catalog Items</Text>
+                  </TouchableOpacity>
+                </View>
+              )}
+            </ScrollView>
           </View>
         )}
       </View>
@@ -626,6 +658,12 @@ const styles = StyleSheet.create({
     zIndex: 999,
     overflow: "hidden",
   },
+  suggestionSectionHeaderRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    paddingHorizontal: SPACING.sm,
+    paddingVertical: 4,
+  },
   suggestionsLoading: {
     flexDirection: "row",
     alignItems: "center",
@@ -651,8 +689,6 @@ const styles = StyleSheet.create({
     fontWeight: "800",
     color: COLORS.textMuted,
     textTransform: "uppercase",
-    paddingHorizontal: SPACING.sm,
-    paddingVertical: 4,
   },
   matchingCatRow: {
     flexDirection: "row",

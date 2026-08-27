@@ -53,7 +53,7 @@ const CATEGORY_ICON_MAP: Record<string, any> = {
 
 export const CategoryGrid: React.FC<CategoryGridProps> = ({ categories, mode = "grid" }) => {
   const router = useRouter();
-  const [isExpanded, setIsExpanded] = useState(false);
+  const [isExpanded, setIsExpanded] = useState(true);
   const bounceAnim = useRef(new Animated.Value(0)).current;
 
   useEffect(() => {
