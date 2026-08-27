@@ -130,11 +130,7 @@ export default function LoginScreen() {
             const res = await loginWithGoogle({ accessToken, idToken });
             if (res.success && res.user) {
               setUser(res.user);
-              if (res.user.role === "vendor") {
-                router.replace("/(vendor)/dashboard" as any);
-              } else {
-                router.replace("/(tabs)/home" as any);
-              }
+              router.replace("/(tabs)/home" as any);
             } else {
               setError(res.error || "Google login failed. Please try again.");
             }
@@ -170,11 +166,7 @@ export default function LoginScreen() {
               const userObj = JSON.parse(decodeURIComponent(userRaw));
               await setStoredTokens(accessToken, refreshToken);
               setUser(userObj);
-              if (userObj.role === "vendor") {
-                router.replace("/(vendor)/dashboard" as any);
-              } else {
-                router.replace("/(tabs)/home" as any);
-              }
+              router.replace("/(tabs)/home" as any);
             } catch (e) {
               console.error("Deep link parse error:", e);
             }
