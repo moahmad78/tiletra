@@ -27,6 +27,7 @@ export async function POST(req: NextRequest) {
         success: true,
         message: result.message,
         channel: "email",
+        expiresIn: result.expiresIn || 300,
       });
     }
 
