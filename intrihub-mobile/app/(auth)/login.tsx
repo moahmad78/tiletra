@@ -81,15 +81,12 @@ export default function LoginScreen() {
   const [timer, setTimer] = useState(60);
   const [canResend, setCanResend] = useState(false);
 
-  const redirectUri = isExpoGo
-    ? "https://auth.expo.io/@moahmad78/intrihub"
-    : AuthSession.makeRedirectUri({
-        scheme: "intrihub",
-        preferLocalhost: true,
-      });
+  const redirectUri = AuthSession.makeRedirectUri({
+    scheme: "intrihub",
+  });
 
   // Google OAuth Request:
-  // In Expo Go, uses Web Client ID with Expo Auth Proxy (https://auth.expo.io/@moahmad78/intrihub).
+  // In Expo Go, uses Web Client ID with Expo Auth Proxy.
   // In standalone / preview APK (com.intrihub.app), uses Android Client ID.
   const [request, response, promptAsync] = Google.useAuthRequest({
     androidClientId: isExpoGo ? undefined : GOOGLE_ANDROID_CLIENT_ID,
