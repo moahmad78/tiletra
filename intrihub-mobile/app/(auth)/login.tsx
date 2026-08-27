@@ -14,6 +14,7 @@ import {
 import { Image } from "expo-image";
 import { useRouter } from "expo-router";
 import * as WebBrowser from "expo-web-browser";
+import * as AuthSession from "expo-auth-session";
 import * as Google from "expo-auth-session/providers/google";
 import Svg, { Path } from "react-native-svg";
 import { ArrowLeft, ShieldCheck, Mail, ArrowRight, RotateCw, Lock, ChevronLeft } from "lucide-react-native";
@@ -23,8 +24,18 @@ import { useAuthStore } from "../../src/store/authStore";
 
 WebBrowser.maybeCompleteAuthSession();
 
-// Google Client ID shared with the Intrihub web application
-const GOOGLE_CLIENT_ID = "602084779648-k1gfeq3u4vein82tvt93d1iv5t43b8oh.apps.googleusercontent.com";
+// Google Client IDs supporting Web, Android Native and iOS
+const GOOGLE_WEB_CLIENT_ID =
+  process.env.EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID ||
+  "602084779648-k1gfeq3u4vein82tvt93d1iv5t43b8oh.apps.googleusercontent.com";
+
+const GOOGLE_ANDROID_CLIENT_ID =
+  process.env.EXPO_PUBLIC_GOOGLE_ANDROID_CLIENT_ID ||
+  "602084779648-bchh5lt1n03g719qisutva4bkhjg17cb.apps.googleusercontent.com";
+
+const GOOGLE_IOS_CLIENT_ID =
+  process.env.EXPO_PUBLIC_GOOGLE_IOS_CLIENT_ID ||
+  GOOGLE_WEB_CLIENT_ID;
 
 function GoogleIcon() {
   return (
@@ -49,6 +60,13 @@ function GoogleIcon() {
   );
 }
 
+import Constants, { ExecutionEnvironment } from "expo-constants";
+
+// Detect if running inside standard Expo Go app
+const isExpoGo =
+  Constants.appOwnership === "expo" ||
+  Constants.executionEnvironment === ExecutionEnvironment.StoreClient;
+
 export default function LoginScreen() {
   const router = useRouter();
   const { setUser } = useAuthStore();
@@ -63,12 +81,26 @@ export default function LoginScreen() {
   const [timer, setTimer] = useState(60);
   const [canResend, setCanResend] = useState(false);
 
-  // Google OAuth Request
-  const [request, response, promptAsync] = Google.useAuthRequest({
-    androidClientId: GOOGLE_CLIENT_ID,
-    webClientId: GOOGLE_CLIENT_ID,
-    scopes: ["profile", "email"],
+  const redirectUri = AuthSession.makeRedirectUri({
+    scheme: "intrihub",
+    preferLocalhost: true,
   });
+
+  // Google OAuth Request:
+  // In Expo Go, uses Web Client ID with Expo Auth Proxy.
+  // In standalone / preview APK (com.intrihub.app), uses Android Client ID.
+  const [request, response, promptAsync] = Google.useAuthRequest({
+    androidClientId: isExpoGo ? undefined : GOOGLE_ANDROID_CLIENT_ID,
+    iosClientId: isExpoGo ? undefined : GOOGLE_IOS_CLIENT_ID,
+    webClientId: GOOGLE_WEB_CLIENT_ID,
+    clientId: GOOGLE_WEB_CLIENT_ID,
+    scopes: ["profile", "email"],
+    redirectUri,
+  });
+
+  useEffect(() => {
+    console.log("[Google OAuth] Configured Redirect URI:", redirectUri);
+  }, [redirectUri]);
 
   // Countdown timer for OTP
   useEffect(() => {

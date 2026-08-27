@@ -1,11 +1,11 @@
-import { useState } from "react";
+import { useState, useRef } from "react";
 import {
   View,
   Text,
   StyleSheet,
   ScrollView,
   TouchableOpacity,
-  Dimensions,
+  useWindowDimensions,
   ActivityIndicator,
   Platform,
   StatusBar,
@@ -27,6 +27,8 @@ import {
   ShoppingBag,
   Check,
   Sparkles,
+  ChevronLeft,
+  ChevronRight,
 } from "lucide-react-native";
 import { getProductDetails, getProducts } from "../../src/api/products";
 import { useCartStore } from "../../src/store/cartStore";
@@ -35,8 +37,6 @@ import { Product, ProductVariant } from "../../src/types";
 import { ProductCard } from "../../src/components/ProductCard";
 import { COLORS, SPACING, RADIUS, SHADOWS } from "../../src/constants/theme";
 import { getImageUrl } from "../../src/constants/config";
-
-const { width } = Dimensions.get("window");
 
 function getPriceUnitSuffix(product: any): string {
   const unit = (product?.unitOfSale || "").toLowerCase().trim();
@@ -68,15 +68,27 @@ function getPriceUnitSuffix(product: any): string {
 export default function ProductDetailScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
   const router = useRouter();
+  const { width } = useWindowDimensions();
   const { addItem, getItemCount } = useCartStore();
   const { isWishlisted, toggleWishlist } = useWishlistStore();
 
+  const galleryRef = useRef<FlatList>(null);
   const [activeImageIndex, setActiveImageIndex] = useState(0);
   const [selectedVariant, setSelectedVariant] = useState<ProductVariant | null>(null);
   const [calculatorArea, setCalculatorArea] = useState("");
   const [calculatedBoxes, setCalculatedBoxes] = useState<number | null>(null);
   const [quantity, setQuantity] = useState(1);
   const [addedToast, setAddedToast] = useState(false);
+
+  const onViewableItemsChanged = useRef(({ viewableItems }: { viewableItems: any[] }) => {
+    if (viewableItems && viewableItems.length > 0 && viewableItems[0].index != null) {
+      setActiveImageIndex(viewableItems[0].index);
+    }
+  }).current;
+
+  const viewabilityConfig = useRef({
+    itemVisiblePercentThreshold: 50,
+  }).current;
 
   // 1. Fetch Current Product Details
   const { data, isLoading, error } = useQuery({
@@ -216,33 +228,89 @@ export default function ProductDetailScreen() {
   const renderHeader = () => (
     <View>
       {/* Product Image Gallery */}
-      <View style={styles.galleryWrapper}>
-        <ScrollView
+      <View style={[styles.galleryWrapper, { width, height: width * 0.9 }]}>
+        <FlatList
+          ref={galleryRef}
+          data={images}
+          keyExtractor={(_, idx) => `gallery-img-${idx}`}
           horizontal
           pagingEnabled
+          nestedScrollEnabled
           showsHorizontalScrollIndicator={false}
-          onScroll={(e) => {
-            const slide = Math.round(e.nativeEvent.contentOffset.x / width);
-            setActiveImageIndex(slide);
-          }}
-          scrollEventThrottle={16}
-        >
-          {images.map((img, idx) => (
-            <Image
-              key={idx}
-              source={{ uri: img }}
-              style={styles.galleryImage}
-              contentFit="cover"
-            />
-          ))}
-        </ScrollView>
+          snapToInterval={width}
+          snapToAlignment="center"
+          decelerationRate="fast"
+          disableIntervalMomentum
+          bounces={false}
+          overScrollMode="never"
+          getItemLayout={(_, index) => ({
+            length: width,
+            offset: width * index,
+            index,
+          })}
+          onViewableItemsChanged={onViewableItemsChanged}
+          viewabilityConfig={viewabilityConfig}
+          renderItem={({ item }) => (
+            <View style={{ width, height: width * 0.9 }}>
+              <Image
+                source={{ uri: item }}
+                style={[styles.galleryImage, { width, height: width * 0.9 }]}
+                contentFit="cover"
+              />
+            </View>
+          )}
+        />
+
+        {/* Gallery Image Counter Badge */}
+        {images.length > 1 && (
+          <View style={styles.galleryCounterBadge}>
+            <Text style={styles.galleryCounterText}>
+              {activeImageIndex + 1} / {images.length}
+            </Text>
+          </View>
+        )}
+
+        {/* Left Arrow Navigation Button */}
+        {images.length > 1 && activeImageIndex > 0 && (
+          <TouchableOpacity
+            style={[styles.galleryNavBtn, styles.galleryNavBtnLeft]}
+            onPress={() => {
+              const prev = activeImageIndex - 1;
+              galleryRef.current?.scrollToIndex({ index: prev, animated: true });
+              setActiveImageIndex(prev);
+            }}
+            activeOpacity={0.85}
+          >
+            <ChevronLeft size={18} color="#FFFFFF" />
+          </TouchableOpacity>
+        )}
+
+        {/* Right Arrow Navigation Button */}
+        {images.length > 1 && activeImageIndex < images.length - 1 && (
+          <TouchableOpacity
+            style={[styles.galleryNavBtn, styles.galleryNavBtnRight]}
+            onPress={() => {
+              const next = activeImageIndex + 1;
+              galleryRef.current?.scrollToIndex({ index: next, animated: true });
+              setActiveImageIndex(next);
+            }}
+            activeOpacity={0.85}
+          >
+            <ChevronRight size={18} color="#FFFFFF" />
+          </TouchableOpacity>
+        )}
 
         {/* Dots Indicator */}
         {images.length > 1 && (
           <View style={styles.dotsRow}>
             {images.map((_, idx) => (
-              <View
+              <TouchableOpacity
                 key={idx}
+                activeOpacity={0.8}
+                onPress={() => {
+                  galleryRef.current?.scrollToIndex({ index: idx, animated: true });
+                  setActiveImageIndex(idx);
+                }}
                 style={[
                   styles.galleryDot,
                   activeImageIndex === idx && styles.activeGalleryDot,
@@ -255,10 +323,6 @@ export default function ProductDetailScreen() {
 
       {/* Product Details Card */}
       <View style={styles.detailsCard}>
-        <Text style={styles.categoryBadge}>
-          {product.categoryName || "Direct Supply"}
-        </Text>
-
         <Text style={styles.productName}>{product.name}</Text>
 
         {/* Rating */}
@@ -490,6 +554,7 @@ export default function ProductDetailScreen() {
         data={catalogProducts}
         keyExtractor={(item: Product, idx) => `${item.id}-${idx}`}
         numColumns={2}
+        nestedScrollEnabled={true}
         ListHeaderComponent={renderHeader}
         renderItem={({ item }: { item: Product }) => (
           <View style={styles.gridCardWrapper}>
@@ -620,27 +685,59 @@ const styles = StyleSheet.create({
     paddingBottom: 30,
   },
   galleryWrapper: {
-    width,
-    height: width * 0.9,
     backgroundColor: COLORS.surfaceSecondary,
     position: "relative",
+    overflow: "hidden",
   },
   galleryImage: {
-    width,
-    height: width * 0.9,
+    backgroundColor: COLORS.surfaceSecondary,
+  },
+  galleryCounterBadge: {
+    position: "absolute",
+    top: 14,
+    right: 14,
+    backgroundColor: "rgba(5, 42, 81, 0.72)",
+    paddingHorizontal: 9,
+    paddingVertical: 3.5,
+    borderRadius: RADIUS.full,
+    zIndex: 10,
+  },
+  galleryCounterText: {
+    color: COLORS.textWhite,
+    fontSize: 11,
+    fontWeight: "800",
+  },
+  galleryNavBtn: {
+    position: "absolute",
+    top: "44%",
+    width: 34,
+    height: 34,
+    borderRadius: RADIUS.full,
+    backgroundColor: "rgba(5, 42, 81, 0.65)",
+    alignItems: "center",
+    justifyContent: "center",
+    zIndex: 10,
+  },
+  galleryNavBtnLeft: {
+    left: 12,
+  },
+  galleryNavBtnRight: {
+    right: 12,
   },
   dotsRow: {
     position: "absolute",
     bottom: 12,
     alignSelf: "center",
     flexDirection: "row",
+    alignItems: "center",
+    zIndex: 10,
   },
   galleryDot: {
     width: 6,
     height: 6,
     borderRadius: RADIUS.full,
-    backgroundColor: "rgba(255, 255, 255, 0.5)",
-    marginHorizontal: 3,
+    backgroundColor: "rgba(255, 255, 255, 0.55)",
+    marginHorizontal: 3.5,
   },
   activeGalleryDot: {
     width: 18,
@@ -651,13 +748,6 @@ const styles = StyleSheet.create({
     padding: SPACING.lg,
     borderBottomWidth: 1,
     borderColor: COLORS.border,
-  },
-  categoryBadge: {
-    fontSize: 11,
-    fontWeight: "800",
-    color: COLORS.accentOrange,
-    textTransform: "uppercase",
-    marginBottom: 4,
   },
   productName: {
     fontSize: 18,
