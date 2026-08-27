@@ -14,6 +14,7 @@ import {
   Keyboard,
   TouchableWithoutFeedback,
   InteractionManager,
+  Pressable,
 } from "react-native";
 import { Image } from "expo-image";
 import { useQuery } from "@tanstack/react-query";
@@ -389,6 +390,18 @@ export default function CategoriesScreen() {
         )}
       </View>
 
+      {/* Touch-blocking backdrop when suggestions dropdown is open */}
+      {showSuggestions && searchQuery.trim().length >= 1 && (
+        <Pressable
+          style={styles.suggestionsBackdrop}
+          onPress={() => {
+            setShowSuggestions(false);
+            setIsSearchFocused(false);
+            Keyboard.dismiss();
+          }}
+        />
+      )}
+
       {/* Horizontal Sort & Filter Bar (E-Commerce Standard) */}
       <View style={styles.filterBar}>
         <ScrollView
@@ -653,6 +666,16 @@ const styles = StyleSheet.create({
   },
   hiddenInput: {
     opacity: 0,
+  },
+  // Touch-blocking backdrop behind dropdown
+  suggestionsBackdrop: {
+    ...StyleSheet.absoluteFillObject,
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    backgroundColor: "rgba(0, 0, 0, 0.15)",
+    zIndex: 50,
   },
   // Suggestions Dropdown
   suggestionsDropdown: {
