@@ -72,23 +72,13 @@ export default function ProductDetailScreen() {
   const { addItem, getItemCount } = useCartStore();
   const { isWishlisted, toggleWishlist } = useWishlistStore();
 
-  const galleryRef = useRef<FlatList>(null);
+  const galleryScrollRef = useRef<ScrollView>(null);
   const [activeImageIndex, setActiveImageIndex] = useState(0);
   const [selectedVariant, setSelectedVariant] = useState<ProductVariant | null>(null);
   const [calculatorArea, setCalculatorArea] = useState("");
   const [calculatedBoxes, setCalculatedBoxes] = useState<number | null>(null);
   const [quantity, setQuantity] = useState(1);
   const [addedToast, setAddedToast] = useState(false);
-
-  const onViewableItemsChanged = useRef(({ viewableItems }: { viewableItems: any[] }) => {
-    if (viewableItems && viewableItems.length > 0 && viewableItems[0].index != null) {
-      setActiveImageIndex(viewableItems[0].index);
-    }
-  }).current;
-
-  const viewabilityConfig = useRef({
-    itemVisiblePercentThreshold: 50,
-  }).current;
 
   // 1. Fetch Current Product Details
   const { data, isLoading, error } = useQuery({
@@ -229,37 +219,30 @@ export default function ProductDetailScreen() {
     <View>
       {/* Product Image Gallery */}
       <View style={[styles.galleryWrapper, { width, height: width * 0.9 }]}>
-        <FlatList
-          ref={galleryRef}
-          data={images}
-          keyExtractor={(_, idx) => `gallery-img-${idx}`}
+        <ScrollView
+          ref={galleryScrollRef}
           horizontal
           pagingEnabled
           nestedScrollEnabled
           showsHorizontalScrollIndicator={false}
-          snapToInterval={width}
-          snapToAlignment="center"
-          decelerationRate="fast"
-          disableIntervalMomentum
           bounces={false}
           overScrollMode="never"
-          getItemLayout={(_, index) => ({
-            length: width,
-            offset: width * index,
-            index,
-          })}
-          onViewableItemsChanged={onViewableItemsChanged}
-          viewabilityConfig={viewabilityConfig}
-          renderItem={({ item }) => (
-            <View style={{ width, height: width * 0.9 }}>
+          scrollEventThrottle={16}
+          onMomentumScrollEnd={(e) => {
+            const index = Math.round(e.nativeEvent.contentOffset.x / width);
+            setActiveImageIndex(index);
+          }}
+        >
+          {images.map((item, idx) => (
+            <View key={`gallery-img-${idx}`} style={{ width, height: width * 0.9 }}>
               <Image
                 source={{ uri: item }}
                 style={[styles.galleryImage, { width, height: width * 0.9 }]}
                 contentFit="cover"
               />
             </View>
-          )}
-        />
+          ))}
+        </ScrollView>
 
         {/* Gallery Image Counter Badge */}
         {images.length > 1 && (
@@ -276,7 +259,7 @@ export default function ProductDetailScreen() {
             style={[styles.galleryNavBtn, styles.galleryNavBtnLeft]}
             onPress={() => {
               const prev = activeImageIndex - 1;
-              galleryRef.current?.scrollToIndex({ index: prev, animated: true });
+              galleryScrollRef.current?.scrollTo({ x: prev * width, animated: true });
               setActiveImageIndex(prev);
             }}
             activeOpacity={0.85}
@@ -291,7 +274,7 @@ export default function ProductDetailScreen() {
             style={[styles.galleryNavBtn, styles.galleryNavBtnRight]}
             onPress={() => {
               const next = activeImageIndex + 1;
-              galleryRef.current?.scrollToIndex({ index: next, animated: true });
+              galleryScrollRef.current?.scrollTo({ x: next * width, animated: true });
               setActiveImageIndex(next);
             }}
             activeOpacity={0.85}
@@ -308,7 +291,7 @@ export default function ProductDetailScreen() {
                 key={idx}
                 activeOpacity={0.8}
                 onPress={() => {
-                  galleryRef.current?.scrollToIndex({ index: idx, animated: true });
+                  galleryScrollRef.current?.scrollTo({ x: idx * width, animated: true });
                   setActiveImageIndex(idx);
                 }}
                 style={[
