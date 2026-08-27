@@ -22,6 +22,7 @@ import {
   MapPin,
   Heart,
   Bell,
+  Headphones,
   PhoneCall,
   MessageCircle,
   LogOut,
@@ -271,20 +272,22 @@ export default function ProfileScreen() {
         <View style={styles.menuGroup}>
           <Text style={styles.groupTitle}>HELP & CUSTOMER SUPPORT</Text>
 
-          <TouchableOpacity style={styles.menuItem} onPress={handleSupportWhatsApp}>
+          <TouchableOpacity
+            style={styles.menuItem}
+            onPress={() => router.push("/support" as any)}
+            activeOpacity={0.75}
+          >
             <View style={styles.menuLeft}>
-              <MessageCircle size={20} color={COLORS.accentGreen} />
-              <Text style={styles.menuLabel}>Chat on WhatsApp</Text>
+              <Headphones size={22} color={COLORS.accentGreen} />
+              <View style={{ marginLeft: 12 }}>
+                <Text style={styles.menuLabel}>Customer Support 24*7</Text>
+                <Text style={styles.supportSubText}>WhatsApp, Helpline & FAQs</Text>
+              </View>
             </View>
-            <Text style={styles.supportHint}>+91 92649 20211</Text>
-          </TouchableOpacity>
-
-          <TouchableOpacity style={styles.menuItem} onPress={handleSupportCall}>
-            <View style={styles.menuLeft}>
-              <PhoneCall size={20} color={COLORS.primary} />
-              <Text style={styles.menuLabel}>Call Helpline</Text>
+            <View style={styles.badge247}>
+              <Text style={styles.badge247Text}>24*7</Text>
+              <ChevronRight size={16} color={COLORS.textMuted} />
             </View>
-            <Text style={styles.supportHint}>10 AM - 7 PM</Text>
           </TouchableOpacity>
 
           <TouchableOpacity style={styles.menuItem} onPress={handlePrivacyPolicy}>
@@ -574,6 +577,25 @@ const styles = StyleSheet.create({
     fontWeight: "700",
     color: COLORS.text,
     marginLeft: 12,
+  },
+  supportSubText: {
+    fontSize: 11,
+    color: COLORS.textMuted,
+    marginTop: 1,
+  },
+  badge247: {
+    flexDirection: "row",
+    alignItems: "center",
+    backgroundColor: "#dcfce7",
+    paddingHorizontal: 8,
+    paddingVertical: 2,
+    borderRadius: RADIUS.full,
+    gap: 4,
+  },
+  badge247Text: {
+    fontSize: 10,
+    fontWeight: "900",
+    color: "#16a34a",
   },
   supportHint: {
     fontSize: 12,
