@@ -6,7 +6,7 @@ import { cookies } from "next/headers";
 import { STRICT_ADMIN_EMAIL } from "@/lib/admin-constants";
 
 const resend = new Resend(process.env.RESEND_API_KEY);
-const FROM_EMAIL = process.env.EMAIL_FROM || "Intrihub Security <onboarding@resend.dev>";
+const FROM_EMAIL = process.env.EMAIL_FROM || "Intrihub Security <noreply@intrihub.com>";
 const OTP_EXPIRY_MINUTES = 10;
 
 // Default admin password fallback if not set in environment variable

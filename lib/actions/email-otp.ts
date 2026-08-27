@@ -7,7 +7,7 @@ import nodemailer from "nodemailer";
 
 const resend = process.env.RESEND_API_KEY ? new Resend(process.env.RESEND_API_KEY) : null;
 
-const FROM_EMAIL = process.env.EMAIL_FROM || "Intrihub <onboarding@resend.dev>";
+const FROM_EMAIL = process.env.EMAIL_FROM || "Intrihub <noreply@intrihub.com>";
 const OTP_EXPIRY_MINUTES = 5; // 5 minutes standard per PRD
 
 export type OtpPurpose = "customer" | "admin" | "vendor";
