@@ -130,7 +130,11 @@ export default function LoginScreen() {
             const res = await loginWithGoogle({ accessToken, idToken });
             if (res.success && res.user) {
               setUser(res.user);
-              router.back();
+              if (res.user.role === "vendor") {
+                router.replace("/(vendor)/dashboard" as any);
+              } else {
+                router.replace("/(tabs)/home" as any);
+              }
             } else {
               setError(res.error || "Google login failed. Please try again.");
             }
@@ -147,6 +151,47 @@ export default function LoginScreen() {
 
     handleGoogleResponse();
   }, [response]);
+
+  // Deep Link listener for web-bridge Google OAuth
+  useEffect(() => {
+    const handleDeepLink = async (event: { url: string }) => {
+      const urlStr = event.url;
+      if (urlStr.includes("intrihub://") && urlStr.includes("accessToken=")) {
+        const queryIndex = urlStr.indexOf("?");
+        if (queryIndex !== -1) {
+          const queryString = urlStr.substring(queryIndex + 1);
+          const params = new URLSearchParams(queryString);
+          const accessToken = params.get("accessToken");
+          const refreshToken = params.get("refreshToken");
+          const userRaw = params.get("user");
+
+          if (accessToken && refreshToken && userRaw) {
+            try {
+              const userObj = JSON.parse(decodeURIComponent(userRaw));
+              await setStoredTokens(accessToken, refreshToken);
+              setUser(userObj);
+              if (userObj.role === "vendor") {
+                router.replace("/(vendor)/dashboard" as any);
+              } else {
+                router.replace("/(tabs)/home" as any);
+              }
+            } catch (e) {
+              console.error("Deep link parse error:", e);
+            }
+          }
+        }
+      }
+    };
+
+    const sub = Linking.addEventListener("url", handleDeepLink);
+    Linking.getInitialURL().then((url) => {
+      if (url) handleDeepLink({ url });
+    });
+
+    return () => {
+      sub.remove();
+    };
+  }, []);
 
   const handleEmailSubmit = async () => {
     setError("");
@@ -191,7 +236,11 @@ export default function LoginScreen() {
 
       if (res.success && res.user) {
         setUser(res.user);
-        router.back();
+        if (res.user.role === "vendor") {
+          router.replace("/(vendor)/dashboard" as any);
+        } else {
+          router.replace("/(tabs)/home" as any);
+        }
       } else {
         setError(res.error || "Invalid verification code. Please try again.");
       }
@@ -256,7 +305,11 @@ export default function LoginScreen() {
             const userObj = JSON.parse(decodeURIComponent(userRaw));
             await setStoredTokens(accessToken, refreshToken);
             setUser(userObj);
-            router.back();
+            if (userObj.role === "vendor") {
+              router.replace("/(vendor)/dashboard" as any);
+            } else {
+              router.replace("/(tabs)/home" as any);
+            }
             return;
           }
         }

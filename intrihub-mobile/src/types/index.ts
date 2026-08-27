@@ -79,10 +79,14 @@ export interface Product {
   finish: string;
   size: string;
   pricePerSqft: number;
+  pricePerBox?: number | null;
   mrp?: number | null;
   thickness: string;
   usage?: string;
   look?: string;
+  status?: string;
+  approvalStatus?: string;
+  featuredImage?: string;
   coverageRate?: number | null;
   wastageFactor?: number | null;
   isTrending?: boolean;
@@ -169,4 +173,103 @@ export interface AppNotification {
   link?: string | null;
   createdAt: string;
 }
+
+// ----------------------------------------------------
+// Vendor Panel Types
+// ----------------------------------------------------
+export interface VendorProfile {
+  id: string;
+  businessName: string;
+  slug: string;
+  category?: string | null;
+  status: "pending" | "approved" | "rejected" | "suspended";
+  logo?: string | null;
+  ownerName?: string | null;
+  contactEmail: string;
+  contactPhone: string;
+  deliveryMethod: "self" | "platform";
+}
+
+export interface VendorStats {
+  totalProducts: number;
+  activeProducts: number;
+  pausedProducts: number;
+  pendingApprovals: number;
+  rejectedProducts: number;
+  lowStockCount: number;
+  totalOrders: number;
+  totalRevenue: number;
+}
+
+export interface VendorDashboardOrder {
+  splitId: string;
+  orderId: string;
+  customerName: string;
+  customerPhone: string;
+  itemsCount: number;
+  subtotal: number;
+  vendorPayoutAmount: number;
+  fulfillmentStatus: string;
+  paymentStatus: string;
+  createdAt: string;
+}
+
+export interface VendorDashboardData {
+  vendor: VendorProfile;
+  stats: VendorStats;
+  recentOrders: VendorDashboardOrder[];
+}
+
+export interface VendorOrderSplit {
+  id: string;
+  orderId: string;
+  vendorId: string;
+  subtotal: number;
+  commissionRate: number;
+  commissionAmount: number;
+  vendorPayoutAmount: number;
+  fulfillmentStatus: string;
+  trackingNumber?: string | null;
+  courierName?: string | null;
+  createdAt: string;
+  updatedAt: string;
+  parentOrder?: {
+    customerName: string;
+    customerPhone: string;
+    customerEmail?: string | null;
+    shippingAddress: Address;
+    paymentStatus: string;
+    paymentMethod: string;
+    orderStatus: string;
+    items: OrderItem[];
+  } | null;
+}
+
+export interface VendorEarningsTrend {
+  label: string;
+  amount: number;
+}
+
+export interface VendorPayoutHistoryItem {
+  id: string;
+  amount: number;
+  status: "completed" | "pending" | "failed";
+  periodStart: string;
+  periodEnd: string;
+  paymentReference: string;
+  paidAt: string;
+  orderCount: number;
+}
+
+export interface VendorEarningsData {
+  totalEarnings: number;
+  readyForPayoutAmount: number;
+  inProgressEstimatedPayout: number;
+  lifetimePaidOut: number;
+  unsettledSplitsCount: number;
+  inProgressCount: number;
+  payoutHistory: VendorPayoutHistoryItem[];
+  trend: VendorEarningsTrend[];
+}
+
 

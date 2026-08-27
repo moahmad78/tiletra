@@ -200,13 +200,87 @@ export async function GET(request: NextRequest) {
           emailVerified: user.emailVerified,
         })
       );
-      return NextResponse.redirect(
-        `intrihub://oauth?accessToken=${encodeURIComponent(
-          mobileTokens.accessToken
-        )}&refreshToken=${encodeURIComponent(
-          mobileTokens.refreshToken
-        )}&user=${mobileUserJson}`
-      );
+
+      const deepLink = `intrihub://oauth?accessToken=${encodeURIComponent(
+        mobileTokens.accessToken
+      )}&refreshToken=${encodeURIComponent(
+        mobileTokens.refreshToken
+      )}&user=${mobileUserJson}`;
+
+      const html = `<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Signing into IntriHub...</title>
+  <style>
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      min-height: 100vh;
+      margin: 0;
+      background: #052a51;
+      color: #ffffff;
+      text-align: center;
+      padding: 24px;
+      box-sizing: border-box;
+    }
+    .spinner {
+      width: 44px;
+      height: 44px;
+      border: 4px solid rgba(255, 255, 255, 0.2);
+      border-top-color: #f97316;
+      border-radius: 50%;
+      animation: spin 0.8s linear infinite;
+      margin-bottom: 20px;
+    }
+    @keyframes spin {
+      to { transform: rotate(360deg); }
+    }
+    h2 { margin: 0 0 8px; font-size: 20px; font-weight: 700; }
+    p { margin: 0 0 24px; font-size: 14px; opacity: 0.8; }
+    .btn {
+      display: inline-block;
+      background: #f97316;
+      color: #ffffff;
+      padding: 12px 28px;
+      border-radius: 9999px;
+      text-decoration: none;
+      font-weight: 700;
+      font-size: 14px;
+      box-shadow: 0 4px 12px rgba(249, 115, 22, 0.3);
+    }
+  </style>
+</head>
+<body>
+  <div class="spinner"></div>
+  <h2>Signing into IntriHub...</h2>
+  <p>Returning to your app. If not redirected automatically:</p>
+  <a id="deepLinkBtn" class="btn" href="${deepLink}">Open IntriHub App</a>
+  <script>
+    try {
+      window.location.replace("${deepLink}");
+    } catch(e) {
+      window.location.href = "${deepLink}";
+    }
+    setTimeout(function() {
+      var btn = document.getElementById("deepLinkBtn");
+      if (btn) btn.click();
+    }, 150);
+  </script>
+</body>
+</html>`;
+
+      return new NextResponse(html, {
+        status: 200,
+        headers: {
+          "Content-Type": "text/html; charset=utf-8",
+          "Cache-Control": "no-store, no-cache, must-revalidate",
+        },
+      });
     }
 
     let redirectTo = "/";
