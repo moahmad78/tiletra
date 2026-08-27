@@ -266,32 +266,42 @@ export default function CategoriesScreen() {
         {/* Live Search Suggestions Dropdown Overlay */}
         {showSuggestions && searchQuery.trim().length >= 1 && (
           <View style={[styles.suggestionsDropdown, SHADOWS.lg]}>
-            <ScrollView
-              keyboardShouldPersistTaps="handled"
-              nestedScrollEnabled
-              style={styles.suggestionsScroll}
-              showsVerticalScrollIndicator={false}
-            >
-              {/* Matching Category Chips */}
-              {matchingCategories.length > 0 && (
-                <View style={styles.matchingCatSection}>
-                  <Text style={styles.suggestionSectionLabel}>Categories</Text>
-                  <View style={styles.matchingCatRow}>
-                    {matchingCategories.map((cat) => (
-                      <TouchableOpacity
-                        key={cat.id}
-                        style={styles.matchingCatChip}
-                        onPress={() => handleSelectCategorySuggestion(cat)}
-                      >
-                        <Sparkles size={11} color={COLORS.accentOrange} style={{ marginRight: 4 }} />
-                        <Text style={styles.matchingCatChipText}>{cat.name}</Text>
-                      </TouchableOpacity>
-                    ))}
-                  </View>
-                </View>
-              )}
+            {/* Matching Categories Single Horizontal Row (Takes minimal vertical space) */}
+            {matchingCategories.length > 0 && (
+              <View style={styles.matchingCatSection}>
+                <Text style={styles.suggestionSectionLabel}>Categories</Text>
+                <ScrollView
+                  horizontal
+                  showsHorizontalScrollIndicator={false}
+                  keyboardShouldPersistTaps="always"
+                  contentContainerStyle={styles.matchingCatRow}
+                >
+                  {matchingCategories.map((cat) => (
+                    <TouchableOpacity
+                      key={cat.id}
+                      style={styles.matchingCatChip}
+                      onPress={() => handleSelectCategorySuggestion(cat)}
+                      activeOpacity={0.7}
+                    >
+                      <Sparkles size={11} color={COLORS.accentOrange} style={{ marginRight: 4 }} />
+                      <Text style={styles.matchingCatChipText}>{cat.name}</Text>
+                    </TouchableOpacity>
+                  ))}
+                </ScrollView>
+              </View>
+            )}
 
-              {/* Matching Products List */}
+            {/* Vertical Scrollable Matching Products List */}
+            <ScrollView
+              keyboardShouldPersistTaps="always"
+              nestedScrollEnabled={true}
+              scrollEnabled={true}
+              overScrollMode="always"
+              showsVerticalScrollIndicator={true}
+              style={styles.suggestionsScroll}
+              contentContainerStyle={styles.suggestionsScrollContent}
+            >
+              {/* Matching Products Header */}
               {mergedSuggestions.length > 0 ? (
                 <>
                   <View style={styles.suggestionSectionHeaderRow}>
@@ -652,7 +662,7 @@ const styles = StyleSheet.create({
     right: SPACING.md,
     backgroundColor: COLORS.surface,
     borderRadius: RADIUS.lg,
-    maxHeight: 340,
+    maxHeight: 480,
     borderWidth: 1,
     borderColor: COLORS.border,
     zIndex: 999,
@@ -662,7 +672,7 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     alignItems: "center",
     paddingHorizontal: SPACING.sm,
-    paddingVertical: 4,
+    paddingVertical: 6,
   },
   suggestionsLoading: {
     flexDirection: "row",
@@ -676,10 +686,15 @@ const styles = StyleSheet.create({
     marginLeft: 8,
   },
   suggestionsScroll: {
-    maxHeight: 340,
+    maxHeight: 410,
+    flexGrow: 0,
+  },
+  suggestionsScrollContent: {
+    paddingBottom: 20,
   },
   matchingCatSection: {
-    padding: SPACING.sm,
+    paddingVertical: 6,
+    paddingHorizontal: SPACING.sm,
     backgroundColor: "rgba(5, 42, 81, 0.03)",
     borderBottomWidth: 1,
     borderBottomColor: COLORS.border,
@@ -689,11 +704,12 @@ const styles = StyleSheet.create({
     fontWeight: "800",
     color: COLORS.textMuted,
     textTransform: "uppercase",
+    marginBottom: 4,
   },
   matchingCatRow: {
     flexDirection: "row",
-    flexWrap: "wrap",
-    marginTop: 4,
+    alignItems: "center",
+    paddingRight: SPACING.md,
   },
   matchingCatChip: {
     flexDirection: "row",
@@ -702,10 +718,9 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: "rgba(242, 101, 34, 0.3)",
     borderRadius: RADIUS.full,
-    paddingVertical: 4,
+    paddingVertical: 5,
     paddingHorizontal: 10,
     marginRight: 6,
-    marginBottom: 4,
   },
   matchingCatChipText: {
     fontSize: 11.5,
