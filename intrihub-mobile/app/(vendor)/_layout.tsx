@@ -68,7 +68,7 @@ export default function VendorTabsLayout() {
         }}
       />
       <Tabs.Screen
-        name="order/[id]"
+        name="vendor-order/[id]"
         options={{
           href: null,
         }}

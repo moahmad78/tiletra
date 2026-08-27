@@ -271,7 +271,7 @@ export default function VendorDashboardScreen() {
                 style={styles.orderCard}
                 onPress={() =>
                   router.push({
-                    pathname: "/(vendor)/order/[id]",
+                    pathname: "/(vendor)/vendor-order/[id]",
                     params: { id: order.splitId },
                   } as any)
                 }
