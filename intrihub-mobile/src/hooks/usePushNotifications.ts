@@ -5,7 +5,9 @@ import Constants, { ExecutionEnvironment } from "expo-constants";
 import { registerPushToken } from "../api/push";
 import { useAuthStore } from "../store/authStore";
 
-const isExpoGo = Constants.executionEnvironment === ExecutionEnvironment.StoreClient;
+const isExpoGo =
+  Constants.appOwnership === "expo" ||
+  Constants.executionEnvironment === ExecutionEnvironment.StoreClient;
 
 if (!isExpoGo) {
   Notifications.setNotificationHandler({
