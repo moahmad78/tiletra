@@ -7,7 +7,13 @@ import nodemailer from "nodemailer";
 
 const resend = process.env.RESEND_API_KEY ? new Resend(process.env.RESEND_API_KEY) : null;
 
-const FROM_EMAIL = process.env.EMAIL_FROM || "Intrihub <noreply@intrihub.com>";
+function getFormattedFromEmail(): string {
+  const envFrom = (process.env.EMAIL_FROM || "").replace(/['"]/g, "").trim();
+  if (!envFrom) return "Intrihub <noreply@intrihub.com>";
+  if (envFrom.includes("<") && envFrom.includes(">")) return envFrom;
+  return `Intrihub <${envFrom}>`;
+}
+
 const OTP_EXPIRY_MINUTES = 5; // 5 minutes standard per PRD
 
 export type OtpPurpose = "customer" | "admin" | "vendor";
@@ -52,7 +58,7 @@ async function deliverEmail({
       });
 
       await transporter.sendMail({
-        from: process.env.SMTP_FROM || FROM_EMAIL,
+        from: process.env.SMTP_FROM || getFormattedFromEmail(),
         to,
         subject,
         html,
@@ -69,9 +75,10 @@ async function deliverEmail({
   // Transport 2: Resend API
   if (resend && process.env.RESEND_API_KEY) {
     try {
-      console.log(`[EMAIL_SEND_STARTED] transport=Resend to=${maskEmail(to)} from=${FROM_EMAIL}`);
+      const fromAddress = getFormattedFromEmail();
+      console.log(`[EMAIL_SEND_STARTED] transport=Resend to=${maskEmail(to)} from=${fromAddress}`);
       const { data, error } = await resend.emails.send({
-        from: FROM_EMAIL,
+        from: fromAddress,
         to,
         subject,
         html,
