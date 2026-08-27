@@ -51,7 +51,12 @@ export async function getProfile(): Promise<{ success: boolean; user?: User; err
   return res.data;
 }
 
-export async function updateProfile(data: { name?: string; email?: string; avatar?: string }): Promise<{ success: boolean; user?: User; error?: string }> {
+export async function updateProfile(data: {
+  name?: string;
+  email?: string;
+  avatar?: string;
+  phone?: string;
+}): Promise<{ success: boolean; user?: User; error?: string }> {
   const res = await apiClient.patch("/api/mobile/auth/me", data);
   return res.data;
 }

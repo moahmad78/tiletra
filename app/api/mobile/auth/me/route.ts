@@ -50,13 +50,29 @@ export async function PATCH(req: NextRequest) {
     }
 
     const body = await req.json().catch(() => ({}));
-    const { name, email, avatar } = body;
+    const { name, email, avatar, phone } = body;
+
+    let cleanPhone: string | undefined = undefined;
+    if (phone !== undefined && phone !== null) {
+      const digits = String(phone).replace(/\D/g, "");
+      if (digits.length === 10) {
+        cleanPhone = digits;
+      } else if (digits.length === 12 && digits.startsWith("91")) {
+        cleanPhone = digits.slice(2);
+      } else if (digits.length > 0) {
+        return mobileApiResponse(
+          { success: false, error: "Please enter a valid 10-digit phone number" },
+          400
+        );
+      }
+    }
 
     const updated = await prisma.user.update({
       where: { id: user.id },
       data: {
         name: name !== undefined ? name : undefined,
         email: email !== undefined ? email : undefined,
+        phone: cleanPhone !== undefined ? cleanPhone : undefined,
         avatar: avatar !== undefined ? avatar : undefined,
       },
       include: {

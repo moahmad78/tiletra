@@ -48,6 +48,7 @@ export default function ProfileScreen() {
   // Edit Profile Form State
   const [editName, setEditName] = useState("");
   const [editEmail, setEditEmail] = useState("");
+  const [editPhone, setEditPhone] = useState("");
   const [editAvatar, setEditAvatar] = useState("");
   const [savingProfile, setSavingProfile] = useState(false);
   const [uploadingAvatar, setUploadingAvatar] = useState(false);
@@ -69,6 +70,11 @@ export default function ProfileScreen() {
     if (user) {
       setEditName(user.name || "");
       setEditEmail(user.email || "");
+      const currentPhone =
+        user.phone && !user.phone.startsWith("google_") && !user.phone.startsWith("email_")
+          ? user.phone
+          : "";
+      setEditPhone(currentPhone);
       setEditAvatar(user.avatar || "");
       setEditProfileModalVisible(true);
     }
@@ -117,11 +123,20 @@ export default function ProfileScreen() {
       return;
     }
 
+    if (editPhone.trim()) {
+      const digits = editPhone.trim().replace(/\D/g, "");
+      if (digits.length !== 10) {
+        Alert.alert("Invalid Phone", "Please enter a valid 10-digit mobile number.");
+        return;
+      }
+    }
+
     setSavingProfile(true);
     try {
       const res = await updateProfile({
         name: editName.trim(),
         email: editEmail.trim() || undefined,
+        phone: editPhone.trim() || undefined,
         avatar: editAvatar || undefined,
       });
 
@@ -209,19 +224,6 @@ export default function ProfileScreen() {
         {/* Section: Account Actions */}
         <View style={styles.menuGroup}>
           <Text style={styles.groupTitle}>ACCOUNT & PREFERENCES</Text>
-
-          {isAuthenticated && (
-            <TouchableOpacity
-              style={styles.menuItem}
-              onPress={handleOpenEditModal}
-            >
-              <View style={styles.menuLeft}>
-                <User size={20} color={COLORS.accentBlue} />
-                <Text style={styles.menuLabel}>Edit Profile & Photo</Text>
-              </View>
-              <ChevronRight size={18} color={COLORS.textMuted} />
-            </TouchableOpacity>
-          )}
 
           <TouchableOpacity
             style={styles.menuItem}
@@ -377,21 +379,19 @@ export default function ProfileScreen() {
                 />
               </View>
 
-              {/* Phone Field (Read-only if exists) */}
-              {user?.phone && (
-                <View style={styles.modalInputGroup}>
-                  <Text style={styles.modalInputLabel}>Phone Number</Text>
-                  <TextInput
-                    style={[styles.modalTextInput, styles.readOnlyInput]}
-                    value={
-                      user.phone.startsWith("google_") || user.phone.startsWith("email_")
-                        ? "Linked via Account"
-                        : `+91 ${user.phone}`
-                    }
-                    editable={false}
-                  />
-                </View>
-              )}
+              {/* Phone Field (Editable) */}
+              <View style={styles.modalInputGroup}>
+                <Text style={styles.modalInputLabel}>Phone Number (+91)</Text>
+                <TextInput
+                  style={styles.modalTextInput}
+                  placeholder="Enter 10-digit mobile number"
+                  placeholderTextColor={COLORS.textMuted}
+                  keyboardType="phone-pad"
+                  maxLength={10}
+                  value={editPhone}
+                  onChangeText={setEditPhone}
+                />
+              </View>
 
               {/* Save Button */}
               <TouchableOpacity
