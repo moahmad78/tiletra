@@ -77,32 +77,15 @@ async function deliverEmail({
     try {
       const fromAddress = getFormattedFromEmail();
       console.log(`[EMAIL_SEND_STARTED] transport=Resend to=${maskEmail(to)} from=${fromAddress}`);
-      let { data, error } = await resend.emails.send({
+      const { data, error } = await resend.emails.send({
         from: fromAddress,
         to,
         subject,
         html,
       });
 
-      // If custom domain is pending DNS verification on Resend, retry with sandbox sender
-      if (error && error.message && error.message.includes("not verified") && !fromAddress.includes("onboarding@resend.dev")) {
-        console.warn(`[EMAIL_PROVIDER_RESPONSE] transport=Resend custom domain pending DNS, falling back to sandbox sender`);
-        const fallbackRes = await resend.emails.send({
-          from: "Intrihub <onboarding@resend.dev>",
-          to,
-          subject,
-          html,
-        });
-        if (!fallbackRes.error) {
-          data = fallbackRes.data;
-          error = null;
-        } else {
-          error = fallbackRes.error;
-        }
-      }
-
       if (error) {
-        console.warn(`[EMAIL_PROVIDER_RESPONSE] transport=Resend status=rejected error=${error.message || JSON.stringify(error)}`);
+        console.error(`[EMAIL_PROVIDER_RESPONSE] transport=Resend status=rejected error=${error.message || JSON.stringify(error)}`);
         return { success: false, provider: "resend", error: error.message || "Failed to send email via Resend" };
       }
 
