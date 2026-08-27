@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import crypto from "crypto";
 import { getAuthBaseUrl, getOAuthSecret } from "@/lib/auth-url";
+import { generateMobileTokens } from "@/lib/mobile-auth";
 
 const GOOGLE_TOKEN_URL = "https://oauth2.googleapis.com/token";
 const GOOGLE_USERINFO_URL = "https://www.googleapis.com/oauth2/v3/userinfo";
@@ -184,7 +185,30 @@ export async function GET(request: NextRequest) {
 
     const encoded = Buffer.from(sessionPayload).toString("base64url");
 
-    // ─── 5. Redirect back to app ─────────────────────────────────────────────
+    // ─── 5. Redirect back to mobile app or web app ────────────────────────────
+    if (intent === "mobile" || intent.startsWith("mobile")) {
+      const mobileTokens = generateMobileTokens(user);
+      const mobileUserJson = encodeURIComponent(
+        JSON.stringify({
+          id: user.id,
+          name: user.name,
+          email: user.email,
+          phone: user.phone,
+          role: user.role,
+          avatar: user.avatar,
+          phoneVerified: user.phoneVerified,
+          emailVerified: user.emailVerified,
+        })
+      );
+      return NextResponse.redirect(
+        `intrihub://oauth?accessToken=${encodeURIComponent(
+          mobileTokens.accessToken
+        )}&refreshToken=${encodeURIComponent(
+          mobileTokens.refreshToken
+        )}&user=${mobileUserJson}`
+      );
+    }
+
     let redirectTo = "/";
     if (intent === "checkout") redirectTo = "/checkout";
 
