@@ -177,7 +177,12 @@ export default function CheckoutScreen() {
 
         <TouchableOpacity
           style={styles.trackOrderBtn}
-          onPress={() => router.replace(`/order/${completedOrder.id}`)}
+          onPress={() =>
+            router.push({
+              pathname: "/order/[id]",
+              params: { id: completedOrder.id },
+            })
+          }
           activeOpacity={0.85}
         >
           <Text style={styles.trackOrderText}>Track My Order</Text>

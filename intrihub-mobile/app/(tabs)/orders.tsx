@@ -106,7 +106,12 @@ export default function OrdersScreen() {
               <TouchableOpacity
                 style={[styles.orderCard, SHADOWS.sm]}
                 activeOpacity={0.85}
-                onPress={() => router.push(`/order/${item.id}`)}
+                onPress={() =>
+                  router.push({
+                    pathname: "/order/[id]",
+                    params: { id: item.id },
+                  })
+                }
               >
                 {/* Order Top Bar */}
                 <View style={styles.cardTop}>

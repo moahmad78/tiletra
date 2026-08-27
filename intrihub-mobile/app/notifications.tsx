@@ -66,8 +66,13 @@ export default function NotificationsScreen() {
     if (item.link) {
       if (item.link.includes("/order/")) {
         const orderId = item.link.split("/order/")[1];
-        if (orderId) router.push(`/order/${orderId}`);
-        return;
+        if (orderId) {
+          router.push({
+            pathname: "/order/[id]",
+            params: { id: orderId },
+          });
+          return;
+        }
       }
       if (item.link.startsWith("/")) {
         router.push(item.link as any);
@@ -75,10 +80,13 @@ export default function NotificationsScreen() {
       }
     }
 
-    // Check if title has order ID (e.g. Order #cmt4...)
-    const orderMatch = item.title.match(/Order #([a-zA-Z0-9_-]+)/i);
+    // Check if title has order ID (e.g. Order #ORD-686411 or #cmt4...)
+    const orderMatch = item.title.match(/#([a-zA-Z0-9_-]+)/i);
     if (orderMatch && orderMatch[1]) {
-      router.push(`/order/${orderMatch[1]}`);
+      router.push({
+        pathname: "/order/[id]",
+        params: { id: orderMatch[1] },
+      });
     }
   };
 
