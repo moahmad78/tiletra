@@ -253,7 +253,7 @@ export default function LoginScreen() {
         setError(res.error || "Failed to resend code");
       }
     } catch (err: any) {
-      setError("Failed to resend verification code");
+      setError(err?.response?.data?.error || err?.response?.data?.message || err?.message || "Failed to resend verification code");
     } finally {
       setLoading(false);
     }
