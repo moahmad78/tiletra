@@ -169,15 +169,6 @@ export const ProductCard: React.FC<ProductCardProps> = ({ product, horizontal = 
             fill={wishlisted ? "#ef4444" : "transparent"}
           />
         </TouchableOpacity>
-
-        {/* Category Pill (Bottom-Left) */}
-        {product.categoryName ? (
-          <View style={styles.categoryPill}>
-            <Text style={styles.categoryPillText} numberOfLines={1}>
-              {product.categoryName}
-            </Text>
-          </View>
-        ) : null}
       </View>
 
       {/* Info Content */}
