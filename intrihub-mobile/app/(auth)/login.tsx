@@ -219,10 +219,7 @@ export default function LoginScreen() {
   };
 
   const handleTermsOfUse = () => {
-    const url = "https://www.intrihub.com/terms";
-    Linking.openURL(url).catch(() => {
-      WebBrowser.openBrowserAsync(url).catch(() => {});
-    });
+    router.push("/terms" as any);
   };
 
   const handlePrivacyPolicy = () => {
@@ -257,9 +254,6 @@ export default function LoginScreen() {
           </TouchableOpacity>
 
           <View style={styles.badgeRow}>
-            <View style={styles.intriBadge}>
-              <Text style={styles.intriBadgeText}>INTRIHUB</Text>
-            </View>
             <View style={styles.secureBadge}>
               <ShieldCheck size={13} color={COLORS.accentOrange} style={{ marginRight: 4 }} />
               <Text style={styles.secureBadgeText}>Secure Login</Text>

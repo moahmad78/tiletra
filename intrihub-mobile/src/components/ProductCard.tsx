@@ -122,11 +122,6 @@ export const ProductCard: React.FC<ProductCardProps> = ({ product, horizontal = 
         </View>
 
         <View style={styles.horizontalInfo}>
-          {product.categoryName ? (
-            <Text style={styles.categoryTag} numberOfLines={1}>
-              {product.categoryName}
-            </Text>
-          ) : null}
           <Text style={styles.title} numberOfLines={1}>
             {product.name}
           </Text>
