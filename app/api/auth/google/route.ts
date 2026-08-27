@@ -10,6 +10,7 @@ export async function GET(request: NextRequest) {
 
   const { searchParams } = new URL(request.url);
   const intent = searchParams.get("intent") || "";
+  const redirectToParam = searchParams.get("redirect_to") || searchParams.get("redirectTo") || "";
 
   const baseUrl = getAuthBaseUrl(request);
   const redirectUri = `${baseUrl}/api/auth/callback/google`;
@@ -21,14 +22,16 @@ export async function GET(request: NextRequest) {
     requestUrl: request.url,
     derivedBaseUrl: baseUrl,
     redirectUri,
+    redirectToParam,
   });
 
   // ─── HMAC-Signed Stateless CSRF State Token ──────────────────────────────
-  // Encodes nonce, intent, creation timestamp, and 15-minute expiration
+  // Encodes nonce, intent, redirectTo, creation timestamp, and 15-minute expiration
   const secret = getOAuthSecret();
   const statePayload = JSON.stringify({
     nonce: crypto.randomBytes(16).toString("hex"),
     intent,
+    redirectTo: redirectToParam,
     iat: Date.now(),
     exp: Date.now() + 15 * 60 * 1000, // 15 minutes
   });

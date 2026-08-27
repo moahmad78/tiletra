@@ -7,8 +7,8 @@ import { generateMobileTokens } from "@/lib/mobile-auth";
 const GOOGLE_TOKEN_URL = "https://oauth2.googleapis.com/token";
 const GOOGLE_USERINFO_URL = "https://www.googleapis.com/oauth2/v3/userinfo";
 
-function verifyAndExtractState(state: string | null, savedCookieState: string | undefined): { valid: boolean; intent: string } {
-  if (!state) return { valid: false, intent: "" };
+function verifyAndExtractState(state: string | null, savedCookieState: string | undefined): { valid: boolean; intent: string; redirectTo: string } {
+  if (!state) return { valid: false, intent: "", redirectTo: "" };
 
   const secret = getOAuthSecret();
 
@@ -25,7 +25,11 @@ function verifyAndExtractState(state: string | null, savedCookieState: string | 
         try {
           const payload = JSON.parse(Buffer.from(payloadB64, "base64url").toString("utf-8"));
           if (payload.exp && payload.exp > Date.now()) {
-            return { valid: true, intent: payload.intent || "" };
+            return {
+              valid: true,
+              intent: payload.intent || "",
+              redirectTo: payload.redirectTo || "",
+            };
           }
         } catch (e) {
           console.error("Error parsing verified state payload:", e);
@@ -39,12 +43,16 @@ function verifyAndExtractState(state: string | null, savedCookieState: string | 
     try {
       const b64 = state.includes(".") ? state.split(".")[0] : state;
       const payload = JSON.parse(Buffer.from(b64, "base64url").toString("utf-8"));
-      return { valid: true, intent: payload.intent || "" };
+      return {
+        valid: true,
+        intent: payload.intent || "",
+        redirectTo: payload.redirectTo || "",
+      };
     } catch {}
-    return { valid: true, intent: "" };
+    return { valid: true, intent: "", redirectTo: "" };
   }
 
-  return { valid: false, intent: "" };
+  return { valid: false, intent: "", redirectTo: "" };
 }
 
 export async function GET(request: NextRequest) {
@@ -70,7 +78,7 @@ export async function GET(request: NextRequest) {
 
   // Dual State Verification (HMAC signature + cookie fallback)
   const savedCookieState = request.cookies.get("oauth_state")?.value;
-  const { valid: isStateValid, intent } = verifyAndExtractState(state, savedCookieState);
+  const { valid: isStateValid, intent, redirectTo: stateRedirectTo } = verifyAndExtractState(state, savedCookieState);
 
   if (!isStateValid) {
     console.warn("OAuth state validation failed for state:", state, "cookie:", savedCookieState);
@@ -186,7 +194,7 @@ export async function GET(request: NextRequest) {
     const encoded = Buffer.from(sessionPayload).toString("base64url");
 
     // ─── 5. Redirect back to mobile app or web app ────────────────────────────
-    if (intent === "mobile" || intent.startsWith("mobile")) {
+    if (intent === "mobile" || intent.startsWith("mobile") || stateRedirectTo) {
       const mobileTokens = generateMobileTokens(user);
       const mobileUserJson = encodeURIComponent(
         JSON.stringify({
@@ -201,7 +209,9 @@ export async function GET(request: NextRequest) {
         })
       );
 
-      const deepLink = `intrihub://oauth?accessToken=${encodeURIComponent(
+      const baseRedirect = stateRedirectTo || "intrihub://oauth";
+      const separator = baseRedirect.includes("?") ? "&" : "?";
+      const deepLink = `${baseRedirect}${separator}accessToken=${encodeURIComponent(
         mobileTokens.accessToken
       )}&refreshToken=${encodeURIComponent(
         mobileTokens.refreshToken

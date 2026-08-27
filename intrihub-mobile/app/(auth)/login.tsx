@@ -283,11 +283,13 @@ export default function LoginScreen() {
         return;
       }
 
-      // Direct WebBrowser OAuth via verified website endpoint
-      // Google Cloud Console already has https://www.intrihub.com/api/auth/callback/google 100% verified and active.
-      // This guarantees seamless Google Login in Expo Go, Android APK, and iOS without any proxy redirect_uri_mismatch errors.
-      const authUrl = "https://www.intrihub.com/api/auth/google?intent=mobile";
-      const redirectUrl = "intrihub://oauth";
+      const redirectUrl = AuthSession.makeRedirectUri({
+        scheme: "intrihub",
+        path: "oauth",
+      });
+      const authUrl = `https://www.intrihub.com/api/auth/google?intent=mobile&redirect_to=${encodeURIComponent(
+        redirectUrl
+      )}`;
 
       const result = await WebBrowser.openAuthSessionAsync(authUrl, redirectUrl);
 
