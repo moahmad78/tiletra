@@ -1,4 +1,4 @@
-import { useEffect } from "react";
+import { useState, useEffect } from "react";
 import {
   View,
   Text,
@@ -9,6 +9,9 @@ import {
   Platform,
   StatusBar,
   Linking,
+  Share,
+  Modal,
+  Alert,
 } from "react-native";
 import { Image } from "expo-image";
 import { useLocalSearchParams, useRouter } from "expo-router";
@@ -23,6 +26,11 @@ import {
   Package,
   PhoneCall,
   Download,
+  FileText,
+  Share2,
+  X,
+  Headphones,
+  MessageCircle,
 } from "lucide-react-native";
 import { getOrderDetails } from "../../src/api/orders";
 import { socketService } from "../../src/store/socketStore";
@@ -32,6 +40,7 @@ export default function OrderDetailScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
   const router = useRouter();
   const queryClient = useQueryClient();
+  const [showInvoiceModal, setShowInvoiceModal] = useState(false);
 
   const { data, isLoading, error } = useQuery({
     queryKey: ["mobile-order-detail", id],
@@ -87,6 +96,45 @@ export default function OrderDetailScreen() {
   if (currentStatus.includes("dispatch") || currentStatus.includes("ship")) activeStepIndex = 2;
   if (currentStatus.includes("deliver")) activeStepIndex = 3;
 
+  const handleShareInvoice = async () => {
+    try {
+      const itemsText = (order.items || [])
+        .map((it: any) => `• ${it.productName} (${it.boxQuantity} Boxes) - ₹${it.totalPrice?.toLocaleString("en-IN")}`)
+        .join("\n");
+
+      const invoiceText = `📄 *INTRIHUB TAX INVOICE & ORDER SUMMARY*
+Order ID: #${order.id}
+Date: ${order.createdAt ? new Date(order.createdAt).toLocaleDateString("en-IN") : "N/A"}
+Customer: ${order.customerName || "Valued Customer"}
+Phone: +91 ${order.customerPhone || ""}
+
+📦 *ITEMS ORDERED:*
+${itemsText}
+
+💰 *PAYMENT BREAKDOWN:*
+Subtotal: ₹${order.subtotal?.toLocaleString("en-IN")}
+Delivery Fee: ${order.deliveryFee === 0 ? "FREE" : `₹${order.deliveryFee}`}
+Grand Total: ₹${order.total?.toLocaleString("en-IN")}
+Payment Mode: ${order.paymentMethod === "cod" ? "Cash on Delivery" : "Online (Paid)"}
+
+📍 *DELIVERY ADDRESS:*
+${order.shippingAddress?.street || ""}, ${order.shippingAddress?.city || ""}, ${order.shippingAddress?.state || ""} - ${order.shippingAddress?.pincode || ""}
+
+Support Helpline: +91 9264920211 | https://www.intrihub.com`;
+
+      await Share.share({
+        title: `Intrihub Invoice #${order.id}`,
+        message: invoiceText,
+      });
+    } catch (err: any) {
+      console.warn("Share failed:", err);
+    }
+  };
+
+  const handleDownloadInvoice = () => {
+    Linking.openURL("https://www.intrihub.com/account/orders");
+  };
+
   return (
     <View style={styles.container}>
       {/* Navbar */}
@@ -100,10 +148,22 @@ export default function OrderDetailScreen() {
       <ScrollView style={styles.scroll} showsVerticalScrollIndicator={false}>
         {/* Real-time Order Tracker Card */}
         <View style={[styles.card, SHADOWS.sm]}>
-          <Text style={styles.cardHeaderTitle}>Delivery Status</Text>
-          <Text style={styles.estimatedDeliveryText}>
-            Estimated Delivery: {order.estimatedDelivery || "3–5 Business Days"}
-          </Text>
+          <View style={styles.cardHeaderRow}>
+            <View>
+              <Text style={styles.cardHeaderTitle}>Delivery Status</Text>
+              <Text style={styles.estimatedDeliveryText}>
+                Estimated Delivery: {order.estimatedDelivery || "3–5 Business Days"}
+              </Text>
+            </View>
+            <TouchableOpacity
+              style={styles.invoiceBadgeBtn}
+              onPress={() => setShowInvoiceModal(true)}
+              activeOpacity={0.8}
+            >
+              <FileText size={14} color={COLORS.primary} />
+              <Text style={styles.invoiceBadgeText}>Invoice</Text>
+            </TouchableOpacity>
+          </View>
 
           {/* Timeline Visual */}
           <View style={styles.timelineContainer}>
@@ -195,7 +255,7 @@ export default function OrderDetailScreen() {
             <Text style={styles.sectionHeading}>Items in this Order ({order.items?.length || 0})</Text>
           </View>
 
-          {order.items?.map((item) => (
+          {order.items?.map((item: any) => (
             <View key={item.id} style={styles.itemRow}>
               {item.image ? (
                 <Image source={{ uri: item.image }} style={styles.itemThumb} contentFit="cover" />
@@ -242,19 +302,176 @@ export default function OrderDetailScreen() {
               {order.paymentMethod === "cod" ? "Cash on Delivery" : "Online (Paid)"}
             </Text>
           </View>
+
+          {/* Download Invoice Button */}
+          <TouchableOpacity
+            style={styles.downloadInvoiceBtn}
+            onPress={() => setShowInvoiceModal(true)}
+            activeOpacity={0.85}
+          >
+            <Download size={16} color={COLORS.primary} />
+            <Text style={styles.downloadInvoiceBtnText}>Download Tax Invoice / Bill</Text>
+          </TouchableOpacity>
         </View>
 
-        {/* Support Helpline CTA */}
-        <TouchableOpacity
-          style={styles.supportBtn}
-          onPress={() => Linking.openURL("tel:9264920211")}
-        >
-          <PhoneCall size={18} color={COLORS.primary} />
-          <Text style={styles.supportBtnText}>Need Help with this Order? Call Support</Text>
-        </TouchableOpacity>
+        {/* Customer Support CTA Card */}
+        <View style={styles.supportCard}>
+          <TouchableOpacity
+            style={styles.supportPrimaryBtn}
+            onPress={() => router.push("/support")}
+            activeOpacity={0.85}
+          >
+            <Headphones size={18} color={COLORS.textWhite} />
+            <Text style={styles.supportPrimaryBtnText}>Need Help with this Order? Open Support</Text>
+          </TouchableOpacity>
+
+          {/* Quick Helpline options */}
+          <View style={styles.quickSupportRow}>
+            <TouchableOpacity
+              style={styles.quickSupportBtn}
+              onPress={() => Linking.openURL("tel:9264920211")}
+              activeOpacity={0.8}
+            >
+              <PhoneCall size={14} color={COLORS.primary} />
+              <Text style={styles.quickSupportText}>Call Helpline</Text>
+            </TouchableOpacity>
+
+            <TouchableOpacity
+              style={styles.quickSupportBtn}
+              onPress={() =>
+                Linking.openURL(
+                  `https://wa.me/919264920211?text=Hi%20Intrihub%20Support,%20I%20need%20help%20with%20Order%20#${order.id}`
+                )
+              }
+              activeOpacity={0.8}
+            >
+              <MessageCircle size={14} color={COLORS.accentGreen} />
+              <Text style={[styles.quickSupportText, { color: COLORS.accentGreen }]}>WhatsApp Chat</Text>
+            </TouchableOpacity>
+          </View>
+        </View>
 
         <View style={{ height: 40 }} />
       </ScrollView>
+
+      {/* Official Tax Invoice / Bill Modal */}
+      <Modal
+        visible={showInvoiceModal}
+        animationType="slide"
+        transparent={true}
+        onRequestClose={() => setShowInvoiceModal(false)}
+      >
+        <View style={styles.modalOverlay}>
+          <View style={styles.modalContent}>
+            {/* Modal Header */}
+            <View style={styles.modalHeader}>
+              <View style={{ flexDirection: "row", alignItems: "center" }}>
+                <FileText size={20} color={COLORS.primary} />
+                <Text style={styles.modalHeaderTitle}>Tax Invoice & Bill</Text>
+              </View>
+              <TouchableOpacity onPress={() => setShowInvoiceModal(false)} style={styles.closeModalBtn}>
+                <X size={20} color={COLORS.textSecondary} />
+              </TouchableOpacity>
+            </View>
+
+            <ScrollView showsVerticalScrollIndicator={false} style={{ maxHeight: 420 }}>
+              {/* Company & Bill Info */}
+              <View style={styles.invoiceHeaderBox}>
+                <Text style={styles.invoiceBrand}>INTRIHUB PRIVATE LIMITED</Text>
+                <Text style={styles.invoiceSub}>Direct Factory Supply & Premium Tiles Marketplace</Text>
+                <Text style={styles.invoiceMeta}>GSTIN: 29AAAAA0000A1Z5 | Verified Tax Bill</Text>
+              </View>
+
+              {/* Order Meta */}
+              <View style={styles.invoiceMetaGrid}>
+                <View style={styles.metaCol}>
+                  <Text style={styles.metaLabel}>Invoice / Order #</Text>
+                  <Text style={styles.metaValue}>#{order.id}</Text>
+                </View>
+                <View style={styles.metaCol}>
+                  <Text style={styles.metaLabel}>Order Date</Text>
+                  <Text style={styles.metaValue}>
+                    {order.createdAt ? new Date(order.createdAt).toLocaleDateString("en-IN") : "Recent"}
+                  </Text>
+                </View>
+              </View>
+
+              {/* Bill To */}
+              <View style={styles.invoiceBillToBox}>
+                <Text style={styles.billToLabel}>BILLED & SHIPPED TO:</Text>
+                <Text style={styles.billToName}>{order.customerName}</Text>
+                <Text style={styles.billToPhone}>+91 {order.customerPhone}</Text>
+                {order.shippingAddress && (
+                  <Text style={styles.billToAddr}>
+                    {order.shippingAddress.street}, {order.shippingAddress.city}, {order.shippingAddress.state} -{" "}
+                    {order.shippingAddress.pincode}
+                  </Text>
+                )}
+              </View>
+
+              {/* Itemized Table */}
+              <View style={styles.invoiceTable}>
+                <View style={styles.tableHeaderRow}>
+                  <Text style={[styles.tableHead, { flex: 2 }]}>Item Description</Text>
+                  <Text style={[styles.tableHead, { flex: 1, textAlign: "center" }]}>Qty</Text>
+                  <Text style={[styles.tableHead, { flex: 1, textAlign: "right" }]}>Amount</Text>
+                </View>
+
+                {order.items?.map((it: any, index: number) => (
+                  <View key={it.id || index} style={styles.tableDataRow}>
+                    <Text style={[styles.tableCell, { flex: 2 }]} numberOfLines={2}>
+                      {it.productName}
+                    </Text>
+                    <Text style={[styles.tableCell, { flex: 1, textAlign: "center" }]}>{it.boxQuantity} Box</Text>
+                    <Text style={[styles.tableCell, { flex: 1, textAlign: "right", fontWeight: "700" }]}>
+                      ₹{it.totalPrice?.toLocaleString("en-IN")}
+                    </Text>
+                  </View>
+                ))}
+              </View>
+
+              {/* Totals */}
+              <View style={styles.invoiceTotalsBox}>
+                <View style={styles.invoiceTotalRow}>
+                  <Text style={styles.invoiceTotalKey}>Subtotal (Tax Included)</Text>
+                  <Text style={styles.invoiceTotalVal}>₹{order.subtotal?.toLocaleString("en-IN")}</Text>
+                </View>
+                <View style={styles.invoiceTotalRow}>
+                  <Text style={styles.invoiceTotalKey}>Shipping & Wooden Crate Handling</Text>
+                  <Text style={styles.invoiceTotalVal}>
+                    {order.deliveryFee === 0 ? "FREE" : `₹${order.deliveryFee}`}
+                  </Text>
+                </View>
+                <View style={[styles.invoiceTotalRow, styles.invoiceGrandTotalRow]}>
+                  <Text style={styles.invoiceGrandTotalKey}>Total Amount (INR)</Text>
+                  <Text style={styles.invoiceGrandTotalVal}>₹{order.total?.toLocaleString("en-IN")}</Text>
+                </View>
+              </View>
+            </ScrollView>
+
+            {/* Modal Actions */}
+            <View style={styles.modalActionRow}>
+              <TouchableOpacity
+                style={styles.modalShareBtn}
+                onPress={handleShareInvoice}
+                activeOpacity={0.85}
+              >
+                <Share2 size={16} color={COLORS.primary} />
+                <Text style={styles.modalShareBtnText}>Share Bill</Text>
+              </TouchableOpacity>
+
+              <TouchableOpacity
+                style={styles.modalDownloadBtn}
+                onPress={handleDownloadInvoice}
+                activeOpacity={0.85}
+              >
+                <Download size={16} color={COLORS.textWhite} />
+                <Text style={styles.modalDownloadBtnText}>Download Official PDF</Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+        </View>
+      </Modal>
     </View>
   );
 }
@@ -313,6 +530,12 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: COLORS.border,
   },
+  cardHeaderRow: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "flex-start",
+    marginBottom: 12,
+  },
   cardHeaderTitle: {
     fontSize: 15,
     fontWeight: "800",
@@ -322,7 +545,22 @@ const styles = StyleSheet.create({
     fontSize: 12,
     color: COLORS.textSecondary,
     marginTop: 2,
-    marginBottom: 16,
+  },
+  invoiceBadgeBtn: {
+    flexDirection: "row",
+    alignItems: "center",
+    backgroundColor: "rgba(5, 42, 81, 0.08)",
+    paddingHorizontal: 10,
+    paddingVertical: 5,
+    borderRadius: RADIUS.full,
+    borderWidth: 1,
+    borderColor: "rgba(5, 42, 81, 0.15)",
+  },
+  invoiceBadgeText: {
+    fontSize: 12,
+    fontWeight: "700",
+    color: COLORS.primary,
+    marginLeft: 4,
   },
   timelineContainer: {
     paddingLeft: 4,
@@ -496,22 +734,271 @@ const styles = StyleSheet.create({
     fontWeight: "900",
     color: COLORS.primary,
   },
-  supportBtn: {
+  downloadInvoiceBtn: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    backgroundColor: "rgba(5, 42, 81, 0.06)",
+    borderWidth: 1,
+    borderColor: COLORS.primary,
+    borderRadius: RADIUS.sm,
+    paddingVertical: 11,
+    marginTop: 14,
+  },
+  downloadInvoiceBtnText: {
+    fontSize: 13,
+    fontWeight: "700",
+    color: COLORS.primary,
+    marginLeft: 6,
+  },
+  supportCard: {
+    marginHorizontal: SPACING.lg,
+    marginTop: SPACING.md,
+  },
+  supportPrimaryBtn: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    backgroundColor: COLORS.primary,
+    borderRadius: RADIUS.md,
+    paddingVertical: 14,
+    ...SHADOWS.sm,
+  },
+  supportPrimaryBtnText: {
+    color: COLORS.textWhite,
+    fontSize: 13,
+    fontWeight: "800",
+    marginLeft: 8,
+  },
+  quickSupportRow: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    marginTop: 8,
+  },
+  quickSupportBtn: {
+    flex: 1,
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    backgroundColor: COLORS.surface,
+    borderWidth: 1,
+    borderColor: COLORS.border,
+    borderRadius: RADIUS.sm,
+    paddingVertical: 10,
+    marginHorizontal: 4,
+  },
+  quickSupportText: {
+    fontSize: 12,
+    fontWeight: "700",
+    color: COLORS.primary,
+    marginLeft: 6,
+  },
+  modalOverlay: {
+    flex: 1,
+    backgroundColor: "rgba(0,0,0,0.6)",
+    justifyContent: "center",
+    padding: SPACING.md,
+  },
+  modalContent: {
+    backgroundColor: COLORS.surface,
+    borderRadius: RADIUS.lg,
+    padding: SPACING.lg,
+    maxHeight: "90%",
+    ...SHADOWS.lg,
+  },
+  modalHeader: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+    borderBottomWidth: 1,
+    borderColor: COLORS.border,
+    paddingBottom: 12,
+    marginBottom: 12,
+  },
+  modalHeaderTitle: {
+    fontSize: 16,
+    fontWeight: "900",
+    color: COLORS.primary,
+    marginLeft: 8,
+  },
+  closeModalBtn: {
+    padding: 4,
+  },
+  invoiceHeaderBox: {
+    backgroundColor: COLORS.surfaceSecondary,
+    padding: SPACING.md,
+    borderRadius: RADIUS.sm,
+    marginBottom: 10,
+  },
+  invoiceBrand: {
+    fontSize: 13,
+    fontWeight: "900",
+    color: COLORS.primary,
+    letterSpacing: 0.5,
+  },
+  invoiceSub: {
+    fontSize: 10,
+    color: COLORS.textSecondary,
+    marginTop: 2,
+  },
+  invoiceMeta: {
+    fontSize: 10,
+    fontWeight: "700",
+    color: COLORS.accentOrange,
+    marginTop: 3,
+  },
+  invoiceMetaGrid: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    marginBottom: 10,
+    paddingHorizontal: 4,
+  },
+  metaCol: {
+    flex: 1,
+  },
+  metaLabel: {
+    fontSize: 10,
+    color: COLORS.textMuted,
+    textTransform: "uppercase",
+  },
+  metaValue: {
+    fontSize: 12,
+    fontWeight: "800",
+    color: COLORS.text,
+    marginTop: 1,
+  },
+  invoiceBillToBox: {
+    backgroundColor: COLORS.surfaceTertiary,
+    padding: SPACING.sm,
+    borderRadius: RADIUS.sm,
+    marginBottom: 10,
+  },
+  billToLabel: {
+    fontSize: 9,
+    fontWeight: "800",
+    color: COLORS.textMuted,
+  },
+  billToName: {
+    fontSize: 12,
+    fontWeight: "800",
+    color: COLORS.text,
+    marginTop: 2,
+  },
+  billToPhone: {
+    fontSize: 11,
+    color: COLORS.textSecondary,
+  },
+  billToAddr: {
+    fontSize: 10,
+    color: COLORS.textSecondary,
+    marginTop: 2,
+    lineHeight: 14,
+  },
+  invoiceTable: {
+    borderWidth: 1,
+    borderColor: COLORS.border,
+    borderRadius: RADIUS.sm,
+    overflow: "hidden",
+    marginBottom: 10,
+  },
+  tableHeaderRow: {
+    flexDirection: "row",
+    backgroundColor: COLORS.surfaceSecondary,
+    paddingVertical: 6,
+    paddingHorizontal: 8,
+    borderBottomWidth: 1,
+    borderColor: COLORS.border,
+  },
+  tableHead: {
+    fontSize: 10,
+    fontWeight: "800",
+    color: COLORS.textSecondary,
+  },
+  tableDataRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    paddingVertical: 6,
+    paddingHorizontal: 8,
+    borderBottomWidth: 1,
+    borderColor: COLORS.borderLight,
+  },
+  tableCell: {
+    fontSize: 11,
+    color: COLORS.text,
+  },
+  invoiceTotalsBox: {
+    backgroundColor: COLORS.surfaceSecondary,
+    padding: SPACING.md,
+    borderRadius: RADIUS.sm,
+    marginTop: 4,
+  },
+  invoiceTotalRow: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    marginVertical: 2,
+  },
+  invoiceTotalKey: {
+    fontSize: 11,
+    color: COLORS.textSecondary,
+  },
+  invoiceTotalVal: {
+    fontSize: 11,
+    fontWeight: "700",
+    color: COLORS.text,
+  },
+  invoiceGrandTotalRow: {
+    borderTopWidth: 1,
+    borderColor: COLORS.border,
+    paddingTop: 6,
+    marginTop: 4,
+  },
+  invoiceGrandTotalKey: {
+    fontSize: 13,
+    fontWeight: "900",
+    color: COLORS.primary,
+  },
+  invoiceGrandTotalVal: {
+    fontSize: 14,
+    fontWeight: "900",
+    color: COLORS.primary,
+  },
+  modalActionRow: {
+    flexDirection: "row",
+    marginTop: 14,
+    justifyContent: "space-between",
+  },
+  modalShareBtn: {
+    flex: 1,
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "center",
     backgroundColor: COLORS.surface,
     borderWidth: 1,
     borderColor: COLORS.primary,
-    borderRadius: RADIUS.md,
-    paddingVertical: 14,
-    marginHorizontal: SPACING.lg,
-    marginTop: SPACING.lg,
+    borderRadius: RADIUS.sm,
+    paddingVertical: 12,
+    marginRight: 6,
   },
-  supportBtnText: {
+  modalShareBtnText: {
+    fontSize: 12,
+    fontWeight: "700",
     color: COLORS.primary,
-    fontSize: 13,
+    marginLeft: 6,
+  },
+  modalDownloadBtn: {
+    flex: 1.5,
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    backgroundColor: COLORS.primary,
+    borderRadius: RADIUS.sm,
+    paddingVertical: 12,
+    marginLeft: 6,
+  },
+  modalDownloadBtnText: {
+    fontSize: 12,
     fontWeight: "800",
-    marginLeft: 8,
+    color: COLORS.textWhite,
+    marginLeft: 6,
   },
 });

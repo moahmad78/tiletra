@@ -62,32 +62,93 @@ export default function NotificationsScreen() {
   const handleNotificationPress = (item: AppNotification) => {
     markAsRead(item.id);
 
-    // If order link or order type
-    if (item.link) {
-      if (item.link.includes("/order/")) {
-        const orderId = item.link.split("/order/")[1];
-        if (orderId) {
-          router.push({
-            pathname: "/order/[id]",
-            params: { id: orderId },
-          });
-          return;
-        }
-      }
-      if (item.link.startsWith("/")) {
-        router.push(item.link as any);
+    const link = (item.link || "").trim();
+
+    // 1. Check for Order ID in link (e.g. /order/123, /orders/123, https://.../order/123)
+    const orderLinkMatch = link.match(/\/orders?\/([a-zA-Z0-9_-]+)/i);
+    if (orderLinkMatch && orderLinkMatch[1]) {
+      const id = orderLinkMatch[1];
+      if (id !== "undefined" && id !== "null") {
+        router.push({
+          pathname: "/order/[id]",
+          params: { id },
+        });
         return;
       }
     }
 
-    // Check if title has order ID (e.g. Order #ORD-686411 or #cmt4...)
-    const orderMatch = item.title.match(/#([a-zA-Z0-9_-]+)/i);
+    // 2. Check for Product in link (e.g. /product/123, /products/123)
+    const productLinkMatch = link.match(/\/products?\/([a-zA-Z0-9_-]+)/i);
+    if (productLinkMatch && productLinkMatch[1]) {
+      const id = productLinkMatch[1];
+      if (id !== "undefined" && id !== "null") {
+        router.push({
+          pathname: "/product/[id]",
+          params: { id },
+        });
+        return;
+      }
+    }
+
+    // 3. Check for Category in link (e.g. /category/living-room)
+    const catLinkMatch = link.match(/\/categor(y|ies)\/([a-zA-Z0-9_-]+)/i);
+    if (catLinkMatch && catLinkMatch[2]) {
+      router.push({
+        pathname: "/category/[slug]",
+        params: { slug: catLinkMatch[2] },
+      });
+      return;
+    }
+
+    // 4. Check for Tab routes in link
+    if (link.includes("/orders") || link.includes("account/orders")) {
+      router.push("/(tabs)/orders" as any);
+      return;
+    }
+    if (link.includes("/shop") || link.includes("/offers") || link.includes("/products") || link.includes("/deals")) {
+      router.push("/(tabs)/shop" as any);
+      return;
+    }
+    if (link.includes("/cart") || link.includes("/checkout")) {
+      router.push("/(tabs)/cart" as any);
+      return;
+    }
+    if (link.includes("/profile") || link.includes("/account")) {
+      router.push("/(tabs)/profile" as any);
+      return;
+    }
+    if (link.includes("/support") || link.includes("/help")) {
+      router.push("/support" as any);
+      return;
+    }
+
+    // 5. Check for Order ID in Title / Body / Description (e.g. Order #ORD-686411 or #cmt4...)
+    const textToScan = `${item.title || ""} ${item.message || ""} ${(item as any).body || ""}`;
+    const orderMatch = textToScan.match(/#([a-zA-Z0-9_-]+)/i);
     if (orderMatch && orderMatch[1]) {
       router.push({
         pathname: "/order/[id]",
         params: { id: orderMatch[1] },
       });
+      return;
     }
+
+    // 6. Fallback based on Notification Type
+    if (item.type === "order_status" || item.type === "order") {
+      router.push("/(tabs)/orders" as any);
+      return;
+    }
+    if (item.type === "offer" || item.type === "promo" || item.type === "discount") {
+      router.push("/(tabs)/shop" as any);
+      return;
+    }
+    if (item.type === "support") {
+      router.push("/support" as any);
+      return;
+    }
+
+    // Default safe fallback to Home
+    router.push("/(tabs)/home" as any);
   };
 
   const renderIcon = (type: string) => {
