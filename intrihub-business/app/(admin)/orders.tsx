@@ -107,7 +107,7 @@ export default function AdminOrdersHubScreen() {
     refetch: refetchSettings,
   } = useQuery({
     queryKey: ["admin-settings"],
-    queryFn: fetchAdminStoreSettings,
+    queryFn: () => fetchAdminStoreSettings(),
   });
 
   // Initialize shipping form when settings load

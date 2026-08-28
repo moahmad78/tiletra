@@ -71,22 +71,22 @@ export default function AdminAccountMasterHubScreen() {
   // Queries
   const { data: settingsData, refetch: refetchSettings } = useQuery({
     queryKey: ["admin-settings"],
-    queryFn: fetchAdminStoreSettings,
+    queryFn: () => fetchAdminStoreSettings(),
   });
 
   const { data: categoriesData, refetch: refetchCats } = useQuery({
     queryKey: ["admin-categories"],
-    queryFn: fetchAdminCategories,
+    queryFn: () => fetchAdminCategories(),
   });
 
   const { data: couponsData, refetch: refetchCoupons } = useQuery({
     queryKey: ["admin-coupons"],
-    queryFn: fetchAdminCoupons,
+    queryFn: () => fetchAdminCoupons(),
   });
 
   const { data: bannersData, refetch: refetchBanners } = useQuery({
     queryKey: ["admin-banners"],
-    queryFn: fetchAdminContentBanners,
+    queryFn: () => fetchAdminContentBanners(),
   });
 
   const { data: reviewsData, refetch: refetchReviews } = useQuery({

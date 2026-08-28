@@ -36,7 +36,7 @@ export default function AdminDashboardScreen() {
 
   const { data, isLoading, refetch, isRefetching } = useQuery({
     queryKey: ["admin-dashboard"],
-    queryFn: fetchAdminDashboard,
+    queryFn: () => fetchAdminDashboard(),
   });
 
   if (isLoading) {

@@ -115,7 +115,7 @@ export default function AdminProductsHubScreen() {
   // 3. Categories Query for Picker
   const { data: catData } = useQuery({
     queryKey: ["admin-categories"],
-    queryFn: fetchAdminCategories,
+    queryFn: () => fetchAdminCategories(),
   });
 
   const products = productsData?.products || [];

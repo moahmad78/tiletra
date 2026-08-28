@@ -52,12 +52,17 @@ export default function AdminCategoriesScreen() {
   const [calculatorType, setCalculatorType] = useState("none");
   const [saving, setSaving] = useState(false);
 
-  const { data, isLoading, refetch, isRefetching } = useQuery({
-    queryKey: ["admin-categories"],
-    queryFn: fetchAdminCategories,
+  const {
+    data: categoriesData,
+    isLoading,
+    refetch,
+    isRefetching,
+  } = useQuery({
+    queryKey: ["admin-categories", search],
+    queryFn: () => fetchAdminCategories({ search: search.trim() || undefined }),
   });
 
-  const categories = data?.categories || [];
+  const categories = categoriesData?.categories || [];
 
   const filteredCategories = categories.filter((c: any) =>
     (c.name || "").toLowerCase().includes(search.toLowerCase()) ||
