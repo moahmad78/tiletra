@@ -111,8 +111,12 @@ export default function AdminVendorsHubScreen() {
   });
 
   const vendors = vendorsData?.vendors || [];
-  const applications = appsData?.applications || [];
-  const pendingAppsCount = applications.filter((a: any) => a.status === "pending").length;
+  const rawApplications = appsData?.applications || [];
+  // Strictly filter only new requests (exclude converted and rejected)
+  const newApplications = rawApplications.filter(
+    (a: any) => a.status === "new_inquiry" || a.status === "pending" || a.status === "new"
+  );
+  const pendingAppsCount = newApplications.length;
 
   const handleOpenEdit = (v: Vendor) => {
     setEditingVendorId(v.id);
@@ -385,45 +389,58 @@ export default function AdminVendorsHubScreen() {
           <Text style={styles.businessName}>{item.businessName}</Text>
           <Text style={styles.categoryText}>Applicant: {item.ownerName || "Unknown"}</Text>
         </View>
-        <View style={[styles.statusBadge, getStatusStyle(item.status)]}>
-          <Text style={styles.statusBadgeText}>{item.status.toUpperCase()}</Text>
+        <View style={[styles.statusBadge, { backgroundColor: "#FEF3C7" }]}>
+          <Text style={[styles.statusBadgeText, { color: "#D97706" }]}>NEW REQUEST</Text>
         </View>
       </View>
 
       <View style={styles.contactRow}>
         <View style={styles.contactItem}>
-          <Mail size={13} color={COLORS.textTertiary} />
-          <Text style={styles.contactText}>{item.contactEmail}</Text>
+          <Tag size={13} color={COLORS.accentBlue} />
+          <Text style={[styles.contactText, { color: COLORS.accentBlue, fontWeight: "700" }]}>
+            {item.category || "General Materials"}
+          </Text>
         </View>
         <View style={styles.contactItem}>
           <Phone size={13} color={COLORS.textTertiary} />
-          <Text style={styles.contactText}>+91 {item.contactPhone}</Text>
+          <Text style={styles.contactText}>+91 {item.phone || item.contactPhone || "N/A"}</Text>
         </View>
       </View>
 
-      {item.notes ? (
-        <Text style={styles.notesText}>Note: {item.notes}</Text>
+      <View style={[styles.contactRow, { marginTop: 4 }]}>
+        <View style={styles.contactItem}>
+          <Mail size={13} color={COLORS.textTertiary} />
+          <Text style={styles.contactText}>{item.email || item.contactEmail || "N/A"}</Text>
+        </View>
+        {item.address ? (
+          <View style={[styles.contactItem, { flex: 1 }]}>
+            <Building2 size={13} color={COLORS.textTertiary} />
+            <Text style={styles.contactText} numberOfLines={1}>{item.address}</Text>
+          </View>
+        ) : null}
+      </View>
+
+      {item.description ? (
+        <Text style={styles.notesText}>Note: {item.description}</Text>
       ) : null}
 
-      {item.status === "pending" && (
-        <View style={styles.actionFooter}>
-          <TouchableOpacity
-            style={[styles.quickBtn, styles.approveBtn]}
-            onPress={() => handleApproveApplication(item.id, item.businessName)}
-          >
-            <CheckCircle2 size={14} color="#16A34A" />
-            <Text style={styles.approveBtnText}>Approve & Onboard</Text>
-          </TouchableOpacity>
+      <View style={styles.actionFooter}>
+        <TouchableOpacity
+          style={[styles.quickBtn, styles.approveBtn]}
+          onPress={() => handleApproveApplication(item.id, item.businessName)}
+        >
+          <CheckCircle2 size={14} color="#16A34A" />
+          <Text style={styles.approveBtnText}>Approve & Onboard</Text>
+        </TouchableOpacity>
 
-          <TouchableOpacity
-            style={[styles.quickBtn, styles.suspendBtn]}
-            onPress={() => handleRejectApplication(item.id, item.businessName)}
-          >
-            <XCircle size={14} color="#DC2626" />
-            <Text style={styles.suspendBtnText}>Reject</Text>
-          </TouchableOpacity>
-        </View>
-      )}
+        <TouchableOpacity
+          style={[styles.quickBtn, styles.suspendBtn]}
+          onPress={() => handleRejectApplication(item.id, item.businessName)}
+        >
+          <XCircle size={14} color="#DC2626" />
+          <Text style={styles.suspendBtnText}>Reject</Text>
+        </TouchableOpacity>
+      </View>
     </View>
   );
 
@@ -521,11 +538,20 @@ export default function AdminVendorsHubScreen() {
         </View>
       ) : (
         <FlatList
-          data={applications}
+          data={newApplications}
           keyExtractor={(item) => item.id}
           renderItem={renderApplicationItem}
           contentContainerStyle={styles.listContent}
           refreshControl={<RefreshControl refreshing={appsRefetching} onRefresh={refetchApps} tintColor={COLORS.accentOrange} />}
+          ListEmptyComponent={
+            <View style={styles.emptyContainer}>
+              <CheckCircle2 size={44} color="#16A34A" />
+              <Text style={styles.emptyTitle}>No New Inquiries</Text>
+              <Text style={styles.emptySubtitle}>
+                All incoming vendor partner applications have been reviewed and processed.
+              </Text>
+            </View>
+          }
         />
       )}
 
@@ -1189,5 +1215,24 @@ const styles = StyleSheet.create({
     color: "#FFFFFF",
     fontSize: 14,
     fontWeight: "800",
+  },
+  emptyContainer: {
+    alignItems: "center",
+    justifyContent: "center",
+    paddingVertical: 50,
+    paddingHorizontal: 20,
+    gap: 8,
+  },
+  emptyTitle: {
+    fontSize: 16,
+    fontWeight: "800",
+    color: "#052A51",
+    marginTop: 4,
+  },
+  emptySubtitle: {
+    fontSize: 12,
+    color: "#64748B",
+    textAlign: "center",
+    lineHeight: 18,
   },
 });
