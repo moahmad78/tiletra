@@ -507,13 +507,38 @@ export default function AddProductScreen() {
           </View>
 
           {images.length > 0 ? (
-                    onPress={() => setImages((prev) => prev.filter((_, idx) => idx !== i))}
-                  >
-                    <X size={12} color="#FFFFFF" />
-                  </TouchableOpacity>
+            <View style={{ marginTop: 10, gap: 8 }}>
+              <View style={{ flexDirection: "row", justifyContent: "space-between", alignItems: "center" }}>
+                <View style={{ flexDirection: "row", alignItems: "center", backgroundColor: "#DCFCE7", paddingHorizontal: 8, paddingVertical: 4, borderRadius: 6, gap: 4 }}>
+                  <Check size={12} color="#16A34A" />
+                  <Text style={{ fontSize: 11, fontWeight: "800", color: "#166534" }}>
+                    {images.length} Image(s) Attached
+                  </Text>
                 </View>
-              ))}
-            </ScrollView>
+
+                <TouchableOpacity
+                  style={{ flexDirection: "row", alignItems: "center", backgroundColor: "#16A34A", paddingHorizontal: 10, paddingVertical: 4, borderRadius: 6, gap: 4 }}
+                  onPress={() => Alert.alert("Confirmed 🎉", "Image preview saved!")}
+                >
+                  <Check size={12} color="#FFFFFF" />
+                  <Text style={{ fontSize: 11, fontWeight: "800", color: "#FFFFFF" }}>Done</Text>
+                </TouchableOpacity>
+              </View>
+
+              <ScrollView horizontal showsHorizontalScrollIndicator={false} style={{ gap: 8 }}>
+                {images.map((imgUri, idx) => (
+                  <View key={idx} style={{ position: "relative", width: 80, height: 80, borderRadius: 10, overflow: "hidden", borderWidth: 1, borderColor: "#CBD5E1", backgroundColor: "#F1F5F9", marginRight: 8 }}>
+                    <Image source={{ uri: imgUri }} style={{ width: "100%", height: "100%" }} contentFit="cover" />
+                    <TouchableOpacity
+                      style={{ position: "absolute", top: 4, right: 4, backgroundColor: "#DC2626", width: 20, height: 20, borderRadius: 10, alignItems: "center", justifyContent: "center" }}
+                      onPress={() => setImages((prev) => prev.filter((img) => img !== imgUri))}
+                    >
+                      <Trash2 size={12} color="#FFFFFF" />
+                    </TouchableOpacity>
+                  </View>
+                ))}
+              </ScrollView>
+            </View>
           ) : null}
 
           <Text style={[styles.inputLabel, { marginTop: 12 }]}>Product Description</Text>

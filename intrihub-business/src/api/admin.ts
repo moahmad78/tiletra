@@ -37,6 +37,7 @@ export async function fetchAdminVendors(params?: {
 export async function fetchAdminVendorDetail(id: string): Promise<{
   success: boolean;
   vendor?: any;
+  stats?: any;
   error?: string;
 }> {
   const res = await apiClient.get(`/api/mobile/admin/vendors/${id}`);
@@ -257,6 +258,7 @@ export async function approveAdminVendorApplication(
   success: boolean;
   vendor?: any;
   credentials?: any;
+  plainPassword?: string;
   message?: string;
   error?: string;
 }> {
@@ -690,15 +692,17 @@ export async function validateAdminBulkCSV(csvText: string): Promise<{
   return res.data;
 }
 
-export async function commitAdminBulkProducts(products: any[]): Promise<{
+export async function commitAdminBulkProducts(productsOrCsv: any): Promise<{
   success: boolean;
   count?: number;
+  importedCount?: number;
   message?: string;
   products?: any[];
   error?: string;
 }> {
   const res = await apiClient.post("/api/mobile/admin/products/bulk/commit", {
-    products,
+    products: typeof productsOrCsv === "string" ? productsOrCsv : productsOrCsv,
+    csvText: typeof productsOrCsv === "string" ? productsOrCsv : undefined,
   });
   return res.data;
 }

@@ -2500,7 +2500,7 @@ const styles = StyleSheet.create({
     height: 16,
     borderRadius: 8,
     alignItems: "center",
-    justify.content: "center",
+    justifyContent: "center",
   },
   addVariantBtn: {
     flexDirection: "row",

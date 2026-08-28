@@ -20,6 +20,7 @@ export interface Vendor {
   contactEmail?: string | null;
   contactPhone?: string | null;
   ownerName?: string | null;
+  businessAddress?: string | null;
   deliveryMethod?: string | null;
   commissionRate?: number | null;
   verified?: boolean;
@@ -27,6 +28,8 @@ export interface Vendor {
   state?: string | null;
   productsCount?: number;
   ordersCount?: number;
+  stats?: any;
+  plainPassword?: string;
   createdAt?: string;
 }
 

@@ -268,8 +268,7 @@ export default function AdminOrdersHubScreen() {
     if (!selectedSplitId) return;
     setSavingAssign(true);
     try {
-      const res = await assignAdminCourier({
-        splitId: selectedSplitId,
+      const res = await assignAdminCourier(selectedSplitId, {
         courierName: courierName.trim() || "Express Delivery Partner",
         courierPhone: courierPhone.trim() || undefined,
         trackingNumber: trackingNumber.trim() || undefined,

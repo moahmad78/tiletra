@@ -57,10 +57,10 @@ export async function createVendorProduct(data: {
   material?: string;
   finish?: string;
   size?: string;
-  thickness?: string;
   usage?: string;
   look?: string;
   status?: "active" | "paused" | "draft";
+  variants?: any[];
 }): Promise<{
   success: boolean;
   product?: Product;
