@@ -41,7 +41,8 @@ import {
   Plus,
   Trash2,
 } from "lucide-react-native";
-import { useAuth } from "../../src/hooks/useAuth";
+import { useAuthStore } from "../../src/store/authStore";
+import { updateProfile as apiUpdateProfile } from "../../src/api/auth";
 import {
   fetchAdminStoreSettings,
   updateAdminStoreSettings,
@@ -63,7 +64,8 @@ import { COLORS, SPACING, RADIUS, SHADOWS } from "../../src/constants/theme";
 
 export default function AdminAccountMasterHubScreen() {
   const router = useRouter();
-  const { user, logout, updateProfile, isUpdatingProfile } = useAuth();
+  const { user, logout, setUser } = useAuthStore();
+  const [isUpdatingProfile, setIsUpdatingProfile] = useState(false);
   const queryClient = useQueryClient();
 
   // Queries
@@ -171,15 +173,23 @@ export default function AdminAccountMasterHubScreen() {
 
   // Handle Save Profile
   const handleSaveProfile = async () => {
+    setIsUpdatingProfile(true);
     try {
-      await updateProfile({
+      const res = await apiUpdateProfile({
         name: name.trim(),
         phone: phone.trim(),
         avatar: avatarUrl.trim() || undefined,
       });
-      setProfileModalOpen(false);
-      Alert.alert("Profile Updated", "Admin personal details updated!");
+      setIsUpdatingProfile(false);
+      if (res.success && res.user) {
+        setUser(res.user);
+        setProfileModalOpen(false);
+        Alert.alert("Profile Updated", "Admin personal details updated!");
+      } else {
+        Alert.alert("Error", res.error || "Failed to update profile");
+      }
     } catch (e: any) {
+      setIsUpdatingProfile(false);
       Alert.alert("Error", e?.message || "Failed to update profile");
     }
   };
