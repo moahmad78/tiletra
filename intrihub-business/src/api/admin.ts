@@ -607,6 +607,14 @@ export async function updateAdminReviewStatus(
   return res.data;
 }
 
+export async function approveAdminReview(id: string) {
+  return updateAdminReviewStatus(id, "approved");
+}
+
+export async function rejectAdminReview(id: string) {
+  return updateAdminReviewStatus(id, "rejected");
+}
+
 export async function deleteAdminReview(id: string): Promise<{
   success: boolean;
   message?: string;
