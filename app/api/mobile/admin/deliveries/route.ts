@@ -17,7 +17,94 @@ export async function GET(req: NextRequest) {
     const search = searchParams.get("search")?.toLowerCase().trim() || "";
     const tab = searchParams.get("status") || "all";
 
-    const allDeliveries = await getPlatformDeliveryOrders();
+    const { prisma } = await import("@/lib/prisma");
+
+    // 1. Fetch all splits
+    const splits = await prisma.vendorOrderSplit.findMany({
+      orderBy: { createdAt: "desc" },
+      include: {
+        vendor: {
+          select: {
+            id: true,
+            businessName: true,
+            contactPhone: true,
+            contactEmail: true,
+            businessAddress: true,
+          },
+        },
+      },
+    });
+
+    const orderIds = splits.map((s) => s.orderId);
+    const allOrders = await prisma.order.findMany({
+      orderBy: { createdAt: "desc" },
+      include: { items: true },
+    });
+
+    const orderMap = new Map(allOrders.map((o) => [o.id, o]));
+
+    let allDeliveries: any[] = splits.map((split) => {
+      const parent = orderMap.get(split.orderId);
+      return {
+        id: split.id,
+        orderId: split.orderId,
+        vendorId: split.vendorId,
+        vendor: split.vendor,
+        subtotal: split.subtotal,
+        commissionRate: split.commissionRate,
+        commissionAmount: split.commissionAmount,
+        vendorPayoutAmount: split.vendorPayoutAmount,
+        deliveryMethod: split.deliveryMethod || "platform",
+        fulfillmentStatus: split.fulfillmentStatus,
+        paymentCollected: split.paymentCollected,
+        trackingNumber: split.trackingNumber,
+        courierName: split.courierName,
+        deliveredAt: split.deliveredAt,
+        createdAt: split.createdAt,
+        updatedAt: split.updatedAt,
+        parentOrder: parent
+          ? {
+              customerName: parent.customerName,
+              customerPhone: parent.customerPhone,
+              customerEmail: parent.customerEmail,
+              shippingAddress: parent.shippingAddress,
+              paymentStatus: parent.paymentStatus,
+              paymentMethod: parent.paymentMethod,
+              orderStatus: parent.orderStatus,
+              items: parent.items,
+            }
+          : null,
+      };
+    });
+
+    // If no splits exist yet, construct delivery cards directly from platform orders
+    if (allDeliveries.length === 0) {
+      allDeliveries = allOrders.map((order) => ({
+        id: order.id,
+        orderId: order.id,
+        vendorId: null,
+        vendor: { businessName: "Intrihub Central Warehouse", contactPhone: "9264920211" },
+        subtotal: order.subtotal || order.total,
+        deliveryMethod: "platform",
+        fulfillmentStatus: order.orderStatus === "delivered" ? "delivered" : "ready_for_pickup",
+        paymentCollected: order.paymentStatus === "paid",
+        trackingNumber: null,
+        courierName: null,
+        deliveredAt: null,
+        createdAt: order.createdAt,
+        updatedAt: order.updatedAt,
+        parentOrder: {
+          customerName: order.customerName,
+          customerPhone: order.customerPhone,
+          customerEmail: order.customerEmail,
+          shippingAddress: order.shippingAddress,
+          paymentStatus: order.paymentStatus,
+          paymentMethod: order.paymentMethod,
+          orderStatus: order.orderStatus,
+          items: order.items,
+        },
+      }));
+    }
 
     const filtered = allDeliveries.filter((item: any) => {
       const status = item.fulfillmentStatus?.toLowerCase();

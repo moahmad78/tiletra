@@ -60,6 +60,31 @@ export async function GET(req: NextRequest) {
       orderBy: { createdAt: "desc" },
     });
 
+    // 4. Low Stock & Out of Stock Products
+    const lowStockProducts = await prisma.product.findMany({
+      where: {
+        OR: [
+          { inStock: false },
+          { status: "out_of_stock" },
+          { variants: { some: { stockBoxes: { lt: 10 } } } },
+        ],
+      },
+      take: 12,
+      orderBy: { updatedAt: "desc" },
+      include: {
+        variants: true,
+        vendor: {
+          select: {
+            id: true,
+            businessName: true,
+            contactPhone: true,
+            contactEmail: true,
+            ownerId: true,
+          },
+        },
+      },
+    });
+
     return mobileApiResponse({
       success: true,
       stats: {
@@ -71,6 +96,7 @@ export async function GET(req: NextRequest) {
         activeVendorsCount,
         totalProductsCount,
         pendingApprovalsCount: pendingVendors.length,
+        lowStockCount: lowStockProducts.length,
       },
       recentOrders: recentOrders.map((o) => ({
         id: o.id,
@@ -81,7 +107,7 @@ export async function GET(req: NextRequest) {
         paymentStatus: o.paymentStatus,
         paymentMethod: o.paymentMethod,
         itemsCount: o.items.length,
-        createdAt: o.createdAt,
+        createdAt: o.createdAt.toISOString(),
       })),
       pendingVendors: pendingVendors.map((v) => ({
         id: v.id,
@@ -89,13 +115,27 @@ export async function GET(req: NextRequest) {
         contactEmail: v.contactEmail,
         contactPhone: v.contactPhone,
         category: v.category,
-        createdAt: v.createdAt,
+        createdAt: v.createdAt.toISOString(),
       })),
+      lowStockProducts: lowStockProducts.map((p) => {
+        const firstVariant = p.variants?.[0];
+        return {
+          id: p.id,
+          name: p.name,
+          pricePerBox: firstVariant?.pricePerBox || 0,
+          pricePerSqft: p.pricePerSqft || firstVariant?.pricePerSqft || 0,
+          stockBoxes: firstVariant?.stockBoxes ?? (p.inStock ? 50 : 0),
+          unitOfSale: p.unitOfSale || "box",
+          images: p.images,
+          status: p.status,
+          vendor: p.vendor,
+        };
+      }),
     });
   } catch (err: any) {
     console.error("Mobile admin dashboard error:", err);
     return mobileApiResponse(
-      { success: false, error: err.message || "Failed to fetch admin dashboard" },
+      { success: false, error: err.message || "Failed to fetch dashboard data" },
       500
     );
   }

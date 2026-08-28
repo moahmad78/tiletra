@@ -26,11 +26,10 @@ export async function GET(req: NextRequest, { params }: { params: Promise<{ id: 
           },
         },
         products: {
-          take: 10,
+          include: { variants: true },
           orderBy: { createdAt: "desc" },
         },
         splits: {
-          take: 10,
           orderBy: { createdAt: "desc" },
         },
       },
@@ -40,7 +39,68 @@ export async function GET(req: NextRequest, { params }: { params: Promise<{ id: 
       return mobileApiResponse({ success: false, error: "Vendor not found" }, 404);
     }
 
-    return mobileApiResponse({ success: true, vendor });
+    // Compute today's sales
+    const startOfToday = new Date();
+    startOfToday.setHours(0, 0, 0, 0);
+
+    const todaySplits = vendor.splits.filter(
+      (s) => new Date(s.createdAt) >= startOfToday && s.fulfillmentStatus !== "cancelled"
+    );
+    const todaySales = todaySplits.reduce((acc, s) => acc + (s.subtotal || 0), 0);
+
+    const totalSales = vendor.splits
+      .filter((s) => s.fulfillmentStatus !== "cancelled")
+      .reduce((acc, s) => acc + (s.subtotal || 0), 0);
+
+    const totalPayoutSettled = vendor.splits
+      .filter((s) => Boolean(s.payoutId))
+      .reduce((acc, s) => acc + (s.vendorPayoutAmount || 0), 0);
+
+    const pendingPayout = vendor.splits
+      .filter((s) => !s.payoutId)
+      .reduce((acc, s) => acc + (s.vendorPayoutAmount || 0), 0);
+
+    // Fetch parent orders for splits
+    const splitOrderIds = vendor.splits.map((s) => s.orderId);
+    const orders = await prisma.order.findMany({
+      where: { id: { in: splitOrderIds } },
+      include: { items: true },
+    });
+    const orderMap = new Map(orders.map((o) => [o.id, o]));
+
+    const enrichedSplits = vendor.splits.map((s) => ({
+      ...s,
+      parentOrder: orderMap.get(s.orderId) || null,
+    }));
+
+    const enrichedProducts = vendor.products.map((p) => {
+      const v = p.variants?.[0];
+      return {
+        ...p,
+        pricePerBox: v?.pricePerBox || 0,
+        pricePerSqft: p.pricePerSqft || v?.pricePerSqft || 0,
+        stockBoxes: v?.stockBoxes ?? (p.inStock ? 50 : 0),
+      };
+    });
+
+    return mobileApiResponse({
+      success: true,
+      vendor: {
+        ...vendor,
+        products: enrichedProducts,
+        splits: enrichedSplits,
+      },
+      stats: {
+        todaySales,
+        totalSales,
+        totalPayoutSettled,
+        pendingPayout,
+        totalOrdersCount: vendor.splits.length,
+        totalProductsCount: vendor.products.length,
+        activeProductsCount: vendor.products.filter((p) => p.status === "active").length,
+        lowStockProductsCount: enrichedProducts.filter((p) => (p.stockBoxes ?? 0) < 10).length,
+      },
+    });
   } catch (err: any) {
     console.error("Mobile admin vendor detail error:", err);
     return mobileApiResponse(

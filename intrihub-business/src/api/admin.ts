@@ -752,3 +752,19 @@ export async function deleteAdminCategory(id: string): Promise<{
   const res = await apiClient.delete(`/api/mobile/admin/categories/${id}`);
   return res.data;
 }
+
+// 16. Notify Vendor Restock
+export async function notifyAdminVendorRestock(data: {
+  vendorId: string;
+  productId?: string;
+  productName?: string;
+  stockBoxes?: number;
+  customMessage?: string;
+}): Promise<{
+  success: boolean;
+  message?: string;
+  error?: string;
+}> {
+  const res = await apiClient.post("/api/mobile/admin/notify-vendor", data);
+  return res.data;
+}

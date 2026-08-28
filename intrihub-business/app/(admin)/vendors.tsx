@@ -295,7 +295,11 @@ export default function AdminVendorsHubScreen() {
   };
 
   const renderVendorItem = ({ item }: { item: Vendor }) => (
-    <View style={styles.vendorCard}>
+    <TouchableOpacity
+      style={styles.vendorCard}
+      onPress={() => router.push(`/(admin)/vendor/${item.id}` as any)}
+      activeOpacity={0.9}
+    >
       <View style={styles.cardHeader}>
         <View style={{ flex: 1 }}>
           <View style={styles.nameRow}>
@@ -345,12 +349,22 @@ export default function AdminVendorsHubScreen() {
       {/* Action Buttons */}
       <View style={styles.actionFooter}>
         <TouchableOpacity
+          style={styles.viewStoreBtn}
+          onPress={() => router.push(`/(admin)/vendor/${item.id}` as any)}
+          activeOpacity={0.85}
+        >
+          <Store size={13} color="#052A51" />
+          <Text style={styles.viewStoreBtnText}>Store & Items ({item.productsCount || 0})</Text>
+          <ChevronRight size={13} color="#052A51" />
+        </TouchableOpacity>
+
+        <TouchableOpacity
           style={styles.editBtn}
           onPress={() => handleOpenEdit(item)}
           activeOpacity={0.85}
         >
           <Edit2 size={13} color={COLORS.accentBlue} />
-          <Text style={styles.editBtnText}>Edit Profile</Text>
+          <Text style={styles.editBtnText}>Edit</Text>
         </TouchableOpacity>
 
         <TouchableOpacity
@@ -359,10 +373,9 @@ export default function AdminVendorsHubScreen() {
           activeOpacity={0.85}
         >
           <Trash2 size={13} color="#DC2626" />
-          <Text style={styles.deleteBtnText}>Delete</Text>
         </TouchableOpacity>
       </View>
-    </View>
+    </TouchableOpacity>
   );
 
   const renderApplicationItem = ({ item }: { item: any }) => (
@@ -990,13 +1003,27 @@ const styles = StyleSheet.create({
   },
   actionFooter: {
     flexDirection: "row",
-    justifyContent: "flex-end",
+    justifyContent: "space-between",
     alignItems: "center",
     marginTop: SPACING.sm,
     paddingTop: SPACING.sm,
     borderTopWidth: 1,
     borderTopColor: COLORS.borderLight,
     gap: 8,
+  },
+  viewStoreBtn: {
+    flexDirection: "row",
+    alignItems: "center",
+    backgroundColor: "#F1F5F9",
+    paddingHorizontal: 10,
+    paddingVertical: 7,
+    borderRadius: RADIUS.sm,
+    gap: 4,
+  },
+  viewStoreBtnText: {
+    fontSize: 11,
+    fontWeight: "800",
+    color: "#052A51",
   },
   editBtn: {
     flexDirection: "row",

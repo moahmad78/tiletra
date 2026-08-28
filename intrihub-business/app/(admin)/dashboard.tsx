@@ -1,3 +1,4 @@
+import React, { useState } from "react";
 import {
   View,
   Text,
@@ -6,6 +7,7 @@ import {
   TouchableOpacity,
   RefreshControl,
   ActivityIndicator,
+  Alert,
 } from "react-native";
 import { useRouter } from "expo-router";
 import { useQuery } from "@tanstack/react-query";
@@ -27,17 +29,49 @@ import {
   Settings,
   MessageSquare,
   FileSpreadsheet,
+  AlertTriangle,
+  Send,
+  Boxes,
 } from "lucide-react-native";
-import { fetchAdminDashboard } from "../../src/api/admin";
+import { fetchAdminDashboard, notifyAdminVendorRestock } from "../../src/api/admin";
 import { COLORS, SPACING, RADIUS, SHADOWS } from "../../src/constants/theme";
 
 export default function AdminDashboardScreen() {
   const router = useRouter();
+  const [notifyingVendorId, setNotifyingVendorId] = useState<string | null>(null);
 
   const { data, isLoading, refetch, isRefetching } = useQuery({
     queryKey: ["admin-dashboard"],
     queryFn: () => fetchAdminDashboard(),
   });
+
+  const handleSendRestockNotice = async (product: any) => {
+    if (!product.vendor?.id) {
+      Alert.alert("Notice", "This product is managed directly by Central Hub.");
+      return;
+    }
+    setNotifyingVendorId(product.id);
+    try {
+      const res = await notifyAdminVendorRestock({
+        vendorId: product.vendor.id,
+        productId: product.id,
+        productName: product.name,
+        stockBoxes: product.stockBoxes,
+      });
+      setNotifyingVendorId(null);
+      if (res.success) {
+        Alert.alert(
+          "Notice Dispatched 🚀",
+          `Restock notification sent to "${product.vendor.businessName}". They will receive an in-app & push alert on their device!`
+        );
+      } else {
+        Alert.alert("Error", res.error || "Failed to notify vendor");
+      }
+    } catch (e: any) {
+      setNotifyingVendorId(null);
+      Alert.alert("Error", e?.message || "Something went wrong.");
+    }
+  };
 
   if (isLoading) {
     return (
@@ -50,6 +84,7 @@ export default function AdminDashboardScreen() {
   const stats = data?.stats;
   const recentOrders = data?.recentOrders || [];
   const pendingVendors = data?.pendingVendors || [];
+  const lowStockProducts = data?.lowStockProducts || [];
 
   return (
     <View style={styles.container}>
@@ -141,6 +176,64 @@ export default function AdminDashboardScreen() {
             <Text style={styles.statTitle}>Platform Users</Text>
           </TouchableOpacity>
         </View>
+
+        {/* Low Stock & Out-of-Stock Alerts Center */}
+        {lowStockProducts.length > 0 ? (
+          <View style={styles.lowStockSection}>
+            <View style={styles.sectionHeader}>
+              <View style={{ flexDirection: "row", alignItems: "center", gap: 6 }}>
+                <AlertTriangle size={16} color="#DC2626" />
+                <Text style={[styles.sectionTitle, { color: "#DC2626" }]}>
+                  Inventory Alerts ({lowStockProducts.length})
+                </Text>
+              </View>
+              <TouchableOpacity onPress={() => router.push("/(admin)/products" as any)}>
+                <Text style={[styles.viewAllText, { color: "#DC2626" }]}>Catalog</Text>
+              </TouchableOpacity>
+            </View>
+
+            {lowStockProducts.map((p: any) => (
+              <View key={p.id} style={styles.lowStockCard}>
+                <Image
+                  source={p.images?.[0] ? { uri: p.images[0] } : require("../../assets/intri-icon.png")}
+                  style={styles.lowStockThumb}
+                  contentFit="cover"
+                />
+                <View style={{ flex: 1, marginLeft: 10 }}>
+                  <Text style={styles.lowStockTitle} numberOfLines={1}>{p.name}</Text>
+                  <Text style={styles.lowStockVendorSub}>
+                    Vendor: {p.vendor?.businessName || "Central Warehouse"}
+                  </Text>
+                  <View style={styles.lowStockBadgeRow}>
+                    <View style={styles.lowStockPill}>
+                      <Boxes size={11} color="#DC2626" />
+                      <Text style={styles.lowStockPillText}>
+                        {p.stockBoxes === 0 ? "Out of Stock" : `${p.stockBoxes} ${p.unitOfSale || "boxes"} left`}
+                      </Text>
+                    </View>
+                  </View>
+                </View>
+
+                {p.vendor?.id ? (
+                  <TouchableOpacity
+                    style={styles.notifyVendorBtn}
+                    onPress={() => handleSendRestockNotice(p)}
+                    disabled={notifyingVendorId === p.id}
+                  >
+                    {notifyingVendorId === p.id ? (
+                      <ActivityIndicator size="small" color="#FFF" />
+                    ) : (
+                      <>
+                        <Send size={11} color="#FFF" />
+                        <Text style={styles.notifyVendorBtnText}>Restock Notice</Text>
+                      </>
+                    )}
+                  </TouchableOpacity>
+                ) : null}
+              </View>
+            ))}
+          </View>
+        ) : null}
 
         {/* Pending Approvals Section */}
         {pendingVendors.length > 0 ? (
@@ -509,6 +602,69 @@ const styles = StyleSheet.create({
   },
   pendingSection: {
     marginBottom: SPACING.xl,
+  },
+  lowStockSection: {
+    marginBottom: SPACING.xl,
+  },
+  lowStockCard: {
+    flexDirection: "row",
+    alignItems: "center",
+    backgroundColor: "#FEF2F2",
+    borderWidth: 1,
+    borderColor: "#FECACA",
+    borderRadius: RADIUS.md,
+    padding: 12,
+    marginBottom: SPACING.sm,
+  },
+  lowStockThumb: {
+    width: 44,
+    height: 44,
+    borderRadius: 8,
+    backgroundColor: "#F1F5F9",
+  },
+  lowStockTitle: {
+    fontSize: 13,
+    fontWeight: "800",
+    color: "#052A51",
+  },
+  lowStockVendorSub: {
+    fontSize: 11,
+    color: "#64748B",
+    marginTop: 2,
+  },
+  lowStockBadgeRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    marginTop: 4,
+  },
+  lowStockPill: {
+    flexDirection: "row",
+    alignItems: "center",
+    backgroundColor: "#FEE2E2",
+    paddingHorizontal: 6,
+    paddingVertical: 2,
+    borderRadius: 6,
+    gap: 4,
+  },
+  lowStockPillText: {
+    fontSize: 10,
+    fontWeight: "800",
+    color: "#DC2626",
+  },
+  notifyVendorBtn: {
+    flexDirection: "row",
+    alignItems: "center",
+    backgroundColor: "#DC2626",
+    paddingHorizontal: 10,
+    paddingVertical: 7,
+    borderRadius: RADIUS.sm,
+    gap: 4,
+    marginLeft: 8,
+  },
+  notifyVendorBtnText: {
+    fontSize: 11,
+    fontWeight: "800",
+    color: "#FFFFFF",
   },
   pendingVendorCard: {
     flexDirection: "row",
