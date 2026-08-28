@@ -38,6 +38,10 @@ import {
   Trash2,
   Store,
   Mail,
+  CheckSquare2,
+  Square,
+  PauseCircle,
+  PlayCircle,
 } from "lucide-react-native";
 import {
   fetchAdminOrders,
@@ -61,6 +65,11 @@ export default function AdminOrdersHubScreen() {
   const [activeSection, setActiveSection] = useState<"orders" | "deliveries" | "shipping">("orders");
   const [search, setSearch] = useState("");
   const [statusFilter, setStatusFilter] = useState("all");
+
+  // Multi-Selection / Batch Selection Mode State (Hold to Mark)
+  const [isSelectMode, setIsSelectMode] = useState(false);
+  const [selectedOrderIds, setSelectedOrderIds] = useState<string[]>([]);
+  const [bulkProcessing, setBulkProcessing] = useState(false);
 
   // Order Details Modal State
   const [selectedOrder, setSelectedOrder] = useState<any | null>(null);
@@ -121,6 +130,98 @@ export default function AdminOrdersHubScreen() {
 
   const orders = ordersData?.orders || [];
   const splits = deliveriesData?.splits || [];
+
+  // Batch Multi-Select Handlers
+  const handleToggleSelectOrder = (id: string) => {
+    setSelectedOrderIds((prev) => {
+      if (prev.includes(id)) {
+        const next = prev.filter((i) => i !== id);
+        if (next.length === 0) setIsSelectMode(false);
+        return next;
+      } else {
+        setIsSelectMode(true);
+        return [...prev, id];
+      }
+    });
+  };
+
+  const handleLongPressOrder = (id: string) => {
+    setIsSelectMode(true);
+    if (!selectedOrderIds.includes(id)) {
+      setSelectedOrderIds((prev) => [...prev, id]);
+    }
+  };
+
+  const handleSelectAllOrders = () => {
+    if (selectedOrderIds.length === orders.length) {
+      setSelectedOrderIds([]);
+      setIsSelectMode(false);
+    } else {
+      setSelectedOrderIds(orders.map((o: any) => o.id));
+      setIsSelectMode(true);
+    }
+  };
+
+  const handleCancelSelectMode = () => {
+    setSelectedOrderIds([]);
+    setIsSelectMode(false);
+  };
+
+  const handleBulkDeleteOrders = () => {
+    if (selectedOrderIds.length === 0) return;
+    Alert.alert(
+      "Move Selected Orders to Trash",
+      `Move ${selectedOrderIds.length} selected order(s) to Recycle Bin?\n\nThey can be restored from the Recycle Bin within 3 days.`,
+      [
+        { text: "Cancel", style: "cancel" },
+        {
+          text: `Move ${selectedOrderIds.length} Orders to Trash`,
+          style: "destructive",
+          onPress: async () => {
+            setBulkProcessing(true);
+            try {
+              for (const id of selectedOrderIds) {
+                await deleteAdminOrder(id);
+              }
+              setBulkProcessing(false);
+              setSelectedOrderIds([]);
+              setIsSelectMode(false);
+              refetchOrders();
+              queryClient.invalidateQueries({ queryKey: ["admin-orders"] });
+              queryClient.invalidateQueries({ queryKey: ["admin-trash"] });
+              queryClient.invalidateQueries({ queryKey: ["admin-dashboard"] });
+              Alert.alert("Bulk Delete 🎉", `${selectedOrderIds.length} orders moved to Recycle Bin.`);
+            } catch (e: any) {
+              setBulkProcessing(false);
+              Alert.alert("Error", e?.message || "Failed bulk order delete");
+            }
+          },
+        },
+      ]
+    );
+  };
+
+  const handleBulkUpdateOrderStatus = async (targetStatus: string) => {
+    if (selectedOrderIds.length === 0) return;
+    setBulkProcessing(true);
+    try {
+      for (const id of selectedOrderIds) {
+        await updateAdminOrder(id, { orderStatus: targetStatus });
+      }
+      setBulkProcessing(false);
+      setSelectedOrderIds([]);
+      setIsSelectMode(false);
+      refetchOrders();
+      queryClient.invalidateQueries({ queryKey: ["admin-orders"] });
+      Alert.alert(
+        "Bulk Status Update 🎉",
+        `Marked ${selectedOrderIds.length} orders as ${targetStatus.toUpperCase()}.`
+      );
+    } catch (e: any) {
+      setBulkProcessing(false);
+      Alert.alert("Error", e?.message || "Failed bulk order status update");
+    }
+  };
 
   // Handle Delete Order (Soft Delete)
   const handleDeleteOrder = (orderId: string, customerName: string) => {
@@ -242,76 +343,95 @@ export default function AdminOrdersHubScreen() {
     }
   };
 
-  const renderOrderItem = ({ item }: { item: any }) => (
-    <TouchableOpacity
-      style={styles.orderCard}
-      onPress={() => {
-        setSelectedOrder(item);
-        setOrderModalOpen(true);
-      }}
-      activeOpacity={0.85}
-    >
-      <View style={styles.cardHeader}>
-        <View style={{ flex: 1 }}>
-          <Text style={styles.orderId}>#{item.orderNumber || item.id?.slice(-8).toUpperCase()}</Text>
-          <Text style={styles.dateText}>
-            {item.createdAt ? new Date(item.createdAt).toLocaleDateString("en-IN", {
-              weekday: "short",
-              year: "numeric",
-              month: "short",
-              day: "numeric",
-              hour: "2-digit",
-              minute: "2-digit",
-            }) : ""}
-          </Text>
-        </View>
-        <View style={{ flexDirection: "row", alignItems: "center", gap: 8 }}>
-          <View style={[styles.statusBadge, getOrderStatusStyle(item.orderStatus)]}>
-            <Text style={styles.statusBadgeText}>{item.orderStatus?.toUpperCase() || "PROCESSING"}</Text>
-          </View>
+  const renderOrderItem = ({ item }: { item: any }) => {
+    const isSelected = selectedOrderIds.includes(item.id);
+    return (
+      <TouchableOpacity
+        style={[styles.orderCard, isSelected && { borderColor: "#2563EB", backgroundColor: "#F0F6FF", borderWidth: 1.5 }]}
+        onPress={() => {
+          if (isSelectMode) {
+            handleToggleSelectOrder(item.id);
+          } else {
+            setSelectedOrder(item);
+            setOrderModalOpen(true);
+          }
+        }}
+        onLongPress={() => handleLongPressOrder(item.id)}
+        activeOpacity={0.85}
+      >
+        <View style={styles.cardHeader}>
           <TouchableOpacity
-            style={{ padding: 4, backgroundColor: "#FEF2F2", borderRadius: 6 }}
-            onPress={() => handleDeleteOrder(item.id, item.customerName || "Customer")}
+            style={{ justifyContent: "center", paddingRight: 6 }}
+            onPress={() => handleToggleSelectOrder(item.id)}
           >
-            <Trash2 size={13} color="#DC2626" />
+            {isSelected ? (
+              <CheckSquare2 size={20} color="#2563EB" />
+            ) : (
+              <Square size={20} color="#CBD5E1" />
+            )}
           </TouchableOpacity>
-        </View>
-      </View>
 
-      <View style={styles.customerRow}>
-        <User size={13} color={COLORS.textSecondary} />
-        <Text style={styles.customerName}>{item.customerName || "Customer"}</Text>
-        {item.customerPhone ? (
-          <Text style={styles.customerPhone}>• +91 {item.customerPhone}</Text>
-        ) : null}
-      </View>
-
-      {item.customerAddress ? (
-        <Text style={styles.addressPreviewText} numberOfLines={1}>
-          📍 {item.customerAddress}
-        </Text>
-      ) : null}
-
-      <View style={styles.metricsRow}>
-        <View style={styles.metricItem}>
-          <Text style={styles.metricLabel}>Total Amount</Text>
-          <Text style={styles.metricVal}>₹{(item.totalAmount ?? item.total ?? 0).toLocaleString("en-IN")}</Text>
+          <View style={{ flex: 1 }}>
+            <Text style={styles.orderId}>#{item.orderNumber || item.id?.slice(-8).toUpperCase()}</Text>
+            <Text style={styles.dateText}>
+              {item.createdAt ? new Date(item.createdAt).toLocaleDateString("en-IN", {
+                weekday: "short",
+                year: "numeric",
+                month: "short",
+                day: "numeric",
+                hour: "2-digit",
+                minute: "2-digit",
+              }) : ""}
+            </Text>
+          </View>
+          <View style={{ flexDirection: "row", alignItems: "center", gap: 8 }}>
+            <View style={[styles.statusBadge, getOrderStatusStyle(item.orderStatus)]}>
+              <Text style={styles.statusBadgeText}>{item.orderStatus?.toUpperCase() || "PROCESSING"}</Text>
+            </View>
+            <TouchableOpacity
+              style={{ padding: 4, backgroundColor: "#FEF2F2", borderRadius: 6 }}
+              onPress={() => handleDeleteOrder(item.id, item.customerName || "Customer")}
+            >
+              <Trash2 size={13} color="#DC2626" />
+            </TouchableOpacity>
+          </View>
         </View>
-        <View style={styles.metricDivider} />
-        <View style={styles.metricItem}>
-          <Text style={styles.metricLabel}>Payment</Text>
-          <Text style={styles.metricVal}>{item.paymentMethod?.toUpperCase() || "COD"}</Text>
+
+        <View style={styles.customerRow}>
+          <User size={13} color={COLORS.textSecondary} />
+          <Text style={styles.customerName}>{item.customerName || "Customer"}</Text>
+          {item.customerPhone ? (
+            <Text style={styles.customerPhone}>• +91 {item.customerPhone}</Text>
+          ) : null}
         </View>
-        <View style={styles.metricDivider} />
-        <View style={styles.metricItem}>
-          <Text style={styles.metricLabel}>Pay Status</Text>
-          <Text style={[styles.metricVal, { color: item.paymentStatus === "paid" ? "#16A34A" : "#F59E0B" }]}>
-            {item.paymentStatus?.toUpperCase() || "PENDING"}
+
+        {item.customerAddress ? (
+          <Text style={styles.addressPreviewText} numberOfLines={1}>
+            📍 {item.customerAddress}
           </Text>
+        ) : null}
+
+        <View style={styles.metricsRow}>
+          <View style={styles.metricItem}>
+            <Text style={styles.metricLabel}>Total Amount</Text>
+            <Text style={styles.metricVal}>₹{(item.totalAmount ?? item.total ?? 0).toLocaleString("en-IN")}</Text>
+          </View>
+          <View style={styles.metricDivider} />
+          <View style={styles.metricItem}>
+            <Text style={styles.metricLabel}>Payment</Text>
+            <Text style={styles.metricVal}>{item.paymentMethod?.toUpperCase() || "COD"}</Text>
+          </View>
+          <View style={styles.metricDivider} />
+          <View style={styles.metricItem}>
+            <Text style={styles.metricLabel}>Pay Status</Text>
+            <Text style={[styles.metricVal, { color: item.paymentStatus === "paid" ? "#16A34A" : "#F59E0B" }]}>
+              {item.paymentStatus?.toUpperCase() || "PENDING"}
+            </Text>
+          </View>
         </View>
-      </View>
-    </TouchableOpacity>
-  );
+      </TouchableOpacity>
+    );
+  };
 
   const renderDeliverySplitItem = ({ item }: { item: any }) => (
     <View style={styles.orderCard}>
@@ -406,16 +526,34 @@ export default function AdminOrdersHubScreen() {
       {activeSection === "orders" ? (
         <>
           <View style={styles.filterSection}>
-            <View style={styles.searchBar}>
-              <Search size={16} color={COLORS.textTertiary} />
-              <TextInput
-                style={styles.searchInput}
-                placeholder="Search orders by ID, customer name, phone..."
-                placeholderTextColor={COLORS.textTertiary}
-                value={search}
-                onChangeText={setSearch}
-              />
-            </View>
+            {isSelectMode ? (
+              <View style={styles.batchHeaderBar}>
+                <View style={{ flexDirection: "row", alignItems: "center", gap: 8 }}>
+                  <TouchableOpacity onPress={handleSelectAllOrders} style={styles.selectAllBtn}>
+                    <CheckSquare2 size={16} color="#FFFFFF" />
+                    <Text style={styles.selectAllBtnText}>
+                      {selectedOrderIds.length === orders.length ? "Deselect All" : "Select All"}
+                    </Text>
+                  </TouchableOpacity>
+                  <Text style={styles.batchCountText}>Selected ({selectedOrderIds.length})</Text>
+                </View>
+
+                <TouchableOpacity onPress={handleCancelSelectMode} style={styles.cancelBatchBtn}>
+                  <X size={16} color="#64748B" />
+                </TouchableOpacity>
+              </View>
+            ) : (
+              <View style={styles.searchBar}>
+                <Search size={16} color={COLORS.textTertiary} />
+                <TextInput
+                  style={styles.searchInput}
+                  placeholder="Search orders by ID, customer name, phone..."
+                  placeholderTextColor={COLORS.textTertiary}
+                  value={search}
+                  onChangeText={setSearch}
+                />
+              </View>
+            )}
 
             <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.chipsScroll}>
               {["all", "pending", "confirmed", "dispatched", "delivered", "cancelled"].map((st) => (
@@ -444,6 +582,38 @@ export default function AdminOrdersHubScreen() {
               contentContainerStyle={styles.listContent}
               refreshControl={<RefreshControl refreshing={ordersRefetching} onRefresh={refetchOrders} tintColor={COLORS.accentBlue} />}
             />
+          )}
+
+          {/* Floating Bottom Batch Action Bar for Orders */}
+          {isSelectMode && selectedOrderIds.length > 0 && (
+            <View style={styles.floatingBatchBar}>
+              <TouchableOpacity
+                style={styles.batchActionBtnDispatch}
+                onPress={() => handleBulkUpdateOrderStatus("dispatched")}
+                disabled={bulkProcessing}
+              >
+                <Truck size={15} color="#2563EB" />
+                <Text style={[styles.batchActionBtnText, { color: "#2563EB" }]}>Dispatch ({selectedOrderIds.length})</Text>
+              </TouchableOpacity>
+
+              <TouchableOpacity
+                style={styles.batchActionBtnDelivered}
+                onPress={() => handleBulkUpdateOrderStatus("delivered")}
+                disabled={bulkProcessing}
+              >
+                <CheckCircle2 size={15} color="#16A34A" />
+                <Text style={[styles.batchActionBtnText, { color: "#16A34A" }]}>Deliver ({selectedOrderIds.length})</Text>
+              </TouchableOpacity>
+
+              <TouchableOpacity
+                style={styles.batchActionBtnDelete}
+                onPress={handleBulkDeleteOrders}
+                disabled={bulkProcessing}
+              >
+                <Trash2 size={15} color="#FFFFFF" />
+                <Text style={[styles.batchActionBtnText, { color: "#FFFFFF" }]}>Trash ({selectedOrderIds.length})</Text>
+              </TouchableOpacity>
+            </View>
           )}
         </>
       ) : activeSection === "deliveries" ? (
@@ -1289,11 +1459,92 @@ const styles = StyleSheet.create({
     borderRadius: 10,
     paddingVertical: 12,
     alignItems: "center",
-    marginTop: 10,
+    marginTop: 8,
   },
   closeOrderModalBtnText: {
     color: "#FFFFFF",
     fontSize: 13,
+    fontWeight: "800",
+  },
+  batchHeaderBar: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+    backgroundColor: "#EFF6FF",
+    borderWidth: 1,
+    borderColor: "#BFDBFE",
+    borderRadius: RADIUS.md,
+    paddingHorizontal: 12,
+    height: 44,
+  },
+  selectAllBtn: {
+    flexDirection: "row",
+    alignItems: "center",
+    backgroundColor: "#052A51",
+    paddingHorizontal: 10,
+    paddingVertical: 6,
+    borderRadius: 6,
+    gap: 6,
+  },
+  selectAllBtnText: {
+    color: "#FFFFFF",
+    fontSize: 11,
+    fontWeight: "800",
+  },
+  batchCountText: {
+    fontSize: 12,
+    fontWeight: "800",
+    color: "#1E40AF",
+  },
+  cancelBatchBtn: {
+    padding: 6,
+  },
+  floatingBatchBar: {
+    position: "absolute",
+    bottom: 20,
+    left: 16,
+    right: 16,
+    backgroundColor: "#052A51",
+    borderRadius: 16,
+    padding: 10,
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+    ...SHADOWS.md,
+    gap: 8,
+  },
+  batchActionBtnDispatch: {
+    flex: 1,
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    backgroundColor: "#EFF6FF",
+    paddingVertical: 10,
+    borderRadius: 10,
+    gap: 4,
+  },
+  batchActionBtnDelivered: {
+    flex: 1,
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    backgroundColor: "#DCFCE7",
+    paddingVertical: 10,
+    borderRadius: 10,
+    gap: 4,
+  },
+  batchActionBtnDelete: {
+    flex: 1,
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    backgroundColor: "#DC2626",
+    paddingVertical: 10,
+    borderRadius: 10,
+    gap: 4,
+  },
+  batchActionBtnText: {
+    fontSize: 11,
     fontWeight: "800",
   },
 });

@@ -488,7 +488,12 @@ export default function AddProductScreen() {
             <TextInput
               style={[styles.inputBox, { flex: 1 }]}
               value={primaryImageUrlInput}
-              onChangeText={setPrimaryImageUrlInput}
+              onChangeText={(val) => {
+                setPrimaryImageUrlInput(val);
+                if (val.trim()) {
+                  setImages((prev) => Array.from(new Set([val.trim(), ...prev])));
+                }
+              }}
               placeholder="https://example.com/tile.jpg"
             />
             <TouchableOpacity
@@ -502,12 +507,6 @@ export default function AddProductScreen() {
           </View>
 
           {images.length > 0 ? (
-            <ScrollView horizontal showsHorizontalScrollIndicator={false} style={{ marginTop: 8 }}>
-              {images.map((img, i) => (
-                <View key={i} style={styles.thumbWrapper}>
-                  <Image source={{ uri: img }} style={styles.thumb} contentFit="cover" />
-                  <TouchableOpacity
-                    style={styles.thumbRemove}
                     onPress={() => setImages((prev) => prev.filter((_, idx) => idx !== i))}
                   >
                     <X size={12} color="#FFFFFF" />

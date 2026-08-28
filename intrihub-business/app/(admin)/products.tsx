@@ -44,6 +44,11 @@ import {
   Camera,
   Scale,
   SlidersHorizontal,
+  CheckSquare2,
+  Square,
+  PauseCircle,
+  PlayCircle,
+  CheckCircle,
 } from "lucide-react-native";
 import {
   fetchAdminProducts,
@@ -91,6 +96,11 @@ export default function AdminProductsHubScreen() {
   const [search, setSearch] = useState("");
   const [statusFilter, setStatusFilter] = useState("all");
 
+  // Multi-Selection / Batch Selection Mode State (Hold to Mark)
+  const [isSelectMode, setIsSelectMode] = useState(false);
+  const [selectedProductIds, setSelectedProductIds] = useState<string[]>([]);
+  const [bulkProcessing, setBulkProcessing] = useState(false);
+
   // Product Add / Edit Modal State
   const [formModalOpen, setFormModalOpen] = useState(false);
   const [isEditing, setIsEditing] = useState(false);
@@ -111,9 +121,11 @@ export default function AdminProductsHubScreen() {
   const [material, setMaterial] = useState("Glazed Vitrified (GVT)");
   const [thickness, setThickness] = useState("9mm");
   const [imageUrl, setImageUrl] = useState("");
+  const [productImages, setProductImages] = useState<string[]>([]);
   const [status, setStatus] = useState("active");
   const [savingProduct, setSavingProduct] = useState(false);
   const [uploadingImage, setUploadingImage] = useState(false);
+  const [imageConfirmed, setImageConfirmed] = useState(false);
 
   // Multi-Variants State
   const [hasVariants, setHasVariants] = useState(false);
@@ -127,7 +139,11 @@ export default function AdminProductsHubScreen() {
   const [customOptionInput, setCustomOptionInput] = useState("");
   const [dropdownSearch, setDropdownSearch] = useState("");
 
-  // Custom Local Master Options (persisted in memory for fast add)
+  // Category Creator Modal with Image Upload
+  const [categoryImageUrl, setCategoryImageUrl] = useState("");
+  const [uploadingCatImage, setUploadingCatImage] = useState(false);
+
+  // Custom Local Master Options
   const [customUnits, setCustomUnits] = useState<string[]>([]);
   const [customSizes, setCustomSizes] = useState<string[]>([]);
   const [customFinishes, setCustomFinishes] = useState<string[]>([]);
@@ -186,6 +202,97 @@ export default function AdminProductsHubScreen() {
   const allFinishes = Array.from(new Set([...CATALOG_FINISHES, ...customFinishes]));
   const allMaterials = Array.from(new Set([...CATALOG_MATERIALS, ...customMaterials]));
 
+  // Batch Multi-Select Handlers
+  const handleToggleSelectProduct = (id: string) => {
+    setSelectedProductIds((prev) => {
+      if (prev.includes(id)) {
+        const next = prev.filter((i) => i !== id);
+        if (next.length === 0) setIsSelectMode(false);
+        return next;
+      } else {
+        setIsSelectMode(true);
+        return [...prev, id];
+      }
+    });
+  };
+
+  const handleLongPressProduct = (id: string) => {
+    setIsSelectMode(true);
+    if (!selectedProductIds.includes(id)) {
+      setSelectedProductIds((prev) => [...prev, id]);
+    }
+  };
+
+  const handleSelectAllProducts = () => {
+    if (selectedProductIds.length === products.length) {
+      setSelectedProductIds([]);
+      setIsSelectMode(false);
+    } else {
+      setSelectedProductIds(products.map((p: any) => p.id));
+      setIsSelectMode(true);
+    }
+  };
+
+  const handleCancelSelectMode = () => {
+    setSelectedProductIds([]);
+    setIsSelectMode(false);
+  };
+
+  const handleBulkDelete = () => {
+    if (selectedProductIds.length === 0) return;
+    Alert.alert(
+      "Move Selected to Trash",
+      `Move ${selectedProductIds.length} selected product(s) to Recycle Bin?\n\nThey can be restored from the Recycle Bin within 3 days.`,
+      [
+        { text: "Cancel", style: "cancel" },
+        {
+          text: `Move ${selectedProductIds.length} Items to Trash`,
+          style: "destructive",
+          onPress: async () => {
+            setBulkProcessing(true);
+            try {
+              for (const id of selectedProductIds) {
+                await deleteAdminProduct(id);
+              }
+              setBulkProcessing(false);
+              setSelectedProductIds([]);
+              setIsSelectMode(false);
+              refetchProducts();
+              queryClient.invalidateQueries({ queryKey: ["admin-products"] });
+              queryClient.invalidateQueries({ queryKey: ["admin-trash"] });
+              Alert.alert("Bulk Delete 🎉", `${selectedProductIds.length} items moved to Recycle Bin.`);
+            } catch (e: any) {
+              setBulkProcessing(false);
+              Alert.alert("Error", e?.message || "Failed bulk delete");
+            }
+          },
+        },
+      ]
+    );
+  };
+
+  const handleBulkToggleStatus = async (targetStatus: "active" | "draft") => {
+    if (selectedProductIds.length === 0) return;
+    setBulkProcessing(true);
+    try {
+      for (const id of selectedProductIds) {
+        await updateAdminProduct(id, { status: targetStatus });
+      }
+      setBulkProcessing(false);
+      setSelectedProductIds([]);
+      setIsSelectMode(false);
+      refetchProducts();
+      queryClient.invalidateQueries({ queryKey: ["admin-products"] });
+      Alert.alert(
+        "Bulk Update 🎉",
+        `Marked ${selectedProductIds.length} items as ${targetStatus.toUpperCase()}.`
+      );
+    } catch (e: any) {
+      setBulkProcessing(false);
+      Alert.alert("Error", e?.message || "Failed bulk status update");
+    }
+  };
+
   // Open Create Product Modal
   const handleOpenAdd = () => {
     setIsEditing(false);
@@ -205,6 +312,8 @@ export default function AdminProductsHubScreen() {
     setMaterial("Glazed Vitrified (GVT)");
     setThickness("9mm");
     setImageUrl("");
+    setProductImages([]);
+    setImageConfirmed(false);
     setStatus("active");
     setHasVariants(false);
     setVariants([
@@ -240,6 +349,8 @@ export default function AdminProductsHubScreen() {
     setMaterial(p.material || "Glazed Vitrified (GVT)");
     setThickness(p.thickness || "9mm");
     setImageUrl(p.images?.[0] || "");
+    setProductImages(p.images && p.images.length > 0 ? p.images : p.images?.[0] ? [p.images[0]] : []);
+    setImageConfirmed(Boolean(p.images && p.images.length > 0));
     setStatus(p.status || "active");
     setHasVariants(false);
     setVariants([
@@ -316,13 +427,63 @@ export default function AdminProductsHubScreen() {
 
         if (res.success && res.url) {
           setImageUrl(res.url);
-          Alert.alert("Uploaded 🎉", "Product primary image uploaded!");
+          setProductImages((prev) => Array.from(new Set([res.url!, ...prev])));
+          setImageConfirmed(true);
+          Alert.alert("Image Attached 🎉", "Product image uploaded & confirmed!");
         } else {
           Alert.alert("Upload Error", res.error || "Could not upload image");
         }
       }
     } catch (e: any) {
       setUploadingImage(false);
+      Alert.alert("Error", e?.message || "Something went wrong during image upload");
+    }
+  };
+
+  // Remove Uploaded Image Helper
+  const handleRemoveProductImage = (imgToRemove?: string) => {
+    if (!imgToRemove) {
+      setImageUrl("");
+      setProductImages([]);
+      setImageConfirmed(false);
+      return;
+    }
+    const updated = productImages.filter((img) => img !== imgToRemove);
+    setProductImages(updated);
+    if (imageUrl === imgToRemove) {
+      setImageUrl(updated[0] || "");
+      setImageConfirmed(updated.length > 0);
+    }
+  };
+
+  // Category Image Upload Helper
+  const handlePickCategoryImage = async () => {
+    try {
+      const result = await ImagePicker.launchImageLibraryAsync({
+        mediaTypes: ImagePicker.MediaTypeOptions.Images,
+        allowsEditing: true,
+        quality: 0.8,
+      });
+
+      if (!result.canceled && result.assets?.[0]?.uri) {
+        const asset = result.assets[0];
+        setUploadingCatImage(true);
+        const res = await uploadBusinessImage(
+          asset.uri,
+          asset.fileName || `cat-${Date.now()}.jpg`,
+          asset.mimeType || "image/jpeg"
+        );
+        setUploadingCatImage(false);
+
+        if (res.success && res.url) {
+          setCategoryImageUrl(res.url);
+          Alert.alert("Category Image Attached 🎉", "Image uploaded successfully!");
+        } else {
+          Alert.alert("Upload Error", res.error || "Could not upload category image");
+        }
+      }
+    } catch (e: any) {
+      setUploadingCatImage(false);
       Alert.alert("Error", e?.message || "Something went wrong during image upload");
     }
   };
@@ -374,12 +535,14 @@ export default function AdminProductsHubScreen() {
           name: val,
           slug,
           description: "Admin added custom category",
+          image: categoryImageUrl.trim() || undefined,
         });
         if (res.success) {
           refetchCats();
           setCategoryName(val);
           setCategorySlug(slug);
           setCustomOptionInput("");
+          setCategoryImageUrl("");
           setDropdownType(null);
           Alert.alert("Category Added 🎉", `"${val}" is now active in category dropdown.`);
         } else {
@@ -432,6 +595,11 @@ export default function AdminProductsHubScreen() {
       return;
     }
 
+    const finalImgs = [...productImages];
+    if (imageUrl.trim() && !finalImgs.includes(imageUrl.trim())) {
+      finalImgs.unshift(imageUrl.trim());
+    }
+
     setSavingProduct(true);
     try {
       const payload: any = {
@@ -449,7 +617,7 @@ export default function AdminProductsHubScreen() {
         finish,
         material,
         thickness,
-        images: imageUrl.trim() ? [imageUrl.trim()] : [],
+        images: finalImgs,
         status,
         variants: hasVariants ? variants : undefined,
       };
@@ -481,7 +649,7 @@ export default function AdminProductsHubScreen() {
     }
   };
 
-  // Handle Delete Product
+  // Handle Delete Single Product
   const handleDeleteProduct = (id: string, prodName: string) => {
     Alert.alert(
       "Move to Recycle Bin",
@@ -601,19 +769,44 @@ export default function AdminProductsHubScreen() {
   };
 
   const renderProductItem = ({ item }: { item: Product }) => {
+    const isSelected = selectedProductIds.includes(item.id);
     const validImg =
-      item.images?.[0] && (item.images[0].startsWith("http://") || item.images[0].startsWith("https://") || item.images[0].startsWith("data:"))
+      item.images && item.images.length > 0 && item.images[0] && item.images[0].trim() !== ""
         ? item.images[0]
         : "https://images.unsplash.com/photo-1600585154340-be6161a56a0c?q=80&w=600&auto=format&fit=crop";
 
     return (
-      <View style={styles.productCard}>
+      <TouchableOpacity
+        style={[styles.productCard, isSelected && styles.productCardSelected]}
+        onPress={() => {
+          if (isSelectMode) {
+            handleToggleSelectProduct(item.id);
+          } else {
+            handleOpenEdit(item);
+          }
+        }}
+        onLongPress={() => handleLongPressProduct(item.id)}
+        activeOpacity={0.85}
+      >
         <View style={styles.productRow}>
+          {/* Checkbox indicator for Batch Selection */}
+          <TouchableOpacity
+            style={styles.checkboxContainer}
+            onPress={() => handleToggleSelectProduct(item.id)}
+          >
+            {isSelected ? (
+              <CheckSquare2 size={20} color="#2563EB" />
+            ) : (
+              <Square size={20} color="#CBD5E1" />
+            )}
+          </TouchableOpacity>
+
           <Image
             source={{ uri: validImg }}
             style={styles.productImage}
             contentFit="cover"
           />
+
           <View style={styles.productInfo}>
             <View style={styles.badgeRow}>
               <View style={[styles.statusBadge, item.status === "active" ? styles.statusActive : styles.statusDraft]}>
@@ -644,7 +837,7 @@ export default function AdminProductsHubScreen() {
         <View style={styles.cardActions}>
           <TouchableOpacity style={styles.editBtn} onPress={() => handleOpenEdit(item)}>
             <Edit2 size={13} color={COLORS.accentBlue} />
-            <Text style={styles.editBtnText}>Edit Item Details</Text>
+            <Text style={styles.editBtnText}>Edit Item</Text>
           </TouchableOpacity>
 
           <TouchableOpacity style={styles.deleteBtn} onPress={() => handleDeleteProduct(item.id, item.name)}>
@@ -652,13 +845,13 @@ export default function AdminProductsHubScreen() {
             <Text style={styles.deleteBtnText}>Delete</Text>
           </TouchableOpacity>
         </View>
-      </View>
+      </TouchableOpacity>
     );
   };
 
   const renderApprovalItem = ({ item }: { item: any }) => {
     const validImg =
-      item.images?.[0] && (item.images[0].startsWith("http://") || item.images[0].startsWith("https://") || item.images[0].startsWith("data:"))
+      item.images && item.images.length > 0 && item.images[0] && item.images[0].trim() !== ""
         ? item.images[0]
         : "https://images.unsplash.com/photo-1600585154340-be6161a56a0c?q=80&w=600&auto=format&fit=crop";
 
@@ -713,7 +906,7 @@ export default function AdminProductsHubScreen() {
       <View style={styles.header}>
         <View style={{ flex: 1 }}>
           <Text style={styles.headerTitle}>Products Catalog Hub</Text>
-          <Text style={styles.headerSubtitle}>Manage catalog items, seller approvals & bulk CSV</Text>
+          <Text style={styles.headerSubtitle}>Hold item to select multiple for batch actions</Text>
         </View>
         <TouchableOpacity style={styles.headerAddBtn} onPress={handleOpenAdd}>
           <Plus size={16} color="#FFFFFF" />
@@ -758,16 +951,35 @@ export default function AdminProductsHubScreen() {
       {activeSection === "catalog" ? (
         <>
           <View style={styles.filterSection}>
-            <View style={styles.searchBar}>
-              <Search size={16} color={COLORS.textTertiary} />
-              <TextInput
-                style={styles.searchInput}
-                placeholder="Search products by title, category..."
-                placeholderTextColor={COLORS.textTertiary}
-                value={search}
-                onChangeText={setSearch}
-              />
-            </View>
+            {/* Batch Selection Action Header */}
+            {isSelectMode ? (
+              <View style={styles.batchHeaderBar}>
+                <View style={{ flexDirection: "row", alignItems: "center", gap: 8 }}>
+                  <TouchableOpacity onPress={handleSelectAllProducts} style={styles.selectAllBtn}>
+                    <CheckSquare2 size={16} color="#FFFFFF" />
+                    <Text style={styles.selectAllBtnText}>
+                      {selectedProductIds.length === products.length ? "Deselect All" : "Select All"}
+                    </Text>
+                  </TouchableOpacity>
+                  <Text style={styles.batchCountText}>Selected ({selectedProductIds.length})</Text>
+                </View>
+
+                <TouchableOpacity onPress={handleCancelSelectMode} style={styles.cancelBatchBtn}>
+                  <X size={16} color="#64748B" />
+                </TouchableOpacity>
+              </View>
+            ) : (
+              <View style={styles.searchBar}>
+                <Search size={16} color={COLORS.textTertiary} />
+                <TextInput
+                  style={styles.searchInput}
+                  placeholder="Search products by title, category..."
+                  placeholderTextColor={COLORS.textTertiary}
+                  value={search}
+                  onChangeText={setSearch}
+                />
+              </View>
+            )}
 
             <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.chipsScroll}>
               {["all", "active", "draft", "out_of_stock"].map((st) => (
@@ -796,6 +1008,38 @@ export default function AdminProductsHubScreen() {
               contentContainerStyle={styles.listContent}
               refreshControl={<RefreshControl refreshing={productsRefetching} onRefresh={refetchProducts} tintColor={COLORS.accentBlue} />}
             />
+          )}
+
+          {/* Floating Bottom Batch Action Bar */}
+          {isSelectMode && selectedProductIds.length > 0 && (
+            <View style={styles.floatingBatchBar}>
+              <TouchableOpacity
+                style={styles.batchActionBtnPause}
+                onPress={() => handleBulkToggleStatus("draft")}
+                disabled={bulkProcessing}
+              >
+                <PauseCircle size={15} color="#D97706" />
+                <Text style={[styles.batchActionBtnText, { color: "#D97706" }]}>Pause ({selectedProductIds.length})</Text>
+              </TouchableOpacity>
+
+              <TouchableOpacity
+                style={styles.batchActionBtnActivate}
+                onPress={() => handleBulkToggleStatus("active")}
+                disabled={bulkProcessing}
+              >
+                <PlayCircle size={15} color="#16A34A" />
+                <Text style={[styles.batchActionBtnText, { color: "#16A34A" }]}>Activate ({selectedProductIds.length})</Text>
+              </TouchableOpacity>
+
+              <TouchableOpacity
+                style={styles.batchActionBtnDelete}
+                onPress={handleBulkDelete}
+                disabled={bulkProcessing}
+              >
+                <Trash2 size={15} color="#FFFFFF" />
+                <Text style={[styles.batchActionBtnText, { color: "#FFFFFF" }]}>Trash ({selectedProductIds.length})</Text>
+              </TouchableOpacity>
+            </View>
           )}
         </>
       ) : activeSection === "approvals" ? (
@@ -871,7 +1115,7 @@ export default function AdminProductsHubScreen() {
         </ScrollView>
       )}
 
-      {/* Comprehensive Product Add & Edit Modal (with Clean Dropdowns & Multi-Variants) */}
+      {/* Comprehensive Product Add & Edit Modal (with Multi-Image Manager) */}
       <Modal
         visible={formModalOpen}
         animationType="slide"
@@ -904,6 +1148,7 @@ export default function AdminProductsHubScreen() {
                 onPress={() => {
                   setDropdownType("category");
                   setCustomOptionInput("");
+                  setCategoryImageUrl("");
                   setDropdownSearch("");
                 }}
                 activeOpacity={0.85}
@@ -1034,13 +1279,19 @@ export default function AdminProductsHubScreen() {
                 </View>
               </View>
 
-              {/* Primary Image with Upload & URL */}
-              <Text style={[styles.inputLabel, { marginTop: 12 }]}>Primary Product Image</Text>
+              {/* Product Image Manager (Upload, Remove & Done Button) */}
+              <Text style={[styles.inputLabel, { marginTop: 14 }]}>Product Primary Images *</Text>
               <View style={{ flexDirection: "row", gap: 8 }}>
                 <TextInput
                   style={[styles.inputBox, { flex: 1 }]}
                   value={imageUrl}
-                  onChangeText={setImageUrl}
+                  onChangeText={(val) => {
+                    setImageUrl(val);
+                    if (val.trim()) {
+                      setProductImages((prev) => Array.from(new Set([val.trim(), ...prev])));
+                      setImageConfirmed(true);
+                    }
+                  }}
                   placeholder="https://example.com/tile-image.jpg"
                 />
                 <TouchableOpacity
@@ -1052,9 +1303,40 @@ export default function AdminProductsHubScreen() {
                   <Text style={styles.uploadMiniBtnText}>Upload</Text>
                 </TouchableOpacity>
               </View>
-              {imageUrl ? (
-                <View style={styles.imagePreviewBox}>
-                  <Image source={{ uri: imageUrl }} style={styles.imagePreviewImg} contentFit="cover" />
+
+              {/* Image Manager Cards with Remove & Done buttons */}
+              {productImages.length > 0 ? (
+                <View style={{ marginTop: 10, gap: 8 }}>
+                  <View style={{ flexDirection: "row", justifyContent: "space-between", alignItems: "center" }}>
+                    <View style={styles.confirmedBadge}>
+                      <CheckCircle size={12} color="#16A34A" />
+                      <Text style={styles.confirmedBadgeText}>
+                        {productImages.length} Image(s) Attached & Confirmed
+                      </Text>
+                    </View>
+
+                    <TouchableOpacity
+                      style={styles.doneImageBtn}
+                      onPress={() => Alert.alert("Confirmed 🎉", "Product images saved & ready for publishing!")}
+                    >
+                      <Check size={12} color="#FFFFFF" />
+                      <Text style={styles.doneImageBtnText}>Done</Text>
+                    </TouchableOpacity>
+                  </View>
+
+                  <ScrollView horizontal showsHorizontalScrollIndicator={false} style={{ gap: 8 }}>
+                    {productImages.map((imgUri, idx) => (
+                      <View key={idx} style={styles.imageCardPreviewBox}>
+                        <Image source={{ uri: imgUri }} style={styles.imageCardPreviewImg} contentFit="cover" />
+                        <TouchableOpacity
+                          style={styles.imageCardRemoveBtn}
+                          onPress={() => handleRemoveProductImage(imgUri)}
+                        >
+                          <Trash2 size={12} color="#FFFFFF" />
+                        </TouchableOpacity>
+                      </View>
+                    ))}
+                  </ScrollView>
                 </View>
               ) : null}
 
@@ -1189,7 +1471,7 @@ export default function AdminProductsHubScreen() {
                           </View>
                         </View>
 
-                        {/* Variant Image Upload & URL */}
+                        {/* Variant Image Upload & URL with Remove button */}
                         <Text style={[styles.variantLabel, { marginTop: 8 }]}>Variant Image URL / Upload</Text>
                         <View style={{ flexDirection: "row", gap: 8, alignItems: "center" }}>
                           <TextInput
@@ -1209,6 +1491,12 @@ export default function AdminProductsHubScreen() {
                         {v.image ? (
                           <View style={styles.variantImagePreview}>
                             <Image source={{ uri: v.image }} style={styles.variantImagePreviewImg} contentFit="cover" />
+                            <TouchableOpacity
+                              style={styles.variantRemoveImgBtn}
+                              onPress={() => handleUpdateVariant(idx, "image", "")}
+                            >
+                              <X size={10} color="#FFFFFF" />
+                            </TouchableOpacity>
                           </View>
                         ) : null}
                       </View>
@@ -1241,14 +1529,14 @@ export default function AdminProductsHubScreen() {
         </View>
       </Modal>
 
-      {/* UNIVERSAL REUSABLE DROPDOWN PICKER MODAL (WITH "+ ADD NEW" BUTTON) */}
+      {/* UNIVERSAL REUSABLE DROPDOWN PICKER MODAL (WITH CATEGORY IMAGE UPLOADER) */}
       <Modal visible={dropdownType !== null} transparent animationType="fade">
         <View style={styles.modalOverlay}>
           <View style={styles.dropdownModalBox}>
             <View style={styles.dropdownModalHeader}>
               <Text style={styles.dropdownModalTitle}>
                 {dropdownType === "category"
-                  ? "Select Category"
+                  ? "Select / Add Category"
                   : dropdownType === "unit"
                   ? "Select Unit of Sale"
                   : dropdownType === "size" || dropdownType === "variant_size"
@@ -1264,19 +1552,41 @@ export default function AdminProductsHubScreen() {
               </TouchableOpacity>
             </View>
 
-            {/* Inline Add New Option Box */}
+            {/* Inline Add New Option Box with Category Image Uploader */}
             {dropdownType !== "variant_color" && (
-              <View style={styles.addOptionInlineBox}>
-                <TextInput
-                  style={styles.addOptionInput}
-                  value={customOptionInput}
-                  onChangeText={setCustomOptionInput}
-                  placeholder={`+ Add new ${dropdownType?.replace("variant_", "") || "item"}...`}
-                />
-                <TouchableOpacity style={styles.addOptionBtn} onPress={handleAddCustomOption}>
-                  <Plus size={14} color="#FFFFFF" />
-                  <Text style={styles.addOptionBtnText}>Add</Text>
-                </TouchableOpacity>
+              <View style={{ gap: 6 }}>
+                <View style={styles.addOptionInlineBox}>
+                  <TextInput
+                    style={styles.addOptionInput}
+                    value={customOptionInput}
+                    onChangeText={setCustomOptionInput}
+                    placeholder={`+ Add new ${dropdownType?.replace("variant_", "") || "item"}...`}
+                  />
+                  <TouchableOpacity style={styles.addOptionBtn} onPress={handleAddCustomOption}>
+                    <Plus size={14} color="#FFFFFF" />
+                    <Text style={styles.addOptionBtnText}>Add</Text>
+                  </TouchableOpacity>
+                </View>
+
+                {/* Category Image Upload Option */}
+                {dropdownType === "category" && (
+                  <View style={styles.catImageUploadRow}>
+                    <TextInput
+                      style={[styles.addOptionInput, { flex: 1, height: 36, backgroundColor: "#FFFFFF", borderWidth: 1, borderColor: "#CBD5E1", borderRadius: 6 }]}
+                      value={categoryImageUrl}
+                      onChangeText={setCategoryImageUrl}
+                      placeholder="Category Image URL (optional)..."
+                    />
+                    <TouchableOpacity
+                      style={styles.catImageUploadBtn}
+                      onPress={handlePickCategoryImage}
+                      disabled={uploadingCatImage}
+                    >
+                      <Camera size={12} color="#052A51" />
+                      <Text style={styles.catImageUploadBtnText}>Image</Text>
+                    </TouchableOpacity>
+                  </View>
+                )}
               </View>
             )}
 
@@ -1292,7 +1602,7 @@ export default function AdminProductsHubScreen() {
             </View>
 
             {/* List of Options */}
-            <ScrollView style={{ maxHeight: 320 }} contentContainerStyle={{ gap: 4, paddingVertical: 4 }}>
+            <ScrollView style={{ maxHeight: 300 }} contentContainerStyle={{ gap: 4, paddingVertical: 4 }}>
               {dropdownType === "category" ? (
                 categories
                   .filter((c: any) => c.name.toLowerCase().includes(dropdownSearch.toLowerCase()))
@@ -1309,9 +1619,14 @@ export default function AdminProductsHubScreen() {
                           setDropdownType(null);
                         }}
                       >
-                        <Text style={[styles.dropdownItemText, isSelected && styles.dropdownItemTextSelected]}>
-                          {cat.name}
-                        </Text>
+                        <View style={{ flexDirection: "row", alignItems: "center", gap: 8 }}>
+                          {cat.image ? (
+                            <Image source={{ uri: cat.image }} style={{ width: 24, height: 24, borderRadius: 4 }} contentFit="cover" />
+                          ) : null}
+                          <Text style={[styles.dropdownItemText, isSelected && styles.dropdownItemTextSelected]}>
+                            {cat.name}
+                          </Text>
+                        </View>
                         {isSelected && <Check size={16} color="#052A51" />}
                       </TouchableOpacity>
                     );
@@ -1525,6 +1840,39 @@ const styles = StyleSheet.create({
     borderBottomColor: COLORS.border,
     gap: SPACING.sm,
   },
+  batchHeaderBar: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+    backgroundColor: "#EFF6FF",
+    borderWidth: 1,
+    borderColor: "#BFDBFE",
+    borderRadius: RADIUS.md,
+    paddingHorizontal: 12,
+    height: 44,
+  },
+  selectAllBtn: {
+    flexDirection: "row",
+    alignItems: "center",
+    backgroundColor: "#052A51",
+    paddingHorizontal: 10,
+    paddingVertical: 6,
+    borderRadius: 6,
+    gap: 6,
+  },
+  selectAllBtnText: {
+    color: "#FFFFFF",
+    fontSize: 11,
+    fontWeight: "800",
+  },
+  batchCountText: {
+    fontSize: 12,
+    fontWeight: "800",
+    color: "#1E40AF",
+  },
+  cancelBatchBtn: {
+    padding: 6,
+  },
   searchBar: {
     flexDirection: "row",
     alignItems: "center",
@@ -1565,7 +1913,7 @@ const styles = StyleSheet.create({
   listContent: {
     padding: SPACING.md,
     gap: SPACING.md,
-    paddingBottom: 40,
+    paddingBottom: 80,
   },
   productCard: {
     backgroundColor: COLORS.surface,
@@ -1576,13 +1924,23 @@ const styles = StyleSheet.create({
     ...SHADOWS.sm,
     gap: SPACING.sm,
   },
+  productCardSelected: {
+    borderColor: "#2563EB",
+    backgroundColor: "#F0F6FF",
+    borderWidth: 1.5,
+  },
+  checkboxContainer: {
+    justifyContent: "center",
+    paddingRight: 4,
+  },
   productRow: {
     flexDirection: "row",
-    gap: SPACING.md,
+    gap: SPACING.sm,
+    alignItems: "center",
   },
   productImage: {
-    width: 70,
-    height: 70,
+    width: 66,
+    height: 66,
     borderRadius: RADIUS.md,
     backgroundColor: "#F1F5F9",
   },
@@ -1690,6 +2048,54 @@ const styles = StyleSheet.create({
     fontSize: 11,
     fontWeight: "700",
     color: "#DC2626",
+  },
+  floatingBatchBar: {
+    position: "absolute",
+    bottom: 20,
+    left: 16,
+    right: 16,
+    backgroundColor: "#052A51",
+    borderRadius: 16,
+    padding: 10,
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+    ...SHADOWS.md,
+    gap: 8,
+  },
+  batchActionBtnPause: {
+    flex: 1,
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    backgroundColor: "#FEF3C7",
+    paddingVertical: 10,
+    borderRadius: 10,
+    gap: 4,
+  },
+  batchActionBtnActivate: {
+    flex: 1,
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    backgroundColor: "#DCFCE7",
+    paddingVertical: 10,
+    borderRadius: 10,
+    gap: 4,
+  },
+  batchActionBtnDelete: {
+    flex: 1,
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    backgroundColor: "#DC2626",
+    paddingVertical: 10,
+    borderRadius: 10,
+    gap: 4,
+  },
+  batchActionBtnText: {
+    fontSize: 11,
+    fontWeight: "800",
   },
   approvalActions: {
     flexDirection: "row",
@@ -1909,18 +2315,58 @@ const styles = StyleSheet.create({
     fontWeight: "800",
     color: "#052A51",
   },
-  imagePreviewBox: {
-    marginTop: 8,
+  confirmedBadge: {
+    flexDirection: "row",
+    alignItems: "center",
+    backgroundColor: "#DCFCE7",
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    borderRadius: 6,
+    gap: 4,
+  },
+  confirmedBadgeText: {
+    fontSize: 11,
+    fontWeight: "800",
+    color: "#166534",
+  },
+  doneImageBtn: {
+    flexDirection: "row",
+    alignItems: "center",
+    backgroundColor: "#16A34A",
+    paddingHorizontal: 10,
+    paddingVertical: 4,
+    borderRadius: 6,
+    gap: 4,
+  },
+  doneImageBtnText: {
+    fontSize: 11,
+    fontWeight: "800",
+    color: "#FFFFFF",
+  },
+  imageCardPreviewBox: {
+    position: "relative",
+    width: 80,
+    height: 80,
     borderRadius: 10,
     overflow: "hidden",
     borderWidth: 1,
-    borderColor: "#E2E8F0",
-    height: 120,
+    borderColor: "#CBD5E1",
     backgroundColor: "#F1F5F9",
   },
-  imagePreviewImg: {
+  imageCardPreviewImg: {
     width: "100%",
     height: "100%",
+  },
+  imageCardRemoveBtn: {
+    position: "absolute",
+    top: 4,
+    right: 4,
+    backgroundColor: "#DC2626",
+    width: 20,
+    height: 20,
+    borderRadius: 10,
+    alignItems: "center",
+    justifyContent: "center",
   },
   variantSectionTitle: {
     fontSize: 14,
@@ -2032,6 +2478,7 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   variantImagePreview: {
+    position: "relative",
     marginTop: 4,
     borderRadius: 6,
     overflow: "hidden",
@@ -2043,6 +2490,17 @@ const styles = StyleSheet.create({
   variantImagePreviewImg: {
     width: "100%",
     height: "100%",
+  },
+  variantRemoveImgBtn: {
+    position: "absolute",
+    top: 2,
+    right: 2,
+    backgroundColor: "#DC2626",
+    width: 16,
+    height: 16,
+    borderRadius: 8,
+    alignItems: "center",
+    justify.content: "center",
   },
   addVariantBtn: {
     flexDirection: "row",
@@ -2131,6 +2589,27 @@ const styles = StyleSheet.create({
     color: "#FFFFFF",
     fontSize: 11,
     fontWeight: "800",
+  },
+  catImageUploadRow: {
+    flexDirection: "row",
+    gap: 6,
+    alignItems: "center",
+  },
+  catImageUploadBtn: {
+    flexDirection: "row",
+    alignItems: "center",
+    backgroundColor: "#EFF6FF",
+    borderWidth: 1,
+    borderColor: "#BFDBFE",
+    borderRadius: 6,
+    paddingHorizontal: 10,
+    height: 36,
+    gap: 4,
+  },
+  catImageUploadBtnText: {
+    fontSize: 11,
+    fontWeight: "800",
+    color: "#052A51",
   },
   dropdownSearchBox: {
     flexDirection: "row",
