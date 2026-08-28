@@ -166,3 +166,97 @@ export const CATALOG_MATERIALS = [
   "Aluminum",
   "Standard Construction",
 ];
+
+export function resolveColorHex(colorName: string): string {
+  if (!colorName) return "#64748B";
+  const trimmed = colorName.trim();
+  if (trimmed.startsWith("#") && (trimmed.length === 4 || trimmed.length === 7)) {
+    return trimmed;
+  }
+  const lower = trimmed.toLowerCase();
+
+  // Match in CATALOG_COLOURS
+  const found = CATALOG_COLOURS.find(
+    (c) =>
+      c.name.toLowerCase() === lower ||
+      lower.includes(c.name.toLowerCase()) ||
+      c.name.toLowerCase().includes(lower)
+  );
+  if (found) return found.hexCode;
+
+  // Extended color dictionary
+  const EXTENDED_MAP: Record<string, string> = {
+    white: "#FFFFFF",
+    ivory: "#FFFFF0",
+    cream: "#FFFDD0",
+    beige: "#F5F5DC",
+    grey: "#808080",
+    gray: "#808080",
+    charcoal: "#36454F",
+    black: "#1A1A1A",
+    silver: "#C0C0C0",
+    chrome: "#E8E8E8",
+    gold: "#FFD700",
+    golden: "#DAA520",
+    bronze: "#CD7F32",
+    copper: "#B87333",
+    brass: "#B5A642",
+    brown: "#8B4513",
+    walnut: "#5C4033",
+    teak: "#B38B6D",
+    oak: "#DEB887",
+    mahogany: "#C04000",
+    wood: "#C19A6B",
+    blue: "#2563EB",
+    navy: "#000080",
+    sky: "#87CEEB",
+    cyan: "#00FFFF",
+    teal: "#008080",
+    turquoise: "#40E0D0",
+    green: "#16A34A",
+    emerald: "#50C878",
+    olive: "#808000",
+    lime: "#32CD32",
+    mint: "#98FF98",
+    forest: "#228B22",
+    yellow: "#FACC15",
+    lemon: "#FFF44F",
+    mustard: "#FFDB58",
+    amber: "#FFBF00",
+    orange: "#EA580C",
+    peach: "#FFE5B4",
+    coral: "#FF7F50",
+    terracotta: "#E2725B",
+    rust: "#B7410E",
+    red: "#DC2626",
+    crimson: "#DC143C",
+    ruby: "#E0115F",
+    maroon: "#800000",
+    burgundy: "#800020",
+    wine: "#722F37",
+    pink: "#EC4899",
+    rose: "#FF007F",
+    magenta: "#FF00FF",
+    purple: "#9333EA",
+    violet: "#8F00FF",
+    lavender: "#E6E6FA",
+    indigo: "#4B0082",
+    clear: "#E2E8F0",
+    transparent: "#CBD5E1",
+    multi: "#6366F1",
+    multicolor: "#6366F1",
+    multicolour: "#6366F1",
+  };
+
+  for (const [key, hex] of Object.entries(EXTENDED_MAP)) {
+    if (lower.includes(key)) return hex;
+  }
+
+  // Consistent fallback hash
+  let hash = 0;
+  for (let i = 0; i < lower.length; i++) {
+    hash = lower.charCodeAt(i) + ((hash << 5) - hash);
+  }
+  const c = (hash & 0x00ffffff).toString(16).toUpperCase();
+  return "#" + "00000".substring(0, 6 - c.length) + c;
+}
