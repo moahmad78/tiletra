@@ -849,3 +849,62 @@ export async function deleteAdminTrashItemPermanently(
   });
   return res.data;
 }
+
+// 19. Admin Revenue & Vendor Breakdown Analytics
+export async function fetchAdminRevenueAnalytics(period: string = "today"): Promise<{
+  success: boolean;
+  period?: string;
+  summary?: {
+    platformTotalGross: number;
+    platformTodayGross: number;
+    platformTotalCommission: number;
+    platformTodayCommission: number;
+    activeVendorsCount: number;
+    totalOrdersCount: number;
+  };
+  vendors?: any[];
+  error?: string;
+}> {
+  const res = await apiClient.get("/api/mobile/admin/revenue", {
+    params: { period },
+  });
+  return res.data;
+}
+
+// 20. Admin Vendor Settlements & Commission Engine
+export async function fetchAdminSettlements(): Promise<{
+  success: boolean;
+  vendors?: any[];
+  error?: string;
+}> {
+  const res = await apiClient.get("/api/mobile/admin/settlements");
+  return res.data;
+}
+
+export async function updateAdminSettlementConfig(data: {
+  vendorId: string;
+  commissionRate?: number;
+  settlementDays?: number;
+  autopay?: boolean;
+}): Promise<{
+  success: boolean;
+  message?: string;
+  error?: string;
+}> {
+  const res = await apiClient.patch("/api/mobile/admin/settlements", data);
+  return res.data;
+}
+
+export async function executeAdminVendorPayout(data: {
+  vendorId: string;
+  customAmount?: number;
+  notes?: string;
+}): Promise<{
+  success: boolean;
+  message?: string;
+  payout?: any;
+  error?: string;
+}> {
+  const res = await apiClient.post("/api/mobile/admin/settlements", data);
+  return res.data;
+}

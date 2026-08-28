@@ -52,6 +52,9 @@ import {
   Camera,
   ToggleLeft,
   ToggleRight,
+  CreditCard,
+  Banknote,
+  Check,
 } from "lucide-react-native";
 import { useAuthStore } from "../../src/store/authStore";
 import { updateProfile as apiUpdateProfile, uploadBusinessImage } from "../../src/api/auth";
@@ -74,6 +77,9 @@ import {
   fetchAdminTrash,
   restoreAdminTrashItem,
   deleteAdminTrashItemPermanently,
+  fetchAdminSettlements,
+  updateAdminSettlementConfig,
+  executeAdminVendorPayout,
 } from "../../src/api/admin";
 import { COLORS, SPACING, RADIUS, SHADOWS } from "../../src/constants/theme";
 
@@ -118,6 +124,15 @@ export default function AdminAccountMasterHubScreen() {
     queryFn: () => fetchAdminTrash(),
   });
 
+  const {
+    data: settlementsData,
+    refetch: refetchSettlements,
+    isLoading: settlementsLoading,
+  } = useQuery({
+    queryKey: ["admin-settlements"],
+    queryFn: () => fetchAdminSettlements(),
+  });
+
   // Modal Visibility States
   const [profileModalOpen, setProfileModalOpen] = useState(false);
   const [storeInfoModalOpen, setStoreInfoModalOpen] = useState(false);
@@ -130,6 +145,12 @@ export default function AdminAccountMasterHubScreen() {
   const [trashSubTab, setTrashSubTab] = useState<"products" | "orders">("products");
   const [detailModalOpen, setDetailModalOpen] = useState(false);
   const [selectedTrashItem, setSelectedTrashItem] = useState<any | null>(null);
+  const [settlementsModalOpen, setSettlementsModalOpen] = useState(false);
+
+  // Settlement Editing State
+  const [editingVendorId, setEditingVendorId] = useState<string | null>(null);
+  const [editingCommRate, setEditingCommRate] = useState("");
+  const [settlingVendorId, setSettlingVendorId] = useState<string | null>(null);
 
   // Profile Form
   const [name, setName] = useState(user?.name || "Super Admin");
@@ -225,6 +246,8 @@ export default function AdminAccountMasterHubScreen() {
   const deletedProducts = trashData?.products || [];
   const deletedOrders = trashData?.orders || [];
   const trashTotalCount = (trashData?.counts?.total) ?? (deletedProducts.length + deletedOrders.length);
+  const settlementVendors = settlementsData?.vendors || [];
+  const totalPendingSettlement = settlementVendors.reduce((sum: number, v: any) => sum + (v.netPayableToVendor || 0), 0);
 
   // Handle Profile Update
   const handleSaveProfile = async () => {
@@ -554,6 +577,56 @@ export default function AdminAccountMasterHubScreen() {
     setDetailModalOpen(true);
   };
 
+  // Handle Settlement Config Update
+  const handleUpdateSettlementRules = async (vendorId: string, updates: { commissionRate?: number; settlementDays?: number; autopay?: boolean }) => {
+    try {
+      const res = await updateAdminSettlementConfig({ vendorId, ...updates });
+      if (res.success) {
+        refetchSettlements();
+        setEditingVendorId(null);
+      } else {
+        Alert.alert("Error", res.error || "Failed to update settlement rules");
+      }
+    } catch (e: any) {
+      Alert.alert("Error", e?.message || "Failed to update settlement rules");
+    }
+  };
+
+  // Handle 1-Tap Pay Vendor Today (Commission Deducted)
+  const handlePayVendorToday = (v: any) => {
+    if (v.netPayableToVendor <= 0) {
+      Alert.alert("Notice", `No pending balance to settle for ${v.businessName}.`);
+      return;
+    }
+
+    Alert.alert(
+      "Pay Vendor Today (Commission Deducted)",
+      `Execute payout settlement for ${v.businessName}?\n\n• Gross Amount: ₹${v.pendingGross.toLocaleString("en-IN")}\n• Platform Commission (${v.commissionRate}%): -₹${v.platformCommissionCut.toLocaleString("en-IN")}\n━━━━━━━━━━━━━━━━━━━\n• Net Payout to Vendor: ₹${v.netPayableToVendor.toLocaleString("en-IN")}\n\nBank: ${v.bankName || "UPI"} (${v.bankUpiId || v.bankAccountNumber || "Direct Transfer"})`,
+      [
+        { text: "Cancel", style: "cancel" },
+        {
+          text: "Confirm & Pay Today",
+          onPress: async () => {
+            setSettlingVendorId(v.id);
+            try {
+              const res = await executeAdminVendorPayout({ vendorId: v.id });
+              setSettlingVendorId(null);
+              if (res.success) {
+                Alert.alert("Payout Settled 🎉", res.message || "Vendor marked as paid!");
+                refetchSettlements();
+              } else {
+                Alert.alert("Error", res.error || "Failed to execute payout");
+              }
+            } catch (e: any) {
+              setSettlingVendorId(null);
+              Alert.alert("Error", e?.message || "Failed to execute payout");
+            }
+          },
+        },
+      ]
+    );
+  };
+
   return (
     <ScrollView style={styles.container} contentContainerStyle={styles.content}>
       {/* Header Profile Hero Card */}
@@ -643,7 +716,32 @@ export default function AdminAccountMasterHubScreen() {
         <ChevronRight size={18} color="#94A3B8" />
       </TouchableOpacity>
 
-      {/* 4. UNIFIED HOMEPAGE CMS, COUPONS & BRANDING CONTROL CENTER */}
+      {/* 4. VENDOR PAYMENT SETTLEMENT & COMMISSION ENGINE */}
+      <TouchableOpacity
+        style={[styles.menuCard, { borderColor: "#BBF7D0", backgroundColor: "#F0FDF4" }]}
+        onPress={() => setSettlementsModalOpen(true)}
+        activeOpacity={0.85}
+      >
+        <View style={[styles.iconBox, { backgroundColor: "#DCFCE7" }]}>
+          <Banknote size={20} color="#16A34A" />
+        </View>
+        <View style={{ flex: 1 }}>
+          <View style={{ flexDirection: "row", alignItems: "center", gap: 6 }}>
+            <Text style={[styles.menuTitle, { color: "#166534" }]}>Vendor Settlements & Commission Engine</Text>
+            {totalPendingSettlement > 0 && (
+              <View style={[styles.trashCountPill, { backgroundColor: "#16A34A" }]}>
+                <Text style={styles.trashCountPillText}>₹{(totalPendingSettlement / 1000).toFixed(0)}k</Text>
+              </View>
+            )}
+          </View>
+          <Text style={[styles.menuSub, { color: "#15803D" }]}>
+            Set commission % rates, payout days (1, 3, 7d), autopay toggle & 1-tap Pay Today
+          </Text>
+        </View>
+        <ChevronRight size={18} color="#16A34A" />
+      </TouchableOpacity>
+
+      {/* 5. UNIFIED HOMEPAGE CMS, COUPONS & BRANDING CONTROL CENTER */}
       <TouchableOpacity
         style={[styles.menuCard, { borderColor: "#BFDBFE", backgroundColor: "#F8FAFC" }]}
         onPress={() => setCmsModalOpen(true)}
@@ -666,7 +764,7 @@ export default function AdminAccountMasterHubScreen() {
         <ChevronRight size={18} color="#2563EB" />
       </TouchableOpacity>
 
-      {/* 5. Reviews Moderation */}
+      {/* 6. Reviews Moderation */}
       <TouchableOpacity
         style={styles.menuCard}
         onPress={() => setReviewsModalOpen(true)}
@@ -682,7 +780,7 @@ export default function AdminAccountMasterHubScreen() {
         <ChevronRight size={18} color="#94A3B8" />
       </TouchableOpacity>
 
-      {/* 6. Recycle Bin & Trash (Mistouch Protection) */}
+      {/* 7. Recycle Bin & Trash (Mistouch Protection) */}
       <TouchableOpacity
         style={[styles.menuCard, { borderColor: "#FECACA", backgroundColor: "#FFF5F5" }]}
         onPress={() => setTrashModalOpen(true)}
@@ -969,7 +1067,201 @@ export default function AdminAccountMasterHubScreen() {
         </View>
       </Modal>
 
-      {/* 5. UNIFIED HOMEPAGE CMS, COUPONS & BRANDING CONTROL CENTER MODAL */}
+      {/* 5. VENDOR PAYMENT SETTLEMENT & COMMISSION ENGINE MODAL */}
+      <Modal visible={settlementsModalOpen} animationType="slide" presentationStyle="pageSheet">
+        <View style={styles.modalContainer}>
+          <View style={styles.modalHeader}>
+            <View>
+              <Text style={styles.modalTitle}>Vendor Settlement Engine</Text>
+              <Text style={styles.modalSubtitle}>Commission Rates, Settlement Cycles & Instant Payouts</Text>
+            </View>
+            <TouchableOpacity onPress={() => setSettlementsModalOpen(false)} style={styles.closeBtn}>
+              <X size={20} color={COLORS.textSecondary} />
+            </TouchableOpacity>
+          </View>
+
+          <ScrollView contentContainerStyle={styles.modalContent}>
+            {/* Top Stat Card */}
+            <View style={styles.settlementSummaryCard}>
+              <Text style={styles.settlementSummaryLabel}>Total Pending Vendor Payables</Text>
+              <Text style={styles.settlementSummaryAmount}>
+                ₹{totalPendingSettlement.toLocaleString("en-IN")}
+              </Text>
+              <Text style={styles.settlementSummarySub}>
+                Commission is automatically deducted before calculating payable amounts.
+              </Text>
+            </View>
+
+            <Text style={[styles.sectionTitle, { marginTop: 12, marginBottom: 8 }]}>
+              Vendor Settlement Accounts ({settlementVendors.length})
+            </Text>
+
+            {settlementsLoading ? (
+              <View style={styles.emptyCenter}>
+                <ActivityIndicator size="large" color={COLORS.accentBlue} />
+              </View>
+            ) : settlementVendors.length === 0 ? (
+              <View style={styles.emptyCenter}>
+                <Text style={{ color: "#64748B" }}>No registered vendors found.</Text>
+              </View>
+            ) : (
+              settlementVendors.map((v: any) => {
+                const isEditing = editingVendorId === v.id;
+                return (
+                  <View key={v.id} style={styles.settlementVendorCard}>
+                    {/* Header */}
+                    <View style={styles.settlementCardHeader}>
+                      <View style={{ flex: 1 }}>
+                        <Text style={styles.settlementVendorName}>{v.businessName}</Text>
+                        <Text style={styles.settlementVendorPhone}>
+                          {v.category} • +91 {v.contactPhone}
+                        </Text>
+                      </View>
+                      <TouchableOpacity
+                        style={styles.editCommBtn}
+                        onPress={() => {
+                          if (isEditing) {
+                            setEditingVendorId(null);
+                          } else {
+                            setEditingVendorId(v.id);
+                            setEditingCommRate(String(v.commissionRate || "10"));
+                          }
+                        }}
+                      >
+                        <Edit2 size={12} color="#052A51" />
+                        <Text style={styles.editCommBtnText}>{isEditing ? "Done" : "Edit Rules"}</Text>
+                      </TouchableOpacity>
+                    </View>
+
+                    {/* Rule Editor Box (when expanded) */}
+                    {isEditing && (
+                      <View style={styles.ruleEditorBox}>
+                        <Text style={styles.ruleLabel}>Platform Commission Rate (%):</Text>
+                        <View style={{ flexDirection: "row", gap: 8, alignItems: "center" }}>
+                          <TextInput
+                            style={[styles.inputBox, { flex: 1, height: 38 }]}
+                            value={editingCommRate}
+                            onChangeText={setEditingCommRate}
+                            keyboardType="decimal-pad"
+                            placeholder="10"
+                          />
+                          <TouchableOpacity
+                            style={[styles.saveActionBtn, { marginTop: 0, paddingHorizontal: 16, height: 38 }]}
+                            onPress={() => handleUpdateSettlementRules(v.id, { commissionRate: parseFloat(editingCommRate) || 10 })}
+                          >
+                            <Text style={styles.saveActionBtnText}>Save %</Text>
+                          </TouchableOpacity>
+                        </View>
+
+                        <Text style={[styles.ruleLabel, { marginTop: 10 }]}>Settlement Cycle:</Text>
+                        <View style={{ flexDirection: "row", gap: 6 }}>
+                          {[
+                            { days: 1, label: "1 Day (Daily)" },
+                            { days: 3, label: "3 Days" },
+                            { days: 7, label: "7 Days" },
+                            { days: 15, label: "15 Days" },
+                          ].map((cy) => (
+                            <TouchableOpacity
+                              key={cy.days}
+                              style={[
+                                styles.cycleChip,
+                                v.settlementDays === cy.days && styles.cycleChipActive,
+                              ]}
+                              onPress={() => handleUpdateSettlementRules(v.id, { settlementDays: cy.days })}
+                            >
+                              <Text
+                                style={[
+                                  styles.cycleChipText,
+                                  v.settlementDays === cy.days && styles.cycleChipTextActive,
+                                ]}
+                              >
+                                {cy.label}
+                              </Text>
+                            </TouchableOpacity>
+                          ))}
+                        </View>
+
+                        <View style={{ flexDirection: "row", justifyContent: "space-between", alignItems: "center", marginTop: 10 }}>
+                          <Text style={styles.ruleLabel}>Autopay Mode:</Text>
+                          <TouchableOpacity
+                            style={[styles.autopayBtn, v.autopay && styles.autopayBtnActive]}
+                            onPress={() => handleUpdateSettlementRules(v.id, { autopay: !v.autopay })}
+                          >
+                            <Text style={[styles.autopayText, v.autopay && styles.autopayTextActive]}>
+                              {v.autopay ? "AUTOPAY: ON" : "MANUAL PAYOUT"}
+                            </Text>
+                          </TouchableOpacity>
+                        </View>
+                      </View>
+                    )}
+
+                    {/* Financial Breakdown Grid */}
+                    <View style={styles.settleGrid}>
+                      <View style={styles.settleGridCol}>
+                        <Text style={styles.settleGridLabel}>Unsettled Gross</Text>
+                        <Text style={styles.settleGridVal}>₹{v.pendingGross.toLocaleString("en-IN")}</Text>
+                      </View>
+
+                      <View style={[styles.settleGridCol, { backgroundColor: "#FEF2F2" }]}>
+                        <Text style={[styles.settleGridLabel, { color: "#DC2626" }]}>
+                          Our Cut ({v.commissionRate}%)
+                        </Text>
+                        <Text style={[styles.settleGridVal, { color: "#DC2626" }]}>
+                          -₹{v.platformCommissionCut.toLocaleString("en-IN")}
+                        </Text>
+                      </View>
+
+                      <View style={[styles.settleGridCol, { backgroundColor: "#F0FDF4" }]}>
+                        <Text style={[styles.settleGridLabel, { color: "#166534" }]}>Net Payable</Text>
+                        <Text style={[styles.settleGridVal, { color: "#16A34A", fontWeight: "900" }]}>
+                          ₹{v.netPayableToVendor.toLocaleString("en-IN")}
+                        </Text>
+                      </View>
+                    </View>
+
+                    {/* Bank Details & Pay Now Action */}
+                    <View style={styles.settleCardFooter}>
+                      <View style={{ flex: 1 }}>
+                        <Text style={styles.bankDetailText}>
+                          Payout A/C: {v.bankName || "UPI"} {v.bankUpiId ? `(${v.bankUpiId})` : v.bankAccountNumber ? `(ending ${v.bankAccountNumber.slice(-4)})` : "(Not Configured)"}
+                        </Text>
+                        <Text style={styles.cycleDetailText}>Cycle: Every {v.settlementDays} days • {v.autopay ? "Autopay" : "Manual"}</Text>
+                      </View>
+
+                      <TouchableOpacity
+                        style={[
+                          styles.payNowBtn,
+                          v.netPayableToVendor === 0 && { backgroundColor: "#E2E8F0" },
+                        ]}
+                        onPress={() => handlePayVendorToday(v)}
+                        disabled={v.netPayableToVendor === 0 || settlingVendorId === v.id}
+                      >
+                        {settlingVendorId === v.id ? (
+                          <ActivityIndicator size="small" color="#FFFFFF" />
+                        ) : (
+                          <>
+                            <Banknote size={13} color={v.netPayableToVendor === 0 ? "#94A3B8" : "#FFFFFF"} />
+                            <Text
+                              style={[
+                                styles.payNowBtnText,
+                                v.netPayableToVendor === 0 && { color: "#94A3B8" },
+                              ]}
+                            >
+                              Pay Today
+                            </Text>
+                          </>
+                        )}
+                      </TouchableOpacity>
+                    </View>
+                  </View>
+                );
+              })
+            )}
+          </ScrollView>
+        </View>
+      </Modal>
+
+      {/* 6. UNIFIED HOMEPAGE CMS, COUPONS & BRANDING CONTROL CENTER MODAL */}
       <Modal visible={cmsModalOpen} animationType="slide" presentationStyle="pageSheet">
         <View style={styles.modalContainer}>
           <View style={styles.modalHeader}>
@@ -1335,7 +1627,7 @@ export default function AdminAccountMasterHubScreen() {
         </View>
       </Modal>
 
-      {/* 6. Reviews Moderation Modal */}
+      {/* 7. Reviews Moderation Modal */}
       <Modal visible={reviewsModalOpen} animationType="slide" presentationStyle="pageSheet">
         <View style={styles.modalContainer}>
           <View style={styles.modalHeader}>
@@ -1387,7 +1679,7 @@ export default function AdminAccountMasterHubScreen() {
         </View>
       </Modal>
 
-      {/* 7. RECYCLE BIN & TRASH MODAL (Mistouch Protection with 3-Day Auto-Purge) */}
+      {/* 8. RECYCLE BIN & TRASH MODAL (Mistouch Protection with 3-Day Auto-Purge) */}
       <Modal visible={trashModalOpen} animationType="slide" presentationStyle="pageSheet">
         <View style={styles.modalContainer}>
           <View style={styles.modalHeader}>
@@ -1576,7 +1868,7 @@ export default function AdminAccountMasterHubScreen() {
         </View>
       </Modal>
 
-      {/* 8. TRASH AUDIT ITEM DETAIL MODAL */}
+      {/* 9. TRASH AUDIT ITEM DETAIL MODAL */}
       <Modal visible={detailModalOpen} transparent animationType="fade">
         <View style={styles.modalOverlay}>
           <View style={styles.auditDetailModal}>
@@ -2284,5 +2576,173 @@ const styles = StyleSheet.create({
     color: "#FFFFFF",
     fontSize: 12,
     fontWeight: "800",
+  },
+  settlementSummaryCard: {
+    backgroundColor: "#166534",
+    borderRadius: 16,
+    padding: 18,
+    ...SHADOWS.md,
+  },
+  settlementSummaryLabel: {
+    color: "#BBF7D0",
+    fontSize: 11,
+    fontWeight: "800",
+    textTransform: "uppercase",
+  },
+  settlementSummaryAmount: {
+    color: "#FFFFFF",
+    fontSize: 24,
+    fontWeight: "900",
+    marginTop: 4,
+  },
+  settlementSummarySub: {
+    color: "#DCFCE7",
+    fontSize: 11,
+    marginTop: 4,
+  },
+  settlementVendorCard: {
+    backgroundColor: "#FFFFFF",
+    borderRadius: 14,
+    padding: 14,
+    borderWidth: 1,
+    borderColor: "#E2E8F0",
+    marginBottom: 12,
+    ...SHADOWS.sm,
+    gap: 10,
+  },
+  settlementCardHeader: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "flex-start",
+  },
+  settlementVendorName: {
+    fontSize: 14,
+    fontWeight: "800",
+    color: "#052A51",
+  },
+  settlementVendorPhone: {
+    fontSize: 11,
+    color: "#64748B",
+    marginTop: 2,
+  },
+  editCommBtn: {
+    flexDirection: "row",
+    alignItems: "center",
+    backgroundColor: "#EFF6FF",
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    borderRadius: 6,
+    gap: 4,
+  },
+  editCommBtnText: {
+    fontSize: 10,
+    fontWeight: "800",
+    color: "#052A51",
+  },
+  ruleEditorBox: {
+    backgroundColor: "#F8FAFC",
+    borderRadius: 10,
+    padding: 10,
+    borderWidth: 1,
+    borderColor: "#E2E8F0",
+    gap: 4,
+  },
+  ruleLabel: {
+    fontSize: 10,
+    fontWeight: "700",
+    color: "#64748B",
+  },
+  cycleChip: {
+    flex: 1,
+    paddingVertical: 5,
+    borderRadius: 6,
+    backgroundColor: "#FFFFFF",
+    borderWidth: 1,
+    borderColor: "#CBD5E1",
+    alignItems: "center",
+  },
+  cycleChipActive: {
+    backgroundColor: "#052A51",
+    borderColor: "#052A51",
+  },
+  cycleChipText: {
+    fontSize: 9,
+    fontWeight: "700",
+    color: "#64748B",
+  },
+  cycleChipTextActive: {
+    color: "#FFFFFF",
+    fontWeight: "800",
+  },
+  autopayBtn: {
+    backgroundColor: "#E2E8F0",
+    paddingHorizontal: 10,
+    paddingVertical: 4,
+    borderRadius: 6,
+  },
+  autopayBtnActive: {
+    backgroundColor: "#16A34A",
+  },
+  autopayText: {
+    fontSize: 10,
+    fontWeight: "800",
+    color: "#64748B",
+  },
+  autopayTextActive: {
+    color: "#FFFFFF",
+  },
+  settleGrid: {
+    flexDirection: "row",
+    gap: 6,
+  },
+  settleGridCol: {
+    flex: 1,
+    backgroundColor: "#F8FAFC",
+    borderRadius: 8,
+    padding: 8,
+  },
+  settleGridLabel: {
+    fontSize: 9,
+    fontWeight: "700",
+    color: "#64748B",
+  },
+  settleGridVal: {
+    fontSize: 12,
+    fontWeight: "800",
+    color: "#052A51",
+    marginTop: 2,
+  },
+  settleCardFooter: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+    borderTopWidth: 1,
+    borderTopColor: "#F1F5F9",
+    paddingTop: 8,
+    gap: 8,
+  },
+  bankDetailText: {
+    fontSize: 10,
+    fontWeight: "700",
+    color: "#334155",
+  },
+  cycleDetailText: {
+    fontSize: 10,
+    color: "#64748B",
+    marginTop: 1,
+  },
+  payNowBtn: {
+    flexDirection: "row",
+    alignItems: "center",
+    backgroundColor: "#16A34A",
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+    borderRadius: 8,
+    gap: 4,
+  },
+  payNowBtnText: {
+    color: "#FFFFFF",
+    fontSize: 11,
+    fontWeight: "900",
   },
 });
