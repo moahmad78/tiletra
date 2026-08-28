@@ -44,14 +44,44 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
 
     const { id } = await params;
     const body = await req.json();
-    const { status, featured, pricePerBox, pricePerSqft, stockBoxes } = body;
+    const {
+      name,
+      description,
+      status,
+      featured,
+      pricePerBox,
+      pricePerSqft,
+      mrp,
+      stockBoxes,
+      unitOfSale,
+      categorySlug,
+      categoryId,
+      images,
+      material,
+      finish,
+      size,
+      thickness,
+      specifications,
+    } = body;
 
     const data: any = {};
+    if (name !== undefined) data.name = String(name).trim();
+    if (description !== undefined) data.description = String(description).trim();
     if (status !== undefined) data.status = status;
-    if (featured !== undefined) (data as any).featured = Boolean(featured);
+    if (featured !== undefined) data.featured = Boolean(featured);
     if (pricePerBox !== undefined) data.pricePerBox = Number(pricePerBox);
     if (pricePerSqft !== undefined) data.pricePerSqft = Number(pricePerSqft);
+    if (mrp !== undefined) data.mrp = Number(mrp);
     if (stockBoxes !== undefined) data.stockBoxes = Number(stockBoxes);
+    if (unitOfSale !== undefined) data.unitOfSale = String(unitOfSale).trim();
+    if (categorySlug !== undefined) data.categorySlug = String(categorySlug).trim();
+    if (categoryId !== undefined) data.categoryId = categoryId;
+    if (images !== undefined) data.images = Array.isArray(images) ? images : [images];
+    if (material !== undefined) data.material = material;
+    if (finish !== undefined) data.finish = finish;
+    if (size !== undefined) data.size = size;
+    if (thickness !== undefined) data.thickness = thickness;
+    if (specifications !== undefined) data.specifications = specifications;
 
     const updated = await prisma.product.update({
       where: { id },

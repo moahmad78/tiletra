@@ -1,29 +1,56 @@
 import { prisma } from "../lib/prisma";
-import { generateMobileTokens } from "../lib/mobile-auth";
 
 async function main() {
-  console.log("1. Finding admin user in database...");
-  const admin = await prisma.user.findFirst({
-    where: { role: "admin" },
+  console.log("1. Initiating official mobile login flow on production for admin@intrihub.com...");
+  
+  const sendRes = await fetch("https://www.intrihub.com/api/mobile/auth/send-otp", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ email: "admin@intrihub.com", purpose: "business" }),
   });
 
-  if (!admin) {
-    console.error("Admin user not found in DB!");
+  const sendData = await sendRes.json();
+  console.log("Send OTP Response:", sendData);
+
+  // 2. Fetch latest OTP from DB
+  const latestToken = await prisma.emailOtpToken.findFirst({
+    where: { email: "admin@intrihub.com" },
+    orderBy: { createdAt: "desc" },
+  });
+
+  if (!latestToken) {
+    console.error("No OTP record found in DB!");
     process.exit(1);
   }
 
-  console.log("Admin User found:", admin.email, "id:", admin.id);
+  console.log("Retrieved OTP from DB:", latestToken.otp);
 
-  const tokens = generateMobileTokens({
-    id: admin.id,
-    role: "admin",
-    email: admin.email,
-    phone: admin.phone,
-    name: admin.name,
+  // 3. Verify OTP against production to get official JWT tokens
+  const verifyRes = await fetch("https://www.intrihub.com/api/mobile/auth/verify-otp", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({
+      email: "admin@intrihub.com",
+      otp: latestToken.otp,
+      purpose: "business",
+    }),
   });
 
-  console.log("Generated Admin Access Token (first 20 chars):", tokens.accessToken.slice(0, 20) + "...");
+  const verifyData = await verifyRes.json();
+  console.log("Verify OTP Response (User/Role):", {
+    success: verifyData.success,
+    user: verifyData.user,
+    hasTokens: Boolean(verifyData.tokens?.accessToken),
+  });
 
+  if (!verifyData.tokens?.accessToken) {
+    console.error("Failed to obtain production access token:", verifyData);
+    process.exit(1);
+  }
+
+  const accessToken = verifyData.tokens.accessToken;
+
+  // 4. Test all admin endpoints with this official token
   const endpoints = [
     { url: "https://www.intrihub.com/api/mobile/admin/dashboard", name: "Dashboard" },
     { url: "https://www.intrihub.com/api/mobile/admin/products", name: "Products" },
@@ -38,12 +65,12 @@ async function main() {
     { url: "https://www.intrihub.com/api/mobile/admin/reviews", name: "Reviews" },
   ];
 
-  console.log("\n2. Testing live production endpoints...");
+  console.log("\n4. Testing live production admin endpoints with verified admin token...\n");
   for (const ep of endpoints) {
     try {
       const res = await fetch(ep.url, {
         headers: {
-          Authorization: `Bearer ${tokens.accessToken}`,
+          Authorization: `Bearer ${accessToken}`,
           Accept: "application/json",
         },
       });
@@ -56,11 +83,11 @@ async function main() {
         parsed = null;
       }
 
-      console.log(`[${ep.name}] Status: ${res.status} | Success: ${parsed?.success ?? false} | Data: ${parsed ? JSON.stringify(parsed).slice(0, 100) : text.slice(0, 80)}`);
+      console.log(`✅ [${ep.name}] Status: ${res.status} | Success: ${parsed?.success ?? false} | Details: ${parsed ? JSON.stringify(parsed).slice(0, 120) : text.slice(0, 100)}...`);
     } catch (e: any) {
-      console.error(`[${ep.name}] Error:`, e.message);
+      console.error(`❌ [${ep.name}] Error:`, e.message);
     }
   }
 }
 
-main().catch(console.error);
+main().finally(() => prisma.$disconnect());

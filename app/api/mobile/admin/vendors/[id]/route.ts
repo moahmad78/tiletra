@@ -59,13 +59,32 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
 
     const { id } = await params;
     const body = await req.json();
-    const { status, commissionRate, verified, deliveryMethod } = body;
+    const {
+      businessName,
+      contactEmail,
+      contactPhone,
+      category,
+      businessAddress,
+      gstNumber,
+      status,
+      commissionRate,
+      verified,
+      deliveryMethod,
+      ownerId,
+    } = body;
 
     const data: any = {};
+    if (businessName !== undefined) data.businessName = String(businessName).trim();
+    if (contactEmail !== undefined) data.contactEmail = String(contactEmail).trim().toLowerCase();
+    if (contactPhone !== undefined) data.contactPhone = String(contactPhone).replace(/\D/g, "");
+    if (category !== undefined) data.category = String(category).trim();
+    if (businessAddress !== undefined) data.businessAddress = String(businessAddress).trim();
+    if (gstNumber !== undefined) data.gstNumber = String(gstNumber).trim();
     if (status !== undefined) data.status = status;
     if (commissionRate !== undefined) data.commissionRate = Number(commissionRate);
     if (verified !== undefined) data.kycStatus = verified ? "verified" : "pending";
     if (deliveryMethod !== undefined) data.deliveryMethod = deliveryMethod;
+    if (ownerId !== undefined) data.ownerId = ownerId;
 
     const updated = await prisma.vendor.update({
       where: { id },
@@ -81,6 +100,31 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
     console.error("Mobile admin vendor update error:", err);
     return mobileApiResponse(
       { success: false, error: err.message || "Failed to update vendor" },
+      500
+    );
+  }
+}
+
+export async function DELETE(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
+  try {
+    const auth = await getAuthenticatedAdmin(req);
+    if ("error" in auth) {
+      return mobileApiResponse({ success: false, error: auth.error }, auth.status);
+    }
+
+    const { id } = await params;
+    await prisma.vendor.delete({
+      where: { id },
+    });
+
+    return mobileApiResponse({
+      success: true,
+      message: "Vendor deleted successfully",
+    });
+  } catch (err: any) {
+    console.error("Mobile admin vendor delete error:", err);
+    return mobileApiResponse(
+      { success: false, error: err.message || "Failed to delete vendor" },
       500
     );
   }

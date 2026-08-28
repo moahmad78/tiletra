@@ -14,10 +14,37 @@ export async function GET(req: NextRequest) {
     }
 
     const settings = await getStoreSettings();
+    const { prisma } = await import("@/lib/prisma");
+
+    const extraKeys = [
+      "setting_support_timings",
+      "setting_policy_help",
+      "setting_policy_privacy",
+      "setting_policy_terms",
+      "setting_policy_returns",
+      "setting_units_list",
+    ];
+
+    const extraRecords = await prisma.setting.findMany({
+      where: { key: { in: extraKeys } },
+    });
+
+    const extraMap: Record<string, string> = {};
+    extraRecords.forEach((r) => {
+      extraMap[r.key] = r.value;
+    });
 
     return mobileApiResponse({
       success: true,
-      settings,
+      settings: {
+        ...settings,
+        supportTimings: extraMap["setting_support_timings"] || "10:00 AM – 07:00 PM (Mon–Sat)",
+        policyHelp: extraMap["setting_policy_help"] || "IntriHub Support: We are committed to providing premium building material procurement support.",
+        policyPrivacy: extraMap["setting_policy_privacy"] || "IntriHub Privacy Policy: Your personal and commercial data is protected.",
+        policyTerms: extraMap["setting_policy_terms"] || "IntriHub Terms of Service: Standard B2B/B2C marketplace terms.",
+        policyReturns: extraMap["setting_policy_returns"] || "IntriHub Return & Refund Policy: 7-day hassle-free damage returns.",
+        unitsList: extraMap["setting_units_list"] ? JSON.parse(extraMap["setting_units_list"]) : ["sqft", "box", "piece", "meter", "kg", "bag", "ton"],
+      },
     });
   } catch (error: any) {
     console.error("[Mobile Admin Settings Get Error]", error);
@@ -37,6 +64,7 @@ export async function PATCH(req: NextRequest) {
 
     const body = await req.json().catch(() => ({}));
     const updateData: any = {};
+    const { prisma } = await import("@/lib/prisma");
 
     if (body.storeName !== undefined) updateData.storeName = body.storeName.trim();
     if (body.gstNumber !== undefined) updateData.gstNumber = body.gstNumber.trim().toUpperCase();
@@ -105,13 +133,71 @@ export async function PATCH(req: NextRequest) {
 
     const res = await updateStoreSettings(updateData);
 
-    if (!res.success) {
-      return mobileApiResponse({ success: false, error: res.error }, 400);
+    // Save extra policies/timings/units
+    const extraUpdates: Promise<any>[] = [];
+    if (body.supportTimings !== undefined) {
+      extraUpdates.push(
+        prisma.setting.upsert({
+          where: { key: "setting_support_timings" },
+          update: { value: String(body.supportTimings).trim() },
+          create: { key: "setting_support_timings", value: String(body.supportTimings).trim() },
+        })
+      );
+    }
+    if (body.policyHelp !== undefined) {
+      extraUpdates.push(
+        prisma.setting.upsert({
+          where: { key: "setting_policy_help" },
+          update: { value: String(body.policyHelp).trim() },
+          create: { key: "setting_policy_help", value: String(body.policyHelp).trim() },
+        })
+      );
+    }
+    if (body.policyPrivacy !== undefined) {
+      extraUpdates.push(
+        prisma.setting.upsert({
+          where: { key: "setting_policy_privacy" },
+          update: { value: String(body.policyPrivacy).trim() },
+          create: { key: "setting_policy_privacy", value: String(body.policyPrivacy).trim() },
+        })
+      );
+    }
+    if (body.policyTerms !== undefined) {
+      extraUpdates.push(
+        prisma.setting.upsert({
+          where: { key: "setting_policy_terms" },
+          update: { value: String(body.policyTerms).trim() },
+          create: { key: "setting_policy_terms", value: String(body.policyTerms).trim() },
+        })
+      );
+    }
+    if (body.policyReturns !== undefined) {
+      extraUpdates.push(
+        prisma.setting.upsert({
+          where: { key: "setting_policy_returns" },
+          update: { value: String(body.policyReturns).trim() },
+          create: { key: "setting_policy_returns", value: String(body.policyReturns).trim() },
+        })
+      );
+    }
+    if (body.unitsList !== undefined) {
+      const unitsJson = JSON.stringify(Array.isArray(body.unitsList) ? body.unitsList : [body.unitsList]);
+      extraUpdates.push(
+        prisma.setting.upsert({
+          where: { key: "setting_units_list" },
+          update: { value: unitsJson },
+          create: { key: "setting_units_list", value: unitsJson },
+        })
+      );
+    }
+
+    if (extraUpdates.length > 0) {
+      await Promise.all(extraUpdates);
     }
 
     return mobileApiResponse({
       success: true,
-      message: "Global store settings updated successfully!",
+      message: "Global store settings & policy content updated successfully!",
       settings: res.settings,
     });
   } catch (error: any) {

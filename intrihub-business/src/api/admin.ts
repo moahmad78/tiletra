@@ -45,10 +45,18 @@ export async function fetchAdminVendorDetail(id: string): Promise<{
 export async function updateAdminVendor(
   id: string,
   data: {
+    businessName?: string;
+    ownerName?: string;
+    contactEmail?: string;
+    contactPhone?: string;
+    category?: string;
+    businessAddress?: string;
+    gstNumber?: string;
     status?: string;
     commissionRate?: number;
     verified?: boolean;
     deliveryMethod?: string;
+    ownerId?: string;
   }
 ): Promise<{
   success: boolean;
@@ -57,6 +65,15 @@ export async function updateAdminVendor(
   error?: string;
 }> {
   const res = await apiClient.patch(`/api/mobile/admin/vendors/${id}`, data);
+  return res.data;
+}
+
+export async function deleteAdminVendor(id: string): Promise<{
+  success: boolean;
+  message?: string;
+  error?: string;
+}> {
+  const res = await apiClient.delete(`/api/mobile/admin/vendors/${id}`);
   return res.data;
 }
 
@@ -78,11 +95,23 @@ export async function fetchAdminProducts(params?: {
 export async function updateAdminProduct(
   id: string,
   data: {
+    name?: string;
+    description?: string;
     status?: string;
     featured?: boolean;
     pricePerBox?: number;
     pricePerSqft?: number;
+    mrp?: number;
     stockBoxes?: number;
+    unitOfSale?: string;
+    categorySlug?: string;
+    categoryId?: string;
+    images?: string[];
+    material?: string;
+    finish?: string;
+    size?: string;
+    thickness?: string;
+    specifications?: any;
   }
 ): Promise<{
   success: boolean;
