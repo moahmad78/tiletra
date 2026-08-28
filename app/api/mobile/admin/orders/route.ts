@@ -21,6 +21,8 @@ export async function GET(req: NextRequest) {
     const where: any = {};
     if (status !== "all") {
       where.orderStatus = { equals: status, mode: "insensitive" };
+    } else {
+      where.orderStatus = { not: "deleted" };
     }
     if (search) {
       where.OR = [

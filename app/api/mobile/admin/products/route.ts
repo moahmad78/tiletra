@@ -19,8 +19,10 @@ export async function GET(req: NextRequest) {
     const limit = Math.min(Number(searchParams.get("limit")) || 30, 100);
 
     const where: any = {};
-    if (status !== "all") {
+    if (status && status !== "all") {
       where.status = status;
+    } else {
+      where.status = { not: "deleted" };
     }
     if (search) {
       where.OR = [

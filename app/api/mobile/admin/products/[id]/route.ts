@@ -110,18 +110,55 @@ export async function DELETE(req: NextRequest, { params }: { params: Promise<{ i
     }
 
     const { id } = await params;
-    await prisma.product.delete({
+    const product = await prisma.product.findUnique({
       where: { id },
+      include: { vendor: true },
+    });
+
+    if (!product) {
+      return mobileApiResponse({ success: false, error: "Product not found" }, 404);
+    }
+
+    // Soft-delete to Trash
+    await prisma.product.update({
+      where: { id },
+      data: {
+        status: "deleted",
+        updatedAt: new Date(),
+      },
+    });
+
+    // Create Audit Log for Trash retention & auto 3-day countdown
+    await prisma.auditLog.create({
+      data: {
+        action: "TRASH_DELETE",
+        entity: "Product",
+        entityId: id,
+        userId: auth.user.id,
+        details: {
+          deletedByName: auth.user.name || "Admin",
+          deletedByRole: auth.user.role || "ADMIN",
+          deletedByEmail: auth.user.email || "",
+          deletedAt: new Date().toISOString(),
+          expiresAt: new Date(Date.now() + 3 * 24 * 60 * 60 * 1000).toISOString(),
+          productSnapshot: {
+            name: product.name,
+            vendorName: product.vendor?.businessName || "Direct / Admin",
+            vendorId: product.vendorId,
+            pricePerSqft: product.pricePerSqft,
+          },
+        },
+      },
     });
 
     return mobileApiResponse({
       success: true,
-      message: "Product deleted successfully",
+      message: `Product "${product.name}" moved to Trash. You can restore it within 3 days.`,
     });
   } catch (err: any) {
     console.error("Mobile admin product delete error:", err);
     return mobileApiResponse(
-      { success: false, error: err.message || "Failed to delete product" },
+      { success: false, error: err.message || "Failed to move product to trash" },
       500
     );
   }

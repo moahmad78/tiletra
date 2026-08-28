@@ -788,12 +788,64 @@ export async function notifyAdminVendorRestock(data: {
   productId?: string;
   productName?: string;
   stockBoxes?: number;
-  customMessage?: string;
+  message?: string;
 }): Promise<{
   success: boolean;
   message?: string;
   error?: string;
 }> {
   const res = await apiClient.post("/api/mobile/admin/notify-vendor", data);
+  return res.data;
+}
+
+// 17. Admin Orders Delete
+export async function deleteAdminOrder(id: string): Promise<{
+  success: boolean;
+  message?: string;
+  error?: string;
+}> {
+  const res = await apiClient.delete(`/api/mobile/admin/orders/${id}`);
+  return res.data;
+}
+
+// 18. Admin Trash & Recycle Bin (Mistouch Protection with 3-Day Auto-Purge)
+export async function fetchAdminTrash(): Promise<{
+  success: boolean;
+  products?: any[];
+  orders?: any[];
+  counts?: {
+    products: number;
+    orders: number;
+    total: number;
+  };
+  error?: string;
+}> {
+  const res = await apiClient.get("/api/mobile/admin/trash");
+  return res.data;
+}
+
+export async function restoreAdminTrashItem(
+  type: "product" | "order",
+  id: string
+): Promise<{
+  success: boolean;
+  message?: string;
+  error?: string;
+}> {
+  const res = await apiClient.post("/api/mobile/admin/trash/restore", { type, id });
+  return res.data;
+}
+
+export async function deleteAdminTrashItemPermanently(
+  type: "product" | "order",
+  id: string
+): Promise<{
+  success: boolean;
+  message?: string;
+  error?: string;
+}> {
+  const res = await apiClient.delete("/api/mobile/admin/trash", {
+    params: { type, id },
+  });
   return res.data;
 }

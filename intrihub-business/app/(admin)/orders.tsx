@@ -34,10 +34,12 @@ import {
   Sliders,
   DollarSign,
   Package,
+  Trash2,
 } from "lucide-react-native";
 import {
   fetchAdminOrders,
   updateAdminOrder,
+  deleteAdminOrder,
   fetchAdminDeliveries,
   assignAdminCourier,
   updateAdminDeliveryTracking,
@@ -211,6 +213,33 @@ export default function AdminOrdersHubScreen() {
     }
   };
 
+  const handleDeleteOrder = (orderId: string, customerName: string) => {
+    Alert.alert(
+      "Move Order to Trash",
+      `Are you sure you want to move order #${orderId.slice(-6).toUpperCase()} (${customerName}) to Trash?\n\nIt will be safely kept for 3 days and can be restored from the Account Trash Tab.`,
+      [
+        { text: "Cancel", style: "cancel" },
+        {
+          text: "Move to Trash",
+          style: "destructive",
+          onPress: async () => {
+            try {
+              const res = await deleteAdminOrder(orderId);
+              if (res.success) {
+                Alert.alert("Moved to Trash 🗑️", "Order moved to Recycle Bin. You can restore it within 3 days.");
+                refetchOrders();
+              } else {
+                Alert.alert("Error", res.error || "Failed to delete order");
+              }
+            } catch (e: any) {
+              Alert.alert("Error", e?.message || "Failed to delete order");
+            }
+          },
+        },
+      ]
+    );
+  };
+
   const renderOrderItem = ({ item }: { item: AdminOrder }) => (
     <View style={styles.orderCard}>
       <View style={styles.cardHeader}>
@@ -218,8 +247,16 @@ export default function AdminOrdersHubScreen() {
           <Text style={styles.orderId}>{item.id}</Text>
           <Text style={styles.dateText}>{item.createdAt ? new Date(item.createdAt).toLocaleDateString("en-IN") : ""}</Text>
         </View>
-        <View style={[styles.statusBadge, getOrderStatusStyle(item.orderStatus)]}>
-          <Text style={styles.statusBadgeText}>{item.orderStatus.toUpperCase()}</Text>
+        <View style={{ flexDirection: "row", alignItems: "center", gap: 8 }}>
+          <View style={[styles.statusBadge, getOrderStatusStyle(item.orderStatus)]}>
+            <Text style={styles.statusBadgeText}>{item.orderStatus.toUpperCase()}</Text>
+          </View>
+          <TouchableOpacity
+            style={{ padding: 4, backgroundColor: "#FEF2F2", borderRadius: 6 }}
+            onPress={() => handleDeleteOrder(item.id, item.customerName || "Customer")}
+          >
+            <Trash2 size={13} color="#DC2626" />
+          </TouchableOpacity>
         </View>
       </View>
 
