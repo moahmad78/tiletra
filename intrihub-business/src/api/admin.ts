@@ -336,6 +336,7 @@ export async function assignAdminCourier(
   id: string,
   data: {
     courierName: string;
+    courierPhone?: string;
     trackingNumber?: string;
     status?: string;
   }
@@ -348,6 +349,8 @@ export async function assignAdminCourier(
   const res = await apiClient.patch(`/api/mobile/admin/deliveries/${id}/assign-courier`, data);
   return res.data;
 }
+
+export const assignAdminDeliveryCourier = assignAdminCourier;
 
 export async function updateAdminDeliveryTracking(
   id: string,

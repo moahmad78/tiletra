@@ -39,7 +39,7 @@ import {
   fetchAdminOrders,
   updateAdminOrder,
   fetchAdminDeliveries,
-  assignAdminDeliveryCourier,
+  assignAdminCourier,
   updateAdminDeliveryTracking,
   confirmAdminDeliveryCod,
   fetchAdminStoreSettings,
@@ -142,7 +142,7 @@ export default function AdminOrdersHubScreen() {
     if (!selectedSplitId) return;
     setSavingAssign(true);
     try {
-      await assignAdminDeliveryCourier(selectedSplitId, {
+      await assignAdminCourier(selectedSplitId, {
         courierName: courierName.trim(),
         courierPhone: courierPhone.trim(),
       });
