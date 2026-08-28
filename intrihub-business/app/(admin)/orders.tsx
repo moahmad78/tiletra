@@ -234,7 +234,7 @@ export default function AdminOrdersHubScreen() {
       <View style={styles.metricsRow}>
         <View style={styles.metricItem}>
           <Text style={styles.metricLabel}>Total Amount</Text>
-          <Text style={styles.metricVal}>₹{item.totalAmount?.toLocaleString("en-IN") || "0"}</Text>
+          <Text style={styles.metricVal}>₹{(item.totalAmount ?? item.total ?? 0).toLocaleString("en-IN")}</Text>
         </View>
         <View style={styles.metricDivider} />
         <View style={styles.metricItem}>

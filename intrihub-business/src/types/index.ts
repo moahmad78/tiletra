@@ -189,6 +189,8 @@ export interface AdminOrder {
   customerPhone: string;
   customerEmail?: string;
   total: number;
+  totalAmount?: number;
+  amount?: number;
   subtotal: number;
   deliveryFee: number;
   orderStatus: string;
