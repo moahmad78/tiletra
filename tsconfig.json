@@ -30,5 +30,15 @@
     ".next/dev/types/**/*.ts",
     "**/*.mts"
   ],
-  "exclude": ["node_modules", "urbanfix", "urbanfix/**/*", "intrihub-mobile", "intrihub-mobile/**/*"]
+  "exclude": [
+    "node_modules",
+    "urbanfix",
+    "urbanfix/**/*",
+    "intrihub-mobile",
+    "intrihub-mobile/**/*",
+    "intrihub-business",
+    "intrihub-business/**/*",
+    "scripts",
+    "scripts/**/*"
+  ]
 }
