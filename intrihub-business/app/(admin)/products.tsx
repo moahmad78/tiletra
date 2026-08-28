@@ -768,12 +768,22 @@ export default function AdminProductsHubScreen() {
     }
   };
 
+  const getValidProductImage = (imgs?: string[]) => {
+    const fallback = "https://images.unsplash.com/photo-1600585154340-be6161a56a0c?q=80&w=600&auto=format&fit=crop";
+    if (!imgs || !Array.isArray(imgs) || imgs.length === 0) return fallback;
+    const raw = imgs[0];
+    if (!raw || typeof raw !== "string" || !raw.trim()) return fallback;
+    const trimmed = raw.trim();
+    if (trimmed.endsWith(".svg") || trimmed.includes("placeholder")) return fallback;
+    if (trimmed.startsWith("http://") || trimmed.startsWith("https://") || trimmed.startsWith("data:") || trimmed.startsWith("file://")) {
+      return trimmed;
+    }
+    return fallback;
+  };
+
   const renderProductItem = ({ item }: { item: Product }) => {
     const isSelected = selectedProductIds.includes(item.id);
-    const validImg =
-      item.images && item.images.length > 0 && item.images[0] && item.images[0].trim() !== ""
-        ? item.images[0]
-        : "https://images.unsplash.com/photo-1600585154340-be6161a56a0c?q=80&w=600&auto=format&fit=crop";
+    const validImg = getValidProductImage(item.images);
 
     return (
       <TouchableOpacity
@@ -789,17 +799,19 @@ export default function AdminProductsHubScreen() {
         activeOpacity={0.85}
       >
         <View style={styles.productRow}>
-          {/* Checkbox indicator for Batch Selection */}
-          <TouchableOpacity
-            style={styles.checkboxContainer}
-            onPress={() => handleToggleSelectProduct(item.id)}
-          >
-            {isSelected ? (
-              <CheckSquare2 size={20} color="#2563EB" />
-            ) : (
-              <Square size={20} color="#CBD5E1" />
-            )}
-          </TouchableOpacity>
+          {/* Checkbox indicator for Batch Selection (Only visible when hold selection mode is active) */}
+          {isSelectMode ? (
+            <TouchableOpacity
+              style={styles.checkboxContainer}
+              onPress={() => handleToggleSelectProduct(item.id)}
+            >
+              {isSelected ? (
+                <CheckSquare2 size={20} color="#2563EB" />
+              ) : (
+                <Square size={20} color="#CBD5E1" />
+              )}
+            </TouchableOpacity>
+          ) : null}
 
           <Image
             source={{ uri: validImg }}
@@ -904,14 +916,25 @@ export default function AdminProductsHubScreen() {
     <View style={styles.container}>
       {/* Header */}
       <View style={styles.header}>
-        <View style={{ flex: 1 }}>
-          <Text style={styles.headerTitle}>Products Catalog Hub</Text>
-          <Text style={styles.headerSubtitle}>Hold item to select multiple for batch actions</Text>
+        <View style={{ flex: 1, paddingRight: 6 }}>
+          <Text style={styles.headerTitle} numberOfLines={1}>Products Hub</Text>
+          <Text style={styles.headerSubtitle} numberOfLines={1}>
+            {products.length} listed items • {approvals.length} pending approvals
+          </Text>
         </View>
-        <TouchableOpacity style={styles.headerAddBtn} onPress={handleOpenAdd}>
-          <Plus size={16} color="#FFFFFF" />
-          <Text style={styles.headerAddBtnText}>+ Add Item</Text>
-        </TouchableOpacity>
+
+        <View style={{ flexDirection: "row", alignItems: "center", gap: 8 }}>
+          <TouchableOpacity style={styles.headerAddBtn} onPress={handleOpenAdd} activeOpacity={0.85}>
+            <Plus size={15} color="#FFFFFF" />
+            <Text style={styles.headerAddBtnText}>Add Item</Text>
+          </TouchableOpacity>
+
+          <Image
+            source={require("../../assets/intri-icon.png")}
+            style={styles.headerBrandLogo}
+            contentFit="contain"
+          />
+        </View>
       </View>
 
       {/* 3-Segment Top Bar */}
@@ -1770,22 +1793,28 @@ const styles = StyleSheet.create({
   },
   header: {
     backgroundColor: COLORS.primaryDark,
-    paddingTop: 50,
-    paddingBottom: SPACING.md,
+    paddingTop: 42,
+    paddingBottom: 12,
     paddingHorizontal: SPACING.lg,
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "space-between",
   },
   headerTitle: {
-    fontSize: 20,
+    fontSize: 18,
     fontWeight: "900",
     color: COLORS.textWhite,
   },
   headerSubtitle: {
     fontSize: 11,
-    color: "#94A3B8",
+    color: "rgba(255, 255, 255, 0.7)",
     marginTop: 2,
+  },
+  headerBrandLogo: {
+    width: 36,
+    height: 36,
+    borderRadius: 8,
+    backgroundColor: "#FFFFFF",
   },
   headerAddBtn: {
     backgroundColor: "#F26522",
