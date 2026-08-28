@@ -128,7 +128,7 @@ export default function AdminOrdersHubScreen() {
   }, [settingsData]);
 
   const orders = ordersData?.orders || [];
-  const splits = deliveriesData?.splits || [];
+  const splits = deliveriesData?.deliveries || deliveriesData?.splits || [];
 
   const handleOpenAssign = (split: any) => {
     setSelectedSplitId(split.id);

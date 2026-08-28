@@ -300,6 +300,7 @@ export async function fetchAdminDeliveries(params?: {
 }): Promise<{
   success: boolean;
   deliveries?: any[];
+  splits?: any[];
   total?: number;
   counts?: {
     all: number;
