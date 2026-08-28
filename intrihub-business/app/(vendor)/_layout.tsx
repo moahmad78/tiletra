@@ -13,12 +13,16 @@ export default function VendorTabsLayout() {
           backgroundColor: COLORS.surface,
           borderTopColor: COLORS.border,
           height: 60,
-          paddingBottom: 8,
-          paddingTop: 6,
+          paddingBottom: 6,
+          paddingTop: 4,
         },
         tabBarLabelStyle: {
-          fontSize: 11,
-          fontWeight: "700",
+          fontSize: 10.5,
+          fontWeight: "800",
+          marginBottom: 2,
+        },
+        tabBarItemStyle: {
+          paddingBottom: 2,
         },
       }}
     >

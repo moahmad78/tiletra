@@ -132,12 +132,12 @@ export default function AdminDashboardScreen() {
   return (
     <View style={styles.container}>
       <View style={styles.header}>
-        <View style={{ flex: 1 }}>
-          <View style={styles.adminBadge}>
-            <ShieldAlert size={12} color="#fff" />
-            <Text style={styles.adminBadgeText}>SUPER ADMIN CONSOLE</Text>
-          </View>
+        <View style={{ flexDirection: "row", alignItems: "center", gap: 8 }}>
           <Text style={styles.headerTitle}>Platform Operations</Text>
+          <View style={styles.adminBadge}>
+            <ShieldAlert size={10} color="#fff" />
+            <Text style={styles.adminBadgeText}>ADMIN</Text>
+          </View>
         </View>
         <Image
           source={require("../../assets/intri-icon.png")}
@@ -157,14 +157,14 @@ export default function AdminDashboardScreen() {
           onPress={() => setRevenueModalOpen(true)}
           activeOpacity={0.9}
         >
-          <View style={{ flexDirection: "row", justifyContent: "space-between", alignItems: "flex-start" }}>
-            <View>
-              <Text style={styles.gmvLabel}>Gross Merchandise Value (GMV)</Text>
+          <View>
+            <Text style={styles.gmvLabel}>GROSS MERCHANDISE VALUE (GMV)</Text>
+            <View style={{ flexDirection: "row", justifyContent: "space-between", alignItems: "center", marginTop: 4 }}>
               <Text style={styles.gmvAmount}>₹{(stats?.totalGmv || 0).toLocaleString("en-IN")}</Text>
-            </View>
-            <View style={styles.tapToViewBadge}>
-              <TrendingUp size={12} color="#FFFFFF" />
-              <Text style={styles.tapToViewText}>Vendor Breakdown →</Text>
+              <View style={styles.tapToViewBadge}>
+                <TrendingUp size={12} color="#FFFFFF" />
+                <Text style={styles.tapToViewText}>Vendor Breakdown →</Text>
+              </View>
             </View>
           </View>
 
@@ -650,8 +650,8 @@ const styles = StyleSheet.create({
   },
   header: {
     backgroundColor: COLORS.primaryDark,
-    paddingTop: 50,
-    paddingBottom: SPACING.md,
+    paddingTop: 42,
+    paddingBottom: 12,
     paddingHorizontal: SPACING.lg,
     flexDirection: "row",
     alignItems: "center",
@@ -661,12 +661,10 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     alignItems: "center",
     backgroundColor: "#F26522",
-    paddingHorizontal: 8,
+    paddingHorizontal: 6,
     paddingVertical: 2,
     borderRadius: RADIUS.full,
-    alignSelf: "flex-start",
-    marginBottom: 4,
-    gap: 4,
+    gap: 3,
   },
   adminBadgeText: {
     color: "#fff",
@@ -675,14 +673,15 @@ const styles = StyleSheet.create({
     letterSpacing: 0.5,
   },
   headerTitle: {
-    fontSize: 20,
+    fontSize: 18,
     fontWeight: "900",
     color: COLORS.textWhite,
   },
   headerBrandLogo: {
-    width: 38,
-    height: 38,
+    width: 36,
+    height: 36,
     borderRadius: 8,
+    backgroundColor: "#FFFFFF",
   },
   scrollContent: {
     padding: SPACING.md,
