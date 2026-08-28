@@ -14,6 +14,7 @@ import {
 } from "react-native";
 import { useRouter } from "expo-router";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { Image } from "expo-image";
 import {
   Store,
   Search,
@@ -448,21 +449,29 @@ export default function AdminVendorsHubScreen() {
     <View style={styles.container}>
       {/* Top Header */}
       <View style={styles.header}>
-        <View style={{ flex: 1 }}>
-          <Text style={styles.headerTitle}>Vendors & Partners Hub</Text>
-          <Text style={styles.headerSubtitle}>
-            {vendors.length} registered vendors • {pendingAppsCount} pending inquiries
+        <View style={{ flex: 1, paddingRight: 6 }}>
+          <Text style={styles.headerTitle} numberOfLines={1}>Vendors Hub</Text>
+          <Text style={styles.headerSubtitle} numberOfLines={1}>
+            {vendors.length} registered • {pendingAppsCount} pending inquiries
           </Text>
         </View>
 
-        <TouchableOpacity
-          style={styles.addVendorBtn}
-          onPress={() => setCreateModalOpen(true)}
-          activeOpacity={0.85}
-        >
-          <Plus size={16} color="#FFFFFF" />
-          <Text style={styles.addVendorBtnText}>Add Vendor</Text>
-        </TouchableOpacity>
+        <View style={{ flexDirection: "row", alignItems: "center", gap: 8 }}>
+          <TouchableOpacity
+            style={styles.addVendorBtn}
+            onPress={() => setCreateModalOpen(true)}
+            activeOpacity={0.85}
+          >
+            <Plus size={15} color="#FFFFFF" />
+            <Text style={styles.addVendorBtnText}>Add Vendor</Text>
+          </TouchableOpacity>
+
+          <Image
+            source={require("../../assets/intri-icon.png")}
+            style={styles.headerBrandLogo}
+            contentFit="contain"
+          />
+        </View>
       </View>
 
       {/* Segmented Section Switcher */}
@@ -830,22 +839,28 @@ const styles = StyleSheet.create({
   },
   header: {
     backgroundColor: COLORS.primaryDark,
-    paddingTop: 50,
-    paddingBottom: SPACING.md,
+    paddingTop: 42,
+    paddingBottom: 12,
     paddingHorizontal: SPACING.lg,
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "space-between",
   },
   headerTitle: {
-    fontSize: 20,
+    fontSize: 18,
     fontWeight: "900",
     color: COLORS.textWhite,
   },
   headerSubtitle: {
-    fontSize: 12,
+    fontSize: 11,
     color: "rgba(255, 255, 255, 0.7)",
     marginTop: 2,
+  },
+  headerBrandLogo: {
+    width: 36,
+    height: 36,
+    borderRadius: 8,
+    backgroundColor: "#FFFFFF",
   },
   addVendorBtn: {
     flexDirection: "row",
