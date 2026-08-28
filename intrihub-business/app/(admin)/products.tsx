@@ -54,55 +54,15 @@ import {
   fetchAdminCategories,
   createAdminCategory,
 } from "../../src/api/admin";
+import {
+  CATALOG_COLOURS,
+  CATALOG_UNITS,
+  CATALOG_DIMENSIONS,
+  CATALOG_FINISHES,
+  CATALOG_MATERIALS,
+} from "../../src/constants/catalog";
 import { Product } from "../../src/types";
 import { COLORS, SPACING, RADIUS, SHADOWS } from "../../src/constants/theme";
-
-// Standard Product Options
-const STANDARD_UNITS = [
-  "box",
-  "sqft",
-  "piece",
-  "kg",
-  "meter",
-  "coil",
-  "pack",
-  "roll",
-  "litre",
-  "can",
-  "sheet",
-  "slab",
-  "bucket",
-  "drum",
-  "bottle",
-  "tube",
-  "dozen",
-  "ton",
-];
-
-const STANDARD_SIZES = [
-  "600x600mm",
-  "600x1200mm",
-  "800x1600mm",
-  "300x450mm",
-  "300x600mm",
-  "1200x1800mm",
-  "800x800mm",
-  "100x100mm",
-  "Custom",
-];
-
-const STANDARD_FINISHES = [
-  "Glossy",
-  "Matt",
-  "High Gloss",
-  "Carving",
-  "Satin",
-  "Rustic",
-  "Polished",
-  "Wood Finish",
-  "Marble Look",
-  "Stone Texture",
-];
 
 interface ProductVariantForm {
   id?: string;
@@ -1015,9 +975,36 @@ export default function AdminProductsHubScreen() {
                         </TouchableOpacity>
                       </View>
 
+                      <View style={{ marginBottom: 8 }}>
+                        <Text style={styles.variantLabel}>Pick Preset Colour Swatch:</Text>
+                        <ScrollView horizontal showsHorizontalScrollIndicator={false} style={{ marginVertical: 4 }}>
+                          {CATALOG_COLOURS.map((col) => {
+                            const isSelected = v.color === col.name;
+                            return (
+                              <TouchableOpacity
+                                key={col.name}
+                                style={[
+                                  styles.colorSwatchChip,
+                                  isSelected && styles.colorSwatchChipActive,
+                                ]}
+                                onPress={() => {
+                                  handleUpdateVariant(idx, "color", col.name);
+                                  handleUpdateVariant(idx, "colorHex", col.hexCode);
+                                }}
+                              >
+                                <View style={[styles.colorCircle, { backgroundColor: col.hexCode }]} />
+                                <Text style={[styles.colorSwatchText, isSelected && styles.colorSwatchTextActive]}>
+                                  {col.name}
+                                </Text>
+                              </TouchableOpacity>
+                            );
+                          })}
+                        </ScrollView>
+                      </View>
+
                       <View style={styles.twoCol}>
                         <View style={{ flex: 1 }}>
-                          <Text style={styles.variantLabel}>Color / Shade Name</Text>
+                          <Text style={styles.variantLabel}>Color Name (Custom / Edited)</Text>
                           <TextInput
                             style={styles.variantInput}
                             value={v.color}
@@ -1026,7 +1013,7 @@ export default function AdminProductsHubScreen() {
                           />
                         </View>
                         <View style={{ flex: 1 }}>
-                          <Text style={styles.variantLabel}>Size / Dimension</Text>
+                          <Text style={styles.variantLabel}>Dimension / Size</Text>
                           <TextInput
                             style={styles.variantInput}
                             value={v.size}
@@ -1690,5 +1677,37 @@ const styles = StyleSheet.create({
     borderRadius: 10,
     alignItems: "center",
     justifyContent: "center",
+  },
+  colorSwatchChip: {
+    flexDirection: "row",
+    alignItems: "center",
+    backgroundColor: "#FFFFFF",
+    borderWidth: 1,
+    borderColor: "#E2E8F0",
+    paddingHorizontal: 8,
+    paddingVertical: 5,
+    borderRadius: 8,
+    marginRight: 6,
+    gap: 6,
+  },
+  colorSwatchChipActive: {
+    borderColor: "#052A51",
+    backgroundColor: "#EFF6FF",
+  },
+  colorCircle: {
+    width: 14,
+    height: 14,
+    borderRadius: 7,
+    borderWidth: 1,
+    borderColor: "rgba(0,0,0,0.15)",
+  },
+  colorSwatchText: {
+    fontSize: 10,
+    fontWeight: "700",
+    color: "#475569",
+  },
+  colorSwatchTextActive: {
+    color: "#052A51",
+    fontWeight: "800",
   },
 });
