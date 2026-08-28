@@ -278,7 +278,6 @@ export default function AdminProductsHubScreen() {
     setVariants((prev) => {
       const next = [...prev];
       if (field === "color") {
-        // Auto-detect and resolve hex code on the fly!
         const detectedHex = resolveColorHex(value);
         next[index] = { ...next[index], color: value, colorHex: detectedHex };
       } else {
@@ -625,36 +624,37 @@ export default function AdminProductsHubScreen() {
               <Text style={styles.categoryPill}>{item.categorySlug}</Text>
             </View>
 
-          <Text style={styles.productName} numberOfLines={2}>{item.name}</Text>
-          <Text style={styles.vendorSubtitle}>Vendor: {item.vendorName || "Direct / Admin"}</Text>
+            <Text style={styles.productName} numberOfLines={2}>{item.name}</Text>
+            <Text style={styles.vendorSubtitle}>Vendor: {item.vendorName || "Direct / Admin"}</Text>
 
-          <View style={styles.priceRow}>
-            <Text style={styles.priceText}>
-              ₹{item.pricePerBox?.toLocaleString("en-IN") || item.pricePerSqft?.toLocaleString("en-IN") || "0"}
-              <Text style={styles.unitText}> / {item.unitOfSale || "box"}</Text>
-            </Text>
+            <View style={styles.priceRow}>
+              <Text style={styles.priceText}>
+                ₹{item.pricePerBox?.toLocaleString("en-IN") || item.pricePerSqft?.toLocaleString("en-IN") || "0"}
+                <Text style={styles.unitText}> / {item.unitOfSale || "box"}</Text>
+              </Text>
 
-            <View style={styles.stockPill}>
-              <Boxes size={11} color="#64748B" />
-              <Text style={styles.stockText}>{item.stockBoxes ?? 0} in stock</Text>
+              <View style={styles.stockPill}>
+                <Boxes size={11} color="#64748B" />
+                <Text style={styles.stockText}>{item.stockBoxes ?? 0} in stock</Text>
+              </View>
             </View>
           </View>
         </View>
-      </View>
 
-      <View style={styles.cardActions}>
-        <TouchableOpacity style={styles.editBtn} onPress={() => handleOpenEdit(item)}>
-          <Edit2 size={13} color={COLORS.accentBlue} />
-          <Text style={styles.editBtnText}>Edit Item Details</Text>
-        </TouchableOpacity>
+        <View style={styles.cardActions}>
+          <TouchableOpacity style={styles.editBtn} onPress={() => handleOpenEdit(item)}>
+            <Edit2 size={13} color={COLORS.accentBlue} />
+            <Text style={styles.editBtnText}>Edit Item Details</Text>
+          </TouchableOpacity>
 
-        <TouchableOpacity style={styles.deleteBtn} onPress={() => handleDeleteProduct(item.id, item.name)}>
-          <Trash2 size={13} color="#DC2626" />
-          <Text style={styles.deleteBtnText}>Delete</Text>
-        </TouchableOpacity>
+          <TouchableOpacity style={styles.deleteBtn} onPress={() => handleDeleteProduct(item.id, item.name)}>
+            <Trash2 size={13} color="#DC2626" />
+            <Text style={styles.deleteBtnText}>Delete</Text>
+          </TouchableOpacity>
+        </View>
       </View>
-    </View>
-  );
+    );
+  };
 
   const renderApprovalItem = ({ item }: { item: any }) => {
     const validImg =
@@ -670,41 +670,42 @@ export default function AdminProductsHubScreen() {
             style={styles.productImage}
             contentFit="cover"
           />
-        <View style={styles.productInfo}>
-          <View style={styles.badgeRow}>
-            <View style={[styles.statusBadge, { backgroundColor: "#FEF3C7" }]}>
-              <Text style={[styles.statusText, { color: "#D97706" }]}>AWAITING APPROVAL</Text>
+          <View style={styles.productInfo}>
+            <View style={styles.badgeRow}>
+              <View style={[styles.statusBadge, { backgroundColor: "#FEF3C7" }]}>
+                <Text style={[styles.statusText, { color: "#D97706" }]}>AWAITING APPROVAL</Text>
+              </View>
+            </View>
+
+            <Text style={styles.productName} numberOfLines={2}>{item.name}</Text>
+            <Text style={styles.vendorSubtitle}>Submitted by: {item.vendor?.businessName || "Vendor Partner"}</Text>
+
+            <View style={styles.priceRow}>
+              <Text style={styles.priceText}>₹{item.pricePerBox || item.pricePerSqft || "0"} / box</Text>
             </View>
           </View>
+        </View>
 
-          <Text style={styles.productName} numberOfLines={2}>{item.name}</Text>
-          <Text style={styles.vendorSubtitle}>Submitted by: {item.vendor?.businessName || "Vendor Partner"}</Text>
+        <View style={styles.approvalActions}>
+          <TouchableOpacity
+            style={styles.approveBtn}
+            onPress={() => handleApproveProduct(item.id, item.name)}
+          >
+            <CheckCircle2 size={14} color="#FFFFFF" />
+            <Text style={styles.approveBtnText}>Approve & Publish</Text>
+          </TouchableOpacity>
 
-          <View style={styles.priceRow}>
-            <Text style={styles.priceText}>₹{item.pricePerBox || item.pricePerSqft || "0"} / box</Text>
-          </View>
+          <TouchableOpacity
+            style={styles.rejectBtn}
+            onPress={() => handleRejectProduct(item.id, item.name)}
+          >
+            <XCircle size={14} color="#DC2626" />
+            <Text style={styles.rejectBtnText}>Reject</Text>
+          </TouchableOpacity>
         </View>
       </View>
-
-      <View style={styles.approvalActions}>
-        <TouchableOpacity
-          style={styles.approveBtn}
-          onPress={() => handleApproveProduct(item.id, item.name)}
-        >
-          <CheckCircle2 size={14} color="#FFFFFF" />
-          <Text style={styles.approveBtnText}>Approve & Publish</Text>
-        </TouchableOpacity>
-
-        <TouchableOpacity
-          style={styles.rejectBtn}
-          onPress={() => handleRejectProduct(item.id, item.name)}
-        >
-          <XCircle size={14} color="#DC2626" />
-          <Text style={styles.rejectBtnText}>Reject</Text>
-        </TouchableOpacity>
-      </View>
-    </View>
-  );
+    );
+  };
 
   return (
     <View style={styles.container}>
@@ -1105,9 +1106,7 @@ export default function AdminProductsHubScreen() {
                         {/* Color Name with Real-Time Live Swatch Auto-Detection */}
                         <Text style={styles.variantLabel}>Color / Shade Name * (Auto Swatch)</Text>
                         <View style={{ flexDirection: "row", gap: 8, alignItems: "center" }}>
-                          <View style={[styles.colorBubbleInput, { backgroundColor: activeHex }]}>
-                            <View style={styles.colorBubbleBorder} />
-                          </View>
+                          <View style={[styles.colorBubbleInput, { backgroundColor: activeHex }]} />
                           <TextInput
                             style={[styles.variantInput, { flex: 1 }]}
                             value={v.color}
@@ -1983,13 +1982,6 @@ const styles = StyleSheet.create({
     borderRadius: 16,
     borderWidth: 1.5,
     borderColor: "#CBD5E1",
-    alignItems: "center",
-    justifyContent: "center",
-  },
-  colorBubbleBorder: {
-    width: 24,
-    height: 24,
-    borderRadius: 12,
   },
   variantLabel: {
     fontSize: 10,
