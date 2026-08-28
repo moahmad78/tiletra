@@ -19,9 +19,9 @@ export default function AdminTabsLayout() {
         tabBarStyle: {
           backgroundColor: "#FFFFFF",
           borderTopColor: "#E2E8F0",
-          height: 60,
-          paddingBottom: 6,
-          paddingTop: 4,
+          height: 68,
+          paddingBottom: 16,
+          paddingTop: 6,
           elevation: 8,
           shadowColor: "#000",
           shadowOffset: { width: 0, height: -2 },
@@ -29,12 +29,12 @@ export default function AdminTabsLayout() {
           shadowRadius: 4,
         },
         tabBarLabelStyle: {
-          fontSize: 10.5,
+          fontSize: 11,
           fontWeight: "800",
-          marginBottom: 2,
+          marginTop: -2,
         },
         tabBarItemStyle: {
-          paddingBottom: 2,
+          paddingBottom: 4,
         },
       }}
     >
