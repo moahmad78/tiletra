@@ -87,6 +87,11 @@ async function registerForPushNotificationsAsync(): Promise<string | null> {
   }
 
   if (Platform.OS !== "web") {
+    // Expo Go (SDK 53+) removed remote push notifications for Android. Skip in Expo Go to avoid LogBox warning.
+    if (Constants.appOwnership === "expo") {
+      return null;
+    }
+
     const { status: existingStatus } = await Notifications.getPermissionsAsync();
     let finalStatus = existingStatus;
     if (existingStatus !== "granted") {
@@ -94,7 +99,6 @@ async function registerForPushNotificationsAsync(): Promise<string | null> {
       finalStatus = status;
     }
     if (finalStatus !== "granted") {
-      console.log("Push notification permission not granted.");
       return null;
     }
 
@@ -105,9 +109,8 @@ async function registerForPushNotificationsAsync(): Promise<string | null> {
         projectId ? { projectId } : undefined
       );
       pushToken = tokenObj.data;
-      console.log("Expo Push Token obtained:", pushToken);
-    } catch (e) {
-      console.log("Error getting push token (likely Expo Go vs dev build):", e);
+    } catch {
+      // In development or when offline
     }
   }
 

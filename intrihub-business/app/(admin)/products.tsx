@@ -822,7 +822,7 @@ export default function AdminProductsHubScreen() {
               <View style={{ marginTop: 14 }}>
                 <Text style={styles.inputLabel}>Unit of Sale *</Text>
                 <ScrollView horizontal showsHorizontalScrollIndicator={false} style={{ marginHorizontal: -4 }}>
-                  {STANDARD_UNITS.map((u) => {
+                  {CATALOG_UNITS.map((u) => {
                     const isSelected = unitOfSale === u;
                     return (
                       <TouchableOpacity
@@ -843,7 +843,7 @@ export default function AdminProductsHubScreen() {
               <View style={{ marginTop: 14 }}>
                 <Text style={styles.inputLabel}>Dimensions / Size</Text>
                 <ScrollView horizontal showsHorizontalScrollIndicator={false} style={{ marginHorizontal: -4 }}>
-                  {STANDARD_SIZES.map((sz) => {
+                  {CATALOG_DIMENSIONS.map((sz) => {
                     const isSelected = size === sz;
                     return (
                       <TouchableOpacity
@@ -864,7 +864,7 @@ export default function AdminProductsHubScreen() {
               <View style={{ marginTop: 14 }}>
                 <Text style={styles.inputLabel}>Finish / Look</Text>
                 <ScrollView horizontal showsHorizontalScrollIndicator={false} style={{ marginHorizontal: -4 }}>
-                  {STANDARD_FINISHES.map((fn) => {
+                  {CATALOG_FINISHES.map((fn) => {
                     const isSelected = finish === fn;
                     return (
                       <TouchableOpacity
