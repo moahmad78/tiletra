@@ -359,16 +359,19 @@ export default function AdminOrdersHubScreen() {
         activeOpacity={0.85}
       >
         <View style={styles.cardHeader}>
-          <TouchableOpacity
-            style={{ justifyContent: "center", paddingRight: 6 }}
-            onPress={() => handleToggleSelectOrder(item.id)}
-          >
-            {isSelected ? (
-              <CheckSquare2 size={20} color="#2563EB" />
-            ) : (
-              <Square size={20} color="#CBD5E1" />
-            )}
-          </TouchableOpacity>
+          {/* Checkbox indicator for Batch Selection (Only visible when hold selection mode is active) */}
+          {isSelectMode ? (
+            <TouchableOpacity
+              style={{ justifyContent: "center", paddingRight: 6 }}
+              onPress={() => handleToggleSelectOrder(item.id)}
+            >
+              {isSelected ? (
+                <CheckSquare2 size={20} color="#2563EB" />
+              ) : (
+                <Square size={20} color="#CBD5E1" />
+              )}
+            </TouchableOpacity>
+          ) : null}
 
           <View style={{ flex: 1 }}>
             <Text style={styles.orderId}>#{item.orderNumber || item.id?.slice(-8).toUpperCase()}</Text>
@@ -402,6 +405,15 @@ export default function AdminOrdersHubScreen() {
           {item.customerPhone ? (
             <Text style={styles.customerPhone}>• +91 {item.customerPhone}</Text>
           ) : null}
+        </View>
+
+        {/* Vendor Partner Allocation Badge Row */}
+        <View style={styles.orderVendorRow}>
+          <Store size={12} color={COLORS.accentBlue} />
+          <Text style={styles.orderVendorLabel}>Vendor: </Text>
+          <Text style={styles.orderVendorVal} numberOfLines={1}>
+            {item.vendorName || (item.vendors && item.vendors.length > 0 ? item.vendors.map((v: any) => v.businessName).join(", ") : "Direct / Admin")}
+          </Text>
         </View>
 
         {item.customerAddress ? (
@@ -480,12 +492,18 @@ export default function AdminOrdersHubScreen() {
     <View style={styles.container}>
       {/* Top Header */}
       <View style={styles.header}>
-        <View style={{ flex: 1 }}>
-          <Text style={styles.headerTitle}>Orders & Logistics Hub</Text>
-          <Text style={styles.headerSubtitle}>
-            {orders.length} total orders • {splits.length} vendor delivery splits
+        <View style={{ flex: 1, paddingRight: 6 }}>
+          <Text style={styles.headerTitle} numberOfLines={1}>Orders Hub</Text>
+          <Text style={styles.headerSubtitle} numberOfLines={1}>
+            {orders.length} total orders • {splits.length} delivery splits
           </Text>
         </View>
+
+        <Image
+          source={require("../../assets/intri-icon.png")}
+          style={styles.headerBrandLogo}
+          contentFit="contain"
+        />
       </View>
 
       {/* Segment Switcher */}
@@ -934,22 +952,28 @@ const styles = StyleSheet.create({
   },
   header: {
     backgroundColor: COLORS.primaryDark,
-    paddingTop: 50,
-    paddingBottom: SPACING.md,
+    paddingTop: 42,
+    paddingBottom: 12,
     paddingHorizontal: SPACING.lg,
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "space-between",
   },
   headerTitle: {
-    fontSize: 20,
+    fontSize: 18,
     fontWeight: "900",
     color: COLORS.textWhite,
   },
   headerSubtitle: {
-    fontSize: 12,
+    fontSize: 11,
     color: "rgba(255, 255, 255, 0.7)",
     marginTop: 2,
+  },
+  headerBrandLogo: {
+    width: 36,
+    height: 36,
+    borderRadius: 8,
+    backgroundColor: "#FFFFFF",
   },
   segmentContainer: {
     flexDirection: "row",
@@ -1083,6 +1107,27 @@ const styles = StyleSheet.create({
   customerPhone: {
     fontSize: 12,
     color: COLORS.textTertiary,
+  },
+  orderVendorRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    marginTop: 4,
+    backgroundColor: "#EFF6FF",
+    paddingHorizontal: 8,
+    paddingVertical: 3,
+    borderRadius: 6,
+    alignSelf: "flex-start",
+    gap: 4,
+  },
+  orderVendorLabel: {
+    fontSize: 11,
+    fontWeight: "700",
+    color: "#1E40AF",
+  },
+  orderVendorVal: {
+    fontSize: 11,
+    fontWeight: "800",
+    color: "#1D4ED8",
   },
   addressPreviewText: {
     fontSize: 11,

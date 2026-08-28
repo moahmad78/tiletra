@@ -141,6 +141,14 @@ export async function GET(req: NextRequest) {
               deliveryMethod: "platform",
             }));
 
+        const vendorNamesList = Array.from(
+          new Set([
+            ...mappedVendors.map((v) => v.businessName),
+            ...mappedItems.map((it) => it.vendorName),
+          ].filter((name) => name && name.trim() !== ""))
+        );
+        const vendorNameDisplay = vendorNamesList.length > 0 ? vendorNamesList.join(", ") : "Direct / Admin";
+
         return {
           id: o.id,
           orderNumber: o.id.slice(-8).toUpperCase(),
@@ -148,6 +156,7 @@ export async function GET(req: NextRequest) {
           customerPhone: o.deliveryPhone || o.customerPhone || "",
           customerEmail: o.customerEmail || "",
           customerAddress: fullAddress,
+          vendorName: vendorNameDisplay,
           total: o.total,
           subtotal: o.subtotal,
           deliveryFee: o.deliveryFee,
