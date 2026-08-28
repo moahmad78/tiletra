@@ -179,11 +179,17 @@ export default function AdminVendorApplicationsPage() {
             </span>
           </div>
           <p className="text-xs text-gray-500 mt-1">
-            Review public applications (Path A), inspect Aadhar/PAN/Shop photos, and create vendor credentials.
+            Review public applications (Path A), inspect Aadhar/PAN/Shop photos, and create vendor credentials. Direct Inquiries: <a href="mailto:vendor@intrihub.com" className="font-bold text-[#052a51] hover:underline">vendor@intrihub.com</a>
           </p>
         </div>
 
         <div className="flex items-center gap-2">
+          <a
+            href="mailto:vendor@intrihub.com"
+            className="px-3.5 py-2 bg-orange-50 hover:bg-orange-100 text-[#F26522] text-xs font-bold rounded-xl border border-orange-200 shadow-2xs transition-all flex items-center gap-1.5"
+          >
+            <Mail size={14} /> vendor@intrihub.com
+          </a>
           <Link
             href="/admin/vendors"
             className="px-4 py-2 bg-white hover:bg-gray-50 text-[#052a51] text-xs font-bold rounded-xl border border-gray-200 shadow-2xs transition-all flex items-center gap-1.5"

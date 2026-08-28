@@ -70,10 +70,10 @@ export default function Header() {
                   <MapPin size={13} className="text-[#F26522]" /> Bangalore, Karnataka
                 </span>
                 <a
-                  href="mailto:info@intrihub.com"
+                  href="mailto:support@intrihub.com"
                   className="flex items-center gap-1.5 hover:text-[#F26522] transition-colors"
                 >
-                  <Mail size={13} className="text-[#F26522]" /> info@intrihub.com
+                  <Mail size={13} className="text-[#F26522]" /> support@intrihub.com
                 </a>
               </div>
               <div className="flex items-center gap-4">

@@ -30,7 +30,7 @@ export async function validateAdminCredentialsAndSendOtp(formData: {
   if (cleanEmail !== STRICT_ADMIN_EMAIL.toLowerCase()) {
     return {
       success: false,
-      message: "Access Denied: Wrong Admin Email. Only the designated Super Admin is authorized.",
+      message: "Access denied.",
     };
   }
 
@@ -38,7 +38,7 @@ export async function validateAdminCredentialsAndSendOtp(formData: {
   if (!cleanPassword || cleanPassword !== ADMIN_PASSWORD) {
     return {
       success: false,
-      message: "Access Denied: Invalid admin password.",
+      message: "Access denied.",
     };
   }
 
@@ -143,7 +143,7 @@ export async function verifyAdmin2FaOtp(data: {
 
   // 1. Strict single email check
   if (cleanEmail !== STRICT_ADMIN_EMAIL.toLowerCase()) {
-    return { success: false, message: "Access Denied: Unauthorized admin email." };
+    return { success: false, message: "Access denied." };
   }
 
   if (!cleanOtp || cleanOtp.length !== 6) {

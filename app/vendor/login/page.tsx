@@ -109,7 +109,7 @@ export default function VendorLoginPage() {
                   type="email"
                   value={identifier}
                   onChange={(e) => setIdentifier(e.target.value)}
-                  placeholder="e.g. balaji.electricals@intrihub.com"
+                  placeholder="e.g. vendor@intrihub.com"
                   className="w-full bg-gray-50 border border-gray-200 rounded-xl px-4 py-3 text-sm font-medium text-gray-800 placeholder-gray-400 focus:bg-white focus:border-[#052a51] focus:outline-hidden transition-all"
                   required
                 />

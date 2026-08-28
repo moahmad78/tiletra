@@ -10,25 +10,54 @@ export type CreateProductInput = {
   categoryId?: string | null;
   categorySlug: string;
   categoryName?: string;
+  subcategory?: string | null;
+  brand?: string | null;
+  modelNumber?: string | null;
+  sku?: string | null;
   material: string;
   description: string;
+  shortDescription?: string | null;
   images: string[];
+  videos?: string[];
   unitOfSale?: string;
+  sellingUnit?: string;
+  baseUnit?: string | null;
+  conversionRatio?: number | null;
+  piecesPerUnit?: number | null;
+  lengthPerUnit?: number | null;
+  weightKg?: number | null;
+  minOrderQuantity?: number;
+  maxOrderQuantity?: number | null;
+  incrementQuantity?: number;
+  allowDecimals?: boolean;
+  decimalPrecision?: number;
   mrp?: number | null;
+  grade?: string | null;
+  series?: string | null;
+  warranty?: string | null;
+  countryOfOrigin?: string;
+  hsnCode?: string | null;
+  gstPercent?: number;
   attributes?: { key: string; value: string }[];
+  priceTiers?: { minQuantity: number; maxQuantity?: number | null; price: number; customerType?: string }[];
   variants: {
+    sku?: string | null;
     size: string;
     finish: any;
     color: string;
+    colorHex?: string | null;
+    swatchImage?: string | null;
     image?: string | null;
     unit?: string | null;
     attributeLabel?: string | null;
     attributeValue?: string | null;
+    variantSpecs?: any;
     mrp?: number | null;
     weightKg?: number | null;
     pricePerBox: number;
     pricePerSqft: number;
     sqftPerBox: number;
+    piecesPerBox?: number;
     stockBoxes?: number;
   }[];
   isBestseller?: boolean;
@@ -38,7 +67,7 @@ export type CreateProductInput = {
   manualReviewCount?: number | null;
   specs?: any;
   vendorId?: string | null;
-  status?: "active" | "paused" | "draft";
+  status?: "active" | "paused" | "draft" | "archived";
   approvalStatus?: "pending" | "approved" | "rejected";
   rejectionReason?: string | null;
   coverageRate?: number | null;
@@ -170,6 +199,7 @@ export async function getProducts(options?: {
       include: {
         variants: true,
         attributes: true,
+        priceTiers: true,
         vendor: {
           select: {
             id: true,
@@ -249,6 +279,7 @@ export async function getProductBySlug(slug: string, options?: { includeAllStatu
       include: {
         variants: true,
         attributes: true,
+        priceTiers: true,
         vendor: {
           select: {
             id: true,
@@ -283,6 +314,7 @@ export async function getProductById(id: string, options?: { includeAllStatuses?
       include: {
         variants: true,
         attributes: true,
+        priceTiers: true,
         vendor: {
           select: {
             id: true,
@@ -399,20 +431,42 @@ export async function createProduct(input: CreateProductInput) {
         categoryId: cat?.id || null,
         categorySlug: input.categorySlug,
         categoryName: cat?.name || "General",
+        subcategory: input.subcategory || null,
+        brand: input.brand || "Intrihub",
+        modelNumber: input.modelNumber || null,
+        sku: input.sku || null,
         material: input.material,
-        unitOfSale: input.unitOfSale || "box",
+        unitOfSale: input.sellingUnit || input.unitOfSale || "box",
+        baseUnit: input.baseUnit || null,
+        conversionRatio: input.conversionRatio !== undefined && input.conversionRatio !== null ? Number(input.conversionRatio) : (primaryVariant.sqftPerBox ? Number(primaryVariant.sqftPerBox) : null),
+        piecesPerUnit: input.piecesPerUnit !== undefined && input.piecesPerUnit !== null ? Number(input.piecesPerUnit) : (primaryVariant.piecesPerBox ? Number(primaryVariant.piecesPerBox) : null),
+        lengthPerUnit: input.lengthPerUnit !== undefined && input.lengthPerUnit !== null ? Number(input.lengthPerUnit) : null,
+        weightKg: input.weightKg !== undefined && input.weightKg !== null ? Number(input.weightKg) : (primaryVariant.weightKg ? Number(primaryVariant.weightKg) : null),
+        minOrderQuantity: input.minOrderQuantity !== undefined && input.minOrderQuantity !== null ? Number(input.minOrderQuantity) : 1,
+        maxOrderQuantity: input.maxOrderQuantity !== undefined && input.maxOrderQuantity !== null ? Number(input.maxOrderQuantity) : null,
+        incrementQuantity: input.incrementQuantity !== undefined && input.incrementQuantity !== null ? Number(input.incrementQuantity) : 1,
+        allowDecimals: Boolean(input.allowDecimals),
+        decimalPrecision: Number(input.decimalPrecision || 0),
         finish: primaryVariant.finish,
         size: primaryVariant.size,
         pricePerSqft: Number(primaryVariant.pricePerSqft),
         thickness: "Standard",
         usage: "Interior / Project",
         look: input.name,
+        grade: input.grade || null,
+        series: input.series || null,
+        warranty: input.warranty || null,
+        countryOfOrigin: input.countryOfOrigin || "India",
+        hsnCode: input.hsnCode || null,
+        gstPercent: input.gstPercent !== undefined && input.gstPercent !== null ? Number(input.gstPercent) : 18,
         inStock: true,
         isBestseller: Boolean(input.isBestseller),
         isNewArrival: Boolean(input.isNew),
         isTrending: Boolean(input.isTrending),
         images: input.images.length > 0 ? input.images : ["/placeholders/product.svg"],
+        videos: input.videos || [],
         description: input.description,
+        shortDescription: input.shortDescription || null,
         mrp: input.mrp !== undefined && input.mrp !== null ? Number(input.mrp) : null,
         rating: input.manualRating !== undefined && input.manualRating !== null ? Number(input.manualRating) : 4.8,
         reviewCount: input.manualReviewCount !== undefined && input.manualReviewCount !== null ? Number(input.manualReviewCount) : 0,
@@ -427,18 +481,23 @@ export async function createProduct(input: CreateProductInput) {
         wastageFactor: input.wastageFactor !== undefined && input.wastageFactor !== null ? Number(input.wastageFactor) : 1.1,
         variants: {
           create: input.variants.map((v) => ({
+            sku: v.sku || null,
             size: v.size,
             finish: v.finish,
             color: v.color,
+            colorHex: v.colorHex || null,
+            swatchImage: v.swatchImage || null,
             image: v.image || null,
             unit: v.unit || null,
             attributeLabel: v.attributeLabel || null,
             attributeValue: v.attributeValue || null,
+            variantSpecs: v.variantSpecs || null,
             mrp: v.mrp !== undefined && v.mrp !== null ? Number(v.mrp) : null,
             weightKg: v.weightKg !== undefined && v.weightKg !== null ? Number(v.weightKg) : 2.5,
             pricePerBox: Number(v.pricePerBox),
             pricePerSqft: Number(v.pricePerSqft),
             sqftPerBox: Number(v.sqftPerBox),
+            piecesPerBox: v.piecesPerBox ? Number(v.piecesPerBox) : 4,
             stockBoxes: Number(v.stockBoxes ?? 50),
             inStock: true,
           })),
@@ -449,10 +508,19 @@ export async function createProduct(input: CreateProductInput) {
             value: a.value,
           })),
         } : undefined,
+        priceTiers: input.priceTiers && input.priceTiers.length > 0 ? {
+          create: input.priceTiers.map((t) => ({
+            minQuantity: Number(t.minQuantity),
+            maxQuantity: t.maxQuantity ? Number(t.maxQuantity) : null,
+            price: Number(t.price),
+            customerType: t.customerType || "all",
+          })),
+        } : undefined,
       },
       include: {
         variants: true,
         attributes: true,
+        priceTiers: true,
         vendor: {
           select: {
             id: true,
@@ -518,8 +586,14 @@ export async function createProductsBulk(inputs: CreateProductInput[]) {
             categoryId: input.categoryId || null,
             categorySlug: input.categorySlug,
             categoryName: input.categoryName || input.categorySlug,
+            subcategory: input.subcategory || null,
+            brand: input.brand || "Intrihub",
+            modelNumber: input.modelNumber || null,
+            sku: input.sku || null,
             material: input.material || "Standard",
-            unitOfSale: input.unitOfSale || "piece",
+            unitOfSale: input.sellingUnit || input.unitOfSale || "piece",
+            baseUnit: input.baseUnit || null,
+            conversionRatio: input.conversionRatio ? Number(input.conversionRatio) : null,
             finish: primaryVariant.finish || "Standard",
             size: primaryVariant.size || "Standard",
             pricePerSqft: Number(primaryVariant.pricePerSqft || primaryVariant.pricePerBox || 100),
@@ -531,7 +605,9 @@ export async function createProductsBulk(inputs: CreateProductInput[]) {
             isNewArrival: Boolean(input.isNew),
             isTrending: Boolean(input.isTrending),
             images: input.images && input.images.length > 0 ? input.images : ["/placeholders/product.svg"],
+            videos: input.videos || [],
             description: input.description || input.name,
+            shortDescription: input.shortDescription || null,
             rating: 4.8,
             reviewCount: 0,
             specs: input.specs || null,
@@ -540,17 +616,22 @@ export async function createProductsBulk(inputs: CreateProductInput[]) {
             approvalStatus: input.approvalStatus || (input.vendorId ? "pending" : "approved"),
             variants: {
               create: input.variants && input.variants.length > 0 ? input.variants.map((v) => ({
+                sku: v.sku || null,
                 size: v.size || "Standard",
                 finish: v.finish || "Standard",
                 color: v.color || "Standard",
+                colorHex: v.colorHex || null,
+                swatchImage: v.swatchImage || null,
                 image: v.image || null,
                 unit: v.unit || null,
                 attributeLabel: v.attributeLabel || null,
                 attributeValue: v.attributeValue || null,
+                variantSpecs: v.variantSpecs || null,
                 pricePerBox: Number(v.pricePerBox || 100),
-                pricePerSqft: Number(v.pricePerSqft || v.pricePerBox || 100),
+                pricePerSqft: Number(v.pricePerSqft || 100),
                 sqftPerBox: Number(v.sqftPerBox || 1),
-                stockBoxes: Number(v.stockBoxes ?? 50),
+                piecesPerBox: v.piecesPerBox ? Number(v.piecesPerBox) : 4,
+                stockBoxes: Number(v.stockBoxes || 50),
                 inStock: true,
               })) : [
                 {
@@ -608,8 +689,28 @@ export async function updateProduct(id: string, input: Partial<CreateProductInpu
   try {
     const updateData: any = {};
     if (input.name) updateData.name = input.name;
+    if (input.brand !== undefined) updateData.brand = input.brand;
+    if (input.modelNumber !== undefined) updateData.modelNumber = input.modelNumber;
+    if (input.sku !== undefined) updateData.sku = input.sku;
     if (input.description !== undefined) updateData.description = input.description;
-    if (input.unitOfSale) updateData.unitOfSale = input.unitOfSale;
+    if (input.shortDescription !== undefined) updateData.shortDescription = input.shortDescription;
+    if (input.sellingUnit || input.unitOfSale) updateData.unitOfSale = input.sellingUnit || input.unitOfSale;
+    if (input.baseUnit !== undefined) updateData.baseUnit = input.baseUnit;
+    if (input.conversionRatio !== undefined) updateData.conversionRatio = input.conversionRatio !== null ? Number(input.conversionRatio) : null;
+    if (input.piecesPerUnit !== undefined) updateData.piecesPerUnit = input.piecesPerUnit !== null ? Number(input.piecesPerUnit) : null;
+    if (input.lengthPerUnit !== undefined) updateData.lengthPerUnit = input.lengthPerUnit !== null ? Number(input.lengthPerUnit) : null;
+    if (input.weightKg !== undefined) updateData.weightKg = input.weightKg !== null ? Number(input.weightKg) : null;
+    if (input.minOrderQuantity !== undefined) updateData.minOrderQuantity = Number(input.minOrderQuantity);
+    if (input.maxOrderQuantity !== undefined) updateData.maxOrderQuantity = input.maxOrderQuantity !== null ? Number(input.maxOrderQuantity) : null;
+    if (input.incrementQuantity !== undefined) updateData.incrementQuantity = Number(input.incrementQuantity);
+    if (input.allowDecimals !== undefined) updateData.allowDecimals = Boolean(input.allowDecimals);
+    if (input.decimalPrecision !== undefined) updateData.decimalPrecision = Number(input.decimalPrecision);
+    if (input.grade !== undefined) updateData.grade = input.grade;
+    if (input.series !== undefined) updateData.series = input.series;
+    if (input.warranty !== undefined) updateData.warranty = input.warranty;
+    if (input.countryOfOrigin !== undefined) updateData.countryOfOrigin = input.countryOfOrigin;
+    if (input.hsnCode !== undefined) updateData.hsnCode = input.hsnCode;
+    if (input.gstPercent !== undefined) updateData.gstPercent = input.gstPercent !== null ? Number(input.gstPercent) : 18;
     if (input.vendorId !== undefined) updateData.vendorId = input.vendorId;
     if (input.status !== undefined) updateData.status = input.status;
     if (input.approvalStatus !== undefined) updateData.approvalStatus = input.approvalStatus;
@@ -624,6 +725,7 @@ export async function updateProduct(id: string, input: Partial<CreateProductInpu
     }
     if (input.material) updateData.material = input.material;
     if (input.images) updateData.images = input.images;
+    if (input.videos !== undefined) updateData.videos = input.videos;
     if (input.isBestseller !== undefined) updateData.isBestseller = input.isBestseller;
     if (input.isNew !== undefined) updateData.isNewArrival = input.isNew;
     if (input.isTrending !== undefined) updateData.isTrending = input.isTrending;
@@ -644,18 +746,23 @@ export async function updateProduct(id: string, input: Partial<CreateProductInpu
       await prisma.productVariant.deleteMany({ where: { productId: id } });
       updateData.variants = {
         create: input.variants.map((v) => ({
+          sku: v.sku || null,
           size: v.size,
           finish: v.finish,
           color: v.color,
+          colorHex: v.colorHex || null,
+          swatchImage: v.swatchImage || null,
           image: v.image || null,
           unit: v.unit || null,
           attributeLabel: v.attributeLabel || null,
           attributeValue: v.attributeValue || null,
+          variantSpecs: v.variantSpecs || null,
           mrp: v.mrp !== undefined && v.mrp !== null ? Number(v.mrp) : null,
           weightKg: v.weightKg !== undefined && v.weightKg !== null ? Number(v.weightKg) : 2.5,
           pricePerBox: Number(v.pricePerBox),
           pricePerSqft: Number(v.pricePerSqft),
           sqftPerBox: Number(v.sqftPerBox),
+          piecesPerBox: v.piecesPerBox ? Number(v.piecesPerBox) : 4,
           stockBoxes: Number(v.stockBoxes ?? 50),
           inStock: true,
         })),
@@ -677,12 +784,27 @@ export async function updateProduct(id: string, input: Partial<CreateProductInpu
       }
     }
 
+    if (input.priceTiers) {
+      await prisma.priceTier.deleteMany({ where: { productId: id } });
+      if (input.priceTiers.length > 0) {
+        updateData.priceTiers = {
+          create: input.priceTiers.map((t) => ({
+            minQuantity: Number(t.minQuantity),
+            maxQuantity: t.maxQuantity ? Number(t.maxQuantity) : null,
+            price: Number(t.price),
+            customerType: t.customerType || "all",
+          })),
+        };
+      }
+    }
+
     const updated = await prisma.product.update({
       where: { id },
       data: updateData,
       include: {
         variants: true,
         attributes: true,
+        priceTiers: true,
         vendor: {
           select: {
             id: true,

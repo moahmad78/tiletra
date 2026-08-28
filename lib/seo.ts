@@ -48,7 +48,7 @@ export function generateOrganizationSchema() {
     },
     description:
       "Intrihub is India's premier online marketplace for interior, construction, home-improvement, and building supplies.",
-    email: "info@intrihub.com",
+    email: "support@intrihub.com",
     telephone: "+919264920211",
     address: {
       "@type": "PostalAddress",

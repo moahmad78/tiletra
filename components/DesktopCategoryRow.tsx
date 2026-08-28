@@ -20,7 +20,7 @@ export default function DesktopCategoryRow({ categories }: DesktopCategoryRowPro
   const posRef = useRef(0);
   const isHoveredRef = useRef(false);
   const isInteractingRef = useRef(false);
-  const idleTimerRef = useRef<NodeJS.Timeout | null>(null);
+  const idleTimerRef = useRef<any>(null);
   const animFrameRef = useRef<number | null>(null);
   const singleSetWidthRef = useRef(0);
 

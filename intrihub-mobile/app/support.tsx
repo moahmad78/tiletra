@@ -30,6 +30,7 @@ import {
   RotateCcw,
   Send,
   Sparkles,
+  Building2,
 } from "lucide-react-native";
 import { COLORS, SPACING, RADIUS, SHADOWS } from "../src/constants/theme";
 
@@ -202,6 +203,22 @@ export default function CustomerSupportScreen() {
             <Text style={styles.emailCardSub}>support@intrihub.com</Text>
           </View>
           <Text style={styles.emailActionText}>Send Email</Text>
+        </TouchableOpacity>
+
+        {/* Vendor Partner Onboarding Desk */}
+        <TouchableOpacity
+          style={[styles.emailCard, { backgroundColor: "#f0fdf4", borderColor: "#bbf7d0", marginTop: 8 }]}
+          onPress={() => Linking.openURL("mailto:vendor@intrihub.com?subject=New%20Vendor%20Partner%20Application%20Inquiry")}
+          activeOpacity={0.85}
+        >
+          <View style={[styles.channelIconWrapper, { backgroundColor: "#dcfce7" }]}>
+            <Building2 size={22} color="#16a34a" />
+          </View>
+          <View style={{ flex: 1, marginLeft: 12 }}>
+            <Text style={styles.emailCardTitle}>Sell on Intrihub (Vendor Desk)</Text>
+            <Text style={[styles.emailCardSub, { color: "#16a34a" }]}>vendor@intrihub.com</Text>
+          </View>
+          <Text style={[styles.emailActionText, { color: "#16a34a" }]}>Apply</Text>
         </TouchableOpacity>
 
         {/* FAQ / Q&A Section */}

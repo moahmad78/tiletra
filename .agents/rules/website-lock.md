@@ -1,46 +1,42 @@
-# Website Protection Rule — DO NOT MODIFY
+# Website & Customer User App Protection Rule — STRICTLY LOCKED
 
-The following files and directories are **LOCKED** and must NOT be modified by any agent prompt unless the user **explicitly** says "unlock website" or "modify website":
+The following directories and files are **STRICTLY LOCKED** and must NOT be modified by any agent prompt under any circumstance unless the user **explicitly** commands "unlock website" or "unlock intrihub-mobile":
 
-## Protected Files (Website / Next.js Web App)
+---
 
-### Authentication
-- `lib/actions/email-otp.ts` — Email OTP send/verify engine
-- `lib/auth-store.ts` — Web auth store (Zustand)
-- `components/auth/LoginModal.tsx` — Web login modal UI
-- `app/api/auth/**` — All OAuth API routes
-- `app/api/mobile/auth/**` — Mobile auth API routes
+## 1. Protected System 1: Intrihub Website (Next.js Web App)
+**LOCKED ROOT**: `d:\Intrihub\` (excluding `intrihub-business/`)
 
-### Core Business Logic
-- `lib/actions/` — All server actions
-- `lib/prisma.ts` — Prisma client
-- `prisma/schema.prisma` — Database schema
+### Protected Components & Routes
+- `app/` (all consumer pages, shop, checkout, cart, product pages, vendor web pages)
+- `components/` (all UI components, location pickers, reviews, auth modals, checkout)
+- `lib/` (all server actions, auth engine `lib/actions/email-otp.ts`, prisma client, rate limiter)
+- `prisma/schema.prisma` (Database schema)
+- `.env` (Environment variables and secrets)
+- `public/` (Web public assets and branding)
+- `server.ts` & `package.json`
 
-### Email & Rate Limiting
-- `lib/rate-limit.ts` — Rate limiting engine
-- `lib/email/` — Email templates and delivery
+---
 
-### Environment
-- `.env` — Environment variables (NEVER expose secrets)
+## 2. Protected System 2: Intrihub Customer User Mobile App
+**LOCKED ROOT**: `d:\Intrihub\intrihub-mobile\`
 
-### Payments
-- All Razorpay integration files
+### Protected Mobile Components & Routes
+- `intrihub-mobile/app/` (all customer tabs, explore, cart, orders, profile, auth login)
+- `intrihub-mobile/src/` (components, animated splash screen, address modal, stores, hooks)
+- `intrihub-mobile/assets/` (production white icon, splash, logos)
+- `intrihub-mobile/app.json`, `eas.json`, `package.json`
 
-## Rules
+---
 
-1. **DO NOT** modify any protected file unless the user explicitly requests a website change.
-2. **DO NOT** add, remove, or change authentication flows on the website.
-3. **DO NOT** modify the Prisma schema without explicit user approval.
-4. **DO NOT** change environment variables.
-5. **DO NOT** alter the Resend email configuration or sender address.
-6. **DO NOT** touch payment/Razorpay integration.
-7. **DO NOT** change Google OAuth configuration.
-8. Mobile app (`intrihub-mobile/`) changes are allowed — they do not affect the website.
+## 3. Allowed Active Workspace
+**ACTIVE ONLY**: `d:\Intrihub\intrihub-business\`
+- All vendor dashboard, admin consoles, product management, order processing, and business APK features.
 
-## Current Verified State (2026-08-27)
-- Resend domain `intrihub.com`: **VERIFIED**
-- Sender: `Intrihub <noreply@intrihub.com>`
-- Email OTP: **WORKING** (tested with external recipients)
-- Google OAuth: **WORKING**
-- Database: Neon PostgreSQL **SYNCED**
-- Latest commit: `4f96d84`
+---
+
+## Mandatory Guardrail Rules
+1. **DO NOT** edit, overwrite, format, or delete any file in `d:\Intrihub\intrihub-mobile\` or website root.
+2. **DO NOT** alter database schemas, prisma models, or existing shared backend APIs.
+3. **DO NOT** modify authentication tokens or customer-facing business logic.
+4. Any change must be strictly isolated to `d:\Intrihub\intrihub-business\`.

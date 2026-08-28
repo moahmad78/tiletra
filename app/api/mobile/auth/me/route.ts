@@ -67,11 +67,25 @@ export async function PATCH(req: NextRequest) {
       }
     }
 
+    let emailToUpdate: string | undefined = undefined;
+    if (email !== undefined && email !== null) {
+      const cleanEmail = String(email).trim().toLowerCase();
+      if (user.role === "admin" && cleanEmail !== "admin@intrihub.com") {
+        return mobileApiResponse(
+          { success: false, error: "Super Admin email cannot be changed. admin@intrihub.com is strictly protected." },
+          403
+        );
+      }
+      if (user.role !== "admin") {
+        emailToUpdate = cleanEmail;
+      }
+    }
+
     const updated = await prisma.user.update({
       where: { id: user.id },
       data: {
-        name: name !== undefined ? name : undefined,
-        email: email !== undefined ? email : undefined,
+        name: name !== undefined ? String(name).trim() : undefined,
+        email: emailToUpdate,
         phone: cleanPhone !== undefined ? cleanPhone : undefined,
         avatar: avatar !== undefined ? avatar : undefined,
       },

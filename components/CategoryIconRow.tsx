@@ -43,7 +43,7 @@ export default function CategoryIconRow({ categories }: { categories?: Category[
   const isInteractingRef = useRef(false);
   const touchStartXRef = useRef(0);
   const touchStartPosRef = useRef(0);
-  const touchTimerRef = useRef<NodeJS.Timeout | null>(null);
+  const touchTimerRef = useRef<any>(null);
   const animFrameRef = useRef<number | null>(null);
   const singleSetWidthRef = useRef(0);
   const isDraggingRef = useRef(false);

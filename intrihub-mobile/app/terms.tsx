@@ -132,7 +132,8 @@ export default function TermsOfUseScreen() {
             For questions regarding these Terms of Use, reach out to our support team:
           </Text>
           <Text style={styles.contactLine}>📞  Support: {SUPPORT_PHONE}</Text>
-          <Text style={styles.contactLine}>📧  Email: support@intrihub.com</Text>
+          <Text style={styles.contactLine}>📧  Customer Support: support@intrihub.com</Text>
+          <Text style={styles.contactLine}>🏢  Corporate & Legal: info@intrihub.com</Text>
           <Text style={[styles.noteBox as any]}>
             Intrihub reserves the right to modify these Terms at any time. Continued use of the application after changes constitutes acceptance of the revised terms.
           </Text>

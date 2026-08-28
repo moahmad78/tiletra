@@ -4,6 +4,7 @@ export const COLORS = {
   primaryDark: "#031d38",
   accent: "#ff9900", // Flipkart / Amazon warm accent
   accentOrange: "#f97316",
+  secondary: "#f97316", // IntriHub orange
   accentGreen: "#10b981",
   accentRed: "#ef4444",
   accentBlue: "#2563eb",
@@ -17,6 +18,7 @@ export const COLORS = {
   // Text
   text: "#0f172a",
   textSecondary: "#475569",
+  textTertiary: "#94a3b8",
   textMuted: "#94a3b8",
   textWhite: "#ffffff",
   textOnPrimary: "#ffffff",

@@ -1,0 +1,43 @@
+{
+  "expo": {
+    "name": "Intrihub Business",
+    "slug": "intrihub-business",
+    "owner": "sahil_sheikh78",
+    "version": "1.0.0",
+    "orientation": "portrait",
+    "icon": "./assets/intri-icon.png",
+    "scheme": "intrihub-biz",
+    "userInterfaceStyle": "light",
+    "newArchEnabled": false,
+    "splash": {
+      "image": "./assets/splash.png",
+      "resizeMode": "contain",
+      "backgroundColor": "#052A51"
+    },
+    "ios": {
+      "supportsTablet": true,
+      "bundleIdentifier": "com.intrihub.business"
+    },
+    "android": {
+      "adaptiveIcon": {
+        "foregroundImage": "./assets/intri-icon.png",
+        "backgroundColor": "#052A51"
+      },
+      "package": "com.intrihub.business"
+    },
+    "web": {
+      "favicon": "./assets/favicon.png"
+    },
+    "plugins": [
+      "expo-router",
+      "expo-secure-store",
+      "expo-font",
+      [
+        "expo-image-picker",
+        {
+          "photosPermission": "The app needs access to your photos to upload product and store images."
+        }
+      ]
+    ]
+  }
+}

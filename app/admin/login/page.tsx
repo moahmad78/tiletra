@@ -19,7 +19,6 @@ import {
   validateAdminCredentialsAndSendOtp,
   verifyAdmin2FaOtp,
 } from "@/lib/actions/admin-auth-2fa";
-import { STRICT_ADMIN_EMAIL } from "@/lib/admin-constants";
 import { toast } from "sonner";
 import Link from "next/link";
 
@@ -38,7 +37,7 @@ export default function AdminLoginPage() {
   const [step, setStep] = useState<"credentials" | "otp">("credentials");
 
   // Step 1 state
-  const [email, setEmail] = useState(STRICT_ADMIN_EMAIL);
+  const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
@@ -52,7 +51,7 @@ export default function AdminLoginPage() {
 
   // Resend OTP countdown timer
   useEffect(() => {
-    let timer: NodeJS.Timeout;
+    let timer: any;
     if (step === "otp" && resendCooldown > 0) {
       timer = setInterval(() => {
         setResendCooldown((prev) => prev - 1);
@@ -76,9 +75,8 @@ export default function AdminLoginPage() {
     setErrorMessage("");
 
     const cleanEmail = email.trim().toLowerCase();
-    if (cleanEmail !== STRICT_ADMIN_EMAIL.toLowerCase()) {
-      setErrorMessage("Access Denied: Wrong Admin Email address.");
-      toast.error("Access Denied: Unauthorized admin email address.");
+    if (!cleanEmail) {
+      setErrorMessage("Please enter your email address.");
       return;
     }
 
@@ -176,7 +174,7 @@ export default function AdminLoginPage() {
 
     try {
       const res = await verifyAdmin2FaOtp({
-        email: STRICT_ADMIN_EMAIL,
+        email: email.trim().toLowerCase(),
         otp: fullOtp,
       });
 
@@ -205,7 +203,7 @@ export default function AdminLoginPage() {
 
     try {
       const res = await validateAdminCredentialsAndSendOtp({
-        email: STRICT_ADMIN_EMAIL,
+        email: email.trim().toLowerCase(),
         password,
       });
 
@@ -228,15 +226,13 @@ export default function AdminLoginPage() {
   return (
     <div className="min-h-screen flex items-center justify-center p-4 bg-gradient-to-br from-[#052a51] via-[#031d38] to-[#02152b]">
       <div className="w-full max-w-md bg-white rounded-3xl p-8 sm:p-10 shadow-2xl border border-white/10 relative overflow-hidden">
-        {/* Top Accent Pill & Header */}
-        <div className="text-center mb-7">
-          <div className="inline-flex items-center bg-white px-4 py-2 rounded-2xl shadow-xs mb-3 border border-gray-100">
-            {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img
-              src="/logo/intri-web-logo.png"
-              alt="Intrihub"
-              className="h-8 w-auto object-contain"
-            />
+        {/* Subtle orange ambient blur inside card */}
+        <div className="absolute top-0 right-0 w-48 h-48 bg-[#F26522]/10 rounded-full blur-2xl pointer-events-none" />
+
+        {/* Brand Header */}
+        <div className="text-center mb-8 relative">
+          <div className="inline-flex items-center justify-center w-14 h-14 rounded-2xl bg-gradient-to-br from-[#052a51] to-[#0a4275] shadow-lg mb-4 text-white">
+            <Lock size={26} className="text-[#F26522]" />
           </div>
 
           <div className="flex items-center justify-center gap-1.5 mb-1">
@@ -249,7 +245,7 @@ export default function AdminLoginPage() {
           <p className="text-xs text-gray-500 max-w-xs mx-auto">
             {step === "credentials"
               ? "Strict 2FA Security Gated: Email + Password + OTP verification"
-              : `Enter the 6-digit code sent to ${STRICT_ADMIN_EMAIL}`}
+              : `Enter the 6-digit code sent to ${email || "your email"}`}
           </p>
         </div>
 
@@ -278,12 +274,12 @@ export default function AdminLoginPage() {
                   required
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
-                  placeholder={STRICT_ADMIN_EMAIL}
+                  placeholder="admin@example.com"
                   className="w-full pl-10 pr-4 py-3 bg-gray-50 border border-gray-200 rounded-xl text-sm font-semibold text-[#052a51] focus:outline-none focus:border-[#F26522] focus:bg-white transition-all shadow-2xs"
                 />
               </div>
               <p className="text-[10px] text-gray-400 mt-1 pl-1">
-                Only <strong className="text-gray-600">{STRICT_ADMIN_EMAIL}</strong> is authorized to access.
+                Authorized personnel only.
               </p>
             </div>
 
@@ -339,7 +335,7 @@ export default function AdminLoginPage() {
               <span className="text-[11px] font-bold text-[#F26522] uppercase tracking-wider block mb-0.5">
                 Security Code Sent
               </span>
-              <p className="text-xs font-bold text-[#052a51]">{STRICT_ADMIN_EMAIL}</p>
+              <p className="text-xs font-bold text-[#052a51]">{email}</p>
             </div>
 
             <div>

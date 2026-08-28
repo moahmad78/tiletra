@@ -1,13 +1,15 @@
 "use client";
 
 import { useState } from "react";
-import { Plus, Trash2, Copy, Sparkles, Image as ImageIcon, Check } from "lucide-react";
+import { Plus, Trash2, Copy, Sparkles, Image as ImageIcon, Check, Palette, Layers, Box } from "lucide-react";
 import type { ProductVariant, Finish } from "@/lib/data/products";
+import { MANAGED_COLOURS, resolveColour } from "@/lib/colours";
 
 interface VariantEditorProps {
   variants: ProductVariant[];
   onChange: (variants: ProductVariant[]) => void;
   unitOfSale?: string;
+  baseUnit?: string;
 }
 
 const ATTRIBUTE_LABELS = [
@@ -31,6 +33,10 @@ const FINISH_OPTIONS: string[] = [
   "Polished",
   "Metallic",
   "Rustic",
+  "High Gloss",
+  "Dual Polish",
+  "Honed",
+  "Flamed",
 ];
 
 const PRESETS: Record<string, { label: string; values: string[] }> = {
@@ -40,19 +46,23 @@ const PRESETS: Record<string, { label: string; values: string[] }> = {
   },
   plywood: {
     label: "Dimension",
-    values: ["6mm x 4x8ft", "9mm x 4x8ft", "12mm x 4x8ft", "16mm x 4x8ft", "19mm x 4x8ft"],
+    values: ["6mm x 4x8ft", "9mm x 4x8ft", "12mm x 4x8ft", "16mm x 4x8ft", "19mm x 4x8ft", "25mm x 4x8ft"],
   },
   tiles: {
     label: "Size",
-    values: ["300x300mm", "600x600mm", "600x1200mm", "800x800mm", "800x1600mm"],
+    values: ["300x300mm", "600x600mm", "600x1200mm", "800x800mm", "800x1600mm", "1200x1800mm"],
   },
   electrical: {
     label: "Size",
-    values: ["1.0 sq.mm (90m)", "1.5 sq.mm (90m)", "2.5 sq.mm (90m)", "4.0 sq.mm (90m)", "6.0 sq.mm (90m)"],
+    values: ["1.0 sq.mm (90m)", "1.5 sq.mm (90m)", "2.5 sq.mm (90m)", "4.0 sq.mm (90m)", "6.0 sq.mm (90m)", "10.0 sq.mm (90m)"],
   },
   hardware: {
     label: "Pack Option",
-    values: ["Pack of 10", "Pack of 25", "Pack of 50", "Pack of 100"],
+    values: ["Pack of 10", "Pack of 25", "Pack of 50", "Pack of 100", "Pack of 500", "Pack of 1000"],
+  },
+  granite: {
+    label: "Slab Thickness",
+    values: ["16mm Slab", "18mm Slab", "20mm Slab", "25mm Slab"],
   },
 };
 
@@ -60,6 +70,7 @@ export default function VariantEditor({
   variants,
   onChange,
   unitOfSale = "unit",
+  baseUnit = "sqft",
 }: VariantEditorProps) {
   const handleAddVariant = () => {
     const newId = `v-${Date.now().toString().slice(-5)}`;
@@ -67,16 +78,20 @@ export default function VariantEditor({
 
     const newVariant: ProductVariant = {
       id: newId,
+      sku: `SKU-${Date.now().toString().slice(-6)}`,
       size: lastVariant ? `${lastVariant.size} (New)` : "Standard",
       finish: lastVariant?.finish || "Standard",
       color: lastVariant?.color || "Standard",
+      colorHex: lastVariant?.colorHex || "#808080",
+      swatchImage: null,
       image: null,
       unit: unitOfSale,
-      attributeLabel: lastVariant?.attributeLabel || "Volume",
-      attributeValue: lastVariant ? `${lastVariant.attributeValue || lastVariant.size} (New)` : "1L",
+      attributeLabel: lastVariant?.attributeLabel || "Size",
+      attributeValue: lastVariant ? `${lastVariant.attributeValue || lastVariant.size} (New)` : "Standard",
       pricePerBox: lastVariant?.pricePerBox || 1000,
       pricePerSqft: lastVariant?.pricePerSqft || 1000,
       sqftPerBox: lastVariant?.sqftPerBox || 1,
+      piecesPerBox: lastVariant?.piecesPerBox || 4,
       stockBoxes: 50,
       inStock: true,
     };
@@ -93,20 +108,22 @@ export default function VariantEditor({
 
     const newVariants: ProductVariant[] = preset.values.map((val, idx) => ({
       id: `v-${presetKey}-${idx + 1}-${Date.now().toString().slice(-4)}`,
+      sku: `SKU-${presetKey.toUpperCase().slice(0, 3)}-${idx + 1}-${Date.now().toString().slice(-4)}`,
       size: val,
       attributeLabel: preset.label,
       attributeValue: val,
       color: baseColor,
+      colorHex: resolveColour(baseColor).hexCode,
       finish: baseFinish,
-      pricePerBox: Math.round(basePrice * (idx === 0 ? 1 : idx === 1 ? 3.5 : idx === 2 ? 8 : 15)),
-      pricePerSqft: basePrice,
-      sqftPerBox: 1,
-      stockBoxes: 50,
-      inStock: true,
       image: null,
       unit: unitOfSale,
+      pricePerBox: Math.round(basePrice * (1 + idx * 0.35)),
+      pricePerSqft: Math.round(basePrice * (1 + idx * 0.35)),
+      sqftPerBox: 1,
+      piecesPerBox: 1,
+      stockBoxes: 50,
+      inStock: true,
     }));
-
     onChange(newVariants);
   };
 

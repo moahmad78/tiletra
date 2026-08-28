@@ -57,7 +57,7 @@ export async function POST(req: NextRequest) {
     }
 
     const formData = await req.formData();
-    const files = formData.getAll("file") as File[];
+    const files = (formData.getAll("file") as unknown) as File[];
 
     if (!files || files.length === 0) {
       return NextResponse.json({ success: false, error: "No files provided" }, { status: 400 });

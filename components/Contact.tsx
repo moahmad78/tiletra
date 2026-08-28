@@ -24,7 +24,7 @@ export default function Contact() {
           initial={{ opacity: 0, y: 15 }}
           whileInView={{ opacity: 1, y: 0 }}
           viewport={{ once: true }}
-          className="mt-8 grid grid-cols-1 md:grid-cols-2 gap-4"
+          className="mt-8 grid grid-cols-1 md:grid-cols-3 gap-4"
         >
           <div className="p-5 rounded-2xl bg-white/[0.06] border border-white/10 flex items-center justify-between gap-4">
             <div className="flex items-center gap-3.5">
@@ -32,10 +32,33 @@ export default function Contact() {
                 <Mail size={20} />
               </div>
               <div>
-                <p className="text-[11px] font-bold text-gray-400 uppercase tracking-wider">General Inquiries & Support</p>
+                <p className="text-[11px] font-bold text-gray-400 uppercase tracking-wider">Customer Support & Orders</p>
+                <a
+                  href="mailto:support@intrihub.com"
+                  className="text-white font-bold text-sm sm:text-base hover:text-[#F26522] transition-colors"
+                >
+                  support@intrihub.com
+                </a>
+              </div>
+            </div>
+            <a
+              href="mailto:support@intrihub.com"
+              className="px-3 py-1.5 rounded-xl bg-white/10 hover:bg-white/20 text-white text-xs font-bold transition-colors shrink-0"
+            >
+              Email Support
+            </a>
+          </div>
+
+          <div className="p-5 rounded-2xl bg-white/[0.06] border border-white/10 flex items-center justify-between gap-4">
+            <div className="flex items-center gap-3.5">
+              <div className="w-11 h-11 rounded-xl bg-blue-500/20 text-blue-400 flex items-center justify-center shrink-0 border border-blue-500/30">
+                <Building size={20} />
+              </div>
+              <div>
+                <p className="text-[11px] font-bold text-gray-400 uppercase tracking-wider">Corporate & Media Desk</p>
                 <a
                   href="mailto:info@intrihub.com"
-                  className="text-white font-bold text-base hover:text-[#F26522] transition-colors"
+                  className="text-white font-bold text-sm sm:text-base hover:text-blue-400 transition-colors"
                 >
                   info@intrihub.com
                 </a>
@@ -43,9 +66,9 @@ export default function Contact() {
             </div>
             <a
               href="mailto:info@intrihub.com"
-              className="px-3.5 py-2 rounded-xl bg-white/10 hover:bg-white/20 text-white text-xs font-bold transition-colors shrink-0"
+              className="px-3 py-1.5 rounded-xl bg-white/10 hover:bg-white/20 text-white text-xs font-bold transition-colors shrink-0"
             >
-              Write to Us
+              Corporate
             </a>
           </div>
 
@@ -55,17 +78,20 @@ export default function Contact() {
                 <Headphones size={20} />
               </div>
               <div>
-                <p className="text-[11px] font-bold text-gray-400 uppercase tracking-wider">Direct Helpline</p>
-                <p className="text-white font-bold text-sm sm:text-base">
-                  Available inside the Intrihub portal
-                </p>
+                <p className="text-[11px] font-bold text-gray-400 uppercase tracking-wider">Seller Onboarding Desk</p>
+                <a
+                  href="mailto:vendor@intrihub.com"
+                  className="text-white font-bold text-sm sm:text-base hover:text-emerald-400 transition-colors"
+                >
+                  vendor@intrihub.com
+                </a>
               </div>
             </div>
             <a
-              href="#helplines"
-              className="px-3.5 py-2 rounded-xl bg-[#F26522] hover:bg-[#d95a1e] text-white text-xs font-bold transition-colors shrink-0"
+              href="mailto:vendor@intrihub.com"
+              className="px-3 py-1.5 rounded-xl bg-[#F26522] hover:bg-[#d95a1e] text-white text-xs font-bold transition-colors shrink-0"
             >
-              View Channels
+              Apply
             </a>
           </div>
         </motion.div>

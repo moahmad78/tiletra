@@ -34,8 +34,7 @@ import {
   Check,
 } from "lucide-react-native";
 import { useAuthStore } from "../../src/store/authStore";
-import { getProfile, updateProfile } from "../../src/api/auth";
-import { uploadProductImage } from "../../src/api/vendor";
+import { getProfile, updateProfile, uploadAvatarImage } from "../../src/api/auth";
 import { AddressModal } from "../../src/components/AddressModal";
 import { COLORS, SPACING, RADIUS, SHADOWS } from "../../src/constants/theme";
 
@@ -99,7 +98,7 @@ export default function ProfileScreen() {
       if (!result.canceled && result.assets?.[0]?.uri) {
         const asset = result.assets[0];
         setUploadingAvatar(true);
-        const res = await uploadProductImage(
+        const res = await uploadAvatarImage(
           asset.uri,
           asset.fileName || `avatar-${Date.now()}.jpg`,
           asset.mimeType || "image/jpeg"

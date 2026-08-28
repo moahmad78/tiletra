@@ -1111,7 +1111,7 @@ export default function VendorSettingsPage() {
               </label>
               <input
                 type="text"
-                placeholder="e.g. Ramesh Kumar or Balaji Electricals"
+                placeholder="e.g. IntriHub Store or Authorized Partner"
                 value={bankData.bankAccountHolder}
                 onChange={(e) => setBankData({ ...bankData, bankAccountHolder: e.target.value })}
                 className="w-full bg-gray-50 border border-gray-200 rounded-xl px-4 py-3 text-sm font-semibold text-gray-800 focus:bg-white focus:border-emerald-500 focus:outline-hidden"

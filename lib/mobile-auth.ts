@@ -97,9 +97,15 @@ export function generateMobileTokens(user: {
   phone?: string | null;
   name?: string | null;
 }) {
+  const allowedAdminEmail = (process.env.ADMIN_ALLOWED_EMAIL || "admin@intrihub.com").toLowerCase().trim();
+  let role = user.role || "customer";
+  if ((role === "admin" || role === "superadmin") && user.email?.toLowerCase().trim() !== allowedAdminEmail) {
+    role = "customer";
+  }
+
   const basePayload = {
     userId: user.id,
-    role: user.role || "customer",
+    role,
     email: user.email || null,
     phone: user.phone || null,
     name: user.name || null,
@@ -143,6 +149,22 @@ export async function getAuthenticatedMobileUser(req: Request | NextRequest) {
     console.error("getAuthenticatedMobileUser error:", err);
     return null;
   }
+}
+
+export async function getAuthenticatedAdmin(req: Request | NextRequest) {
+  const user = await getAuthenticatedMobileUser(req);
+  if (!user) {
+    return { error: "Access denied", status: 401 as const };
+  }
+  const allowedAdminEmail = (process.env.ADMIN_ALLOWED_EMAIL || "admin@intrihub.com").toLowerCase().trim();
+  const isAdmin =
+    (user.role === "admin" || user.role === "superadmin") &&
+    user.email?.toLowerCase().trim() === allowedAdminEmail;
+
+  if (!isAdmin) {
+    return { error: "Access denied", status: 403 as const };
+  }
+  return { user };
 }
 
 /**

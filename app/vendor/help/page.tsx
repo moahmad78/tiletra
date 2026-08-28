@@ -38,7 +38,7 @@ const FAQS = [
   },
   {
     q: "How can I contact my Dedicated Vendor Account Manager?",
-    a: "You can reach out via WhatsApp at +91 78709 35277 or email info@intrihub.com with your Shop ID. Priority support is active from 9:30 AM to 7:30 PM IST (Monday to Saturday).",
+    a: "You can reach out via WhatsApp at +91 78709 35277 or email support@intrihub.com with your Shop ID. Priority support is active from 9:30 AM to 7:30 PM IST (Monday to Saturday).",
   },
 ];
 
@@ -245,7 +245,7 @@ export default function VendorHelpPage() {
                 <span>+91 78709 35277</span>
                 <span className="text-[10px] text-[#F26522] font-extrabold uppercase">Live</span>
               </div>
-              <p className="text-[11px] text-gray-500 truncate">info@intrihub.com</p>
+              <p className="text-[11px] text-gray-500 truncate">support@intrihub.com</p>
             </div>
           </div>
 

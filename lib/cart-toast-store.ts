@@ -8,7 +8,7 @@ type CartToastState = {
   quantity: number;
   message?: string;
   toastKey: number;
-  timerId: NodeJS.Timeout | null;
+  timerId: any;
   showToast: (params: { productName: string; quantity?: number; message?: string }) => void;
   hideToast: () => void;
 };

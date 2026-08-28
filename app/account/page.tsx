@@ -93,7 +93,7 @@ function AccountPageContent() {
   const [addrCity, setAddrCity] = useState("Bangalore");
   const [addrState, setAddrState] = useState("Karnataka");
   const [addrLandmark, setAddrLandmark] = useState("");
-  const [addrLabel, setAddrLabel] = useState<"Home" | "Work" | "Other">("Home");
+  const [addrLabel, setAddrLabel] = useState<"Home" | "Work" | "Site" | "Other" | string>("Home");
 
   // GST / Business Details State (Flipkart B2B pattern)
   const [gstNumber, setGstNumber] = useState("");

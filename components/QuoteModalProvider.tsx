@@ -83,7 +83,7 @@ Best regards,
 ${fullName}`;
 
     // Open mail client
-    window.location.href = `mailto:sahil@intrihub.com?cc=info@intrihub.com&subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`;
+    window.location.href = `mailto:sahil@intrihub.com?cc=support@intrihub.com&subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`;
     
     // Also give them an option to use WhatsApp or Call directly on the success screen
     setIsSuccess(true);

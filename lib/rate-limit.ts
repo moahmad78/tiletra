@@ -31,7 +31,7 @@ if (typeof setInterval !== "undefined") {
       }
     }
   }, 5 * 60 * 1000);
-  if (cleanupTimer.unref) cleanupTimer.unref();
+  if (typeof (cleanupTimer as any)?.unref === "function") (cleanupTimer as any).unref();
 }
 
 /**
@@ -138,5 +138,71 @@ export function resetFailedAttempts(key: string): void {
  */
 export function resetRateLimit(key: string): void {
   rateLimitStore.delete(key);
+}
+
+const VENDOR_LOCKOUT_MAX_ATTEMPTS = 3;
+const VENDOR_LOCKOUT_DURATION_MS = 15 * 60 * 1000; // 15 minutes
+
+/**
+ * Checks if an IP is locked out from vendor login attempts
+ */
+export function checkVendorLoginLockout(ip: string): {
+  locked: boolean;
+  lockoutUntil?: number;
+  retryAfterSeconds?: number;
+} {
+  const key = `vendor_login_ip:${ip || "unknown"}`;
+  const status = isLockedOut(key);
+
+  if (status.locked && status.lockoutUntil) {
+    const remainingSeconds = Math.max(1, Math.ceil((status.lockoutUntil - Date.now()) / 1000));
+    return {
+      locked: true,
+      lockoutUntil: status.lockoutUntil,
+      retryAfterSeconds: remainingSeconds,
+    };
+  }
+
+  return { locked: false };
+}
+
+/**
+ * Records a failed vendor login attempt for an IP
+ */
+export function recordVendorLoginFailure(ip: string): {
+  locked: boolean;
+  remainingAttempts: number;
+  lockoutUntil?: number;
+  retryAfterSeconds?: number;
+} {
+  const key = `vendor_login_ip:${ip || "unknown"}`;
+  const result = recordFailedAttempt(
+    key,
+    VENDOR_LOCKOUT_MAX_ATTEMPTS,
+    VENDOR_LOCKOUT_DURATION_MS
+  );
+
+  if (result.locked && result.lockoutUntil) {
+    const remainingSeconds = Math.max(1, Math.ceil((result.lockoutUntil - Date.now()) / 1000));
+    return {
+      locked: true,
+      remainingAttempts: 0,
+      lockoutUntil: result.lockoutUntil,
+      retryAfterSeconds: remainingSeconds,
+    };
+  }
+
+  return {
+    locked: false,
+    remainingAttempts: result.remainingAttempts,
+  };
+}
+
+/**
+ * Resets failed vendor login attempts for an IP on successful login
+ */
+export function resetVendorLoginLockout(ip: string): void {
+  const key = `vendor_login_ip:${ip || "unknown"}`;
+  resetFailedAttempts(key);
 }
 

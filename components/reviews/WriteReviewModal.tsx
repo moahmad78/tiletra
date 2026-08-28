@@ -262,11 +262,10 @@ export default function WriteReviewModal({
               </label>
               <input
                 type="text"
-                required
+                placeholder="e.g. IntriHub"
                 value={authorName}
                 onChange={(e) => setAuthorName(e.target.value)}
-                placeholder="e.g. Rahul Sharma"
-                className="w-full px-3 py-2 bg-gray-50 border border-gray-200 rounded-xl text-xs font-semibold text-[#052a51] focus:outline-none focus:border-[#F26522]"
+                className="w-full px-3 py-2 border border-slate-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-slate-900 focus:border-transparent transition-all"
               />
             </div>
 

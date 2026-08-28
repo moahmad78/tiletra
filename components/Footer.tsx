@@ -174,12 +174,23 @@ export default function Footer() {
                   </div>
                 </li>
                 <li>
-                  <a href="mailto:info@intrihub.com" className="flex items-center gap-3 hover:text-white transition-colors break-all">
+                  <a href="mailto:support@intrihub.com" className="flex items-center gap-3 hover:text-white transition-colors break-all">
                     <div className="w-8 h-8 rounded-full bg-white/5 flex items-center justify-center text-[#F26522] shrink-0">
                       <Mail size={15} />
                     </div>
                     <div className="flex flex-col justify-center">
-                      <span className="font-bold text-white text-xs">Email Us</span>
+                      <span className="font-bold text-white text-xs">Customer Support</span>
+                      <span className="text-white/70 text-xs mt-0.5">support@intrihub.com</span>
+                    </div>
+                  </a>
+                </li>
+                <li>
+                  <a href="mailto:info@intrihub.com" className="flex items-center gap-3 hover:text-white transition-colors break-all">
+                    <div className="w-8 h-8 rounded-full bg-white/5 flex items-center justify-center text-blue-400 shrink-0">
+                      <Mail size={15} />
+                    </div>
+                    <div className="flex flex-col justify-center">
+                      <span className="font-bold text-white text-xs">General / Corporate Info</span>
                       <span className="text-white/70 text-xs mt-0.5">info@intrihub.com</span>
                     </div>
                   </a>

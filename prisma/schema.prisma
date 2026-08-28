@@ -33,6 +33,8 @@ model User {
   notifications         Notification[]
   notificationPreference NotificationPreference?
   recentlyViewed        RecentlyViewed[]
+  wishlist              WishlistItem[]
+  pushTokens            MobilePushToken[]
   returnRequests        ReturnRequest[]
   auditLogs             AuditLog[]
   staffPermissions      StaffPermission[]
@@ -58,23 +60,36 @@ model EmailOtpToken {
 }
 
 model Address {
-  id        String   @id @default(cuid())
-  userId    String
-  label     String   @default("Home") // Home | Work | Site | Other
-  street    String
-  landmark  String?
-  city      String   @default("Bangalore")
-  state     String   @default("Karnataka")
-  pincode   String
-  latitude  Float?
-  longitude Float?
-  isDefault Boolean  @default(false)
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  id                   String   @id @default(cuid())
+  userId               String
+  label                String   @default("Home") // Home | Work | Site | Other
+  fullName             String?
+  phone                String?
+  houseNumber          String?  // House/Flat/Shop Number
+  buildingName         String?  // Building / Apartment Name
+  floor                String?  // Floor / Unit
+  street               String   // Street / Road / Cross
+  area                 String?  // Area / Locality / Sector
+  landmark             String?  // Nearby Landmark
+  city                 String   @default("Bangalore")
+  district             String?
+  state                String   @default("Karnataka")
+  country              String   @default("India")
+  pincode              String
+  postalCode           String?
+  latitude             Float?
+  longitude            Float?
+  accuracy             Float?   // GPS accuracy in meters
+  source               String   @default("GPS") // GPS | MAP_PIN | SEARCH | MANUAL
+  deliveryInstructions String?  // Gate code, call instructions, etc.
+  isDefault            Boolean  @default(false)
+  createdAt            DateTime @default(now())
+  updatedAt            DateTime @updatedAt
 
-  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  user                 User     @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@index([userId])
+  @@index([latitude, longitude])
 }
 
 // ----------------------------------------------------
@@ -103,56 +118,87 @@ model Category {
 }
 
 model Product {
-  id            String             @id @default(cuid())
-  name          String
-  slug          String             @unique
-  categoryId    String?
-  categorySlug  String             @default("floor-tiles")
-  categoryName  String             @default("Floor Tiles")
-  subcategory   String?
-  unitOfSale    String             @default("box") // box | sqft | piece | meter | coil | kg | pack | roll | litre | can
-  material      String             @default("Vitrified")
-  finish        String             @default("Glossy")
-  size          String             @default("600x600mm")
-  pricePerSqft  Float              @default(45)
-  mrp           Float?             // List price / MRP in INR (optional original price for discount calculation)
-  thickness     String             @default("9mm")
-  usage         String             @default("Indoor / Floor")
-  look          String             @default("Marble Look")
-  coverageRate  Float?             // sq.ft per box (tiles), sq.ft per litre (paint), meters per coil (wire)
-  wastageFactor Float?             @default(1.1) // 1.1 = 10% wastage buffer
-  isTrending    Boolean            @default(false)
-  isBestseller  Boolean            @default(false)
-  isNewArrival  Boolean            @default(false)
-  inStock       Boolean            @default(true)
-  images        String[]           @default([])
-  description   String             @default("")
-  rating        Float              @default(4.8)
-  reviewCount   Int                @default(12)
-  manualRating  Float?
+  id                String             @id @default(cuid())
+  name              String
+  slug              String             @unique
+  categoryId        String?
+  categorySlug      String             @default("floor-tiles")
+  categoryName      String             @default("Floor Tiles")
+  subcategory       String?
+  brand             String?            @default("Intrihub")
+  modelNumber       String?
+  sku               String?
+
+  // Canonical Selling Unit & Packaging Conversion
+  unitOfSale        String             @default("box") // Canonical selling unit: box | sqft | piece | meter | coil | kg | pack | roll | litre | can | sheet | slab | bucket | drum | bottle | tube | dozen | ton
+  baseUnit          String?            // Reference unit e.g. "sqft", "meter", "piece", "litre", "kg"
+  conversionRatio   Float?             // e.g. 4.5 sqft per box, 90m per roll, 20L per bucket
+  coverageRate      Float?             // Coverage in sq.ft per selling unit
+  piecesPerUnit     Int?               // Pieces per pack/box
+  lengthPerUnit     Float?             // Length per roll/bundle in meters
+  weightKg          Float?             // Weight per selling unit in kg
+
+  // Quantities & Ordering Rules
+  minOrderQuantity  Float              @default(1)
+  maxOrderQuantity  Float?
+  incrementQuantity Float              @default(1)
+  allowDecimals     Boolean            @default(false)
+  decimalPrecision  Int                @default(0)
+
+  // Standard Product Attributes
+  material          String             @default("Vitrified")
+  finish            String             @default("Glossy")
+  size              String             @default("600x600mm")
+  thickness         String             @default("9mm")
+  usage             String             @default("Indoor / Floor")
+  look              String             @default("Marble Look")
+  grade             String?            // e.g. "Commercial", "MR", "BWP", "Grade A"
+  series            String?            // e.g. "Royal Collection"
+  warranty          String?            // e.g. "10 Years Warranty"
+  countryOfOrigin   String             @default("India")
+  hsnCode           String?            // GST HSN/SAC code
+  gstPercent        Float              @default(18)
+
+  // Pricing
+  pricePerSqft      Float              @default(45) // Equivalent reference price
+  mrp               Float?             // List price / MRP in INR
+  wastageFactor     Float?             @default(1.1)
+
+  // Flags & Media
+  isTrending        Boolean            @default(false)
+  isBestseller      Boolean            @default(false)
+  isNewArrival      Boolean            @default(false)
+  inStock           Boolean            @default(true)
+  images            String[]           @default([])
+  videos            String[]           @default([])
+  description       String             @default("")
+  shortDescription  String?
+  rating            Float              @default(4.8)
+  reviewCount       Int                @default(12)
+  manualRating      Float?
   manualReviewCount Int?
-  specs         Json?
+  specs             Json?
 
   // Multi-Vendor fields
-  vendorId         String?
-  status           String             @default("active") // active | paused | draft
-  approvalStatus   String             @default("approved") // pending | approved | rejected
-  rejectionReason  String?
+  vendorId          String?
+  status            String             @default("active") // active | paused | draft | archived
+  approvalStatus    String             @default("approved") // pending | approved | rejected
+  rejectionReason   String?
 
-  createdAt    DateTime           @default(now())
-  updatedAt    DateTime           @updatedAt
+  createdAt         DateTime           @default(now())
+  updatedAt         DateTime           @updatedAt
 
-  category     Category?          @relation(fields: [categoryId], references: [id], onDelete: SetNull)
-  vendor       Vendor?            @relation(fields: [vendorId], references: [id], onDelete: SetNull)
-  variants     ProductVariant[]
-  attributes   ProductAttribute[]
-  reviews      Review[]
-  orderItems   OrderItem[]
-  recentlyViewed RecentlyViewed[]
+  category          Category?          @relation(fields: [categoryId], references: [id], onDelete: SetNull)
+  vendor            Vendor?            @relation(fields: [vendorId], references: [id], onDelete: SetNull)
+  variants          ProductVariant[]
+  attributes        ProductAttribute[]
+  priceTiers        PriceTier[]
+  reviews           Review[]
+  orderItems        OrderItem[]
+  recentlyViewed    RecentlyViewed[]
+  wishlistItems     WishlistItem[]
 
   @@index([categorySlug])
-  @@index([isTrending])
-  @@index([isBestseller])
   @@index([vendorId])
   @@index([status])
   @@index([approvalStatus])
@@ -161,8 +207,8 @@ model Product {
 model ProductAttribute {
   id        String   @id @default(cuid())
   productId String
-  key       String   // e.g. "gauge", "thickness", "material", "packOf", "pattern"
-  value     String   // e.g. "2.5 sq mm", "18mm", "SS 304", "100 Pcs", "Geometric"
+  key       String   // e.g. "gauge", "thickness", "material", "packOf", "pattern", "headType", "driveType"
+  value     String   // e.g. "2.5 sq mm", "18mm", "SS 304", "100 Pcs", "Geometric", "Phillips"
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
@@ -172,30 +218,70 @@ model ProductAttribute {
 }
 
 model ProductVariant {
-  id             String     @id @default(cuid())
+  id             String      @id @default(cuid())
   productId      String
+  sku            String?
   size           String
   finish         String
-  color          String
-  image          String?
-  unit           String?
+  color          String      // Canonical colour name e.g. "Grey", "Alaska White"
+  colorHex       String?     // Hex code e.g. "#808080"
+  swatchImage    String?     // Texture image URL for stone, wood, granite
+  image          String?     // Variant specific product image
+  unit           String?     // Variant selling unit override
   attributeLabel String?
   attributeValue String?
-  weightKg       Float?     @default(2.5) // in kilograms (e.g. 2.5kg per box, 18kg per plywood sheet)
-  mrp            Float?     // List price / MRP in INR for variant
-  pricePerSqft   Float
-  pricePerBox    Float
-  sqftPerBox     Float
-  piecesPerBox   Int        @default(4)
-  inStock        Boolean    @default(true)
-  stockBoxes     Int        @default(50)
-  createdAt      DateTime   @default(now())
-  updatedAt      DateTime   @updatedAt
+  variantSpecs   Json?       // Category-specific variant attributes
+  weightKg       Float?      @default(2.5) // in kilograms
+  mrp            Float?      // MRP in INR for variant
+  pricePerSqft   Float       // Equivalent Reference Price
+  pricePerBox    Float       // Variant Selling Unit Price
+  sqftPerBox     Float       // Conversion ratio / coverage
+  piecesPerBox   Int         @default(4)
+  inStock        Boolean     @default(true)
+  stockBoxes     Int         @default(50)
+  createdAt      DateTime    @default(now())
+  updatedAt      DateTime    @updatedAt
 
-  product        Product    @relation(fields: [productId], references: [id], onDelete: Cascade)
+  product        Product     @relation(fields: [productId], references: [id], onDelete: Cascade)
   cartItems      CartItem[]
+  priceTiers     PriceTier[]
 
   @@index([productId])
+  @@index([color])
+  @@index([size])
+}
+
+model Colour {
+  id           String   @id @default(cuid())
+  name         String   @unique
+  hexCode      String
+  secondaryHex String?
+  swatchImage  String?
+  categorySlug String?
+  displayOrder Int      @default(0)
+  isActive     Boolean  @default(true)
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  @@index([name])
+}
+
+model PriceTier {
+  id           String          @id @default(cuid())
+  productId    String
+  variantId    String?
+  minQuantity  Float           // Minimum quantity for tier (e.g. 10)
+  maxQuantity  Float?          // Maximum quantity for tier (e.g. 49)
+  price        Float           // Tier unit price (e.g. 1300)
+  customerType String          @default("all") // all | b2b | contractor | retail
+  createdAt    DateTime        @default(now())
+  updatedAt    DateTime        @updatedAt
+
+  product      Product         @relation(fields: [productId], references: [id], onDelete: Cascade)
+  variant      ProductVariant? @relation(fields: [variantId], references: [id], onDelete: Cascade)
+
+  @@index([productId])
+  @@index([variantId])
 }
 
 // ----------------------------------------------------
@@ -232,39 +318,114 @@ model CartItem {
 // 4. Orders, Order Items & Return Requests
 // ----------------------------------------------------
 model Order {
-  id                String          @id
-  userId            String?
-  customerName      String
-  customerPhone     String
-  customerEmail     String          @default("customer@intrihub.com")
-  shippingAddress   Json
-  subtotal          Float
-  deliveryFee       Float           @default(0)
-  discount          Float           @default(0)
-  total             Float
-  paymentStatus     String          @default("Pending") // Paid | Pending | Refunded
-  paymentMethod     String          @default("Online")  // Online | COD | UPI | Card | NetBanking
-  codConfirmed      Boolean         @default(false)
-  paymentCollected  Boolean         @default(false)
-  paymentId         String?
-  razorpayOrderId   String?
-  razorpayPaymentId String?
-  razorpaySignature String?
-  orderStatus       String          @default("Processing") // Processing | Confirmed | Dispatched | Out for Delivery | Delivered | Cancelled
-  courierName       String?
-  trackingNumber    String?
-  internalNotes     String?
-  estimatedDelivery String          @default("3–5 Business Days")
-  createdAt         DateTime        @default(now())
-  updatedAt         DateTime        @updatedAt
+  id                     String          @id
+  userId                 String?
+  customerName           String
+  customerPhone          String
+  customerEmail          String          @default("customer@intrihub.com")
+  shippingAddress        Json
+  subtotal               Float
+  deliveryFee            Float           @default(0)
+  discount               Float           @default(0)
+  total                  Float
+  paymentStatus          String          @default("Pending") // Paid | Pending | Refunded
+  paymentMethod          String          @default("Online")  // Online | COD | UPI | Card | NetBanking
+  codConfirmed           Boolean         @default(false)
+  paymentCollected       Boolean         @default(false)
+  paymentId              String?
+  razorpayOrderId        String?
+  razorpayPaymentId      String?
+  razorpaySignature      String?
+  orderStatus            String          @default("Processing") // Processing | Confirmed | Dispatched | Out for Delivery | Delivered | Cancelled
+  courierName            String?
+  trackingNumber         String?
+  internalNotes          String?
+  estimatedDelivery      String          @default("3–5 Business Days")
 
-  user              User?           @relation(fields: [userId], references: [id], onDelete: SetNull)
-  items             OrderItem[]
-  returnRequests    ReturnRequest[]
+  // Immutable Delivery Snapshot
+  deliveryName           String?
+  deliveryPhone          String?
+  deliveryAddress        String?
+  deliveryHouseNumber    String?
+  deliveryBuildingName   String?
+  deliveryFloor          String?
+  deliveryStreet         String?
+  deliveryArea           String?
+  deliveryLandmark       String?
+  deliveryCity           String?
+  deliveryDistrict       String?
+  deliveryState          String?
+  deliveryCountry        String?         @default("India")
+  deliveryPostalCode     String?
+  deliveryLatitude       Float?
+  deliveryLongitude      Float?
+  deliveryAccuracy       Float?
+  deliveryLocationSource String?         @default("GPS") // GPS | MAP_PIN | SEARCH | MANUAL
+  deliveryInstructions   String?
+
+  // Delivery Partner Assignment & Live Tracking
+  deliveryPartnerId      String?
+  deliveryAssignedAt     DateTime?
+  deliveryArrivedAt      DateTime?
+  deliveredAt            DateTime?
+
+  createdAt              DateTime        @default(now())
+  updatedAt              DateTime        @updatedAt
+
+  user                   User?           @relation(fields: [userId], references: [id], onDelete: SetNull)
+  deliveryPartner        DeliveryPartner? @relation(fields: [deliveryPartnerId], references: [id], onDelete: SetNull)
+  items                  OrderItem[]
+  returnRequests         ReturnRequest[]
+  locationLogs           DeliveryLocationLog[]
 
   @@index([customerPhone])
   @@index([orderStatus])
   @@index([userId])
+  @@index([deliveryPartnerId])
+  @@index([deliveryLatitude, deliveryLongitude])
+}
+
+model DeliveryPartner {
+  id               String               @id @default(cuid())
+  userId           String?              @unique
+  name             String
+  phone            String               @unique
+  email            String?
+  vehicleType      String               @default("bike") // bike | scooter | van | truck
+  vehicleNumber    String?
+  currentLatitude  Float?
+  currentLongitude Float?
+  currentAccuracy  Float?
+  lastLocationAt   DateTime?
+  status           String               @default("available") // available | on_delivery | offline
+  isActive         Boolean              @default(true)
+  createdAt        DateTime             @default(now())
+  updatedAt        DateTime             @updatedAt
+
+  orders           Order[]
+  locationLogs     DeliveryLocationLog[]
+
+  @@index([phone])
+  @@index([status])
+}
+
+model DeliveryLocationLog {
+  id                String          @id @default(cuid())
+  orderId           String?
+  deliveryPartnerId String
+  latitude          Float
+  longitude         Float
+  accuracy          Float?
+  speed             Float?
+  heading           Float?
+  timestamp         DateTime        @default(now())
+
+  order             Order?          @relation(fields: [orderId], references: [id], onDelete: SetNull)
+  deliveryPartner   DeliveryPartner @relation(fields: [deliveryPartnerId], references: [id], onDelete: Cascade)
+
+  @@index([orderId])
+  @@index([deliveryPartnerId])
+  @@index([timestamp])
 }
 
 model OrderItem {
@@ -412,7 +573,7 @@ model StoreSettings {
   storeName             String   @default("Intrihub")
   contactPhone          String   @default("+91 78709 35277")
   whatsappNumber        String   @default("+91 78709 35277")
-  email                 String   @default("info@intrihub.com")
+  email                 String   @default("support@intrihub.com")
   address               String   @default("Intrihub Central Supply Hub, Begur, Bengaluru, Karnataka 560114")
   gstNumber             String?  @default("29AABCT1234F1Z8")
   freeDeliveryThreshold Float    @default(15000)
@@ -593,6 +754,11 @@ model Vendor {
   // Auto-Publishing Controls (Super Admin permission)
   autoPublishEnabled    Boolean            @default(false)
 
+  // Pickup / Dispatch Location
+  latitude              Float?
+  longitude             Float?
+  locationAccuracy      Float?
+
   createdAt       DateTime           @default(now())
   updatedAt       DateTime           @updatedAt
 
@@ -714,7 +880,7 @@ model UploadedFile {
 }
 
 // ----------------------------------------------------
-// 14. Mobile Device Push Tokens
+// 14. Mobile Device Push Tokens & Wishlist
 // ----------------------------------------------------
 model MobilePushToken {
   id        String   @id @default(cuid())
@@ -725,7 +891,23 @@ model MobilePushToken {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
   @@index([userId])
+}
+
+model WishlistItem {
+  id        String   @id @default(cuid())
+  userId    String
+  productId String
+  createdAt DateTime @default(now())
+
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  product   Product  @relation(fields: [productId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, productId])
+  @@index([userId])
+  @@index([productId])
 }
 
 

@@ -134,8 +134,8 @@ export default function HomeScreen() {
       <View style={styles.trustBanner}>
         <View style={styles.trustItem}>
           <Shield size={20} color={COLORS.primary} />
-          <Text style={styles.trustTitle}>Everything, Every Space</Text>
-          <Text style={styles.trustSub}>India's top supply marketplace</Text>
+          <Text style={styles.trustTitle}>Everything, Every Place</Text>
+          <Text style={styles.trustSub}>India's top building & interior marketplace</Text>
         </View>
         <View style={styles.trustDivider} />
         <View style={styles.trustItem}>
@@ -149,7 +149,7 @@ export default function HomeScreen() {
       <View style={styles.sectionHeader}>
         <View>
           <Text style={styles.sectionTitle}>All Products & Materials</Text>
-          <Text style={styles.sectionSubtitle}>Direct factory prices across entire catalog</Text>
+          <Text style={styles.sectionSubtitle}>Direct prices for home, project & commercial spaces</Text>
         </View>
       </View>
     </View>

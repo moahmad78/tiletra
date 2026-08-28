@@ -294,6 +294,28 @@ export async function createOrder(input: CreateOrderInput) {
           razorpaySignature: input.razorpaySignature || null,
           orderStatus: "Processing",
           estimatedDelivery: "3–5 Business Days",
+
+          // Immutable Delivery Snapshot
+          deliveryName: (input.shippingAddress as any)?.fullName || (input.shippingAddress as any)?.name || input.customerName,
+          deliveryPhone: (input.shippingAddress as any)?.phone || input.customerPhone,
+          deliveryAddress: (input.shippingAddress as any)?.formattedAddress || (input.shippingAddress as any)?.street || "",
+          deliveryHouseNumber: (input.shippingAddress as any)?.houseNumber || null,
+          deliveryBuildingName: (input.shippingAddress as any)?.buildingName || null,
+          deliveryFloor: (input.shippingAddress as any)?.floor || null,
+          deliveryStreet: (input.shippingAddress as any)?.street || "",
+          deliveryArea: (input.shippingAddress as any)?.area || null,
+          deliveryLandmark: (input.shippingAddress as any)?.landmark || null,
+          deliveryCity: (input.shippingAddress as any)?.city || "Bangalore",
+          deliveryDistrict: (input.shippingAddress as any)?.district || null,
+          deliveryState: (input.shippingAddress as any)?.state || "Karnataka",
+          deliveryCountry: (input.shippingAddress as any)?.country || "India",
+          deliveryPostalCode: (input.shippingAddress as any)?.postalCode || (input.shippingAddress as any)?.pincode || "",
+          deliveryLatitude: (input.shippingAddress as any)?.latitude ? Number((input.shippingAddress as any).latitude) : null,
+          deliveryLongitude: (input.shippingAddress as any)?.longitude ? Number((input.shippingAddress as any).longitude) : null,
+          deliveryAccuracy: (input.shippingAddress as any)?.accuracy ? Number((input.shippingAddress as any).accuracy) : null,
+          deliveryLocationSource: (input.shippingAddress as any)?.source || "GPS",
+          deliveryInstructions: (input.shippingAddress as any)?.deliveryInstructions || (input.shippingAddress as any)?.instructions || null,
+
           items: {
             create: verifiedItems.map((item) => ({
               productId: item.productId,

@@ -603,9 +603,9 @@ export default function ProductDetailsClient({
                     { label: "Material", value: definedProduct.material },
                     { label: "Size", value: selectedVariant.size },
                     { label: "Surface Finish", value: selectedVariant.finish },
-                    { label: "Thickness", value: definedProduct.specs.thickness || "Standard" },
-                    { label: "Water Absorption", value: definedProduct.specs.waterAbsorption || "Impervious" },
-                    { label: "Breaking Strength", value: definedProduct.specs.breakingStrength || "High" },
+                    { label: "Thickness", value: definedProduct.specs?.thickness || definedProduct.thickness || "Standard" },
+                    { label: "Water Absorption", value: definedProduct.specs?.waterAbsorption || "Impervious" },
+                    { label: "Breaking Strength", value: definedProduct.specs?.breakingStrength || "High" },
                     { label: "Coverage per Box", value: `${selectedVariant.sqftPerBox} sq.ft` },
                     { label: "Stock Availability", value: `${selectedVariant.stockBoxes} boxes available` },
                   ].map(({ label, value }) => (

@@ -76,3 +76,40 @@ export async function loginWithGoogle(params: {
 export async function logout(): Promise<void> {
   await clearStoredTokens();
 }
+
+export async function uploadAvatarImage(
+  uri: string,
+  fileName?: string,
+  mimeType?: string
+): Promise<{ success: boolean; url?: string; error?: string }> {
+  try {
+    const formData = new FormData();
+    const cleanName = fileName || `avatar-${Date.now()}.jpg`;
+    const cleanType = mimeType || "image/jpeg";
+
+    formData.append("file", {
+      uri,
+      name: cleanName,
+      type: cleanType,
+    } as any);
+
+    const baseURL = apiClient.defaults.baseURL || "https://www.intrihub.com";
+    const res = await fetch(`${baseURL}/api/upload`, {
+      method: "POST",
+      body: formData,
+      headers: {
+        Accept: "application/json",
+      },
+    });
+
+    const data = await res.json();
+    if (res.ok && data.success) {
+      const fullUrl = data.url.startsWith("http") ? data.url : `${baseURL}${data.url}`;
+      return { success: true, url: fullUrl };
+    }
+    return { success: false, error: data.error || "Upload failed" };
+  } catch (err: any) {
+    console.error("uploadAvatarImage error:", err);
+    return { success: false, error: err.message || "Failed to upload avatar" };
+  }
+}

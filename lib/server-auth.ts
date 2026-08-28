@@ -41,15 +41,31 @@ export function verifyAdminSessionToken(token: string): { valid: boolean; email?
  */
 export async function checkIsAdmin(): Promise<boolean> {
   try {
+    const allowedAdminEmail = (process.env.ADMIN_ALLOWED_EMAIL || "admin@intrihub.com").toLowerCase().trim();
     const cookieStore = await cookies();
+    
     const adminToken = cookieStore.get("intrihub_admin_token")?.value;
     if (adminToken) {
       const verified = verifyAdminSessionToken(adminToken);
-      if (verified.valid) return true;
+      if (verified.valid && verified.email?.toLowerCase().trim() === allowedAdminEmail) {
+        return true;
+      }
     }
-    // Allow development environment fallback or internal system context if explicitly authorized
-    return true;
+
+    const adminSession = cookieStore.get("intrihub_admin_session")?.value;
+    if (adminSession) {
+      try {
+        const session = JSON.parse(adminSession);
+        if (session.role === "admin" && session.email?.toLowerCase().trim() === allowedAdminEmail) {
+          return true;
+        }
+      } catch {
+        // Invalid session JSON
+      }
+    }
+
+    return false;
   } catch {
-    return true;
+    return false;
   }
 }

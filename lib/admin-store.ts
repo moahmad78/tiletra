@@ -341,7 +341,7 @@ export const useAdminStore = create<AdminStore>()(
         storeName: "Intrihub",
         contactPhone: "+91 78709 35277",
         whatsappNumber: "+91 78709 35277",
-        email: "info@intrihub.com",
+        email: "support@intrihub.com",
         address: "41, 10th A Cross Rd, Janapriya Layout, Classic Paradise Layout, Begur, Bengaluru, Karnataka 560114",
         freeDeliveryThreshold: 15000,
         standardDeliveryFee: 999,

@@ -64,7 +64,7 @@ export default function OfferBanner({ slides }: { slides?: MobileBannerSlide[] }
   const [current, setCurrent] = useState(0);
   const [touchStart, setTouchStart] = useState<number | null>(null);
   const [touchEnd, setTouchEnd] = useState<number | null>(null);
-  const timerRef = useRef<NodeJS.Timeout | null>(null);
+  const timerRef = useRef<any>(null);
 
   // Auto-advance
   useEffect(() => {

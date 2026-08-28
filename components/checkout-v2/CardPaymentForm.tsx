@@ -129,7 +129,7 @@ export default function CardPaymentForm({
             type="text"
             value={cardName}
             onChange={(e) => onCardNameChange(e.target.value)}
-            placeholder="e.g. MOHAMMAD AHMAD"
+            placeholder="e.g. INTRIHUB"
             className="w-full h-11 px-3.5 bg-white border border-gray-200 rounded-xl text-xs sm:text-sm font-bold text-[#052a51] uppercase focus:outline-none focus:border-[#F26522]"
           />
         </div>

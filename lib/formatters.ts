@@ -172,17 +172,20 @@ export function formatUnitName(unitOfSale?: string | null): string {
   }
 }
 
-// Helper to convert Prisma product with variants to UI Product type
 export function formatProduct(dbProduct: any): Product {
   const variants: ProductVariant[] = (dbProduct.variants || []).map((v: any) => ({
     id: v.id,
+    sku: v.sku || null,
     size: v.size,
     finish: (v.finish as Finish) || "Glossy",
     color: v.color || "Standard",
+    colorHex: v.colorHex || null,
+    swatchImage: v.swatchImage || null,
     image: v.image || null,
     unit: v.unit || null,
     attributeLabel: v.attributeLabel || null,
     attributeValue: v.attributeValue || null,
+    variantSpecs: v.variantSpecs || null,
     weightKg: v.weightKg ? Number(v.weightKg) : null,
     mrp: v.mrp ? Number(v.mrp) : null,
     pricePerBox: Number(v.pricePerBox),
@@ -191,6 +194,7 @@ export function formatProduct(dbProduct: any): Product {
     piecesPerBox: v.piecesPerBox ? Number(v.piecesPerBox) : 4,
     stockBoxes: Number(v.stockBoxes ?? 50),
     inStock: v.inStock ?? true,
+    priceTiers: v.priceTiers || [],
   }));
 
   // Fallback variant if none exists
@@ -201,12 +205,7 @@ export function formatProduct(dbProduct: any): Product {
       size: dbProduct.size || "Standard",
       finish: (dbProduct.finish as Finish) || "Glossy",
       color: "Standard",
-      image: null,
-      unit: dbProduct.unitOfSale || "box",
-      attributeLabel: null,
-      attributeValue: null,
-      mrp: dbProduct.mrp ? Number(dbProduct.mrp) : null,
-      pricePerBox: Math.round(pSqft * (dbProduct.unitOfSale === "sqft" || dbProduct.unitOfSale === "box" ? 16 : 1)),
+      pricePerBox: pSqft * 40,
       pricePerSqft: pSqft,
       sqftPerBox: dbProduct.unitOfSale === "sqft" || dbProduct.unitOfSale === "box" ? 16 : 1,
       stockBoxes: dbProduct.inStock ? 50 : 0,

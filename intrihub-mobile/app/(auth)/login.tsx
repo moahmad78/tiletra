@@ -425,8 +425,8 @@ export default function LoginScreen() {
             <Text style={styles.label}>Full Name (Optional)</Text>
             <TextInput
               style={styles.input}
-              placeholder="e.g. Rahul Sharma"
-              placeholderTextColor="#94a3b8"
+              placeholder="e.g. IntriHub"
+              placeholderTextColor={COLORS.textTertiary}
               value={name}
               onChangeText={setName}
             />

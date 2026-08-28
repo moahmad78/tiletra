@@ -31,16 +31,19 @@ import {
   X,
   Headphones,
   MessageCircle,
+  Navigation,
 } from "lucide-react-native";
 import { getOrderDetails } from "../../src/api/orders";
 import { socketService } from "../../src/store/socketStore";
 import { COLORS, SPACING, RADIUS, SHADOWS } from "../../src/constants/theme";
+import { downloadInvoicePDFDirect, shareInvoicePDF } from "../../src/utils/pdfInvoiceGenerator";
 
 export default function OrderDetailScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
   const router = useRouter();
   const queryClient = useQueryClient();
   const [showInvoiceModal, setShowInvoiceModal] = useState(false);
+  const [downloadingPdf, setDownloadingPdf] = useState(false);
 
   const { data, isLoading, error } = useQuery({
     queryKey: ["mobile-order-detail", id],
@@ -96,43 +99,100 @@ export default function OrderDetailScreen() {
   if (currentStatus.includes("dispatch") || currentStatus.includes("ship")) activeStepIndex = 2;
   if (currentStatus.includes("deliver")) activeStepIndex = 3;
 
-  const handleShareInvoice = async () => {
-    try {
-      const itemsText = (order.items || [])
-        .map((it: any) => `• ${it.productName} (${it.boxQuantity} Boxes) - ₹${it.totalPrice?.toLocaleString("en-IN")}`)
-        .join("\n");
+  const handleShareInvoice = () => {
+    Alert.alert(
+      "Share Invoice",
+      "Choose how you want to share this bill:",
+      [
+        {
+          text: "📄 Share PDF Bill",
+          onPress: async () => {
+            try {
+              setDownloadingPdf(true);
+              const res = await shareInvoicePDF(order);
+              if (!res.success) {
+                Alert.alert("Share Error", "Could not share PDF invoice.");
+              }
+            } catch (err: any) {
+              console.warn("Share PDF error:", err);
+            } finally {
+              setDownloadingPdf(false);
+            }
+          },
+        },
+        {
+          text: "💬 Share Text Summary",
+          onPress: async () => {
+            try {
+              const itemsText = (order.items || [])
+                .map(
+                  (it: any, idx: number) =>
+                    `${idx + 1}. ${it.productName}\n   Qty: ${it.boxQuantity} Box(es) • ₹${it.totalPrice?.toLocaleString("en-IN")}`
+                )
+                .join("\n\n");
 
-      const invoiceText = `📄 *INTRIHUB TAX INVOICE & ORDER SUMMARY*
+              const invoiceText = `📄 *INTRIHUB TAX INVOICE & ORDER SUMMARY*
 Order ID: #${order.id}
-Date: ${order.createdAt ? new Date(order.createdAt).toLocaleDateString("en-IN") : "N/A"}
-Customer: ${order.customerName || "Valued Customer"}
-Phone: +91 ${order.customerPhone || ""}
+Date: ${order.createdAt ? new Date(order.createdAt).toLocaleDateString("en-IN") : "Recent"}
+Customer: ${order.deliveryName || order.customerName || "Valued Customer"}
+Phone: +91 ${order.deliveryPhone || order.customerPhone || ""}
 
 📦 *ITEMS ORDERED:*
 ${itemsText}
 
-💰 *PAYMENT BREAKDOWN:*
+💰 *PAYMENT SUMMARY:*
 Subtotal: ₹${order.subtotal?.toLocaleString("en-IN")}
-Delivery Fee: ${order.deliveryFee === 0 ? "FREE" : `₹${order.deliveryFee}`}
+Shipping & Handling: ${order.deliveryFee === 0 ? "FREE" : `₹${order.deliveryFee}`}
 Grand Total: ₹${order.total?.toLocaleString("en-IN")}
 Payment Mode: ${order.paymentMethod === "cod" ? "Cash on Delivery" : "Online (Paid)"}
+Payment Status: ${order.paymentStatus || "Confirmed"}
 
 📍 *DELIVERY ADDRESS:*
-${order.shippingAddress?.street || ""}, ${order.shippingAddress?.city || ""}, ${order.shippingAddress?.state || ""} - ${order.shippingAddress?.pincode || ""}
+${[
+  order.deliveryHouseNumber,
+  order.deliveryBuildingName,
+  order.deliveryStreet || order.shippingAddress?.street,
+  order.deliveryArea,
+  order.deliveryCity || order.shippingAddress?.city,
+  order.deliveryPostalCode || order.shippingAddress?.pincode,
+]
+  .filter(Boolean)
+  .join(", ") || order.shippingAddress?.street || ""}
 
-Support Helpline: +91 9264920211 | https://www.intrihub.com`;
+Official Helpline: +91 9264920211
+IntriHub — Everything, Every Place`;
 
-      await Share.share({
-        title: `Intrihub Invoice #${order.id}`,
-        message: invoiceText,
-      });
-    } catch (err: any) {
-      console.warn("Share failed:", err);
-    }
+              await Share.share({
+                title: `IntriHub_Invoice_${order.id}`,
+                message: invoiceText,
+              });
+            } catch (err: any) {
+              console.warn("Share failed:", err);
+            }
+          },
+        },
+        {
+          text: "Cancel",
+          style: "cancel",
+        },
+      ],
+      { cancelable: true }
+    );
   };
 
-  const handleDownloadInvoice = () => {
-    Linking.openURL("https://www.intrihub.com/account/orders");
+  const handleDownloadInvoice = async () => {
+    try {
+      setDownloadingPdf(true);
+      const res = await downloadInvoicePDFDirect(order);
+      if (!res.success) {
+        Alert.alert("Invoice Error", "Could not generate tax PDF invoice. Please try again.");
+      }
+    } catch (err: any) {
+      console.warn("In-app PDF download failed:", err);
+      Alert.alert("Invoice Error", "Could not download PDF invoice.");
+    } finally {
+      setDownloadingPdf(false);
+    }
   };
 
   return (
@@ -237,15 +297,69 @@ Support Helpline: +91 9264920211 | https://www.intrihub.com`;
           </View>
 
           <Text style={styles.recipientName}>{order.customerName}</Text>
-          <Text style={styles.recipientPhone}>Phone: +91 {order.customerPhone}</Text>
-          {order.shippingAddress ? (
-            <Text style={styles.addressLine}>
-              {order.shippingAddress.street},{" "}
-              {order.shippingAddress.landmark ? `Near ${order.shippingAddress.landmark}, ` : ""}
-              {order.shippingAddress.city}, {order.shippingAddress.state} -{" "}
-              {order.shippingAddress.pincode}
+          <Text style={styles.recipientPhone}>Phone: +91 {order.deliveryPhone || order.customerPhone}</Text>
+          
+          {/* Detailed Address Line */}
+          <Text style={styles.addressLine}>
+            {[
+              order.deliveryHouseNumber,
+              order.deliveryBuildingName,
+              order.deliveryStreet || order.shippingAddress?.street,
+              order.deliveryArea,
+              order.deliveryCity || order.shippingAddress?.city,
+              order.deliveryPostalCode || order.shippingAddress?.pincode,
+            ]
+              .filter(Boolean)
+              .join(", ") || order.shippingAddress?.street}
+          </Text>
+
+          {/* Landmark */}
+          {(order.deliveryLandmark || order.shippingAddress?.landmark) ? (
+            <Text style={styles.cardLandmarkDetail}>
+              📍 Landmark: {order.deliveryLandmark || order.shippingAddress?.landmark}
             </Text>
           ) : null}
+
+          {/* Delivery Instructions */}
+          {order.deliveryInstructions ? (
+            <View style={styles.instructionBox}>
+              <Text style={styles.instructionTitle}>Delivery Instructions:</Text>
+              <Text style={styles.instructionText}>{order.deliveryInstructions}</Text>
+            </View>
+          ) : null}
+
+          {/* Coordinates & Navigation Row */}
+          {(() => {
+            const lat = order.deliveryLatitude || (order.shippingAddress as any)?.latitude;
+            const lng = order.deliveryLongitude || (order.shippingAddress as any)?.longitude;
+            if (!lat || !lng) return null;
+
+            return (
+              <View style={styles.navRow}>
+                <View style={styles.coordsTag}>
+                  <MapPin size={12} color={COLORS.secondary} />
+                  <Text style={styles.coordsTagText}>
+                    GPS: {lat.toFixed(4)}, {lng.toFixed(4)}
+                  </Text>
+                </View>
+
+                <TouchableOpacity
+                  style={styles.navigateBtn}
+                  onPress={() => {
+                    const navUrl =
+                      Platform.OS === "ios"
+                        ? `maps://?daddr=${lat},${lng}`
+                        : `https://www.google.com/maps/dir/?api=1&destination=${lat},${lng}`;
+                    Linking.openURL(navUrl);
+                  }}
+                  activeOpacity={0.85}
+                >
+                  <Navigation size={14} color="#fff" />
+                  <Text style={styles.navigateBtnText}>NAVIGATE</Text>
+                </TouchableOpacity>
+              </View>
+            );
+          })()}
         </View>
 
         {/* Order Items Card */}
@@ -378,7 +492,7 @@ Support Helpline: +91 9264920211 | https://www.intrihub.com`;
               {/* Company & Bill Info */}
               <View style={styles.invoiceHeaderBox}>
                 <Text style={styles.invoiceBrand}>INTRIHUB PRIVATE LIMITED</Text>
-                <Text style={styles.invoiceSub}>Direct Factory Supply & Premium Tiles Marketplace</Text>
+                <Text style={styles.invoiceSub}>Everything, Every Place</Text>
                 <Text style={styles.invoiceMeta}>GSTIN: 29AAAAA0000A1Z5 | Verified Tax Bill</Text>
               </View>
 
@@ -463,10 +577,17 @@ Support Helpline: +91 9264920211 | https://www.intrihub.com`;
               <TouchableOpacity
                 style={styles.modalDownloadBtn}
                 onPress={handleDownloadInvoice}
+                disabled={downloadingPdf}
                 activeOpacity={0.85}
               >
-                <Download size={16} color={COLORS.textWhite} />
-                <Text style={styles.modalDownloadBtnText}>Download Official PDF</Text>
+                {downloadingPdf ? (
+                  <ActivityIndicator size="small" color={COLORS.textWhite} />
+                ) : (
+                  <>
+                    <Download size={16} color={COLORS.textWhite} />
+                    <Text style={styles.modalDownloadBtnText}>Download Official PDF</Text>
+                  </>
+                )}
               </TouchableOpacity>
             </View>
           </View>
@@ -1000,5 +1121,74 @@ const styles = StyleSheet.create({
     fontWeight: "800",
     color: COLORS.textWhite,
     marginLeft: 6,
+  },
+  cardLandmarkDetail: {
+    fontSize: 11,
+    fontWeight: "600",
+    color: COLORS.textSecondary,
+    marginTop: 4,
+  },
+  instructionBox: {
+    backgroundColor: "#fff8f3",
+    borderWidth: 1,
+    borderColor: "#ffe0cc",
+    borderRadius: RADIUS.sm,
+    padding: SPACING.sm,
+    marginTop: 6,
+  },
+  instructionTitle: {
+    fontSize: 10,
+    fontWeight: "800",
+    color: COLORS.secondary,
+    textTransform: "uppercase",
+  },
+  instructionText: {
+    fontSize: 11,
+    fontWeight: "600",
+    color: COLORS.text,
+    marginTop: 2,
+  },
+  navRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    marginTop: 8,
+    paddingTop: 8,
+    borderTopWidth: 1,
+    borderTopColor: COLORS.borderLight,
+  },
+  coordsTag: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 4,
+    backgroundColor: "#f4f6f8",
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    borderRadius: RADIUS.sm,
+  },
+  coordsTagText: {
+    fontSize: 10,
+    fontWeight: "700",
+    color: COLORS.textSecondary,
+  },
+  navigateBtn: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 6,
+    backgroundColor: COLORS.secondary,
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderRadius: RADIUS.sm,
+    shadowColor: COLORS.secondary,
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.2,
+    shadowRadius: 3,
+    elevation: 2,
+  },
+  navigateBtnText: {
+    fontSize: 11,
+    fontWeight: "900",
+    color: "#fff",
+    letterSpacing: 0.5,
   },
 });

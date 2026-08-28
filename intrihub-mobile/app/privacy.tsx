@@ -111,8 +111,12 @@ export default function PrivacyPolicyScreen() {
             +91 {SUPPORT_PHONE}
           </Text>
           <Text style={styles.contactLine}>
-            <Text style={{ fontWeight: "700", color: COLORS.primary }}>Email: </Text>
+            <Text style={{ fontWeight: "700", color: COLORS.primary }}>Customer Support: </Text>
             support@intrihub.com
+          </Text>
+          <Text style={styles.contactLine}>
+            <Text style={{ fontWeight: "700", color: COLORS.primary }}>Corporate Info: </Text>
+            info@intrihub.com
           </Text>
           <Text style={styles.contactLine}>
             <Text style={{ fontWeight: "700", color: COLORS.primary }}>Website: </Text>

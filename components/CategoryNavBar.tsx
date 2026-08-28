@@ -146,7 +146,7 @@ export default function CategoryNavBar() {
 
   const [activeCategory, setActiveCategory] = useState<Category | null>(null);
   const [dropdownPos, setDropdownPos] = useState<{ left: number }>({ left: 16 });
-  const closeTimerRef = useRef<NodeJS.Timeout | null>(null);
+  const closeTimerRef = useRef<any>(null);
 
   const checkScroll = useCallback(() => {
     const el = scrollRef.current;

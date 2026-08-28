@@ -37,6 +37,7 @@ import { Product, ProductVariant } from "../../src/types";
 import { ProductCard } from "../../src/components/ProductCard";
 import { COLORS, SPACING, RADIUS, SHADOWS } from "../../src/constants/theme";
 import { getImageUrl } from "../../src/constants/config";
+import { resolveMobileColour } from "../../src/utils/colours";
 
 function getPriceUnitSuffix(product: any): string {
   const unit = (product?.unitOfSale || "").toLowerCase().trim();
@@ -390,38 +391,54 @@ export default function ProductDetailScreen() {
         )}
       </View>
 
-      {/* Available Sizes & Finishes (Variants) */}
+      {/* Available Sizes, Finishes & Colour Swatches (Variants) */}
       {product.variants && product.variants.length > 0 && (
         <View style={styles.sectionCard}>
-          <Text style={styles.sectionHeading}>Available Sizes & Finishes</Text>
+          <Text style={styles.sectionHeading}>Options & Finishes</Text>
           <View style={styles.variantsRow}>
             {product.variants.map((v) => {
               const isSelected =
                 selectedVariant?.id === v.id || (!selectedVariant && v.id === product.variants![0].id);
+              const colorInfo = resolveMobileColour(v.color, v.colorHex);
+
               return (
                 <TouchableOpacity
                   key={v.id}
                   style={[styles.variantChip, isSelected && styles.activeVariantChip]}
                   onPress={() => setSelectedVariant(v)}
+                  activeOpacity={0.7}
                 >
+                  {v.color && v.color !== "Standard" ? (
+                    <View
+                      style={{
+                        width: 14,
+                        height: 14,
+                        borderRadius: 7,
+                        backgroundColor: colorInfo.hex,
+                        borderWidth: 1,
+                        borderColor: "rgba(0,0,0,0.15)",
+                        marginRight: 6,
+                      }}
+                    />
+                  ) : null}
                   <Text
                     style={[
                       styles.variantChipText,
                       isSelected && styles.activeVariantChipText,
                     ]}
                   >
-                    {v.name || `${v.size} - ${v.finish}`}
+                    {v.name || v.attributeValue || `${v.size}${v.finish ? ` - ${v.finish}` : ""}`}
                   </Text>
-                  {v.pricePerSqft && (
+                  {v.pricePerSqft ? (
                     <Text
                       style={[
                         styles.variantPriceText,
                         isSelected && styles.activeVariantPriceText,
                       ]}
                     >
-                      ₹{v.pricePerSqft}/sq.ft
+                      ₹{v.pricePerSqft}/{unitSuffix || "sq.ft"}
                     </Text>
-                  )}
+                  ) : null}
                 </TouchableOpacity>
               );
             })}
@@ -429,9 +446,44 @@ export default function ProductDetailScreen() {
         </View>
       )}
 
+      {/* Packaging & Unit Information */}
+      {(product.coverageRate || product.conversionRatio || product.piecesPerUnit || selectedVariant?.sqftPerBox) ? (
+        <View style={styles.sectionCard}>
+          <Text style={styles.sectionHeading}>Packaging & Unit Details</Text>
+          <View style={styles.specRow}>
+            <Text style={styles.specKey}>Selling Unit</Text>
+            <Text style={styles.specValue}>{product.unitOfSale?.toUpperCase() || "BOX"}</Text>
+          </View>
+          {product.coverageRate || selectedVariant?.sqftPerBox ? (
+            <View style={styles.specRow}>
+              <Text style={styles.specKey}>Coverage per {product.unitOfSale || "Box"}</Text>
+              <Text style={styles.specValue}>{product.coverageRate || selectedVariant?.sqftPerBox} Sq.Ft</Text>
+            </View>
+          ) : null}
+          {product.piecesPerUnit || selectedVariant?.piecesPerBox ? (
+            <View style={styles.specRow}>
+              <Text style={styles.specKey}>Pieces per {product.unitOfSale || "Box"}</Text>
+              <Text style={styles.specValue}>{product.piecesPerUnit || selectedVariant?.piecesPerBox || 4} Pieces</Text>
+            </View>
+          ) : null}
+          {product.weightKg || selectedVariant?.weightKg ? (
+            <View style={styles.specRow}>
+              <Text style={styles.specKey}>Gross Weight</Text>
+              <Text style={styles.specValue}>{product.weightKg || selectedVariant?.weightKg} kg</Text>
+            </View>
+          ) : null}
+        </View>
+      ) : null}
+
       {/* Product Specifications */}
       <View style={styles.sectionCard}>
         <Text style={styles.sectionHeading}>Specifications</Text>
+        {product.brand ? (
+          <View style={styles.specRow}>
+            <Text style={styles.specKey}>Brand</Text>
+            <Text style={styles.specValue}>{product.brand}</Text>
+          </View>
+        ) : null}
         <View style={styles.specRow}>
           <Text style={styles.specKey}>Category</Text>
           <Text style={styles.specValue}>{product.categoryName}</Text>
@@ -452,6 +504,24 @@ export default function ProductDetailScreen() {
           <Text style={styles.specKey}>Thickness</Text>
           <Text style={styles.specValue}>{product.thickness}</Text>
         </View>
+        {product.grade ? (
+          <View style={styles.specRow}>
+            <Text style={styles.specKey}>Grade / Quality</Text>
+            <Text style={styles.specValue}>{product.grade}</Text>
+          </View>
+        ) : null}
+        {product.warranty ? (
+          <View style={styles.specRow}>
+            <Text style={styles.specKey}>Warranty</Text>
+            <Text style={styles.specValue}>{product.warranty}</Text>
+          </View>
+        ) : null}
+        {product.hsnCode ? (
+          <View style={styles.specRow}>
+            <Text style={styles.specKey}>HSN Code</Text>
+            <Text style={styles.specValue}>{product.hsnCode}</Text>
+          </View>
+        ) : null}
         {product.look ? (
           <View style={styles.specRow}>
             <Text style={styles.specKey}>Look & Feel</Text>

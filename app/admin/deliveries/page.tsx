@@ -344,14 +344,58 @@ export default function AdminDeliveriesPage() {
                         <p className="text-gray-500 text-[11px]">Phone: {split.vendor?.contactPhone}</p>
                       </div>
 
-                      {/* Customer Delivery Address */}
-                      <div className="space-y-1 bg-white p-3 rounded-xl border border-gray-200/60">
-                        <p className="font-bold text-gray-700 uppercase text-[10px]">Customer Doorstep</p>
-                        <p className="text-gray-900 font-semibold">{parent?.customerName}</p>
-                        <p className="text-gray-600 text-[11px]">
-                          {(parent?.shippingAddress as any)?.street}, {(parent?.shippingAddress as any)?.city} - {(parent?.shippingAddress as any)?.pincode}
-                        </p>
-                        <p className="text-gray-500 text-[11px]">Phone: {parent?.customerPhone}</p>
+                      {/* Customer Delivery Address & GPS Navigation */}
+                      <div className="space-y-1.5 bg-white p-3 rounded-xl border border-gray-200/60 flex flex-col justify-between">
+                        <div>
+                          <p className="font-bold text-gray-700 uppercase text-[10px]">Customer Doorstep & GPS</p>
+                          <p className="text-gray-900 font-semibold">{parent?.deliveryName || parent?.customerName}</p>
+                          <p className="text-gray-600 text-[11px]">
+                            {[
+                              parent?.deliveryHouseNumber,
+                              parent?.deliveryBuildingName,
+                              parent?.deliveryStreet || (parent?.shippingAddress as any)?.street,
+                              parent?.deliveryArea,
+                              parent?.deliveryCity || (parent?.shippingAddress as any)?.city,
+                              parent?.deliveryPostalCode || (parent?.shippingAddress as any)?.pincode,
+                            ]
+                              .filter(Boolean)
+                              .join(", ")}
+                          </p>
+                          {parent?.deliveryLandmark && (
+                            <p className="text-amber-700 text-[11px] font-semibold">
+                              📍 Landmark: {parent?.deliveryLandmark}
+                            </p>
+                          )}
+                          {parent?.deliveryInstructions && (
+                            <p className="text-blue-700 text-[11px] bg-blue-50/60 p-1.5 rounded-lg border border-blue-100">
+                              ℹ️ Instructions: {parent?.deliveryInstructions}
+                            </p>
+                          )}
+                          <p className="text-gray-500 text-[11px]">Phone: {parent?.deliveryPhone || parent?.customerPhone}</p>
+                        </div>
+
+                        {/* Exact Coordinates Navigation CTA */}
+                        {(() => {
+                          const lat = parent?.deliveryLatitude || (parent?.shippingAddress as any)?.latitude;
+                          const lng = parent?.deliveryLongitude || (parent?.shippingAddress as any)?.longitude;
+                          if (!lat || !lng) return null;
+                          return (
+                            <div className="pt-2 mt-1 border-t border-gray-100 flex items-center justify-between">
+                              <span className="text-[10px] font-mono text-gray-500 font-bold">
+                                {lat.toFixed(4)}, {lng.toFixed(4)}
+                              </span>
+                              <a
+                                href={`https://www.google.com/maps/dir/?api=1&destination=${lat},${lng}`}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                className="inline-flex items-center gap-1 px-2.5 py-1 bg-[#F26522] hover:bg-[#d95314] text-white text-[11px] font-black rounded-lg shadow-2xs transition-colors"
+                              >
+                                <MapPin size={11} />
+                                <span>Navigate GPS</span>
+                              </a>
+                            </div>
+                          );
+                        })()}
                       </div>
 
                       {/* Transit & Fleet Info */}

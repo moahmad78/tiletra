@@ -48,6 +48,20 @@ export default function TermsPage() {
               These Terms are governed by and construed in accordance with the laws of India. Any disputes arising from transactions on this website shall be subject to the exclusive jurisdiction of the courts in Bengaluru, Karnataka.
             </p>
           </section>
+
+          <section className="space-y-2 pt-2 border-t border-gray-100">
+            <h2 className="text-lg font-black text-[#052a51]">5. Corporate & Legal Contact</h2>
+            <p>
+              For legal inquiries, terms clarification, or formal corporate communications, please write to our corporate desk at{" "}
+              <a href="mailto:info@intrihub.com" className="font-bold text-[#052a51] hover:underline">
+                info@intrihub.com
+              </a>
+              {" "}or for customer support at{" "}
+              <a href="mailto:support@intrihub.com" className="font-bold text-[#F26522] hover:underline">
+                support@intrihub.com
+              </a>.
+            </p>
+          </section>
         </div>
       </div>
 

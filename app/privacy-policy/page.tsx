@@ -41,6 +41,16 @@ export default function PrivacyPolicyPage() {
               All traffic between your device and Intrihub is encrypted using standard HTTPS/TLS protocols.
             </p>
           </section>
+
+          <section className="space-y-2 pt-2 border-t border-gray-100">
+            <h2 className="text-lg font-black text-[#052a51]">4. Data Protection & Inquiries</h2>
+            <p>
+              For data access requests, privacy concerns, or corporate governance inquiries, please reach out to our privacy desk at{" "}
+              <a href="mailto:info@intrihub.com" className="font-bold text-[#052a51] hover:underline">
+                info@intrihub.com
+              </a>.
+            </p>
+          </section>
         </div>
       </div>
 

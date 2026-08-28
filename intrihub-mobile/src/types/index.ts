@@ -16,11 +16,26 @@ export interface Address {
   id: string;
   userId?: string;
   label?: string; // Home | Work | Site | Other
+  fullName?: string | null;
+  phone?: string | null;
+  houseNumber?: string | null;
+  buildingName?: string | null;
+  floor?: string | null;
   street: string;
+  area?: string | null;
   landmark?: string | null;
   city: string;
+  district?: string | null;
   state: string;
+  country?: string;
   pincode: string;
+  postalCode?: string | null;
+  latitude?: number | null;
+  longitude?: number | null;
+  accuracy?: number | null;
+  source?: "GPS" | "MAP_PIN" | "SEARCH" | "MANUAL" | string;
+  deliveryInstructions?: string | null;
+  formattedAddress?: string;
   isDefault?: boolean;
 }
 
@@ -39,13 +54,31 @@ export interface Category {
   };
 }
 
+export interface PriceTier {
+  id?: string;
+  minQuantity: number;
+  maxQuantity?: number | null;
+  price: number;
+  customerType?: string;
+}
+
 export interface ProductVariant {
   id: string;
-  productId: string;
-  name: string;
-  size?: string | null;
-  finish?: string | null;
+  productId?: string;
+  name?: string;
+  sku?: string | null;
+  size: string;
+  finish: string;
+  color?: string | null;
+  colorHex?: string | null;
+  swatchImage?: string | null;
+  image?: string | null;
+  unit?: string | null;
+  attributeLabel?: string | null;
+  attributeValue?: string | null;
+  variantSpecs?: any;
   thickness?: string | null;
+  weightKg?: number | null;
   pricePerSqft?: number | null;
   pricePerBox?: number | null;
   mrp?: number | null;
@@ -53,7 +86,7 @@ export interface ProductVariant {
   piecesPerBox?: number | null;
   stockBoxes: number;
   inStock: boolean;
-  sku?: string | null;
+  priceTiers?: PriceTier[];
 }
 
 export interface VendorMini {
@@ -70,11 +103,25 @@ export interface Product {
   id: string;
   name: string;
   slug: string;
+  brand?: string;
+  modelNumber?: string | null;
+  sku?: string | null;
   categoryId?: string | null;
   categorySlug: string;
   categoryName: string;
   subcategory?: string | null;
   unitOfSale: string;
+  sellingUnit?: string;
+  baseUnit?: string | null;
+  conversionRatio?: number | null;
+  piecesPerUnit?: number | null;
+  lengthPerUnit?: number | null;
+  weightKg?: number | null;
+  minOrderQuantity?: number;
+  maxOrderQuantity?: number | null;
+  incrementQuantity?: number;
+  allowDecimals?: boolean;
+  decimalPrecision?: number;
   material: string;
   finish: string;
   size: string;
@@ -84,6 +131,11 @@ export interface Product {
   thickness: string;
   usage?: string;
   look?: string;
+  grade?: string | null;
+  series?: string | null;
+  warranty?: string | null;
+  hsnCode?: string | null;
+  gstPercent?: number;
   status?: string;
   approvalStatus?: string;
   featuredImage?: string;
@@ -94,13 +146,17 @@ export interface Product {
   isNewArrival?: boolean;
   inStock: boolean;
   images: string[];
+  videos?: string[];
   description: string;
+  shortDescription?: string | null;
   rating: number;
   reviewCount: number;
   specs?: Record<string, any> | null;
   vendorId?: string | null;
   vendor?: VendorMini | null;
   variants?: ProductVariant[];
+  priceTiers?: PriceTier[];
+  attributes?: { key: string; value: string }[];
   category?: Partial<Category> | null;
 }
 
@@ -148,6 +204,28 @@ export interface Order {
   trackingNumber?: string | null;
   courierName?: string | null;
   estimatedDelivery?: string | null;
+
+  // Immutable Delivery Snapshot
+  deliveryName?: string | null;
+  deliveryPhone?: string | null;
+  deliveryAddress?: string | null;
+  deliveryHouseNumber?: string | null;
+  deliveryBuildingName?: string | null;
+  deliveryFloor?: string | null;
+  deliveryStreet?: string | null;
+  deliveryArea?: string | null;
+  deliveryLandmark?: string | null;
+  deliveryCity?: string | null;
+  deliveryDistrict?: string | null;
+  deliveryState?: string | null;
+  deliveryCountry?: string | null;
+  deliveryPostalCode?: string | null;
+  deliveryLatitude?: number | null;
+  deliveryLongitude?: number | null;
+  deliveryAccuracy?: number | null;
+  deliveryLocationSource?: string | null;
+  deliveryInstructions?: string | null;
+
   createdAt: string;
   items: OrderItem[];
 }

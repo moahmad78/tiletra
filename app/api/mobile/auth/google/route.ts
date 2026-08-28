@@ -1,6 +1,11 @@
 import { NextRequest } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { generateMobileTokens, mobileApiResponse, handleMobileCorsOptions } from "@/lib/mobile-auth";
+import {
+  checkVendorLoginLockout,
+  recordVendorLoginFailure,
+  resetVendorLoginLockout,
+} from "@/lib/rate-limit";
 
 export async function OPTIONS() {
   return handleMobileCorsOptions();
@@ -9,13 +14,40 @@ export async function OPTIONS() {
 export async function POST(req: NextRequest) {
   try {
     const body = await req.json().catch(() => ({}));
-    const { idToken, accessToken, profile: clientProfile } = body;
+    const { idToken, accessToken, profile: clientProfile, purpose = "customer" } = body;
+
+    const isBusinessLogin = purpose === "business" || purpose === "vendor" || purpose === "admin";
+    const clientIp =
+      req.headers.get("x-forwarded-for")?.split(",")[0]?.trim() ||
+      req.headers.get("x-real-ip") ||
+      "127.0.0.1";
+
+    // 1. Check IP lockout for business login attempts
+    if (isBusinessLogin) {
+      const lockoutCheck = checkVendorLoginLockout(clientIp);
+      if (lockoutCheck.locked) {
+        const mins = Math.floor((lockoutCheck.retryAfterSeconds || 0) / 60);
+        const secs = (lockoutCheck.retryAfterSeconds || 0) % 60;
+        const timeStr = `${mins.toString().padStart(2, "0")}:${secs.toString().padStart(2, "0")}`;
+
+        return mobileApiResponse(
+          {
+            success: false,
+            error: `Too many failed attempts. Try again in ${timeStr}`,
+            locked: true,
+            lockoutUntil: lockoutCheck.lockoutUntil,
+            retryAfterSeconds: lockoutCheck.retryAfterSeconds,
+          },
+          429
+        );
+      }
+    }
 
     let email = clientProfile?.email;
     let name = clientProfile?.name;
     let avatar = clientProfile?.avatar || clientProfile?.picture;
 
-    // 1. If accessToken provided, verify and fetch Google userinfo
+    // Verify and fetch Google user info
     if (accessToken && !email) {
       try {
         const googleRes = await fetch("https://www.googleapis.com/oauth2/v3/userinfo", {
@@ -32,7 +64,6 @@ export async function POST(req: NextRequest) {
       }
     }
 
-    // 2. If idToken provided and email not yet resolved, verify via tokeninfo
     if (idToken && !email) {
       try {
         const tokenRes = await fetch(`https://oauth2.googleapis.com/tokeninfo?id_token=${encodeURIComponent(idToken)}`);
@@ -48,6 +79,21 @@ export async function POST(req: NextRequest) {
     }
 
     if (!email || typeof email !== "string") {
+      if (isBusinessLogin) {
+        const failRecord = recordVendorLoginFailure(clientIp);
+        if (failRecord.locked) {
+          return mobileApiResponse(
+            {
+              success: false,
+              error: "Too many failed attempts. Try again in 15:00",
+              locked: true,
+              lockoutUntil: failRecord.lockoutUntil,
+              retryAfterSeconds: failRecord.retryAfterSeconds,
+            },
+            429
+          );
+        }
+      }
       return mobileApiResponse(
         { success: false, error: "Could not verify Google account or retrieve email address" },
         400
@@ -57,10 +103,11 @@ export async function POST(req: NextRequest) {
     const cleanEmail = email.trim().toLowerCase();
     const syntheticPhone = `google_${cleanEmail.replace(/[^a-z0-9]/gi, "_")}`;
 
-    // 3. Upsert user in database
+    // 2. Lookup existing user
     const existingByEmail = await prisma.user.findUnique({
       where: { email: cleanEmail },
       include: {
+        vendor: true,
         addresses: {
           orderBy: [{ isDefault: "desc" }, { createdAt: "desc" }],
         },
@@ -82,6 +129,7 @@ export async function POST(req: NextRequest) {
           avatar: shouldUpdateAvatar ? avatar : undefined,
         },
         include: {
+          vendor: true,
           addresses: {
             orderBy: [{ isDefault: "desc" }, { createdAt: "desc" }],
           },
@@ -90,7 +138,10 @@ export async function POST(req: NextRequest) {
     } else {
       const existingByPhone = await prisma.user.findUnique({
         where: { phone: syntheticPhone },
-        include: { addresses: true },
+        include: {
+          vendor: true,
+          addresses: true,
+        },
       });
 
       if (existingByPhone) {
@@ -104,6 +155,7 @@ export async function POST(req: NextRequest) {
             avatar: avatar || existingByPhone.avatar,
           },
           include: {
+            vendor: true,
             addresses: {
               orderBy: [{ isDefault: "desc" }, { createdAt: "desc" }],
             },
@@ -122,16 +174,100 @@ export async function POST(req: NextRequest) {
             role: "customer",
           },
           include: {
+            vendor: true,
             addresses: true,
           },
         });
       }
     }
 
+    // 3. Business Login Security Whitelist Verification
+    if (isBusinessLogin) {
+      const allowedAdminEmail = (process.env.ADMIN_ALLOWED_EMAIL || "admin@intrihub.com").toLowerCase().trim();
+      const isAdmin =
+        (user.role === "admin" || user.role === "superadmin") &&
+        user.email?.toLowerCase().trim() === allowedAdminEmail;
+
+      if (!isAdmin) {
+        let vendor = user.vendor;
+
+        // Check if there is an approved Vendor with this contactEmail
+        if (!vendor) {
+          const matchedVendor = await prisma.vendor.findFirst({
+            where: {
+              OR: [
+                { contactEmail: cleanEmail },
+                { contactEmail: { equals: cleanEmail, mode: "insensitive" } },
+              ],
+            },
+          });
+
+          if (matchedVendor) {
+            await prisma.vendor.update({
+              where: { id: matchedVendor.id },
+              data: { ownerId: user.id },
+            });
+            await prisma.user.update({
+              where: { id: user.id },
+              data: { role: "vendor" },
+            });
+            vendor = matchedVendor;
+            user.role = "vendor";
+          }
+        }
+
+        if (!vendor) {
+          const failRecord = recordVendorLoginFailure(clientIp);
+          return mobileApiResponse(
+            {
+              success: false,
+              error:
+                "Access Restricted: Google account is not registered as an Intrihub vendor partner. Please submit a vendor application.",
+              remainingAttempts: failRecord.remainingAttempts,
+              locked: failRecord.locked,
+            },
+            403
+          );
+        }
+
+        if (vendor.status !== "approved") {
+          const failRecord = recordVendorLoginFailure(clientIp);
+          let msg = "Your vendor account is not approved.";
+          if (vendor.status === "pending") {
+            msg = "Your vendor application is currently under review by the Intrihub Admin team. You will be notified upon approval.";
+          } else if (vendor.status === "suspended") {
+            msg = "Your vendor store has been suspended. Please contact Intrihub Partner Support at +91 9264920211.";
+          } else if (vendor.status === "rejected") {
+            msg = `Your vendor application was not approved. ${vendor.rejectionReason ? `Reason: ${vendor.rejectionReason}` : "Please contact partner support."}`;
+          }
+
+          return mobileApiResponse(
+            {
+              success: false,
+              error: msg,
+              vendorStatus: vendor.status,
+              remainingAttempts: failRecord.remainingAttempts,
+              locked: failRecord.locked,
+            },
+            403
+          );
+        }
+      }
+
+      // Successful business login -> reset IP lockout
+      resetVendorLoginLockout(clientIp);
+    }
+
+    const allowedAdminEmail = (process.env.ADMIN_ALLOWED_EMAIL || "admin@intrihub.com").toLowerCase().trim();
+    let effectiveRole = user.role;
+    if ((effectiveRole === "admin" || effectiveRole === "superadmin") && user.email?.toLowerCase().trim() !== allowedAdminEmail) {
+      effectiveRole = "customer";
+    }
+
     // 4. Generate standard JWT tokens for mobile
     const tokens = generateMobileTokens({
       id: user.id,
-      role: user.role,
+      role: effectiveRole,
       email: user.email,
       phone: user.phone,
       name: user.name,
@@ -145,7 +281,7 @@ export async function POST(req: NextRequest) {
         name: user.name,
         email: user.email,
         phone: user.phone,
-        role: user.role,
+        role: effectiveRole,
         avatar: user.avatar,
         phoneVerified: user.phoneVerified,
         emailVerified: user.emailVerified,

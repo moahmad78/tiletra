@@ -19,7 +19,7 @@ export default function AdminSettingsPage() {
   const [gstNumber, setGstNumber] = useState("29AABCT1234F1Z8");
   const [contactPhone, setContactPhone] = useState("+91 78709 35277");
   const [whatsappNumber, setWhatsappNumber] = useState("+91 78709 35277");
-  const [email, setEmail] = useState("info@intrihub.com");
+  const [email, setEmail] = useState("support@intrihub.com");
   const [address, setAddress] = useState("Intrihub Central Supply Hub, Begur, Bangalore, Karnataka - 560114");
   const [freeDeliveryThreshold, setFreeDeliveryThreshold] = useState(15000);
   const [standardDeliveryFee, setStandardDeliveryFee] = useState(999);

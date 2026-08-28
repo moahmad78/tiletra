@@ -18,6 +18,7 @@ import {
   CreditCard,
   Loader2,
   ChevronRight,
+  Mail,
 } from "lucide-react";
 import { toast } from "sonner";
 import { submitVendorApplication } from "@/lib/actions/vendor-application";
@@ -155,6 +156,15 @@ export default function VendorApplyPage() {
                 <span className="w-5 h-5 rounded-full bg-[#052a51] text-white flex items-center justify-center text-[10px] font-bold shrink-0 mt-0.5">3</span>
                 <span>Upload inventory products, set custom pricing, and start fulfilling orders!</span>
               </div>
+              <div className="flex items-start gap-3 text-xs text-gray-700">
+                <span className="w-5 h-5 rounded-full bg-[#052a51] text-white flex items-center justify-center text-[10px] font-bold shrink-0 mt-0.5">4</span>
+                <span>
+                  For expedited verification or sending GST certificates, email our onboarding desk at{" "}
+                  <a href="mailto:vendor@intrihub.com" className="font-bold text-[#F26522] hover:underline">
+                    vendor@intrihub.com
+                  </a>
+                </span>
+              </div>
             </div>
 
             <div className="mt-8 flex flex-col sm:flex-row gap-3 justify-center">
@@ -234,6 +244,23 @@ export default function VendorApplyPage() {
                     Real-time stock management, price updates, and instant pause toggles.
                   </p>
                 </div>
+
+                <div className="bg-gradient-to-r from-orange-500/20 to-amber-500/10 backdrop-blur-md p-4 rounded-2xl border border-orange-400/30">
+                  <div className="flex items-center gap-2 mb-1">
+                    <Mail className="text-[#F26522]" size={16} />
+                    <h4 className="text-xs font-black uppercase tracking-wider text-white">Vendor Onboarding Desk</h4>
+                  </div>
+                  <p className="text-xs text-blue-100/80 leading-relaxed mb-2.5">
+                    Have questions about seller commission, logistics coverage, or catalog onboarding?
+                  </p>
+                  <a
+                    href="mailto:vendor@intrihub.com?subject=New%20Vendor%20Application%20Inquiry"
+                    className="inline-flex items-center gap-1.5 text-xs font-bold text-white bg-white/15 hover:bg-[#F26522] px-3 py-1.5 rounded-xl transition-all shadow-xs"
+                  >
+                    <Mail size={13} />
+                    <span>vendor@intrihub.com</span>
+                  </a>
+                </div>
               </div>
 
               {/* Already registered quick link */}
@@ -275,7 +302,7 @@ export default function VendorApplyPage() {
                       <input
                         type="text"
                         required
-                        placeholder="e.g. Sri Balaji Hardware & Electricals"
+                        placeholder="e.g. IntriHub Store"
                         value={formData.businessName}
                         onChange={(e) => setFormData({ ...formData, businessName: e.target.value })}
                         className="w-full px-3.5 py-2.5 bg-gray-50 border border-gray-200 rounded-xl text-sm font-medium focus:bg-white focus:border-[#052a51] focus:ring-2 focus:ring-[#052a51]/20 outline-none transition-all"
@@ -289,7 +316,7 @@ export default function VendorApplyPage() {
                       <input
                         type="text"
                         required
-                        placeholder="e.g. Ramesh Kumar"
+                        placeholder="e.g. IntriHub Partner"
                         value={formData.ownerName}
                         onChange={(e) => setFormData({ ...formData, ownerName: e.target.value })}
                         className="w-full px-3.5 py-2.5 bg-gray-50 border border-gray-200 rounded-xl text-sm font-medium focus:bg-white focus:border-[#052a51] focus:ring-2 focus:ring-[#052a51]/20 outline-none transition-all"

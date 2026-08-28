@@ -15,6 +15,25 @@ interface BannerCarouselProps {
   banners: OfferBanner[];
 }
 
+// Mapping for common banner shortcuts to valid category slugs
+const CATEGORY_ALIAS_MAP: Record<string, string> = {
+  "floor-tiles": "tiles-stone",
+  "wall-tiles": "tiles-stone",
+  "tiles": "tiles-stone",
+  "vitrified-tiles": "tiles-stone",
+  "sanitaryware": "plumbing-sanitary",
+  "bathroom": "plumbing-sanitary",
+  "plumbing": "plumbing-sanitary",
+  "tile-adhesives": "construction-chemicals",
+  "adhesives": "construction-chemicals",
+  "chemicals": "construction-chemicals",
+  "plywood": "plywood-boards",
+  "ply": "plywood-boards",
+  "hardware": "hardware-fasteners",
+  "electrical": "electrical-appliances",
+  "paint": "paint-finishes",
+};
+
 export const BannerCarousel: React.FC<BannerCarouselProps> = ({ banners }) => {
   const router = useRouter();
   const flatListRef = useRef<FlatList>(null);
@@ -29,7 +48,7 @@ export const BannerCarousel: React.FC<BannerCarouselProps> = ({ banners }) => {
       title: "Premium Vitrified Tiles",
       subtitle: "Starting at ₹38/sq.ft • Direct from Factory",
       cta: "Explore Deals",
-      href: "/category/floor-tiles",
+      href: "/category/tiles-stone",
       image: "https://images.unsplash.com/photo-1600585154340-be6161a56a0c?w=1000",
     },
     {
@@ -38,7 +57,7 @@ export const BannerCarousel: React.FC<BannerCarouselProps> = ({ banners }) => {
       title: "Luxury Sanitaryware & CP",
       subtitle: "Up to 45% OFF on Bulk Bathroom Packages",
       cta: "Shop Now",
-      href: "/category/sanitaryware",
+      href: "/category/plumbing-sanitary",
       image: "https://images.unsplash.com/photo-1584622650111-993a426fbf0a?w=1000",
     },
     {
@@ -47,7 +66,7 @@ export const BannerCarousel: React.FC<BannerCarouselProps> = ({ banners }) => {
       title: "Tile Adhesives & Grouts",
       subtitle: "Heavy duty polymer modified cements",
       cta: "Order Now",
-      href: "/category/tile-adhesives",
+      href: "/category/construction-chemicals",
       image: "https://images.unsplash.com/photo-1504307651254-35680f356dfd?w=1000",
     },
   ];
@@ -76,6 +95,64 @@ export const BannerCarousel: React.FC<BannerCarouselProps> = ({ banners }) => {
 
     return () => clearInterval(interval);
   }, [data.length]);
+
+  const handleBannerPress = (item: OfferBanner) => {
+    const href = (item.href || "").trim();
+
+    // 1. Check for product link (/product/123, /products/123)
+    const productMatch = href.match(/\/products?\/([a-zA-Z0-9_-]+)/i);
+    if (productMatch && productMatch[1]) {
+      router.push({
+        pathname: "/product/[id]",
+        params: { id: productMatch[1] },
+      } as any);
+      return;
+    }
+
+    // 2. Check for category slug in href
+    const catParamMatch = href.match(/[?&]category=([a-zA-Z0-9_-]+)/i);
+    const categoryMatch = href.match(/\/categor(?:y|ies)\/([a-zA-Z0-9_-]+)/i);
+    const rawSlug = (catParamMatch?.[1] || categoryMatch?.[1] || "").toLowerCase();
+
+    if (rawSlug) {
+      const resolvedSlug = CATEGORY_ALIAS_MAP[rawSlug] || rawSlug;
+      router.push({
+        pathname: "/category/[slug]",
+        params: { slug: resolvedSlug },
+      } as any);
+      return;
+    }
+
+    // 3. Fallback based on banner title keywords
+    const titleLower = (item.title || "").toLowerCase();
+    if (titleLower.includes("tile")) {
+      router.push({ pathname: "/category/[slug]", params: { slug: "tiles-stone" } } as any);
+      return;
+    }
+    if (titleLower.includes("sanitary") || titleLower.includes("bathroom") || titleLower.includes("cp")) {
+      router.push({ pathname: "/category/[slug]", params: { slug: "plumbing-sanitary" } } as any);
+      return;
+    }
+    if (titleLower.includes("adhesive") || titleLower.includes("grout") || titleLower.includes("chemical")) {
+      router.push({ pathname: "/category/[slug]", params: { slug: "construction-chemicals" } } as any);
+      return;
+    }
+    if (titleLower.includes("plywood") || titleLower.includes("board")) {
+      router.push({ pathname: "/category/[slug]", params: { slug: "plywood-boards" } } as any);
+      return;
+    }
+    if (titleLower.includes("electric") || titleLower.includes("switch") || titleLower.includes("wire")) {
+      router.push({ pathname: "/category/[slug]", params: { slug: "electrical-appliances" } } as any);
+      return;
+    }
+    if (titleLower.includes("paint") || titleLower.includes("primer") || titleLower.includes("putty")) {
+      router.push({ pathname: "/category/[slug]", params: { slug: "paint-finishes" } } as any);
+      return;
+    }
+
+    // 4. Default: Open categories tab
+    router.push("/(tabs)/categories" as any);
+  };
 
   return (
     <View style={styles.container}>
@@ -115,12 +192,8 @@ export const BannerCarousel: React.FC<BannerCarouselProps> = ({ banners }) => {
         renderItem={({ item }) => (
           <TouchableOpacity
             style={styles.bannerCard}
-            activeOpacity={0.9}
-            onPress={() => {
-              if (item.href) {
-                router.push(item.href as any);
-              }
-            }}
+            activeOpacity={0.88}
+            onPress={() => handleBannerPress(item)}
           >
             <Image source={{ uri: getImageUrl(item.image) }} style={styles.bannerImage} contentFit="cover" transition={200} />
             <LinearGradient

@@ -10,12 +10,23 @@ export interface CustomerAddress {
   pincode: string;
   line1: string;
   line2?: string;
+  houseNumber?: string;
+  buildingName?: string;
+  floor?: string;
+  street?: string;
+  area?: string;
   city: string;
+  district?: string;
   state: string;
+  country?: string;
   landmark?: string;
-  label: "Home" | "Work" | "Other";
+  label: "Home" | "Work" | "Site" | "Other" | string;
   latitude?: number;
   longitude?: number;
+  accuracy?: number;
+  source?: "GPS" | "MAP_PIN" | "SEARCH" | "MANUAL" | string;
+  deliveryInstructions?: string;
+  formattedAddress?: string;
   isDefault?: boolean;
 }
 
