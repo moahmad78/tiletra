@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useMemo } from "react";
 import {
   View,
   Text,
@@ -157,16 +157,18 @@ export default function AdminProductsHubScreen() {
   const [validationResult, setValidationResult] = useState<any | null>(null);
 
   // 1. Products Query
+  const [showSuggestions, setShowSuggestions] = useState(false);
+
+  // 1. Products Query (Cached in-memory for zero network delay instant live search)
   const {
     data: productsData,
     isLoading: productsLoading,
     refetch: refetchProducts,
     isRefetching: productsRefetching,
   } = useQuery({
-    queryKey: ["admin-products", search, statusFilter],
+    queryKey: ["admin-products", statusFilter],
     queryFn: () =>
       fetchAdminProducts({
-        search: search.trim() || undefined,
         status: statusFilter === "all" ? undefined : statusFilter,
       }),
   });
@@ -189,17 +191,35 @@ export default function AdminProductsHubScreen() {
   });
 
   const rawProducts = productsData?.products || [];
-  const products = rawProducts.filter((p: any) => {
-    if (!search.trim()) return true;
+
+  // Instant in-memory search filtering (zero load time, character-by-character)
+  const products = useMemo(() => {
+    if (!search.trim()) return rawProducts;
     const q = search.trim().toLowerCase();
-    const nameMatch = (p.name || "").toLowerCase().includes(q);
-    const catMatch = (p.categoryName || p.categorySlug || "").toLowerCase().includes(q);
-    const vendorMatch = (p.vendorName || p.vendor?.businessName || "").toLowerCase().includes(q);
-    const unitMatch = (p.unitOfSale || "").toLowerCase().includes(q);
-    const matMatch = (p.material || "").toLowerCase().includes(q);
-    const finishMatch = (p.finish || "").toLowerCase().includes(q);
-    return nameMatch || catMatch || vendorMatch || unitMatch || matMatch || finishMatch;
-  });
+    return rawProducts.filter((p: any) => {
+      const nameMatch = (p.name || "").toLowerCase().includes(q);
+      const catMatch = (p.categoryName || p.categorySlug || "").toLowerCase().includes(q);
+      const vendorMatch = (p.vendorName || p.vendor?.businessName || "").toLowerCase().includes(q);
+      const unitMatch = (p.unitOfSale || "").toLowerCase().includes(q);
+      const matMatch = (p.material || "").toLowerCase().includes(q);
+      const finishMatch = (p.finish || "").toLowerCase().includes(q);
+      return nameMatch || catMatch || vendorMatch || unitMatch || matMatch || finishMatch;
+    });
+  }, [rawProducts, search]);
+
+  // Live Auto-Suggestions dropdown list
+  const searchSuggestions = useMemo(() => {
+    if (!search.trim()) return [];
+    const q = search.trim().toLowerCase();
+    return rawProducts
+      .filter((p: any) => {
+        const nameMatch = (p.name || "").toLowerCase().includes(q);
+        const catMatch = (p.categoryName || p.categorySlug || "").toLowerCase().includes(q);
+        const vendorMatch = (p.vendorName || p.vendor?.businessName || "").toLowerCase().includes(q);
+        return nameMatch || catMatch || vendorMatch;
+      })
+      .slice(0, 5);
+  }, [rawProducts, search]);
   const approvals = approvalsData?.products || [];
   const categories = catData?.categories || [
     { id: "1", name: "Tiles & Stone", slug: "tiles-stone" },
@@ -1039,15 +1059,75 @@ export default function AdminProductsHubScreen() {
                 </TouchableOpacity>
               </View>
             ) : (
-              <View style={styles.searchBar}>
-                <Search size={16} color={COLORS.textTertiary} />
-                <TextInput
-                  style={styles.searchInput}
-                  placeholder="Search products by title, category..."
-                  placeholderTextColor={COLORS.textTertiary}
-                  value={search}
-                  onChangeText={setSearch}
-                />
+              <View style={styles.searchBarContainer}>
+                <View style={styles.searchBar}>
+                  <Search size={16} color={COLORS.accentBlue} />
+                  <TextInput
+                    style={styles.searchInput}
+                    placeholder="Search products by title, category, vendor..."
+                    placeholderTextColor={COLORS.textTertiary}
+                    value={search}
+                    onChangeText={(txt) => {
+                      setSearch(txt);
+                      setShowSuggestions(true);
+                    }}
+                    onFocus={() => setShowSuggestions(true)}
+                  />
+                  {search ? (
+                    <TouchableOpacity
+                      onPress={() => {
+                        setSearch("");
+                        setShowSuggestions(false);
+                      }}
+                      style={{ padding: 4 }}
+                    >
+                      <X size={16} color="#64748B" />
+                    </TouchableOpacity>
+                  ) : null}
+                </View>
+
+                {/* Live Auto-Suggestions Dropdown Panel */}
+                {showSuggestions && search.trim() !== "" && (
+                  <View style={styles.suggestionsBox}>
+                    <View style={styles.suggestionHeader}>
+                      <Text style={styles.suggestionHeaderText}>
+                        LIVE AUTO-SUGGESTIONS ({searchSuggestions.length})
+                      </Text>
+                      <TouchableOpacity onPress={() => setShowSuggestions(false)}>
+                        <Text style={styles.suggestionCloseText}>Close ✕</Text>
+                      </TouchableOpacity>
+                    </View>
+
+                    {searchSuggestions.length > 0 ? (
+                      searchSuggestions.map((item: any) => (
+                        <TouchableOpacity
+                          key={item.id}
+                          style={styles.suggestionItem}
+                          onPress={() => {
+                            setSearch(item.name);
+                            setShowSuggestions(false);
+                          }}
+                          activeOpacity={0.8}
+                        >
+                          <Search size={13} color={COLORS.accentBlue} />
+                          <View style={{ flex: 1 }}>
+                            <Text style={styles.suggestionTitle} numberOfLines={1}>
+                              {item.name}
+                            </Text>
+                            <Text style={styles.suggestionSub} numberOfLines={1}>
+                              {item.categoryName || item.categorySlug} • {item.vendorName || "Direct"}
+                            </Text>
+                          </View>
+                          <Text style={styles.suggestionPrice}>₹{item.pricePerBox || item.pricePerSqft}</Text>
+                        </TouchableOpacity>
+                      ))
+                    ) : (
+                      <View style={styles.noSuggestionRow}>
+                        <Text style={styles.noSuggestionText}>No matching products found for "{search}"</Text>
+                      </View>
+                    )}
+                  </View>
+                )}
               </View>
             )}
 
@@ -1949,6 +2029,10 @@ const styles = StyleSheet.create({
   cancelBatchBtn: {
     padding: 6,
   },
+  searchBarContainer: {
+    position: "relative",
+    zIndex: 50,
+  },
   searchBar: {
     flexDirection: "row",
     alignItems: "center",
@@ -1964,6 +2048,70 @@ const styles = StyleSheet.create({
     flex: 1,
     fontSize: 13,
     color: COLORS.text,
+  },
+  suggestionsBox: {
+    backgroundColor: "#FFFFFF",
+    borderRadius: RADIUS.md,
+    borderWidth: 1,
+    borderColor: "#BFDBFE",
+    marginTop: 6,
+    padding: 8,
+    ...SHADOWS.md,
+    gap: 4,
+  },
+  suggestionHeader: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+    paddingHorizontal: 6,
+    paddingVertical: 4,
+    borderBottomWidth: 1,
+    borderBottomColor: "#F1F5F9",
+    marginBottom: 4,
+  },
+  suggestionHeaderText: {
+    fontSize: 9,
+    fontWeight: "900",
+    color: "#2563EB",
+    letterSpacing: 0.5,
+  },
+  suggestionCloseText: {
+    fontSize: 10,
+    fontWeight: "700",
+    color: "#64748B",
+  },
+  suggestionItem: {
+    flexDirection: "row",
+    alignItems: "center",
+    paddingHorizontal: 8,
+    paddingVertical: 8,
+    borderRadius: RADIUS.sm,
+    backgroundColor: "#F8FAFC",
+    gap: 8,
+  },
+  suggestionTitle: {
+    fontSize: 12,
+    fontWeight: "800",
+    color: "#052A51",
+  },
+  suggestionSub: {
+    fontSize: 10,
+    color: "#64748B",
+    marginTop: 1,
+  },
+  suggestionPrice: {
+    fontSize: 12,
+    fontWeight: "900",
+    color: "#16A34A",
+  },
+  noSuggestionRow: {
+    padding: 10,
+    alignItems: "center",
+  },
+  noSuggestionText: {
+    fontSize: 11,
+    color: "#94A3B8",
+    fontStyle: "italic",
   },
   chipsScroll: {
     marginHorizontal: -4,
