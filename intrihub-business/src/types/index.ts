@@ -161,17 +161,36 @@ export interface AdminDashboardData {
     activeVendorsCount: number;
     totalProductsCount: number;
     pendingApprovalsCount: number;
+    lowStockCount?: number;
   };
   recentOrders: Array<{
     id: string;
-    customerName: string;
-    customerPhone: string;
+    orderNumber?: string;
+    customerName?: string;
+    customerPhone?: string;
     total: number;
+    subtotal?: number;
+    deliveryFee?: number;
     orderStatus: string;
     paymentStatus: string;
     paymentMethod: string;
     itemsCount: number;
     createdAt: string;
+    formattedDate?: string;
+    customer?: {
+      name: string;
+      phone: string;
+      email?: string;
+      avatar?: string | null;
+      address: string;
+      city?: string;
+      state?: string;
+      pincode?: string;
+      latitude?: number | null;
+      longitude?: number | null;
+    };
+    items?: any[];
+    vendors?: any[];
   }>;
   pendingVendors: Array<{
     id: string;
@@ -180,6 +199,22 @@ export interface AdminDashboardData {
     contactPhone: string;
     category: string;
     createdAt: string;
+  }>;
+  lowStockProducts?: Array<{
+    id: string;
+    name: string;
+    pricePerBox: number;
+    pricePerSqft: number;
+    stockBoxes: number;
+    unitOfSale: string;
+    images?: string[];
+    status?: string;
+    vendor?: {
+      id: string;
+      businessName: string;
+      contactPhone?: string;
+      contactEmail?: string;
+    };
   }>;
 }
 

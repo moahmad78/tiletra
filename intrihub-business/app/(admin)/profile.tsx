@@ -2745,4 +2745,9 @@ const styles = StyleSheet.create({
     fontSize: 11,
     fontWeight: "900",
   },
+  sectionTitle: {
+    fontSize: 14,
+    fontWeight: "900",
+    color: "#052A51",
+  },
 });

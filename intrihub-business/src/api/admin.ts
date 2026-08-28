@@ -13,6 +13,7 @@ export async function fetchAdminDashboard(): Promise<{
   stats?: AdminDashboardData["stats"];
   recentOrders?: AdminDashboardData["recentOrders"];
   pendingVendors?: AdminDashboardData["pendingVendors"];
+  lowStockProducts?: AdminDashboardData["lowStockProducts"];
   error?: string;
 }> {
   const res = await apiClient.get("/api/mobile/admin/dashboard");
