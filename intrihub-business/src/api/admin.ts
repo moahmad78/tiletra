@@ -516,6 +516,10 @@ export async function deleteAdminBanner(id: string): Promise<{
   return res.data;
 }
 
+export const fetchAdminContentBanners = fetchAdminBanners;
+export const createAdminContentBanner = createAdminBanner;
+export const deleteAdminContentBanner = deleteAdminBanner;
+
 export async function fetchAdminHero(): Promise<{
   success: boolean;
   hero?: any;
@@ -693,13 +697,13 @@ export async function createAdminVendorManual(data: {
 }
 
 // 15. Admin Categories Management
-export async function fetchAdminCategories(): Promise<{
+export async function fetchAdminCategories(params?: { search?: string }): Promise<{
   success: boolean;
   categories?: any[];
   count?: number;
   error?: string;
 }> {
-  const res = await apiClient.get("/api/mobile/admin/categories");
+  const res = await apiClient.get("/api/mobile/admin/categories", { params });
   return res.data;
 }
 

@@ -274,8 +274,8 @@ export default function AdminAccountMasterHubScreen() {
         name: newCatName.trim(),
         slug,
         description: newCatDesc.trim() || undefined,
-        imageUrl: newCatImage.trim() || undefined,
-        hasCalculator: newCatHasCalc,
+        image: newCatImage.trim() || undefined,
+        calculatorType: newCatHasCalc ? "tile" : "none",
       });
       if (res.success) {
         setNewCatName("");
@@ -321,7 +321,7 @@ export default function AdminAccountMasterHubScreen() {
         code: newCouponCode.trim().toUpperCase(),
         discountType: newCouponType,
         value: parseFloat(newCouponValue) || 100,
-        minOrderAmount: parseFloat(newCouponMinOrder) || 1000,
+        minOrderValue: parseFloat(newCouponMinOrder) || 1000,
       });
       if (res.success) {
         setNewCouponCode("");
@@ -363,9 +363,8 @@ export default function AdminAccountMasterHubScreen() {
       const res = await createAdminContentBanner({
         title: newBannerTitle.trim(),
         subtitle: newBannerSubtitle.trim() || undefined,
-        imageUrl: newBannerImage.trim(),
-        linkUrl: newBannerCta.trim() || "/shop",
-        active: true,
+        image: newBannerImage.trim(),
+        href: newBannerCta.trim() || "/shop",
       });
       if (res.success) {
         setNewBannerTitle("");
@@ -399,10 +398,10 @@ export default function AdminAccountMasterHubScreen() {
     ]);
   };
 
-  const categories = categoriesData?.categories || [];
-  const coupons = couponsData?.coupons || [];
-  const banners = bannersData?.banners || [];
-  const reviews = reviewsData?.reviews || [];
+  const categories = (categoriesData as any)?.categories || [];
+  const coupons = (couponsData as any)?.coupons || [];
+  const banners = (bannersData as any)?.banners || [];
+  const reviews = (reviewsData as any)?.reviews || [];
 
   return (
     <ScrollView style={styles.container} contentContainerStyle={styles.contentContainer}>
