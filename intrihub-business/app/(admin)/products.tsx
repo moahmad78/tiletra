@@ -35,9 +35,14 @@ import {
   IndianRupee,
   Boxes,
   Eye,
+  Palette,
+  Ruler,
+  Tag,
+  Check,
 } from "lucide-react-native";
 import {
   fetchAdminProducts,
+  createAdminProduct,
   updateAdminProduct,
   deleteAdminProduct,
   fetchAdminProductApprovals,
@@ -47,9 +52,69 @@ import {
   validateAdminBulkCSV,
   commitAdminBulkProducts,
   fetchAdminCategories,
+  createAdminCategory,
 } from "../../src/api/admin";
 import { Product } from "../../src/types";
 import { COLORS, SPACING, RADIUS, SHADOWS } from "../../src/constants/theme";
+
+// Standard Product Options
+const STANDARD_UNITS = [
+  "box",
+  "sqft",
+  "piece",
+  "kg",
+  "meter",
+  "coil",
+  "pack",
+  "roll",
+  "litre",
+  "can",
+  "sheet",
+  "slab",
+  "bucket",
+  "drum",
+  "bottle",
+  "tube",
+  "dozen",
+  "ton",
+];
+
+const STANDARD_SIZES = [
+  "600x600mm",
+  "600x1200mm",
+  "800x1600mm",
+  "300x450mm",
+  "300x600mm",
+  "1200x1800mm",
+  "800x800mm",
+  "100x100mm",
+  "Custom",
+];
+
+const STANDARD_FINISHES = [
+  "Glossy",
+  "Matt",
+  "High Gloss",
+  "Carving",
+  "Satin",
+  "Rustic",
+  "Polished",
+  "Wood Finish",
+  "Marble Look",
+  "Stone Texture",
+];
+
+interface ProductVariantForm {
+  id?: string;
+  color: string;
+  colorHex?: string;
+  size: string;
+  finish: string;
+  pricePerBox: string;
+  pricePerSqft: string;
+  stockBoxes: string;
+  image?: string;
+}
 
 export default function AdminProductsHubScreen() {
   const router = useRouter();
@@ -60,25 +125,37 @@ export default function AdminProductsHubScreen() {
   const [search, setSearch] = useState("");
   const [statusFilter, setStatusFilter] = useState("all");
 
-  // Edit Modal State
-  const [editModalOpen, setEditModalOpen] = useState(false);
+  // Product Add / Edit Modal State
+  const [formModalOpen, setFormModalOpen] = useState(false);
+  const [isEditing, setIsEditing] = useState(false);
   const [editingProductId, setEditingProductId] = useState<string | null>(null);
-  const [editName, setEditName] = useState("");
-  const [editDescription, setEditDescription] = useState("");
-  const [editPricePerBox, setEditPricePerBox] = useState("");
-  const [editPricePerSqft, setEditPricePerSqft] = useState("");
-  const [editMrp, setEditMrp] = useState("");
-  const [editStockBoxes, setEditStockBoxes] = useState("");
-  const [editUnitOfSale, setEditUnitOfSale] = useState("box");
-  const [editCategorySlug, setEditCategorySlug] = useState("tiles-stone");
-  const [editSize, setEditSize] = useState("600x1200mm");
-  const [editFinish, setEditFinish] = useState("Glossy");
-  const [editMaterial, setEditMaterial] = useState("Glazed Vitrified");
-  const [editThickness, setEditThickness] = useState("9mm");
-  const [editImageUrl, setEditImageUrl] = useState("");
-  const [editStatus, setEditStatus] = useState("active");
-  const [editFeatured, setEditFeatured] = useState(false);
-  const [savingEdit, setSavingEdit] = useState(false);
+
+  const [name, setName] = useState("");
+  const [description, setDescription] = useState("");
+  const [categorySlug, setCategorySlug] = useState("tiles-stone");
+  const [categoryName, setCategoryName] = useState("Tiles & Stone");
+  const [categoryId, setCategoryId] = useState<string | undefined>(undefined);
+  const [unitOfSale, setUnitOfSale] = useState("box");
+  const [pricePerBox, setPricePerBox] = useState("750");
+  const [pricePerSqft, setPricePerSqft] = useState("45");
+  const [mrp, setMrp] = useState("950");
+  const [stockBoxes, setStockBoxes] = useState("100");
+  const [size, setSize] = useState("600x1200mm");
+  const [finish, setFinish] = useState("Glossy");
+  const [material, setMaterial] = useState("Glazed Vitrified");
+  const [thickness, setThickness] = useState("9mm");
+  const [imageUrl, setImageUrl] = useState("");
+  const [status, setStatus] = useState("active");
+  const [savingProduct, setSavingProduct] = useState(false);
+
+  // Multi-Variants State (Flipkart Style)
+  const [hasVariants, setHasVariants] = useState(false);
+  const [variants, setVariants] = useState<ProductVariantForm[]>([]);
+
+  // Quick Inline Category Creator State
+  const [newCatModalOpen, setNewCatModalOpen] = useState(false);
+  const [newCatName, setNewCatName] = useState("");
+  const [creatingCategory, setCreatingCategory] = useState(false);
 
   // Bulk CSV State
   const [bulkCsvText, setBulkCsvText] = useState("");
@@ -112,137 +189,295 @@ export default function AdminProductsHubScreen() {
     queryFn: () => fetchAdminProductApprovals(),
   });
 
-  // 3. Categories Query for Picker
-  const { data: catData } = useQuery({
+  // 3. Categories Query
+  const { data: catData, refetch: refetchCats } = useQuery({
     queryKey: ["admin-categories"],
     queryFn: () => fetchAdminCategories(),
   });
 
   const products = productsData?.products || [];
   const approvals = approvalsData?.products || [];
-  const categories = catData?.categories || [];
+  const categories = catData?.categories || [
+    { id: "1", name: "Tiles & Stone", slug: "tiles-stone" },
+    { id: "2", name: "Electrical & Lighting", slug: "electrical-lighting" },
+    { id: "3", name: "Plumbing & Sanitaryware", slug: "plumbing-sanitaryware" },
+    { id: "4", name: "Paints & Wallpapers", slug: "paints-wallpapers" },
+    { id: "5", name: "Hardware & Tools", slug: "hardware-tools" },
+  ];
 
-  const handleOpenEdit = (p: Product) => {
-    setEditingProductId(p.id);
-    setEditName(p.name || "");
-    setEditDescription(p.description || "");
-    setEditPricePerBox(String(p.pricePerBox || ""));
-    setEditPricePerSqft(String(p.pricePerSqft || ""));
-    setEditMrp(String(p.mrp || ""));
-    setEditStockBoxes(String(p.stockBoxes ?? ""));
-    setEditUnitOfSale(p.unitOfSale || "box");
-    setEditCategorySlug(p.categorySlug || "tiles-stone");
-    setEditSize(p.size || "600x1200mm");
-    setEditFinish(p.finish || "Glossy");
-    setEditMaterial(p.material || "Glazed Vitrified");
-    setEditThickness(p.thickness || "9mm");
-    setEditImageUrl(p.images?.[0] || "");
-    setEditStatus(p.status || "active");
-    setEditFeatured(Boolean(p.featured));
-    setEditModalOpen(true);
+  // Open Create Product Modal
+  const handleOpenAdd = () => {
+    setIsEditing(false);
+    setEditingProductId(null);
+    setName("");
+    setDescription("");
+    setCategorySlug(categories[0]?.slug || "tiles-stone");
+    setCategoryName(categories[0]?.name || "Tiles & Stone");
+    setCategoryId(categories[0]?.id);
+    setUnitOfSale("box");
+    setPricePerBox("750");
+    setPricePerSqft("45");
+    setMrp("950");
+    setStockBoxes("100");
+    setSize("600x1200mm");
+    setFinish("Glossy");
+    setMaterial("Glazed Vitrified");
+    setThickness("9mm");
+    setImageUrl("");
+    setStatus("active");
+    setHasVariants(false);
+    setVariants([
+      {
+        color: "Alaska White",
+        colorHex: "#F8FAFC",
+        size: "600x1200mm",
+        finish: "Glossy",
+        pricePerBox: "750",
+        pricePerSqft: "45",
+        stockBoxes: "100",
+      },
+    ]);
+    setFormModalOpen(true);
   };
 
-  const handleSaveEdit = async () => {
-    if (!editingProductId) return;
-    if (!editName.trim()) {
+  // Open Edit Product Modal
+  const handleOpenEdit = (p: Product) => {
+    setIsEditing(true);
+    setEditingProductId(p.id);
+    setName(p.name || "");
+    setDescription(p.description || "");
+    setCategorySlug(p.categorySlug || "tiles-stone");
+    setCategoryName(p.categoryName || "Tiles & Stone");
+    setCategoryId(p.categoryId || undefined);
+    setUnitOfSale(p.unitOfSale || "box");
+    setPricePerBox(String(p.pricePerBox || "750"));
+    setPricePerSqft(String(p.pricePerSqft || "45"));
+    setMrp(String(p.mrp || "950"));
+    setStockBoxes(String(p.stockBoxes ?? "100"));
+    setSize(p.size || "600x1200mm");
+    setFinish(p.finish || "Glossy");
+    setMaterial(p.material || "Glazed Vitrified");
+    setThickness(p.thickness || "9mm");
+    setImageUrl(p.images?.[0] || "");
+    setStatus(p.status || "active");
+    setHasVariants(false);
+    setVariants([
+      {
+        color: "Standard",
+        colorHex: "#E2E8F0",
+        size: p.size || "600x1200mm",
+        finish: p.finish || "Glossy",
+        pricePerBox: String(p.pricePerBox || "750"),
+        pricePerSqft: String(p.pricePerSqft || "45"),
+        stockBoxes: String(p.stockBoxes ?? "100"),
+      },
+    ]);
+    setFormModalOpen(true);
+  };
+
+  // Add Variant Row (Flipkart / Amazon style)
+  const handleAddVariant = () => {
+    setVariants((prev) => [
+      ...prev,
+      {
+        color: `Option ${prev.length + 1}`,
+        colorHex: "#3B82F6",
+        size: size || "600x1200mm",
+        finish: finish || "Glossy",
+        pricePerBox: pricePerBox || "750",
+        pricePerSqft: pricePerSqft || "45",
+        stockBoxes: stockBoxes || "50",
+        image: imageUrl || undefined,
+      },
+    ]);
+  };
+
+  const handleRemoveVariant = (index: number) => {
+    if (variants.length <= 1) {
+      Alert.alert("Notice", "At least one product variant must remain.");
+      return;
+    }
+    setVariants((prev) => prev.filter((_, i) => i !== index));
+  };
+
+  const handleUpdateVariant = (index: number, field: keyof ProductVariantForm, value: string) => {
+    setVariants((prev) => {
+      const updated = [...prev];
+      updated[index] = { ...updated[index], [field]: value };
+      return updated;
+    });
+  };
+
+  // Save Product (Create or Update)
+  const handleSaveProduct = async () => {
+    if (!name.trim()) {
       Alert.alert("Validation Error", "Product title cannot be empty.");
       return;
     }
 
-    setSavingEdit(true);
-    try {
-      const res = await updateAdminProduct(editingProductId, {
-        name: editName.trim(),
-        description: editDescription.trim(),
-        pricePerBox: editPricePerBox ? parseFloat(editPricePerBox) : undefined,
-        pricePerSqft: editPricePerSqft ? parseFloat(editPricePerSqft) : undefined,
-        mrp: editMrp ? parseFloat(editMrp) : undefined,
-        stockBoxes: editStockBoxes !== "" ? parseInt(editStockBoxes, 10) : undefined,
-        unitOfSale: editUnitOfSale.trim(),
-        categorySlug: editCategorySlug.trim(),
-        size: editSize.trim(),
-        finish: editFinish.trim(),
-        material: editMaterial.trim(),
-        thickness: editThickness.trim(),
-        images: editImageUrl.trim() ? [editImageUrl.trim()] : undefined,
-        status: editStatus,
-        featured: editFeatured,
-      });
+    setSavingProduct(true);
 
-      setSavingEdit(false);
-      if (res.success) {
-        setEditModalOpen(false);
-        Alert.alert("Product Updated", "Product catalog details saved successfully!");
-        refetchProducts();
-        queryClient.invalidateQueries({ queryKey: ["admin-products"] });
-        queryClient.invalidateQueries({ queryKey: ["admin-dashboard"] });
+    const formattedVariants = (hasVariants && variants.length > 0 ? variants : [
+      {
+        color: "Standard",
+        size: size || "600x600mm",
+        finish: finish || "Glossy",
+        pricePerBox: pricePerBox || "750",
+        pricePerSqft: pricePerSqft || "45",
+        stockBoxes: stockBoxes || "50",
+      },
+    ]).map((v) => ({
+      color: v.color.trim() || "Standard",
+      colorHex: v.colorHex,
+      size: v.size || size || "600x600mm",
+      finish: v.finish || finish || "Glossy",
+      pricePerBox: parseFloat(v.pricePerBox) || 750,
+      pricePerSqft: parseFloat(v.pricePerSqft) || 45,
+      sqftPerBox: 16,
+      stockBoxes: parseInt(v.stockBoxes, 10) || 50,
+      image: v.image || imageUrl || undefined,
+    }));
+
+    try {
+      if (isEditing && editingProductId) {
+        const res = await updateAdminProduct(editingProductId, {
+          name: name.trim(),
+          description: description.trim(),
+          categorySlug,
+          categoryId,
+          unitOfSale,
+          pricePerBox: parseFloat(pricePerBox) || undefined,
+          pricePerSqft: parseFloat(pricePerSqft) || undefined,
+          mrp: parseFloat(mrp) || undefined,
+          stockBoxes: parseInt(stockBoxes, 10) || undefined,
+          material,
+          finish,
+          size,
+          thickness,
+          images: imageUrl ? [imageUrl] : undefined,
+          status,
+        });
+        setSavingProduct(false);
+        if (res.success) {
+          setFormModalOpen(false);
+          Alert.alert("Product Updated", "Catalog item updated successfully!");
+          refetchProducts();
+        } else {
+          Alert.alert("Error", res.error || "Failed to update product");
+        }
       } else {
-        Alert.alert("Update Error", res.error || "Failed to update product.");
+        const res = await createAdminProduct({
+          name: name.trim(),
+          description: description.trim(),
+          categorySlug,
+          categoryName,
+          categoryId,
+          unitOfSale,
+          pricePerBox: parseFloat(pricePerBox) || 750,
+          pricePerSqft: parseFloat(pricePerSqft) || 45,
+          mrp: parseFloat(mrp) || 950,
+          stockBoxes: parseInt(stockBoxes, 10) || 100,
+          material,
+          finish,
+          size,
+          thickness,
+          images: imageUrl ? [imageUrl] : [],
+          status,
+          variants: formattedVariants,
+        });
+        setSavingProduct(false);
+        if (res.success) {
+          setFormModalOpen(false);
+          Alert.alert("Product Published 🎉", "New item listed in catalog!");
+          refetchProducts();
+        } else {
+          Alert.alert("Error", res.error || "Failed to create product");
+        }
       }
     } catch (e: any) {
-      setSavingEdit(false);
+      setSavingProduct(false);
       Alert.alert("Error", e?.message || "Something went wrong.");
     }
   };
 
-  const handleDeleteProduct = (id: string, name: string) => {
-    Alert.alert("Delete Product", `Permanently delete "${name}" from master catalog?`, [
+  // Quick Inline Category Creation
+  const handleQuickAddCategory = async () => {
+    if (!newCatName.trim()) return;
+    setCreatingCategory(true);
+    try {
+      const slug = newCatName.toLowerCase().replace(/[^a-z0-9]+/g, "-");
+      const res = await createAdminCategory({
+        name: newCatName.trim(),
+        slug,
+        calculatorType: "tile",
+      });
+      setCreatingCategory(false);
+      if (res.success) {
+        setCategorySlug(slug);
+        setCategoryName(newCatName.trim());
+        setNewCatName("");
+        setNewCatModalOpen(false);
+        refetchCats();
+        Alert.alert("Category Created", `Category "${newCatName}" added & selected!`);
+      } else {
+        Alert.alert("Error", res.error || "Failed to create category");
+      }
+    } catch (e: any) {
+      setCreatingCategory(false);
+      Alert.alert("Error", e?.message || "Failed to create category");
+    }
+  };
+
+  // Delete Product Handler
+  const handleDeleteProduct = (productId: string, productName: string) => {
+    Alert.alert("Delete Product", `Permanently delete "${productName}" from catalog?`, [
       { text: "Cancel", style: "cancel" },
       {
         text: "Delete",
         style: "destructive",
         onPress: async () => {
           try {
-            const res = await deleteAdminProduct(id);
+            const res = await deleteAdminProduct(productId);
             if (res.success) {
-              Alert.alert("Deleted", "Product removed.");
+              Alert.alert("Deleted", "Product deleted from database.");
               refetchProducts();
-              queryClient.invalidateQueries({ queryKey: ["admin-products"] });
-              queryClient.invalidateQueries({ queryKey: ["admin-dashboard"] });
             } else {
-              Alert.alert("Error", res.error || "Failed to delete product.");
+              Alert.alert("Error", res.error || "Failed to delete");
             }
           } catch (e: any) {
-            Alert.alert("Error", e?.message || "Something went wrong.");
+            Alert.alert("Error", e?.message || "Failed to delete");
           }
         },
       },
     ]);
   };
 
-  const handleApproveProduct = async (id: string, name: string) => {
-    Alert.alert("Approve Product", `Publish "${name}" to live marketplace?`, [
-      { text: "Cancel", style: "cancel" },
-      {
-        text: "Approve & Publish",
-        onPress: async () => {
-          try {
-            const res = await approveAdminProductPending(id);
-            if (res.success) {
-              Alert.alert("Published 🎉", `"${name}" is now live on marketplace!`);
-              refetchApprovals();
-              refetchProducts();
-              queryClient.invalidateQueries({ queryKey: ["admin-products"] });
-            } else {
-              Alert.alert("Error", res.error || "Failed to approve product");
-            }
-          } catch (e: any) {
-            Alert.alert("Error", e?.message || "Something went wrong.");
-          }
-        },
-      },
-    ]);
+  // Approve Pending Product Handler
+  const handleApproveProduct = async (id: string, prodName: string) => {
+    try {
+      const res = await approveAdminProductPending(id);
+      if (res.success) {
+        Alert.alert("Approved 🎉", `Product "${prodName}" is now active in the live store!`);
+        refetchApprovals();
+        refetchProducts();
+      } else {
+        Alert.alert("Error", res.error || "Failed to approve product");
+      }
+    } catch (e: any) {
+      Alert.alert("Error", e?.message || "Something went wrong.");
+    }
   };
 
-  const handleRejectProduct = (id: string, name: string) => {
-    Alert.alert("Reject Product", `Reject submission for "${name}"?`, [
+  // Reject Pending Product Handler
+  const handleRejectProduct = (id: string, prodName: string) => {
+    Alert.alert("Reject Product", `Reject seller product "${prodName}"?`, [
       { text: "Cancel", style: "cancel" },
       {
         text: "Reject",
         style: "destructive",
         onPress: async () => {
           try {
-            const res = await rejectAdminProductPending(id, "Product details or imagery incomplete");
+            const res = await rejectAdminProductPending(id, "Does not meet catalog image and pricing quality standard");
             if (res.success) {
               Alert.alert("Rejected", "Product rejected.");
               refetchApprovals();
@@ -257,116 +492,100 @@ export default function AdminProductsHubScreen() {
     ]);
   };
 
-  // Bulk CSV Pick File
+  // Bulk CSV Importer Handlers
   const handlePickCsvFile = async () => {
     try {
       const result = await DocumentPicker.getDocumentAsync({
-        type: ["text/csv", "text/comma-separated-values", "application/vnd.ms-excel", "text/plain"],
+        type: ["text/csv", "text/comma-separated-values", "application/csv", "text/plain"],
         copyToCacheDirectory: true,
       });
 
-      if (result.canceled || !result.assets?.[0]) return;
-      const file = result.assets[0];
-      const content = await FileSystem.readAsStringAsync(file.uri);
-      setBulkCsvText(content);
-      handleValidateCsvText(content);
-    } catch (e: any) {
-      Alert.alert("File Picker Error", e?.message || "Could not read selected CSV file");
-    }
-  };
-
-  const handleValidateCsvText = async (textToValidate: string) => {
-    if (!textToValidate.trim()) return;
-    setValidating(true);
-    setValidationResult(null);
-    try {
-      const res = await validateAdminBulkCSV(textToValidate);
-      setValidating(false);
-      if (res.success) {
-        setValidationResult(res);
-      } else {
-        Alert.alert("Validation Error", res.error || "Invalid CSV structure");
+      if (!result.canceled && result.assets?.[0]?.uri) {
+        const fileUri = result.assets[0].uri;
+        const content = await FileSystem.readAsStringAsync(fileUri);
+        setBulkCsvText(content);
+        setValidating(true);
+        const res = await validateAdminBulkCSV(content);
+        setValidating(false);
+        if (res.success) {
+          setValidationResult(res);
+          Alert.alert("CSV Parsed Successfully", `Found ${res.validRows} valid rows ready for import!`);
+        } else {
+          Alert.alert("CSV Validation Error", res.error || "Invalid file format");
+        }
       }
-    } catch (e: any) {
+    } catch (err: any) {
       setValidating(false);
-      Alert.alert("Error", e?.message || "Failed to validate CSV");
+      Alert.alert("File Error", err?.message || "Could not read CSV file");
     }
   };
 
   const handleCommitBulk = async () => {
-    if (!validationResult?.preview || validationResult.preview.length === 0) return;
+    if (!validationResult?.preview || validationResult.preview.length === 0) {
+      Alert.alert("Error", "No validated products to import.");
+      return;
+    }
     setCommitting(true);
     try {
       const res = await commitAdminBulkProducts(validationResult.preview);
       setCommitting(false);
       if (res.success) {
-        Alert.alert(
-          "Import Successful 🎉",
-          `Imported ${res.count || validationResult.preview.length} products to live database!`
-        );
-        setBulkCsvText("");
+        Alert.alert("Bulk Import Complete 🎉", `Successfully imported ${res.count || validationResult.validRows} products to the catalog!`);
         setValidationResult(null);
+        setBulkCsvText("");
         setActiveSection("catalog");
         refetchProducts();
       } else {
-        Alert.alert("Commit Error", res.error || "Failed to commit products");
+        Alert.alert("Import Error", res.error || "Failed to commit products");
       }
     } catch (e: any) {
       setCommitting(false);
-      Alert.alert("Error", e?.message || "Something went wrong during bulk import.");
+      Alert.alert("Error", e?.message || "Failed to commit products");
     }
   };
 
   const renderProductItem = ({ item }: { item: Product }) => (
     <View style={styles.productCard}>
-      <View style={styles.productTopRow}>
+      <View style={styles.productRow}>
         <Image
           source={item.images?.[0] ? { uri: item.images[0] } : require("../../assets/intri-icon.png")}
-          style={styles.productThumb}
+          style={styles.productImage}
           contentFit="cover"
         />
-        <View style={{ flex: 1, marginLeft: 12 }}>
-          <View style={styles.titleRow}>
-            <Text style={styles.productName} numberOfLines={2}>{item.name}</Text>
+        <View style={styles.productInfo}>
+          <View style={styles.badgeRow}>
+            <View style={[styles.statusBadge, item.status === "active" ? styles.statusActive : styles.statusDraft]}>
+              <Text style={[styles.statusText, item.status === "active" ? styles.statusTextActive : styles.statusTextDraft]}>
+                {item.status.toUpperCase()}
+              </Text>
+            </View>
+            <Text style={styles.categoryPill}>{item.categorySlug}</Text>
           </View>
-          <Text style={styles.vendorName}>By {item.vendor?.businessName || "Intrihub Direct"}</Text>
 
-          <View style={styles.priceStockRow}>
+          <Text style={styles.productName} numberOfLines={2}>{item.name}</Text>
+          <Text style={styles.vendorSubtitle}>Vendor: {item.vendorName || "Direct / Admin"}</Text>
+
+          <View style={styles.priceRow}>
             <Text style={styles.priceText}>
               ₹{item.pricePerBox?.toLocaleString("en-IN") || item.pricePerSqft?.toLocaleString("en-IN") || "0"}
               <Text style={styles.unitText}> / {item.unitOfSale || "box"}</Text>
             </Text>
-            <View style={[styles.stockPill, (item.stockBoxes ?? 0) > 0 ? styles.stockGreen : styles.stockRed]}>
-              <Boxes size={11} color={(item.stockBoxes ?? 0) > 0 ? "#16A34A" : "#DC2626"} />
-              <Text style={[styles.stockText, (item.stockBoxes ?? 0) > 0 ? styles.stockTextGreen : styles.stockTextRed]}>
-                {item.stockBoxes ?? 0} In Stock
-              </Text>
+
+            <View style={styles.stockPill}>
+              <Boxes size={11} color="#64748B" />
+              <Text style={styles.stockText}>{item.stockBoxes ?? 0} in stock</Text>
             </View>
           </View>
         </View>
       </View>
 
-      <View style={styles.specsRow}>
-        <View style={styles.specBadge}><Text style={styles.specBadgeText}>{item.categorySlug || "tiles"}</Text></View>
-        {item.size ? <View style={styles.specBadge}><Text style={styles.specBadgeText}>{item.size}</Text></View> : null}
-        {item.finish ? <View style={styles.specBadge}><Text style={styles.specBadgeText}>{item.finish}</Text></View> : null}
-      </View>
-
-      <View style={styles.actionFooter}>
-        <TouchableOpacity
-          style={styles.editBtn}
-          onPress={() => handleOpenEdit(item)}
-          activeOpacity={0.85}
-        >
+      <View style={styles.cardActions}>
+        <TouchableOpacity style={styles.editBtn} onPress={() => handleOpenEdit(item)}>
           <Edit2 size={13} color={COLORS.accentBlue} />
-          <Text style={styles.editBtnText}>Edit Item</Text>
+          <Text style={styles.editBtnText}>Edit Item Details</Text>
         </TouchableOpacity>
 
-        <TouchableOpacity
-          style={styles.deleteBtn}
-          onPress={() => handleDeleteProduct(item.id, item.name)}
-          activeOpacity={0.85}
-        >
+        <TouchableOpacity style={styles.deleteBtn} onPress={() => handleDeleteProduct(item.id, item.name)}>
           <Trash2 size={13} color="#DC2626" />
           <Text style={styles.deleteBtnText}>Delete</Text>
         </TouchableOpacity>
@@ -374,38 +593,45 @@ export default function AdminProductsHubScreen() {
     </View>
   );
 
-  const renderApprovalItem = ({ item }: { item: Product }) => (
+  const renderApprovalItem = ({ item }: { item: any }) => (
     <View style={styles.productCard}>
-      <View style={styles.productTopRow}>
+      <View style={styles.productRow}>
         <Image
           source={item.images?.[0] ? { uri: item.images[0] } : require("../../assets/intri-icon.png")}
-          style={styles.productThumb}
+          style={styles.productImage}
           contentFit="cover"
         />
-        <View style={{ flex: 1, marginLeft: 12 }}>
+        <View style={styles.productInfo}>
+          <View style={styles.badgeRow}>
+            <View style={[styles.statusBadge, { backgroundColor: "#FEF3C7" }]}>
+              <Text style={[styles.statusText, { color: "#D97706" }]}>AWAITING APPROVAL</Text>
+            </View>
+          </View>
+
           <Text style={styles.productName} numberOfLines={2}>{item.name}</Text>
-          <Text style={styles.vendorName}>Submitted by: {item.vendor?.businessName || "Partner"}</Text>
-          <Text style={styles.priceText}>
-            ₹{item.pricePerBox || item.pricePerSqft || "0"} / {item.unitOfSale || "box"}
-          </Text>
+          <Text style={styles.vendorSubtitle}>Submitted by: {item.vendor?.businessName || "Vendor Partner"}</Text>
+
+          <View style={styles.priceRow}>
+            <Text style={styles.priceText}>₹{item.pricePerBox || item.pricePerSqft || "0"} / box</Text>
+          </View>
         </View>
       </View>
 
-      <View style={styles.actionFooter}>
+      <View style={styles.approvalActions}>
         <TouchableOpacity
-          style={[styles.quickBtn, styles.approveBtn]}
+          style={styles.approveBtn}
           onPress={() => handleApproveProduct(item.id, item.name)}
         >
-          <CheckCircle2 size={14} color="#16A34A" />
+          <CheckCircle2 size={14} color="#FFFFFF" />
           <Text style={styles.approveBtnText}>Approve & Publish</Text>
         </TouchableOpacity>
 
         <TouchableOpacity
-          style={[styles.quickBtn, styles.suspendBtn]}
+          style={styles.rejectBtn}
           onPress={() => handleRejectProduct(item.id, item.name)}
         >
           <XCircle size={14} color="#DC2626" />
-          <Text style={styles.suspendBtnText}>Reject</Text>
+          <Text style={styles.rejectBtnText}>Reject</Text>
         </TouchableOpacity>
       </View>
     </View>
@@ -413,17 +639,19 @@ export default function AdminProductsHubScreen() {
 
   return (
     <View style={styles.container}>
-      {/* Top Header */}
+      {/* Header */}
       <View style={styles.header}>
         <View style={{ flex: 1 }}>
-          <Text style={styles.headerTitle}>Products & Catalog Hub</Text>
-          <Text style={styles.headerSubtitle}>
-            {products.length} live catalog items • {approvals.length} pending moderation
-          </Text>
+          <Text style={styles.headerTitle}>Products Catalog Hub</Text>
+          <Text style={styles.headerSubtitle}>Manage catalog items, seller approvals & bulk CSV</Text>
         </View>
+        <TouchableOpacity style={styles.headerAddBtn} onPress={handleOpenAdd}>
+          <Plus size={16} color="#FFFFFF" />
+          <Text style={styles.headerAddBtnText}>+ Add Item</Text>
+        </TouchableOpacity>
       </View>
 
-      {/* Segmented Switcher */}
+      {/* 3-Segment Top Bar */}
       <View style={styles.segmentContainer}>
         <TouchableOpacity
           style={[styles.segmentBtn, activeSection === "catalog" && styles.segmentBtnActive]}
@@ -456,37 +684,50 @@ export default function AdminProductsHubScreen() {
         </TouchableOpacity>
       </View>
 
-      {/* Catalog Search Header */}
-      {activeSection === "catalog" && (
-        <View style={styles.filterSection}>
-          <View style={styles.searchBar}>
-            <Search size={18} color={COLORS.textTertiary} />
-            <TextInput
-              style={styles.searchInput}
-              placeholder="Search product name, category, SKU..."
-              placeholderTextColor={COLORS.textTertiary}
-              value={search}
-              onChangeText={setSearch}
-            />
-          </View>
-        </View>
-      )}
-
-      {/* Content Rendering */}
+      {/* Section Content */}
       {activeSection === "catalog" ? (
-        productsLoading ? (
-          <View style={styles.centerContainer}>
-            <ActivityIndicator size="large" color={COLORS.accentBlue} />
+        <>
+          <View style={styles.filterSection}>
+            <View style={styles.searchBar}>
+              <Search size={16} color={COLORS.textTertiary} />
+              <TextInput
+                style={styles.searchInput}
+                placeholder="Search products by title, category..."
+                placeholderTextColor={COLORS.textTertiary}
+                value={search}
+                onChangeText={setSearch}
+              />
+            </View>
+
+            <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.chipsScroll}>
+              {["all", "active", "draft", "out_of_stock"].map((st) => (
+                <TouchableOpacity
+                  key={st}
+                  style={[styles.filterChip, statusFilter === st && styles.filterChipActive]}
+                  onPress={() => setStatusFilter(st)}
+                >
+                  <Text style={[styles.filterChipText, statusFilter === st && styles.filterChipTextActive]}>
+                    {st === "all" ? "All Products" : st.replace("_", " ").toUpperCase()}
+                  </Text>
+                </TouchableOpacity>
+              ))}
+            </ScrollView>
           </View>
-        ) : (
-          <FlatList
-            data={products}
-            keyExtractor={(item) => item.id}
-            renderItem={renderProductItem}
-            contentContainerStyle={styles.listContent}
-            refreshControl={<RefreshControl refreshing={productsRefetching} onRefresh={refetchProducts} tintColor={COLORS.accentBlue} />}
-          />
-        )
+
+          {productsLoading ? (
+            <View style={styles.centerContainer}>
+              <ActivityIndicator size="large" color={COLORS.accentBlue} />
+            </View>
+          ) : (
+            <FlatList
+              data={products}
+              keyExtractor={(item) => item.id}
+              renderItem={renderProductItem}
+              contentContainerStyle={styles.listContent}
+              refreshControl={<RefreshControl refreshing={productsRefetching} onRefresh={refetchProducts} tintColor={COLORS.accentBlue} />}
+            />
+          )}
+        </>
       ) : activeSection === "approvals" ? (
         approvalsLoading ? (
           <View style={styles.centerContainer}>
@@ -560,148 +801,317 @@ export default function AdminProductsHubScreen() {
         </ScrollView>
       )}
 
-      {/* Edit Product Modal */}
+      {/* Comprehensive Product Add & Edit Modal (with Multi-Variants) */}
       <Modal
-        visible={editModalOpen}
+        visible={formModalOpen}
         animationType="slide"
         presentationStyle="pageSheet"
-        onRequestClose={() => setEditModalOpen(false)}
+        onRequestClose={() => setFormModalOpen(false)}
       >
         <View style={styles.modalContainer}>
           <View style={styles.modalHeader}>
-            <Text style={styles.modalTitle}>Edit Product</Text>
-            <TouchableOpacity onPress={() => setEditModalOpen(false)} style={styles.closeBtn}>
+            <Text style={styles.modalTitle}>{isEditing ? "Edit Product" : "Add New Product"}</Text>
+            <TouchableOpacity onPress={() => setFormModalOpen(false)} style={styles.closeBtn}>
               <X size={20} color={COLORS.textSecondary} />
             </TouchableOpacity>
           </View>
 
           <ScrollView contentContainerStyle={styles.modalContent} keyboardShouldPersistTaps="handled">
             <View style={styles.modalCard}>
+              {/* Product Title */}
               <Text style={styles.inputLabel}>Product Title *</Text>
               <TextInput
                 style={styles.inputBox}
-                value={editName}
-                onChangeText={setEditName}
-                placeholder="Product Name"
+                value={name}
+                onChangeText={setName}
+                placeholder="e.g. Royal Statuario Glazed Vitrified Tile"
               />
 
-              <Text style={[styles.inputLabel, { marginTop: 12 }]}>Category</Text>
-              <TextInput
-                style={styles.inputBox}
-                value={editCategorySlug}
-                onChangeText={setEditCategorySlug}
-                placeholder="e.g. tiles-stone, electrical, sanitaryware"
-              />
+              {/* Category Dropdown & Quick Add */}
+              <View style={{ marginTop: 14 }}>
+                <View style={{ flexDirection: "row", justifyContent: "space-between", alignItems: "center", marginBottom: 6 }}>
+                  <Text style={styles.inputLabel}>Category *</Text>
+                  <TouchableOpacity onPress={() => setNewCatModalOpen(true)}>
+                    <Text style={styles.quickAddLink}>+ Add New Category</Text>
+                  </TouchableOpacity>
+                </View>
 
-              <Text style={[styles.inputLabel, { marginTop: 12 }]}>Unit of Sale</Text>
-              <TextInput
-                style={styles.inputBox}
-                value={editUnitOfSale}
-                onChangeText={setEditUnitOfSale}
-                placeholder="box, sqft, piece, meter, kg, bag, ton"
-              />
+                <ScrollView horizontal showsHorizontalScrollIndicator={false} style={{ marginHorizontal: -4 }}>
+                  {categories.map((cat: any) => {
+                    const isSelected = categorySlug === cat.slug;
+                    return (
+                      <TouchableOpacity
+                        key={cat.id || cat.slug}
+                        style={[styles.dropdownChip, isSelected && styles.dropdownChipActive]}
+                        onPress={() => {
+                          setCategorySlug(cat.slug);
+                          setCategoryName(cat.name);
+                          setCategoryId(cat.id);
+                        }}
+                      >
+                        <Text style={[styles.dropdownChipText, isSelected && styles.dropdownChipTextActive]}>
+                          {cat.name}
+                        </Text>
+                      </TouchableOpacity>
+                    );
+                  })}
+                </ScrollView>
+              </View>
 
-              <View style={styles.twoCol}>
+              {/* Unit of Sale Dropdown */}
+              <View style={{ marginTop: 14 }}>
+                <Text style={styles.inputLabel}>Unit of Sale *</Text>
+                <ScrollView horizontal showsHorizontalScrollIndicator={false} style={{ marginHorizontal: -4 }}>
+                  {STANDARD_UNITS.map((u) => {
+                    const isSelected = unitOfSale === u;
+                    return (
+                      <TouchableOpacity
+                        key={u}
+                        style={[styles.dropdownChip, isSelected && styles.dropdownChipActive]}
+                        onPress={() => setUnitOfSale(u)}
+                      >
+                        <Text style={[styles.dropdownChipText, isSelected && styles.dropdownChipTextActive]}>
+                          {u.toUpperCase()}
+                        </Text>
+                      </TouchableOpacity>
+                    );
+                  })}
+                </ScrollView>
+              </View>
+
+              {/* Size Selector */}
+              <View style={{ marginTop: 14 }}>
+                <Text style={styles.inputLabel}>Dimensions / Size</Text>
+                <ScrollView horizontal showsHorizontalScrollIndicator={false} style={{ marginHorizontal: -4 }}>
+                  {STANDARD_SIZES.map((sz) => {
+                    const isSelected = size === sz;
+                    return (
+                      <TouchableOpacity
+                        key={sz}
+                        style={[styles.dropdownChip, isSelected && styles.dropdownChipActive]}
+                        onPress={() => setSize(sz)}
+                      >
+                        <Text style={[styles.dropdownChipText, isSelected && styles.dropdownChipTextActive]}>
+                          {sz}
+                        </Text>
+                      </TouchableOpacity>
+                    );
+                  })}
+                </ScrollView>
+              </View>
+
+              {/* Finish Selector */}
+              <View style={{ marginTop: 14 }}>
+                <Text style={styles.inputLabel}>Finish / Look</Text>
+                <ScrollView horizontal showsHorizontalScrollIndicator={false} style={{ marginHorizontal: -4 }}>
+                  {STANDARD_FINISHES.map((fn) => {
+                    const isSelected = finish === fn;
+                    return (
+                      <TouchableOpacity
+                        key={fn}
+                        style={[styles.dropdownChip, isSelected && styles.dropdownChipActive]}
+                        onPress={() => setFinish(fn)}
+                      >
+                        <Text style={[styles.dropdownChipText, isSelected && styles.dropdownChipTextActive]}>
+                          {fn}
+                        </Text>
+                      </TouchableOpacity>
+                    );
+                  })}
+                </ScrollView>
+              </View>
+
+              {/* Pricing & Stock Grid */}
+              <View style={[styles.twoCol, { marginTop: 14 }]}>
                 <View style={{ flex: 1 }}>
-                  <Text style={styles.inputLabel}>Price / Box (₹)</Text>
+                  <Text style={styles.inputLabel}>Price / {unitOfSale.toUpperCase()} (₹) *</Text>
                   <TextInput
                     style={styles.inputBox}
-                    value={editPricePerBox}
-                    onChangeText={setEditPricePerBox}
+                    value={pricePerBox}
+                    onChangeText={setPricePerBox}
                     keyboardType="decimal-pad"
+                    placeholder="750"
                   />
                 </View>
                 <View style={{ flex: 1 }}>
                   <Text style={styles.inputLabel}>Price / Sqft (₹)</Text>
                   <TextInput
                     style={styles.inputBox}
-                    value={editPricePerSqft}
-                    onChangeText={setEditPricePerSqft}
+                    value={pricePerSqft}
+                    onChangeText={setPricePerSqft}
                     keyboardType="decimal-pad"
+                    placeholder="45"
                   />
                 </View>
               </View>
 
               <View style={styles.twoCol}>
                 <View style={{ flex: 1 }}>
-                  <Text style={styles.inputLabel}>MRP (₹)</Text>
+                  <Text style={styles.inputLabel}>List MRP (₹)</Text>
                   <TextInput
                     style={styles.inputBox}
-                    value={editMrp}
-                    onChangeText={setEditMrp}
+                    value={mrp}
+                    onChangeText={setMrp}
                     keyboardType="decimal-pad"
+                    placeholder="950"
                   />
                 </View>
                 <View style={{ flex: 1 }}>
-                  <Text style={styles.inputLabel}>Stock (Boxes/Units)</Text>
+                  <Text style={styles.inputLabel}>Stock Quantity ({unitOfSale}s) *</Text>
                   <TextInput
                     style={styles.inputBox}
-                    value={editStockBoxes}
-                    onChangeText={setEditStockBoxes}
+                    value={stockBoxes}
+                    onChangeText={setStockBoxes}
                     keyboardType="number-pad"
+                    placeholder="100"
                   />
                 </View>
               </View>
 
+              {/* Image URL & Description */}
               <Text style={[styles.inputLabel, { marginTop: 12 }]}>Primary Image URL</Text>
               <TextInput
                 style={styles.inputBox}
-                value={editImageUrl}
-                onChangeText={setEditImageUrl}
-                placeholder="https://... or /categories/tiles.jpg"
+                value={imageUrl}
+                onChangeText={setImageUrl}
+                placeholder="https://example.com/tile-image.jpg"
               />
 
-              <Text style={[styles.inputLabel, { marginTop: 12 }]}>Description</Text>
+              <Text style={[styles.inputLabel, { marginTop: 12 }]}>Product Description</Text>
               <TextInput
-                style={[styles.inputBox, { height: 70, textAlignVertical: "top", paddingTop: 8 }]}
+                style={[styles.inputBox, { height: 70, paddingTop: 8 }]}
+                value={description}
+                onChangeText={setDescription}
+                placeholder="Detailed specifications, installation guidelines..."
                 multiline
-                value={editDescription}
-                onChangeText={setEditDescription}
-                placeholder="Full product technical specifications..."
               />
-
-              <View style={styles.twoCol}>
-                <View style={{ flex: 1 }}>
-                  <Text style={styles.inputLabel}>Size</Text>
-                  <TextInput style={styles.inputBox} value={editSize} onChangeText={setEditSize} />
-                </View>
-                <View style={{ flex: 1 }}>
-                  <Text style={styles.inputLabel}>Finish</Text>
-                  <TextInput style={styles.inputBox} value={editFinish} onChangeText={setEditFinish} />
-                </View>
-              </View>
-
-              <Text style={[styles.inputLabel, { marginTop: 12 }]}>Status</Text>
-              <View style={styles.statusOptionsRow}>
-                {["active", "draft", "out_of_stock"].map((st) => (
-                  <TouchableOpacity
-                    key={st}
-                    style={[styles.statusOptionChip, editStatus === st && styles.statusOptionChipActive]}
-                    onPress={() => setEditStatus(st)}
-                  >
-                    <Text style={[styles.statusOptionText, editStatus === st && styles.statusOptionTextActive]}>
-                      {st.toUpperCase()}
-                    </Text>
-                  </TouchableOpacity>
-                ))}
-              </View>
             </View>
 
-            <TouchableOpacity
-              style={styles.saveProductBtn}
-              onPress={handleSaveEdit}
-              disabled={savingEdit}
-            >
-              {savingEdit ? (
+            {/* Multi-Variant Section (Flipkart / Amazon Style) */}
+            <View style={styles.modalCard}>
+              <View style={{ flexDirection: "row", justifyContent: "space-between", alignItems: "center" }}>
+                <View>
+                  <Text style={styles.variantSectionTitle}>Multi-Variant Options (Flipkart Style)</Text>
+                  <Text style={styles.variantSectionSub}>Add different colors, sizes, or finishes for the same item</Text>
+                </View>
+                <TouchableOpacity
+                  style={[styles.toggleBtn, hasVariants && styles.toggleBtnActive]}
+                  onPress={() => setHasVariants(!hasVariants)}
+                >
+                  <Text style={[styles.toggleBtnText, hasVariants && styles.toggleBtnTextActive]}>
+                    {hasVariants ? "ON" : "OFF"}
+                  </Text>
+                </TouchableOpacity>
+              </View>
+
+              {hasVariants && (
+                <View style={{ marginTop: 14 }}>
+                  {variants.map((v, idx) => (
+                    <View key={idx} style={styles.variantCard}>
+                      <View style={styles.variantCardHeader}>
+                        <Text style={styles.variantNum}>Variant #{idx + 1}</Text>
+                        <TouchableOpacity onPress={() => handleRemoveVariant(idx)}>
+                          <Trash2 size={14} color="#DC2626" />
+                        </TouchableOpacity>
+                      </View>
+
+                      <View style={styles.twoCol}>
+                        <View style={{ flex: 1 }}>
+                          <Text style={styles.variantLabel}>Color / Shade Name</Text>
+                          <TextInput
+                            style={styles.variantInput}
+                            value={v.color}
+                            onChangeText={(val) => handleUpdateVariant(idx, "color", val)}
+                            placeholder="e.g. Statuario White"
+                          />
+                        </View>
+                        <View style={{ flex: 1 }}>
+                          <Text style={styles.variantLabel}>Size / Dimension</Text>
+                          <TextInput
+                            style={styles.variantInput}
+                            value={v.size}
+                            onChangeText={(val) => handleUpdateVariant(idx, "size", val)}
+                            placeholder="600x1200mm"
+                          />
+                        </View>
+                      </View>
+
+                      <View style={styles.twoCol}>
+                        <View style={{ flex: 1 }}>
+                          <Text style={styles.variantLabel}>Price / Box (₹)</Text>
+                          <TextInput
+                            style={styles.variantInput}
+                            value={v.pricePerBox}
+                            onChangeText={(val) => handleUpdateVariant(idx, "pricePerBox", val)}
+                            keyboardType="decimal-pad"
+                          />
+                        </View>
+                        <View style={{ flex: 1 }}>
+                          <Text style={styles.variantLabel}>Stock Units</Text>
+                          <TextInput
+                            style={styles.variantInput}
+                            value={v.stockBoxes}
+                            onChangeText={(val) => handleUpdateVariant(idx, "stockBoxes", val)}
+                            keyboardType="number-pad"
+                          />
+                        </View>
+                      </View>
+                    </View>
+                  ))}
+
+                  <TouchableOpacity style={styles.addVariantBtn} onPress={handleAddVariant}>
+                    <Plus size={14} color="#052A51" />
+                    <Text style={styles.addVariantBtnText}>+ Add Another Color / Size Variant</Text>
+                  </TouchableOpacity>
+                </View>
+              )}
+            </View>
+
+            {/* Save Button */}
+            <TouchableOpacity style={styles.saveActionBtn} onPress={handleSaveProduct} disabled={savingProduct}>
+              {savingProduct ? (
                 <ActivityIndicator size="small" color="#FFFFFF" />
               ) : (
-                <>
-                  <CheckCircle2 size={18} color="#FFFFFF" />
-                  <Text style={styles.saveProductBtnText}>Save Product Details</Text>
-                </>
+                <Text style={styles.saveActionBtnText}>
+                  {isEditing ? "Save Changes" : "Publish Product to Catalog"}
+                </Text>
               )}
             </TouchableOpacity>
           </ScrollView>
+        </View>
+      </Modal>
+
+      {/* Quick Category Modal */}
+      <Modal visible={newCatModalOpen} transparent animationType="fade">
+        <View style={styles.modalOverlay}>
+          <View style={styles.quickModalCard}>
+            <Text style={styles.quickModalTitle}>Add New Category</Text>
+            <TextInput
+              style={styles.inputBox}
+              value={newCatName}
+              onChangeText={setNewCatName}
+              placeholder="Category Name (e.g. Adhesives & Grouts)"
+            />
+            <View style={{ flexDirection: "row", gap: 10, marginTop: 14 }}>
+              <TouchableOpacity
+                style={[styles.quickModalBtn, { backgroundColor: "#F1F5F9" }]}
+                onPress={() => setNewCatModalOpen(false)}
+              >
+                <Text style={{ color: "#64748B", fontWeight: "700" }}>Cancel</Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                style={[styles.quickModalBtn, { backgroundColor: "#052A51" }]}
+                onPress={handleQuickAddCategory}
+                disabled={creatingCategory}
+              >
+                {creatingCategory ? (
+                  <ActivityIndicator size="small" color="#FFF" />
+                ) : (
+                  <Text style={{ color: "#FFF", fontWeight: "800" }}>Add & Select</Text>
+                )}
+              </TouchableOpacity>
+            </View>
+          </View>
         </View>
       </Modal>
     </View>
@@ -733,9 +1143,23 @@ const styles = StyleSheet.create({
     color: COLORS.textWhite,
   },
   headerSubtitle: {
-    fontSize: 12,
-    color: "rgba(255, 255, 255, 0.7)",
+    fontSize: 11,
+    color: "#94A3B8",
     marginTop: 2,
+  },
+  headerAddBtn: {
+    flexDirection: "row",
+    alignItems: "center",
+    backgroundColor: "#F26522",
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+    borderRadius: RADIUS.md,
+    gap: 4,
+  },
+  headerAddBtnText: {
+    color: "#FFFFFF",
+    fontSize: 12,
+    fontWeight: "800",
   },
   segmentContainer: {
     flexDirection: "row",
@@ -784,115 +1208,130 @@ const styles = StyleSheet.create({
     borderRadius: RADIUS.md,
     paddingHorizontal: SPACING.md,
     height: 40,
-    gap: SPACING.sm,
   },
   searchInput: {
     flex: 1,
+    marginLeft: SPACING.sm,
     fontSize: 13,
     color: COLORS.text,
   },
+  chipsScroll: {
+    marginTop: SPACING.sm,
+  },
+  filterChip: {
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderRadius: RADIUS.full,
+    backgroundColor: COLORS.background,
+    borderWidth: 1,
+    borderColor: COLORS.border,
+    marginRight: 6,
+  },
+  filterChipActive: {
+    backgroundColor: "#052A51",
+    borderColor: "#052A51",
+  },
+  filterChipText: {
+    fontSize: 11,
+    fontWeight: "700",
+    color: COLORS.textSecondary,
+  },
+  filterChipTextActive: {
+    color: "#FFFFFF",
+  },
   listContent: {
     padding: SPACING.md,
-    gap: SPACING.md,
+    gap: 12,
     paddingBottom: 40,
   },
   productCard: {
-    backgroundColor: COLORS.surface,
+    backgroundColor: "#FFFFFF",
     borderRadius: RADIUS.lg,
-    padding: SPACING.md,
+    padding: 14,
     borderWidth: 1,
-    borderColor: COLORS.border,
+    borderColor: "#E2E8F0",
     ...SHADOWS.sm,
   },
-  productTopRow: {
+  productRow: {
     flexDirection: "row",
-    alignItems: "flex-start",
   },
-  productThumb: {
-    width: 64,
-    height: 64,
+  productImage: {
+    width: 70,
+    height: 70,
     borderRadius: 10,
     backgroundColor: "#F1F5F9",
   },
-  titleRow: {
+  productInfo: {
+    flex: 1,
+    marginLeft: 12,
+  },
+  badgeRow: {
     flexDirection: "row",
-    justifyContent: "space-between",
+    alignItems: "center",
+    gap: 6,
+    marginBottom: 4,
+  },
+  statusBadge: {
+    paddingHorizontal: 6,
+    paddingVertical: 2,
+    borderRadius: 4,
+  },
+  statusActive: { backgroundColor: "#DCFCE7" },
+  statusDraft: { backgroundColor: "#F1F5F9" },
+  statusText: { fontSize: 9, fontWeight: "800" },
+  statusTextActive: { color: "#16A34A" },
+  statusTextDraft: { color: "#64748B" },
+  categoryPill: {
+    fontSize: 10,
+    color: "#64748B",
   },
   productName: {
-    fontSize: 14,
+    fontSize: 13,
     fontWeight: "800",
-    color: COLORS.text,
-    lineHeight: 18,
+    color: "#052A51",
   },
-  vendorName: {
+  vendorSubtitle: {
     fontSize: 11,
-    color: COLORS.textTertiary,
+    color: "#64748B",
     marginTop: 2,
   },
-  priceStockRow: {
+  priceRow: {
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "space-between",
     marginTop: 6,
   },
   priceText: {
-    fontSize: 14,
+    fontSize: 13,
     fontWeight: "900",
-    color: COLORS.primary,
+    color: "#052A51",
   },
   unitText: {
-    fontSize: 11,
-    color: COLORS.textSecondary,
-    fontWeight: "600",
+    fontSize: 10,
+    color: "#64748B",
   },
   stockPill: {
     flexDirection: "row",
     alignItems: "center",
-    paddingHorizontal: 8,
-    paddingVertical: 3,
-    borderRadius: RADIUS.full,
     gap: 4,
-  },
-  stockGreen: {
-    backgroundColor: "rgba(22, 163, 74, 0.1)",
-  },
-  stockRed: {
-    backgroundColor: "rgba(220, 38, 38, 0.1)",
-  },
-  stockText: {
-    fontSize: 10,
-    fontWeight: "800",
-  },
-  stockTextGreen: {
-    color: "#16A34A",
-  },
-  stockTextRed: {
-    color: "#DC2626",
-  },
-  specsRow: {
-    flexDirection: "row",
-    gap: 6,
-    marginTop: 10,
-  },
-  specBadge: {
     backgroundColor: "#F1F5F9",
-    paddingHorizontal: 8,
+    paddingHorizontal: 6,
     paddingVertical: 2,
     borderRadius: 6,
   },
-  specBadgeText: {
+  stockText: {
     fontSize: 10,
-    color: "#64748B",
     fontWeight: "700",
+    color: "#64748B",
   },
-  actionFooter: {
+  cardActions: {
     flexDirection: "row",
     justifyContent: "flex-end",
     alignItems: "center",
-    marginTop: SPACING.sm,
-    paddingTop: SPACING.sm,
+    marginTop: 10,
+    paddingTop: 10,
     borderTopWidth: 1,
-    borderTopColor: COLORS.borderLight,
+    borderTopColor: "#F1F5F9",
     gap: 8,
   },
   editBtn: {
@@ -900,12 +1339,12 @@ const styles = StyleSheet.create({
     alignItems: "center",
     backgroundColor: "#EFF6FF",
     paddingHorizontal: 12,
-    paddingVertical: 7,
+    paddingVertical: 6,
     borderRadius: RADIUS.sm,
     gap: 4,
   },
   editBtnText: {
-    fontSize: 12,
+    fontSize: 11,
     fontWeight: "800",
     color: COLORS.accentBlue,
   },
@@ -913,43 +1352,57 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     alignItems: "center",
     backgroundColor: "#FEF2F2",
-    paddingHorizontal: 12,
-    paddingVertical: 7,
+    paddingHorizontal: 10,
+    paddingVertical: 6,
     borderRadius: RADIUS.sm,
     gap: 4,
   },
   deleteBtnText: {
-    fontSize: 12,
+    fontSize: 11,
     fontWeight: "800",
     color: "#DC2626",
   },
-  quickBtn: {
+  approvalActions: {
     flexDirection: "row",
-    alignItems: "center",
-    gap: 4,
-    paddingHorizontal: 12,
-    paddingVertical: 7,
-    borderRadius: RADIUS.sm,
+    gap: 8,
+    marginTop: 12,
+    paddingTop: 10,
+    borderTopWidth: 1,
+    borderTopColor: "#F1F5F9",
   },
   approveBtn: {
-    backgroundColor: "rgba(22, 163, 74, 0.1)",
+    flex: 1,
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    backgroundColor: "#16A34A",
+    paddingVertical: 8,
+    borderRadius: RADIUS.sm,
+    gap: 6,
   },
   approveBtnText: {
+    color: "#FFFFFF",
     fontSize: 12,
     fontWeight: "800",
-    color: "#16A34A",
   },
-  suspendBtn: {
-    backgroundColor: "rgba(220, 38, 38, 0.1)",
+  rejectBtn: {
+    flex: 1,
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    backgroundColor: "#FEE2E2",
+    paddingVertical: 8,
+    borderRadius: RADIUS.sm,
+    gap: 6,
   },
-  suspendBtnText: {
-    fontSize: 12,
-    fontWeight: "800",
+  rejectBtnText: {
     color: "#DC2626",
+    fontSize: 12,
+    fontWeight: "800",
   },
   bulkContent: {
-    padding: 16,
-    gap: 16,
+    padding: SPACING.md,
+    gap: 14,
   },
   bulkCard: {
     backgroundColor: "#FFFFFF",
@@ -961,9 +1414,9 @@ const styles = StyleSheet.create({
     ...SHADOWS.sm,
   },
   bulkIconCircle: {
-    width: 64,
-    height: 64,
-    borderRadius: 32,
+    width: 60,
+    height: 60,
+    borderRadius: 30,
     backgroundColor: "#EFF6FF",
     alignItems: "center",
     justifyContent: "center",
@@ -971,9 +1424,8 @@ const styles = StyleSheet.create({
   },
   bulkCardTitle: {
     fontSize: 16,
-    fontWeight: "800",
+    fontWeight: "900",
     color: "#052A51",
-    textAlign: "center",
   },
   bulkCardSub: {
     fontSize: 12,
@@ -981,15 +1433,14 @@ const styles = StyleSheet.create({
     textAlign: "center",
     marginTop: 4,
     marginBottom: 16,
-    lineHeight: 16,
   },
   pickFileBtn: {
     flexDirection: "row",
     alignItems: "center",
     backgroundColor: "#052A51",
-    paddingHorizontal: 20,
-    paddingVertical: 12,
-    borderRadius: 12,
+    paddingHorizontal: 16,
+    paddingVertical: 10,
+    borderRadius: RADIUS.md,
     gap: 8,
   },
   pickFileBtnText: {
@@ -1003,7 +1454,7 @@ const styles = StyleSheet.create({
     padding: 16,
     borderWidth: 1,
     borderColor: "#E2E8F0",
-    ...SHADOWS.sm,
+    gap: 12,
   },
   validationHeader: {
     flexDirection: "row",
@@ -1017,9 +1468,8 @@ const styles = StyleSheet.create({
   },
   errorBox: {
     backgroundColor: "#FEF2F2",
-    padding: 10,
     borderRadius: 8,
-    marginTop: 10,
+    padding: 10,
     gap: 4,
   },
   errorText: {
@@ -1030,11 +1480,10 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "center",
-    backgroundColor: "#F26522",
+    backgroundColor: "#16A34A",
     paddingVertical: 12,
-    borderRadius: 12,
+    borderRadius: RADIUS.md,
     gap: 8,
-    marginTop: 14,
   },
   commitBtnText: {
     color: "#FFFFFF",
@@ -1056,7 +1505,7 @@ const styles = StyleSheet.create({
     borderBottomColor: "#E2E8F0",
   },
   modalTitle: {
-    fontSize: 17,
+    fontSize: 16,
     fontWeight: "800",
     color: "#052A51",
   },
@@ -1065,7 +1514,8 @@ const styles = StyleSheet.create({
   },
   modalContent: {
     padding: 16,
-    gap: 16,
+    gap: 14,
+    paddingBottom: 50,
   },
   modalCard: {
     backgroundColor: "#FFFFFF",
@@ -1087,52 +1537,158 @@ const styles = StyleSheet.create({
     borderRadius: 12,
     paddingHorizontal: 12,
     height: 44,
-    fontSize: 14,
+    fontSize: 13,
     color: COLORS.text,
   },
   twoCol: {
     flexDirection: "row",
     gap: 10,
-    marginTop: 12,
+    marginTop: 10,
   },
-  statusOptionsRow: {
-    flexDirection: "row",
-    gap: 8,
-    marginTop: 4,
-  },
-  statusOptionChip: {
+  dropdownChip: {
     paddingHorizontal: 12,
-    paddingVertical: 8,
-    borderRadius: 10,
+    paddingVertical: 7,
+    borderRadius: 8,
     backgroundColor: "#F1F5F9",
     borderWidth: 1,
-    borderColor: "#CBD5E1",
+    borderColor: "#E2E8F0",
+    marginHorizontal: 4,
   },
-  statusOptionChipActive: {
-    backgroundColor: "#EFF6FF",
-    borderColor: "#3B82F6",
+  dropdownChipActive: {
+    backgroundColor: "#052A51",
+    borderColor: "#052A51",
   },
-  statusOptionText: {
+  dropdownChipText: {
     fontSize: 11,
     fontWeight: "700",
     color: "#64748B",
   },
-  statusOptionTextActive: {
-    color: "#1D4ED8",
-    fontWeight: "800",
+  dropdownChipTextActive: {
+    color: "#FFFFFF",
   },
-  saveProductBtn: {
-    backgroundColor: "#052A51",
-    height: 50,
-    borderRadius: 14,
+  quickAddLink: {
+    fontSize: 11,
+    fontWeight: "800",
+    color: "#F26522",
+  },
+  variantSectionTitle: {
+    fontSize: 14,
+    fontWeight: "800",
+    color: "#052A51",
+  },
+  variantSectionSub: {
+    fontSize: 11,
+    color: "#64748B",
+    marginTop: 2,
+  },
+  toggleBtn: {
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderRadius: 8,
+    backgroundColor: "#E2E8F0",
+  },
+  toggleBtnActive: {
+    backgroundColor: "#16A34A",
+  },
+  toggleBtnText: {
+    fontSize: 11,
+    fontWeight: "800",
+    color: "#64748B",
+  },
+  toggleBtnTextActive: {
+    color: "#FFFFFF",
+  },
+  variantCard: {
+    backgroundColor: "#F8FAFC",
+    borderRadius: 12,
+    padding: 12,
+    borderWidth: 1,
+    borderColor: "#E2E8F0",
+    marginBottom: 10,
+  },
+  variantCardHeader: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+    marginBottom: 8,
+  },
+  variantNum: {
+    fontSize: 12,
+    fontWeight: "800",
+    color: "#052A51",
+  },
+  variantLabel: {
+    fontSize: 10,
+    fontWeight: "700",
+    color: "#64748B",
+    marginBottom: 4,
+  },
+  variantInput: {
+    backgroundColor: "#FFFFFF",
+    borderWidth: 1,
+    borderColor: "#CBD5E1",
+    borderRadius: 8,
+    paddingHorizontal: 10,
+    height: 38,
+    fontSize: 12,
+    color: "#052A51",
+  },
+  addVariantBtn: {
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "center",
-    gap: 8,
+    backgroundColor: "#EFF6FF",
+    borderWidth: 1,
+    borderColor: "#BFDBFE",
+    borderRadius: 10,
+    paddingVertical: 10,
+    gap: 6,
+    marginTop: 6,
   },
-  saveProductBtnText: {
+  addVariantBtnText: {
+    fontSize: 12,
+    fontWeight: "800",
+    color: "#052A51",
+  },
+  saveActionBtn: {
+    backgroundColor: "#052A51",
+    height: 48,
+    borderRadius: 12,
+    alignItems: "center",
+    justifyContent: "center",
+    marginTop: 8,
+  },
+  saveActionBtnText: {
     color: "#FFFFFF",
     fontSize: 14,
     fontWeight: "800",
+  },
+  modalOverlay: {
+    flex: 1,
+    backgroundColor: "rgba(0,0,0,0.5)",
+    alignItems: "center",
+    justifyContent: "center",
+    padding: 20,
+  },
+  quickModalCard: {
+    backgroundColor: "#FFFFFF",
+    borderRadius: 16,
+    padding: 20,
+    width: "100%",
+    maxWidth: 400,
+    ...SHADOWS.md,
+  },
+  quickModalTitle: {
+    fontSize: 16,
+    fontWeight: "800",
+    color: "#052A51",
+    marginBottom: 12,
+  },
+  quickModalBtn: {
+    flex: 1,
+    height: 42,
+    borderRadius: 10,
+    alignItems: "center",
+    justifyContent: "center",
   },
 });

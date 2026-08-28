@@ -92,6 +92,35 @@ export async function fetchAdminProducts(params?: {
   return res.data;
 }
 
+export async function createAdminProduct(data: {
+  name: string;
+  categoryId?: string;
+  categorySlug?: string;
+  categoryName?: string;
+  pricePerSqft?: number;
+  pricePerBox?: number;
+  mrp?: number;
+  stockBoxes?: number;
+  unitOfSale?: string;
+  description?: string;
+  images?: string[];
+  material?: string;
+  finish?: string;
+  size?: string;
+  thickness?: string;
+  variants?: any[];
+  vendorId?: string | null;
+  status?: string;
+}): Promise<{
+  success: boolean;
+  product?: Product;
+  message?: string;
+  error?: string;
+}> {
+  const res = await apiClient.post("/api/mobile/admin/products", data);
+  return res.data;
+}
+
 export async function updateAdminProduct(
   id: string,
   data: {

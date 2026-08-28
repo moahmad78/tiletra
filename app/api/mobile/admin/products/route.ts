@@ -76,3 +76,84 @@ export async function GET(req: NextRequest) {
     );
   }
 }
+
+export async function POST(req: NextRequest) {
+  try {
+    const auth = await getAuthenticatedAdmin(req);
+    if ("error" in auth) {
+      return mobileApiResponse({ success: false, error: auth.error }, auth.status);
+    }
+
+    const { createProduct } = await import("@/lib/actions/products");
+    const body = await req.json();
+    const {
+      name,
+      categoryId,
+      categorySlug,
+      categoryName,
+      pricePerSqft,
+      pricePerBox,
+      mrp,
+      stockBoxes,
+      unitOfSale,
+      description,
+      images,
+      material,
+      finish,
+      size,
+      thickness,
+      variants,
+      vendorId,
+      status,
+    } = body;
+
+    if (!name || typeof name !== "string" || name.trim().length < 2) {
+      return mobileApiResponse({ success: false, error: "Product name is required" }, 400);
+    }
+
+    const numPriceBox = Number(pricePerBox || 100);
+    const numPriceSqft = Number(pricePerSqft || numPriceBox / 16 || 45);
+    const numMrp = mrp ? Number(mrp) : numPriceBox * 1.3;
+    const numStock = stockBoxes !== undefined ? Number(stockBoxes) : 50;
+
+    let productVariants = variants;
+    if (!productVariants || productVariants.length === 0) {
+      productVariants = [
+        {
+          size: size || "600x600mm",
+          finish: finish || "Glossy",
+          color: "Standard",
+          pricePerSqft: numPriceSqft,
+          pricePerBox: numPriceBox,
+          sqftPerBox: 16,
+          stockBoxes: numStock,
+          mrp: numMrp,
+        },
+      ];
+    }
+
+    const res = await createProduct({
+      name: name.trim(),
+      categoryId: categoryId || undefined,
+      categorySlug: categorySlug || "general",
+      categoryName: categoryName || "General",
+      mrp: numMrp,
+      unitOfSale: unitOfSale || "box",
+      material: material || "Standard",
+      description: description?.trim() || "",
+      images: Array.isArray(images) ? images : images ? [images] : [],
+      status: status || "active",
+      approvalStatus: "approved",
+      vendorId: vendorId || null,
+      variants: productVariants,
+    });
+
+    return mobileApiResponse(res);
+  } catch (err: any) {
+    console.error("Mobile admin product creation error:", err);
+    return mobileApiResponse(
+      { success: false, error: err.message || "Failed to create product" },
+      500
+    );
+  }
+}

@@ -1,4 +1,4 @@
-import { useState } from "react";
+import React, { useState } from "react";
 import {
   View,
   Text,
@@ -9,6 +9,7 @@ import {
   ActivityIndicator,
   Alert,
   Platform,
+  Modal,
 } from "react-native";
 import { useRouter } from "expo-router";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
@@ -22,6 +23,10 @@ import {
   IndianRupee,
   CheckCircle2,
   X,
+  Plus,
+  Trash2,
+  Boxes,
+  Sparkles,
 } from "lucide-react-native";
 import {
   createVendorProduct,
@@ -30,6 +35,63 @@ import {
 import { uploadBusinessImage } from "../../src/api/auth";
 import { COLORS, SPACING, RADIUS, SHADOWS } from "../../src/constants/theme";
 
+const STANDARD_UNITS = [
+  "box",
+  "sqft",
+  "piece",
+  "kg",
+  "meter",
+  "coil",
+  "pack",
+  "roll",
+  "litre",
+  "can",
+  "sheet",
+  "slab",
+  "bucket",
+  "drum",
+  "bottle",
+  "tube",
+  "dozen",
+  "ton",
+];
+
+const STANDARD_SIZES = [
+  "600x600 mm",
+  "600x1200 mm",
+  "800x1600 mm",
+  "300x450 mm",
+  "300x600 mm",
+  "1200x1800 mm",
+  "800x800 mm",
+  "100x100 mm",
+  "Custom",
+];
+
+const STANDARD_FINISHES = [
+  "Glossy",
+  "Matt",
+  "High Gloss",
+  "Carving",
+  "Satin",
+  "Rustic",
+  "Polished",
+  "Wood Finish",
+  "Marble Look",
+  "Stone Texture",
+];
+
+interface VariantFormItem {
+  color: string;
+  colorHex?: string;
+  size: string;
+  finish: string;
+  pricePerBox: string;
+  pricePerSqft: string;
+  stockBoxes: string;
+  image?: string;
+}
+
 export default function AddProductScreen() {
   const router = useRouter();
   const queryClient = useQueryClient();
@@ -37,10 +99,12 @@ export default function AddProductScreen() {
   const [name, setName] = useState("");
   const [categorySlug, setCategorySlug] = useState("floor-tiles");
   const [categoryName, setCategoryName] = useState("Floor Tiles");
-  const [pricePerSqft, setPricePerSqft] = useState("");
-  const [pricePerBox, setPricePerBox] = useState("");
-  const [mrp, setMrp] = useState("");
-  const [stockBoxes, setStockBoxes] = useState("");
+  const [categoryId, setCategoryId] = useState<string | undefined>(undefined);
+  const [unitOfSale, setUnitOfSale] = useState("box");
+  const [pricePerSqft, setPricePerSqft] = useState("45");
+  const [pricePerBox, setPricePerBox] = useState("750");
+  const [mrp, setMrp] = useState("950");
+  const [stockBoxes, setStockBoxes] = useState("100");
   const [description, setDescription] = useState("");
   const [size, setSize] = useState("600x600 mm");
   const [finish, setFinish] = useState("Glossy");
@@ -48,9 +112,23 @@ export default function AddProductScreen() {
   const [images, setImages] = useState<string[]>([]);
   const [uploading, setUploading] = useState(false);
 
+  // Multi-Variants (Flipkart Style)
+  const [hasVariants, setHasVariants] = useState(false);
+  const [variants, setVariants] = useState<VariantFormItem[]>([
+    {
+      color: "Alaska White",
+      colorHex: "#F8FAFC",
+      size: "600x600 mm",
+      finish: "Glossy",
+      pricePerBox: "750",
+      pricePerSqft: "45",
+      stockBoxes: "100",
+    },
+  ]);
+
   const { data: categoriesData } = useQuery({
     queryKey: ["vendor-categories"],
-    queryFn: fetchVendorCategories,
+    queryFn: () => fetchVendorCategories(),
   });
 
   const categories = categoriesData?.categories || [
@@ -66,7 +144,7 @@ export default function AddProductScreen() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["vendor-products"] });
       queryClient.invalidateQueries({ queryKey: ["vendor-dashboard"] });
-      Alert.alert("Success", "Product successfully added to your catalog!", [
+      Alert.alert("Success 🎉", "Product submitted to catalog for approval!", [
         { text: "OK", onPress: () => router.back() },
       ]);
     },
@@ -101,225 +179,377 @@ export default function AddProductScreen() {
         setUploading(false);
 
         if (uploadRes.success && uploadRes.url) {
-          setImages((prev) => [...prev, uploadRes.url!]);
+          setImages((prev) => [...prev, uploadRes.url]);
         } else {
-          Alert.alert("Upload Error", uploadRes.error || "Failed to upload image.");
+          Alert.alert("Upload Failed", uploadRes.error || "Could not upload image");
         }
       }
     } catch (e: any) {
       setUploading(false);
-      Alert.alert("Error", e?.message || "Could not select photo");
+      Alert.alert("Error", e?.message || "Something went wrong.");
     }
   };
 
-  const handleRemoveImage = (index: number) => {
-    setImages((prev) => prev.filter((_, i) => i !== index));
+  const handleAddVariant = () => {
+    setVariants((prev) => [
+      ...prev,
+      {
+        color: `Color ${prev.length + 1}`,
+        colorHex: "#3B82F6",
+        size: size || "600x600 mm",
+        finish: finish || "Glossy",
+        pricePerBox: pricePerBox || "750",
+        pricePerSqft: pricePerSqft || "45",
+        stockBoxes: stockBoxes || "50",
+      },
+    ]);
+  };
+
+  const handleRemoveVariant = (index: number) => {
+    if (variants.length <= 1) {
+      Alert.alert("Notice", "At least one product variant is required.");
+      return;
+    }
+    setVariants((prev) => prev.filter((_, i) => i !== index));
+  };
+
+  const handleUpdateVariant = (index: number, field: keyof VariantFormItem, val: string) => {
+    setVariants((prev) => {
+      const copy = [...prev];
+      copy[index] = { ...copy[index], [field]: val };
+      return copy;
+    });
   };
 
   const handleSubmit = () => {
     if (!name.trim()) {
-      Alert.alert("Missing Field", "Please enter product name");
-      return;
-    }
-    if (!pricePerBox.trim() || isNaN(Number(pricePerBox))) {
-      Alert.alert("Missing Field", "Please enter valid price per box");
-      return;
-    }
-    if (!stockBoxes.trim() || isNaN(Number(stockBoxes))) {
-      Alert.alert("Missing Field", "Please enter available stock quantity");
+      Alert.alert("Validation Error", "Product title is required.");
       return;
     }
 
+    const numPriceBox = parseFloat(pricePerBox) || 750;
+    const numPriceSqft = parseFloat(pricePerSqft) || 45;
+    const numMrp = parseFloat(mrp) || numPriceBox * 1.3;
+    const numStock = parseInt(stockBoxes, 10) || 50;
+
+    const formattedVariants = (hasVariants && variants.length > 0 ? variants : [
+      {
+        color: "Standard",
+        size: size || "600x600 mm",
+        finish: finish || "Glossy",
+        pricePerBox: pricePerBox || "750",
+        pricePerSqft: pricePerSqft || "45",
+        stockBoxes: stockBoxes || "50",
+      },
+    ]).map((v) => ({
+      color: v.color.trim() || "Standard",
+      colorHex: v.colorHex,
+      size: v.size || size || "600x600 mm",
+      finish: v.finish || finish || "Glossy",
+      pricePerBox: parseFloat(v.pricePerBox) || numPriceBox,
+      pricePerSqft: parseFloat(v.pricePerSqft) || numPriceSqft,
+      sqftPerBox: 16,
+      stockBoxes: parseInt(v.stockBoxes, 10) || numStock,
+      mrp: numMrp,
+      image: v.image || images[0] || undefined,
+    }));
+
     createMutation.mutate({
       name: name.trim(),
+      categoryId: categoryId || undefined,
       categorySlug,
       categoryName,
-      pricePerBox: Number(pricePerBox),
-      pricePerSqft: pricePerSqft ? Number(pricePerSqft) : undefined,
-      mrp: mrp ? Number(mrp) : undefined,
-      stockBoxes: Number(stockBoxes),
-      description: description.trim() || undefined,
-      size,
-      finish,
+      unitOfSale,
+      pricePerBox: numPriceBox,
+      pricePerSqft: numPriceSqft,
+      mrp: numMrp,
+      stockBoxes: numStock,
       material,
-      images:
-        images.length > 0
-          ? images
-          : ["https://images.unsplash.com/photo-1595428774223-ef52624120d2?w=400"],
+      finish,
+      size,
+      description: description.trim(),
+      images,
       status: "active",
+      variants: formattedVariants,
     });
   };
 
   return (
     <View style={styles.container}>
-      {/* App Bar */}
-      <View style={styles.topBar}>
+      <View style={styles.header}>
         <TouchableOpacity style={styles.backBtn} onPress={() => router.back()}>
-          <ArrowLeft size={22} color="#fff" />
+          <ArrowLeft size={20} color="#FFFFFF" />
         </TouchableOpacity>
-        <Text style={styles.topBarTitle}>Add New Product</Text>
+        <Text style={styles.headerTitle}>Add New Product</Text>
+        <View style={{ width: 24 }} />
       </View>
 
       <ScrollView contentContainerStyle={styles.scrollContent} keyboardShouldPersistTaps="handled">
-        {/* Product Images */}
-        <Text style={styles.fieldLabel}>Product Photos</Text>
-        <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.imageRow}>
-          {images.map((imgUri, idx) => (
-            <View key={idx} style={styles.imagePreviewWrapper}>
-              <Image source={{ uri: imgUri }} style={styles.imagePreview} contentFit="cover" />
-              <TouchableOpacity style={styles.removeImageBtn} onPress={() => handleRemoveImage(idx)}>
-                <X size={14} color="#fff" />
-              </TouchableOpacity>
+        {/* Basic Info */}
+        <View style={styles.card}>
+          <Text style={styles.inputLabel}>Product Title *</Text>
+          <TextInput
+            style={styles.inputBox}
+            value={name}
+            onChangeText={setName}
+            placeholder="e.g. Royal Statuario Floor Tile"
+          />
+
+          {/* Category Dropdown */}
+          <Text style={[styles.inputLabel, { marginTop: 14 }]}>Category *</Text>
+          <ScrollView horizontal showsHorizontalScrollIndicator={false} style={{ marginHorizontal: -4 }}>
+            {categories.map((cat: any) => {
+              const isSelected = categorySlug === cat.slug;
+              return (
+                <TouchableOpacity
+                  key={cat.id || cat.slug}
+                  style={[styles.dropdownChip, isSelected && styles.dropdownChipActive]}
+                  onPress={() => {
+                    setCategorySlug(cat.slug);
+                    setCategoryName(cat.name);
+                    setCategoryId(cat.id);
+                  }}
+                >
+                  <Text style={[styles.dropdownChipText, isSelected && styles.dropdownChipTextActive]}>
+                    {cat.name}
+                  </Text>
+                </TouchableOpacity>
+              );
+            })}
+          </ScrollView>
+
+          {/* Unit of Sale Dropdown */}
+          <Text style={[styles.inputLabel, { marginTop: 14 }]}>Unit of Sale *</Text>
+          <ScrollView horizontal showsHorizontalScrollIndicator={false} style={{ marginHorizontal: -4 }}>
+            {STANDARD_UNITS.map((u) => {
+              const isSelected = unitOfSale === u;
+              return (
+                <TouchableOpacity
+                  key={u}
+                  style={[styles.dropdownChip, isSelected && styles.dropdownChipActive]}
+                  onPress={() => setUnitOfSale(u)}
+                >
+                  <Text style={[styles.dropdownChipText, isSelected && styles.dropdownChipTextActive]}>
+                    {u.toUpperCase()}
+                  </Text>
+                </TouchableOpacity>
+              );
+            })}
+          </ScrollView>
+
+          {/* Dimensions / Size */}
+          <Text style={[styles.inputLabel, { marginTop: 14 }]}>Dimensions / Size</Text>
+          <ScrollView horizontal showsHorizontalScrollIndicator={false} style={{ marginHorizontal: -4 }}>
+            {STANDARD_SIZES.map((sz) => {
+              const isSelected = size === sz;
+              return (
+                <TouchableOpacity
+                  key={sz}
+                  style={[styles.dropdownChip, isSelected && styles.dropdownChipActive]}
+                  onPress={() => setSize(sz)}
+                >
+                  <Text style={[styles.dropdownChipText, isSelected && styles.dropdownChipTextActive]}>
+                    {sz}
+                  </Text>
+                </TouchableOpacity>
+              );
+            })}
+          </ScrollView>
+
+          {/* Finish */}
+          <Text style={[styles.inputLabel, { marginTop: 14 }]}>Finish / Surface</Text>
+          <ScrollView horizontal showsHorizontalScrollIndicator={false} style={{ marginHorizontal: -4 }}>
+            {STANDARD_FINISHES.map((fn) => {
+              const isSelected = finish === fn;
+              return (
+                <TouchableOpacity
+                  key={fn}
+                  style={[styles.dropdownChip, isSelected && styles.dropdownChipActive]}
+                  onPress={() => setFinish(fn)}
+                >
+                  <Text style={[styles.dropdownChipText, isSelected && styles.dropdownChipTextActive]}>
+                    {fn}
+                  </Text>
+                </TouchableOpacity>
+              );
+            })}
+          </ScrollView>
+
+          {/* Pricing Grid */}
+          <View style={[styles.twoCol, { marginTop: 14 }]}>
+            <View style={{ flex: 1 }}>
+              <Text style={styles.inputLabel}>Price / {unitOfSale.toUpperCase()} (₹) *</Text>
+              <TextInput
+                style={styles.inputBox}
+                value={pricePerBox}
+                onChangeText={setPricePerBox}
+                keyboardType="decimal-pad"
+                placeholder="750"
+              />
             </View>
-          ))}
+            <View style={{ flex: 1 }}>
+              <Text style={styles.inputLabel}>Price / Sqft (₹)</Text>
+              <TextInput
+                style={styles.inputBox}
+                value={pricePerSqft}
+                onChangeText={setPricePerSqft}
+                keyboardType="decimal-pad"
+                placeholder="45"
+              />
+            </View>
+          </View>
 
-          <TouchableOpacity style={styles.addPhotoBox} onPress={handlePickImage} disabled={uploading}>
-            {uploading ? (
-              <ActivityIndicator size="small" color={COLORS.accentOrange} />
-            ) : (
-              <>
-                <Camera size={24} color={COLORS.accentOrange} />
-                <Text style={styles.addPhotoText}>Upload Photo</Text>
-              </>
-            )}
-          </TouchableOpacity>
-        </ScrollView>
+          <View style={styles.twoCol}>
+            <View style={{ flex: 1 }}>
+              <Text style={styles.inputLabel}>MRP (₹)</Text>
+              <TextInput
+                style={styles.inputBox}
+                value={mrp}
+                onChangeText={setMrp}
+                keyboardType="decimal-pad"
+                placeholder="950"
+              />
+            </View>
+            <View style={{ flex: 1 }}>
+              <Text style={styles.inputLabel}>Initial Stock ({unitOfSale}s) *</Text>
+              <TextInput
+                style={styles.inputBox}
+                value={stockBoxes}
+                onChangeText={setStockBoxes}
+                keyboardType="number-pad"
+                placeholder="100"
+              />
+            </View>
+          </View>
 
-        {/* Basic Details */}
-        <Text style={styles.fieldLabel}>Product Name *</Text>
-        <TextInput
-          style={styles.textInput}
-          placeholder="e.g. Royal Statuario Marble Vitrified Tile"
-          placeholderTextColor={COLORS.textTertiary}
-          value={name}
-          onChangeText={setName}
-        />
+          <Text style={[styles.inputLabel, { marginTop: 12 }]}>Product Description</Text>
+          <TextInput
+            style={[styles.inputBox, { height: 70, paddingTop: 8 }]}
+            value={description}
+            onChangeText={setDescription}
+            placeholder="Material composition, coverage, features..."
+            multiline
+          />
+        </View>
 
-        <Text style={styles.fieldLabel}>Category *</Text>
-        <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.categoriesRow}>
-          {categories.map((cat) => (
+        {/* Multi-Variants Section (Flipkart Style) */}
+        <View style={styles.card}>
+          <View style={{ flexDirection: "row", justifyContent: "space-between", alignItems: "center" }}>
+            <View>
+              <Text style={styles.variantSectionTitle}>Multi-Variant Options (Flipkart Style)</Text>
+              <Text style={styles.variantSectionSub}>Add different colors, dimensions, or textures</Text>
+            </View>
             <TouchableOpacity
-              key={cat.slug}
-              style={[
-                styles.categoryChip,
-                categorySlug === cat.slug && styles.categoryChipActive,
-              ]}
-              onPress={() => {
-                setCategorySlug(cat.slug);
-                setCategoryName(cat.name);
-              }}
+              style={[styles.toggleBtn, hasVariants && styles.toggleBtnActive]}
+              onPress={() => setHasVariants(!hasVariants)}
             >
-              <Text
-                style={[
-                  styles.categoryChipText,
-                  categorySlug === cat.slug && styles.categoryChipTextActive,
-                ]}
-              >
-                {cat.name}
+              <Text style={[styles.toggleBtnText, hasVariants && styles.toggleBtnTextActive]}>
+                {hasVariants ? "ON" : "OFF"}
               </Text>
             </TouchableOpacity>
-          ))}
-        </ScrollView>
+          </View>
 
-        {/* Pricing Grid */}
-        <View style={styles.gridRow}>
-          <View style={styles.gridCol}>
-            <Text style={styles.fieldLabel}>Price Per Box (₹) *</Text>
-            <TextInput
-              style={styles.textInput}
-              placeholder="e.g. 1450"
-              placeholderTextColor={COLORS.textTertiary}
-              value={pricePerBox}
-              onChangeText={setPricePerBox}
-              keyboardType="numeric"
-            />
-          </View>
-          <View style={styles.gridCol}>
-            <Text style={styles.fieldLabel}>Price / Sq.Ft (₹)</Text>
-            <TextInput
-              style={styles.textInput}
-              placeholder="e.g. 75"
-              placeholderTextColor={COLORS.textTertiary}
-              value={pricePerSqft}
-              onChangeText={setPricePerSqft}
-              keyboardType="numeric"
-            />
-          </View>
+          {hasVariants && (
+            <View style={{ marginTop: 14 }}>
+              {variants.map((v, idx) => (
+                <View key={idx} style={styles.variantCard}>
+                  <View style={styles.variantCardHeader}>
+                    <Text style={styles.variantNum}>Variant #{idx + 1}</Text>
+                    <TouchableOpacity onPress={() => handleRemoveVariant(idx)}>
+                      <Trash2 size={14} color="#DC2626" />
+                    </TouchableOpacity>
+                  </View>
+
+                  <View style={styles.twoCol}>
+                    <View style={{ flex: 1 }}>
+                      <Text style={styles.variantLabel}>Color / Shade</Text>
+                      <TextInput
+                        style={styles.variantInput}
+                        value={v.color}
+                        onChangeText={(val) => handleUpdateVariant(idx, "color", val)}
+                        placeholder="e.g. Statuario White"
+                      />
+                    </View>
+                    <View style={{ flex: 1 }}>
+                      <Text style={styles.variantLabel}>Dimension / Size</Text>
+                      <TextInput
+                        style={styles.variantInput}
+                        value={v.size}
+                        onChangeText={(val) => handleUpdateVariant(idx, "size", val)}
+                        placeholder="600x600 mm"
+                      />
+                    </View>
+                  </View>
+
+                  <View style={styles.twoCol}>
+                    <View style={{ flex: 1 }}>
+                      <Text style={styles.variantLabel}>Price / Box (₹)</Text>
+                      <TextInput
+                        style={styles.variantInput}
+                        value={v.pricePerBox}
+                        onChangeText={(val) => handleUpdateVariant(idx, "pricePerBox", val)}
+                        keyboardType="decimal-pad"
+                      />
+                    </View>
+                    <View style={{ flex: 1 }}>
+                      <Text style={styles.variantLabel}>Stock Units</Text>
+                      <TextInput
+                        style={styles.variantInput}
+                        value={v.stockBoxes}
+                        onChangeText={(val) => handleUpdateVariant(idx, "stockBoxes", val)}
+                        keyboardType="number-pad"
+                      />
+                    </View>
+                  </View>
+                </View>
+              ))}
+
+              <TouchableOpacity style={styles.addVariantBtn} onPress={handleAddVariant}>
+                <Plus size={14} color="#052A51" />
+                <Text style={styles.addVariantBtnText}>+ Add Another Color / Size Variant</Text>
+              </TouchableOpacity>
+            </View>
+          )}
         </View>
 
-        <View style={styles.gridRow}>
-          <View style={styles.gridCol}>
-            <Text style={styles.fieldLabel}>MRP (₹)</Text>
-            <TextInput
-              style={styles.textInput}
-              placeholder="e.g. 1850"
-              placeholderTextColor={COLORS.textTertiary}
-              value={mrp}
-              onChangeText={setMrp}
-              keyboardType="numeric"
-            />
-          </View>
-          <View style={styles.gridCol}>
-            <Text style={styles.fieldLabel}>Stock (Boxes) *</Text>
-            <TextInput
-              style={styles.textInput}
-              placeholder="e.g. 250"
-              placeholderTextColor={COLORS.textTertiary}
-              value={stockBoxes}
-              onChangeText={setStockBoxes}
-              keyboardType="numeric"
-            />
-          </View>
+        {/* Photos */}
+        <View style={styles.card}>
+          <Text style={styles.inputLabel}>Product Images</Text>
+          <ScrollView horizontal showsHorizontalScrollIndicator={false} style={{ marginTop: 8 }}>
+            <TouchableOpacity style={styles.uploadBox} onPress={handlePickImage} disabled={uploading}>
+              {uploading ? (
+                <ActivityIndicator size="small" color={COLORS.accentBlue} />
+              ) : (
+                <>
+                  <Camera size={22} color="#64748B" />
+                  <Text style={styles.uploadBoxText}>+ Add Photo</Text>
+                </>
+              )}
+            </TouchableOpacity>
+
+            {images.map((uri, idx) => (
+              <View key={idx} style={styles.imageThumbBox}>
+                <Image source={{ uri }} style={styles.imageThumb} contentFit="cover" />
+                <TouchableOpacity
+                  style={styles.removeImgBtn}
+                  onPress={() => setImages((prev) => prev.filter((_, i) => i !== idx))}
+                >
+                  <X size={12} color="#FFF" />
+                </TouchableOpacity>
+              </View>
+            ))}
+          </ScrollView>
         </View>
 
-        {/* Technical Specs */}
-        <View style={styles.gridRow}>
-          <View style={styles.gridCol}>
-            <Text style={styles.fieldLabel}>Size</Text>
-            <TextInput
-              style={styles.textInput}
-              placeholder="e.g. 600x1200 mm"
-              placeholderTextColor={COLORS.textTertiary}
-              value={size}
-              onChangeText={setSize}
-            />
-          </View>
-          <View style={styles.gridCol}>
-            <Text style={styles.fieldLabel}>Finish</Text>
-            <TextInput
-              style={styles.textInput}
-              placeholder="e.g. Glossy / Matt"
-              placeholderTextColor={COLORS.textTertiary}
-              value={finish}
-              onChangeText={setFinish}
-            />
-          </View>
-        </View>
-
-        <Text style={styles.fieldLabel}>Product Description</Text>
-        <TextInput
-          style={[styles.textInput, { height: 90, textAlignVertical: "top" }]}
-          placeholder="Enter specifications, coverage area per box, water absorption etc."
-          placeholderTextColor={COLORS.textTertiary}
-          value={description}
-          onChangeText={setDescription}
-          multiline
-        />
-
-        {/* Submit Button */}
         <TouchableOpacity
           style={styles.submitBtn}
           onPress={handleSubmit}
           disabled={createMutation.isPending}
-          activeOpacity={0.85}
         >
           {createMutation.isPending ? (
-            <ActivityIndicator size="small" color="#fff" />
+            <ActivityIndicator size="small" color="#FFF" />
           ) : (
-            <>
-              <CheckCircle2 size={18} color="#fff" />
-              <Text style={styles.submitBtnText}>Publish Product</Text>
-            </>
+            <Text style={styles.submitBtnText}>Submit Product for Catalog Listing</Text>
           )}
         </TouchableOpacity>
       </ScrollView>
@@ -332,131 +562,206 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: COLORS.background,
   },
-  topBar: {
-    flexDirection: "row",
-    alignItems: "center",
-    backgroundColor: COLORS.primary,
+  header: {
+    backgroundColor: COLORS.primaryDark,
     paddingTop: 50,
     paddingBottom: SPACING.md,
     paddingHorizontal: SPACING.lg,
-    gap: 12,
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
   },
   backBtn: {
-    padding: 4,
+    padding: 6,
   },
-  topBarTitle: {
+  headerTitle: {
     fontSize: 18,
-    fontWeight: "800",
+    fontWeight: "900",
     color: COLORS.textWhite,
   },
   scrollContent: {
-    padding: SPACING.lg,
-    paddingBottom: 40,
+    padding: 16,
+    gap: 14,
+    paddingBottom: 50,
   },
-  fieldLabel: {
-    fontSize: 12,
-    fontWeight: "700",
-    color: COLORS.text,
-    marginBottom: 6,
-    marginTop: SPACING.md,
-  },
-  imageRow: {
-    flexDirection: "row",
-    marginBottom: SPACING.sm,
-  },
-  imagePreviewWrapper: {
-    position: "relative",
-    marginRight: SPACING.sm,
-  },
-  imagePreview: {
-    width: 90,
-    height: 90,
-    borderRadius: RADIUS.md,
-    backgroundColor: COLORS.surfaceSecondary,
-  },
-  removeImageBtn: {
-    position: "absolute",
-    top: 4,
-    right: 4,
-    backgroundColor: "rgba(0,0,0,0.6)",
-    width: 22,
-    height: 22,
-    borderRadius: 11,
-    alignItems: "center",
-    justifyContent: "center",
-  },
-  addPhotoBox: {
-    width: 90,
-    height: 90,
-    borderRadius: RADIUS.md,
-    borderWidth: 1.5,
-    borderColor: COLORS.accentOrange,
-    borderStyle: "dashed",
-    alignItems: "center",
-    justifyContent: "center",
-    backgroundColor: "rgba(234, 88, 12, 0.05)",
-  },
-  addPhotoText: {
-    fontSize: 10,
-    fontWeight: "700",
-    color: COLORS.accentOrange,
-    marginTop: 4,
-  },
-  textInput: {
-    backgroundColor: COLORS.surface,
+  card: {
+    backgroundColor: "#FFFFFF",
+    borderRadius: 16,
+    padding: 16,
     borderWidth: 1,
-    borderColor: COLORS.border,
-    borderRadius: RADIUS.md,
-    paddingHorizontal: SPACING.md,
-    paddingVertical: Platform.OS === "ios" ? 12 : 8,
-    fontSize: 14,
-    color: COLORS.text,
+    borderColor: "#E2E8F0",
+    ...SHADOWS.sm,
   },
-  categoriesRow: {
-    flexDirection: "row",
-    marginBottom: SPACING.sm,
-  },
-  categoryChip: {
-    paddingHorizontal: 14,
-    paddingVertical: 8,
-    borderRadius: RADIUS.full,
-    backgroundColor: COLORS.surface,
-    borderWidth: 1,
-    borderColor: COLORS.border,
-    marginRight: 8,
-  },
-  categoryChipActive: {
-    backgroundColor: COLORS.primary,
-    borderColor: COLORS.primary,
-  },
-  categoryChipText: {
+  inputLabel: {
     fontSize: 12,
     fontWeight: "700",
     color: COLORS.textSecondary,
+    marginBottom: 6,
   },
-  categoryChipTextActive: {
-    color: "#fff",
+  inputBox: {
+    backgroundColor: "#F8FAFC",
+    borderWidth: 1,
+    borderColor: "#CBD5E1",
+    borderRadius: 12,
+    paddingHorizontal: 12,
+    height: 44,
+    fontSize: 13,
+    color: COLORS.text,
   },
-  gridRow: {
+  twoCol: {
     flexDirection: "row",
-    gap: SPACING.md,
+    gap: 10,
+    marginTop: 10,
   },
-  gridCol: {
-    flex: 1,
+  dropdownChip: {
+    paddingHorizontal: 12,
+    paddingVertical: 7,
+    borderRadius: 8,
+    backgroundColor: "#F1F5F9",
+    borderWidth: 1,
+    borderColor: "#E2E8F0",
+    marginHorizontal: 4,
   },
-  submitBtn: {
+  dropdownChipActive: {
+    backgroundColor: "#052A51",
+    borderColor: "#052A51",
+  },
+  dropdownChipText: {
+    fontSize: 11,
+    fontWeight: "700",
+    color: "#64748B",
+  },
+  dropdownChipTextActive: {
+    color: "#FFFFFF",
+  },
+  variantSectionTitle: {
+    fontSize: 14,
+    fontWeight: "800",
+    color: "#052A51",
+  },
+  variantSectionSub: {
+    fontSize: 11,
+    color: "#64748B",
+    marginTop: 2,
+  },
+  toggleBtn: {
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderRadius: 8,
+    backgroundColor: "#E2E8F0",
+  },
+  toggleBtnActive: {
+    backgroundColor: "#16A34A",
+  },
+  toggleBtnText: {
+    fontSize: 11,
+    fontWeight: "800",
+    color: "#64748B",
+  },
+  toggleBtnTextActive: {
+    color: "#FFFFFF",
+  },
+  variantCard: {
+    backgroundColor: "#F8FAFC",
+    borderRadius: 12,
+    padding: 12,
+    borderWidth: 1,
+    borderColor: "#E2E8F0",
+    marginBottom: 10,
+  },
+  variantCardHeader: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+    marginBottom: 8,
+  },
+  variantNum: {
+    fontSize: 12,
+    fontWeight: "800",
+    color: "#052A51",
+  },
+  variantLabel: {
+    fontSize: 10,
+    fontWeight: "700",
+    color: "#64748B",
+    marginBottom: 4,
+  },
+  variantInput: {
+    backgroundColor: "#FFFFFF",
+    borderWidth: 1,
+    borderColor: "#CBD5E1",
+    borderRadius: 8,
+    paddingHorizontal: 10,
+    height: 38,
+    fontSize: 12,
+    color: "#052A51",
+  },
+  addVariantBtn: {
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "center",
-    backgroundColor: COLORS.accentOrange,
-    borderRadius: RADIUS.lg,
-    paddingVertical: 15,
-    marginTop: SPACING.xl,
-    gap: 8,
+    backgroundColor: "#EFF6FF",
+    borderWidth: 1,
+    borderColor: "#BFDBFE",
+    borderRadius: 10,
+    paddingVertical: 10,
+    gap: 6,
+    marginTop: 6,
+  },
+  addVariantBtnText: {
+    fontSize: 12,
+    fontWeight: "800",
+    color: "#052A51",
+  },
+  uploadBox: {
+    width: 80,
+    height: 80,
+    borderRadius: 12,
+    borderWidth: 1,
+    borderStyle: "dashed",
+    borderColor: "#94A3B8",
+    alignItems: "center",
+    justifyContent: "center",
+    backgroundColor: "#F8FAFC",
+    marginRight: 10,
+  },
+  uploadBoxText: {
+    fontSize: 10,
+    fontWeight: "700",
+    color: "#64748B",
+    marginTop: 4,
+  },
+  imageThumbBox: {
+    position: "relative",
+    marginRight: 10,
+  },
+  imageThumb: {
+    width: 80,
+    height: 80,
+    borderRadius: 12,
+  },
+  removeImgBtn: {
+    position: "absolute",
+    top: -6,
+    right: -6,
+    width: 20,
+    height: 20,
+    borderRadius: 10,
+    backgroundColor: "#DC2626",
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  submitBtn: {
+    backgroundColor: "#052A51",
+    height: 50,
+    borderRadius: 12,
+    alignItems: "center",
+    justifyContent: "center",
+    marginTop: 8,
   },
   submitBtnText: {
-    color: "#fff",
-    fontSize: 15,
+    color: "#FFFFFF",
+    fontSize: 14,
     fontWeight: "800",
   },
 });
