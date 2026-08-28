@@ -724,13 +724,13 @@ export default function AdminAccountMasterHubScreen() {
             </View>
 
             <Text style={[styles.inputLabel, { marginTop: 12 }]}>Existing Categories ({categories.length})</Text>
-            {categories.map((c) => (
-              <View key={c.id} style={styles.listCard}>
+            {categories.map((c: any) => (
+              <View key={String(c.id)} style={styles.listCard}>
                 <View style={{ flex: 1 }}>
                   <Text style={styles.itemTitle}>{c.name}</Text>
                   <Text style={styles.itemSub}>{c.slug} • {c.productsCount || 0} products</Text>
                 </View>
-                <TouchableOpacity onPress={() => handleDeleteCategory(c.id, c.name)}>
+                <TouchableOpacity onPress={() => handleDeleteCategory(String(c.id), String(c.name))}>
                   <Trash2 size={16} color="#DC2626" />
                 </TouchableOpacity>
               </View>
@@ -764,12 +764,12 @@ export default function AdminAccountMasterHubScreen() {
 
             <Text style={[styles.inputLabel, { marginTop: 12 }]}>Active Coupons ({coupons.length})</Text>
             {coupons.map((cp: any) => (
-              <View key={cp.id} style={styles.listCard}>
+              <View key={String(cp.id)} style={styles.listCard}>
                 <View style={{ flex: 1 }}>
                   <Text style={styles.itemTitle}>{cp.code}</Text>
-                  <Text style={styles.itemSub}>{cp.discountType === "percentage" ? `${cp.value}% OFF` : `₹${cp.value} FLAT OFF`} • Min Order ₹{cp.minOrderAmount || 0}</Text>
+                  <Text style={styles.itemSub}>{cp.discountType === "percentage" ? `${cp.value}% OFF` : `₹${cp.value} FLAT OFF`} • Min Order ₹{cp.minOrderValue || cp.minOrderAmount || 0}</Text>
                 </View>
-                <TouchableOpacity onPress={() => handleDeleteCoupon(cp.id, cp.code)}>
+                <TouchableOpacity onPress={() => handleDeleteCoupon(String(cp.id), String(cp.code))}>
                   <Trash2 size={16} color="#DC2626" />
                 </TouchableOpacity>
               </View>
@@ -802,12 +802,12 @@ export default function AdminAccountMasterHubScreen() {
 
             <Text style={[styles.inputLabel, { marginTop: 12 }]}>Live Banners ({banners.length})</Text>
             {banners.map((b: any) => (
-              <View key={b.id} style={styles.listCard}>
+              <View key={String(b.id)} style={styles.listCard}>
                 <View style={{ flex: 1 }}>
                   <Text style={styles.itemTitle}>{b.title}</Text>
                   <Text style={styles.itemSub}>{b.subtitle || b.linkUrl}</Text>
                 </View>
-                <TouchableOpacity onPress={() => handleDeleteBanner(b.id)}>
+                <TouchableOpacity onPress={() => handleDeleteBanner(String(b.id))}>
                   <Trash2 size={16} color="#DC2626" />
                 </TouchableOpacity>
               </View>
@@ -832,13 +832,13 @@ export default function AdminAccountMasterHubScreen() {
               </View>
             ) : (
               reviews.map((r: any) => (
-                <View key={r.id} style={styles.listCard}>
+                <View key={String(r.id)} style={styles.listCard}>
                   <View style={{ flex: 1 }}>
                     <Text style={styles.itemTitle}>{r.product?.name || "Product"}</Text>
                     <Text style={styles.itemSub}>Rating: {r.rating} ⭐ • By {r.user?.name || "Customer"}</Text>
                     <Text style={{ fontSize: 12, color: "#475569", marginTop: 4 }}>"{r.comment}"</Text>
                   </View>
-                  <TouchableOpacity onPress={async () => { await deleteAdminReview(r.id); refetchReviews(); }}>
+                  <TouchableOpacity onPress={async () => { await deleteAdminReview(String(r.id)); refetchReviews(); }}>
                     <Trash2 size={16} color="#DC2626" />
                   </TouchableOpacity>
                 </View>
