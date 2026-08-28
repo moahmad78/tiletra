@@ -23,6 +23,17 @@ export async function GET(req: NextRequest) {
       "setting_policy_terms",
       "setting_policy_returns",
       "setting_units_list",
+      "setting_website_logo",
+      "setting_app_icon",
+      "setting_hero_headline",
+      "setting_hero_tagline",
+      "setting_trending_heading",
+      "setting_trending_caption",
+      "setting_bestsellers_heading",
+      "setting_bestsellers_caption",
+      "setting_new_arrivals_heading",
+      "setting_new_arrivals_caption",
+      "setting_deals_bar_text",
     ];
 
     const extraRecords = await prisma.setting.findMany({
@@ -44,6 +55,17 @@ export async function GET(req: NextRequest) {
         policyTerms: extraMap["setting_policy_terms"] || "IntriHub Terms of Service: Standard B2B/B2C marketplace terms.",
         policyReturns: extraMap["setting_policy_returns"] || "IntriHub Return & Refund Policy: 7-day hassle-free damage returns.",
         unitsList: extraMap["setting_units_list"] ? JSON.parse(extraMap["setting_units_list"]) : ["sqft", "box", "piece", "meter", "kg", "bag", "ton"],
+        websiteLogo: extraMap["setting_website_logo"] || "",
+        appIcon: extraMap["setting_app_icon"] || "",
+        heroHeadline: extraMap["setting_hero_headline"] || "Direct-From-Factory Building Materials",
+        heroTagline: extraMap["setting_hero_tagline"] || "Tiles, Granites, Sanitaryware & Paints Delivered to Your Site",
+        trendingHeading: extraMap["setting_trending_heading"] || "Trending Now",
+        trendingCaption: extraMap["setting_trending_caption"] || "Architect-approved curated designs for modern spaces",
+        bestsellersHeading: extraMap["setting_bestsellers_heading"] || "Bestseller Collections",
+        bestsellersCaption: extraMap["setting_bestsellers_caption"] || "Top-rated vitrified tiles & finishes trusted by 10,000+ builders",
+        newArrivalsHeading: extraMap["setting_new_arrivals_heading"] || "New In Stock",
+        newArrivalsCaption: extraMap["setting_new_arrivals_caption"] || "Latest luxury surfaces and hardware fresh from factory",
+        dealsBarText: extraMap["setting_deals_bar_text"] || "Special Launch Offer: Extra 10% off with coupon code FESTIVE10",
       },
     });
   } catch (error: any) {
@@ -180,13 +202,102 @@ export async function PATCH(req: NextRequest) {
         })
       );
     }
-    if (body.unitsList !== undefined) {
-      const unitsJson = JSON.stringify(Array.isArray(body.unitsList) ? body.unitsList : [body.unitsList]);
+    if (body.websiteLogo !== undefined) {
       extraUpdates.push(
         prisma.setting.upsert({
-          where: { key: "setting_units_list" },
-          update: { value: unitsJson },
-          create: { key: "setting_units_list", value: unitsJson },
+          where: { key: "setting_website_logo" },
+          update: { value: String(body.websiteLogo).trim() },
+          create: { key: "setting_website_logo", value: String(body.websiteLogo).trim() },
+        })
+      );
+    }
+    if (body.appIcon !== undefined) {
+      extraUpdates.push(
+        prisma.setting.upsert({
+          where: { key: "setting_app_icon" },
+          update: { value: String(body.appIcon).trim() },
+          create: { key: "setting_app_icon", value: String(body.appIcon).trim() },
+        })
+      );
+    }
+    if (body.heroHeadline !== undefined) {
+      extraUpdates.push(
+        prisma.setting.upsert({
+          where: { key: "setting_hero_headline" },
+          update: { value: String(body.heroHeadline).trim() },
+          create: { key: "setting_hero_headline", value: String(body.heroHeadline).trim() },
+        })
+      );
+    }
+    if (body.heroTagline !== undefined) {
+      extraUpdates.push(
+        prisma.setting.upsert({
+          where: { key: "setting_hero_tagline" },
+          update: { value: String(body.heroTagline).trim() },
+          create: { key: "setting_hero_tagline", value: String(body.heroTagline).trim() },
+        })
+      );
+    }
+    if (body.trendingHeading !== undefined) {
+      extraUpdates.push(
+        prisma.setting.upsert({
+          where: { key: "setting_trending_heading" },
+          update: { value: String(body.trendingHeading).trim() },
+          create: { key: "setting_trending_heading", value: String(body.trendingHeading).trim() },
+        })
+      );
+    }
+    if (body.trendingCaption !== undefined) {
+      extraUpdates.push(
+        prisma.setting.upsert({
+          where: { key: "setting_trending_caption" },
+          update: { value: String(body.trendingCaption).trim() },
+          create: { key: "setting_trending_caption", value: String(body.trendingCaption).trim() },
+        })
+      );
+    }
+    if (body.bestsellersHeading !== undefined) {
+      extraUpdates.push(
+        prisma.setting.upsert({
+          where: { key: "setting_bestsellers_heading" },
+          update: { value: String(body.bestsellersHeading).trim() },
+          create: { key: "setting_bestsellers_heading", value: String(body.bestsellersHeading).trim() },
+        })
+      );
+    }
+    if (body.bestsellersCaption !== undefined) {
+      extraUpdates.push(
+        prisma.setting.upsert({
+          where: { key: "setting_bestsellers_caption" },
+          update: { value: String(body.bestsellersCaption).trim() },
+          create: { key: "setting_bestsellers_caption", value: String(body.bestsellersCaption).trim() },
+        })
+      );
+    }
+    if (body.newArrivalsHeading !== undefined) {
+      extraUpdates.push(
+        prisma.setting.upsert({
+          where: { key: "setting_new_arrivals_heading" },
+          update: { value: String(body.newArrivalsHeading).trim() },
+          create: { key: "setting_new_arrivals_heading", value: String(body.newArrivalsHeading).trim() },
+        })
+      );
+    }
+    if (body.newArrivalsCaption !== undefined) {
+      extraUpdates.push(
+        prisma.setting.upsert({
+          where: { key: "setting_new_arrivals_caption" },
+          update: { value: String(body.newArrivalsCaption).trim() },
+          create: { key: "setting_new_arrivals_caption", value: String(body.newArrivalsCaption).trim() },
+        })
+      );
+    }
+    if (body.dealsBarText !== undefined) {
+      extraUpdates.push(
+        prisma.setting.upsert({
+          where: { key: "setting_deals_bar_text" },
+          update: { value: String(body.dealsBarText).trim() },
+          create: { key: "setting_deals_bar_text", value: String(body.dealsBarText).trim() },
         })
       );
     }
