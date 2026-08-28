@@ -64,6 +64,7 @@ import {
   fetchAdminCategories,
   createAdminCategory,
 } from "../../src/api/admin";
+import { API_BASE_URL } from "../../src/api/client";
 import { uploadBusinessImage } from "../../src/api/auth";
 import {
   CATALOG_COLOURS,
@@ -187,7 +188,18 @@ export default function AdminProductsHubScreen() {
     queryFn: () => fetchAdminCategories(),
   });
 
-  const products = productsData?.products || [];
+  const rawProducts = productsData?.products || [];
+  const products = rawProducts.filter((p: any) => {
+    if (!search.trim()) return true;
+    const q = search.trim().toLowerCase();
+    const nameMatch = (p.name || "").toLowerCase().includes(q);
+    const catMatch = (p.categoryName || p.categorySlug || "").toLowerCase().includes(q);
+    const vendorMatch = (p.vendorName || p.vendor?.businessName || "").toLowerCase().includes(q);
+    const unitMatch = (p.unitOfSale || "").toLowerCase().includes(q);
+    const matMatch = (p.material || "").toLowerCase().includes(q);
+    const finishMatch = (p.finish || "").toLowerCase().includes(q);
+    return nameMatch || catMatch || vendorMatch || unitMatch || matMatch || finishMatch;
+  });
   const approvals = approvalsData?.products || [];
   const categories = catData?.categories || [
     { id: "1", name: "Tiles & Stone", slug: "tiles-stone" },
@@ -768,22 +780,57 @@ export default function AdminProductsHubScreen() {
     }
   };
 
-  const getValidProductImage = (imgs?: string[]) => {
-    const fallback = "https://images.unsplash.com/photo-1600585154340-be6161a56a0c?q=80&w=600&auto=format&fit=crop";
-    if (!imgs || !Array.isArray(imgs) || imgs.length === 0) return fallback;
-    const raw = imgs[0];
-    if (!raw || typeof raw !== "string" || !raw.trim()) return fallback;
-    const trimmed = raw.trim();
-    if (trimmed.endsWith(".svg") || trimmed.includes("placeholder")) return fallback;
-    if (trimmed.startsWith("http://") || trimmed.startsWith("https://") || trimmed.startsWith("data:") || trimmed.startsWith("file://")) {
-      return trimmed;
+  const getValidProductImage = (imgs?: string[], prodName?: string, catSlug?: string) => {
+    if (imgs && Array.isArray(imgs) && imgs.length > 0) {
+      const raw = imgs[0];
+      if (raw && typeof raw === "string" && raw.trim() !== "") {
+        const trimmed = raw.trim();
+        // Check if it's an uploaded file or real image (not placeholder.svg)
+        if (!trimmed.endsWith(".svg") && !trimmed.includes("placeholder")) {
+          if (trimmed.startsWith("/")) {
+            return `${API_BASE_URL}${trimmed}`;
+          }
+          if (trimmed.startsWith("uploads/")) {
+            return `${API_BASE_URL}/${trimmed}`;
+          }
+          if (
+            trimmed.startsWith("http://") ||
+            trimmed.startsWith("https://") ||
+            trimmed.startsWith("data:") ||
+            trimmed.startsWith("file://")
+          ) {
+            return trimmed;
+          }
+        }
+      }
     }
-    return fallback;
+
+    // High-resolution item category & title matching fallbacks:
+    const lname = (prodName || "").toLowerCase();
+    const lcat = (catSlug || "").toLowerCase();
+
+    if (lname.includes("statuario") || lname.includes("vitrified") || lcat.includes("tile")) {
+      return "https://images.unsplash.com/photo-1600585154340-be6161a56a0c?q=80&w=600&auto=format&fit=crop"; // Marble Tile
+    }
+    if (lname.includes("granite") || lname.includes("galaxy") || lcat.includes("granite") || lcat.includes("stone")) {
+      return "https://images.unsplash.com/photo-1618221195710-dd6b41faaea6?q=80&w=600&auto=format&fit=crop"; // Black Granite
+    }
+    if (lname.includes("sand") || lname.includes("bag") || lname.includes("cement") || lcat.includes("flooring") || lcat.includes("building")) {
+      return "https://images.unsplash.com/photo-1589939705384-5185137a7f0f?q=80&w=600&auto=format&fit=crop"; // M Sand / Construction material
+    }
+    if (lname.includes("wood") || lcat.includes("wood")) {
+      return "https://images.unsplash.com/photo-1513694203232-719a280e022f?q=80&w=600&auto=format&fit=crop"; // Wood floor
+    }
+    if (lname.includes("marble") || lcat.includes("marble")) {
+      return "https://images.unsplash.com/photo-1615529182904-14819c35db37?q=80&w=600&auto=format&fit=crop"; // Italian Marble
+    }
+
+    return "https://images.unsplash.com/photo-1600585154340-be6161a56a0c?q=80&w=600&auto=format&fit=crop";
   };
 
   const renderProductItem = ({ item }: { item: Product }) => {
     const isSelected = selectedProductIds.includes(item.id);
-    const validImg = getValidProductImage(item.images);
+    const validImg = getValidProductImage(item.images, item.name, item.categorySlug);
 
     return (
       <TouchableOpacity
