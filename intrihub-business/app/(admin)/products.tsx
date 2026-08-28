@@ -601,23 +601,29 @@ export default function AdminProductsHubScreen() {
     }
   };
 
-  const renderProductItem = ({ item }: { item: Product }) => (
-    <View style={styles.productCard}>
-      <View style={styles.productRow}>
-        <Image
-          source={item.images?.[0] ? { uri: item.images[0] } : require("../../assets/intri-icon.png")}
-          style={styles.productImage}
-          contentFit="cover"
-        />
-        <View style={styles.productInfo}>
-          <View style={styles.badgeRow}>
-            <View style={[styles.statusBadge, item.status === "active" ? styles.statusActive : styles.statusDraft]}>
-              <Text style={[styles.statusText, item.status === "active" ? styles.statusTextActive : styles.statusTextDraft]}>
-                {item.status.toUpperCase()}
-              </Text>
+  const renderProductItem = ({ item }: { item: Product }) => {
+    const validImg =
+      item.images?.[0] && (item.images[0].startsWith("http://") || item.images[0].startsWith("https://") || item.images[0].startsWith("data:"))
+        ? item.images[0]
+        : "https://images.unsplash.com/photo-1600585154340-be6161a56a0c?q=80&w=600&auto=format&fit=crop";
+
+    return (
+      <View style={styles.productCard}>
+        <View style={styles.productRow}>
+          <Image
+            source={{ uri: validImg }}
+            style={styles.productImage}
+            contentFit="cover"
+          />
+          <View style={styles.productInfo}>
+            <View style={styles.badgeRow}>
+              <View style={[styles.statusBadge, item.status === "active" ? styles.statusActive : styles.statusDraft]}>
+                <Text style={[styles.statusText, item.status === "active" ? styles.statusTextActive : styles.statusTextDraft]}>
+                  {item.status.toUpperCase()}
+                </Text>
+              </View>
+              <Text style={styles.categoryPill}>{item.categorySlug}</Text>
             </View>
-            <Text style={styles.categoryPill}>{item.categorySlug}</Text>
-          </View>
 
           <Text style={styles.productName} numberOfLines={2}>{item.name}</Text>
           <Text style={styles.vendorSubtitle}>Vendor: {item.vendorName || "Direct / Admin"}</Text>
@@ -650,14 +656,20 @@ export default function AdminProductsHubScreen() {
     </View>
   );
 
-  const renderApprovalItem = ({ item }: { item: any }) => (
-    <View style={styles.productCard}>
-      <View style={styles.productRow}>
-        <Image
-          source={item.images?.[0] ? { uri: item.images[0] } : require("../../assets/intri-icon.png")}
-          style={styles.productImage}
-          contentFit="cover"
-        />
+  const renderApprovalItem = ({ item }: { item: any }) => {
+    const validImg =
+      item.images?.[0] && (item.images[0].startsWith("http://") || item.images[0].startsWith("https://") || item.images[0].startsWith("data:"))
+        ? item.images[0]
+        : "https://images.unsplash.com/photo-1600585154340-be6161a56a0c?q=80&w=600&auto=format&fit=crop";
+
+    return (
+      <View style={styles.productCard}>
+        <View style={styles.productRow}>
+          <Image
+            source={{ uri: validImg }}
+            style={styles.productImage}
+            contentFit="cover"
+          />
         <View style={styles.productInfo}>
           <View style={styles.badgeRow}>
             <View style={[styles.statusBadge, { backgroundColor: "#FEF3C7" }]}>

@@ -14,6 +14,7 @@ import {
 } from "react-native";
 import { useRouter } from "expo-router";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { Image } from "expo-image";
 import {
   ShoppingCart,
   Truck,
@@ -35,6 +36,8 @@ import {
   DollarSign,
   Package,
   Trash2,
+  Store,
+  Mail,
 } from "lucide-react-native";
 import {
   fetchAdminOrders,
@@ -58,6 +61,10 @@ export default function AdminOrdersHubScreen() {
   const [activeSection, setActiveSection] = useState<"orders" | "deliveries" | "shipping">("orders");
   const [search, setSearch] = useState("");
   const [statusFilter, setStatusFilter] = useState("all");
+
+  // Order Details Modal State
+  const [selectedOrder, setSelectedOrder] = useState<any | null>(null);
+  const [orderModalOpen, setOrderModalOpen] = useState(false);
 
   // Courier Assignment Modal State
   const [assignModalOpen, setAssignModalOpen] = useState(false);
@@ -108,115 +115,18 @@ export default function AdminOrdersHubScreen() {
     isLoading: settingsLoading,
     refetch: refetchSettings,
   } = useQuery({
-    queryKey: ["admin-settings"],
+    queryKey: ["admin-store-settings"],
     queryFn: () => fetchAdminStoreSettings(),
   });
 
-  // Initialize shipping form when settings load
-  React.useEffect(() => {
-    if (settingsData?.settings) {
-      const s = settingsData.settings;
-      if (s.freeDeliveryThreshold !== undefined) setFreeThreshold(String(s.freeDeliveryThreshold));
-      if (s.standardDeliveryFee !== undefined) setStandardFee(String(s.standardDeliveryFee));
-      if (s.bikeDeliveryRate !== undefined) setBikeRate(String(s.bikeDeliveryRate));
-      if (s.fourWheelerDeliveryRate !== undefined) setFourWheelerRate(String(s.fourWheelerDeliveryRate));
-      if (s.weightThresholdKg !== undefined) setWeightThreshold(String(s.weightThresholdKg));
-      if (s.codBlockedPincodes) {
-        setBlockedPincodes(
-          Array.isArray(s.codBlockedPincodes) ? s.codBlockedPincodes.join(", ") : String(s.codBlockedPincodes)
-        );
-      }
-    }
-  }, [settingsData]);
-
   const orders = ordersData?.orders || [];
-  const splits = deliveriesData?.deliveries || deliveriesData?.splits || [];
+  const splits = deliveriesData?.splits || [];
 
-  const handleOpenAssign = (split: any) => {
-    setSelectedSplitId(split.id);
-    setCourierName(split.courierName || "Intrihub Express Logistics");
-    setCourierPhone(split.courierPhone || "9876543210");
-    setTrackingNumber(split.trackingNumber || `TRK-${Date.now().toString().slice(-6)}`);
-    setAssignModalOpen(true);
-  };
-
-  const handleSaveAssign = async () => {
-    if (!selectedSplitId) return;
-    setSavingAssign(true);
-    try {
-      await assignAdminCourier(selectedSplitId, {
-        courierName: courierName.trim(),
-        courierPhone: courierPhone.trim(),
-      });
-
-      if (trackingNumber.trim()) {
-        await updateAdminDeliveryTracking(selectedSplitId, {
-          trackingNumber: trackingNumber.trim(),
-          courierName: courierName.trim(),
-        });
-      }
-
-      setSavingAssign(false);
-      setAssignModalOpen(false);
-      Alert.alert("Courier Assigned 🎉", "Delivery courier and tracking updated!");
-      refetchDeliveries();
-    } catch (e: any) {
-      setSavingAssign(false);
-      Alert.alert("Error", e?.message || "Failed to assign courier");
-    }
-  };
-
-  const handleConfirmCod = (splitId: string) => {
-    Alert.alert("Confirm COD Cash", "Confirm customer COD cash collected in full?", [
-      { text: "Cancel", style: "cancel" },
-      {
-        text: "Confirm Collected",
-        onPress: async () => {
-          try {
-            const res = await confirmAdminDeliveryCod(splitId);
-            if (res.success) {
-              Alert.alert("COD Collected", "Cash collection confirmed.");
-              refetchDeliveries();
-            } else {
-              Alert.alert("Error", res.error || "Failed to confirm COD");
-            }
-          } catch (e: any) {
-            Alert.alert("Error", e?.message || "Something went wrong.");
-          }
-        },
-      },
-    ]);
-  };
-
-  const handleSaveShippingRates = async () => {
-    setSavingRates(true);
-    try {
-      const res = await updateAdminStoreSettings({
-        freeDeliveryThreshold: parseFloat(freeThreshold) || 0,
-        standardDeliveryFee: parseFloat(standardFee) || 0,
-        bikeDeliveryRate: parseFloat(bikeRate) || 0,
-        fourWheelerDeliveryRate: parseFloat(fourWheelerRate) || 0,
-        weightThresholdKg: parseFloat(weightThreshold) || 0,
-        codBlockedPincodes: blockedPincodes.split(",").map((p) => p.trim()).filter(Boolean),
-      });
-
-      setSavingRates(false);
-      if (res.success) {
-        Alert.alert("Rates Saved 🎉", "Area-wise freight rates and delivery thresholds updated!");
-        refetchSettings();
-      } else {
-        Alert.alert("Error", res.error || "Failed to save settings");
-      }
-    } catch (e: any) {
-      setSavingRates(false);
-      Alert.alert("Error", e?.message || "Failed to update rates");
-    }
-  };
-
+  // Handle Delete Order (Soft Delete)
   const handleDeleteOrder = (orderId: string, customerName: string) => {
     Alert.alert(
-      "Move Order to Trash",
-      `Are you sure you want to move order #${orderId.slice(-6).toUpperCase()} (${customerName}) to Trash?\n\nIt will be safely kept for 3 days and can be restored from the Account Trash Tab.`,
+      "Move Order to Recycle Bin",
+      `Move order #${orderId.slice(-8).toUpperCase()} for "${customerName}" to Trash?\n\nIt will be preserved in the Recycle Bin for 3 days and can be restored.`,
       [
         { text: "Cancel", style: "cancel" },
         {
@@ -226,8 +136,11 @@ export default function AdminOrdersHubScreen() {
             try {
               const res = await deleteAdminOrder(orderId);
               if (res.success) {
-                Alert.alert("Moved to Trash 🗑️", "Order moved to Recycle Bin. You can restore it within 3 days.");
                 refetchOrders();
+                queryClient.invalidateQueries({ queryKey: ["admin-orders"] });
+                queryClient.invalidateQueries({ queryKey: ["admin-trash"] });
+                queryClient.invalidateQueries({ queryKey: ["admin-dashboard"] });
+                Alert.alert("Moved to Trash", `Order #${orderId.slice(-8).toUpperCase()} moved to Recycle Bin.`);
               } else {
                 Alert.alert("Error", res.error || "Failed to delete order");
               }
@@ -240,16 +153,121 @@ export default function AdminOrdersHubScreen() {
     );
   };
 
-  const renderOrderItem = ({ item }: { item: AdminOrder }) => (
-    <View style={styles.orderCard}>
+  // Open Courier Assignment Modal
+  const handleOpenAssign = (split: any) => {
+    setSelectedSplitId(split.id);
+    setCourierName(split.courierName || "");
+    setCourierPhone(split.courierPhone || "");
+    setTrackingNumber(split.trackingNumber || "");
+    setAssignModalOpen(true);
+  };
+
+  // Save Courier Assignment
+  const handleSaveAssign = async () => {
+    if (!selectedSplitId) return;
+    setSavingAssign(true);
+    try {
+      const res = await assignAdminCourier({
+        splitId: selectedSplitId,
+        courierName: courierName.trim() || "Express Delivery Partner",
+        courierPhone: courierPhone.trim() || undefined,
+        trackingNumber: trackingNumber.trim() || undefined,
+      });
+      setSavingAssign(false);
+
+      if (res.success) {
+        setAssignModalOpen(false);
+        refetchDeliveries();
+        Alert.alert("Assigned 🎉", "Courier details updated successfully!");
+      } else {
+        Alert.alert("Error", res.error || "Failed to assign courier");
+      }
+    } catch (e: any) {
+      setSavingAssign(false);
+      Alert.alert("Error", e?.message || "Something went wrong.");
+    }
+  };
+
+  // Confirm COD Payment
+  const handleConfirmCod = async (splitId: string) => {
+    Alert.alert(
+      "Confirm Cash on Delivery",
+      "Has the delivery agent collected the cash payment for this order split?",
+      [
+        { text: "Cancel", style: "cancel" },
+        {
+          text: "Yes, Payment Collected",
+          onPress: async () => {
+            try {
+              const res = await confirmAdminDeliveryCod(splitId);
+              if (res.success) {
+                refetchDeliveries();
+                queryClient.invalidateQueries({ queryKey: ["admin-orders"] });
+                Alert.alert("Success 🎉", "COD payment marked as Collected!");
+              } else {
+                Alert.alert("Error", res.error || "Failed to confirm COD");
+              }
+            } catch (e: any) {
+              Alert.alert("Error", e?.message || "Something went wrong.");
+            }
+          },
+        },
+      ]
+    );
+  };
+
+  // Save Shipping Rules
+  const handleSaveShippingRates = async () => {
+    setSavingRates(true);
+    try {
+      const res = await updateAdminStoreSettings({
+        freeShippingThreshold: parseFloat(freeThreshold) || 5000,
+        standardDeliveryFee: parseFloat(standardFee) || 149,
+        twoWheelerBaseRate: parseFloat(bikeRate) || 49,
+        fourWheelerBaseRate: parseFloat(fourWheelerRate) || 299,
+        weightThresholdKg: parseFloat(weightThreshold) || 25,
+        blockedPincodes: blockedPincodes.split(",").map((p) => p.trim()).filter(Boolean),
+      });
+      setSavingRates(false);
+
+      if (res.success) {
+        refetchSettings();
+        Alert.alert("Saved 🎉", "Platform shipping rate rules updated!");
+      } else {
+        Alert.alert("Error", res.error || "Failed to save shipping rates");
+      }
+    } catch (e: any) {
+      setSavingRates(false);
+      Alert.alert("Error", e?.message || "Failed to save shipping rates");
+    }
+  };
+
+  const renderOrderItem = ({ item }: { item: any }) => (
+    <TouchableOpacity
+      style={styles.orderCard}
+      onPress={() => {
+        setSelectedOrder(item);
+        setOrderModalOpen(true);
+      }}
+      activeOpacity={0.85}
+    >
       <View style={styles.cardHeader}>
         <View style={{ flex: 1 }}>
-          <Text style={styles.orderId}>{item.id}</Text>
-          <Text style={styles.dateText}>{item.createdAt ? new Date(item.createdAt).toLocaleDateString("en-IN") : ""}</Text>
+          <Text style={styles.orderId}>#{item.orderNumber || item.id?.slice(-8).toUpperCase()}</Text>
+          <Text style={styles.dateText}>
+            {item.createdAt ? new Date(item.createdAt).toLocaleDateString("en-IN", {
+              weekday: "short",
+              year: "numeric",
+              month: "short",
+              day: "numeric",
+              hour: "2-digit",
+              minute: "2-digit",
+            }) : ""}
+          </Text>
         </View>
         <View style={{ flexDirection: "row", alignItems: "center", gap: 8 }}>
           <View style={[styles.statusBadge, getOrderStatusStyle(item.orderStatus)]}>
-            <Text style={styles.statusBadgeText}>{item.orderStatus.toUpperCase()}</Text>
+            <Text style={styles.statusBadgeText}>{item.orderStatus?.toUpperCase() || "PROCESSING"}</Text>
           </View>
           <TouchableOpacity
             style={{ padding: 4, backgroundColor: "#FEF2F2", borderRadius: 6 }}
@@ -267,6 +285,12 @@ export default function AdminOrdersHubScreen() {
           <Text style={styles.customerPhone}>• +91 {item.customerPhone}</Text>
         ) : null}
       </View>
+
+      {item.customerAddress ? (
+        <Text style={styles.addressPreviewText} numberOfLines={1}>
+          📍 {item.customerAddress}
+        </Text>
+      ) : null}
 
       <View style={styles.metricsRow}>
         <View style={styles.metricItem}>
@@ -286,7 +310,7 @@ export default function AdminOrdersHubScreen() {
           </Text>
         </View>
       </View>
-    </View>
+    </TouchableOpacity>
   );
 
   const renderDeliverySplitItem = ({ item }: { item: any }) => (
@@ -363,7 +387,7 @@ export default function AdminOrdersHubScreen() {
         >
           <Truck size={15} color={activeSection === "deliveries" ? "#052A51" : "#64748B"} />
           <Text style={[styles.segmentBtnText, activeSection === "deliveries" && styles.segmentBtnTextActive]}>
-            Fleet ({splits.length})
+            Splits ({splits.length})
           </Text>
         </TouchableOpacity>
 
@@ -373,42 +397,55 @@ export default function AdminOrdersHubScreen() {
         >
           <Sliders size={15} color={activeSection === "shipping" ? "#052A51" : "#64748B"} />
           <Text style={[styles.segmentBtnText, activeSection === "shipping" && styles.segmentBtnTextActive]}>
-            Rates & Zones
+            Shipping Rates
           </Text>
         </TouchableOpacity>
       </View>
 
-      {/* Search Header for Orders */}
-      {activeSection === "orders" && (
-        <View style={styles.filterSection}>
-          <View style={styles.searchBar}>
-            <Search size={18} color={COLORS.textTertiary} />
-            <TextInput
-              style={styles.searchInput}
-              placeholder="Search order ID, customer name, phone..."
-              placeholderTextColor={COLORS.textTertiary}
-              value={search}
-              onChangeText={setSearch}
-            />
-          </View>
-        </View>
-      )}
-
-      {/* Main Content */}
+      {/* Main Section Content */}
       {activeSection === "orders" ? (
-        ordersLoading ? (
-          <View style={styles.centerContainer}>
-            <ActivityIndicator size="large" color={COLORS.accentBlue} />
+        <>
+          <View style={styles.filterSection}>
+            <View style={styles.searchBar}>
+              <Search size={16} color={COLORS.textTertiary} />
+              <TextInput
+                style={styles.searchInput}
+                placeholder="Search orders by ID, customer name, phone..."
+                placeholderTextColor={COLORS.textTertiary}
+                value={search}
+                onChangeText={setSearch}
+              />
+            </View>
+
+            <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.chipsScroll}>
+              {["all", "pending", "confirmed", "dispatched", "delivered", "cancelled"].map((st) => (
+                <TouchableOpacity
+                  key={st}
+                  style={[styles.filterChip, statusFilter === st && styles.filterChipActive]}
+                  onPress={() => setStatusFilter(st)}
+                >
+                  <Text style={[styles.filterChipText, statusFilter === st && styles.filterChipTextActive]}>
+                    {st === "all" ? "All Orders" : st.toUpperCase()}
+                  </Text>
+                </TouchableOpacity>
+              ))}
+            </ScrollView>
           </View>
-        ) : (
-          <FlatList
-            data={orders}
-            keyExtractor={(item) => item.id}
-            renderItem={renderOrderItem}
-            contentContainerStyle={styles.listContent}
-            refreshControl={<RefreshControl refreshing={ordersRefetching} onRefresh={refetchOrders} tintColor={COLORS.accentBlue} />}
-          />
-        )
+
+          {ordersLoading ? (
+            <View style={styles.centerContainer}>
+              <ActivityIndicator size="large" color={COLORS.accentBlue} />
+            </View>
+          ) : (
+            <FlatList
+              data={orders}
+              keyExtractor={(item) => item.id}
+              renderItem={renderOrderItem}
+              contentContainerStyle={styles.listContent}
+              refreshControl={<RefreshControl refreshing={ordersRefetching} onRefresh={refetchOrders} tintColor={COLORS.accentBlue} />}
+            />
+          )}
+        </>
       ) : activeSection === "deliveries" ? (
         deliveriesLoading ? (
           <View style={styles.centerContainer}>
@@ -426,60 +463,70 @@ export default function AdminOrdersHubScreen() {
       ) : (
         <ScrollView contentContainerStyle={styles.shippingContent} keyboardShouldPersistTaps="handled">
           <View style={styles.shippingCard}>
-            <Text style={styles.sectionHeading}>Area-Wise Freight & Slabs</Text>
+            <View style={styles.cardHeaderRow}>
+              <Truck size={18} color="#052A51" />
+              <Text style={styles.shippingCardTitle}>Tiered Delivery Fees Engine</Text>
+            </View>
+            <Text style={styles.shippingCardSub}>
+              Configure real-time calculation rules for platform deliveries, two-wheelers, and four-wheeler trucks.
+            </Text>
 
-            <Text style={styles.inputLabel}>Free Delivery Order Threshold (₹)</Text>
+            <Text style={[styles.inputLabel, { marginTop: 14 }]}>Free Delivery Order Threshold (₹)</Text>
             <TextInput
               style={styles.inputBox}
               value={freeThreshold}
               onChangeText={setFreeThreshold}
               keyboardType="decimal-pad"
+              placeholder="5000"
             />
 
-            <Text style={[styles.inputLabel, { marginTop: 12 }]}>Standard Local Delivery Fee (₹)</Text>
+            <Text style={[styles.inputLabel, { marginTop: 12 }]}>Standard Delivery Fee (₹)</Text>
             <TextInput
               style={styles.inputBox}
               value={standardFee}
               onChangeText={setStandardFee}
               keyboardType="decimal-pad"
+              placeholder="149"
             />
 
             <View style={styles.twoCol}>
               <View style={{ flex: 1 }}>
-                <Text style={styles.inputLabel}>2-Wheeler / Bike Rate (₹)</Text>
+                <Text style={styles.inputLabel}>Bike Base (₹)</Text>
                 <TextInput
                   style={styles.inputBox}
                   value={bikeRate}
                   onChangeText={setBikeRate}
                   keyboardType="decimal-pad"
+                  placeholder="49"
                 />
               </View>
               <View style={{ flex: 1 }}>
-                <Text style={styles.inputLabel}>4-Wheeler / Truck Rate (₹)</Text>
+                <Text style={styles.inputLabel}>4-Wheeler Base (₹)</Text>
                 <TextInput
                   style={styles.inputBox}
                   value={fourWheelerRate}
                   onChangeText={setFourWheelerRate}
                   keyboardType="decimal-pad"
+                  placeholder="299"
                 />
               </View>
             </View>
 
-            <Text style={[styles.inputLabel, { marginTop: 12 }]}>Heavy Cargo Weight Threshold (KG)</Text>
+            <Text style={[styles.inputLabel, { marginTop: 12 }]}>Weight Threshold for Heavy Vehicle (Kg)</Text>
             <TextInput
               style={styles.inputBox}
               value={weightThreshold}
               onChangeText={setWeightThreshold}
               keyboardType="decimal-pad"
+              placeholder="25"
             />
 
-            <Text style={[styles.inputLabel, { marginTop: 12 }]}>Blocked Delivery Pincodes (Comma separated)</Text>
+            <Text style={[styles.inputLabel, { marginTop: 12 }]}>Blocked Service Pincodes (Comma separated)</Text>
             <TextInput
-              style={[styles.inputBox, { height: 60, textAlignVertical: "top", paddingTop: 8 }]}
-              multiline
+              style={styles.inputBox}
               value={blockedPincodes}
               onChangeText={setBlockedPincodes}
-              placeholder="e.g. 560001, 560099, 110001"
+              placeholder="e.g. 110001, 110002"
             />
 
             <TouchableOpacity
@@ -490,26 +537,155 @@ export default function AdminOrdersHubScreen() {
               {savingRates ? (
                 <ActivityIndicator size="small" color="#FFFFFF" />
               ) : (
-                <>
-                  <CheckCircle2 size={18} color="#FFFFFF" />
-                  <Text style={styles.saveRatesBtnText}>Save Shipping Rates & Rules</Text>
-                </>
+                <Text style={styles.saveRatesBtnText}>Update Shipping Rates</Text>
               )}
             </TouchableOpacity>
           </View>
         </ScrollView>
       )}
 
-      {/* Courier Assignment Modal */}
-      <Modal
-        visible={assignModalOpen}
-        animationType="slide"
-        presentationStyle="pageSheet"
-        onRequestClose={() => setAssignModalOpen(false)}
-      >
+      {/* 1. ORDER AUDIT MODAL */}
+      <Modal visible={orderModalOpen} transparent animationType="slide">
+        <View style={styles.modalOverlay}>
+          <View style={styles.orderModalBox}>
+            <View style={styles.orderModalHeader}>
+              <View>
+                <Text style={styles.orderModalTitle}>
+                  Order #{selectedOrder?.orderNumber || selectedOrder?.id?.slice(-8).toUpperCase()}
+                </Text>
+                <Text style={styles.orderModalSub}>
+                  Placed on: {selectedOrder?.createdAt ? new Date(selectedOrder.createdAt).toLocaleString("en-IN") : ""}
+                </Text>
+              </View>
+              <TouchableOpacity onPress={() => setOrderModalOpen(false)} style={styles.closeBtn}>
+                <X size={20} color={COLORS.textSecondary} />
+              </TouchableOpacity>
+            </View>
+
+            {selectedOrder && (
+              <ScrollView style={{ maxHeight: 480 }} contentContainerStyle={{ gap: 12, paddingVertical: 10 }}>
+                {/* Status & Amount Highlight */}
+                <View style={styles.orderHighlightCard}>
+                  <View style={{ flex: 1 }}>
+                    <Text style={styles.highlightLabel}>Total Order Amount</Text>
+                    <Text style={styles.highlightAmount}>₹{(selectedOrder.total || 0).toLocaleString("en-IN")}</Text>
+                  </View>
+                  <View style={styles.orderStatusBadge}>
+                    <Text style={styles.orderStatusBadgeText}>{selectedOrder.orderStatus?.toUpperCase()}</Text>
+                  </View>
+                </View>
+
+                {/* Customer Profile & Delivery Location */}
+                <View style={styles.auditSectionBox}>
+                  <View style={styles.auditSectionHeader}>
+                    <User size={15} color="#2563EB" />
+                    <Text style={styles.auditSectionTitle}>Customer Profile & Site Location</Text>
+                  </View>
+
+                  <View style={styles.auditDetailRow}>
+                    <Text style={styles.auditLabel}>Customer Name:</Text>
+                    <Text style={styles.auditVal}>{selectedOrder.customerName || "Customer"}</Text>
+                  </View>
+
+                  <View style={styles.auditDetailRow}>
+                    <Text style={styles.auditLabel}>Contact Phone:</Text>
+                    <Text style={[styles.auditVal, { color: "#2563EB", fontWeight: "800" }]}>
+                      +91 {selectedOrder.customerPhone || "N/A"}
+                    </Text>
+                  </View>
+
+                  {selectedOrder.customerEmail ? (
+                    <View style={styles.auditDetailRow}>
+                      <Text style={styles.auditLabel}>Email Address:</Text>
+                      <Text style={styles.auditVal}>{selectedOrder.customerEmail}</Text>
+                    </View>
+                  ) : null}
+
+                  <View style={[styles.auditDetailRow, { alignItems: "flex-start" }]}>
+                    <Text style={[styles.auditLabel, { marginTop: 2 }]}>Delivery Address:</Text>
+                    <Text style={[styles.auditVal, { flex: 1, textAlign: "right" }]}>
+                      {selectedOrder.customerAddress || selectedOrder.deliveryCity || "Site Address"}
+                    </Text>
+                  </View>
+                </View>
+
+                {/* Allocated Vendors */}
+                <View style={styles.auditSectionBox}>
+                  <View style={styles.auditSectionHeader}>
+                    <Store size={15} color="#16A34A" />
+                    <Text style={styles.auditSectionTitle}>
+                      Vendor Partner Allocation ({selectedOrder.vendors?.length || 1})
+                    </Text>
+                  </View>
+
+                  {selectedOrder.vendors?.map((v: any, idx: number) => (
+                    <View key={idx} style={styles.vendorAllocCard}>
+                      <View style={{ flexDirection: "row", justifyContent: "space-between", alignItems: "center" }}>
+                        <Text style={styles.allocVendorName}>{v.businessName}</Text>
+                        <Text style={styles.allocVendorCat}>{v.category}</Text>
+                      </View>
+                      <Text style={styles.allocVendorPhone}>Phone: +91 {v.contactPhone || "Direct"}</Text>
+                      <View style={styles.allocFinanceRow}>
+                        <Text style={styles.allocFinanceText}>
+                          Subtotal: <Text style={{ fontWeight: "800", color: "#052A51" }}>₹{(v.subtotal || 0).toLocaleString("en-IN")}</Text>
+                        </Text>
+                        <Text style={styles.allocFinanceText}>
+                          Payout: <Text style={{ fontWeight: "800", color: "#16A34A" }}>₹{(v.vendorPayoutAmount || v.subtotal || 0).toLocaleString("en-IN")}</Text>
+                        </Text>
+                      </View>
+                    </View>
+                  ))}
+                </View>
+
+                {/* Ordered Items with Image */}
+                <View style={styles.auditSectionBox}>
+                  <View style={styles.auditSectionHeader}>
+                    <Package size={15} color="#D97706" />
+                    <Text style={styles.auditSectionTitle}>
+                      Ordered Products ({selectedOrder.items?.length || 0})
+                    </Text>
+                  </View>
+
+                  {selectedOrder.items?.map((it: any) => (
+                    <View key={it.id} style={styles.orderItemRow}>
+                      <Image
+                        source={it.image ? { uri: it.image } : require("../../assets/intri-icon.png")}
+                        style={styles.itemThumb}
+                        contentFit="cover"
+                      />
+                      <View style={{ flex: 1, marginLeft: 10 }}>
+                        <Text style={styles.itemTitleText}>{it.productName}</Text>
+                        <Text style={styles.itemVariantText}>{it.variantDetails}</Text>
+                        <Text style={styles.itemVendorText}>Seller: {it.vendorName}</Text>
+                      </View>
+                      <View style={{ alignItems: "flex-end" }}>
+                        <Text style={styles.itemQtyText}>x {it.boxQuantity}</Text>
+                        <Text style={styles.itemPriceText}>₹{(it.totalPrice || 0).toLocaleString("en-IN")}</Text>
+                      </View>
+                    </View>
+                  ))}
+                </View>
+              </ScrollView>
+            )}
+
+            <TouchableOpacity
+              style={styles.closeOrderModalBtn}
+              onPress={() => setOrderModalOpen(false)}
+            >
+              <Text style={styles.closeOrderModalBtnText}>Close Order Details</Text>
+            </TouchableOpacity>
+          </View>
+        </View>
+      </Modal>
+
+      {/* 2. COURIER ASSIGNMENT MODAL */}
+      <Modal visible={assignModalOpen} animationType="slide" presentationStyle="pageSheet">
         <View style={styles.modalContainer}>
           <View style={styles.modalHeader}>
-            <Text style={styles.modalTitle}>Assign Delivery Courier</Text>
+            <View>
+              <Text style={styles.modalTitle}>Assign Delivery Partner</Text>
+              <Text style={styles.modalSubtitle}>Dispatch vendor parcel via courier or bike rider</Text>
+            </View>
             <TouchableOpacity onPress={() => setAssignModalOpen(false)} style={styles.closeBtn}>
               <X size={20} color={COLORS.textSecondary} />
             </TouchableOpacity>
@@ -660,6 +836,27 @@ const styles = StyleSheet.create({
     fontSize: 13,
     color: COLORS.text,
   },
+  chipsScroll: {
+    marginTop: 10,
+  },
+  filterChip: {
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderRadius: RADIUS.full,
+    backgroundColor: COLORS.background,
+    marginRight: 8,
+  },
+  filterChipActive: {
+    backgroundColor: COLORS.accentBlue,
+  },
+  filterChipText: {
+    fontSize: 11,
+    fontWeight: "700",
+    color: COLORS.textSecondary,
+  },
+  filterChipTextActive: {
+    color: "#fff",
+  },
   listContent: {
     padding: SPACING.md,
     gap: SPACING.md,
@@ -701,12 +898,13 @@ const styles = StyleSheet.create({
   statusBadgeText: {
     fontSize: 10,
     fontWeight: "800",
+    color: COLORS.text,
   },
   customerRow: {
     flexDirection: "row",
     alignItems: "center",
+    marginTop: SPACING.sm,
     gap: 6,
-    marginTop: 8,
   },
   customerName: {
     fontSize: 12,
@@ -715,7 +913,12 @@ const styles = StyleSheet.create({
   },
   customerPhone: {
     fontSize: 12,
-    color: COLORS.textSecondary,
+    color: COLORS.textTertiary,
+  },
+  addressPreviewText: {
+    fontSize: 11,
+    color: "#64748B",
+    marginTop: 4,
   },
   metricsRow: {
     flexDirection: "row",
@@ -729,92 +932,104 @@ const styles = StyleSheet.create({
     flex: 1,
     alignItems: "center",
   },
-  metricLabel: {
-    fontSize: 10,
-    color: COLORS.textTertiary,
-    textTransform: "uppercase",
-    fontWeight: "700",
-  },
-  metricVal: {
-    fontSize: 13,
-    fontWeight: "800",
-    color: COLORS.primary,
-    marginTop: 2,
-  },
   metricDivider: {
     width: 1,
-    height: "60%",
+    height: 20,
     backgroundColor: COLORS.border,
+  },
+  metricLabel: {
+    fontSize: 9,
+    fontWeight: "700",
+    color: COLORS.textTertiary,
+    textTransform: "uppercase",
+  },
+  metricVal: {
+    fontSize: 12,
+    fontWeight: "800",
+    color: COLORS.text,
+    marginTop: 2,
   },
   actionFooter: {
     flexDirection: "row",
-    justifyContent: "flex-end",
-    alignItems: "center",
+    gap: 8,
     marginTop: SPACING.sm,
     paddingTop: SPACING.sm,
     borderTopWidth: 1,
-    borderTopColor: COLORS.borderLight,
-    gap: 8,
+    borderTopColor: COLORS.border,
   },
   assignBtn: {
+    flex: 1,
     flexDirection: "row",
     alignItems: "center",
-    backgroundColor: "#F1F5F9",
-    paddingHorizontal: 12,
-    paddingVertical: 7,
+    justifyContent: "center",
+    backgroundColor: "#EFF6FF",
+    borderWidth: 1,
+    borderColor: "#BFDBFE",
+    paddingVertical: 8,
     borderRadius: RADIUS.sm,
-    gap: 4,
+    gap: 6,
   },
   assignBtnText: {
-    fontSize: 12,
-    fontWeight: "800",
     color: "#052A51",
+    fontSize: 11,
+    fontWeight: "800",
   },
   codBtn: {
     flexDirection: "row",
     alignItems: "center",
+    justifyContent: "center",
     backgroundColor: "#DCFCE7",
     paddingHorizontal: 12,
-    paddingVertical: 7,
+    paddingVertical: 8,
     borderRadius: RADIUS.sm,
     gap: 4,
   },
   codBtnText: {
-    fontSize: 12,
-    fontWeight: "800",
     color: "#16A34A",
+    fontSize: 11,
+    fontWeight: "800",
   },
   shippingContent: {
-    padding: 16,
-    gap: 16,
+    padding: SPACING.md,
   },
   shippingCard: {
-    backgroundColor: "#FFFFFF",
-    borderRadius: 16,
-    padding: 16,
+    backgroundColor: COLORS.surface,
+    borderRadius: RADIUS.lg,
+    padding: SPACING.md,
     borderWidth: 1,
-    borderColor: "#E2E8F0",
+    borderColor: COLORS.border,
+    ...SHADOWS.sm,
   },
-  sectionHeading: {
+  cardHeaderRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 8,
+  },
+  shippingCardTitle: {
     fontSize: 16,
     fontWeight: "800",
-    color: "#052A51",
-    marginBottom: 12,
+    color: COLORS.text,
+  },
+  shippingCardSub: {
+    fontSize: 12,
+    color: COLORS.textSecondary,
+    marginTop: 4,
+    lineHeight: 18,
   },
   inputLabel: {
-    fontSize: 12,
+    fontSize: 11,
     fontWeight: "700",
     color: COLORS.textSecondary,
-    marginBottom: 6,
+    marginBottom: 4,
   },
   inputBox: {
-    backgroundColor: "#F8FAFC",
+    backgroundColor: COLORS.background,
     borderWidth: 1,
-    borderColor: "#CBD5E1",
-    borderRadius: 12,
-    paddingHorizontal: 12,
+    borderColor: COLORS.border,
+    borderRadius: RADIUS.md,
+    paddingHorizontal: SPACING.md,
     height: 44,
-    fontSize: 14,
+    fontSize: 13,
     color: COLORS.text,
   },
   twoCol: {
@@ -824,17 +1039,15 @@ const styles = StyleSheet.create({
   },
   saveRatesBtn: {
     backgroundColor: "#052A51",
-    height: 50,
-    borderRadius: 14,
-    flexDirection: "row",
+    height: 46,
+    borderRadius: RADIUS.md,
     alignItems: "center",
     justifyContent: "center",
-    gap: 8,
-    marginTop: 16,
+    marginTop: 18,
   },
   saveRatesBtnText: {
     color: "#FFFFFF",
-    fontSize: 14,
+    fontSize: 13,
     fontWeight: "800",
   },
   modalContainer: {
@@ -852,36 +1065,235 @@ const styles = StyleSheet.create({
     borderBottomColor: "#E2E8F0",
   },
   modalTitle: {
-    fontSize: 17,
+    fontSize: 16,
     fontWeight: "800",
     color: "#052A51",
+  },
+  modalSubtitle: {
+    fontSize: 11,
+    color: "#64748B",
+    marginTop: 2,
   },
   closeBtn: {
     padding: 6,
   },
   modalContent: {
     padding: 16,
-    gap: 16,
+    gap: 12,
   },
   modalCard: {
     backgroundColor: "#FFFFFF",
     borderRadius: 16,
     padding: 16,
     borderWidth: 1,
-    borderColor: "#E2E8F0",
+    borderColor: COLORS.border,
   },
   saveAssignBtn: {
     backgroundColor: "#052A51",
-    height: 50,
-    borderRadius: 14,
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "center",
+    height: 48,
+    borderRadius: 12,
     gap: 8,
   },
   saveAssignBtnText: {
     color: "#FFFFFF",
-    fontSize: 14,
+    fontSize: 13,
+    fontWeight: "800",
+  },
+  modalOverlay: {
+    flex: 1,
+    backgroundColor: "rgba(0,0,0,0.5)",
+    alignItems: "center",
+    justifyContent: "center",
+    padding: 16,
+  },
+  orderModalBox: {
+    backgroundColor: "#FFFFFF",
+    borderRadius: 16,
+    padding: 18,
+    width: "100%",
+    maxWidth: 440,
+    ...SHADOWS.md,
+  },
+  orderModalHeader: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+    borderBottomWidth: 1,
+    borderBottomColor: "#E2E8F0",
+    paddingBottom: 10,
+  },
+  orderModalTitle: {
+    fontSize: 16,
+    fontWeight: "900",
+    color: "#052A51",
+  },
+  orderModalSub: {
+    fontSize: 11,
+    color: "#64748B",
+    marginTop: 2,
+  },
+  orderHighlightCard: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+    backgroundColor: "#EFF6FF",
+    borderRadius: 10,
+    padding: 12,
+    borderWidth: 1,
+    borderColor: "#BFDBFE",
+  },
+  highlightLabel: {
+    fontSize: 10,
+    fontWeight: "700",
+    color: "#1E40AF",
+  },
+  highlightAmount: {
+    fontSize: 20,
+    fontWeight: "900",
+    color: "#1D4ED8",
+    marginTop: 2,
+  },
+  orderStatusBadge: {
+    backgroundColor: "#16A34A",
+    paddingHorizontal: 10,
+    paddingVertical: 4,
+    borderRadius: 6,
+  },
+  orderStatusBadgeText: {
+    color: "#FFFFFF",
+    fontSize: 10,
+    fontWeight: "900",
+  },
+  auditSectionBox: {
+    backgroundColor: "#F8FAFC",
+    borderRadius: 10,
+    padding: 12,
+    borderWidth: 1,
+    borderColor: "#E2E8F0",
+    gap: 6,
+  },
+  auditSectionHeader: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 6,
+    borderBottomWidth: 1,
+    borderBottomColor: "#E2E8F0",
+    paddingBottom: 6,
+    marginBottom: 4,
+  },
+  auditSectionTitle: {
+    fontSize: 12,
+    fontWeight: "800",
+    color: "#052A51",
+  },
+  auditDetailRow: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+    paddingVertical: 2,
+  },
+  auditLabel: {
+    fontSize: 11,
+    color: "#64748B",
+    fontWeight: "600",
+  },
+  auditVal: {
+    fontSize: 11,
+    fontWeight: "700",
+    color: "#052A51",
+  },
+  vendorAllocCard: {
+    backgroundColor: "#FFFFFF",
+    borderRadius: 8,
+    padding: 10,
+    borderWidth: 1,
+    borderColor: "#E2E8F0",
+    gap: 2,
+    marginBottom: 4,
+  },
+  allocVendorName: {
+    fontSize: 13,
+    fontWeight: "800",
+    color: "#052A51",
+  },
+  allocVendorCat: {
+    fontSize: 10,
+    color: "#64748B",
+    fontWeight: "700",
+  },
+  allocVendorPhone: {
+    fontSize: 11,
+    color: "#64748B",
+  },
+  allocFinanceRow: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+    marginTop: 4,
+    paddingTop: 4,
+    borderTopWidth: 1,
+    borderTopColor: "#F1F5F9",
+  },
+  allocFinanceText: {
+    fontSize: 11,
+    color: "#64748B",
+  },
+  orderItemRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    backgroundColor: "#FFFFFF",
+    borderRadius: 8,
+    padding: 8,
+    borderWidth: 1,
+    borderColor: "#E2E8F0",
+    marginBottom: 4,
+  },
+  itemThumb: {
+    width: 44,
+    height: 44,
+    borderRadius: 6,
+    backgroundColor: "#F1F5F9",
+  },
+  itemTitleText: {
+    fontSize: 12,
+    fontWeight: "800",
+    color: "#052A51",
+  },
+  itemVariantText: {
+    fontSize: 10,
+    color: "#64748B",
+    marginTop: 1,
+  },
+  itemVendorText: {
+    fontSize: 10,
+    color: "#2563EB",
+    fontWeight: "700",
+    marginTop: 1,
+  },
+  itemQtyText: {
+    fontSize: 11,
+    color: "#64748B",
+    fontWeight: "700",
+  },
+  itemPriceText: {
+    fontSize: 12,
+    fontWeight: "900",
+    color: "#052A51",
+    marginTop: 2,
+  },
+  closeOrderModalBtn: {
+    backgroundColor: "#052A51",
+    borderRadius: 10,
+    paddingVertical: 12,
+    alignItems: "center",
+    marginTop: 10,
+  },
+  closeOrderModalBtnText: {
+    color: "#FFFFFF",
+    fontSize: 13,
     fontWeight: "800",
   },
 });

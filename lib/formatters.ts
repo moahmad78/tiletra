@@ -244,9 +244,11 @@ export function formatProduct(dbProduct: any): Product {
     mrp: dbProduct.mrp ? Number(dbProduct.mrp) : null,
     pricePerSqft: dbProduct.pricePerSqft ? Number(dbProduct.pricePerSqft) : undefined,
     attributes,
-    images: Array.isArray(dbProduct.images) && dbProduct.images.length > 0
-      ? dbProduct.images.map((img: string) => (typeof img === "string" && img.includes("unsplash.com") ? "/placeholders/product.svg" : img))
-      : ["/placeholders/product.svg"],
+    images: Array.isArray(dbProduct.images) && dbProduct.images.length > 0 && dbProduct.images[0] && dbProduct.images[0] !== "/placeholders/product.svg"
+      ? dbProduct.images.filter((img: string) => typeof img === "string" && img.trim() !== "")
+      : dbProduct.variants?.[0]?.image
+      ? [dbProduct.variants[0].image]
+      : ["https://images.unsplash.com/photo-1600585154340-be6161a56a0c?q=80&w=600&auto=format&fit=crop"],
     variants,
     rating: dbProduct.manualRating !== null && dbProduct.manualRating !== undefined
       ? Number(dbProduct.manualRating)

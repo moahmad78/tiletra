@@ -39,6 +39,13 @@ import {
   Sparkles,
   DollarSign,
   Percent,
+  MapPin,
+  Phone,
+  Mail,
+  User,
+  CreditCard,
+  Building2,
+  Eye,
 } from "lucide-react-native";
 import {
   fetchAdminDashboard,
@@ -54,6 +61,10 @@ export default function AdminDashboardScreen() {
   // Revenue Analytics Modal State
   const [revenueModalOpen, setRevenueModalOpen] = useState(false);
   const [revenuePeriod, setRevenuePeriod] = useState<"today" | "yesterday" | "7days" | "this_month" | "all">("today");
+
+  // Recent Order Drilldown Modal State
+  const [selectedOrder, setSelectedOrder] = useState<any | null>(null);
+  const [orderModalOpen, setOrderModalOpen] = useState(false);
 
   const { data, isLoading, refetch, isRefetching } = useQuery({
     queryKey: ["admin-dashboard"],
@@ -95,6 +106,11 @@ export default function AdminDashboardScreen() {
       setNotifyingVendorId(null);
       Alert.alert("Error", e?.message || "Something went wrong.");
     }
+  };
+
+  const handleOpenOrderDetail = (order: any) => {
+    setSelectedOrder(order);
+    setOrderModalOpen(true);
   };
 
   if (isLoading) {
@@ -234,9 +250,15 @@ export default function AdminDashboardScreen() {
             {lowStockProducts.map((p: any) => (
               <View key={p.id} style={styles.alertCard}>
                 <View style={styles.alertCardTop}>
-                  <View style={{ flex: 1 }}>
+                  <Image
+                    source={p.images?.[0] ? { uri: p.images[0] } : require("../../assets/intri-icon.png")}
+                    style={styles.alertProdImg}
+                    contentFit="cover"
+                  />
+                  <View style={{ flex: 1, marginLeft: 10 }}>
                     <Text style={styles.alertProductName} numberOfLines={1}>{p.name}</Text>
                     <Text style={styles.alertVendorName}>Seller: {p.vendor?.businessName || "Direct Hub"}</Text>
+                    <Text style={styles.alertTime}>Ref: {p.unitOfSale}</Text>
                   </View>
                   <View style={[styles.stockBadge, p.stockBoxes === 0 ? styles.stockBadgeOut : styles.stockBadgeLow]}>
                     <Boxes size={11} color={p.stockBoxes === 0 ? "#DC2626" : "#D97706"} />
@@ -247,7 +269,7 @@ export default function AdminDashboardScreen() {
                 </View>
 
                 <View style={styles.alertActionRow}>
-                  <Text style={styles.alertTime}>Ref: {p.categorySlug}</Text>
+                  <Text style={styles.alertTime}>Price: ₹{p.pricePerBox || p.pricePerSqft || 0}</Text>
                   {p.vendor?.id ? (
                     <TouchableOpacity
                       style={styles.notifyBtn}
@@ -297,10 +319,13 @@ export default function AdminDashboardScreen() {
           </View>
         )}
 
-        {/* Recent Orders */}
+        {/* Recent Orders (Tappable for Full Customer Profile, Location & Vendor Allocations) */}
         <View style={styles.section}>
           <View style={styles.sectionHeaderRow}>
-            <Text style={styles.sectionTitle}>Recent Orders</Text>
+            <View>
+              <Text style={styles.sectionTitle}>Recent Orders ({recentOrders.length})</Text>
+              <Text style={{ fontSize: 11, color: "#64748B" }}>Tap any order for full customer profile & vendor details</Text>
+            </View>
             <TouchableOpacity onPress={() => router.push("/(admin)/orders" as any)}>
               <Text style={styles.seeAllText}>See All Orders</Text>
             </TouchableOpacity>
@@ -310,23 +335,183 @@ export default function AdminDashboardScreen() {
             <TouchableOpacity
               key={o.id}
               style={styles.orderCard}
-              onPress={() => router.push("/(admin)/orders" as any)}
-              activeOpacity={0.8}
+              onPress={() => handleOpenOrderDetail(o)}
+              activeOpacity={0.85}
             >
               <View style={styles.orderTop}>
-                <Text style={styles.orderId}>{o.id}</Text>
+                <View style={{ flexDirection: "row", alignItems: "center", gap: 6 }}>
+                  <Text style={styles.orderId}>#{o.orderNumber || o.id?.slice(-8).toUpperCase()}</Text>
+                  <View style={styles.datePill}>
+                    <Clock size={10} color="#64748B" />
+                    <Text style={styles.datePillText}>{o.formattedDate || new Date(o.createdAt).toLocaleDateString("en-IN")}</Text>
+                  </View>
+                </View>
                 <Text style={styles.orderStatus}>{o.orderStatus?.toUpperCase()}</Text>
               </View>
+
               <View style={styles.orderBottom}>
-                <Text style={styles.orderCustomer}>{o.customerName || "Customer"}</Text>
-                <Text style={styles.orderAmount}>₹{(o.total || 0).toLocaleString("en-IN")}</Text>
+                <View style={{ flex: 1 }}>
+                  <Text style={styles.orderCustomer}>
+                    {o.customer?.name || o.customerName || "Customer"} {o.customer?.phone ? `• ${o.customer.phone}` : ""}
+                  </Text>
+                  <Text style={styles.orderAddressPreview} numberOfLines={1}>
+                    📍 {o.customer?.address || "Site Delivery"}
+                  </Text>
+                </View>
+                <View style={{ alignItems: "flex-end" }}>
+                  <Text style={styles.orderAmount}>₹{(o.total || 0).toLocaleString("en-IN")}</Text>
+                  <Text style={styles.viewAuditLink}>View Details →</Text>
+                </View>
               </View>
             </TouchableOpacity>
           ))}
         </View>
       </ScrollView>
 
-      {/* VENDOR REVENUE & COMMISSION ANALYTICS MODAL */}
+      {/* 1. RECENT ORDER DRILLDOWN AUDIT MODAL (CUSTOMER PROFILE, LOCATION & VENDORS) */}
+      <Modal visible={orderModalOpen} transparent animationType="slide">
+        <View style={styles.modalOverlay}>
+          <View style={styles.orderModalBox}>
+            <View style={styles.orderModalHeader}>
+              <View>
+                <Text style={styles.orderModalTitle}>
+                  Order #{selectedOrder?.orderNumber || selectedOrder?.id?.slice(-8).toUpperCase()}
+                </Text>
+                <Text style={styles.orderModalSub}>
+                  Placed on: {selectedOrder?.formattedDate || new Date(selectedOrder?.createdAt || Date.now()).toLocaleString("en-IN")}
+                </Text>
+              </View>
+              <TouchableOpacity onPress={() => setOrderModalOpen(false)} style={styles.closeBtn}>
+                <X size={20} color={COLORS.textSecondary} />
+              </TouchableOpacity>
+            </View>
+
+            {selectedOrder && (
+              <ScrollView style={{ maxHeight: 480 }} contentContainerStyle={{ gap: 12, paddingVertical: 10 }}>
+                {/* Status & Amount Highlight */}
+                <View style={styles.orderHighlightCard}>
+                  <View style={{ flex: 1 }}>
+                    <Text style={styles.highlightLabel}>Total Order Amount</Text>
+                    <Text style={styles.highlightAmount}>₹{(selectedOrder.total || 0).toLocaleString("en-IN")}</Text>
+                  </View>
+                  <View style={styles.orderStatusBadge}>
+                    <Text style={styles.orderStatusBadgeText}>{selectedOrder.orderStatus?.toUpperCase()}</Text>
+                  </View>
+                </View>
+
+                {/* Customer Profile & Delivery Location */}
+                <View style={styles.auditSectionBox}>
+                  <View style={styles.auditSectionHeader}>
+                    <User size={15} color="#2563EB" />
+                    <Text style={styles.auditSectionTitle}>Customer Profile & Site Location</Text>
+                  </View>
+
+                  <View style={styles.auditDetailRow}>
+                    <Text style={styles.auditLabel}>Customer Name:</Text>
+                    <Text style={styles.auditVal}>{selectedOrder.customer?.name || "Customer"}</Text>
+                  </View>
+
+                  <View style={styles.auditDetailRow}>
+                    <Text style={styles.auditLabel}>Contact Phone:</Text>
+                    <Text style={[styles.auditVal, { color: "#2563EB", fontWeight: "800" }]}>
+                      +91 {selectedOrder.customer?.phone || "N/A"}
+                    </Text>
+                  </View>
+
+                  {selectedOrder.customer?.email && selectedOrder.customer?.email !== "N/A" ? (
+                    <View style={styles.auditDetailRow}>
+                      <Text style={styles.auditLabel}>Email Address:</Text>
+                      <Text style={styles.auditVal}>{selectedOrder.customer.email}</Text>
+                    </View>
+                  ) : null}
+
+                  <View style={[styles.auditDetailRow, { alignItems: "flex-start" }]}>
+                    <Text style={[styles.auditLabel, { marginTop: 2 }]}>Delivery Address:</Text>
+                    <Text style={[styles.auditVal, { flex: 1, textAlign: "right" }]}>
+                      {selectedOrder.customer?.address || "Site Address"}
+                    </Text>
+                  </View>
+
+                  {selectedOrder.customer?.latitude && selectedOrder.customer?.longitude ? (
+                    <View style={styles.auditDetailRow}>
+                      <Text style={styles.auditLabel}>GPS Coordinates:</Text>
+                      <Text style={styles.auditVal}>
+                        {selectedOrder.customer.latitude.toFixed(5)}, {selectedOrder.customer.longitude.toFixed(5)}
+                      </Text>
+                    </View>
+                  ) : null}
+                </View>
+
+                {/* Allocated Vendors */}
+                <View style={styles.auditSectionBox}>
+                  <View style={styles.auditSectionHeader}>
+                    <Store size={15} color="#16A34A" />
+                    <Text style={styles.auditSectionTitle}>
+                      Vendor Partner Allocation ({selectedOrder.vendors?.length || 1})
+                    </Text>
+                  </View>
+
+                  {selectedOrder.vendors?.map((v: any, idx: number) => (
+                    <View key={idx} style={styles.vendorAllocCard}>
+                      <View style={{ flexDirection: "row", justifyContent: "space-between", alignItems: "center" }}>
+                        <Text style={styles.allocVendorName}>{v.businessName}</Text>
+                        <Text style={styles.allocVendorCat}>{v.category}</Text>
+                      </View>
+                      <Text style={styles.allocVendorPhone}>Phone: +91 {v.contactPhone || "Direct"}</Text>
+                      <View style={styles.allocFinanceRow}>
+                        <Text style={styles.allocFinanceText}>
+                          Vendor Subtotal: <Text style={{ fontWeight: "800", color: "#052A51" }}>₹{(v.subtotal || 0).toLocaleString("en-IN")}</Text>
+                        </Text>
+                        <Text style={styles.allocFinanceText}>
+                          Payout: <Text style={{ fontWeight: "800", color: "#16A34A" }}>₹{(v.vendorPayoutAmount || v.subtotal || 0).toLocaleString("en-IN")}</Text>
+                        </Text>
+                      </View>
+                    </View>
+                  ))}
+                </View>
+
+                {/* Ordered Items with Image */}
+                <View style={styles.auditSectionBox}>
+                  <View style={styles.auditSectionHeader}>
+                    <Package size={15} color="#D97706" />
+                    <Text style={styles.auditSectionTitle}>
+                      Ordered Products ({selectedOrder.items?.length || 0})
+                    </Text>
+                  </View>
+
+                  {selectedOrder.items?.map((it: any) => (
+                    <View key={it.id} style={styles.orderItemRow}>
+                      <Image
+                        source={it.image ? { uri: it.image } : require("../../assets/intri-icon.png")}
+                        style={styles.itemThumb}
+                        contentFit="cover"
+                      />
+                      <View style={{ flex: 1, marginLeft: 10 }}>
+                        <Text style={styles.itemTitleText}>{it.productName}</Text>
+                        <Text style={styles.itemVariantText}>{it.variantDetails}</Text>
+                        <Text style={styles.itemVendorText}>Seller: {it.vendorName}</Text>
+                      </View>
+                      <View style={{ alignItems: "flex-end" }}>
+                        <Text style={styles.itemQtyText}>x {it.boxQuantity}</Text>
+                        <Text style={styles.itemPriceText}>₹{(it.totalPrice || 0).toLocaleString("en-IN")}</Text>
+                      </View>
+                    </View>
+                  ))}
+                </View>
+              </ScrollView>
+            )}
+
+            <TouchableOpacity
+              style={styles.closeOrderModalBtn}
+              onPress={() => setOrderModalOpen(false)}
+            >
+              <Text style={styles.closeOrderModalBtnText}>Close Order Details</Text>
+            </TouchableOpacity>
+          </View>
+        </View>
+      </Modal>
+
+      {/* 2. VENDOR REVENUE & COMMISSION ANALYTICS MODAL */}
       <Modal visible={revenueModalOpen} animationType="slide" presentationStyle="pageSheet">
         <View style={styles.modalContainer}>
           <View style={styles.modalHeader}>
@@ -636,8 +821,13 @@ const styles = StyleSheet.create({
   },
   alertCardTop: {
     flexDirection: "row",
-    justifyContent: "space-between",
-    alignItems: "flex-start",
+    alignItems: "center",
+  },
+  alertProdImg: {
+    width: 44,
+    height: 44,
+    borderRadius: 8,
+    backgroundColor: "#F1F5F9",
   },
   alertProductName: {
     fontSize: 13,
@@ -709,40 +899,272 @@ const styles = StyleSheet.create({
   },
   orderCard: {
     backgroundColor: "#FFFFFF",
-    padding: 12,
+    padding: 14,
     borderRadius: RADIUS.md,
     borderWidth: 1,
     borderColor: COLORS.border,
-    gap: 4,
+    ...SHADOWS.sm,
+    gap: 6,
   },
   orderTop: {
     flexDirection: "row",
     justifyContent: "space-between",
+    alignItems: "center",
   },
   orderId: {
-    fontSize: 11,
-    fontWeight: "800",
-    color: COLORS.textSecondary,
+    fontSize: 12,
+    fontWeight: "900",
+    color: "#052A51",
+  },
+  datePill: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 4,
+    backgroundColor: "#F1F5F9",
+    paddingHorizontal: 6,
+    paddingVertical: 2,
+    borderRadius: 4,
+  },
+  datePillText: {
+    fontSize: 10,
+    color: "#64748B",
+    fontWeight: "600",
   },
   orderStatus: {
     fontSize: 10,
     fontWeight: "800",
     color: "#16A34A",
+    backgroundColor: "#DCFCE7",
+    paddingHorizontal: 8,
+    paddingVertical: 2,
+    borderRadius: 6,
   },
   orderBottom: {
     flexDirection: "row",
     justifyContent: "space-between",
     alignItems: "center",
+    borderTopWidth: 1,
+    borderTopColor: "#F8FAFC",
+    paddingTop: 8,
   },
   orderCustomer: {
     fontSize: 12,
-    fontWeight: "700",
+    fontWeight: "800",
     color: COLORS.text,
   },
+  orderAddressPreview: {
+    fontSize: 11,
+    color: "#64748B",
+    marginTop: 2,
+    maxWidth: "90%",
+  },
   orderAmount: {
-    fontSize: 13,
+    fontSize: 14,
     fontWeight: "900",
-    color: COLORS.text,
+    color: "#052A51",
+  },
+  viewAuditLink: {
+    fontSize: 10,
+    fontWeight: "800",
+    color: "#2563EB",
+    marginTop: 2,
+  },
+  modalOverlay: {
+    flex: 1,
+    backgroundColor: "rgba(0,0,0,0.5)",
+    alignItems: "center",
+    justifyContent: "center",
+    padding: 16,
+  },
+  orderModalBox: {
+    backgroundColor: "#FFFFFF",
+    borderRadius: 16,
+    padding: 18,
+    width: "100%",
+    maxWidth: 440,
+    ...SHADOWS.md,
+  },
+  orderModalHeader: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+    borderBottomWidth: 1,
+    borderBottomColor: "#E2E8F0",
+    paddingBottom: 10,
+  },
+  orderModalTitle: {
+    fontSize: 16,
+    fontWeight: "900",
+    color: "#052A51",
+  },
+  orderModalSub: {
+    fontSize: 11,
+    color: "#64748B",
+    marginTop: 2,
+  },
+  closeBtn: {
+    padding: 6,
+  },
+  orderHighlightCard: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+    backgroundColor: "#EFF6FF",
+    borderRadius: 10,
+    padding: 12,
+    borderWidth: 1,
+    borderColor: "#BFDBFE",
+  },
+  highlightLabel: {
+    fontSize: 10,
+    fontWeight: "700",
+    color: "#1E40AF",
+  },
+  highlightAmount: {
+    fontSize: 20,
+    fontWeight: "900",
+    color: "#1D4ED8",
+    marginTop: 2,
+  },
+  orderStatusBadge: {
+    backgroundColor: "#16A34A",
+    paddingHorizontal: 10,
+    paddingVertical: 4,
+    borderRadius: 6,
+  },
+  orderStatusBadgeText: {
+    color: "#FFFFFF",
+    fontSize: 10,
+    fontWeight: "900",
+  },
+  auditSectionBox: {
+    backgroundColor: "#F8FAFC",
+    borderRadius: 10,
+    padding: 12,
+    borderWidth: 1,
+    borderColor: "#E2E8F0",
+    gap: 6,
+  },
+  auditSectionHeader: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 6,
+    borderBottomWidth: 1,
+    borderBottomColor: "#E2E8F0",
+    paddingBottom: 6,
+    marginBottom: 4,
+  },
+  auditSectionTitle: {
+    fontSize: 12,
+    fontWeight: "800",
+    color: "#052A51",
+  },
+  auditDetailRow: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+    paddingVertical: 2,
+  },
+  auditLabel: {
+    fontSize: 11,
+    color: "#64748B",
+    fontWeight: "600",
+  },
+  auditVal: {
+    fontSize: 11,
+    fontWeight: "700",
+    color: "#052A51",
+  },
+  vendorAllocCard: {
+    backgroundColor: "#FFFFFF",
+    borderRadius: 8,
+    padding: 10,
+    borderWidth: 1,
+    borderColor: "#E2E8F0",
+    gap: 2,
+    marginBottom: 4,
+  },
+  allocVendorName: {
+    fontSize: 13,
+    fontWeight: "800",
+    color: "#052A51",
+  },
+  allocVendorCat: {
+    fontSize: 10,
+    color: "#64748B",
+    fontWeight: "700",
+  },
+  allocVendorPhone: {
+    fontSize: 11,
+    color: "#64748B",
+  },
+  allocFinanceRow: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+    marginTop: 4,
+    paddingTop: 4,
+    borderTopWidth: 1,
+    borderTopColor: "#F1F5F9",
+  },
+  allocFinanceText: {
+    fontSize: 11,
+    color: "#64748B",
+  },
+  orderItemRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    backgroundColor: "#FFFFFF",
+    borderRadius: 8,
+    padding: 8,
+    borderWidth: 1,
+    borderColor: "#E2E8F0",
+    marginBottom: 4,
+  },
+  itemThumb: {
+    width: 44,
+    height: 44,
+    borderRadius: 6,
+    backgroundColor: "#F1F5F9",
+  },
+  itemTitleText: {
+    fontSize: 12,
+    fontWeight: "800",
+    color: "#052A51",
+  },
+  itemVariantText: {
+    fontSize: 10,
+    color: "#64748B",
+    marginTop: 1,
+  },
+  itemVendorText: {
+    fontSize: 10,
+    color: "#2563EB",
+    fontWeight: "700",
+    marginTop: 1,
+  },
+  itemQtyText: {
+    fontSize: 11,
+    color: "#64748B",
+    fontWeight: "700",
+  },
+  itemPriceText: {
+    fontSize: 12,
+    fontWeight: "900",
+    color: "#052A51",
+    marginTop: 2,
+  },
+  closeOrderModalBtn: {
+    backgroundColor: "#052A51",
+    borderRadius: 10,
+    paddingVertical: 12,
+    alignItems: "center",
+    marginTop: 10,
+  },
+  closeOrderModalBtnText: {
+    color: "#FFFFFF",
+    fontSize: 13,
+    fontWeight: "800",
   },
   modalContainer: {
     flex: 1,
@@ -767,9 +1189,6 @@ const styles = StyleSheet.create({
     fontSize: 11,
     color: "#64748B",
     marginTop: 2,
-  },
-  closeBtn: {
-    padding: 6,
   },
   periodScroll: {
     backgroundColor: "#FFFFFF",

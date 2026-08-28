@@ -43,13 +43,30 @@ export async function GET(req: NextRequest) {
             businessName: true,
           },
         },
+        variants: {
+          select: {
+            image: true,
+            swatchImage: true,
+          },
+        },
       },
     });
+
+    const fallbackProductImage = "https://images.unsplash.com/photo-1600585154340-be6161a56a0c?q=80&w=600&auto=format&fit=crop";
 
     return mobileApiResponse({
       success: true,
       products: products.map((p) => {
         const estPricePerBox = Math.round((p.pricePerSqft || 45) * (p.coverageRate || 19.36));
+        const validImages =
+          p.images && p.images.length > 0 && p.images[0] && p.images[0].trim() !== ""
+            ? p.images
+            : p.variants?.[0]?.image && p.variants[0].image.trim() !== ""
+            ? [p.variants[0].image]
+            : p.variants?.[0]?.swatchImage && p.variants[0].swatchImage.trim() !== ""
+            ? [p.variants[0].swatchImage]
+            : [fallbackProductImage];
+
         return {
           id: p.id,
           name: p.name,
@@ -62,7 +79,7 @@ export async function GET(req: NextRequest) {
           stockBoxes: p.inStock ? 250 : 0,
           status: p.status,
           featured: p.isTrending || p.isBestseller,
-          images: p.images,
+          images: validImages,
           vendorName: p.vendor?.businessName || "Direct / Admin",
           vendorId: p.vendorId,
           createdAt: p.createdAt,
