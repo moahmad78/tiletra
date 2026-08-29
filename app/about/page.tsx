@@ -1,33 +1,98 @@
-"use client";
-
+import { Metadata } from "next";
 import Link from "next/link";
 import Image from "next/image";
-import { ShieldCheck, Truck, Sparkles, ArrowRight, HeartHandshake, Mail, Award } from "lucide-react";
+import { ShieldCheck, Truck, Sparkles, ArrowRight, HeartHandshake, Mail, Award, MapPin } from "lucide-react";
 import Header from "@/components/Header";
 import Footer from "@/components/Footer";
 import { LEADERSHIP_TEAM } from "@/lib/data/contacts";
+import { BASE_SITE_URL, getCanonicalUrl, generateBreadcrumbSchema, safeJsonLd } from "@/lib/seo";
+
+export const metadata: Metadata = {
+  title: "About IntriHub | Building & Interior Materials Marketplace Bengaluru",
+  description:
+    "Learn about IntriHub — India's instant building materials quick-commerce network. Founded in 2026 by Sahil Sheikh in Begur, Bengaluru to deliver factory-direct supplies in 60 minutes.",
+  alternates: {
+    canonical: getCanonicalUrl("/about"),
+  },
+  openGraph: {
+    title: "About IntriHub | Everything for Every Space",
+    description:
+      "India's instant building & interior materials quick commerce marketplace. Factory-direct sourcing with 60-minute site delivery in Bengaluru.",
+    url: getCanonicalUrl("/about"),
+    type: "website",
+    siteName: "IntriHub",
+  },
+};
 
 export default function AboutPage() {
-  return (
-    <main className="min-h-screen flex flex-col bg-[#F3F4F5]">
-      <Header />
+  const aboutPageSchema = {
+    "@context": "https://schema.org",
+    "@type": "AboutPage",
+    "@id": `${BASE_SITE_URL}/about#webpage`,
+    name: "About IntriHub",
+    url: `${BASE_SITE_URL}/about`,
+    description:
+      "IntriHub is India's premier quick-commerce marketplace for interior and construction materials, delivering factory-direct supplies in 60 minutes across Bengaluru.",
+    mainEntity: {
+      "@type": "Organization",
+      "@id": `${BASE_SITE_URL}/#organization`,
+      name: "IntriHub",
+      alternateName: "IntriHub QuickCommerce",
+      url: BASE_SITE_URL,
+      foundingDate: "2026",
+      founder: {
+        "@type": "Person",
+        name: "Sahil Sheikh",
+        jobTitle: "Founder & Lead Architect",
+        sameAs: "https://www.instagram.com/sahil_sheikh78/",
+      },
+      address: {
+        "@type": "PostalAddress",
+        streetAddress: "41, 10th A Cross Rd, Janapriya Layout, Begur",
+        addressLocality: "Begur, Bengaluru",
+        addressRegion: "Karnataka",
+        postalCode: "560114",
+        addressCountry: "IN",
+      },
+    },
+  };
 
-      {/* Hero */}
-      <div
-        className="bg-[#052a51] text-white pt-[110px] md:pt-[168px] pb-16 md:pb-24"
-      >
-        <div className="w-full max-w-[1200px] mx-auto px-[20px] md:px-[24px] lg:px-[32px] text-center">
-          <span className="px-3.5 py-1.5 bg-[#F26522]/20 border border-[#F26522]/40 rounded-full text-[#F26522] text-xs font-bold uppercase tracking-wider inline-block mb-4">
-            Our Story & Mission
-          </span>
-          <h1 className="text-[36px] sm:text-[46px] md:text-[56px] font-black leading-tight max-w-2xl mx-auto">
-            Quality Supplies for <span className="text-[#F26522]">Every Space</span>
-          </h1>
-          <p className="text-white/80 text-base md:text-lg mt-4 max-w-xl mx-auto leading-relaxed">
-            Intrihub is on a mission to simplify interior & construction supply for Indian homeowners, architects, and builders. From electrical and plumbing to tiles, hardware, plywood, and granite, we deliver factory-fresh materials directly to your site.
-          </p>
+  const breadcrumbsSchema = generateBreadcrumbSchema([
+    { name: "Home", url: "/" },
+    { name: "About Us", url: "/about" },
+  ]);
+
+  return (
+    <>
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{
+          __html: safeJsonLd(aboutPageSchema),
+        }}
+      />
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{
+          __html: safeJsonLd(breadcrumbsSchema),
+        }}
+      />
+      <main className="min-h-screen flex flex-col bg-[#F3F4F5]">
+        <Header />
+
+        {/* Hero */}
+        <div className="bg-[#052a51] text-white pt-[110px] md:pt-[168px] pb-16 md:pb-24">
+          <div className="w-full max-w-[1200px] mx-auto px-[20px] md:px-[24px] lg:px-[32px] text-center">
+            <span className="px-3.5 py-1.5 bg-[#F26522]/20 border border-[#F26522]/40 rounded-full text-[#F26522] text-xs font-bold uppercase tracking-wider inline-block mb-4">
+              Our Story & Mission • Founded 2026
+            </span>
+            <h1 className="text-[36px] sm:text-[46px] md:text-[56px] font-black leading-tight max-w-2xl mx-auto">
+              Quality Supplies for <span className="text-[#F26522]">Every Space</span>
+            </h1>
+            <p className="text-white/80 text-base md:text-lg mt-4 max-w-xl mx-auto leading-relaxed">
+              IntriHub is on a mission to revolutionize interior & construction material procurement for homeowners, architects, and builders. From electricals and plumbing to vitrified tiles, hardware, plywood, and sanitaryware, we deliver factory-fresh supplies in 60 minutes across Bengaluru & Pan-India.
+            </p>
+          </div>
         </div>
-      </div>
 
       {/* Story Content */}
       <div className="w-full max-w-[1200px] mx-auto px-[20px] md:px-[24px] lg:px-[32px] py-14 flex-1">

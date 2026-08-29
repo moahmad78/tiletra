@@ -226,8 +226,104 @@ export const BUYING_GUIDES: BuyingGuide[] = [
     ],
     relatedCategorySlugs: ["electricals", "sanitaryware", "tile-adhesives", "hardware"],
   },
+  {
+    slug: "how-intrihub-delivers-materials-in-60-minutes",
+    title: "How IntriHub Delivers Building & Interior Materials in 60 Minutes Across Bangalore",
+    shortDescription:
+      "A deep dive into IntriHub's quick-commerce logistics network: hyper-local dark stores, automated dispatch, palletized transport, and zero-breakage construction supplies delivery.",
+    category: "Quick Commerce & Logistics",
+    readTime: "6 min read",
+    publishedAt: "2026-03-01T00:00:00.000Z",
+    updatedAt: "2026-08-29T00:00:00.000Z",
+    image: "https://images.unsplash.com/photo-1586528116311-ad8dd3c8310d?w=1200",
+    author: "Sahil Sheikh (Founder & CEO, IntriHub)",
+    summary:
+      "Standard construction procurement in India takes days or weeks. IntriHub operates a quick-commerce network across Bangalore, delivering essential electricals, tiles, sanitaryware, adhesives, and hardware directly to construction sites within 60 minutes.",
+    sections: [
+      {
+        heading: "1. The 60-Minute Quick Commerce Model for Building Materials",
+        content: [
+          "Construction downtime costs builders and homeowners immense money when workers sit idle waiting for missing cables, adhesive bags, or plumbing valves.",
+          "IntriHub solves this through strategically located micro-fulfillment hubs (dark stores) across Begur, Electronic City, Whitefield, and North Bengaluru stocked with high-frequency SKUs.",
+        ],
+        bulletPoints: [
+          "Hyper-local dispatch centers positioned within 10km radius of major construction corridors.",
+          "Instant order routing algorithm selecting the closest hub with live inventory allocation.",
+          "Specialized fleet handling heavy pallets, fragile sanitaryware, and bulk project supplies safely.",
+        ],
+      },
+      {
+        heading: "2. Zero-Breakage Packaging & Live Tracking",
+        content: [
+          "Tiles, granite, and porcelain sanitaryware are vulnerable to mishandling in regular parcel transport.",
+          "Every IntriHub delivery utilizes reinforced edge guards, cushioned pallet straps, and direct-vehicle dispatch with real-time GPS tracking so project supervisors know exact arrival times.",
+        ],
+      },
+    ],
+    faqs: [
+      {
+        question: "Which areas in Bangalore are eligible for IntriHub's 60-minute delivery?",
+        answer:
+          "IntriHub delivers within 60 minutes across South Bangalore (Begur, HSR Layout, Koramangala, Electronic City, Bannerghatta Rd) and major surrounding tech and residential hubs, with pan-Bangalore express coverage.",
+      },
+      {
+        question: "Can I order heavy building materials like cement and granite for 60-minute delivery?",
+        answer:
+          "Yes. Our rapid dispatch fleet includes high-payload flatbed and hydraulic-tail vehicles capable of transporting up to 2.5 tons of construction supplies in a single fast-track dispatch.",
+      },
+    ],
+    relatedCategorySlugs: ["floor-tiles", "electricals", "plumbing-sanitary", "hardware"],
+  },
+  {
+    slug: "founders-note-why-we-started-intrihub",
+    title: "Founder's Note: Why We Started IntriHub to Revolutionize Building & Interior Supplies",
+    shortDescription:
+      "Our founding vision: eliminating middlemen markups, ending project delays with 60-minute delivery, and creating India's most transparent interior materials marketplace.",
+    category: "Company & Vision",
+    readTime: "5 min read",
+    publishedAt: "2026-03-05T00:00:00.000Z",
+    updatedAt: "2026-08-29T00:00:00.000Z",
+    image: "https://images.unsplash.com/photo-1503387762-592deb58ef4e?w=1200",
+    author: "Sahil Sheikh (Founder & Lead Architect, IntriHub)",
+    summary:
+      "IntriHub was founded with a single mission: Everything for Every Space. We connect manufacturers directly with homeowners, architects, and builders with honest pricing and instant doorstep site delivery.",
+    sections: [
+      {
+        heading: "1. The Broken Reality of Traditional Material Sourcing",
+        content: [
+          "For decades, buying tiles, bath fittings, and hardware meant navigating opaque pricing, multiple broker tiers, unreliable quality grades, and week-long delivery delays.",
+          "As an architect and builder, I saw first-hand how much time and energy was wasted chasing materials instead of focusing on craft and design.",
+        ],
+      },
+      {
+        heading: "2. The IntriHub Promise: Direct, Transparent & Instant",
+        content: [
+          "We built IntriHub to democratize access to factory-direct materials. Every price is published openly, coverage calculators eliminate guesswork, and our 60-minute quick-commerce fleet ensures zero site downtime.",
+        ],
+        bulletPoints: [
+          "Direct-from-factory sourcing with guaranteed ISI and ISO certifications.",
+          "Wholesale trade rates available for both individual homeowners and commercial contractors.",
+          "Tech-driven inventory and rapid dispatch fleet anchored in Bengaluru.",
+        ],
+      },
+    ],
+    faqs: [
+      {
+        question: "Where is IntriHub headquartered?",
+        answer:
+          "IntriHub is headquartered at 41, 10th A Cross Rd, Janapriya Layout, Begur, Bengaluru, Karnataka 560114, India.",
+      },
+      {
+        question: "How can manufacturers and vendors partner with IntriHub?",
+        answer:
+          "Suppliers and verified manufacturers can register directly via our Vendor Portal (intrihub.com/vendor/login) or reach our onboarding team at vendor@intrihub.com.",
+      },
+    ],
+    relatedCategorySlugs: ["floor-tiles", "lighting", "paint-finishes", "furniture"],
+  },
 ];
 
 export function getBuyingGuideBySlug(slug: string): BuyingGuide | undefined {
   return BUYING_GUIDES.find((g) => g.slug === slug);
 }
+

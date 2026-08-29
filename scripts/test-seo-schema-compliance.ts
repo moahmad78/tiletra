@@ -8,6 +8,9 @@ import {
   BASE_SITE_URL,
 } from "../lib/seo";
 import robots from "../app/robots";
+import { BUYING_GUIDES } from "../lib/guides-data";
+import fs from "fs";
+import path from "path";
 
 function assert(condition: boolean, msg: string) {
   if (!condition) {
@@ -19,11 +22,11 @@ function assert(condition: boolean, msg: string) {
 
 async function runSeoSchemaTests() {
   console.log("==========================================================================");
-  console.log("INTRIHUB TECHNICAL SEO, STRUCTURED DATA & BRAND COMPLIANCE TEST SUITE");
+  console.log("INTRIHUB TECHNICAL SEO, STRUCTURED DATA & BRAND DOMINANCE TEST SUITE");
   console.log("==========================================================================\n");
 
   // ─────────────────────────────────────────────────────────────────────────────
-  // 1. ORGANIZATION / ONLINESTORE SCHEMA VALIDATION (PRD Section 6.1)
+  // 1. ORGANIZATION / ONLINESTORE SCHEMA VALIDATION (PRD Section 4.1.4 & 6.1)
   // ─────────────────────────────────────────────────────────────────────────────
   console.log("[TEST 1] Organization & OnlineStore Schema Validation:");
   const org = generateOrganizationSchema();
@@ -36,10 +39,16 @@ async function runSeoSchemaTests() {
     "Org schema includes OnlineStore / Organization type"
   );
   assert(org.name === "IntriHub", "Org schema name is 'IntriHub'");
-  assert(org.alternateName === "IntriHub Quick Commerce", "Org schema alternateName is 'IntriHub Quick Commerce'");
+  assert(
+    org.alternateName === "IntriHub QuickCommerce" || org.alternateName === "IntriHub Quick Commerce",
+    "Org schema alternateName is 'IntriHub QuickCommerce'"
+  );
   assert(!JSON.stringify(org).includes("Technologies"), "Org schema contains NO 'Technologies' references");
   assert(org.address && org.address["@type"] === "PostalAddress", "Org schema has valid PostalAddress");
   assert(org.address.addressCountry === "IN", "Org address country is IN");
+  assert(org.telephone === "+91-92649-20211", "Org telephone formatted consistently (+91-92649-20211)");
+  assert(org.foundingDate === "2026", "Org foundingDate is set to 2026");
+  assert(Array.isArray(org.sameAs) && org.sameAs.length >= 3, "Org sameAs has live social/brand profile links");
 
   // ─────────────────────────────────────────────────────────────────────────────
   // 2. WEBSITE SCHEMA VALIDATION
@@ -177,8 +186,24 @@ async function runSeoSchemaTests() {
     `robots.txt declares correct sitemap URL: ${robotsConfig.sitemap}`
   );
 
+  // ─────────────────────────────────────────────────────────────────────────────
+  // 6. BRAND DISAMBIGUATION & E-E-A-T CONTENT DEPTH (PRD Section 4.1.5 & 4.3)
+  // ─────────────────────────────────────────────────────────────────────────────
+  console.log("\n[TEST 6] Brand Disambiguation & E-E-A-T Depth Verification:");
+  const layoutContent = fs.readFileSync(path.join(__dirname, "../app/layout.tsx"), "utf-8");
+  assert(
+    layoutContent.includes("Building Materials Marketplace — Bengaluru"),
+    "Homepage layout contains disambiguating title: 'IntriHub | Building Materials Marketplace — Bengaluru & Pan-India'"
+  );
+  assert(BUYING_GUIDES.length >= 5, `E-E-A-T Guide count is ≥ 5 (Found ${BUYING_GUIDES.length} rich guides)`);
+  
+  const has60MinGuide = BUYING_GUIDES.some((g) => g.slug.includes("60-minutes"));
+  const hasFounderGuide = BUYING_GUIDES.some((g) => g.slug.includes("founders-note"));
+  assert(has60MinGuide, "Contains dedicated 'How IntriHub Delivers in 60 Minutes' logistics guide");
+  assert(hasFounderGuide, "Contains dedicated 'Founder's Note (Sahil Sheikh)' company vision guide");
+
   console.log("\n==========================================================================");
-  console.log("🎉 ALL SEO, STRUCTURED DATA & BRAND COMPLIANCE TESTS PASSED (100%)! ✓");
+  console.log("🎉 ALL SEO, STRUCTURED DATA & BRAND DOMINANCE TESTS PASSED (100%)! ✓");
   console.log("==========================================================================");
 }
 

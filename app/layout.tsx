@@ -25,22 +25,21 @@ const jakarta = Plus_Jakarta_Sans({
 export const metadata: Metadata = {
   metadataBase: new URL(BASE_SITE_URL),
   title: {
-    default: "IntriHub | Everything for Every Space",
+    default: "IntriHub | Building Materials Marketplace — Bengaluru & Pan-India",
     template: "%s | IntriHub",
   },
   description:
-    "IntriHub — India's instant building materials quick commerce network. Direct-from-factory delivery for electrical, lighting, tiles, plumbing, hardware, plywood, and interior products.",
+    "IntriHub — India's instant building & interior materials quick-commerce marketplace. Direct factory delivery within 60 minutes for tiles, electrical, plumbing, sanitaryware, and hardware across Bengaluru & Pan-India.",
   keywords: [
-    "interior materials quick commerce",
+    "IntriHub",
+    "IntriHub QuickCommerce",
+    "building materials marketplace",
     "construction supplies bangalore",
     "instant building materials delivery",
     "tiles and sanitaryware online",
-    "electrical supplies wholesale",
+    "electrical supplies wholesale bangalore",
     "lighting fixtures india",
-    "building materials marketplace",
     "plywood and hardware online",
-    "IntriHub",
-    "IntriHub Quick Commerce",
   ],
   alternates: {
     canonical: BASE_SITE_URL,
@@ -69,9 +68,9 @@ export const metadata: Metadata = {
   },
   manifest: "/site.webmanifest",
   openGraph: {
-    title: "IntriHub | Everything for Every Space",
+    title: "IntriHub | Building Materials Marketplace — Bengaluru & Pan-India",
     description:
-      "IntriHub — India's instant building materials quick commerce network. Factory-direct delivery for electrical, lighting, tiles, plumbing, and hardware.",
+      "IntriHub — India's instant building materials quick-commerce network. Factory-direct delivery within 60 minutes for electrical, lighting, tiles, plumbing, and hardware.",
     type: "website",
     url: BASE_SITE_URL,
     siteName: "IntriHub",
@@ -81,15 +80,15 @@ export const metadata: Metadata = {
         url: "/logo/intri-web-logo.png",
         width: 1200,
         height: 630,
-        alt: "IntriHub - Everything for Every Space",
+        alt: "IntriHub - Building Materials Marketplace",
       },
     ],
   },
   twitter: {
     card: "summary_large_image",
-    title: "IntriHub | Everything for Every Space",
+    title: "IntriHub | Building Materials Marketplace — Bengaluru & Pan-India",
     description:
-      "IntriHub — India's instant building materials quick commerce network.",
+      "IntriHub — India's instant building materials quick-commerce network. Direct factory site delivery within 60 minutes.",
     images: ["/logo/intri-web-logo.png"],
   },
 };

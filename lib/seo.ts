@@ -42,13 +42,14 @@ export function generateOrganizationSchema() {
     "@type": ["Organization", "OnlineStore"],
     "@id": `${BASE_SITE_URL}/#organization`,
     name: "IntriHub",
-    alternateName: "IntriHub Quick Commerce",
+    alternateName: "IntriHub QuickCommerce",
     url: BASE_SITE_URL,
     logo: `${BASE_SITE_URL}/logo/intri-web-logo.png`,
     description:
       "India's instant building materials quick commerce network. Direct-from-factory delivery for construction & interior products.",
     email: "support@intrihub.com",
-    telephone: "+919264920211",
+    telephone: "+91-92649-20211",
+    foundingDate: "2026",
     address: {
       "@type": "PostalAddress",
       streetAddress: "41, 10th A Cross Rd, Janapriya Layout, Begur",
@@ -65,6 +66,9 @@ export function generateOrganizationSchema() {
     },
     sameAs: [
       "https://www.instagram.com/sahil_sheikh78/",
+      "https://www.instagram.com/intrihub/",
+      "https://www.linkedin.com/company/intrihub",
+      "https://www.facebook.com/intrihub",
     ],
   };
 }
