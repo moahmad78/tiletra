@@ -11,6 +11,7 @@ import { getProductById, updateProduct, deleteProduct } from "@/lib/actions/prod
 import { getCategories } from "@/lib/actions/categories";
 import type { Product, Material, ProductVariant, UnitOfSale, ProductAttribute } from "@/lib/data/products";
 import { UNIT_OF_SALE_OPTIONS, getDefaultUnitOfSale } from "@/lib/units";
+import { CATALOG_MATERIALS } from "@/lib/catalog";
 import type { Category } from "@/lib/data/categories";
 import { toast } from "sonner";
 
@@ -303,17 +304,11 @@ export default function EditProductPage({
               onChange={(e) => setMaterial(e.target.value as Material)}
               className="w-full px-3.5 py-2.5 bg-gray-50 border border-gray-200 rounded-xl text-sm font-bold text-[#052a51] focus:outline-none focus:border-[#F26522] cursor-pointer"
             >
-              <option value="Vitrified">Vitrified</option>
-              <option value="Ceramic">Ceramic</option>
-              <option value="Porcelain">Porcelain</option>
-              <option value="Natural Stone">Natural Stone</option>
-              <option value="Wood">Wood / Plywood</option>
-              <option value="Metal">Metal / SS</option>
-              <option value="Brass">Brass</option>
-              <option value="PVC">PVC / UPVC</option>
-              <option value="CPVC">CPVC</option>
-              <option value="Vinyl">Vinyl</option>
-              <option value="Composite">Composite / Other</option>
+              {CATALOG_MATERIALS.map((mat) => (
+                <option key={mat} value={mat}>
+                  {mat}
+                </option>
+              ))}
             </select>
           </div>
         </div>

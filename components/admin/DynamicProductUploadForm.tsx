@@ -22,13 +22,23 @@ import {
   Sliders,
   FileText,
   ShieldCheck,
+  Palette,
+  Sparkles,
 } from "lucide-react";
 import ImageUploadManager from "@/components/admin/ImageUploadManager";
 import VariantEditor from "@/components/admin/VariantEditor";
+import ColorPalettePickerModal from "@/components/admin/ColorPalettePickerModal";
 import { createProduct } from "@/lib/actions/products";
 import { getVendorProfile } from "@/lib/actions/vendor";
 import type { ProductVariant } from "@/lib/data/products";
 import { UNIT_OF_SALE_OPTIONS, getDefaultUnitOfSale } from "@/lib/units";
+import {
+  CATALOG_COLOURS,
+  CATALOG_FINISHES,
+  CATALOG_MATERIALS,
+  CATALOG_DIMENSIONS,
+  resolveColorHex,
+} from "@/lib/catalog";
 import { toast } from "sonner";
 
 // ── Category Definitions & Dynamic Config ──────────────────────────────
@@ -223,6 +233,12 @@ export default function DynamicProductUploadForm({
   const [stockQty, setStockQty] = useState<string>("100");
   const [unitOfSale, setUnitOfSale] = useState<string>(currentCategoryConfig.defaultUnit);
   const [material, setMaterial] = useState<string>(currentCategoryConfig.defaultMaterial);
+  const [isCustomMaterial, setIsCustomMaterial] = useState(false);
+  const [primaryColor, setPrimaryColor] = useState("White");
+  const [primaryColorHex, setPrimaryColorHex] = useState("#FFFFFF");
+  const [finish, setFinish] = useState("Glossy");
+  const [isCustomFinish, setIsCustomFinish] = useState(false);
+  const [colorPickerOpen, setColorPickerOpen] = useState(false);
   const [isBestseller, setIsBestseller] = useState(false);
   const [isNewArrival, setIsNewArrival] = useState(true);
   const [isTrending, setIsTrending] = useState(true);
@@ -393,8 +409,9 @@ export default function DynamicProductUploadForm({
     const formattedVariants = hasMultipleVariants && customVariants.length > 0
       ? customVariants.map((v) => ({
           size: v.attributeValue || v.size || variantSize,
-          finish: v.finish || selectedTags[0] || "Standard",
-          color: v.color || "Standard",
+          finish: v.finish || finish || "Glossy",
+          color: v.color || primaryColor || "White",
+          colorHex: v.colorHex || resolveColorHex(v.color || primaryColor || "White"),
           image: v.image || null,
           unit: unitOfSale || currentCategoryConfig.defaultUnit,
           attributeLabel: v.attributeLabel || "Option",
@@ -409,9 +426,10 @@ export default function DynamicProductUploadForm({
       : [
           {
             size: variantSize,
-            finish: selectedTags[0] || "Standard",
-            color: "Standard",
-            image: null,
+            finish: finish || "Glossy",
+            color: primaryColor || "White",
+            colorHex: primaryColorHex || resolveColorHex(primaryColor || "White"),
+            image: images[0] || null,
             unit: unitOfSale || currentCategoryConfig.defaultUnit,
             attributeLabel: "Size",
             attributeValue: variantSize,
@@ -701,16 +719,132 @@ export default function DynamicProductUploadForm({
 
           {/* Material / Construction Core */}
           <div>
+            <div className="flex items-center justify-between mb-1.5">
+              <label className="text-xs font-bold text-gray-700 uppercase tracking-wider">
+                Material / Base Composition
+              </label>
+              <button
+                type="button"
+                onClick={() => setIsCustomMaterial(!isCustomMaterial)}
+                className="text-[11px] font-bold text-[#F26522] hover:underline cursor-pointer"
+              >
+                {isCustomMaterial ? "Select from list" : "+ Enter custom material"}
+              </button>
+            </div>
+
+            {isCustomMaterial ? (
+              <input
+                type="text"
+                placeholder="Enter custom material (e.g. Glazed Vitrified GVT, SS 304)..."
+                value={material}
+                onChange={(e) => setMaterial(e.target.value)}
+                className="w-full px-4 py-3 bg-gray-50/70 border border-gray-200 rounded-2xl text-xs font-semibold text-gray-800 focus:bg-white focus:outline-none focus:border-[#F26522]"
+              />
+            ) : (
+              <select
+                value={material}
+                onChange={(e) => setMaterial(e.target.value)}
+                className="w-full px-4 py-3 bg-gray-50/70 border border-gray-200 rounded-2xl text-xs font-semibold text-gray-800 focus:bg-white focus:outline-none focus:border-[#F26522] cursor-pointer"
+              >
+                {CATALOG_MATERIALS.map((m) => (
+                  <option key={m} value={m}>
+                    {m}
+                  </option>
+                ))}
+              </select>
+            )}
+          </div>
+        </div>
+      </div>
+
+      {/* ── Section: Color Palette & Surface Finish ── */}
+      <div className="bg-white p-6 sm:p-8 rounded-3xl border border-gray-200/80 shadow-2xs space-y-5">
+        <div className="flex items-center justify-between pb-3 border-b border-gray-100">
+          <div className="flex items-center gap-2">
+            <Palette size={18} className="text-[#F26522]" />
+            <h2 className="text-base font-black text-[#052a51]">
+              Color Palette & Surface Finish
+            </h2>
+          </div>
+          <span className="text-xs text-gray-400 font-medium">
+            Solid shades, dual gradients & textures
+          </span>
+        </div>
+
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
+          {/* Color Palette Trigger */}
+          <div>
             <label className="block text-xs font-bold text-gray-700 uppercase tracking-wider mb-1.5">
-              Material / Base Composition
+              Product Primary Color / Shade *
             </label>
-            <input
-              type="text"
-              placeholder="e.g. Polycarbonate / Electrolytic Copper / Vitrified Clay"
-              value={material}
-              onChange={(e) => setMaterial(e.target.value)}
-              className="w-full px-4 py-3 bg-gray-50/70 border border-gray-200 rounded-2xl text-xs font-semibold text-gray-800 focus:bg-white focus:outline-none focus:border-[#F26522]"
-            />
+            <div className="flex items-center gap-3 p-3 bg-gray-50/80 border border-gray-200 rounded-2xl">
+              <button
+                type="button"
+                onClick={() => setColorPickerOpen(true)}
+                className="w-12 h-12 rounded-2xl border-2 border-white shadow-md flex items-center justify-center shrink-0 cursor-pointer hover:scale-105 transition-transform"
+                style={{ backgroundColor: primaryColorHex }}
+                title="Click to open Color Palette Picker"
+              >
+                <Palette size={16} className={resolveColorHex(primaryColor) === "#FFFFFF" || primaryColorHex === "#FFFFFF" ? "text-gray-700" : "text-white"} />
+              </button>
+
+              <div className="flex-1 min-w-0">
+                <div className="flex items-center gap-2">
+                  <span className="text-sm font-black text-[#052a51] truncate">{primaryColor}</span>
+                  <span className="text-[10px] font-mono font-bold text-gray-500 bg-white px-2 py-0.5 rounded-md border border-gray-200">
+                    {primaryColorHex}
+                  </span>
+                </div>
+                <p className="text-[11px] text-gray-400 mt-0.5">Click to choose solid shade, dual gradient or color matrix</p>
+              </div>
+
+              <button
+                type="button"
+                onClick={() => setColorPickerOpen(true)}
+                className="px-3 py-2 bg-white hover:bg-orange-50 text-[#F26522] border border-orange-200 rounded-xl text-xs font-bold transition-colors cursor-pointer shrink-0 shadow-2xs"
+              >
+                Open Palette
+              </button>
+            </div>
+          </div>
+
+          {/* Surface Finish */}
+          <div>
+            <div className="flex items-center justify-between mb-1.5">
+              <label className="text-xs font-bold text-gray-700 uppercase tracking-wider">
+                Surface Finish *
+              </label>
+              <button
+                type="button"
+                onClick={() => setIsCustomFinish(!isCustomFinish)}
+                className="text-[11px] font-bold text-[#F26522] hover:underline cursor-pointer"
+              >
+                {isCustomFinish ? "Select from list" : "+ Enter custom finish"}
+              </button>
+            </div>
+
+            {isCustomFinish ? (
+              <input
+                type="text"
+                placeholder="Enter custom finish (e.g. Flamed, Bush Hammered)..."
+                value={finish}
+                onChange={(e) => setFinish(e.target.value)}
+                className="w-full px-4 py-3 bg-gray-50/70 border border-gray-200 rounded-2xl text-xs font-semibold text-gray-800 focus:bg-white focus:outline-none focus:border-[#F26522]"
+              />
+            ) : (
+              <select
+                value={finish}
+                onChange={(e) => setFinish(e.target.value)}
+                className="w-full px-4 py-3 bg-gray-50/70 border border-gray-200 rounded-2xl text-xs font-semibold text-gray-800 focus:bg-white focus:outline-none focus:border-[#F26522] cursor-pointer"
+              >
+                {CATALOG_FINISHES.map((f) => (
+                  <option key={f} value={f}>
+                    {f}
+                  </option>
+                ))}
+              </select>
+            )}
+            <p className="text-[10px] text-gray-400 mt-1">e.g. Glossy, Matt / Matte, High Gloss, Satin, Polished, Rustic</p>
           </div>
         </div>
       </div>
@@ -1249,6 +1383,19 @@ export default function DynamicProductUploadForm({
           </button>
         </div>
       </div>
+
+      {/* Color Palette Picker Modal */}
+      <ColorPalettePickerModal
+        isOpen={colorPickerOpen}
+        onClose={() => setColorPickerOpen(false)}
+        currentColorName={primaryColor}
+        currentColorHex={primaryColorHex}
+        onSelectColor={(name, hex) => {
+          setPrimaryColor(name);
+          setPrimaryColorHex(hex);
+        }}
+        title="Select Product Primary Color"
+      />
     </form>
   );
 }

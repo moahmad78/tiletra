@@ -14,6 +14,8 @@ import type { Category } from "@/lib/data/categories";
 import type { Product } from "@/lib/data/products";
 import { UNIT_OF_SALE_OPTIONS } from "@/lib/units";
 import ImageUploadManager from "@/components/admin/ImageUploadManager";
+import VariantEditor from "@/components/admin/VariantEditor";
+import { resolveColorHex } from "@/lib/catalog";
 import {
   Plus,
   Search,
@@ -569,56 +571,13 @@ export default function VendorProductsPage() {
                 <ImageUploadManager images={editImages} onChange={setEditImages} />
               </div>
 
-              {/* Pricing & Primary Variant */}
-              <div className="bg-gray-50 rounded-2xl p-4 border border-gray-200/80 space-y-3">
-                <h3 className="text-xs font-bold text-gray-900 uppercase">Primary Variant Pricing</h3>
-                <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
-                  <div>
-                    <label className="block text-[10px] font-bold text-gray-500 uppercase mb-1">
-                      Price per {editUnitOfSale} (₹)
-                    </label>
-                    <input
-                      type="number"
-                      value={editVariants[0]?.pricePerBox || 1000}
-                      onChange={(e) => {
-                        const copy = [...editVariants];
-                        copy[0] = { ...copy[0], pricePerBox: Number(e.target.value) };
-                        setEditVariants(copy);
-                      }}
-                      className="w-full bg-white border border-gray-200 rounded-xl px-3 py-2 text-xs font-bold text-gray-800"
-                    />
-                  </div>
-                  <div>
-                    <label className="block text-[10px] font-bold text-gray-500 uppercase mb-1">
-                      Price per Sqft (₹)
-                    </label>
-                    <input
-                      type="number"
-                      value={editVariants[0]?.pricePerSqft || 50}
-                      onChange={(e) => {
-                        const copy = [...editVariants];
-                        copy[0] = { ...copy[0], pricePerSqft: Number(e.target.value) };
-                        setEditVariants(copy);
-                      }}
-                      className="w-full bg-white border border-gray-200 rounded-xl px-3 py-2 text-xs font-bold text-gray-800"
-                    />
-                  </div>
-                  <div>
-                    <label className="block text-[10px] font-bold text-gray-500 uppercase mb-1">
-                      Stock Count ({editUnitOfSale}s)
-                    </label>
-                    <input
-                      type="number"
-                      value={editVariants[0]?.stockBoxes ?? 50}
-                      onChange={(e) => {
-                        const copy = [...editVariants];
-                        copy[0] = { ...copy[0], stockBoxes: Number(e.target.value) };
-                        setEditVariants(copy);
-                      }}
-                      className="w-full bg-white border border-gray-200 rounded-xl px-3 py-2 text-xs font-bold text-gray-800"
-                    />
-                  </div>
-                </div>
+              {/* Multi-Variants & Rich Color Palette */}
+              <div className="bg-gray-50 rounded-2xl p-4 border border-gray-200/80">
+                <VariantEditor
+                  variants={editVariants}
+                  onChange={setEditVariants}
+                  unitOfSale={editUnitOfSale}
+                />
               </div>
 
               <div className="flex items-center justify-end gap-3 pt-3 border-t border-gray-100">

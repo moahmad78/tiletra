@@ -14,6 +14,7 @@ import {
   createVendorManually,
   deleteVendor,
 } from "@/lib/actions/admin-vendor";
+import { toggleVendorAutoPublish } from "@/lib/actions/vendor";
 import {
   Store,
   Search,
@@ -196,6 +197,27 @@ export default function AdminVendorsPage() {
       loadVendors();
     } else {
       toast.error(res.error || "Failed to update commission");
+    }
+  };
+
+  const handleToggleAutoPublish = async (vendorId: string, currentStatus: boolean) => {
+    const nextState = !currentStatus;
+    setVendors((prev) =>
+      prev.map((v) => (v.id === vendorId ? { ...v, autoPublishEnabled: nextState } : v))
+    );
+    if (selectedVendor && selectedVendor.id === vendorId) {
+      setSelectedVendor((prev: any) => ({ ...prev, autoPublishEnabled: nextState }));
+    }
+    const res = await toggleVendorAutoPublish(vendorId, nextState);
+    if (res.success) {
+      toast.success(
+        nextState
+          ? "⚡ Auto-Publish enabled! Products go live instantly without admin review."
+          : "⏳ Auto-Publish disabled. Admin approval required for listings."
+      );
+    } else {
+      toast.error(res.error || "Failed to update Auto-Publish status");
+      loadVendors();
     }
   };
 
@@ -448,15 +470,18 @@ export default function AdminVendorsPage() {
                             <p className="text-[10px] text-gray-400 truncate">
                               Owner: {v.owner?.name || "N/A"}
                             </p>
-                            {v.autoPublishEnabled ? (
-                              <span className="inline-flex items-center gap-1 px-1.5 py-0.5 mt-0.5 rounded text-[9px] font-black bg-emerald-50 text-emerald-700 border border-emerald-200">
-                                ⚡ Auto-Publish ON
-                              </span>
-                            ) : (
-                              <span className="inline-flex items-center gap-1 px-1.5 py-0.5 mt-0.5 rounded text-[9px] font-medium text-gray-400">
-                                Standard Review
-                              </span>
-                            )}
+                            <button
+                              type="button"
+                              onClick={() => handleToggleAutoPublish(v.id, Boolean(v.autoPublishEnabled))}
+                              className={`inline-flex items-center gap-1 px-2 py-0.5 mt-0.5 rounded text-[9px] font-bold border transition-all cursor-pointer ${
+                                v.autoPublishEnabled
+                                  ? "bg-emerald-50 text-emerald-800 border-emerald-300 hover:bg-emerald-100"
+                                  : "bg-gray-100 text-gray-600 border-gray-200 hover:bg-gray-200"
+                              }`}
+                              title="Click to toggle Auto-Publish / Direct Live mode"
+                            >
+                              <span>{v.autoPublishEnabled ? "⚡ Auto-Publish (ON)" : "⏳ Standard Review (OFF)"}</span>
+                            </button>
                           </div>
                         </div>
                       </td>
@@ -858,6 +883,46 @@ export default function AdminVendorsPage() {
                   <span>{selectedVendor.businessAddress}</span>
                 </div>
               )}
+
+              {/* Auto-Publish (Instant Live) Privilege Toggle */}
+              <div className="p-4 rounded-2xl bg-gradient-to-r from-emerald-50/80 to-teal-50/80 border border-emerald-200/80 flex items-center justify-between gap-4">
+                <div>
+                  <div className="flex items-center gap-1.5">
+                    <span className="text-xs font-black text-emerald-950">
+                      ⚡ Instant Auto-Publish Privileges
+                    </span>
+                    <span
+                      className={`px-2 py-0.5 rounded-full text-[9px] font-black uppercase tracking-wider ${
+                        selectedVendor.autoPublishEnabled
+                          ? "bg-emerald-600 text-white"
+                          : "bg-gray-200 text-gray-700"
+                      }`}
+                    >
+                      {selectedVendor.autoPublishEnabled ? "Enabled" : "Disabled"}
+                    </span>
+                  </div>
+                  <p className="text-[11px] text-emerald-800 mt-0.5">
+                    When enabled, this vendor&apos;s product listings and updates bypass admin queue and go live immediately.
+                  </p>
+                </div>
+
+                <button
+                  type="button"
+                  onClick={() =>
+                    handleToggleAutoPublish(
+                      selectedVendor.id,
+                      Boolean(selectedVendor.autoPublishEnabled)
+                    )
+                  }
+                  className={`px-4 py-2 rounded-xl text-xs font-bold transition-all shadow-xs shrink-0 cursor-pointer ${
+                    selectedVendor.autoPublishEnabled
+                      ? "bg-rose-600 hover:bg-rose-700 text-white"
+                      : "bg-emerald-600 hover:bg-emerald-700 text-white"
+                  }`}
+                >
+                  {selectedVendor.autoPublishEnabled ? "Revoke Privilege" : "Grant Auto-Publish"}
+                </button>
+              </div>
 
               {/* Commission Rate Setting */}
               <div className="pt-2">

@@ -20,6 +20,7 @@ import {
   Search,
   Check,
   Loader2,
+  Printer,
 } from "lucide-react";
 import { useVendorAuth } from "@/lib/vendor-auth";
 import {
@@ -28,6 +29,7 @@ import {
   updateVendorFulfillmentBulk,
 } from "@/lib/actions/vendor";
 import { useLiveSync, broadcastLiveEvent } from "@/lib/live-sync";
+import InvoiceModal from "@/components/admin/InvoiceModal";
 import { formatPrice } from "@/lib/formatters";
 import { toast } from "sonner";
 
@@ -49,6 +51,9 @@ export default function VendorOrdersPage() {
   const [courierName, setCourierName] = useState("");
   const [trackingNumber, setTrackingNumber] = useState("");
   const [updating, setUpdating] = useState(false);
+
+  // Tax Invoice Modal State
+  const [selectedInvoiceOrder, setSelectedInvoiceOrder] = useState<any | null>(null);
 
   const loadOrders = async () => {
     if (!vendor?.id) return;
@@ -469,6 +474,17 @@ export default function VendorOrdersPage() {
                         </>
                       )}
 
+                      {/* Print Tax Invoice Button */}
+                      <button
+                        type="button"
+                        onClick={() => setSelectedInvoiceOrder(parent || split)}
+                        className="px-2.5 py-1.5 bg-gray-100 hover:bg-gray-200 text-gray-700 text-xs font-bold rounded-xl transition-colors flex items-center gap-1 cursor-pointer"
+                        title="View and Print Official Tax Invoice"
+                      >
+                        <Printer size={13} />
+                        <span>Invoice</span>
+                      </button>
+
                       <button
                         type="button"
                         onClick={() => setExpandedOrderId(isExpanded ? null : split.id)}
@@ -622,6 +638,15 @@ export default function VendorOrdersPage() {
             </div>
           </div>
         </div>
+      )}
+
+      {/* Official Tax Invoice Modal */}
+      {selectedInvoiceOrder && (
+        <InvoiceModal
+          order={selectedInvoiceOrder}
+          isOpen={Boolean(selectedInvoiceOrder)}
+          onClose={() => setSelectedInvoiceOrder(null)}
+        />
       )}
     </div>
   );

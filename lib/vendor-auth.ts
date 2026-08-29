@@ -14,6 +14,7 @@ export type VendorSession = {
   commissionRate: number;
   ownerName: string;
   ownerId: string;
+  autoPublishEnabled?: boolean;
   rejectionReason?: string | null;
   mustChangePassword?: boolean;
   lastLogin: string;
@@ -32,7 +33,6 @@ export const useVendorAuth = create<VendorAuthState>()(
     (set, get) => ({
       vendor: null,
       isAuthenticated: false,
-
       login: async (emailOrPhone, password) => {
         const input = emailOrPhone.toLowerCase().trim();
 
@@ -57,6 +57,7 @@ export const useVendorAuth = create<VendorAuthState>()(
               commissionRate: data.vendor.commissionRate,
               ownerName: data.vendor.ownerName,
               ownerId: data.vendor.ownerId,
+              autoPublishEnabled: Boolean(data.vendor.autoPublishEnabled),
               rejectionReason: data.vendor.rejectionReason,
               mustChangePassword: data.vendor.mustChangePassword,
               lastLogin: new Date().toISOString(),

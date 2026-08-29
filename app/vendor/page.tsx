@@ -97,8 +97,19 @@ export default function VendorDashboardPage() {
       {/* Welcome Banner */}
       <div className="bg-linear-to-r from-[#052a51] via-[#07386d] to-[#0a488a] rounded-3xl p-6 md:p-8 text-white shadow-xl flex flex-col md:flex-row items-start md:items-center justify-between gap-6">
         <div className="space-y-2">
-          <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-emerald-500/20 border border-emerald-400/30 text-emerald-300 text-xs font-bold">
-            <ShieldCheck size={14} /> Verified Shop Account
+          <div className="flex flex-wrap items-center gap-2">
+            <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-emerald-500/20 border border-emerald-400/30 text-emerald-300 text-xs font-bold">
+              <ShieldCheck size={14} /> Verified Shop Account
+            </div>
+            {vendor?.autoPublishEnabled ? (
+              <div className="inline-flex items-center gap-1 px-3 py-1 rounded-full bg-amber-400/20 border border-amber-300/40 text-amber-300 text-xs font-black">
+                ⚡ Instant Auto-Publish Active (Direct Live)
+              </div>
+            ) : (
+              <div className="inline-flex items-center gap-1 px-3 py-1 rounded-full bg-blue-400/20 border border-blue-300/40 text-blue-200 text-xs font-medium">
+                ⏳ Admin Approval Required Mode
+              </div>
+            )}
           </div>
           <h1 className="text-2xl md:text-3xl font-black tracking-tight">
             Welcome back, {vendor?.ownerName || vendor?.businessName}!

@@ -21,13 +21,14 @@ import {
   PauseCircle,
   PlayCircle,
 } from "lucide-react";
-import { getProducts, deleteProduct, createProduct } from "@/lib/actions/products";
+import { getProducts, deleteProduct, createProduct, updateProduct } from "@/lib/actions/products";
 import { getCategories } from "@/lib/actions/categories";
 import { getAdminVendors } from "@/lib/actions/admin-vendor";
 import type { Product } from "@/lib/data/products";
 import type { Category } from "@/lib/data/categories";
 import { getLowestPrice, getLowestBoxPrice } from "@/lib/data/products";
 import { formatPrice, formatUnitLabel } from "@/lib/formatters";
+import { resolveColorHex } from "@/lib/catalog";
 import { toast } from "sonner";
 
 export default function AdminProductsPage() {
@@ -159,6 +160,50 @@ export default function AdminProductsPage() {
     }
   };
 
+  const handleBulkActivate = async () => {
+    try {
+      for (const id of selectedIds) {
+        await updateProduct(id, { status: "active" });
+      }
+      setProducts((prev) =>
+        prev.map((p) => (selectedIds.includes(p.id) ? { ...p, status: "active" } : p))
+      );
+      toast.success(`${selectedIds.length} product(s) marked Active!`);
+      setSelectedIds([]);
+    } catch (e) {
+      toast.error("Failed to activate selected products");
+    }
+  };
+
+  const handleBulkPause = async () => {
+    try {
+      for (const id of selectedIds) {
+        await updateProduct(id, { status: "paused" });
+      }
+      setProducts((prev) =>
+        prev.map((p) => (selectedIds.includes(p.id) ? { ...p, status: "paused" } : p))
+      );
+      toast.success(`${selectedIds.length} product(s) marked Paused!`);
+      setSelectedIds([]);
+    } catch (e) {
+      toast.error("Failed to pause selected products");
+    }
+  };
+
+  const handleToggleStatus = async (p: Product) => {
+    const nextStatus = (p.status || "active") === "active" ? "paused" : "active";
+    setProducts((prev) =>
+      prev.map((item) => (item.id === p.id ? { ...item, status: nextStatus } : item))
+    );
+    const res = await updateProduct(p.id, { status: nextStatus });
+    if (res.success) {
+      toast.success(`Product marked ${nextStatus === "active" ? "Active" : "Paused"}`);
+    } else {
+      toast.error(res.error || "Failed to update status");
+      loadData();
+    }
+  };
+
   const handleBulkDelete = async () => {
     if (
       window.confirm(
@@ -197,6 +242,14 @@ export default function AdminProductsPage() {
         </div>
 
         <div className="flex items-center gap-2 flex-wrap">
+          <Link
+            href="/admin/product-approvals"
+            className="inline-flex items-center gap-1.5 px-3.5 py-2 bg-blue-50 hover:bg-blue-100 text-blue-800 text-xs font-bold rounded-xl transition-colors border border-blue-200"
+          >
+            <Clock size={14} />
+            <span>Approvals Queue</span>
+          </Link>
+
           <Link
             href="/admin/products/bulk"
             className="inline-flex items-center gap-1.5 px-3.5 py-2 bg-gray-100 hover:bg-gray-200 text-[#052a51] text-xs font-bold rounded-xl transition-colors shadow-2xs"
@@ -291,17 +344,33 @@ export default function AdminProductsPage() {
 
         {/* Bulk Action Bar if items selected */}
         {selectedIds.length > 0 && (
-          <div className="flex items-center justify-between p-2.5 bg-[#052a51]/5 border border-[#052a51]/10 rounded-xl animate-in fade-in">
-            <span className="text-xs font-bold text-[#052a51]">
-              {selectedIds.length} product(s) selected
+          <div className="flex flex-wrap items-center justify-between gap-3 p-3 bg-orange-50/70 border border-orange-200 rounded-xl animate-in fade-in">
+            <span className="text-xs font-black text-[#052a51]">
+              ✓ {selectedIds.length} product(s) marked
             </span>
-            <button
-              onClick={handleBulkDelete}
-              className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-red-600 hover:bg-red-700 text-white text-xs font-bold rounded-lg shadow-xs transition-colors cursor-pointer"
-            >
-              <Trash2 size={13} />
-              <span>Delete Selected</span>
-            </button>
+            <div className="flex items-center gap-2">
+              <button
+                onClick={handleBulkActivate}
+                className="inline-flex items-center gap-1 px-3 py-1.5 bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold rounded-lg shadow-xs transition-colors cursor-pointer"
+              >
+                <PlayCircle size={13} />
+                <span>Mark Live ({selectedIds.length})</span>
+              </button>
+              <button
+                onClick={handleBulkPause}
+                className="inline-flex items-center gap-1 px-3 py-1.5 bg-amber-600 hover:bg-amber-700 text-white text-xs font-bold rounded-lg shadow-xs transition-colors cursor-pointer"
+              >
+                <PauseCircle size={13} />
+                <span>Pause ({selectedIds.length})</span>
+              </button>
+              <button
+                onClick={handleBulkDelete}
+                className="inline-flex items-center gap-1 px-3 py-1.5 bg-red-600 hover:bg-red-700 text-white text-xs font-bold rounded-lg shadow-xs transition-colors cursor-pointer"
+              >
+                <Trash2 size={13} />
+                <span>Delete ({selectedIds.length})</span>
+              </button>
+            </div>
           </div>
         )}
       </div>
@@ -325,7 +394,7 @@ export default function AdminProductsPage() {
                     )}
                   </button>
                 </th>
-                <th className="py-3.5 px-4">Product Name</th>
+                <th className="py-3.5 px-4">Product Name & Colors</th>
                 <th className="py-3.5 px-4">Vendor Shop</th>
                 <th className="py-3.5 px-4">Category / Material</th>
                 <th className="py-3.5 px-4">Pricing</th>
@@ -365,6 +434,15 @@ export default function AdminProductsPage() {
                   const isRejected = p.approvalStatus === "rejected";
                   const isPaused = p.status === "paused";
 
+                  // Extract distinct colors with hex codes
+                  const distinctColors = Array.from(
+                    new Set(
+                      p.variants
+                        .map((v) => v.color?.trim())
+                        .filter(Boolean)
+                    )
+                  );
+
                   return (
                     <tr
                       key={p.id}
@@ -386,7 +464,7 @@ export default function AdminProductsPage() {
                         </button>
                       </td>
 
-                      {/* Design Image & Name */}
+                      {/* Design Image & Name & Color Swatches */}
                       <td className="py-3 px-4">
                         <div className="flex items-center gap-3">
                           <div className="relative w-12 h-12 rounded-xl overflow-hidden bg-gray-100 shrink-0 border border-gray-200">
@@ -405,9 +483,33 @@ export default function AdminProductsPage() {
                             >
                               {p.name}
                             </Link>
-                            <p className="text-[10px] text-gray-400">
-                              {p.variants.length} variant(s) · {p.variants.map((v) => v.size).join(", ")}
-                            </p>
+                            <div className="flex items-center gap-2 mt-0.5">
+                              <span className="text-[10px] text-gray-400">
+                                {p.variants.length} variant(s)
+                              </span>
+
+                              {/* Color Swatch Dots */}
+                              {distinctColors.length > 0 && (
+                                <div className="flex items-center gap-1">
+                                  {distinctColors.slice(0, 4).map((col) => {
+                                    const hex = resolveColorHex(col);
+                                    return (
+                                      <span
+                                        key={col}
+                                        className="w-2.5 h-2.5 rounded-full border border-black/15 shadow-2xs"
+                                        style={{ backgroundColor: hex }}
+                                        title={col}
+                                      />
+                                    );
+                                  })}
+                                  {distinctColors.length > 4 && (
+                                    <span className="text-[9px] text-gray-400 font-bold">
+                                      +{distinctColors.length - 4}
+                                    </span>
+                                  )}
+                                </div>
+                              )}
+                            </div>
                           </div>
                         </div>
                       </td>
@@ -456,7 +558,7 @@ export default function AdminProductsPage() {
                                 : "bg-emerald-50 text-emerald-700 border border-emerald-200"
                             }`}
                           >
-                            {totalStock} boxes
+                            {totalStock} {p.unitOfSale || "box"}s
                           </span>
                         </div>
                       </td>
@@ -480,15 +582,19 @@ export default function AdminProductsPage() {
                             </span>
                           )}
 
-                          {isPaused ? (
-                            <span className="text-[9px] text-amber-600 font-bold flex items-center gap-1">
-                              <PauseCircle size={10} /> Paused
-                            </span>
-                          ) : (
-                            <span className="text-[9px] text-emerald-600 font-bold flex items-center gap-1">
-                              <PlayCircle size={10} /> Live on Store
-                            </span>
-                          )}
+                          <button
+                            type="button"
+                            onClick={() => handleToggleStatus(p)}
+                            className={`text-[9px] font-bold flex items-center gap-1 px-2 py-0.5 rounded-md border w-fit transition-all cursor-pointer ${
+                              isPaused
+                                ? "bg-amber-50 text-amber-700 border-amber-200 hover:bg-amber-100"
+                                : "bg-emerald-50 text-emerald-700 border-emerald-200 hover:bg-emerald-100"
+                            }`}
+                            title="Click to toggle Active / Paused"
+                          >
+                            {isPaused ? <PauseCircle size={10} /> : <PlayCircle size={10} />}
+                            <span>{isPaused ? "Paused (Click to Live)" : "Live (Click to Pause)"}</span>
+                          </button>
                         </div>
                       </td>
 

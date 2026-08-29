@@ -1,9 +1,14 @@
 "use client";
 
 import { useState } from "react";
-import { Plus, Trash2, Copy, Sparkles, Image as ImageIcon, Check, Palette, Layers, Box } from "lucide-react";
-import type { ProductVariant, Finish } from "@/lib/data/products";
-import { MANAGED_COLOURS, resolveColour } from "@/lib/colours";
+import { Plus, Trash2, Copy, Sparkles, Palette, Check, Layers, Image as ImageIcon } from "lucide-react";
+import type { ProductVariant } from "@/lib/data/products";
+import {
+  CATALOG_FINISHES,
+  CATALOG_DIMENSIONS,
+  resolveColorHex,
+} from "@/lib/catalog";
+import ColorPalettePickerModal from "@/components/admin/ColorPalettePickerModal";
 
 interface VariantEditorProps {
   variants: ProductVariant[];
@@ -22,21 +27,6 @@ const ATTRIBUTE_LABELS = [
   "Pack Option",
   "Finish",
   "Custom",
-];
-
-const FINISH_OPTIONS: string[] = [
-  "Standard",
-  "Matte",
-  "Glossy",
-  "Textured",
-  "Satin",
-  "Polished",
-  "Metallic",
-  "Rustic",
-  "High Gloss",
-  "Dual Polish",
-  "Honed",
-  "Flamed",
 ];
 
 const PRESETS: Record<string, { label: string; values: string[] }> = {
@@ -72,6 +62,8 @@ export default function VariantEditor({
   unitOfSale = "unit",
   baseUnit = "sqft",
 }: VariantEditorProps) {
+  const [activeColorModalIdx, setActiveColorModalIdx] = useState<number | null>(null);
+
   const handleAddVariant = () => {
     const newId = `v-${Date.now().toString().slice(-5)}`;
     const lastVariant = variants[variants.length - 1];
@@ -80,9 +72,9 @@ export default function VariantEditor({
       id: newId,
       sku: `SKU-${Date.now().toString().slice(-6)}`,
       size: lastVariant ? `${lastVariant.size} (New)` : "Standard",
-      finish: lastVariant?.finish || "Standard",
-      color: lastVariant?.color || "Standard",
-      colorHex: lastVariant?.colorHex || "#808080",
+      finish: lastVariant?.finish || "Glossy",
+      color: lastVariant?.color || "White",
+      colorHex: lastVariant?.colorHex || resolveColorHex(lastVariant?.color || "White"),
       swatchImage: null,
       image: null,
       unit: unitOfSale,
@@ -103,8 +95,9 @@ export default function VariantEditor({
     if (!preset) return;
 
     const basePrice = variants[0]?.pricePerBox || 1000;
-    const baseColor = variants[0]?.color || "Standard";
-    const baseFinish = variants[0]?.finish || "Standard";
+    const baseColor = variants[0]?.color || "White";
+    const baseFinish = variants[0]?.finish || "Glossy";
+    const baseColorHex = variants[0]?.colorHex || resolveColorHex(baseColor);
 
     const newVariants: ProductVariant[] = preset.values.map((val, idx) => ({
       id: `v-${presetKey}-${idx + 1}-${Date.now().toString().slice(-4)}`,
@@ -113,7 +106,7 @@ export default function VariantEditor({
       attributeLabel: preset.label,
       attributeValue: val,
       color: baseColor,
-      colorHex: resolveColour(baseColor).hexCode,
+      colorHex: baseColorHex,
       finish: baseFinish,
       image: null,
       unit: unitOfSale,
@@ -154,7 +147,23 @@ export default function VariantEditor({
       current.attributeValue = value;
     }
 
+    // Auto-sync colorHex when color changes directly
+    if (field === "color" && typeof value === "string") {
+      current.colorHex = resolveColorHex(value);
+    }
+
     updated[index] = current;
+    onChange(updated);
+  };
+
+  const handleColorSelected = (colorName: string, colorHex: string) => {
+    if (activeColorModalIdx === null) return;
+    const updated = [...variants];
+    updated[activeColorModalIdx] = {
+      ...updated[activeColorModalIdx],
+      color: colorName,
+      colorHex: colorHex,
+    };
     onChange(updated);
   };
 
@@ -208,212 +217,248 @@ export default function VariantEditor({
         <button
           type="button"
           onClick={() => handleApplyPreset("paint")}
-          className="px-2.5 py-1 rounded-lg bg-white border border-gray-200 hover:border-[#F26522] text-[11px] font-bold text-[#052a51] transition-colors"
+          className="px-2.5 py-1 rounded-lg bg-white border border-gray-200 hover:border-[#F26522] text-[11px] font-bold text-[#052a51] transition-colors cursor-pointer"
         >
           Paint (1L, 4L, 10L, 20L)
         </button>
         <button
           type="button"
           onClick={() => handleApplyPreset("plywood")}
-          className="px-2.5 py-1 rounded-lg bg-white border border-gray-200 hover:border-[#F26522] text-[11px] font-bold text-[#052a51] transition-colors"
+          className="px-2.5 py-1 rounded-lg bg-white border border-gray-200 hover:border-[#F26522] text-[11px] font-bold text-[#052a51] transition-colors cursor-pointer"
         >
           Plywood (6mm, 12mm, 19mm)
         </button>
         <button
           type="button"
           onClick={() => handleApplyPreset("tiles")}
-          className="px-2.5 py-1 rounded-lg bg-white border border-gray-200 hover:border-[#F26522] text-[11px] font-bold text-[#052a51] transition-colors"
+          className="px-2.5 py-1 rounded-lg bg-white border border-gray-200 hover:border-[#F26522] text-[11px] font-bold text-[#052a51] transition-colors cursor-pointer"
         >
           Tiles (600x600, 600x1200)
         </button>
         <button
           type="button"
           onClick={() => handleApplyPreset("electrical")}
-          className="px-2.5 py-1 rounded-lg bg-white border border-gray-200 hover:border-[#F26522] text-[11px] font-bold text-[#052a51] transition-colors"
+          className="px-2.5 py-1 rounded-lg bg-white border border-gray-200 hover:border-[#F26522] text-[11px] font-bold text-[#052a51] transition-colors cursor-pointer"
         >
           Wire (1.0, 1.5, 2.5 sq.mm)
+        </button>
+        <button
+          type="button"
+          onClick={() => handleApplyPreset("hardware")}
+          className="px-2.5 py-1 rounded-lg bg-white border border-gray-200 hover:border-[#F26522] text-[11px] font-bold text-[#052a51] transition-colors cursor-pointer"
+        >
+          Hardware (Pack of 10, 50, 100)
         </button>
       </div>
 
       {/* Responsive Table of Variants */}
       <div className="overflow-x-auto border border-gray-200 rounded-2xl bg-white shadow-2xs">
-        <table className="w-full text-left text-xs border-collapse min-w-[800px]">
+        <table className="w-full text-left text-xs border-collapse min-w-[900px]">
           <thead>
             <tr className="bg-gray-50 border-b border-gray-200 text-gray-500 font-bold uppercase tracking-wider text-[10px]">
               <th className="py-3 px-3">Type</th>
-              <th className="py-3 px-3">Option Value (e.g. 4L / 19mm)</th>
-              <th className="py-3 px-3">Color / Shade</th>
+              <th className="py-3 px-3">Option / Size (e.g. 4L / 19mm)</th>
+              <th className="py-3 px-3">Color Palette</th>
               <th className="py-3 px-3">Finish</th>
               <th className="py-3 px-3">Price (₹)</th>
               <th className="py-3 px-3">MRP (₹)</th>
               <th className="py-3 px-3">Weight (kg)</th>
               <th className="py-3 px-3">Stock ({unitOfSale}s)</th>
-              <th className="py-3 px-3">Variant Image URL</th>
+              <th className="py-3 px-3">Variant Image</th>
               <th className="py-3 px-3 text-right">Actions</th>
             </tr>
           </thead>
           <tbody className="divide-y divide-gray-100 font-medium">
-            {variants.map((v, i) => (
-              <tr key={v.id || i} className="hover:bg-gray-50/50 transition-colors">
-                {/* Attribute Label */}
-                <td className="p-2.5">
-                  <select
-                    value={v.attributeLabel || "Volume"}
-                    onChange={(e) => handleUpdateVariant(i, "attributeLabel", e.target.value)}
-                    className="w-28 px-2 py-1.5 bg-gray-50 border border-gray-200 rounded-lg text-xs font-bold text-[#052a51] focus:outline-none focus:border-[#F26522]"
-                  >
-                    {ATTRIBUTE_LABELS.map((lbl) => (
-                      <option key={lbl} value={lbl}>
-                        {lbl}
-                      </option>
-                    ))}
-                  </select>
-                </td>
+            {variants.map((v, i) => {
+              const hex = v.colorHex || resolveColorHex(v.color || "White");
+              return (
+                <tr key={v.id || i} className="hover:bg-gray-50/50 transition-colors">
+                  {/* Attribute Label */}
+                  <td className="p-2.5">
+                    <select
+                      value={v.attributeLabel || "Volume"}
+                      onChange={(e) => handleUpdateVariant(i, "attributeLabel", e.target.value)}
+                      className="w-28 px-2 py-1.5 bg-gray-50 border border-gray-200 rounded-lg text-xs font-bold text-[#052a51] focus:outline-none focus:border-[#F26522]"
+                    >
+                      {ATTRIBUTE_LABELS.map((lbl) => (
+                        <option key={lbl} value={lbl}>
+                          {lbl}
+                        </option>
+                      ))}
+                    </select>
+                  </td>
 
-                {/* Option Value */}
-                <td className="p-2.5">
-                  <input
-                    type="text"
-                    value={v.attributeValue || v.size}
-                    onChange={(e) => handleUpdateVariant(i, "attributeValue", e.target.value)}
-                    className="w-36 px-2.5 py-1.5 bg-gray-50 border border-gray-200 rounded-lg text-xs font-bold text-[#052a51] focus:outline-none focus:border-[#F26522]"
-                    placeholder="e.g. 4L, 19mm, 600x600mm"
-                  />
-                </td>
-
-                {/* Color */}
-                <td className="p-2.5">
-                  <input
-                    type="text"
-                    value={v.color || ""}
-                    onChange={(e) => handleUpdateVariant(i, "color", e.target.value)}
-                    className="w-28 px-2.5 py-1.5 bg-gray-50 border border-gray-200 rounded-lg text-xs font-bold text-[#052a51] focus:outline-none focus:border-[#F26522]"
-                    placeholder="e.g. White, Teak"
-                  />
-                </td>
-
-                {/* Finish */}
-                <td className="p-2.5">
-                  <select
-                    value={v.finish || "Standard"}
-                    onChange={(e) => handleUpdateVariant(i, "finish", e.target.value)}
-                    className="w-24 px-2 py-1.5 bg-gray-50 border border-gray-200 rounded-lg text-xs font-bold text-[#052a51] focus:outline-none focus:border-[#F26522]"
-                  >
-                    {FINISH_OPTIONS.map((f) => (
-                      <option key={f} value={f}>
-                        {f}
-                      </option>
-                    ))}
-                  </select>
-                </td>
-
-                {/* Price */}
-                <td className="p-2.5">
-                  <input
-                    type="number"
-                    value={v.pricePerBox}
-                    onChange={(e) => handleUpdateVariant(i, "pricePerBox", Number(e.target.value))}
-                    className="w-24 px-2.5 py-1.5 bg-gray-50 border border-gray-200 rounded-lg text-xs font-black text-[#052a51] focus:outline-none focus:border-[#F26522]"
-                    min={1}
-                  />
-                </td>
-
-                {/* MRP (Optional) */}
-                <td className="p-2.5">
-                  <input
-                    type="number"
-                    value={v.mrp ?? ""}
-                    onChange={(e) =>
-                      handleUpdateVariant(
-                        i,
-                        "mrp",
-                        e.target.value !== "" ? Number(e.target.value) : undefined
-                      )
-                    }
-                    className="w-24 px-2.5 py-1.5 bg-gray-50 border border-gray-200 rounded-lg text-xs font-bold text-gray-500 focus:outline-none focus:border-[#F26522]"
-                    placeholder="Optional"
-                    min={0}
-                  />
-                </td>
-
-                {/* Weight (kg) */}
-                <td className="p-2.5">
-                  <input
-                    type="number"
-                    value={v.weightKg ?? ""}
-                    onChange={(e) =>
-                      handleUpdateVariant(
-                        i,
-                        "weightKg",
-                        e.target.value !== "" ? Number(e.target.value) : undefined
-                      )
-                    }
-                    className="w-20 px-2.5 py-1.5 bg-gray-50 border border-gray-200 rounded-lg text-xs font-bold text-[#052a51] focus:outline-none focus:border-[#F26522]"
-                    placeholder="e.g. 2.5"
-                    step="0.1"
-                    min={0}
-                  />
-                </td>
-
-                {/* Stock */}
-                <td className="p-2.5">
-                  <input
-                    type="number"
-                    value={v.stockBoxes}
-                    onChange={(e) => handleUpdateVariant(i, "stockBoxes", Number(e.target.value))}
-                    className={`w-20 px-2.5 py-1.5 border rounded-lg text-xs font-bold focus:outline-none focus:border-[#F26522] ${
-                      v.stockBoxes < 10
-                        ? "bg-red-50 border-red-200 text-red-700"
-                        : "bg-gray-50 border-gray-200 text-[#052a51]"
-                    }`}
-                    min={0}
-                  />
-                </td>
-
-                {/* Variant Image URL */}
-                <td className="p-2.5">
-                  <div className="flex items-center gap-1.5">
+                  {/* Option Value */}
+                  <td className="p-2.5">
                     <input
                       type="text"
-                      value={v.image || ""}
-                      onChange={(e) => handleUpdateVariant(i, "image", e.target.value || null)}
-                      className="w-36 px-2 py-1.5 bg-gray-50 border border-gray-200 rounded-lg text-[11px] font-medium text-gray-700 focus:outline-none focus:border-[#F26522]"
-                      placeholder="https://... or /image.jpg"
+                      value={v.attributeValue || v.size}
+                      onChange={(e) => handleUpdateVariant(i, "attributeValue", e.target.value)}
+                      className="w-36 px-2.5 py-1.5 bg-gray-50 border border-gray-200 rounded-lg text-xs font-bold text-[#052a51] focus:outline-none focus:border-[#F26522]"
+                      placeholder="e.g. 4L, 19mm, 600x600mm"
                     />
-                    {v.image && (
-                      <div className="w-7 h-7 rounded-md border border-gray-200 overflow-hidden shrink-0">
-                        <img src={v.image} alt="variant" className="w-full h-full object-cover" />
-                      </div>
-                    )}
-                  </div>
-                </td>
+                  </td>
 
-                {/* Actions */}
-                <td className="p-2.5 text-right space-x-1">
-                  <button
-                    type="button"
-                    onClick={() => handleDuplicateVariant(i)}
-                    className="p-1.5 text-gray-400 hover:text-[#052a51] rounded-lg hover:bg-gray-100 cursor-pointer"
-                    title="Duplicate variant"
-                  >
-                    <Copy size={13} />
-                  </button>
-                  {variants.length > 1 && (
+                  {/* Rich Color Palette Trigger */}
+                  <td className="p-2.5">
                     <button
                       type="button"
-                      onClick={() => handleRemoveVariant(i)}
-                      className="p-1.5 text-gray-400 hover:text-red-500 rounded-lg hover:bg-red-50 cursor-pointer"
-                      title="Remove variant"
+                      onClick={() => setActiveColorModalIdx(i)}
+                      className="flex items-center gap-2 px-2.5 py-1.5 bg-gray-50 hover:bg-orange-50/70 border border-gray-200 hover:border-[#F26522] rounded-lg transition-all text-left cursor-pointer group"
+                      title="Click to open Color Palette Picker"
                     >
-                      <Trash2 size={13} />
+                      <div
+                        className="w-5 h-5 rounded-full border border-black/15 shadow-xs shrink-0"
+                        style={{ backgroundColor: hex }}
+                      />
+                      <div className="flex flex-col min-w-[70px] max-w-[100px]">
+                        <span className="text-xs font-bold text-[#052a51] group-hover:text-[#F26522] truncate">
+                          {v.color || "Select"}
+                        </span>
+                        <span className="text-[9px] text-gray-400 font-mono font-medium truncate">
+                          {hex}
+                        </span>
+                      </div>
+                      <Palette size={12} className="text-gray-400 group-hover:text-[#F26522] shrink-0" />
                     </button>
-                  )}
-                </td>
-              </tr>
-            ))}
+                  </td>
+
+                  {/* Finish */}
+                  <td className="p-2.5">
+                    <select
+                      value={v.finish || "Glossy"}
+                      onChange={(e) => handleUpdateVariant(i, "finish", e.target.value)}
+                      className="w-28 px-2 py-1.5 bg-gray-50 border border-gray-200 rounded-lg text-xs font-bold text-[#052a51] focus:outline-none focus:border-[#F26522]"
+                    >
+                      {CATALOG_FINISHES.map((f) => (
+                        <option key={f} value={f}>
+                          {f}
+                        </option>
+                      ))}
+                    </select>
+                  </td>
+
+                  {/* Price */}
+                  <td className="p-2.5">
+                    <input
+                      type="number"
+                      value={v.pricePerBox}
+                      onChange={(e) => handleUpdateVariant(i, "pricePerBox", Number(e.target.value))}
+                      className="w-24 px-2.5 py-1.5 bg-gray-50 border border-gray-200 rounded-lg text-xs font-black text-[#052a51] focus:outline-none focus:border-[#F26522]"
+                      min={1}
+                    />
+                  </td>
+
+                  {/* MRP (Optional) */}
+                  <td className="p-2.5">
+                    <input
+                      type="number"
+                      value={v.mrp ?? ""}
+                      onChange={(e) =>
+                        handleUpdateVariant(
+                          i,
+                          "mrp",
+                          e.target.value !== "" ? Number(e.target.value) : undefined
+                        )
+                      }
+                      className="w-24 px-2.5 py-1.5 bg-gray-50 border border-gray-200 rounded-lg text-xs font-bold text-gray-500 focus:outline-none focus:border-[#F26522]"
+                      placeholder="Optional"
+                      min={0}
+                    />
+                  </td>
+
+                  {/* Weight (kg) */}
+                  <td className="p-2.5">
+                    <input
+                      type="number"
+                      value={v.weightKg ?? ""}
+                      onChange={(e) =>
+                        handleUpdateVariant(
+                          i,
+                          "weightKg",
+                          e.target.value !== "" ? Number(e.target.value) : undefined
+                        )
+                      }
+                      className="w-20 px-2.5 py-1.5 bg-gray-50 border border-gray-200 rounded-lg text-xs font-bold text-[#052a51] focus:outline-none focus:border-[#F26522]"
+                      placeholder="e.g. 2.5"
+                      step="0.1"
+                      min={0}
+                    />
+                  </td>
+
+                  {/* Stock */}
+                  <td className="p-2.5">
+                    <input
+                      type="number"
+                      value={v.stockBoxes}
+                      onChange={(e) => handleUpdateVariant(i, "stockBoxes", Number(e.target.value))}
+                      className={`w-20 px-2.5 py-1.5 border rounded-lg text-xs font-bold focus:outline-none focus:border-[#F26522] ${
+                        v.stockBoxes < 10
+                          ? "bg-red-50 border-red-200 text-red-700"
+                          : "bg-gray-50 border-gray-200 text-[#052a51]"
+                      }`}
+                      min={0}
+                    />
+                  </td>
+
+                  {/* Variant Image URL */}
+                  <td className="p-2.5">
+                    <div className="flex items-center gap-1.5">
+                      <input
+                        type="text"
+                        value={v.image || ""}
+                        onChange={(e) => handleUpdateVariant(i, "image", e.target.value || null)}
+                        className="w-32 px-2 py-1.5 bg-gray-50 border border-gray-200 rounded-lg text-[11px] font-medium text-gray-700 focus:outline-none focus:border-[#F26522]"
+                        placeholder="https://... or /img.jpg"
+                      />
+                      {v.image ? (
+                        <div className="w-7 h-7 rounded-md border border-gray-200 overflow-hidden shrink-0">
+                          {/* eslint-disable-next-line @next/next/no-img-element */}
+                          <img src={v.image} alt="variant" className="w-full h-full object-cover" />
+                        </div>
+                      ) : null}
+                    </div>
+                  </td>
+
+                  {/* Actions */}
+                  <td className="p-2.5 text-right space-x-1">
+                    <button
+                      type="button"
+                      onClick={() => handleDuplicateVariant(i)}
+                      className="p-1.5 text-gray-400 hover:text-[#052a51] rounded-lg hover:bg-gray-100 cursor-pointer transition-colors"
+                      title="Duplicate variant"
+                    >
+                      <Copy size={13} />
+                    </button>
+                    {variants.length > 1 && (
+                      <button
+                        type="button"
+                        onClick={() => handleRemoveVariant(i)}
+                        className="p-1.5 text-gray-400 hover:text-red-500 rounded-lg hover:bg-red-50 cursor-pointer transition-colors"
+                        title="Remove variant"
+                      >
+                        <Trash2 size={13} />
+                      </button>
+                    )}
+                  </td>
+                </tr>
+              );
+            })}
           </tbody>
         </table>
       </div>
+
+      {/* Reusable Color Palette Picker Modal */}
+      {activeColorModalIdx !== null && (
+        <ColorPalettePickerModal
+          isOpen={true}
+          onClose={() => setActiveColorModalIdx(null)}
+          currentColorName={variants[activeColorModalIdx]?.color || "White"}
+          currentColorHex={variants[activeColorModalIdx]?.colorHex || resolveColorHex(variants[activeColorModalIdx]?.color || "White")}
+          onSelectColor={handleColorSelected}
+          title={`Choose Color for Option #${activeColorModalIdx + 1}`}
+        />
+      )}
     </div>
   );
 }
