@@ -819,13 +819,22 @@ export async function verifyVendorKyc(
 // 16. Super Admin: Update Vendor Login Method (OTP vs Password)
 export async function updateVendorLoginMethod(
   vendorId: string,
-  data: {
-    loginMethod: "otp" | "password";
-    password?: string;
-  }
+  methodOrData:
+    | "otp"
+    | "password"
+    | {
+        loginMethod: "otp" | "password";
+        password?: string;
+      },
+  optionalPassword?: string
 ) {
   try {
     if (!vendorId) return { success: false, error: "Vendor ID required" };
+
+    const data =
+      typeof methodOrData === "object"
+        ? methodOrData
+        : { loginMethod: methodOrData, password: optionalPassword };
 
     const vendor = await prisma.vendor.findUnique({
       where: { id: vendorId },
