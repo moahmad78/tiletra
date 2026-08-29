@@ -43,6 +43,24 @@ import {
 } from "../../src/api/admin";
 import { COLORS, SPACING, RADIUS } from "../../src/constants/theme";
 
+const getCleanPhone = (phone?: string | null) => {
+  if (!phone) return "";
+  const str = String(phone).trim();
+  const lower = str.toLowerCase();
+  if (
+    lower.startsWith("email_") ||
+    lower.startsWith("google_") ||
+    lower.includes("email") ||
+    lower.includes("@") ||
+    /[a-zA-Z_]/.test(str)
+  ) {
+    return "";
+  }
+  const digits = str.replace(/\D/g, "");
+  if (digits.length < 7) return "";
+  return digits.length > 10 ? digits.slice(-10) : digits;
+};
+
 const TABS = [
   { key: "all", label: "All" },
   { key: "ready", label: "Ready" },
@@ -253,10 +271,10 @@ export default function AdminDeliveriesScreen() {
                 </Text>
               ) : null}
             </View>
-            {parent?.customerPhone ? (
+            {getCleanPhone(parent?.customerPhone) ? (
               <TouchableOpacity
                 style={styles.callBtn}
-                onPress={() => openPhone(parent.customerPhone)}
+                onPress={() => openPhone(getCleanPhone(parent.customerPhone))}
               >
                 <Phone size={13} color="#052A51" />
               </TouchableOpacity>

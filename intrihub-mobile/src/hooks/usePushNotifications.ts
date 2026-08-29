@@ -2,6 +2,7 @@ import { useEffect, useRef } from "react";
 import { Platform } from "react-native";
 import * as Notifications from "expo-notifications";
 import Constants, { ExecutionEnvironment } from "expo-constants";
+import { useRouter } from "expo-router";
 import { registerPushToken } from "../api/push";
 import { useAuthStore } from "../store/authStore";
 
@@ -22,6 +23,7 @@ if (!isExpoGo) {
 }
 
 export function usePushNotifications() {
+  const router = useRouter();
   const { user } = useAuthStore();
   const notificationListener = useRef<Notifications.EventSubscription | null>(null);
   const responseListener = useRef<Notifications.EventSubscription | null>(null);
@@ -75,14 +77,15 @@ export function usePushNotifications() {
     setupNotifications();
 
     notificationListener.current = Notifications.addNotificationReceivedListener((notification) => {
-      // Foreground notification handler
+      console.log("Customer foreground push notification received:", notification);
     });
 
     responseListener.current = Notifications.addNotificationResponseReceivedListener((response) => {
-      // Notification tapped handler (can route to order detail)
       const data = response.notification.request.content.data;
       if (data?.orderId) {
-        // Handled in router
+        router.push(`/order/${data.orderId}` as any);
+      } else if (data?.screen) {
+        router.push(data.screen as any);
       }
     });
 

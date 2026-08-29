@@ -38,6 +38,24 @@ import { socketService } from "../../src/store/socketStore";
 import { COLORS, SPACING, RADIUS, SHADOWS } from "../../src/constants/theme";
 import { downloadInvoicePDFDirect, shareInvoicePDF } from "../../src/utils/pdfInvoiceGenerator";
 
+const getCleanPhone = (phone?: string | null) => {
+  if (!phone) return "";
+  const str = String(phone).trim();
+  const lower = str.toLowerCase();
+  if (
+    lower.startsWith("email_") ||
+    lower.startsWith("google_") ||
+    lower.includes("email") ||
+    lower.includes("@") ||
+    /[a-zA-Z_]/.test(str)
+  ) {
+    return "";
+  }
+  const digits = str.replace(/\D/g, "");
+  if (digits.length < 7) return "";
+  return digits.length > 10 ? digits.slice(-10) : digits;
+};
+
 export default function OrderDetailScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
   const router = useRouter();
@@ -135,7 +153,7 @@ export default function OrderDetailScreen() {
 Order ID: #${order.id}
 Date: ${order.createdAt ? new Date(order.createdAt).toLocaleDateString("en-IN") : "Recent"}
 Customer: ${order.deliveryName || order.customerName || "Valued Customer"}
-Phone: +91 ${order.deliveryPhone || order.customerPhone || ""}
+Phone: ${getCleanPhone(order.deliveryPhone || order.customerPhone) ? `+91 ${getCleanPhone(order.deliveryPhone || order.customerPhone)}` : "Not Provided"}
 
 📦 *ITEMS ORDERED:*
 ${itemsText}
@@ -148,7 +166,7 @@ Payment Mode: ${order.paymentMethod === "cod" ? "Cash on Delivery" : "Online (Pa
 Payment Status: ${order.paymentStatus || "Confirmed"}
 
 📍 *DELIVERY ADDRESS:*
-${[
+${order.deliveryAddress || [
   order.deliveryHouseNumber,
   order.deliveryBuildingName,
   order.deliveryStreet || order.shippingAddress?.street,
@@ -297,11 +315,13 @@ IntriHub — Everything, Every Place`;
           </View>
 
           <Text style={styles.recipientName}>{order.customerName}</Text>
-          <Text style={styles.recipientPhone}>Phone: +91 {order.deliveryPhone || order.customerPhone}</Text>
+          {getCleanPhone(order.deliveryPhone || order.customerPhone) ? (
+            <Text style={styles.recipientPhone}>Phone: +91 {getCleanPhone(order.deliveryPhone || order.customerPhone)}</Text>
+          ) : null}
           
           {/* Detailed Address Line */}
           <Text style={styles.addressLine}>
-            {[
+            {order.deliveryAddress || [
               order.deliveryHouseNumber,
               order.deliveryBuildingName,
               order.deliveryStreet || order.shippingAddress?.street,
@@ -314,7 +334,7 @@ IntriHub — Everything, Every Place`;
           </Text>
 
           {/* Landmark */}
-          {(order.deliveryLandmark || order.shippingAddress?.landmark) ? (
+          {(!order.deliveryAddress && (order.deliveryLandmark || order.shippingAddress?.landmark)) ? (
             <Text style={styles.cardLandmarkDetail}>
               📍 Landmark: {order.deliveryLandmark || order.shippingAddress?.landmark}
             </Text>
@@ -514,7 +534,9 @@ IntriHub — Everything, Every Place`;
               <View style={styles.invoiceBillToBox}>
                 <Text style={styles.billToLabel}>BILLED & SHIPPED TO:</Text>
                 <Text style={styles.billToName}>{order.customerName}</Text>
-                <Text style={styles.billToPhone}>+91 {order.customerPhone}</Text>
+                {getCleanPhone(order.customerPhone) ? (
+                  <Text style={styles.billToPhone}>+91 {getCleanPhone(order.customerPhone)}</Text>
+                ) : null}
                 {order.shippingAddress && (
                   <Text style={styles.billToAddr}>
                     {order.shippingAddress.street}, {order.shippingAddress.city}, {order.shippingAddress.state} -{" "}

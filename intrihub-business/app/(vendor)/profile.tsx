@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import {
   View,
   Text,
@@ -14,6 +14,7 @@ import {
 import { useRouter } from "expo-router";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { Image } from "expo-image";
+import * as ImagePicker from "expo-image-picker";
 import {
   Building2,
   Phone,
@@ -28,9 +29,12 @@ import {
   Edit2,
   Bell,
   CheckCircle2,
+  Camera,
+  UploadCloud,
   X,
 } from "lucide-react-native";
 import { fetchVendorDashboard, updateVendorProfile } from "../../src/api/vendor";
+import { uploadBusinessImage } from "../../src/api/auth";
 import { apiClient } from "../../src/api/client";
 import { useAuthStore } from "../../src/store/authStore";
 import { COLORS, SPACING, RADIUS, SHADOWS } from "../../src/constants/theme";
@@ -47,22 +51,77 @@ export default function VendorProfileScreen() {
 
   const vendor = data?.vendor;
 
-  // Edit Modal State
+  // Edit Modal & Logo State
   const [editModalOpen, setEditModalOpen] = useState(false);
   const [editStoreName, setEditStoreName] = useState("");
   const [editPhone, setEditPhone] = useState("");
   const [editEmail, setEditEmail] = useState("");
   const [editAddress, setEditAddress] = useState("");
   const [editDeliveryMethod, setEditDeliveryMethod] = useState("");
+  const [storeLogo, setStoreLogo] = useState("");
+  const [uploadingLogo, setUploadingLogo] = useState(false);
   const [saving, setSaving] = useState(false);
   const [testingPush, setTestingPush] = useState(false);
+
+  useEffect(() => {
+    if (vendor?.logo) {
+      setStoreLogo(vendor.logo);
+    }
+  }, [vendor?.logo]);
+
+  const handlePickAndUploadLogo = async () => {
+    try {
+      const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
+      if (status !== "granted") {
+        Alert.alert("Permission Required", "Gallery permission is required to upload your store logo.");
+        return;
+      }
+
+      const result = await ImagePicker.launchImageLibraryAsync({
+        mediaTypes: ["images"],
+        allowsEditing: true,
+        aspect: [1, 1],
+        quality: 0.85,
+      });
+
+      if (!result.canceled && result.assets?.[0]?.uri) {
+        const asset = result.assets[0];
+        setUploadingLogo(true);
+        const res = await uploadBusinessImage(
+          asset.uri,
+          asset.fileName || `vendor-logo-${Date.now()}.jpg`,
+          asset.mimeType || "image/jpeg"
+        );
+        setUploadingLogo(false);
+
+        if (res.success && res.url) {
+          setStoreLogo(res.url);
+          const updateRes = await updateVendorProfile({
+            logo: res.url,
+          });
+          if (updateRes.success) {
+            refetch();
+            queryClient.invalidateQueries({ queryKey: ["vendor-dashboard"] });
+            queryClient.invalidateQueries({ queryKey: ["admin-vendors"] });
+            queryClient.invalidateQueries({ queryKey: ["admin-vendor-detail"] });
+            Alert.alert("Logo Uploaded 🎉", "Your store logo is now saved and visible to admins & customers!");
+          }
+        } else {
+          Alert.alert("Upload Error", res.error || "Failed to upload logo image");
+        }
+      }
+    } catch (e: any) {
+      setUploadingLogo(false);
+      Alert.alert("Error", e?.message || "Something went wrong during image selection");
+    }
+  };
 
   const handleOpenEdit = () => {
     setEditStoreName(vendor?.businessName || user?.name || "");
     setEditPhone(vendor?.contactPhone || user?.phone || "");
     setEditEmail(vendor?.contactEmail || user?.email || "");
     setEditAddress(vendor?.businessAddress || "");
-    setEditDeliveryMethod(vendor?.deliveryMethod || "Seller Warehouse / IntriHub Fleet");
+    setEditDeliveryMethod(vendor?.deliveryMethod === "platform" ? "platform" : "self");
     setEditModalOpen(true);
   };
 
@@ -79,21 +138,24 @@ export default function VendorProfileScreen() {
         contactPhone: editPhone.trim() || undefined,
         contactEmail: editEmail.trim() || undefined,
         businessAddress: editAddress.trim() || undefined,
-        deliveryMethod: editDeliveryMethod.trim() || undefined,
+        deliveryMethod: editDeliveryMethod === "platform" ? "platform" : "self",
+        logo: storeLogo || undefined,
       });
 
       setSaving(false);
       if (res.success) {
         setEditModalOpen(false);
-        Alert.alert("Profile Updated", "Store profile details have been saved!");
+        Alert.alert("Profile Updated 🎉", `Store details saved! Logistics method: ${editDeliveryMethod === "platform" ? "Platform Logistics (Auto)" : "Self-Delivery (Manual)"}`);
         refetch();
         queryClient.invalidateQueries({ queryKey: ["vendor-dashboard"] });
+        queryClient.invalidateQueries({ queryKey: ["admin-vendors"] });
+        queryClient.invalidateQueries({ queryKey: ["admin-deliveries"] });
       } else {
-        Alert.alert("Update Error", res.error || "Failed to update profile.");
+        Alert.alert("Save Error", res.error || "Failed to update store details");
       }
     } catch (e: any) {
       setSaving(false);
-      Alert.alert("Error", e?.message || "Something went wrong.");
+      Alert.alert("Error", e?.message || "Failed to save changes");
     }
   };
 
@@ -152,10 +214,39 @@ export default function VendorProfileScreen() {
       <ScrollView contentContainerStyle={styles.scrollContent}>
         {/* Profile Card */}
         <View style={styles.storeCard}>
-          <View style={styles.storeIconCircle}>
-            <Building2 size={32} color={COLORS.accentOrange} />
-          </View>
+          <TouchableOpacity
+            style={styles.storeLogoWrapper}
+            onPress={handlePickAndUploadLogo}
+            disabled={uploadingLogo}
+            activeOpacity={0.85}
+          >
+            {uploadingLogo ? (
+              <View style={styles.storeIconCircle}>
+                <ActivityIndicator size="small" color={COLORS.accentOrange} />
+              </View>
+            ) : (vendor?.logo || storeLogo || user?.avatar) ? (
+              <Image
+                source={{ uri: (vendor?.logo || storeLogo || user?.avatar || "") as string }}
+                style={styles.storeLogoImg}
+                contentFit="cover"
+              />
+            ) : (
+              <View style={styles.storeIconCircle}>
+                <Building2 size={32} color={COLORS.accentOrange} />
+              </View>
+            )}
+            <View style={styles.cameraIconBadge}>
+              <Camera size={12} color="#FFFFFF" />
+            </View>
+          </TouchableOpacity>
+
           <Text style={styles.storeName}>{vendor?.businessName || user?.name || "My Store"}</Text>
+          <TouchableOpacity onPress={handlePickAndUploadLogo} style={{ marginTop: 4, marginBottom: 8 }}>
+            <Text style={{ fontSize: 11, fontWeight: "800", color: COLORS.accentOrange }}>
+              {(vendor?.logo || storeLogo || user?.avatar) ? "📷 Change Store Logo" : "➕ Upload Store Logo"}
+            </Text>
+          </TouchableOpacity>
+
           <View style={styles.statusPill}>
             <ShieldCheck size={14} color={COLORS.accentGreen} />
             <Text style={styles.statusPillText}>Verified Partner</Text>
@@ -172,8 +263,12 @@ export default function VendorProfileScreen() {
             <Text style={styles.infoText}>+91 {vendor?.contactPhone || user?.phone || "N/A"}</Text>
           </View>
           <View style={styles.infoRow}>
-            <Truck size={16} color={COLORS.textSecondary} />
-            <Text style={styles.infoText}>Dispatch: {vendor?.deliveryMethod || "Seller Warehouse / IntriHub Fleet"}</Text>
+            <Truck size={16} color={vendor?.deliveryMethod === "platform" ? COLORS.accentBlue : COLORS.accentOrange} />
+            <Text style={styles.infoText}>
+              Logistics: <Text style={{ fontWeight: "800", color: vendor?.deliveryMethod === "platform" ? "#1E40AF" : "#9A3412" }}>
+                {vendor?.deliveryMethod === "platform" ? "⚡ Platform Logistics (Auto)" : "🚛 Self-Delivery (Manual)"}
+              </Text>
+            </Text>
           </View>
 
           <TouchableOpacity style={styles.editProfileBtn} onPress={handleOpenEdit}>
@@ -205,15 +300,16 @@ export default function VendorProfileScreen() {
 
           <TouchableOpacity
             style={styles.menuItem}
-            onPress={() => Linking.openURL("tel:+919264920211")}
+            onPress={() => router.push("/(vendor)/support" as any)}
+            activeOpacity={0.85}
           >
             <View style={styles.menuLeft}>
               <View style={[styles.menuIconBox, { backgroundColor: "#EFF6FF" }]}>
                 <Headphones size={18} color={COLORS.primary} />
               </View>
               <View style={{ flex: 1 }}>
-                <Text style={styles.menuText}>Vendor Partner Support</Text>
-                <Text style={styles.menuSub}>+91 9264920211 (10 AM - 7 PM)</Text>
+                <Text style={styles.menuText}>Vendor Partner Support 24*7</Text>
+                <Text style={styles.menuSub}>Helpline, WhatsApp chat, FAQs & tickets</Text>
               </View>
             </View>
             <ChevronRight size={18} color={COLORS.textTertiary} />
@@ -243,6 +339,53 @@ export default function VendorProfileScreen() {
           </View>
 
           <ScrollView contentContainerStyle={styles.modalContent}>
+            {/* Store Logo Section in Modal */}
+            <View style={[styles.modalCard, { alignItems: "center", paddingVertical: 18 }]}>
+              <TouchableOpacity
+                style={styles.storeLogoWrapper}
+                onPress={handlePickAndUploadLogo}
+                disabled={uploadingLogo}
+                activeOpacity={0.85}
+              >
+                {uploadingLogo ? (
+                  <View style={styles.storeIconCircle}>
+                    <ActivityIndicator size="small" color={COLORS.accentOrange} />
+                  </View>
+                ) : (vendor?.logo || storeLogo || user?.avatar) ? (
+                  <Image
+                    source={{ uri: (vendor?.logo || storeLogo || user?.avatar || "") as string }}
+                    style={styles.storeLogoImg}
+                    contentFit="cover"
+                  />
+                ) : (
+                  <View style={styles.storeIconCircle}>
+                    <Building2 size={32} color={COLORS.accentOrange} />
+                  </View>
+                )}
+                <View style={styles.cameraIconBadge}>
+                  <Camera size={12} color="#FFFFFF" />
+                </View>
+              </TouchableOpacity>
+
+              <TouchableOpacity
+                style={{
+                  marginTop: 8,
+                  backgroundColor: "#FFF7ED",
+                  borderWidth: 1,
+                  borderColor: "#FED7AA",
+                  paddingHorizontal: 14,
+                  paddingVertical: 6,
+                  borderRadius: 8,
+                }}
+                onPress={handlePickAndUploadLogo}
+                disabled={uploadingLogo}
+              >
+                <Text style={{ fontSize: 12, fontWeight: "800", color: COLORS.accentOrange }}>
+                  {(vendor?.logo || storeLogo || user?.avatar) ? "Change Store Logo" : "Upload Store Logo"}
+                </Text>
+              </TouchableOpacity>
+            </View>
+
             <View style={styles.modalCard}>
               <Text style={styles.inputLabel}>Store / Business Name:</Text>
               <TextInput
@@ -284,14 +427,66 @@ export default function VendorProfileScreen() {
                 placeholderTextColor={COLORS.textTertiary}
               />
 
-              <Text style={[styles.inputLabel, { marginTop: 12 }]}>Dispatch / Delivery Method:</Text>
-              <TextInput
-                style={styles.inputBox}
-                value={editDeliveryMethod}
-                onChangeText={setEditDeliveryMethod}
-                placeholder="Seller Warehouse / IntriHub Fleet"
-                placeholderTextColor={COLORS.textTertiary}
-              />
+              <Text style={[styles.inputLabel, { marginTop: 16 }]}>Logistics & Fulfillment Method:</Text>
+              
+              {/* Option 1: Self-Delivery (Manual) */}
+              <TouchableOpacity
+                style={[
+                  styles.deliveryRadioCard,
+                  editDeliveryMethod === "self" && styles.deliveryRadioCardActive,
+                ]}
+                onPress={() => setEditDeliveryMethod("self")}
+                activeOpacity={0.85}
+              >
+                <View style={styles.radioTopRow}>
+                  <View style={[styles.radioButton, editDeliveryMethod === "self" && styles.radioButtonActive]}>
+                    {editDeliveryMethod === "self" ? <View style={styles.radioInnerDot} /> : null}
+                  </View>
+                  <View style={{ flex: 1 }}>
+                    <View style={{ flexDirection: "row", alignItems: "center", justifyContent: "space-between", flexWrap: "wrap", gap: 4 }}>
+                      <Text style={[styles.deliveryRadioTitle, editDeliveryMethod === "self" && styles.deliveryRadioTitleActive]}>
+                        🚛 Self-Delivery (Manual)
+                      </Text>
+                      <View style={[styles.deliveryTagBadge, { backgroundColor: "#FEF3C7" }]}>
+                        <Text style={{ fontSize: 9, fontWeight: "800", color: "#B45309" }}>MANUAL LOGISTICS</Text>
+                      </View>
+                    </View>
+                    <Text style={styles.deliveryRadioSubtitle}>
+                      You deliver customer orders via your own warehouse vehicles or private couriers, providing tracking / LR details manually.
+                    </Text>
+                  </View>
+                </View>
+              </TouchableOpacity>
+
+              {/* Option 2: Platform Logistics (Auto) */}
+              <TouchableOpacity
+                style={[
+                  styles.deliveryRadioCard,
+                  editDeliveryMethod === "platform" && styles.deliveryRadioCardActive,
+                  { marginTop: 10 },
+                ]}
+                onPress={() => setEditDeliveryMethod("platform")}
+                activeOpacity={0.85}
+              >
+                <View style={styles.radioTopRow}>
+                  <View style={[styles.radioButton, editDeliveryMethod === "platform" && styles.radioButtonActive]}>
+                    {editDeliveryMethod === "platform" ? <View style={styles.radioInnerDot} /> : null}
+                  </View>
+                  <View style={{ flex: 1 }}>
+                    <View style={{ flexDirection: "row", alignItems: "center", justifyContent: "space-between", flexWrap: "wrap", gap: 4 }}>
+                      <Text style={[styles.deliveryRadioTitle, editDeliveryMethod === "platform" && styles.deliveryRadioTitleActive]}>
+                        ⚡ Intrihub Platform Logistics (Auto)
+                      </Text>
+                      <View style={[styles.deliveryTagBadge, { backgroundColor: "#DCFCE7" }]}>
+                        <Text style={{ fontSize: 9, fontWeight: "800", color: "#15803D" }}>AUTOMATED FLEET</Text>
+                      </View>
+                    </View>
+                    <Text style={styles.deliveryRadioSubtitle}>
+                      Intrihub Central Transport Fleet will automatically assign pickup, dispatch, and doorstep customer delivery from your store.
+                    </Text>
+                  </View>
+                </View>
+              </TouchableOpacity>
             </View>
 
             <TouchableOpacity
@@ -300,11 +495,11 @@ export default function VendorProfileScreen() {
               disabled={saving}
             >
               {saving ? (
-                <ActivityIndicator size="small" color="#FFFFFF" />
+                <ActivityIndicator color="#FFFFFF" size="small" />
               ) : (
                 <>
                   <CheckCircle2 size={18} color="#FFFFFF" />
-                  <Text style={styles.saveProfileBtnText}>Save Store Details</Text>
+                  <Text style={styles.saveProfileBtnText}>Save Store Changes</Text>
                 </>
               )}
             </TouchableOpacity>
@@ -358,14 +553,37 @@ const styles = StyleSheet.create({
     borderColor: COLORS.border,
     ...SHADOWS.sm,
   },
+  storeLogoWrapper: {
+    position: "relative",
+    marginBottom: SPACING.xs,
+  },
+  storeLogoImg: {
+    width: 72,
+    height: 72,
+    borderRadius: 36,
+    borderWidth: 2,
+    borderColor: "#F26522",
+  },
+  cameraIconBadge: {
+    position: "absolute",
+    bottom: 0,
+    right: 0,
+    backgroundColor: "#F26522",
+    width: 22,
+    height: 22,
+    borderRadius: 11,
+    alignItems: "center",
+    justifyContent: "center",
+    borderWidth: 2,
+    borderColor: "#FFFFFF",
+  },
   storeIconCircle: {
-    width: 64,
-    height: 64,
-    borderRadius: 32,
+    width: 72,
+    height: 72,
+    borderRadius: 36,
     backgroundColor: "rgba(242, 101, 34, 0.12)",
     alignItems: "center",
     justifyContent: "center",
-    marginBottom: SPACING.sm,
   },
   storeName: {
     fontSize: 18,
@@ -529,6 +747,61 @@ const styles = StyleSheet.create({
     height: 44,
     fontSize: 14,
     color: COLORS.text,
+  },
+  deliveryRadioCard: {
+    backgroundColor: "#F8FAFC",
+    borderWidth: 1.5,
+    borderColor: "#E2E8F0",
+    borderRadius: 14,
+    padding: 12,
+  },
+  deliveryRadioCardActive: {
+    borderColor: "#052A51",
+    backgroundColor: "#F0F7FF",
+  },
+  radioTopRow: {
+    flexDirection: "row",
+    gap: 10,
+    alignItems: "flex-start",
+  },
+  radioButton: {
+    width: 20,
+    height: 20,
+    borderRadius: 10,
+    borderWidth: 2,
+    borderColor: "#94A3B8",
+    alignItems: "center",
+    justifyContent: "center",
+    marginTop: 2,
+  },
+  radioButtonActive: {
+    borderColor: "#052A51",
+  },
+  radioInnerDot: {
+    width: 10,
+    height: 10,
+    borderRadius: 5,
+    backgroundColor: "#052A51",
+  },
+  deliveryRadioTitle: {
+    fontSize: 13,
+    fontWeight: "700",
+    color: "#1E293B",
+  },
+  deliveryRadioTitleActive: {
+    color: "#052A51",
+    fontWeight: "800",
+  },
+  deliveryRadioSubtitle: {
+    fontSize: 11,
+    color: "#64748B",
+    marginTop: 4,
+    lineHeight: 16,
+  },
+  deliveryTagBadge: {
+    paddingHorizontal: 6,
+    paddingVertical: 2,
+    borderRadius: 6,
   },
   saveProfileBtn: {
     backgroundColor: "#F26522",

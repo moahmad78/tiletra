@@ -79,6 +79,12 @@ export default function VendorTabsLayout() {
           href: null,
         }}
       />
+      <Tabs.Screen
+        name="support"
+        options={{
+          href: null,
+        }}
+      />
     </Tabs>
   );
 }

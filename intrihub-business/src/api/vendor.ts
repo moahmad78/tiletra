@@ -193,6 +193,8 @@ export async function updateVendorProfile(data: {
   category?: string;
   deliveryMethod?: string;
   description?: string;
+  logo?: string;
+  shopPhotoUrl?: string;
 }): Promise<{
   success: boolean;
   message?: string;

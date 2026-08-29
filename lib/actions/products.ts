@@ -401,7 +401,7 @@ export async function createProduct(input: CreateProductInput) {
       .replace(/[^a-z0-9]+/g, "-")
       .replace(/(^-|-$)+/g, "") + `-${Date.now().toString().slice(-4)}`;
 
-    const primaryVariant = input.variants[0] || {
+    const primaryVariant: any = (input.variants && input.variants.length > 0 ? input.variants[0] : null) || {
       size: "Standard",
       finish: "Standard",
       pricePerBox: 1000,
@@ -480,23 +480,23 @@ export async function createProduct(input: CreateProductInput) {
         coverageRate: input.coverageRate !== undefined && input.coverageRate !== null ? Number(input.coverageRate) : (primaryVariant.sqftPerBox ? Number(primaryVariant.sqftPerBox) : null),
         wastageFactor: input.wastageFactor !== undefined && input.wastageFactor !== null ? Number(input.wastageFactor) : 1.1,
         variants: {
-          create: input.variants.map((v) => ({
+          create: (input.variants && input.variants.length > 0 ? input.variants : [primaryVariant]).map((v: any) => ({
             sku: v.sku || null,
-            size: v.size,
-            finish: v.finish,
-            color: v.color,
+            size: v.size || primaryVariant.size || "Standard",
+            finish: v.finish || primaryVariant.finish || "Standard",
+            color: v.color || "Standard",
             colorHex: v.colorHex || null,
             swatchImage: v.swatchImage || null,
-            image: v.image || null,
-            unit: v.unit || null,
+            image: v.image || (input.images?.[0] ?? null),
+            unit: v.unit || input.sellingUnit || input.unitOfSale || "box",
             attributeLabel: v.attributeLabel || null,
             attributeValue: v.attributeValue || null,
             variantSpecs: v.variantSpecs || null,
             mrp: v.mrp !== undefined && v.mrp !== null ? Number(v.mrp) : null,
             weightKg: v.weightKg !== undefined && v.weightKg !== null ? Number(v.weightKg) : 2.5,
-            pricePerBox: Number(v.pricePerBox),
-            pricePerSqft: Number(v.pricePerSqft),
-            sqftPerBox: Number(v.sqftPerBox),
+            pricePerBox: Number(v.pricePerBox || primaryVariant.pricePerBox || 0),
+            pricePerSqft: Number(v.pricePerSqft || primaryVariant.pricePerSqft || 0),
+            sqftPerBox: Number(v.sqftPerBox || primaryVariant.sqftPerBox || 1),
             piecesPerBox: v.piecesPerBox ? Number(v.piecesPerBox) : 4,
             stockBoxes: Number(v.stockBoxes ?? 50),
             inStock: true,

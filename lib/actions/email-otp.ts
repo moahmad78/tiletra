@@ -16,7 +16,7 @@ function getFormattedFromEmail(): string {
 
 const OTP_EXPIRY_MINUTES = 5; // 5 minutes standard per PRD
 
-export type OtpPurpose = "customer" | "admin" | "vendor";
+export type OtpPurpose = "customer" | "admin" | "vendor" | "business";
 
 function generateSecureOtp(): string {
   // Cryptographically secure 6-digit numeric OTP
@@ -125,25 +125,42 @@ export async function sendEmailOtp(
     if (cleanEmail !== STRICT_ADMIN_EMAIL.toLowerCase()) {
       return { success: false, message: "Invalid credentials. Access denied." };
     }
-  } else if (purpose === "vendor") {
-    const vendorRecord = await prisma.vendor.findFirst({
-      where: {
-        OR: [
-          { contactEmail: { equals: cleanEmail, mode: "insensitive" } },
-          { owner: { email: { equals: cleanEmail, mode: "insensitive" }, role: "vendor" } },
-        ],
-      },
-    });
+  } else if (purpose === "vendor" || purpose === "business") {
+    const allowedAdminEmail = (process.env.ADMIN_ALLOWED_EMAIL || "admin@intrihub.com").toLowerCase().trim();
+    const isAdmin = cleanEmail === allowedAdminEmail;
 
-    const vendorUser = await prisma.user.findFirst({
-      where: {
-        email: { equals: cleanEmail, mode: "insensitive" },
-        role: "vendor",
-      },
-    });
+    if (!isAdmin) {
+      const vendorRecord = await prisma.vendor.findFirst({
+        where: {
+          OR: [
+            { contactEmail: { equals: cleanEmail, mode: "insensitive" } },
+            { owner: { email: { equals: cleanEmail, mode: "insensitive" } } },
+          ],
+        },
+      });
 
-    if (!vendorRecord && !vendorUser) {
-      return { success: false, message: "Invalid credentials. Please check your email address." };
+      const vendorUser = !vendorRecord
+        ? await prisma.user.findFirst({
+            where: {
+              email: { equals: cleanEmail, mode: "insensitive" },
+              role: "vendor",
+            },
+          })
+        : null;
+
+      if (!vendorRecord && !vendorUser) {
+        return { success: false, message: "This email isn't registered as an approved vendor partner." };
+      }
+
+      if (vendorRecord && vendorRecord.status !== "approved") {
+        return {
+          success: false,
+          message:
+            vendorRecord.status === "pending"
+              ? "Your vendor application is currently under review."
+              : `Your vendor account status is ${vendorRecord.status}.`,
+        };
+      }
     }
   }
 

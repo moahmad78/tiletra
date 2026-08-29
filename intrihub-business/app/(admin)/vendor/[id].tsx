@@ -34,6 +34,7 @@ import {
   ChevronRight,
   TrendingUp,
   AlertTriangle,
+  Zap,
 } from "lucide-react-native";
 import {
   fetchAdminVendorDetail,
@@ -59,7 +60,9 @@ export default function AdminVendorDetailScreen() {
   const [commissionRate, setCommissionRate] = useState("15.0");
   const [status, setStatus] = useState("approved");
   const [verified, setVerified] = useState(false);
+  const [autoPublish, setAutoPublish] = useState(false);
   const [savingVendor, setSavingVendor] = useState(false);
+  const [togglingAutoPublish, setTogglingAutoPublish] = useState(false);
 
   // Edit Product Modal State
   const [productEditModalOpen, setProductEditModalOpen] = useState(false);
@@ -71,7 +74,7 @@ export default function AdminVendorDetailScreen() {
   const [editProdStatus, setEditProdStatus] = useState("active");
   const [savingProduct, setSavingProduct] = useState(false);
 
-  const { data, isLoading, refetch } = useQuery({
+  const { data, isLoading, isError, refetch } = useQuery({
     queryKey: ["admin-vendor-detail", id],
     queryFn: () => fetchAdminVendorDetail(id as string),
     enabled: Boolean(id),
@@ -88,8 +91,65 @@ export default function AdminVendorDetailScreen() {
       setCommissionRate(String(vendor.commissionRate ?? 15));
       setStatus(vendor.status || "approved");
       setVerified(Boolean(vendor.verified || vendor.kycStatus === "verified"));
+      setAutoPublish(Boolean(vendor.autoPublishEnabled));
     }
   }, [vendor]);
+
+  const handleQuickUpdateStatus = async (newStatus: "approved" | "pending" | "suspended" | "rejected") => {
+    setSavingVendor(true);
+    try {
+      const res = await updateAdminVendor(id as string, {
+        status: newStatus,
+        verified: newStatus === "approved" ? true : verified,
+      });
+      setSavingVendor(false);
+      if (res.success) {
+        setStatus(newStatus);
+        if (newStatus === "approved") setVerified(true);
+        refetch();
+        queryClient.invalidateQueries({ queryKey: ["admin-vendors"] });
+        queryClient.invalidateQueries({ queryKey: ["admin-dashboard"] });
+        Alert.alert(
+          "Vendor Status Updated 🎉",
+          newStatus === "approved"
+            ? `Store "${businessName}" is now APPROVED & ACTIVE on Intrihub!`
+            : `Store "${businessName}" status set to ${newStatus.toUpperCase()}`
+        );
+      } else {
+        Alert.alert("Status Update Error", res.error || "Failed to update vendor status");
+      }
+    } catch (e: any) {
+      setSavingVendor(false);
+      Alert.alert("Error", e?.message || "Something went wrong.");
+    }
+  };
+
+  const handleToggleAutoPublish = async () => {
+    const nextState = !autoPublish;
+    setTogglingAutoPublish(true);
+    try {
+      const res = await updateAdminVendor(id as string, {
+        autoPublishEnabled: nextState,
+      });
+      setTogglingAutoPublish(false);
+      if (res.success) {
+        setAutoPublish(nextState);
+        refetch();
+        queryClient.invalidateQueries({ queryKey: ["admin-vendors"] });
+        Alert.alert(
+          nextState ? "⚡ Auto-Upload Mode Activated" : "⏳ Approval Required Mode Activated",
+          nextState
+            ? `Items uploaded by "${businessName}" will now go DIRECTLY LIVE without waiting for review.`
+            : `Items uploaded by "${businessName}" will now REQUIRE SUPER ADMIN APPROVAL before going live.`
+        );
+      } else {
+        Alert.alert("Error", res.error || "Failed to update upload mode");
+      }
+    } catch (e: any) {
+      setTogglingAutoPublish(false);
+      Alert.alert("Error", e?.message || "Something went wrong.");
+    }
+  };
 
   const handleSaveVendor = async () => {
     setSavingVendor(true);
@@ -101,6 +161,7 @@ export default function AdminVendorDetailScreen() {
         commissionRate: parseFloat(commissionRate) || 15.0,
         status,
         verified,
+        autoPublishEnabled: autoPublish,
       });
       setSavingVendor(false);
       if (res.success) {
@@ -149,7 +210,7 @@ export default function AdminVendorDetailScreen() {
       }
     } catch (e: any) {
       setSavingProduct(false);
-      Alert.alert("Error", e?.message || "Failed to update product");
+      Alert.alert("Error", e?.message || "Something went wrong.");
     }
   };
 
@@ -172,10 +233,29 @@ export default function AdminVendorDetailScreen() {
     ]);
   };
 
-  if (isLoading || !vendor) {
+  if (isLoading) {
     return (
       <View style={styles.centerContainer}>
         <ActivityIndicator size="large" color={COLORS.accentBlue} />
+        <Text style={{ marginTop: 12, fontSize: 13, color: COLORS.textSecondary, fontFamily: "Outfit-Medium" }}>
+          Loading vendor details...
+        </Text>
+      </View>
+    );
+  }
+
+  if (isError || !vendor) {
+    return (
+      <View style={styles.centerContainer}>
+        <Text style={{ fontSize: 14, color: COLORS.textSecondary, fontFamily: "Outfit-Medium", marginBottom: 14 }}>
+          Vendor not found or could not load details.
+        </Text>
+        <TouchableOpacity
+          style={{ backgroundColor: "#052A51", paddingHorizontal: 20, paddingVertical: 10, borderRadius: 10 }}
+          onPress={() => refetch()}
+        >
+          <Text style={{ color: "#FFFFFF", fontSize: 13, fontFamily: "Outfit-Bold" }}>Retry</Text>
+        </TouchableOpacity>
       </View>
     );
   }
@@ -203,12 +283,43 @@ export default function AdminVendorDetailScreen() {
         <View style={styles.vendorCard}>
           <View style={styles.vendorHeaderRow}>
             <View style={styles.iconCircle}>
-              <Store size={26} color="#052A51" />
+              {vendor.logo ? (
+                <Image
+                  source={{ uri: vendor.logo }}
+                  style={{ width: 48, height: 48, borderRadius: 24 }}
+                  contentFit="cover"
+                />
+              ) : (
+                <Store size={26} color="#052A51" />
+              )}
             </View>
             <View style={{ flex: 1, marginLeft: 12 }}>
-              <View style={{ flexDirection: "row", alignItems: "center", gap: 6 }}>
-                <Text style={styles.businessTitle}>{vendor.businessName}</Text>
-                {verified && <ShieldCheck size={16} color="#16A34A" />}
+              <View style={{ flexDirection: "row", alignItems: "center", justifyContent: "space-between" }}>
+                <View style={{ flexDirection: "row", alignItems: "center", gap: 6, flex: 1 }}>
+                  <Text style={styles.businessTitle} numberOfLines={1}>{vendor.businessName}</Text>
+                  {verified && <ShieldCheck size={16} color="#16A34A" />}
+                </View>
+                {/* Status Badge */}
+                <View
+                  style={{
+                    paddingHorizontal: 8,
+                    paddingVertical: 3,
+                    borderRadius: 6,
+                    backgroundColor:
+                      status === "approved" ? "#DCFCE7" : status === "pending" ? "#FEF3C7" : "#FEE2E2",
+                  }}
+                >
+                  <Text
+                    style={{
+                      fontSize: 10,
+                      fontFamily: "Outfit-Bold",
+                      color:
+                        status === "approved" ? "#15803D" : status === "pending" ? "#B45309" : "#DC2626",
+                    }}
+                  >
+                    {status === "approved" ? "✓ ACTIVE" : status === "pending" ? "⏳ PENDING" : "⏸ SUSPENDED"}
+                  </Text>
+                </View>
               </View>
               <Text style={styles.categorySub}>{vendor.category || "Building Materials"}</Text>
               <Text style={styles.ownerSub}>Owner: {vendor.owner?.name || "Verified Partner"}</Text>
@@ -228,6 +339,125 @@ export default function AdminVendorDetailScreen() {
               <Text style={styles.addressText}>📍 {vendor.businessAddress}</Text>
             ) : null}
           </View>
+
+          {/* Quick Account Status Actions Bar */}
+          <View style={{ marginTop: 12, paddingTop: 12, borderTopWidth: 1, borderTopColor: "#F1F5F9" }}>
+            {status !== "approved" ? (
+              <TouchableOpacity
+                style={{
+                  backgroundColor: "#16A34A",
+                  flexDirection: "row",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  gap: 8,
+                  paddingVertical: 10,
+                  borderRadius: 10,
+                }}
+                onPress={() => handleQuickUpdateStatus("approved")}
+                disabled={savingVendor}
+                activeOpacity={0.85}
+              >
+                <CheckCircle2 size={16} color="#FFFFFF" />
+                <Text style={{ color: "#FFFFFF", fontSize: 13, fontFamily: "Outfit-Bold" }}>
+                  Approve & Activate Vendor Store
+                </Text>
+              </TouchableOpacity>
+            ) : (
+              <View style={{ flexDirection: "row", gap: 8 }}>
+                <TouchableOpacity
+                  style={{
+                    flex: 1,
+                    backgroundColor: "#FEF2F2",
+                    borderWidth: 1,
+                    borderColor: "#FECACA",
+                    flexDirection: "row",
+                    alignItems: "center",
+                    justifyContent: "center",
+                    gap: 6,
+                    paddingVertical: 8,
+                    borderRadius: 10,
+                  }}
+                  onPress={() => {
+                    Alert.alert(
+                      "Suspend Vendor Store",
+                      `Are you sure you want to suspend "${vendor.businessName}"? Their products will be hidden from customer app.`,
+                      [
+                        { text: "Cancel", style: "cancel" },
+                        { text: "Suspend Store", style: "destructive", onPress: () => handleQuickUpdateStatus("suspended") },
+                      ]
+                    );
+                  }}
+                  disabled={savingVendor}
+                  activeOpacity={0.85}
+                >
+                  <AlertTriangle size={14} color="#DC2626" />
+                  <Text style={{ color: "#DC2626", fontSize: 12, fontFamily: "Outfit-Bold" }}>
+                    Suspend Store
+                  </Text>
+                </TouchableOpacity>
+
+                <TouchableOpacity
+                  style={{
+                    flex: 1,
+                    backgroundColor: "#F0FDF4",
+                    borderWidth: 1,
+                    borderColor: "#BBF7D0",
+                    flexDirection: "row",
+                    alignItems: "center",
+                    justifyContent: "center",
+                    gap: 6,
+                    paddingVertical: 8,
+                    borderRadius: 10,
+                  }}
+                  onPress={() => setVendorEditModalOpen(true)}
+                  activeOpacity={0.85}
+                >
+                  <Edit2 size={14} color="#166534" />
+                  <Text style={{ color: "#166534", fontSize: 12, fontFamily: "Outfit-Bold" }}>
+                    Edit Store
+                  </Text>
+                </TouchableOpacity>
+              </View>
+            )}
+          </View>
+        </View>
+
+        {/* Auto Upload vs Approval Required Mode Control */}
+        <View style={[styles.autoUploadStrip, autoPublish ? styles.autoUploadStripActive : styles.autoUploadStripInactive]}>
+          <View style={{ flex: 1, paddingRight: 10 }}>
+            <View style={{ flexDirection: "row", alignItems: "center", gap: 6 }}>
+              <Zap size={15} color={autoPublish ? "#16A34A" : "#D97706"} />
+              <Text style={[styles.autoUploadTitle, { color: autoPublish ? "#166534" : "#92400E" }]}>
+                {autoPublish ? "⚡ Auto-Upload Mode (Direct Live)" : "⏳ Approval Required Mode"}
+              </Text>
+            </View>
+            <Text style={[styles.autoUploadSubtitle, { color: autoPublish ? "#15803D" : "#78350F" }]}>
+              {autoPublish
+                ? "New products uploaded by this vendor will go DIRECTLY LIVE without waiting for Super Admin review."
+                : "New products uploaded by this vendor will remain in PENDING until Super Admin approves them."}
+            </Text>
+          </View>
+
+          <TouchableOpacity
+            style={[
+              styles.modeSwitchBtn,
+              autoPublish ? styles.modeSwitchBtnActive : styles.modeSwitchBtnInactive,
+            ]}
+            onPress={handleToggleAutoPublish}
+            disabled={togglingAutoPublish}
+            activeOpacity={0.85}
+          >
+            {togglingAutoPublish ? (
+              <ActivityIndicator size="small" color={autoPublish ? "#FFFFFF" : "#052A51"} />
+            ) : (
+              <>
+                <Text style={[styles.modeSwitchText, autoPublish ? styles.modeSwitchTextActive : styles.modeSwitchTextInactive]}>
+                  {autoPublish ? "DIRECT LIVE" : "APPROVAL"}
+                </Text>
+                <View style={[styles.toggleThumb, autoPublish ? styles.toggleThumbActive : styles.toggleThumbInactive]} />
+              </>
+            )}
+          </TouchableOpacity>
         </View>
 
         {/* Financial & Performance Stats Grid */}
@@ -857,5 +1087,70 @@ const styles = StyleSheet.create({
     color: "#FFFFFF",
     fontSize: 13,
     fontWeight: "800",
+  },
+  autoUploadStrip: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    padding: 12,
+    borderRadius: 14,
+    borderWidth: 1,
+    ...SHADOWS.sm,
+  },
+  autoUploadStripActive: {
+    backgroundColor: "#F0FDF4",
+    borderColor: "#BBF7D0",
+  },
+  autoUploadStripInactive: {
+    backgroundColor: "#FFFBEB",
+    borderColor: "#FDE68A",
+  },
+  autoUploadTitle: {
+    fontSize: 13,
+    fontWeight: "800",
+  },
+  autoUploadSubtitle: {
+    fontSize: 11,
+    marginTop: 3,
+    lineHeight: 15,
+  },
+  modeSwitchBtn: {
+    flexDirection: "row",
+    alignItems: "center",
+    paddingHorizontal: 10,
+    paddingVertical: 6,
+    borderRadius: 20,
+    borderWidth: 1,
+    gap: 6,
+  },
+  modeSwitchBtnActive: {
+    backgroundColor: "#16A34A",
+    borderColor: "#15803D",
+  },
+  modeSwitchBtnInactive: {
+    backgroundColor: "#F1F5F9",
+    borderColor: "#CBD5E1",
+  },
+  modeSwitchText: {
+    fontSize: 10,
+    fontWeight: "900",
+    letterSpacing: 0.5,
+  },
+  modeSwitchTextActive: {
+    color: "#FFFFFF",
+  },
+  modeSwitchTextInactive: {
+    color: "#475569",
+  },
+  toggleThumb: {
+    width: 12,
+    height: 12,
+    borderRadius: 6,
+  },
+  toggleThumbActive: {
+    backgroundColor: "#FFFFFF",
+  },
+  toggleThumbInactive: {
+    backgroundColor: "#94A3B8",
   },
 });

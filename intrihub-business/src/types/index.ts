@@ -24,6 +24,7 @@ export interface Vendor {
   deliveryMethod?: string | null;
   commissionRate?: number | null;
   verified?: boolean;
+  autoPublishEnabled?: boolean;
   city?: string | null;
   state?: string | null;
   productsCount?: number;
@@ -94,6 +95,8 @@ export interface VendorOrderSplit {
   createdAt: string;
   trackingNumber?: string;
   courierName?: string;
+  deliveryAddress?: string;
+  shippingAddress?: any;
   items?: any[];
 }
 
@@ -110,6 +113,7 @@ export interface VendorDashboardData {
     contactPhone?: string;
     businessAddress?: string;
     deliveryMethod?: string;
+    autoPublishEnabled?: boolean;
   };
   stats: {
     totalRevenue: number;

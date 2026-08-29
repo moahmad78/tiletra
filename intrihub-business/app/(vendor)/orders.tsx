@@ -4,6 +4,7 @@ import {
   Text,
   StyleSheet,
   FlatList,
+  ScrollView,
   TouchableOpacity,
   RefreshControl,
   ActivityIndicator,
@@ -22,10 +23,31 @@ import {
   Phone,
   Package,
   X,
+  Printer,
 } from "lucide-react-native";
 import { fetchVendorOrders, updateVendorOrderStatus } from "../../src/api/vendor";
 import { VendorOrderSplit } from "../../src/types";
+import { COURIER_PARTNERS } from "../../src/constants/logistics";
 import { COLORS, SPACING, RADIUS, SHADOWS } from "../../src/constants/theme";
+import { printOrderInvoice } from "../../src/utils/invoicePrinter";
+
+const getCleanPhone = (phone?: string | null) => {
+  if (!phone) return "";
+  const str = String(phone).trim();
+  const lower = str.toLowerCase();
+  if (
+    lower.startsWith("email_") ||
+    lower.startsWith("google_") ||
+    lower.includes("email") ||
+    lower.includes("@") ||
+    /[a-zA-Z_]/.test(str)
+  ) {
+    return "";
+  }
+  const digits = str.replace(/\D/g, "");
+  if (digits.length < 7) return "";
+  return digits.length > 10 ? digits.slice(-10) : digits;
+};
 
 export default function VendorOrdersScreen() {
   const router = useRouter();
@@ -85,8 +107,8 @@ export default function VendorOrdersScreen() {
           <View>
             <Text style={styles.orderId}>Order #{item.orderId}</Text>
             <Text style={styles.customerName}>{item.customerName}</Text>
-            {item.customerPhone ? (
-              <Text style={styles.customerPhone}>Phone: +91 {item.customerPhone}</Text>
+            {getCleanPhone(item.customerPhone) ? (
+              <Text style={styles.customerPhone}>Phone: +91 {getCleanPhone(item.customerPhone)}</Text>
             ) : null}
           </View>
           <View style={[styles.statusBadge, getStatusStyle(item.fulfillmentStatus)]}>
@@ -125,6 +147,13 @@ export default function VendorOrdersScreen() {
           >
             <Text style={styles.viewDetailBtnText}>Order Details</Text>
             <ChevronRight size={14} color={COLORS.primary} />
+          </TouchableOpacity>
+
+          <TouchableOpacity
+            style={{ padding: 8, backgroundColor: "#FFF7ED", borderWidth: 1, borderColor: "#FFEDD5", borderRadius: 8, justifyContent: "center", alignItems: "center" }}
+            onPress={() => printOrderInvoice(item)}
+          >
+            <Printer size={16} color="#EA580C" />
           </TouchableOpacity>
 
           <TouchableOpacity
@@ -226,18 +255,71 @@ export default function VendorOrdersScreen() {
 
             {newStatus === "dispatched" ? (
               <View style={styles.dispatchFields}>
-                <Text style={styles.label}>Courier / Transport Name</Text>
+                <Text style={styles.label}>Select Courier / Transport Partner *</Text>
+                
+                {/* Selectable Courier Partners Grid */}
+                <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.courierScroll}>
+                  <View style={styles.courierChipsRow}>
+                    {COURIER_PARTNERS.map((cp) => {
+                      const isSelected = courierName.toLowerCase() === cp.name.toLowerCase() || courierName.toLowerCase().startsWith(cp.name.toLowerCase().split(" ")[0]);
+                      return (
+                        <TouchableOpacity
+                          key={cp.id}
+                          style={[
+                            styles.courierChip,
+                            isSelected && styles.courierChipSelected,
+                          ]}
+                          onPress={() => setCourierName(cp.name)}
+                          activeOpacity={0.8}
+                        >
+                          <View style={{ flexDirection: "row", alignItems: "center", gap: 6 }}>
+                            <Truck size={13} color={isSelected ? "#FFFFFF" : cp.badgeColor} />
+                            <Text
+                              style={[
+                                styles.courierChipText,
+                                isSelected && styles.courierChipTextSelected,
+                              ]}
+                            >
+                              {cp.name}
+                            </Text>
+                          </View>
+                          {cp.tag ? (
+                            <View
+                              style={[
+                                styles.courierTagBadge,
+                                { backgroundColor: isSelected ? "rgba(255,255,255,0.25)" : "rgba(0,0,0,0.05)" },
+                              ]}
+                            >
+                              <Text
+                                style={[
+                                  styles.courierTagText,
+                                  isSelected && { color: "#FFFFFF" },
+                                ]}
+                              >
+                                {cp.tag}
+                              </Text>
+                            </View>
+                          ) : null}
+                        </TouchableOpacity>
+                      );
+                    })}
+                  </View>
+                </ScrollView>
+
+                <Text style={[styles.label, { marginTop: 10 }]}>Courier / Transport Name (Customizable)</Text>
                 <TextInput
                   style={styles.modalInput}
                   placeholder="e.g. VRL Logistics, Delhivery, Own Truck"
+                  placeholderTextColor="#94A3B8"
                   value={courierName}
                   onChangeText={setCourierName}
                 />
 
-                <Text style={styles.label}>Tracking / LR Number</Text>
+                <Text style={styles.label}>Tracking / LR / Bilty Number</Text>
                 <TextInput
                   style={styles.modalInput}
-                  placeholder="e.g. VRL-98726354"
+                  placeholder="e.g. VRL-98726354 / KA-01-AB-1234"
+                  placeholderTextColor="#94A3B8"
                   value={trackingNumber}
                   onChangeText={setTrackingNumber}
                 />
@@ -512,6 +594,48 @@ const styles = StyleSheet.create({
   },
   dispatchFields: {
     marginBottom: SPACING.md,
+  },
+  courierScroll: {
+    marginVertical: 6,
+  },
+  courierChipsRow: {
+    flexDirection: "row",
+    gap: 8,
+    paddingVertical: 4,
+  },
+  courierChip: {
+    flexDirection: "row",
+    alignItems: "center",
+    backgroundColor: "#F8FAFC",
+    borderWidth: 1.5,
+    borderColor: "#CBD5E1",
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+    borderRadius: 12,
+    gap: 8,
+  },
+  courierChipSelected: {
+    backgroundColor: "#052A51",
+    borderColor: "#052A51",
+  },
+  courierChipText: {
+    fontSize: 12,
+    fontWeight: "700",
+    color: "#0F172A",
+  },
+  courierChipTextSelected: {
+    color: "#FFFFFF",
+    fontWeight: "800",
+  },
+  courierTagBadge: {
+    paddingHorizontal: 6,
+    paddingVertical: 2,
+    borderRadius: 6,
+  },
+  courierTagText: {
+    fontSize: 10,
+    fontWeight: "800",
+    color: "#64748B",
   },
   modalInput: {
     backgroundColor: COLORS.surfaceSecondary,

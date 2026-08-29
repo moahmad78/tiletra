@@ -9,6 +9,7 @@ import {
   ActivityIndicator,
   Alert,
   Modal,
+  Platform,
   Image as RNImage,
 } from "react-native";
 import { useRouter } from "expo-router";
@@ -18,6 +19,7 @@ import * as ImagePicker from "expo-image-picker";
 import {
   User,
   Shield,
+  ShieldCheck,
   Phone,
   Mail,
   Building2,
@@ -83,6 +85,27 @@ import {
 } from "../../src/api/admin";
 import { COLORS, SPACING, RADIUS, SHADOWS } from "../../src/constants/theme";
 
+const getCleanPhone = (phone?: string | null) => {
+  if (!phone) return "";
+  const str = String(phone).trim();
+  const lower = str.toLowerCase();
+  if (
+    lower.startsWith("email_") ||
+    lower.startsWith("google_") ||
+    lower.includes("email") ||
+    lower.includes("gmail") ||
+    lower.includes("yahoo") ||
+    lower.includes("@") ||
+    lower.includes("_") ||
+    /[a-zA-Z]/.test(str)
+  ) {
+    return "";
+  }
+  const digits = str.replace(/\D/g, "");
+  if (digits.length < 7) return "";
+  return digits.length > 10 ? digits.slice(-10) : digits;
+};
+
 export default function AdminAccountMasterHubScreen() {
   const router = useRouter();
   const { user, logout, setUser } = useAuthStore();
@@ -135,17 +158,33 @@ export default function AdminAccountMasterHubScreen() {
 
   // Modal Visibility States
   const [profileModalOpen, setProfileModalOpen] = useState(false);
-  const [storeInfoModalOpen, setStoreInfoModalOpen] = useState(false);
-  const [policiesModalOpen, setPoliciesModalOpen] = useState(false);
-  const [categoriesModalOpen, setCategoriesModalOpen] = useState(false);
   const [cmsModalOpen, setCmsModalOpen] = useState(false);
-  const [cmsSubTab, setCmsSubTab] = useState<"banners" | "coupons" | "logos" | "headings">("banners");
+  const [activeCmsTab, setActiveCmsTab] = useState<"store" | "invoice" | "policies" | "banners" | "coupons" | "logos" | "headings" | null>(null);
+  const [storeInfoModalOpen, setStoreInfoModalOpen] = useState(false);
+  const [invoicePdfModalOpen, setInvoicePdfModalOpen] = useState(false);
+  const [policiesModalOpen, setPoliciesModalOpen] = useState(false);
+  const [bannersModalOpen, setBannersModalOpen] = useState(false);
+  const [couponsModalOpen, setCouponsModalOpen] = useState(false);
+  const [logosModalOpen, setLogosModalOpen] = useState(false);
+  const [headingsModalOpen, setHeadingsModalOpen] = useState(false);
   const [reviewsModalOpen, setReviewsModalOpen] = useState(false);
   const [trashModalOpen, setTrashModalOpen] = useState(false);
   const [trashSubTab, setTrashSubTab] = useState<"products" | "orders">("products");
   const [detailModalOpen, setDetailModalOpen] = useState(false);
   const [selectedTrashItem, setSelectedTrashItem] = useState<any | null>(null);
   const [settlementsModalOpen, setSettlementsModalOpen] = useState(false);
+  const [isUpdatingSettings, setIsUpdatingSettings] = useState(false);
+
+  // Tax Invoice & Bill PDF CMS Form
+  const [invGstNumber, setInvGstNumber] = useState("29AAAAA0000A1Z5");
+  const [invSupportPhone, setInvSupportPhone] = useState("+91 9264920211");
+  const [invSupportEmail, setInvSupportEmail] = useState("support@intrihub.com");
+  const [invSigText, setInvSigText] = useState("INTRIHUB");
+  const [invSigTitle, setInvSigTitle] = useState("Authorized Signatory");
+  const [invDigitalBadge, setInvDigitalBadge] = useState("✔ Digitally Signed");
+  const [invTermsNotes, setInvTermsNotes] = useState("• Computer-generated tax invoice verified by IntriHub.\n• Everything, Every Place • www.intrihub.com");
+  const [invFooterTagline, setInvFooterTagline] = useState("This is an official computer-generated tax invoice verified by IntriHub.");
+  const [invWatermarkUrl, setInvWatermarkUrl] = useState("https://www.intrihub.com/logo/intri-web-logo.png");
 
   // Settlement Editing State
   const [editingVendorId, setEditingVendorId] = useState<string | null>(null);
@@ -236,6 +275,16 @@ export default function AdminAccountMasterHubScreen() {
       setNewArrivalsHeading(s.newArrivalsHeading || "New In Stock");
       setNewArrivalsCaption(s.newArrivalsCaption || "Latest luxury surfaces and hardware fresh from factory");
       setDealsBarText(s.dealsBarText || "Special Launch Offer: Extra 10% off with coupon code FESTIVE10");
+
+      if (s.gstNumber) setInvGstNumber(s.gstNumber);
+      if (s.contactPhone) setInvSupportPhone(s.contactPhone);
+      if (s.email) setInvSupportEmail(s.email);
+      if (s.invoiceSignatureText) setInvSigText(s.invoiceSignatureText);
+      if (s.invoiceSignatureTitle) setInvSigTitle(s.invoiceSignatureTitle);
+      if (s.invoiceDigitalBadge) setInvDigitalBadge(s.invoiceDigitalBadge);
+      if (s.invoiceTermsNotes) setInvTermsNotes(s.invoiceTermsNotes);
+      if (s.invoiceFooterTagline) setInvFooterTagline(s.invoiceFooterTagline);
+      if (s.invoiceWatermarkUrl) setInvWatermarkUrl(s.invoiceWatermarkUrl);
     }
   }, [settingsData]);
 
@@ -356,8 +405,8 @@ export default function AdminAccountMasterHubScreen() {
   const handlePickAndUploadImage = async (onUploaded: (url: string) => void) => {
     try {
       const result = await ImagePicker.launchImageLibraryAsync({
-        mediaTypes: ImagePicker.MediaTypeOptions.Images,
-        allowsEditing: true,
+        mediaTypes: ["images"],
+        allowsEditing: false,
         quality: 0.8,
       });
 
@@ -627,10 +676,54 @@ export default function AdminAccountMasterHubScreen() {
     );
   };
 
+  const handleLogout = () => {
+    Alert.alert(
+      "Secure Sign Out",
+      "Are you sure you want to sign out of the Super Admin Console?",
+      [
+        { text: "Cancel", style: "cancel" },
+        {
+          text: "Sign Out",
+          style: "destructive",
+          onPress: async () => {
+            try {
+              await logout();
+              queryClient.clear();
+              router.replace("/(auth)/login" as any);
+            } catch {
+              router.replace("/(auth)/login" as any);
+            }
+          },
+        },
+      ]
+    );
+  };
+
   return (
     <ScrollView style={styles.container} contentContainerStyle={styles.content}>
       {/* Header Profile Hero Card */}
       <View style={styles.heroCard}>
+        <TouchableOpacity
+          style={{
+            position: "absolute",
+            top: 14,
+            right: 14,
+            width: 34,
+            height: 34,
+            borderRadius: 17,
+            backgroundColor: "rgba(255,255,255,0.18)",
+            alignItems: "center",
+            justifyContent: "center",
+            borderWidth: 1,
+            borderColor: "rgba(255,255,255,0.35)",
+            zIndex: 10,
+          }}
+          onPress={() => setProfileModalOpen(true)}
+          activeOpacity={0.8}
+        >
+          <Edit2 size={16} color="#FFFFFF" />
+        </TouchableOpacity>
+
         <View style={styles.heroTop}>
           <Image
             source={
@@ -641,82 +734,46 @@ export default function AdminAccountMasterHubScreen() {
             style={styles.avatar}
           />
           <View style={styles.heroInfo}>
-            <View style={styles.badgeRow}>
-              <View style={styles.adminBadge}>
-                <Shield size={12} color="#FFFFFF" />
-                <Text style={styles.adminBadgeText}>SUPER ADMIN</Text>
-              </View>
-              <View style={styles.activePill}>
-                <Text style={styles.activePillText}>AUTHENTICATED</Text>
-              </View>
-            </View>
             <Text style={styles.userName}>{user?.name || "Super Admin"}</Text>
-            <Text style={styles.userPhone}>+91 {user?.phone || "9876543210"}</Text>
+            {getCleanPhone(user?.phone) ? (
+              <Text style={styles.userPhone}>+91 {getCleanPhone(user?.phone)}</Text>
+            ) : null}
             {user?.email ? <Text style={styles.userEmail}>{user.email}</Text> : null}
           </View>
         </View>
-
-        <TouchableOpacity
-          style={styles.editProfileBtn}
-          onPress={() => setProfileModalOpen(true)}
-          activeOpacity={0.8}
-        >
-          <Edit2 size={14} color="#052A51" />
-          <Text style={styles.editProfileBtnText}>Edit Identity & Avatar</Text>
-        </TouchableOpacity>
       </View>
 
-      <Text style={styles.sectionHeader}>PLATFORM ADMINISTRATION</Text>
+      <Text style={styles.sectionHeader}>STORE & HOMEPAGE CMS CONTROL</Text>
 
-      {/* 1. Store Details & Support Contact */}
+      {/* CMS Control Center Card */}
       <TouchableOpacity
-        style={styles.menuCard}
-        onPress={() => setStoreInfoModalOpen(true)}
+        style={[styles.menuCard, { borderColor: "#BFDBFE", backgroundColor: "#EFF6FF" }]}
+        onPress={() => {
+          setActiveCmsTab(null);
+          setCmsModalOpen(true);
+        }}
         activeOpacity={0.85}
       >
-        <View style={[styles.iconBox, { backgroundColor: "#EFF6FF" }]}>
-          <Building2 size={20} color="#2563EB" />
+        <View style={[styles.iconBox, { backgroundColor: "#DBEAFE" }]}>
+          <Sparkles size={20} color="#1D4ED8" />
         </View>
         <View style={{ flex: 1 }}>
-          <Text style={styles.menuTitle}>Store Details & Support Helpline</Text>
-          <Text style={styles.menuSub}>Company GSTIN, support phone, WhatsApp, warehouse address</Text>
+          <View style={{ flexDirection: "row", alignItems: "center", gap: 6 }}>
+            <Text style={[styles.menuTitle, { color: "#1E3A8A" }]}>CMS Control</Text>
+            <View style={[styles.trashCountPill, { backgroundColor: "#2563EB" }]}>
+              <Text style={styles.trashCountPillText}>7 MODULES</Text>
+            </View>
+          </View>
+          <Text style={styles.menuSub}>
+            Store Info, Tax Invoice PDF, Policies, Banners, Coupons, Logos & Headings
+          </Text>
         </View>
-        <ChevronRight size={18} color="#94A3B8" />
+        <ChevronRight size={18} color="#1D4ED8" />
       </TouchableOpacity>
 
-      {/* 2. Customer Policies & Legal */}
-      <TouchableOpacity
-        style={styles.menuCard}
-        onPress={() => setPoliciesModalOpen(true)}
-        activeOpacity={0.85}
-      >
-        <View style={[styles.iconBox, { backgroundColor: "#F5F3FF" }]}>
-          <FileText size={20} color="#7C3AED" />
-        </View>
-        <View style={{ flex: 1 }}>
-          <Text style={styles.menuTitle}>Customer Policies & Legal Texts</Text>
-          <Text style={styles.menuSub}>Help Center, Privacy Policy, Terms, 7-Day Returns Guarantee</Text>
-        </View>
-        <ChevronRight size={18} color="#94A3B8" />
-      </TouchableOpacity>
+      <Text style={[styles.sectionHeader, { marginTop: 18 }]}>OPERATIONS & AUDIT</Text>
 
-      {/* 3. Product Categories Master */}
-      <TouchableOpacity
-        style={styles.menuCard}
-        onPress={() => setCategoriesModalOpen(true)}
-        activeOpacity={0.85}
-      >
-        <View style={[styles.iconBox, { backgroundColor: "#ECFDF5" }]}>
-          <Layers size={20} color="#059669" />
-        </View>
-        <View style={{ flex: 1 }}>
-          <Text style={styles.menuTitle}>Product Categories Master ({categories.length})</Text>
-          <Text style={styles.menuSub}>Add/delete categories, tiles/paint calculation engines</Text>
-        </View>
-        <ChevronRight size={18} color="#94A3B8" />
-      </TouchableOpacity>
-
-      {/* 4. VENDOR PAYMENT SETTLEMENT & COMMISSION ENGINE */}
+      {/* 8. Vendor Settlements & Commission Engine */}
       <TouchableOpacity
         style={[styles.menuCard, { borderColor: "#BBF7D0", backgroundColor: "#F0FDF4" }]}
         onPress={() => setSettlementsModalOpen(true)}
@@ -739,29 +796,6 @@ export default function AdminAccountMasterHubScreen() {
           </Text>
         </View>
         <ChevronRight size={18} color="#16A34A" />
-      </TouchableOpacity>
-
-      {/* 5. UNIFIED HOMEPAGE CMS, COUPONS & BRANDING CONTROL CENTER */}
-      <TouchableOpacity
-        style={[styles.menuCard, { borderColor: "#BFDBFE", backgroundColor: "#F8FAFC" }]}
-        onPress={() => setCmsModalOpen(true)}
-        activeOpacity={0.85}
-      >
-        <View style={[styles.iconBox, { backgroundColor: "#DBEAFE" }]}>
-          <Sparkles size={20} color="#1D4ED8" />
-        </View>
-        <View style={{ flex: 1 }}>
-          <View style={{ flexDirection: "row", alignItems: "center", gap: 6 }}>
-            <Text style={[styles.menuTitle, { color: "#1E3A8A" }]}>Homepage CMS & Storefront Control</Text>
-            <View style={[styles.trashCountPill, { backgroundColor: "#2563EB" }]}>
-              <Text style={styles.trashCountPillText}>HUB</Text>
-            </View>
-          </View>
-          <Text style={styles.menuSub}>
-            Coupons, Hero Carousel Slides, Website & App Logos, Headings, Captions & Taglines
-          </Text>
-        </View>
-        <ChevronRight size={18} color="#2563EB" />
       </TouchableOpacity>
 
       {/* 6. Reviews Moderation */}
@@ -806,7 +840,7 @@ export default function AdminAccountMasterHubScreen() {
       </TouchableOpacity>
 
       {/* Logout Action */}
-      <TouchableOpacity style={styles.logoutBtn} onPress={logout} activeOpacity={0.85}>
+      <TouchableOpacity style={styles.logoutBtn} onPress={handleLogout} activeOpacity={0.85}>
         <LogOut size={18} color="#DC2626" />
         <Text style={styles.logoutBtnText}>Secure Session Sign Out</Text>
       </TouchableOpacity>
@@ -834,12 +868,44 @@ export default function AdminAccountMasterHubScreen() {
               />
 
               <Text style={[styles.inputLabel, { marginTop: 12 }]}>Profile Picture / Avatar URL</Text>
-              <TextInput
-                style={styles.inputBox}
-                value={avatarUrl}
-                onChangeText={setAvatarUrl}
-                placeholder="https://..."
-              />
+              <View style={{ flexDirection: "row", gap: 8, alignItems: "center" }}>
+                <TextInput
+                  style={[styles.inputBox, { flex: 1 }]}
+                  value={avatarUrl}
+                  onChangeText={setAvatarUrl}
+                  placeholder="https://..."
+                />
+                <TouchableOpacity
+                  style={styles.uploadMiniBtn}
+                  onPress={() => handlePickAndUploadImage((url) => setAvatarUrl(url))}
+                  disabled={uploadingImage}
+                >
+                  <Camera size={14} color="#052A51" />
+                  <Text style={styles.uploadMiniBtnText}>Upload</Text>
+                </TouchableOpacity>
+              </View>
+              {avatarUrl ? (
+                <View style={styles.attachedImageRow}>
+                  <Image source={{ uri: avatarUrl }} style={[styles.attachedImageThumb, { borderRadius: 20 }]} contentFit="cover" />
+                  <View style={{ flex: 1 }}>
+                    <Text style={styles.attachedImageLabel}>Avatar Image Attached</Text>
+                    <Text style={styles.attachedImageSub} numberOfLines={1}>{avatarUrl}</Text>
+                  </View>
+                  <TouchableOpacity
+                    style={styles.doneImageBtn}
+                    onPress={() => Alert.alert("Confirmed 🎉", "Profile Avatar image confirmed & saved!")}
+                  >
+                    <CheckCircle2 size={12} color="#FFFFFF" />
+                    <Text style={styles.doneImageBtnText}>Done</Text>
+                  </TouchableOpacity>
+                  <TouchableOpacity
+                    style={styles.removeImageBtn}
+                    onPress={() => setAvatarUrl("")}
+                  >
+                    <X size={12} color="#DC2626" />
+                  </TouchableOpacity>
+                </View>
+              ) : null}
 
               <View style={styles.lockedRow}>
                 <Lock size={14} color="#64748B" />
@@ -862,16 +928,165 @@ export default function AdminAccountMasterHubScreen() {
         </View>
       </Modal>
 
+      {/* 1B. UNIFIED CMS CONTROL CENTER MODAL */}
+      <Modal visible={cmsModalOpen} animationType="slide" presentationStyle="pageSheet">
+        <View style={styles.modalContainer}>
+          <View style={styles.modalHeader}>
+            <View>
+              <Text style={styles.modalTitle}>CMS Control Center</Text>
+              <Text style={styles.modalSubtitle}>Store Info, Invoice CMS, Policies, Banners & Branding</Text>
+            </View>
+            <TouchableOpacity onPress={() => setCmsModalOpen(false)} style={styles.closeBtn}>
+              <X size={20} color={COLORS.textSecondary} />
+            </TouchableOpacity>
+          </View>
+
+          <ScrollView contentContainerStyle={styles.modalContent}>
+            {/* Module 1 */}
+            <TouchableOpacity
+              style={[styles.menuCard, { borderColor: "#BFDBFE", backgroundColor: "#F8FAFC" }]}
+              onPress={() => setStoreInfoModalOpen(true)}
+              activeOpacity={0.85}
+            >
+              <View style={[styles.iconBox, { backgroundColor: "#DBEAFE" }]}>
+                <Building2 size={20} color="#1D4ED8" />
+              </View>
+              <View style={{ flex: 1 }}>
+                <Text style={[styles.menuTitle, { color: "#1E3A8A" }]}>Store Details & Support Helpline</Text>
+                <Text style={styles.menuSub}>Brand name, GSTIN, Support phone, WhatsApp, timings & warehouse address</Text>
+              </View>
+              <ChevronRight size={18} color="#2563EB" />
+            </TouchableOpacity>
+
+            {/* Module 2 */}
+            <TouchableOpacity
+              style={[styles.menuCard, { borderColor: "#FED7AA", backgroundColor: "#FFF7ED" }]}
+              onPress={() => setInvoicePdfModalOpen(true)}
+              activeOpacity={0.85}
+            >
+              <View style={[styles.iconBox, { backgroundColor: "#FFEDD5" }]}>
+                <FileText size={20} color="#EA580C" />
+              </View>
+              <View style={{ flex: 1 }}>
+                <View style={{ flexDirection: "row", alignItems: "center", gap: 6 }}>
+                  <Text style={[styles.menuTitle, { color: "#9A3412" }]}>Tax Invoice & Bill PDF CMS</Text>
+                  <View style={[styles.trashCountPill, { backgroundColor: "#EA580C" }]}>
+                    <Text style={styles.trashCountPillText}>PDF BILL</Text>
+                  </View>
+                </View>
+                <Text style={styles.menuSub}>
+                  Customize GSTIN, Support Phone, Digital Signature Name, Terms & Watermark Logo
+                </Text>
+              </View>
+              <ChevronRight size={18} color="#EA580C" />
+            </TouchableOpacity>
+
+            {/* Module 3 */}
+            <TouchableOpacity
+              style={[styles.menuCard, { borderColor: "#DDD6FE", backgroundColor: "#F5F3FF" }]}
+              onPress={() => setPoliciesModalOpen(true)}
+              activeOpacity={0.85}
+            >
+              <View style={[styles.iconBox, { backgroundColor: "#EDE9FE" }]}>
+                <ShieldCheck size={20} color="#7C3AED" />
+              </View>
+              <View style={{ flex: 1 }}>
+                <Text style={[styles.menuTitle, { color: "#5B21B6" }]}>Customer Policies & Legal Texts</Text>
+                <Text style={styles.menuSub}>Help Center, Privacy Policy, Terms, 7-Day Returns Guarantee</Text>
+              </View>
+              <ChevronRight size={18} color="#7C3AED" />
+            </TouchableOpacity>
+
+            {/* Module 4 */}
+            <TouchableOpacity
+              style={[styles.menuCard, { borderColor: "#BAE6FD", backgroundColor: "#F0F9FF" }]}
+              onPress={() => setBannersModalOpen(true)}
+              activeOpacity={0.85}
+            >
+              <View style={[styles.iconBox, { backgroundColor: "#E0F2FE" }]}>
+                <ImageIcon size={20} color="#0284C7" />
+              </View>
+              <View style={{ flex: 1 }}>
+                <View style={{ flexDirection: "row", alignItems: "center", gap: 6 }}>
+                  <Text style={[styles.menuTitle, { color: "#0369A1" }]}>Hero Banners & Carousel Slides</Text>
+                  <View style={[styles.trashCountPill, { backgroundColor: "#0284C7" }]}>
+                    <Text style={styles.trashCountPillText}>{banners.length} SLIDES</Text>
+                  </View>
+                </View>
+                <Text style={styles.menuSub}>Upload, arrange, and manage promotional hero banners</Text>
+              </View>
+              <ChevronRight size={18} color="#0284C7" />
+            </TouchableOpacity>
+
+            {/* Module 5 */}
+            <TouchableOpacity
+              style={[styles.menuCard, { borderColor: "#FDE68A", backgroundColor: "#FEFCE8" }]}
+              onPress={() => setCouponsModalOpen(true)}
+              activeOpacity={0.85}
+            >
+              <View style={[styles.iconBox, { backgroundColor: "#FEF3C7" }]}>
+                <Tag size={20} color="#D97706" />
+              </View>
+              <View style={{ flex: 1 }}>
+                <View style={{ flexDirection: "row", alignItems: "center", gap: 6 }}>
+                  <Text style={[styles.menuTitle, { color: "#B45309" }]}>Promo Coupons & Discount Engine</Text>
+                  <View style={[styles.trashCountPill, { backgroundColor: "#D97706" }]}>
+                    <Text style={styles.trashCountPillText}>{coupons.length} COUPS</Text>
+                  </View>
+                </View>
+                <Text style={styles.menuSub}>Create discount codes, set min order amounts & expiry</Text>
+              </View>
+              <ChevronRight size={18} color="#D97706" />
+            </TouchableOpacity>
+
+            {/* Module 6 */}
+            <TouchableOpacity
+              style={[styles.menuCard, { borderColor: "#E9D5FF", backgroundColor: "#FAF5FF" }]}
+              onPress={() => setLogosModalOpen(true)}
+              activeOpacity={0.85}
+            >
+              <View style={[styles.iconBox, { backgroundColor: "#F3E8FF" }]}>
+                <Smartphone size={20} color="#9333EA" />
+              </View>
+              <View style={{ flex: 1 }}>
+                <Text style={[styles.menuTitle, { color: "#6B21A8" }]}>App & Website Branding Logos</Text>
+                <Text style={styles.menuSub}>Update dark/light header logos, favicon, and brand assets</Text>
+              </View>
+              <ChevronRight size={18} color="#9333EA" />
+            </TouchableOpacity>
+
+            {/* Module 7 */}
+            <TouchableOpacity
+              style={[styles.menuCard, { borderColor: "#CBD5E1", backgroundColor: "#F8FAFC" }]}
+              onPress={() => setHeadingsModalOpen(true)}
+              activeOpacity={0.85}
+            >
+              <View style={[styles.iconBox, { backgroundColor: "#E2E8F0" }]}>
+                <Type size={20} color="#475569" />
+              </View>
+              <View style={{ flex: 1 }}>
+                <Text style={[styles.menuTitle, { color: "#334155" }]}>Storefront Headings & Captions</Text>
+                <Text style={styles.menuSub}>Section titles, subheadings, hero taglines & banners</Text>
+              </View>
+              <ChevronRight size={18} color="#475569" />
+            </TouchableOpacity>
+          </ScrollView>
+        </View>
+      </Modal>
+
       {/* 2. Store Info Modal */}
       <Modal visible={storeInfoModalOpen} animationType="slide" presentationStyle="pageSheet">
         <View style={styles.modalContainer}>
           <View style={styles.modalHeader}>
-            <Text style={styles.modalTitle}>Store Details & Support Helpline</Text>
+            <View>
+              <Text style={styles.modalTitle}>Store Details & Support Helpline</Text>
+              <Text style={styles.modalSubtitle}>Configure Store Info, Support Phone, Email & Warehouse</Text>
+            </View>
             <TouchableOpacity onPress={() => setStoreInfoModalOpen(false)} style={styles.closeBtn}>
               <X size={20} color={COLORS.textSecondary} />
             </TouchableOpacity>
           </View>
-          <ScrollView contentContainerStyle={styles.modalContent}>
+          <ScrollView contentContainerStyle={styles.modalContent} keyboardShouldPersistTaps="handled">
             <View style={styles.modalCard}>
               <Text style={styles.inputLabel}>Brand / Legal Business Name</Text>
               <TextInput style={styles.inputBox} value={storeName} onChangeText={setStoreName} />
@@ -925,14 +1140,475 @@ export default function AdminAccountMasterHubScreen() {
             </View>
 
             <TouchableOpacity
-              style={styles.saveActionBtn}
+              style={[styles.saveActionBtn, { marginTop: 16 }]}
               onPress={handleSaveStoreSettings}
               disabled={savingSettings}
             >
               {savingSettings ? (
                 <ActivityIndicator size="small" color="#FFFFFF" />
               ) : (
-                <Text style={styles.saveActionBtnText}>Save Store Configuration</Text>
+                <Text style={styles.saveActionBtnText}>Save Store & Support Details</Text>
+              )}
+            </TouchableOpacity>
+          </ScrollView>
+        </View>
+      </Modal>
+
+      {/* 2B. Tax Invoice PDF Modal */}
+      <Modal visible={invoicePdfModalOpen} animationType="slide" presentationStyle="pageSheet">
+        <View style={styles.modalContainer}>
+          <View style={styles.modalHeader}>
+            <View>
+              <Text style={styles.modalTitle}>Tax Invoice & Bill PDF CMS</Text>
+              <Text style={styles.modalSubtitle}>GSTIN, Signature Name, Terms & Watermark Logo</Text>
+            </View>
+            <TouchableOpacity onPress={() => setInvoicePdfModalOpen(false)} style={styles.closeBtn}>
+              <X size={20} color={COLORS.textSecondary} />
+            </TouchableOpacity>
+          </View>
+          <ScrollView contentContainerStyle={styles.modalContent} keyboardShouldPersistTaps="handled">
+            <View style={styles.modalCard}>
+              <Text style={{ fontSize: 13, fontWeight: "800", color: "#052a51", marginBottom: 12 }}>
+                📄 Company & Header Details
+              </Text>
+
+              <Text style={styles.inputLabel}>Company GSTIN</Text>
+              <TextInput style={styles.inputBox} value={invGstNumber} onChangeText={setInvGstNumber} placeholder="29AAAAA0000A1Z5" />
+
+              <Text style={[styles.inputLabel, { marginTop: 12 }]}>Bill Support Phone</Text>
+              <TextInput style={styles.inputBox} value={invSupportPhone} onChangeText={setInvSupportPhone} placeholder="+91 9264920211" />
+
+              <Text style={[styles.inputLabel, { marginTop: 12 }]}>Bill Support Email</Text>
+              <TextInput style={styles.inputBox} value={invSupportEmail} onChangeText={setInvSupportEmail} placeholder="support@intrihub.com" />
+            </View>
+
+            <View style={[styles.modalCard, { marginTop: 14 }]}>
+              <Text style={{ fontSize: 13, fontWeight: "800", color: "#052a51", marginBottom: 12 }}>
+                ✍️ Authorized Signature & Branding
+              </Text>
+
+              <Text style={styles.inputLabel}>Digital Signature Name / Text</Text>
+              <TextInput style={styles.inputBox} value={invSigText} onChangeText={setInvSigText} placeholder="INTRIHUB" />
+
+              <Text style={[styles.inputLabel, { marginTop: 12 }]}>Signature Subtitle / Title</Text>
+              <TextInput style={styles.inputBox} value={invSigTitle} onChangeText={setInvSigTitle} placeholder="Authorized Signatory" />
+
+              <Text style={[styles.inputLabel, { marginTop: 12 }]}>Verification Badge Text</Text>
+              <TextInput style={styles.inputBox} value={invDigitalBadge} onChangeText={setInvDigitalBadge} placeholder="✔ Digitally Signed" />
+
+              <Text style={[styles.inputLabel, { marginTop: 12 }]}>Watermark & Header Logo URL</Text>
+              <View style={{ flexDirection: "row", gap: 8, alignItems: "center" }}>
+                <TextInput
+                  style={[styles.inputBox, { flex: 1 }]}
+                  value={invWatermarkUrl}
+                  onChangeText={setInvWatermarkUrl}
+                  placeholder="https://www.intrihub.com/logo/intri-web-logo.png"
+                />
+                <TouchableOpacity
+                  style={styles.uploadMiniBtn}
+                  onPress={() => handlePickAndUploadImage((url) => setInvWatermarkUrl(url))}
+                  disabled={uploadingImage}
+                >
+                  <Camera size={14} color="#052A51" />
+                  <Text style={styles.uploadMiniBtnText}>Upload</Text>
+                </TouchableOpacity>
+              </View>
+              {invWatermarkUrl ? (
+                <View style={styles.attachedImageRow}>
+                  <Image source={{ uri: invWatermarkUrl }} style={styles.attachedImageThumb} contentFit="contain" />
+                  <View style={{ flex: 1 }}>
+                    <Text style={styles.attachedImageLabel}>Logo Attached & Active</Text>
+                    <Text style={styles.attachedImageSub} numberOfLines={1}>{invWatermarkUrl}</Text>
+                  </View>
+                  <TouchableOpacity
+                    style={styles.doneImageBtn}
+                    onPress={() => Alert.alert("Confirmed 🎉", "Invoice Watermark Logo confirmed & ready!")}
+                  >
+                    <CheckCircle2 size={12} color="#FFFFFF" />
+                    <Text style={styles.doneImageBtnText}>Done</Text>
+                  </TouchableOpacity>
+                  <TouchableOpacity
+                    style={styles.removeImageBtn}
+                    onPress={() => setInvWatermarkUrl("")}
+                  >
+                    <X size={12} color="#DC2626" />
+                  </TouchableOpacity>
+                </View>
+              ) : null}
+            </View>
+
+            <View style={[styles.modalCard, { marginTop: 14 }]}>
+              <Text style={{ fontSize: 13, fontWeight: "800", color: "#052a51", marginBottom: 12 }}>
+                📜 Terms, Notes & Footer
+              </Text>
+
+              <Text style={styles.inputLabel}>Invoice Terms & Notes (One per line)</Text>
+              <TextInput
+                style={[styles.inputBox, { height: 80, textAlignVertical: "top" }]}
+                multiline
+                numberOfLines={3}
+                value={invTermsNotes}
+                onChangeText={setInvTermsNotes}
+              />
+
+              <Text style={[styles.inputLabel, { marginTop: 12 }]}>Footer Tagline Text</Text>
+              <TextInput style={styles.inputBox} value={invFooterTagline} onChangeText={setInvFooterTagline} />
+            </View>
+
+            <TouchableOpacity
+              style={[styles.saveActionBtn, { backgroundColor: "#EA580C", marginTop: 16 }]}
+              onPress={async () => {
+                try {
+                  setIsUpdatingSettings(true);
+                  const res = await updateAdminStoreSettings({
+                    gstNumber: invGstNumber,
+                    contactPhone: invSupportPhone,
+                    email: invSupportEmail,
+                    invoiceSignatureText: invSigText,
+                    invoiceSignatureTitle: invSigTitle,
+                    invoiceDigitalBadge: invDigitalBadge,
+                    invoiceTermsNotes: invTermsNotes,
+                    invoiceFooterTagline: invFooterTagline,
+                    invoiceWatermarkUrl: invWatermarkUrl,
+                  });
+                  if (res.success) {
+                    Alert.alert("Success", "Tax Invoice & Bill PDF CMS settings updated successfully!");
+                    refetchSettings();
+                  } else {
+                    Alert.alert("Error", res.error || "Failed to update invoice settings");
+                  }
+                } catch (err: any) {
+                  Alert.alert("Error", err.message || "Failed to save settings");
+                } finally {
+                  setIsUpdatingSettings(false);
+                }
+              }}
+              disabled={isUpdatingSettings}
+            >
+              {isUpdatingSettings ? (
+                <ActivityIndicator size="small" color="#FFFFFF" />
+              ) : (
+                <Text style={styles.saveActionBtnText}>Save Invoice & Bill CMS Settings</Text>
+              )}
+            </TouchableOpacity>
+          </ScrollView>
+        </View>
+      </Modal>
+
+      {/* 4. Hero Banners Modal */}
+      <Modal visible={bannersModalOpen} animationType="slide" presentationStyle="pageSheet">
+        <View style={styles.modalContainer}>
+          <View style={styles.modalHeader}>
+            <View>
+              <Text style={styles.modalTitle}>Hero Banners & Carousel Slides</Text>
+              <Text style={styles.modalSubtitle}>Manage Promotional Carousel Slides ({banners.length})</Text>
+            </View>
+            <TouchableOpacity onPress={() => setBannersModalOpen(false)} style={styles.closeBtn}>
+              <X size={20} color={COLORS.textSecondary} />
+            </TouchableOpacity>
+          </View>
+          <ScrollView contentContainerStyle={styles.modalContent} keyboardShouldPersistTaps="handled">
+            <View style={styles.modalCard}>
+              <Text style={{ fontSize: 13, fontWeight: "800", color: "#052a51", marginBottom: 8 }}>
+                ➕ Add New Banner Slide
+              </Text>
+              <TextInput
+                style={styles.inputBox}
+                value={newBannerTitle}
+                onChangeText={setNewBannerTitle}
+                placeholder="Banner Title (e.g. Festival Super Sale)"
+              />
+              <Text style={[styles.inputLabel, { marginTop: 8 }]}>Banner Image URL</Text>
+              <View style={{ flexDirection: "row", gap: 8, alignItems: "center" }}>
+                <TextInput
+                  style={[styles.inputBox, { flex: 1 }]}
+                  value={newBannerImage}
+                  onChangeText={setNewBannerImage}
+                  placeholder="Banner Image URL (https://...)"
+                />
+                <TouchableOpacity
+                  style={styles.uploadMiniBtn}
+                  onPress={() => handlePickAndUploadImage((url) => setNewBannerImage(url))}
+                  disabled={uploadingImage}
+                >
+                  <Camera size={14} color="#052A51" />
+                  <Text style={styles.uploadMiniBtnText}>Upload</Text>
+                </TouchableOpacity>
+              </View>
+              {newBannerImage ? (
+                <View style={styles.attachedImageRow}>
+                  <Image source={{ uri: newBannerImage }} style={styles.attachedImageThumb} contentFit="cover" />
+                  <View style={{ flex: 1 }}>
+                    <Text style={styles.attachedImageLabel}>Slide Image Attached</Text>
+                    <Text style={styles.attachedImageSub} numberOfLines={1}>{newBannerImage}</Text>
+                  </View>
+                  <TouchableOpacity
+                    style={styles.doneImageBtn}
+                    onPress={() => Alert.alert("Confirmed 🎉", "Banner slide image confirmed & ready!")}
+                  >
+                    <CheckCircle2 size={12} color="#FFFFFF" />
+                    <Text style={styles.doneImageBtnText}>Done</Text>
+                  </TouchableOpacity>
+                  <TouchableOpacity
+                    style={styles.removeImageBtn}
+                    onPress={() => setNewBannerImage("")}
+                  >
+                    <X size={12} color="#DC2626" />
+                  </TouchableOpacity>
+                </View>
+              ) : null}
+
+              <TextInput
+                style={[styles.inputBox, { marginTop: 8 }]}
+                value={newBannerCta}
+                onChangeText={setNewBannerCta}
+                placeholder="Click Link Target (e.g. /category/tiles)"
+              />
+              <TouchableOpacity
+                style={[styles.saveActionBtn, { marginTop: 12, backgroundColor: "#0284C7" }]}
+                onPress={handleCreateBanner}
+              >
+                <Text style={styles.saveActionBtnText}>Add Banner Slide</Text>
+              </TouchableOpacity>
+            </View>
+
+            {banners.map((b: any) => (
+              <View key={b.id || String(Math.random())} style={[styles.modalCard, { marginTop: 10, flexDirection: "row", alignItems: "center" }]}>
+                {b.image ? (
+                  <Image source={{ uri: b.image }} style={{ width: 64, height: 40, borderRadius: 6, backgroundColor: "#F1F5F9" }} contentFit="cover" />
+                ) : null}
+                <View style={{ flex: 1, marginLeft: 10 }}>
+                  <Text style={{ fontSize: 12, fontWeight: "800", color: "#052A51" }}>{b.title || "Banner Slide"}</Text>
+                  <Text style={{ fontSize: 10, color: "#64748B" }}>Target: {b.href || b.linkUrl || "None"}</Text>
+                </View>
+                <TouchableOpacity
+                  onPress={() => handleDeleteBanner(b.id)}
+                  style={{ padding: 6, backgroundColor: "#FEE2E2", borderRadius: 6 }}
+                >
+                  <Trash2 size={16} color="#DC2626" />
+                </TouchableOpacity>
+              </View>
+            ))}
+          </ScrollView>
+        </View>
+      </Modal>
+
+      {/* 5. Coupons Modal */}
+      <Modal visible={couponsModalOpen} animationType="slide" presentationStyle="pageSheet">
+        <View style={styles.modalContainer}>
+          <View style={styles.modalHeader}>
+            <View>
+              <Text style={styles.modalTitle}>Promo Coupons & Discount Engine</Text>
+              <Text style={styles.modalSubtitle}>Manage Store Discount Codes ({coupons.length})</Text>
+            </View>
+            <TouchableOpacity onPress={() => setCouponsModalOpen(false)} style={styles.closeBtn}>
+              <X size={20} color={COLORS.textSecondary} />
+            </TouchableOpacity>
+          </View>
+          <ScrollView contentContainerStyle={styles.modalContent} keyboardShouldPersistTaps="handled">
+            <View style={styles.modalCard}>
+              <Text style={{ fontSize: 13, fontWeight: "800", color: "#052a51", marginBottom: 8 }}>
+                ➕ Create New Coupon Code
+              </Text>
+              <TextInput
+                style={styles.inputBox}
+                value={newCouponCode}
+                onChangeText={(t) => setNewCouponCode(t.toUpperCase())}
+                placeholder="Coupon Code (e.g. INTRI100)"
+              />
+              <View style={{ flexDirection: "row", gap: 8, marginTop: 8 }}>
+                <TextInput
+                  style={[styles.inputBox, { flex: 1 }]}
+                  value={newCouponValue}
+                  onChangeText={setNewCouponValue}
+                  placeholder="Discount Amount (₹)"
+                  keyboardType="numeric"
+                />
+                <TextInput
+                  style={[styles.inputBox, { flex: 1 }]}
+                  value={newCouponMinOrder}
+                  onChangeText={setNewCouponMinOrder}
+                  placeholder="Min Order Amount (₹)"
+                  keyboardType="numeric"
+                />
+              </View>
+              <TouchableOpacity
+                style={[styles.saveActionBtn, { marginTop: 12, backgroundColor: "#D97706" }]}
+                onPress={handleCreateCoupon}
+              >
+                <Text style={styles.saveActionBtnText}>Create Coupon Code</Text>
+              </TouchableOpacity>
+            </View>
+
+            {coupons.map((c: any) => (
+              <View key={c.id || String(Math.random())} style={[styles.modalCard, { marginTop: 10, flexDirection: "row", alignItems: "center" }]}>
+                <View style={{ flex: 1 }}>
+                  <Text style={{ fontSize: 13, fontWeight: "900", color: "#D97706" }}>{c.code}</Text>
+                  <Text style={{ fontSize: 10, color: "#64748B" }}>
+                    Flat ₹{c.value || c.discountValue} OFF on orders above ₹{c.minOrderValue || 0}
+                  </Text>
+                </View>
+                <TouchableOpacity
+                  onPress={() => handleDeleteCoupon(c.id, c.code)}
+                  style={{ padding: 6, backgroundColor: "#FEE2E2", borderRadius: 6 }}
+                >
+                  <Trash2 size={16} color="#DC2626" />
+                </TouchableOpacity>
+              </View>
+            ))}
+          </ScrollView>
+        </View>
+      </Modal>
+
+      {/* 6. Logos Modal */}
+      <Modal visible={logosModalOpen} animationType="slide" presentationStyle="pageSheet">
+        <View style={styles.modalContainer}>
+          <View style={styles.modalHeader}>
+            <View>
+              <Text style={styles.modalTitle}>App & Website Branding Logos</Text>
+              <Text style={styles.modalSubtitle}>Header Logos, Favicon & Brand Assets</Text>
+            </View>
+            <TouchableOpacity onPress={() => setLogosModalOpen(false)} style={styles.closeBtn}>
+              <X size={20} color={COLORS.textSecondary} />
+            </TouchableOpacity>
+          </View>
+          <ScrollView contentContainerStyle={styles.modalContent} keyboardShouldPersistTaps="handled">
+            <View style={styles.modalCard}>
+              <Text style={styles.inputLabel}>Main Website Logo URL</Text>
+              <View style={{ flexDirection: "row", gap: 8, alignItems: "center" }}>
+                <TextInput
+                  style={[styles.inputBox, { flex: 1 }]}
+                  value={websiteLogo}
+                  onChangeText={setWebsiteLogo}
+                  placeholder="https://..."
+                />
+                <TouchableOpacity
+                  style={styles.uploadMiniBtn}
+                  onPress={() => handlePickAndUploadImage((url) => setWebsiteLogo(url))}
+                  disabled={uploadingImage}
+                >
+                  <Camera size={14} color="#052A51" />
+                  <Text style={styles.uploadMiniBtnText}>Upload</Text>
+                </TouchableOpacity>
+              </View>
+              {websiteLogo ? (
+                <View style={styles.attachedImageRow}>
+                  <Image source={{ uri: websiteLogo }} style={styles.attachedImageThumb} contentFit="contain" />
+                  <View style={{ flex: 1 }}>
+                    <Text style={styles.attachedImageLabel}>Website Logo Attached</Text>
+                    <Text style={styles.attachedImageSub} numberOfLines={1}>{websiteLogo}</Text>
+                  </View>
+                  <TouchableOpacity
+                    style={styles.doneImageBtn}
+                    onPress={() => Alert.alert("Confirmed 🎉", "Website Logo confirmed & saved!")}
+                  >
+                    <CheckCircle2 size={12} color="#FFFFFF" />
+                    <Text style={styles.doneImageBtnText}>Done</Text>
+                  </TouchableOpacity>
+                  <TouchableOpacity
+                    style={styles.removeImageBtn}
+                    onPress={() => setWebsiteLogo("")}
+                  >
+                    <X size={12} color="#DC2626" />
+                  </TouchableOpacity>
+                </View>
+              ) : null}
+
+              <Text style={[styles.inputLabel, { marginTop: 14 }]}>Mobile App Icon URL</Text>
+              <View style={{ flexDirection: "row", gap: 8, alignItems: "center" }}>
+                <TextInput
+                  style={[styles.inputBox, { flex: 1 }]}
+                  value={appIcon}
+                  onChangeText={setAppIcon}
+                  placeholder="https://..."
+                />
+                <TouchableOpacity
+                  style={styles.uploadMiniBtn}
+                  onPress={() => handlePickAndUploadImage((url) => setAppIcon(url))}
+                  disabled={uploadingImage}
+                >
+                  <Camera size={14} color="#052A51" />
+                  <Text style={styles.uploadMiniBtnText}>Upload</Text>
+                </TouchableOpacity>
+              </View>
+              {appIcon ? (
+                <View style={styles.attachedImageRow}>
+                  <Image source={{ uri: appIcon }} style={[styles.attachedImageThumb, { borderRadius: 10 }]} contentFit="cover" />
+                  <View style={{ flex: 1 }}>
+                    <Text style={styles.attachedImageLabel}>App Icon Attached</Text>
+                    <Text style={styles.attachedImageSub} numberOfLines={1}>{appIcon}</Text>
+                  </View>
+                  <TouchableOpacity
+                    style={styles.doneImageBtn}
+                    onPress={() => Alert.alert("Confirmed 🎉", "App Launcher Icon confirmed & ready!")}
+                  >
+                    <CheckCircle2 size={12} color="#FFFFFF" />
+                    <Text style={styles.doneImageBtnText}>Done</Text>
+                  </TouchableOpacity>
+                  <TouchableOpacity
+                    style={styles.removeImageBtn}
+                    onPress={() => setAppIcon("")}
+                  >
+                    <X size={12} color="#DC2626" />
+                  </TouchableOpacity>
+                </View>
+              ) : null}
+            </View>
+
+            <TouchableOpacity
+              style={[styles.saveActionBtn, { backgroundColor: "#9333EA", marginTop: 16 }]}
+              onPress={handleSaveCmsSettings}
+              disabled={savingSettings}
+            >
+              {savingSettings ? (
+                <ActivityIndicator size="small" color="#FFFFFF" />
+              ) : (
+                <Text style={styles.saveActionBtnText}>Save Brand Logos & Assets</Text>
+              )}
+            </TouchableOpacity>
+          </ScrollView>
+        </View>
+      </Modal>
+
+      {/* 7. Headings Modal */}
+      <Modal visible={headingsModalOpen} animationType="slide" presentationStyle="pageSheet">
+        <View style={styles.modalContainer}>
+          <View style={styles.modalHeader}>
+            <View>
+              <Text style={styles.modalTitle}>Storefront Headings & Captions</Text>
+              <Text style={styles.modalSubtitle}>Homepage Section Titles, Taglines & Subheadings</Text>
+            </View>
+            <TouchableOpacity onPress={() => setHeadingsModalOpen(false)} style={styles.closeBtn}>
+              <X size={20} color={COLORS.textSecondary} />
+            </TouchableOpacity>
+          </View>
+          <ScrollView contentContainerStyle={styles.modalContent} keyboardShouldPersistTaps="handled">
+            <View style={styles.modalCard}>
+              <Text style={styles.inputLabel}>Homepage Main Hero Headline</Text>
+              <TextInput style={styles.inputBox} value={heroHeadline} onChangeText={setHeroHeadline} />
+
+              <Text style={[styles.inputLabel, { marginTop: 12 }]}>Hero Tagline / Subtitle</Text>
+              <TextInput style={styles.inputBox} value={heroTagline} onChangeText={setHeroTagline} />
+
+              <Text style={[styles.inputLabel, { marginTop: 12 }]}>Top Announcement / Deals Bar</Text>
+              <TextInput style={styles.inputBox} value={dealsBarText} onChangeText={setDealsBarText} />
+
+              <Text style={[styles.inputLabel, { marginTop: 12 }]}>Trending Products Heading</Text>
+              <TextInput style={styles.inputBox} value={trendingHeading} onChangeText={setTrendingHeading} />
+
+              <Text style={[styles.inputLabel, { marginTop: 12 }]}>Bestsellers Heading</Text>
+              <TextInput style={styles.inputBox} value={bestsellersHeading} onChangeText={setBestsellersHeading} />
+            </View>
+
+            <TouchableOpacity
+              style={[styles.saveActionBtn, { backgroundColor: "#475569", marginTop: 16 }]}
+              onPress={handleSaveCmsSettings}
+              disabled={savingSettings}
+            >
+              {savingSettings ? (
+                <ActivityIndicator size="small" color="#FFFFFF" />
+              ) : (
+                <Text style={styles.saveActionBtnText}>Save Headings & Captions</Text>
               )}
             </TouchableOpacity>
           </ScrollView>
@@ -998,74 +1674,7 @@ export default function AdminAccountMasterHubScreen() {
         </View>
       </Modal>
 
-      {/* 4. Categories Modal */}
-      <Modal visible={categoriesModalOpen} animationType="slide" presentationStyle="pageSheet">
-        <View style={styles.modalContainer}>
-          <View style={styles.modalHeader}>
-            <Text style={styles.modalTitle}>Product Categories Master</Text>
-            <TouchableOpacity onPress={() => setCategoriesModalOpen(false)} style={styles.closeBtn}>
-              <X size={20} color={COLORS.textSecondary} />
-            </TouchableOpacity>
-          </View>
-          <ScrollView contentContainerStyle={styles.modalContent}>
-            <View style={styles.modalCard}>
-              <Text style={styles.inputLabel}>Add New Category</Text>
-              <TextInput
-                style={styles.inputBox}
-                value={newCatName}
-                onChangeText={setNewCatName}
-                placeholder="Category Name (e.g. Sanitaryware)"
-              />
-              <TextInput
-                style={[styles.inputBox, { marginTop: 8 }]}
-                value={newCatSlug}
-                onChangeText={setNewCatSlug}
-                placeholder="URL Slug (auto-generated if blank)"
-              />
-              <TextInput
-                style={[styles.inputBox, { marginTop: 8 }]}
-                value={newCatDesc}
-                onChangeText={setNewCatDesc}
-                placeholder="Short Description"
-              />
 
-              <TouchableOpacity
-                style={styles.checkRow}
-                onPress={() => setNewCatHasCalc(!newCatHasCalc)}
-              >
-                <View style={[styles.checkbox, newCatHasCalc && styles.checkboxActive]}>
-                  {newCatHasCalc && <CheckCircle2 size={14} color="#FFFFFF" />}
-                </View>
-                <Text style={styles.checkLabel}>Enable Tile Area/Box Calculator Engine</Text>
-              </TouchableOpacity>
-
-              <TouchableOpacity
-                style={[styles.saveActionBtn, { marginTop: 12 }]}
-                onPress={handleCreateCategory}
-              >
-                <Text style={styles.saveActionBtnText}>+ Add Category</Text>
-              </TouchableOpacity>
-            </View>
-
-            <Text style={[styles.inputLabel, { marginTop: 12 }]}>
-              Existing Categories ({categories.length})
-            </Text>
-            {categories.map((c: any) => (
-              <View key={String(c.id)} style={styles.listCard}>
-                <View style={{ flex: 1 }}>
-                  <Text style={styles.itemTitle}>{c.name}</Text>
-                  <Text style={styles.itemSub}>
-                    {c.slug} • {c.productsCount || 0} products
-                  </Text>
-                </View>
-                <TouchableOpacity onPress={() => handleDeleteCategory(c.id, c.name)}>
-                  <Trash2 size={16} color="#DC2626" />
-                </TouchableOpacity>
-              </View>
-            ))}
-          </ScrollView>
-        </View>
-      </Modal>
 
       {/* 5. VENDOR PAYMENT SETTLEMENT & COMMISSION ENGINE MODAL */}
       <Modal visible={settlementsModalOpen} animationType="slide" presentationStyle="pageSheet">
@@ -1256,372 +1865,6 @@ export default function AdminAccountMasterHubScreen() {
                   </View>
                 );
               })
-            )}
-          </ScrollView>
-        </View>
-      </Modal>
-
-      {/* 6. UNIFIED HOMEPAGE CMS, COUPONS & BRANDING CONTROL CENTER MODAL */}
-      <Modal visible={cmsModalOpen} animationType="slide" presentationStyle="pageSheet">
-        <View style={styles.modalContainer}>
-          <View style={styles.modalHeader}>
-            <View>
-              <Text style={styles.modalTitle}>Homepage CMS & Branding Hub</Text>
-              <Text style={styles.modalSubtitle}>Carousel Slides, Coupons, Logos & Storefront Headings</Text>
-            </View>
-            <TouchableOpacity onPress={() => setCmsModalOpen(false)} style={styles.closeBtn}>
-              <X size={20} color={COLORS.textSecondary} />
-            </TouchableOpacity>
-          </View>
-
-          {/* 4 Sub-Tabs: Banners | Coupons | Logos | Headings */}
-          <View style={styles.trashSubTabBar}>
-            <TouchableOpacity
-              style={[styles.trashTabBtn, cmsSubTab === "banners" && styles.trashTabBtnActive]}
-              onPress={() => setCmsSubTab("banners")}
-            >
-              <ImageIcon size={14} color={cmsSubTab === "banners" ? "#052A51" : "#64748B"} />
-              <Text style={[styles.trashTabBtnText, cmsSubTab === "banners" && styles.trashTabBtnTextActive]}>
-                Banners ({banners.length})
-              </Text>
-            </TouchableOpacity>
-
-            <TouchableOpacity
-              style={[styles.trashTabBtn, cmsSubTab === "coupons" && styles.trashTabBtnActive]}
-              onPress={() => setCmsSubTab("coupons")}
-            >
-              <Tag size={14} color={cmsSubTab === "coupons" ? "#052A51" : "#64748B"} />
-              <Text style={[styles.trashTabBtnText, cmsSubTab === "coupons" && styles.trashTabBtnTextActive]}>
-                Coupons ({coupons.length})
-              </Text>
-            </TouchableOpacity>
-
-            <TouchableOpacity
-              style={[styles.trashTabBtn, cmsSubTab === "logos" && styles.trashTabBtnActive]}
-              onPress={() => setCmsSubTab("logos")}
-            >
-              <Smartphone size={14} color={cmsSubTab === "logos" ? "#052A51" : "#64748B"} />
-              <Text style={[styles.trashTabBtnText, cmsSubTab === "logos" && styles.trashTabBtnTextActive]}>
-                Logos & App Icon
-              </Text>
-            </TouchableOpacity>
-
-            <TouchableOpacity
-              style={[styles.trashTabBtn, cmsSubTab === "headings" && styles.trashTabBtnActive]}
-              onPress={() => setCmsSubTab("headings")}
-            >
-              <Type size={14} color={cmsSubTab === "headings" ? "#052A51" : "#64748B"} />
-              <Text style={[styles.trashTabBtnText, cmsSubTab === "headings" && styles.trashTabBtnTextActive]}>
-                Headings & Captions
-              </Text>
-            </TouchableOpacity>
-          </View>
-
-          <ScrollView contentContainerStyle={styles.modalContent} keyboardShouldPersistTaps="handled">
-            {cmsSubTab === "banners" ? (
-              <>
-                <View style={styles.modalCard}>
-                  <Text style={styles.inputLabel}>Add Promotional Slide Image</Text>
-                  <TextInput
-                    style={styles.inputBox}
-                    value={newBannerTitle}
-                    onChangeText={setNewBannerTitle}
-                    placeholder="Headline (e.g. Flat 30% Off on Vitrified Tiles)"
-                  />
-                  <TextInput
-                    style={[styles.inputBox, { marginTop: 8 }]}
-                    value={newBannerSubtitle}
-                    onChangeText={setNewBannerSubtitle}
-                    placeholder="Sub-headline (e.g. Free site delivery this week)"
-                  />
-                  
-                  <View style={{ flexDirection: "row", gap: 8, marginTop: 8 }}>
-                    <TextInput
-                      style={[styles.inputBox, { flex: 1 }]}
-                      value={newBannerImage}
-                      onChangeText={setNewBannerImage}
-                      placeholder="Slide Image URL"
-                    />
-                    <TouchableOpacity
-                      style={styles.uploadMiniBtn}
-                      onPress={() => handlePickAndUploadImage((url) => setNewBannerImage(url))}
-                    >
-                      <Camera size={14} color="#052A51" />
-                      <Text style={styles.uploadMiniBtnText}>Upload</Text>
-                    </TouchableOpacity>
-                  </View>
-
-                  <TextInput
-                    style={[styles.inputBox, { marginTop: 8 }]}
-                    value={newBannerCta}
-                    onChangeText={setNewBannerCta}
-                    placeholder="CTA Link (e.g. /category/tiles-stone)"
-                  />
-
-                  <TouchableOpacity
-                    style={[styles.saveActionBtn, { marginTop: 12 }]}
-                    onPress={handleCreateBanner}
-                  >
-                    <Text style={styles.saveActionBtnText}>+ Publish Banner Slide</Text>
-                  </TouchableOpacity>
-                </View>
-
-                <Text style={[styles.inputLabel, { marginTop: 12 }]}>Live Carousel Banners ({banners.length})</Text>
-                {banners.map((b: any) => (
-                  <View key={String(b.id)} style={styles.listCard}>
-                    {b.image ? (
-                      <Image source={{ uri: b.image }} style={styles.bannerThumb} contentFit="cover" />
-                    ) : null}
-                    <View style={{ flex: 1, marginLeft: b.image ? 10 : 0 }}>
-                      <Text style={styles.itemTitle}>{b.title}</Text>
-                      <Text style={styles.itemSub}>{b.subtitle || b.href}</Text>
-                    </View>
-                    <TouchableOpacity onPress={() => handleDeleteBanner(b.id)}>
-                      <Trash2 size={16} color="#DC2626" />
-                    </TouchableOpacity>
-                  </View>
-                ))}
-              </>
-            ) : cmsSubTab === "coupons" ? (
-              <>
-                <View style={styles.modalCard}>
-                  <Text style={styles.inputLabel}>Create New Promo Coupon</Text>
-                  <TextInput
-                    style={styles.inputBox}
-                    value={newCouponCode}
-                    onChangeText={setNewCouponCode}
-                    placeholder="COUPON CODE (e.g. FESTIVE15)"
-                    autoCapitalize="characters"
-                  />
-
-                  <View style={{ flexDirection: "row", gap: 8, marginTop: 8 }}>
-                    <TouchableOpacity
-                      style={[
-                        styles.tabPill,
-                        newCouponType === "flat" && styles.tabPillActive,
-                        { flex: 1 },
-                      ]}
-                      onPress={() => setNewCouponType("flat")}
-                    >
-                      <Text
-                        style={[
-                          styles.tabPillText,
-                          newCouponType === "flat" && styles.tabPillTextActive,
-                        ]}
-                      >
-                        Flat ₹ Off
-                      </Text>
-                    </TouchableOpacity>
-                    <TouchableOpacity
-                      style={[
-                        styles.tabPill,
-                        newCouponType === "percentage" && styles.tabPillActive,
-                        { flex: 1 },
-                      ]}
-                      onPress={() => setNewCouponType("percentage")}
-                    >
-                      <Text
-                        style={[
-                          styles.tabPillText,
-                          newCouponType === "percentage" && styles.tabPillTextActive,
-                        ]}
-                      >
-                        Percentage % Off
-                      </Text>
-                    </TouchableOpacity>
-                  </View>
-
-                  <View style={{ flexDirection: "row", gap: 8, marginTop: 8 }}>
-                    <TextInput
-                      style={[styles.inputBox, { flex: 1 }]}
-                      value={newCouponValue}
-                      onChangeText={setNewCouponValue}
-                      placeholder={newCouponType === "flat" ? "Discount Amount (₹)" : "Discount (%)"}
-                      keyboardType="numeric"
-                    />
-                    <TextInput
-                      style={[styles.inputBox, { flex: 1 }]}
-                      value={newCouponMinOrder}
-                      onChangeText={setNewCouponMinOrder}
-                      placeholder="Min Order Value (₹)"
-                      keyboardType="numeric"
-                    />
-                  </View>
-
-                  <TouchableOpacity
-                    style={[styles.saveActionBtn, { marginTop: 12 }]}
-                    onPress={handleCreateCoupon}
-                  >
-                    <Text style={styles.saveActionBtnText}>+ Create Coupon</Text>
-                  </TouchableOpacity>
-                </View>
-
-                <Text style={[styles.inputLabel, { marginTop: 12 }]}>Active Coupons ({coupons.length})</Text>
-                {coupons.map((cp: any) => (
-                  <View key={String(cp.id)} style={styles.listCard}>
-                    <View style={{ flex: 1 }}>
-                      <Text style={styles.itemTitle}>{cp.code}</Text>
-                      <Text style={styles.itemSub}>
-                        {cp.discountType === "flat" ? `₹${cp.value} Flat Off` : `${cp.value}% Off`} • Min Order ₹{cp.minOrderValue}
-                      </Text>
-                    </View>
-                    <TouchableOpacity onPress={() => handleDeleteCoupon(cp.id, cp.code)}>
-                      <Trash2 size={16} color="#DC2626" />
-                    </TouchableOpacity>
-                  </View>
-                ))}
-              </>
-            ) : cmsSubTab === "logos" ? (
-              <>
-                <View style={styles.modalCard}>
-                  <Text style={styles.sectionHeaderInner}>WEBSITE LOGO & BRANDING</Text>
-                  <Text style={styles.inputLabel}>Website Header & Footer Logo URL</Text>
-                  <View style={{ flexDirection: "row", gap: 8 }}>
-                    <TextInput
-                      style={[styles.inputBox, { flex: 1 }]}
-                      value={websiteLogo}
-                      onChangeText={setWebsiteLogo}
-                      placeholder="https://intrihub.com/logo.png"
-                    />
-                    <TouchableOpacity
-                      style={styles.uploadMiniBtn}
-                      onPress={() => handlePickAndUploadImage((url) => setWebsiteLogo(url))}
-                    >
-                      <Camera size={14} color="#052A51" />
-                      <Text style={styles.uploadMiniBtnText}>Upload</Text>
-                    </TouchableOpacity>
-                  </View>
-                  {websiteLogo ? (
-                    <View style={styles.logoPreviewBox}>
-                      <Image source={{ uri: websiteLogo }} style={styles.logoPreviewImg} contentFit="contain" />
-                    </View>
-                  ) : null}
-
-                  <Text style={[styles.sectionHeaderInner, { marginTop: 18 }]}>MOBILE APP ICON & BADGE</Text>
-                  <Text style={styles.inputLabel}>App Download Icon & Header Badge URL (512x512)</Text>
-                  <View style={{ flexDirection: "row", gap: 8 }}>
-                    <TextInput
-                      style={[styles.inputBox, { flex: 1 }]}
-                      value={appIcon}
-                      onChangeText={setAppIcon}
-                      placeholder="https://intrihub.com/app-icon.png"
-                    />
-                    <TouchableOpacity
-                      style={styles.uploadMiniBtn}
-                      onPress={() => handlePickAndUploadImage((url) => setAppIcon(url))}
-                    >
-                      <Camera size={14} color="#052A51" />
-                      <Text style={styles.uploadMiniBtnText}>Upload</Text>
-                    </TouchableOpacity>
-                  </View>
-                  {appIcon ? (
-                    <View style={styles.appIconPreviewBox}>
-                      <Image source={{ uri: appIcon }} style={styles.appIconPreviewImg} contentFit="cover" />
-                    </View>
-                  ) : null}
-                </View>
-
-                <TouchableOpacity
-                  style={styles.saveActionBtn}
-                  onPress={handleSaveCmsSettings}
-                  disabled={savingSettings}
-                >
-                  {savingSettings ? (
-                    <ActivityIndicator size="small" color="#FFFFFF" />
-                  ) : (
-                    <Text style={styles.saveActionBtnText}>Save Brand Logos & App Icon</Text>
-                  )}
-                </TouchableOpacity>
-              </>
-            ) : (
-              <>
-                <View style={styles.modalCard}>
-                  <Text style={styles.sectionHeaderInner}>HERO & ANNOUNCEMENT BAR</Text>
-                  <Text style={styles.inputLabel}>Main Homepage Hero Headline</Text>
-                  <TextInput
-                    style={styles.inputBox}
-                    value={heroHeadline}
-                    onChangeText={setHeroHeadline}
-                    placeholder="Direct-From-Factory Building Materials"
-                  />
-
-                  <Text style={[styles.inputLabel, { marginTop: 10 }]}>Main Hero Tagline / Subtitle</Text>
-                  <TextInput
-                    style={styles.inputBox}
-                    value={heroTagline}
-                    onChangeText={setHeroTagline}
-                    placeholder="Tiles, Granites, Sanitaryware Delivered to Your Site"
-                  />
-
-                  <Text style={[styles.inputLabel, { marginTop: 10 }]}>Top Announcement / Deals Bar</Text>
-                  <TextInput
-                    style={styles.inputBox}
-                    value={dealsBarText}
-                    onChangeText={setDealsBarText}
-                    placeholder="Special Launch Offer: Extra 10% off with coupon code FESTIVE10"
-                  />
-
-                  <Text style={[styles.sectionHeaderInner, { marginTop: 18 }]}>TRENDING SECTION</Text>
-                  <Text style={styles.inputLabel}>Trending Products Heading</Text>
-                  <TextInput
-                    style={styles.inputBox}
-                    value={trendingHeading}
-                    onChangeText={setTrendingHeading}
-                    placeholder="Trending Now"
-                  />
-                  <Text style={[styles.inputLabel, { marginTop: 10 }]}>Trending Products Caption</Text>
-                  <TextInput
-                    style={styles.inputBox}
-                    value={trendingCaption}
-                    onChangeText={setTrendingCaption}
-                    placeholder="Architect-approved curated designs for modern spaces"
-                  />
-
-                  <Text style={[styles.sectionHeaderInner, { marginTop: 18 }]}>BESTSELLERS SECTION</Text>
-                  <Text style={styles.inputLabel}>Bestsellers Heading</Text>
-                  <TextInput
-                    style={styles.inputBox}
-                    value={bestsellersHeading}
-                    onChangeText={setBestsellersHeading}
-                    placeholder="Bestseller Collections"
-                  />
-                  <Text style={[styles.inputLabel, { marginTop: 10 }]}>Bestsellers Caption</Text>
-                  <TextInput
-                    style={styles.inputBox}
-                    value={bestsellersCaption}
-                    onChangeText={setBestsellersCaption}
-                    placeholder="Top-rated vitrified tiles & finishes trusted by 10,000+ builders"
-                  />
-
-                  <Text style={[styles.sectionHeaderInner, { marginTop: 18 }]}>NEW ARRIVALS SECTION</Text>
-                  <Text style={styles.inputLabel}>New Arrivals Heading</Text>
-                  <TextInput
-                    style={styles.inputBox}
-                    value={newArrivalsHeading}
-                    onChangeText={setNewArrivalsHeading}
-                    placeholder="New In Stock"
-                  />
-                  <Text style={[styles.inputLabel, { marginTop: 10 }]}>New Arrivals Caption</Text>
-                  <TextInput
-                    style={styles.inputBox}
-                    value={newArrivalsCaption}
-                    onChangeText={setNewArrivalsCaption}
-                    placeholder="Latest luxury surfaces and hardware fresh from factory"
-                  />
-                </View>
-
-                <TouchableOpacity
-                  style={styles.saveActionBtn}
-                  onPress={handleSaveCmsSettings}
-                  disabled={savingSettings}
-                >
-                  {savingSettings ? (
-                    <ActivityIndicator size="small" color="#FFFFFF" />
-                  ) : (
-                    <Text style={styles.saveActionBtnText}>Publish Headings & Captions to Storefront</Text>
-                  )}
-                </TouchableOpacity>
-              </>
             )}
           </ScrollView>
         </View>
@@ -1965,6 +2208,111 @@ export default function AdminAccountMasterHubScreen() {
           </View>
         </View>
       </Modal>
+
+      {/* 8. Tax Invoice & Bill PDF CMS Modal */}
+      <Modal visible={invoicePdfModalOpen} animationType="slide" presentationStyle="pageSheet">
+        <View style={styles.modalContainer}>
+          <View style={styles.modalHeader}>
+            <View>
+              <Text style={styles.modalTitle}>Tax Invoice & Bill PDF CMS</Text>
+              <Text style={styles.modalSubtitle}>Customize Invoice GSTIN, Support Phone, Signature, Terms & Notes</Text>
+            </View>
+            <TouchableOpacity onPress={() => setInvoicePdfModalOpen(false)} style={styles.closeBtn}>
+              <X size={20} color={COLORS.textSecondary} />
+            </TouchableOpacity>
+          </View>
+          <ScrollView contentContainerStyle={styles.modalContent}>
+            <View style={styles.modalCard}>
+              <Text style={{ fontSize: 13, fontWeight: "800", color: "#052a51", marginBottom: 12 }}>
+                📄 Company & Header Details
+              </Text>
+              
+              <Text style={styles.inputLabel}>Company GSTIN</Text>
+              <TextInput style={styles.inputBox} value={invGstNumber} onChangeText={setInvGstNumber} placeholder="29AAAAA0000A1Z5" />
+
+              <Text style={[styles.inputLabel, { marginTop: 12 }]}>Bill Support Phone</Text>
+              <TextInput style={styles.inputBox} value={invSupportPhone} onChangeText={setInvSupportPhone} placeholder="+91 9264920211" />
+
+              <Text style={[styles.inputLabel, { marginTop: 12 }]}>Bill Support Email</Text>
+              <TextInput style={styles.inputBox} value={invSupportEmail} onChangeText={setInvSupportEmail} placeholder="support@intrihub.com" />
+            </View>
+
+            <View style={[styles.modalCard, { marginTop: 14 }]}>
+              <Text style={{ fontSize: 13, fontWeight: "800", color: "#052a51", marginBottom: 12 }}>
+                ✍️ Authorized Signature & Branding
+              </Text>
+
+              <Text style={styles.inputLabel}>Digital Signature Name / Text</Text>
+              <TextInput style={styles.inputBox} value={invSigText} onChangeText={setInvSigText} placeholder="INTRIHUB" />
+
+              <Text style={[styles.inputLabel, { marginTop: 12 }]}>Signature Subtitle / Title</Text>
+              <TextInput style={styles.inputBox} value={invSigTitle} onChangeText={setInvSigTitle} placeholder="Authorized Signatory" />
+
+              <Text style={[styles.inputLabel, { marginTop: 12 }]}>Verification Badge Text</Text>
+              <TextInput style={styles.inputBox} value={invDigitalBadge} onChangeText={setInvDigitalBadge} placeholder="✔ Digitally Signed" />
+
+              <Text style={[styles.inputLabel, { marginTop: 12 }]}>Watermark & Header Logo URL</Text>
+              <TextInput style={styles.inputBox} value={invWatermarkUrl} onChangeText={setInvWatermarkUrl} placeholder="https://www.intrihub.com/logo/intri-web-logo.png" />
+            </View>
+
+            <View style={[styles.modalCard, { marginTop: 14 }]}>
+              <Text style={{ fontSize: 13, fontWeight: "800", color: "#052a51", marginBottom: 12 }}>
+                📜 Terms, Notes & Footer
+              </Text>
+
+              <Text style={styles.inputLabel}>Invoice Terms & Notes (One per line)</Text>
+              <TextInput
+                style={[styles.inputBox, { height: 80, textAlignVertical: "top" }]}
+                multiline
+                numberOfLines={3}
+                value={invTermsNotes}
+                onChangeText={setInvTermsNotes}
+              />
+
+              <Text style={[styles.inputLabel, { marginTop: 12 }]}>Footer Tagline Text</Text>
+              <TextInput style={styles.inputBox} value={invFooterTagline} onChangeText={setInvFooterTagline} />
+            </View>
+
+            <TouchableOpacity
+              style={[styles.saveActionBtn, { backgroundColor: "#EA580C" }]}
+              onPress={async () => {
+                try {
+                  setIsUpdatingSettings(true);
+                  const res = await updateAdminStoreSettings({
+                    gstNumber: invGstNumber,
+                    contactPhone: invSupportPhone,
+                    email: invSupportEmail,
+                    invoiceSignatureText: invSigText,
+                    invoiceSignatureTitle: invSigTitle,
+                    invoiceDigitalBadge: invDigitalBadge,
+                    invoiceTermsNotes: invTermsNotes,
+                    invoiceFooterTagline: invFooterTagline,
+                    invoiceWatermarkUrl: invWatermarkUrl,
+                  });
+                  if (res.success) {
+                    Alert.alert("Success", "Tax Invoice & Bill PDF CMS settings updated successfully!");
+                    refetchSettings();
+                    setInvoicePdfModalOpen(false);
+                  } else {
+                    Alert.alert("Error", res.error || "Failed to update invoice settings");
+                  }
+                } catch (err: any) {
+                  Alert.alert("Error", err.message || "Failed to save settings");
+                } finally {
+                  setIsUpdatingSettings(false);
+                }
+              }}
+              disabled={isUpdatingSettings}
+            >
+              {isUpdatingSettings ? (
+                <ActivityIndicator size="small" color="#FFFFFF" />
+              ) : (
+                <Text style={styles.saveActionBtnText}>Save Invoice & Bill CMS Settings</Text>
+              )}
+            </TouchableOpacity>
+          </ScrollView>
+        </View>
+      </Modal>
     </ScrollView>
   );
 }
@@ -1976,6 +2324,7 @@ const styles = StyleSheet.create({
   },
   content: {
     padding: SPACING.md,
+    paddingTop: Platform.OS === "ios" ? 54 : 48,
     paddingBottom: 60,
   },
   heroCard: {
@@ -2459,12 +2808,59 @@ const styles = StyleSheet.create({
     borderColor: "#BFDBFE",
     borderRadius: 10,
     paddingHorizontal: 12,
+    height: 42,
     gap: 4,
   },
   uploadMiniBtnText: {
     fontSize: 11,
     fontWeight: "800",
     color: "#052A51",
+  },
+  attachedImageRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    backgroundColor: "#F0FDF4",
+    borderWidth: 1,
+    borderColor: "#BBF7D0",
+    borderRadius: 10,
+    padding: 8,
+    marginTop: 8,
+    gap: 8,
+  },
+  attachedImageThumb: {
+    width: 42,
+    height: 42,
+    borderRadius: 6,
+    backgroundColor: "#FFFFFF",
+  },
+  attachedImageLabel: {
+    fontSize: 12,
+    fontWeight: "800",
+    color: "#166534",
+  },
+  attachedImageSub: {
+    fontSize: 10,
+    color: "#15803D",
+    marginTop: 2,
+  },
+  doneImageBtn: {
+    flexDirection: "row",
+    alignItems: "center",
+    backgroundColor: "#16A34A",
+    paddingHorizontal: 10,
+    paddingVertical: 5,
+    borderRadius: 6,
+    gap: 4,
+  },
+  doneImageBtnText: {
+    color: "#FFFFFF",
+    fontSize: 11,
+    fontWeight: "800",
+  },
+  removeImageBtn: {
+    padding: 6,
+    backgroundColor: "#FEE2E2",
+    borderRadius: 6,
   },
   bannerThumb: {
     width: 60,

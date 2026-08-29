@@ -99,11 +99,28 @@ export default function VendorProductsScreen() {
 
         <View style={styles.productInfo}>
           <View style={styles.productTopRow}>
-            <View style={[styles.statusBadge, isActive ? styles.activeBadge : styles.pausedBadge]}>
-              <Text style={[styles.statusBadgeText, isActive ? styles.activeText : styles.pausedText]}>
-                {item.status.toUpperCase()}
-              </Text>
+            <View style={{ flexDirection: "row", alignItems: "center", gap: 6 }}>
+              <View style={[styles.statusBadge, isActive ? styles.activeBadge : styles.pausedBadge]}>
+                <Text style={[styles.statusBadgeText, isActive ? styles.activeText : styles.pausedText]}>
+                  {item.status.toUpperCase()}
+                </Text>
+              </View>
+
+              {item.approvalStatus === "pending" ? (
+                <View style={[styles.statusBadge, { backgroundColor: "#FEF3C7" }]}>
+                  <Text style={[styles.statusBadgeText, { color: "#D97706" }]}>⏳ PENDING</Text>
+                </View>
+              ) : item.approvalStatus === "rejected" ? (
+                <View style={[styles.statusBadge, { backgroundColor: "#FEE2E2" }]}>
+                  <Text style={[styles.statusBadgeText, { color: "#DC2626" }]}>✕ REJECTED</Text>
+                </View>
+              ) : (
+                <View style={[styles.statusBadge, { backgroundColor: "#DCFCE7" }]}>
+                  <Text style={[styles.statusBadgeText, { color: "#16A34A" }]}>✓ LIVE</Text>
+                </View>
+              )}
             </View>
+
             <Text style={styles.stockCount}>
               Stock: <Text style={{ fontWeight: "800", color: COLORS.text }}>{item.stockBoxes} Boxes</Text>
             </Text>

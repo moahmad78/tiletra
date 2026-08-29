@@ -74,6 +74,7 @@ import {
   CATALOG_MATERIALS,
   resolveColorHex,
 } from "../../src/constants/catalog";
+import ColorPalettePickerModal from "../../src/components/ColorPalettePickerModal";
 import { Product } from "../../src/types";
 import { COLORS, SPACING, RADIUS, SHADOWS } from "../../src/constants/theme";
 
@@ -134,11 +135,15 @@ export default function AdminProductsHubScreen() {
 
   // Reusable Dropdown Picker Sheet State
   const [dropdownType, setDropdownType] = useState<
-    "category" | "unit" | "size" | "finish" | "material" | "variant_size" | "variant_finish" | "variant_color" | null
+    "category" | "unit" | "size" | "finish" | "material" | "variant_size" | "variant_finish" | null
   >(null);
   const [dropdownVariantIdx, setDropdownVariantIdx] = useState<number | null>(null);
   const [customOptionInput, setCustomOptionInput] = useState("");
   const [dropdownSearch, setDropdownSearch] = useState("");
+
+  // Rich Color Palette Picker Modal State (Solid, Gradient, Spectrum)
+  const [colorPickerOpen, setColorPickerOpen] = useState(false);
+  const [colorPickerVariantIdx, setColorPickerVariantIdx] = useState<number | null>(null);
 
   // Category Creator Modal with Image Upload
   const [categoryImageUrl, setCategoryImageUrl] = useState("");
@@ -442,8 +447,8 @@ export default function AdminProductsHubScreen() {
   const handlePickAndUploadPrimaryImage = async () => {
     try {
       const result = await ImagePicker.launchImageLibraryAsync({
-        mediaTypes: ImagePicker.MediaTypeOptions.Images,
-        allowsEditing: true,
+        mediaTypes: ["images"],
+        allowsEditing: false,
         quality: 0.8,
       });
 
@@ -492,8 +497,8 @@ export default function AdminProductsHubScreen() {
   const handlePickCategoryImage = async () => {
     try {
       const result = await ImagePicker.launchImageLibraryAsync({
-        mediaTypes: ImagePicker.MediaTypeOptions.Images,
-        allowsEditing: true,
+        mediaTypes: ["images"],
+        allowsEditing: false,
         quality: 0.8,
       });
 
@@ -524,8 +529,8 @@ export default function AdminProductsHubScreen() {
   const handlePickAndUploadVariantImage = async (variantIdx: number) => {
     try {
       const result = await ImagePicker.launchImageLibraryAsync({
-        mediaTypes: ImagePicker.MediaTypeOptions.Images,
-        allowsEditing: true,
+        mediaTypes: ["images"],
+        allowsEditing: false,
         quality: 0.8,
       });
 
@@ -1548,9 +1553,8 @@ export default function AdminProductsHubScreen() {
                           <TouchableOpacity
                             style={styles.chooseSwatchBtn}
                             onPress={() => {
-                              setDropdownType("variant_color");
-                              setDropdownVariantIdx(idx);
-                              setDropdownSearch("");
+                              setColorPickerVariantIdx(idx);
+                              setColorPickerOpen(true);
                             }}
                           >
                             <Palette size={13} color="#052A51" />
@@ -1693,9 +1697,7 @@ export default function AdminProductsHubScreen() {
                   ? "Select Dimensions / Size"
                   : dropdownType === "finish" || dropdownType === "variant_finish"
                   ? "Select Finish / Look"
-                  : dropdownType === "material"
-                  ? "Select Material"
-                  : "Pick Color Swatch"}
+                  : "Select Material"}
               </Text>
               <TouchableOpacity onPress={() => setDropdownType(null)}>
                 <X size={18} color="#64748B" />
@@ -1703,8 +1705,7 @@ export default function AdminProductsHubScreen() {
             </View>
 
             {/* Inline Add New Option Box with Category Image Uploader */}
-            {dropdownType !== "variant_color" && (
-              <View style={{ gap: 6 }}>
+            <View style={{ gap: 6 }}>
                 <View style={styles.addOptionInlineBox}>
                   <TextInput
                     style={styles.addOptionInput}
@@ -1738,7 +1739,6 @@ export default function AdminProductsHubScreen() {
                   </View>
                 )}
               </View>
-            )}
 
             {/* Search filter for long lists */}
             <View style={styles.dropdownSearchBox}>
@@ -1875,34 +1875,28 @@ export default function AdminProductsHubScreen() {
                       </TouchableOpacity>
                     );
                   })
-              ) : dropdownType === "variant_color" && dropdownVariantIdx !== null ? (
-                CATALOG_COLOURS.filter((c) => c.name.toLowerCase().includes(dropdownSearch.toLowerCase())).map((c) => {
-                  const isSelected = variants[dropdownVariantIdx]?.color === c.name;
-                  return (
-                    <TouchableOpacity
-                      key={c.name}
-                      style={[styles.dropdownItemRow, isSelected && styles.dropdownItemRowSelected]}
-                      onPress={() => {
-                        handleUpdateVariant(dropdownVariantIdx, "color", c.name);
-                        handleUpdateVariant(dropdownVariantIdx, "colorHex", c.hexCode);
-                        setDropdownType(null);
-                      }}
-                    >
-                      <View style={{ flexDirection: "row", alignItems: "center", gap: 10 }}>
-                        <View style={[styles.colorCircle, { backgroundColor: c.hexCode }]} />
-                        <Text style={[styles.dropdownItemText, isSelected && styles.dropdownItemTextSelected]}>
-                          {c.name}
-                        </Text>
-                      </View>
-                      {isSelected && <Check size={16} color="#052A51" />}
-                    </TouchableOpacity>
-                  );
-                })
               ) : null}
             </ScrollView>
           </View>
         </View>
       </Modal>
+
+      {/* Rich Color Palette Picker Modal (Solid, Dual Gradient & Spectrum Graph) */}
+      <ColorPalettePickerModal
+        visible={colorPickerOpen}
+        onClose={() => {
+          setColorPickerOpen(false);
+          setColorPickerVariantIdx(null);
+        }}
+        onSelectColor={(colorName, colorHex) => {
+          if (colorPickerVariantIdx !== null) {
+            handleUpdateVariant(colorPickerVariantIdx, "color", colorName);
+            handleUpdateVariant(colorPickerVariantIdx, "colorHex", colorHex);
+          }
+        }}
+        currentColorName={colorPickerVariantIdx !== null ? variants[colorPickerVariantIdx]?.color : ""}
+        currentColorHex={colorPickerVariantIdx !== null ? variants[colorPickerVariantIdx]?.colorHex : "#F26522"}
+      />
     </View>
   );
 }

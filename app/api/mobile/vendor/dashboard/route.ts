@@ -91,6 +91,7 @@ export async function GET(req: NextRequest) {
         contactEmail: vendor.contactEmail,
         contactPhone: vendor.contactPhone,
         deliveryMethod: vendor.deliveryMethod,
+        autoPublishEnabled: Boolean(vendor.autoPublishEnabled),
       },
       stats,
       recentOrders,

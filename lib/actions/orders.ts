@@ -69,7 +69,8 @@ export async function createOrder(input: CreateOrderInput) {
       }> = [];
 
       for (const item of input.items) {
-        let pricePerBox = item.pricePerBox || 0;
+        const boxQty = Math.max(1, parseInt(String(item.boxQuantity || (item as any).quantity || (item as any).boxes || 1), 10));
+        let pricePerBox = item.pricePerBox || (item as any).unitPrice || 0;
         let productName = item.productName || "Product";
 
         if (item.variantId && item.variantId !== "default") {
@@ -79,24 +80,24 @@ export async function createOrder(input: CreateOrderInput) {
           });
 
           if (variant) {
-            if (variant.stockBoxes < item.boxQuantity) {
+            if (variant.stockBoxes < boxQty) {
               const pName = variant.product?.name || item.productName;
               throw new Error(
-                `Insufficient stock for "${pName}". Only ${variant.stockBoxes} left in stock (requested ${item.boxQuantity}).`
+                `Insufficient stock for "${pName}". Only ${variant.stockBoxes} left in stock (requested ${boxQty}).`
               );
             }
 
             // Server-derived price (cannot be manipulated by client)
             pricePerBox =
               variant.pricePerBox ||
-              (variant.pricePerSqft ? variant.pricePerSqft * (variant.sqftPerBox || 1) : item.pricePerBox);
+              (variant.pricePerSqft ? variant.pricePerSqft * (variant.sqftPerBox || 1) : pricePerBox);
             if (variant.product?.name) productName = variant.product.name;
 
             const updatedVariant = await tx.productVariant.update({
               where: { id: item.variantId },
               data: {
-                stockBoxes: { decrement: item.boxQuantity },
-                inStock: variant.stockBoxes - item.boxQuantity > 0,
+                stockBoxes: { decrement: boxQty },
+                inStock: variant.stockBoxes - boxQty > 0,
               },
             });
 
@@ -116,12 +117,12 @@ export async function createOrder(input: CreateOrderInput) {
         } else if (item.productId) {
           const product = await tx.product.findUnique({ where: { id: item.productId } });
           if (product) {
-            pricePerBox = product.pricePerSqft || item.pricePerBox;
+            pricePerBox = product.pricePerSqft || pricePerBox;
             productName = product.name;
           }
         }
 
-        const itemTotal = pricePerBox * item.boxQuantity;
+        const itemTotal = pricePerBox * boxQty;
         calculatedSubtotal += itemTotal;
 
         verifiedItems.push({
@@ -129,7 +130,7 @@ export async function createOrder(input: CreateOrderInput) {
           productName,
           variantId: item.variantId || "default",
           variantDetails: item.variantDetails || "Standard",
-          boxQuantity: item.boxQuantity,
+          boxQuantity: boxQty,
           pricePerBox,
           totalPrice: itemTotal,
           image: item.image || "",
@@ -250,13 +251,54 @@ export async function createOrder(input: CreateOrderInput) {
         }
       }
 
+      // 3. Normalize Address Snapshot
+      const rawAddr = (input.shippingAddress || {}) as any;
+      const addrHouseNumber = rawAddr.houseNumber || rawAddr.flatNumber || (input as any).deliveryHouseNumber || null;
+      const addrBuildingName = rawAddr.buildingName || rawAddr.building || (input as any).deliveryBuildingName || null;
+      const addrFloor = rawAddr.floor || (input as any).deliveryFloor || null;
+      const addrStreet = rawAddr.street || rawAddr.line1 || (input as any).deliveryStreet || "";
+      const addrArea = rawAddr.area || rawAddr.line2 || (input as any).deliveryArea || null;
+      const addrLandmark = rawAddr.landmark || (input as any).deliveryLandmark || null;
+      const addrCity = rawAddr.city || (input as any).deliveryCity || "Bengaluru";
+      const addrDistrict = rawAddr.district || (input as any).deliveryDistrict || null;
+      const addrState = rawAddr.state || (input as any).deliveryState || "Karnataka";
+      const addrCountry = rawAddr.country || (input as any).deliveryCountry || "India";
+      const addrPostalCode = rawAddr.postalCode || rawAddr.pincode || (input as any).deliveryPincode || "";
+      const addrFullName = rawAddr.fullName || rawAddr.name || input.customerName;
+      const addrPhone = rawAddr.phone || input.customerPhone;
+
+      const compiledCleanAddress = [
+        [addrHouseNumber, addrBuildingName].filter(Boolean).join(", "),
+        [addrStreet, addrArea].filter(Boolean).join(", "),
+        addrLandmark ? `Landmark: ${String(addrLandmark).replace(/^landmark:?\s*/i, "").replace(/^near\s+/i, "")}` : null,
+        addrCity,
+        [addrState, addrPostalCode].filter(Boolean).join(" - "),
+      ].filter(Boolean).map((s: string) => s.trim()).filter((s: string) => s.length > 0).join(", ");
+
+      const normalizedShippingAddress = {
+        fullName: addrFullName,
+        phone: addrPhone,
+        houseNumber: addrHouseNumber,
+        buildingName: addrBuildingName,
+        floor: addrFloor,
+        street: addrStreet,
+        area: addrArea,
+        landmark: addrLandmark,
+        city: addrCity,
+        district: addrDistrict,
+        state: addrState,
+        country: addrCountry,
+        postalCode: addrPostalCode,
+        formattedAddress: compiledCleanAddress,
+      };
+
       // 3. Upsert Customer CRM inside transaction
       await tx.customer.upsert({
         where: { phone: input.customerPhone },
         update: {
           name: input.customerName,
           email: input.customerEmail || undefined,
-          city: input.shippingAddress.city || "Bangalore",
+          city: addrCity,
           totalOrders: { increment: 1 },
           totalSpent: { increment: calculatedTotal },
         },
@@ -264,7 +306,7 @@ export async function createOrder(input: CreateOrderInput) {
           name: input.customerName,
           phone: input.customerPhone,
           email: input.customerEmail || null,
-          city: input.shippingAddress.city || "Bangalore",
+          city: addrCity,
           totalOrders: 1,
           totalSpent: calculatedTotal,
           status: "Active",
@@ -279,7 +321,7 @@ export async function createOrder(input: CreateOrderInput) {
           customerName: input.customerName,
           customerPhone: input.customerPhone,
           customerEmail: input.customerEmail || "customer@intrihub.com",
-          shippingAddress: input.shippingAddress as any,
+          shippingAddress: normalizedShippingAddress as any,
           subtotal: calculatedSubtotal,
           deliveryFee: calculatedDeliveryFee,
           discount: calculatedDiscount,
@@ -296,22 +338,22 @@ export async function createOrder(input: CreateOrderInput) {
           estimatedDelivery: "3–5 Business Days",
 
           // Immutable Delivery Snapshot
-          deliveryName: (input.shippingAddress as any)?.fullName || (input.shippingAddress as any)?.name || input.customerName,
-          deliveryPhone: (input.shippingAddress as any)?.phone || input.customerPhone,
-          deliveryAddress: (input.shippingAddress as any)?.formattedAddress || (input.shippingAddress as any)?.street || "",
-          deliveryHouseNumber: (input.shippingAddress as any)?.houseNumber || null,
-          deliveryBuildingName: (input.shippingAddress as any)?.buildingName || null,
-          deliveryFloor: (input.shippingAddress as any)?.floor || null,
-          deliveryStreet: (input.shippingAddress as any)?.street || "",
-          deliveryArea: (input.shippingAddress as any)?.area || null,
-          deliveryLandmark: (input.shippingAddress as any)?.landmark || null,
-          deliveryCity: (input.shippingAddress as any)?.city || "Bangalore",
-          deliveryDistrict: (input.shippingAddress as any)?.district || null,
-          deliveryState: (input.shippingAddress as any)?.state || "Karnataka",
-          deliveryCountry: (input.shippingAddress as any)?.country || "India",
-          deliveryPostalCode: (input.shippingAddress as any)?.postalCode || (input.shippingAddress as any)?.pincode || "",
-          deliveryLatitude: (input.shippingAddress as any)?.latitude ? Number((input.shippingAddress as any).latitude) : null,
-          deliveryLongitude: (input.shippingAddress as any)?.longitude ? Number((input.shippingAddress as any).longitude) : null,
+          deliveryName: addrFullName,
+          deliveryPhone: addrPhone,
+          deliveryAddress: compiledCleanAddress,
+          deliveryHouseNumber: addrHouseNumber,
+          deliveryBuildingName: addrBuildingName,
+          deliveryFloor: addrFloor,
+          deliveryStreet: addrStreet,
+          deliveryArea: addrArea,
+          deliveryLandmark: addrLandmark,
+          deliveryCity: addrCity,
+          deliveryDistrict: addrDistrict,
+          deliveryState: addrState,
+          deliveryCountry: addrCountry,
+          deliveryPostalCode: addrPostalCode,
+          deliveryLatitude: rawAddr?.latitude ? Number(rawAddr.latitude) : null,
+          deliveryLongitude: rawAddr?.longitude ? Number(rawAddr.longitude) : null,
           deliveryAccuracy: (input.shippingAddress as any)?.accuracy ? Number((input.shippingAddress as any).accuracy) : null,
           deliveryLocationSource: (input.shippingAddress as any)?.source || "GPS",
           deliveryInstructions: (input.shippingAddress as any)?.deliveryInstructions || (input.shippingAddress as any)?.instructions || null,
@@ -443,7 +485,7 @@ export async function createOrder(input: CreateOrderInput) {
         console.error("Failed to create customer notification:", e);
       }
 
-      // Dispatch Mobile Push Notification safely
+      // Dispatch Mobile Push Notification to Customer
       try {
         const { sendPushToUser } = await import("@/lib/push-notifications");
         await sendPushToUser(order.userId, {
@@ -452,8 +494,37 @@ export async function createOrder(input: CreateOrderInput) {
           data: { orderId: order.id, type: "order_placed" },
         });
       } catch (e) {
-        console.warn("Mobile push notification error:", e);
+        console.warn("Customer mobile push notification error:", e);
       }
+    }
+
+    // Dispatch Mobile Push Notification to Vendors and Admin
+    try {
+      const { notifyVendorPush, notifyAdminPush } = await import("@/lib/push-notifications");
+
+      // Notify Super Admins
+      await notifyAdminPush({
+        title: `New Order Received 🚀`,
+        body: `Order #${order.id} for ₹${order.total.toLocaleString("en-IN")} placed by ${order.customerName}.`,
+        data: { orderId: order.id, type: "new_order" },
+      });
+
+      // Notify Vendors for each assigned split
+      const splits = await prisma.vendorOrderSplit.findMany({
+        where: { orderId: order.id },
+        select: { vendorId: true, subtotal: true },
+      });
+
+      for (const split of splits) {
+        await notifyVendorPush({
+          vendorId: split.vendorId,
+          title: `New Order Assigned 📦`,
+          body: `Order #${order.id} has items assigned to your store for fulfillment.`,
+          data: { orderId: order.id, type: "vendor_order_assigned" },
+        });
+      }
+    } catch (e) {
+      console.warn("Vendor/Admin push notification error:", e);
     }
 
     // Real-Time Socket Broadcast to Admin Room (Phase 5b PRD)
@@ -906,6 +977,7 @@ export async function createRazorpayOrder({
       // 1. Recalculate price server-side from database
       let subtotal = 0;
       for (const item of items) {
+        const boxQty = Math.max(1, parseInt(String(item.boxQuantity || (item as any).quantity || (item as any).boxes || 1), 10));
         let pricePerBox = item.pricePerBox || 0;
         if (item.variantId && item.variantId !== "default") {
           const v = await prisma.productVariant.findUnique({ where: { id: item.variantId } });
@@ -918,7 +990,7 @@ export async function createRazorpayOrder({
             pricePerBox = p.pricePerSqft || pricePerBox;
           }
         }
-        subtotal += pricePerBox * item.boxQuantity;
+        subtotal += pricePerBox * boxQty;
       }
 
       // 2. Validate coupon discount server-side

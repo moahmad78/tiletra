@@ -41,6 +41,43 @@ export const CATALOG_COLOURS: CatalogColour[] = [
   { name: "Multicolour", hexCode: "#6366F1", textColor: "light", categoryHint: "all" },
 ];
 
+export interface CatalogGradient {
+  name: string;
+  colors: [string, string];
+  categoryHint?: string;
+}
+
+export const CATALOG_GRADIENTS: CatalogGradient[] = [
+  { name: "Black & Gold Vein", colors: ["#111827", "#EAB308"], categoryHint: "tiles-stone" },
+  { name: "White & Grey Carrara", colors: ["#FFFFFF", "#94A3B8"], categoryHint: "tiles-stone" },
+  { name: "Beige & Warm Gold", colors: ["#F5F5DC", "#D4AF37"], categoryHint: "tiles-stone" },
+  { name: "Emerald & Gold", colors: ["#065F46", "#F59E0B"], categoryHint: "tiles-stone" },
+  { name: "Royal Blue & Silver", colors: ["#1E3A8A", "#CBD5E1"], categoryHint: "tiles-stone" },
+  { name: "Rose Gold & Pearl", colors: ["#B76E79", "#FFF7ED"], categoryHint: "hardware" },
+  { name: "Charcoal & Copper", colors: ["#334155", "#C2410C"], categoryHint: "hardware" },
+  { name: "Walnut & Bronze", colors: ["#451A03", "#CD7F32"], categoryHint: "plywood-boards" },
+  { name: "Teak & Honey Amber", colors: ["#78350F", "#D97706"], categoryHint: "plywood-boards" },
+  { name: "Ocean Teal & White", colors: ["#0F766E", "#F0FDFA"], categoryHint: "paints" },
+  { name: "Sunset Crimson & Amber", colors: ["#DC2626", "#F59E0B"], categoryHint: "paints" },
+  { name: "Olive Moss & Sand", colors: ["#3F6212", "#FEF08A"], categoryHint: "paints" },
+  { name: "Slate Grey & Sky Blue", colors: ["#475569", "#38BDF8"], categoryHint: "all" },
+  { name: "Midnight Onyx & Platinum", colors: ["#020617", "#E2E8F0"], categoryHint: "all" },
+  { name: "Terracotta & Ivory", colors: ["#9A3412", "#FEFCE8"], categoryHint: "tiles-stone" },
+  { name: "Champagne & Gold", colors: ["#FEF3C7", "#D4AF37"], categoryHint: "hardware" },
+];
+
+export const SPECTRUM_COLORS: string[][] = [
+  ["#FF4D4F", "#F5222D", "#CF1322", "#A8071A", "#820014", "#5C0011"],
+  ["#FFA940", "#FA8C16", "#D46B08", "#AD4E00", "#873800", "#612500"],
+  ["#FFEC3D", "#FADB14", "#D4B106", "#AD8B00", "#876800", "#614700"],
+  ["#73D13D", "#52C41A", "#389E0D", "#237804", "#135200", "#092B00"],
+  ["#36CFC9", "#13C2C2", "#08979C", "#006D75", "#00474F", "#002329"],
+  ["#4096FF", "#1677FF", "#0958D9", "#003EB3", "#002C8C", "#001D66"],
+  ["#9254DE", "#722ED1", "#531DAB", "#391085", "#22075E", "#120338"],
+  ["#F759AB", "#EB2F96", "#C41D7F", "#9E1068", "#780650", "#520337"],
+  ["#FFFFFF", "#F5F5DC", "#D4AF37", "#8B4513", "#4A4A4A", "#111827"],
+];
+
 export const CATALOG_UNITS = [
   "box",
   "sqft",

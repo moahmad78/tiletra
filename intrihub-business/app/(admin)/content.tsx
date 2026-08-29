@@ -160,9 +160,8 @@ export default function AdminContentScreen() {
       }
 
       const result = await ImagePicker.launchImageLibraryAsync({
-        mediaTypes: ImagePicker.MediaTypeOptions.Images,
-        allowsEditing: true,
-        aspect: [16, 9],
+        mediaTypes: ["images"],
+        allowsEditing: false,
         quality: 0.8,
       });
 
@@ -618,16 +617,61 @@ export default function AdminContentScreen() {
           </View>
 
           <ScrollView contentContainerStyle={styles.modalContent}>
-            {/* Image Picker */}
+            {/* Image Picker & URL */}
             <View style={styles.modalSection}>
-              <Text style={styles.sectionHeading}>Banner Creative / Image</Text>
+              <Text style={styles.sectionHeading}>Banner Creative / Image (Upload or URL)</Text>
+              <View style={{ flexDirection: "row", gap: 8, alignItems: "center", marginBottom: 8 }}>
+                <TextInput
+                  style={[styles.inputBox, { flex: 1 }]}
+                  value={bImage}
+                  onChangeText={setBImage}
+                  placeholder="Paste Image URL or Upload below..."
+                  placeholderTextColor={COLORS.textTertiary}
+                />
+                <TouchableOpacity
+                  style={{
+                    flexDirection: "row",
+                    alignItems: "center",
+                    backgroundColor: "#EFF6FF",
+                    borderWidth: 1,
+                    borderColor: "#BFDBFE",
+                    borderRadius: 10,
+                    paddingHorizontal: 12,
+                    height: 44,
+                    gap: 4,
+                  }}
+                  onPress={handlePickImage}
+                  disabled={uploadingImage}
+                >
+                  <Upload size={14} color="#052A51" />
+                  <Text style={{ fontSize: 11, fontWeight: "800", color: "#052A51" }}>Upload</Text>
+                </TouchableOpacity>
+              </View>
+
               {bImage ? (
                 <View style={styles.previewImageContainer}>
                   <Image source={{ uri: bImage }} style={styles.previewImage} resizeMode="cover" />
-                  <TouchableOpacity style={styles.changeImgBtn} onPress={handlePickImage}>
-                    <Upload size={14} color="#FFFFFF" />
-                    <Text style={styles.changeImgBtnText}>Change Image</Text>
-                  </TouchableOpacity>
+                  <View style={{ flexDirection: "row", gap: 8, position: "absolute", bottom: 10, right: 10 }}>
+                    <TouchableOpacity
+                      style={{
+                        flexDirection: "row",
+                        alignItems: "center",
+                        backgroundColor: "#16A34A",
+                        paddingHorizontal: 12,
+                        paddingVertical: 6,
+                        borderRadius: 8,
+                        gap: 4,
+                      }}
+                      onPress={() => Alert.alert("Confirmed 🎉", "Banner image confirmed & ready!")}
+                    >
+                      <CheckCircle2 size={13} color="#FFFFFF" />
+                      <Text style={{ color: "#FFFFFF", fontSize: 11, fontWeight: "800" }}>Done</Text>
+                    </TouchableOpacity>
+                    <TouchableOpacity style={styles.changeImgBtn} onPress={handlePickImage}>
+                      <Upload size={14} color="#FFFFFF" />
+                      <Text style={styles.changeImgBtnText}>Change</Text>
+                    </TouchableOpacity>
+                  </View>
                 </View>
               ) : (
                 <TouchableOpacity

@@ -33,10 +33,12 @@ import {
   Palette,
   Search,
   Check,
+  Zap,
 } from "lucide-react-native";
 import {
   createVendorProduct,
   fetchVendorCategories,
+  fetchVendorDashboard,
 } from "../../src/api/vendor";
 import { uploadBusinessImage } from "../../src/api/auth";
 import {
@@ -47,6 +49,7 @@ import {
   CATALOG_MATERIALS,
   resolveColorHex,
 } from "../../src/constants/catalog";
+import ColorPalettePickerModal from "../../src/components/ColorPalettePickerModal";
 import { COLORS, SPACING, RADIUS, SHADOWS } from "../../src/constants/theme";
 
 interface VariantFormItem {
@@ -97,17 +100,27 @@ export default function AddProductScreen() {
 
   // Dropdown Picker Modal State
   const [dropdownType, setDropdownType] = useState<
-    "category" | "unit" | "size" | "finish" | "material" | "variant_size" | "variant_finish" | "variant_color" | null
+    "category" | "unit" | "size" | "finish" | "material" | "variant_size" | "variant_finish" | null
   >(null);
   const [dropdownVariantIdx, setDropdownVariantIdx] = useState<number | null>(null);
   const [customOptionInput, setCustomOptionInput] = useState("");
   const [dropdownSearch, setDropdownSearch] = useState("");
+
+  // Rich Color Palette Picker Modal State (Solid, Gradient, Spectrum)
+  const [colorPickerOpen, setColorPickerOpen] = useState(false);
+  const [colorPickerVariantIdx, setColorPickerVariantIdx] = useState<number | null>(null);
 
   // Custom Local Master Options
   const [customUnits, setCustomUnits] = useState<string[]>([]);
   const [customSizes, setCustomSizes] = useState<string[]>([]);
   const [customFinishes, setCustomFinishes] = useState<string[]>([]);
   const [customMaterials, setCustomMaterials] = useState<string[]>([]);
+
+  const { data: dashboardData } = useQuery({
+    queryKey: ["vendor-dashboard"],
+    queryFn: () => fetchVendorDashboard(),
+  });
+  const isAutoPublish = Boolean(dashboardData?.vendor?.autoPublishEnabled);
 
   const { data: categoriesData } = useQuery({
     queryKey: ["vendor-categories"],
@@ -132,9 +145,13 @@ export default function AddProductScreen() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["vendor-products"] });
       queryClient.invalidateQueries({ queryKey: ["vendor-dashboard"] });
-      Alert.alert("Success 🎉", "Product submitted to catalog for approval!", [
-        { text: "OK", onPress: () => router.back() },
-      ]);
+      Alert.alert(
+        isAutoPublish ? "Product Published 🎉" : "Submitted for Approval ⏳",
+        isAutoPublish
+          ? "Your product is now published and directly live on Intrihub storefront!"
+          : "Your product has been submitted and is awaiting Super Admin approval before going live.",
+        [{ text: "OK", onPress: () => router.back() }]
+      );
     },
     onError: (err: any) => {
       Alert.alert("Error", err?.message || "Failed to create product");
@@ -150,8 +167,8 @@ export default function AddProductScreen() {
       }
 
       const result = await ImagePicker.launchImageLibraryAsync({
-        mediaTypes: ImagePicker.MediaTypeOptions.Images,
-        allowsEditing: true,
+        mediaTypes: ["images"],
+        allowsEditing: false,
         quality: 0.8,
       });
 
@@ -181,8 +198,8 @@ export default function AddProductScreen() {
   const handlePickVariantImage = async (variantIdx: number) => {
     try {
       const result = await ImagePicker.launchImageLibraryAsync({
-        mediaTypes: ImagePicker.MediaTypeOptions.Images,
-        allowsEditing: true,
+        mediaTypes: ["images"],
+        allowsEditing: false,
         quality: 0.8,
       });
 
@@ -335,6 +352,21 @@ export default function AddProductScreen() {
       </View>
 
       <ScrollView contentContainerStyle={styles.content} keyboardShouldPersistTaps="handled">
+        {/* Upload Mode Status Banner */}
+        <View style={[styles.modeBanner, isAutoPublish ? styles.modeBannerLive : styles.modeBannerPending]}>
+          <Zap size={18} color={isAutoPublish ? "#16A34A" : "#D97706"} />
+          <View style={{ flex: 1 }}>
+            <Text style={[styles.modeBannerTitle, { color: isAutoPublish ? "#166534" : "#92400E" }]}>
+              {isAutoPublish ? "⚡ Auto-Upload Mode Active (Direct Live)" : "⏳ Admin Approval Required Mode"}
+            </Text>
+            <Text style={[styles.modeBannerSub, { color: isAutoPublish ? "#15803D" : "#78350F" }]}>
+              {isAutoPublish
+                ? "This product will go live immediately on Intrihub storefront upon submission."
+                : "This product will be reviewed and approved by Super Admin before appearing live."}
+            </Text>
+          </View>
+        </View>
+
         {/* Basic Details */}
         <View style={styles.card}>
           <Text style={styles.inputLabel}>Product Title *</Text>
@@ -599,9 +631,8 @@ export default function AddProductScreen() {
                       <TouchableOpacity
                         style={styles.chooseSwatchBtn}
                         onPress={() => {
-                          setDropdownType("variant_color");
-                          setDropdownVariantIdx(idx);
-                          setDropdownSearch("");
+                          setColorPickerVariantIdx(idx);
+                          setColorPickerOpen(true);
                         }}
                       >
                         <Palette size={13} color="#052A51" />
@@ -732,12 +763,10 @@ export default function AddProductScreen() {
                   : dropdownType === "unit"
                   ? "Select Unit of Sale"
                   : dropdownType === "size" || dropdownType === "variant_size"
-                  ? "Select Dimensions / Size"
+                  ? "Select Size / Dimension"
                   : dropdownType === "finish" || dropdownType === "variant_finish"
-                  ? "Select Finish / Look"
-                  : dropdownType === "material"
-                  ? "Select Material"
-                  : "Pick Color Swatch"}
+                  ? "Select Surface Finish"
+                  : "Select Material"}
               </Text>
               <TouchableOpacity onPress={() => setDropdownType(null)}>
                 <X size={18} color="#64748B" />
@@ -745,20 +774,18 @@ export default function AddProductScreen() {
             </View>
 
             {/* Inline Add New Option Box */}
-            {dropdownType !== "variant_color" && (
-              <View style={styles.addOptionInlineBox}>
-                <TextInput
-                  style={styles.addOptionInput}
-                  value={customOptionInput}
-                  onChangeText={setCustomOptionInput}
-                  placeholder={`+ Add new ${dropdownType?.replace("variant_", "") || "item"}...`}
-                />
-                <TouchableOpacity style={styles.addOptionBtn} onPress={handleAddCustomOption}>
-                  <Plus size={14} color="#FFFFFF" />
-                  <Text style={styles.addOptionBtnText}>Add</Text>
-                </TouchableOpacity>
-              </View>
-            )}
+            <View style={styles.addOptionInlineBox}>
+              <TextInput
+                style={styles.addOptionInput}
+                value={customOptionInput}
+                onChangeText={setCustomOptionInput}
+                placeholder={`+ Add new ${dropdownType?.replace("variant_", "") || "item"}...`}
+              />
+              <TouchableOpacity style={styles.addOptionBtn} onPress={handleAddCustomOption}>
+                <Plus size={14} color="#FFFFFF" />
+                <Text style={styles.addOptionBtnText}>Add</Text>
+              </TouchableOpacity>
+            </View>
 
             {/* Search filter for long lists */}
             <View style={styles.dropdownSearchBox}>
@@ -890,34 +917,28 @@ export default function AddProductScreen() {
                       </TouchableOpacity>
                     );
                   })
-              ) : dropdownType === "variant_color" && dropdownVariantIdx !== null ? (
-                CATALOG_COLOURS.filter((c) => c.name.toLowerCase().includes(dropdownSearch.toLowerCase())).map((c) => {
-                  const isSelected = variants[dropdownVariantIdx]?.color === c.name;
-                  return (
-                    <TouchableOpacity
-                      key={c.name}
-                      style={[styles.dropdownItemRow, isSelected && styles.dropdownItemRowSelected]}
-                      onPress={() => {
-                        handleUpdateVariant(dropdownVariantIdx, "color", c.name);
-                        handleUpdateVariant(dropdownVariantIdx, "colorHex", c.hexCode);
-                        setDropdownType(null);
-                      }}
-                    >
-                      <View style={{ flexDirection: "row", alignItems: "center", gap: 10 }}>
-                        <View style={[styles.colorCircle, { backgroundColor: c.hexCode }]} />
-                        <Text style={[styles.dropdownItemText, isSelected && styles.dropdownItemTextSelected]}>
-                          {c.name}
-                        </Text>
-                      </View>
-                      {isSelected && <Check size={16} color="#052A51" />}
-                    </TouchableOpacity>
-                  );
-                })
               ) : null}
             </ScrollView>
           </View>
         </View>
       </Modal>
+
+      {/* Rich Color Palette Picker Modal (Solid, Dual Gradient & Spectrum Graph) */}
+      <ColorPalettePickerModal
+        visible={colorPickerOpen}
+        onClose={() => {
+          setColorPickerOpen(false);
+          setColorPickerVariantIdx(null);
+        }}
+        onSelectColor={(colorName, colorHex) => {
+          if (colorPickerVariantIdx !== null) {
+            handleUpdateVariant(colorPickerVariantIdx, "color", colorName);
+            handleUpdateVariant(colorPickerVariantIdx, "colorHex", colorHex);
+          }
+        }}
+        currentColorName={colorPickerVariantIdx !== null ? variants[colorPickerVariantIdx]?.color : ""}
+        currentColorHex={colorPickerVariantIdx !== null ? variants[colorPickerVariantIdx]?.colorHex : "#F26522"}
+      />
     </View>
   );
 }
@@ -1287,5 +1308,31 @@ const styles = StyleSheet.create({
     borderRadius: 9,
     borderWidth: 1,
     borderColor: "rgba(0,0,0,0.15)",
+  },
+  modeBanner: {
+    flexDirection: "row",
+    alignItems: "center",
+    padding: 12,
+    borderRadius: 14,
+    borderWidth: 1,
+    gap: 10,
+    ...SHADOWS.sm,
+  },
+  modeBannerLive: {
+    backgroundColor: "#F0FDF4",
+    borderColor: "#BBF7D0",
+  },
+  modeBannerPending: {
+    backgroundColor: "#FFFBEB",
+    borderColor: "#FDE68A",
+  },
+  modeBannerTitle: {
+    fontSize: 12,
+    fontWeight: "800",
+  },
+  modeBannerSub: {
+    fontSize: 10.5,
+    marginTop: 2,
+    lineHeight: 14,
   },
 });

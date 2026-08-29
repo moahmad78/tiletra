@@ -103,7 +103,68 @@ export async function POST(req: NextRequest) {
     const cleanEmail = email.trim().toLowerCase();
     const syntheticPhone = `google_${cleanEmail.replace(/[^a-z0-9]/gi, "_")}`;
 
-    // 2. Lookup existing user
+    // 2. Pre-verify Business Portal Access BEFORE creating any User records
+    if (isBusinessLogin) {
+      const allowedAdminEmail = (process.env.ADMIN_ALLOWED_EMAIL || "admin@intrihub.com").toLowerCase().trim();
+      const isAdmin = cleanEmail === allowedAdminEmail;
+
+      if (!isAdmin) {
+        const matchedVendor = await prisma.vendor.findFirst({
+          where: {
+            OR: [
+              { contactEmail: { equals: cleanEmail, mode: "insensitive" } },
+              { owner: { email: { equals: cleanEmail, mode: "insensitive" } } },
+            ],
+          },
+        });
+
+        if (!matchedVendor) {
+          const failRecord = recordVendorLoginFailure(clientIp);
+          return mobileApiResponse(
+            {
+              success: false,
+              reason: "NOT_FOUND",
+              error: "This Google account isn't registered as an approved vendor partner on Intrihub Business.",
+              email: cleanEmail,
+              remainingAttempts: failRecord.remainingAttempts,
+              locked: failRecord.locked,
+            },
+            403
+          );
+        }
+
+        if (matchedVendor.status !== "approved") {
+          const failRecord = recordVendorLoginFailure(clientIp);
+          let reason = "UNAPPROVED";
+          let msg = `Vendor account status is '${matchedVendor.status}'. Access denied before approval.`;
+          if (matchedVendor.status === "pending") {
+            reason = "PENDING_APPROVAL";
+            msg = "Your vendor partner application is currently under review.";
+          } else if (matchedVendor.status === "rejected") {
+            reason = "REJECTED";
+            msg = `Your vendor application was rejected.${matchedVendor.rejectionReason ? ` Reason: ${matchedVendor.rejectionReason}` : ""}`;
+          } else if (matchedVendor.status === "suspended") {
+            reason = "SUSPENDED";
+            msg = "Your vendor account has been suspended. Please contact partner support.";
+          }
+
+          return mobileApiResponse(
+            {
+              success: false,
+              reason,
+              error: msg,
+              email: cleanEmail,
+              vendorName: matchedVendor.businessName,
+              remainingAttempts: failRecord.remainingAttempts,
+              locked: failRecord.locked,
+            },
+            403
+          );
+        }
+      }
+    }
+
+    // 3. Lookup existing user
     const existingByEmail = await prisma.user.findUnique({
       where: { email: cleanEmail },
       include: {
@@ -171,7 +232,7 @@ export async function POST(req: NextRequest) {
             emailVerified: true,
             phoneVerified: false,
             authProvider: "google",
-            role: "customer",
+            role: isBusinessLogin ? "vendor" : "customer",
           },
           include: {
             vendor: true,
@@ -221,8 +282,10 @@ export async function POST(req: NextRequest) {
           return mobileApiResponse(
             {
               success: false,
+              reason: "NOT_FOUND",
               error:
-                "Access Restricted: Google account is not registered as an Intrihub vendor partner. Please submit a vendor application.",
+                "This Google account isn't registered as an approved vendor partner on Intrihub Business.",
+              email: cleanEmail,
               remainingAttempts: failRecord.remainingAttempts,
               locked: failRecord.locked,
             },
@@ -233,18 +296,24 @@ export async function POST(req: NextRequest) {
         if (vendor.status !== "approved") {
           const failRecord = recordVendorLoginFailure(clientIp);
           let msg = "Your vendor account is not approved.";
+          let reason = "UNAPPROVED";
           if (vendor.status === "pending") {
-            msg = "Your vendor application is currently under review by the Intrihub Admin team. You will be notified upon approval.";
+            reason = "PENDING_APPROVAL";
+            msg = "Your vendor partner application is currently under review by the Intrihub Admin team.";
           } else if (vendor.status === "suspended") {
-            msg = "Your vendor store has been suspended. Please contact Intrihub Partner Support at +91 9264920211.";
+            reason = "SUSPENDED";
+            msg = "Your vendor store has been suspended. Please contact Intrihub Partner Support.";
           } else if (vendor.status === "rejected") {
-            msg = `Your vendor application was not approved. ${vendor.rejectionReason ? `Reason: ${vendor.rejectionReason}` : "Please contact partner support."}`;
+            reason = "REJECTED";
+            msg = `Your vendor application was not approved.${vendor.rejectionReason ? ` Reason: ${vendor.rejectionReason}` : " Please contact partner support."}`;
           }
 
           return mobileApiResponse(
             {
               success: false,
+              reason,
               error: msg,
+              vendorName: vendor.businessName,
               vendorStatus: vendor.status,
               remainingAttempts: failRecord.remainingAttempts,
               locked: failRecord.locked,

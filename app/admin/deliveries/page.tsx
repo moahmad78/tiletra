@@ -350,7 +350,7 @@ export default function AdminDeliveriesPage() {
                           <p className="font-bold text-gray-700 uppercase text-[10px]">Customer Doorstep & GPS</p>
                           <p className="text-gray-900 font-semibold">{parent?.deliveryName || parent?.customerName}</p>
                           <p className="text-gray-600 text-[11px]">
-                            {[
+                            {parent?.deliveryAddress || [
                               parent?.deliveryHouseNumber,
                               parent?.deliveryBuildingName,
                               parent?.deliveryStreet || (parent?.shippingAddress as any)?.street,
@@ -361,7 +361,7 @@ export default function AdminDeliveriesPage() {
                               .filter(Boolean)
                               .join(", ")}
                           </p>
-                          {parent?.deliveryLandmark && (
+                          {(!parent?.deliveryAddress && parent?.deliveryLandmark) && (
                             <p className="text-amber-700 text-[11px] font-semibold">
                               📍 Landmark: {parent?.deliveryLandmark}
                             </p>

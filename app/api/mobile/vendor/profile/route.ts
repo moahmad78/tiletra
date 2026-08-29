@@ -82,6 +82,8 @@ export async function PATCH(req: NextRequest) {
       category,
       deliveryMethod,
       description,
+      logo,
+      shopPhotoUrl,
     } = body;
 
     let cleanPhone: string | undefined = undefined;
@@ -107,18 +109,21 @@ export async function PATCH(req: NextRequest) {
     if (category !== undefined) updateData.category = String(category).trim();
     if (deliveryMethod !== undefined) updateData.deliveryMethod = String(deliveryMethod).trim();
     if (description !== undefined) updateData.description = String(description).trim();
+    if (logo !== undefined) updateData.logo = logo ? String(logo).trim() : null;
+    if (shopPhotoUrl !== undefined) updateData.shopPhotoUrl = shopPhotoUrl ? String(shopPhotoUrl).trim() : null;
 
     const updatedVendor = await prisma.vendor.update({
       where: { id: vendor.id },
       data: updateData,
     });
 
-    // Also update underlying user record name/phone
+    // Also update underlying user record name/phone/avatar
     await prisma.user.update({
       where: { id: user.id },
       data: {
         name: businessName !== undefined ? String(businessName).trim() : undefined,
         phone: cleanPhone !== undefined ? cleanPhone : undefined,
+        avatar: logo !== undefined ? (logo ? String(logo).trim() : null) : undefined,
       },
     });
 

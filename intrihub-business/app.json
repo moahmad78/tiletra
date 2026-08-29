@@ -19,11 +19,12 @@
       "bundleIdentifier": "com.intrihub.business"
     },
     "android": {
+      "package": "com.intrihub.business",
+      "googleServicesFile": "./google-services.json",
       "adaptiveIcon": {
         "foregroundImage": "./assets/intri-icon.png",
         "backgroundColor": "#052A51"
-      },
-      "package": "com.intrihub.business"
+      }
     },
     "web": {
       "favicon": "./assets/favicon.png"
@@ -32,6 +33,13 @@
       "expo-router",
       "expo-secure-store",
       "expo-font",
+      [
+        "expo-notifications",
+        {
+          "icon": "./assets/intri-icon.png",
+          "color": "#052A51"
+        }
+      ],
       [
         "expo-image-picker",
         {

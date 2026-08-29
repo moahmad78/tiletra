@@ -25,6 +25,7 @@ import {
 import { useCartStore } from "../src/store/cartStore";
 import { useAuthStore } from "../src/store/authStore";
 import { createCheckoutOrder, verifyCheckoutPayment } from "../src/api/orders";
+import RazorpayCheckout from "react-native-razorpay";
 import { AddressModal } from "../src/components/AddressModal";
 import { COLORS, SPACING, RADIUS, SHADOWS } from "../src/constants/theme";
 import { getImageUrl } from "../src/constants/config";
@@ -60,6 +61,23 @@ export default function CheckoutScreen() {
 
     setIsProcessing(true);
 
+    const sanitizePhone = (p?: string | null) => {
+      if (!p) return "";
+      const str = String(p).trim();
+      if (
+        str.startsWith("email_") ||
+        str.startsWith("google_") ||
+        str.includes("email") ||
+        str.includes("@") ||
+        /[a-zA-Z_]/.test(str)
+      ) {
+        return "";
+      }
+      const digits = str.replace(/\D/g, "");
+      return digits.length >= 7 ? digits : "";
+    };
+    const checkoutPhone = sanitizePhone(selectedAddress?.phone) || sanitizePhone(user?.phone) || "";
+
     try {
       const orderPayloadItems = items.map((i) => ({
         productId: i.product.id,
@@ -80,7 +98,7 @@ export default function CheckoutScreen() {
           items: orderPayloadItems,
           shippingAddress: selectedAddress,
           customerName: user?.name || "Customer",
-          customerPhone: user?.phone || "",
+          customerPhone: checkoutPhone,
           customerEmail: user?.email || undefined,
           subtotal,
           deliveryFee,
@@ -94,14 +112,14 @@ export default function CheckoutScreen() {
           setErrorMessage(res.error || "Failed to place COD order. Please try again.");
         }
       } else {
-        // Online Payment Flow (Razorpay)
+        // Online Payment Flow (Razorpay Native SDK)
         const res = await createCheckoutOrder({
           amount: total,
           paymentMethod: "online",
           items: orderPayloadItems,
           shippingAddress: selectedAddress,
           customerName: user?.name || "Customer",
-          customerPhone: user?.phone || "",
+          customerPhone: checkoutPhone,
           customerEmail: user?.email || undefined,
           subtotal,
           deliveryFee,
@@ -109,27 +127,64 @@ export default function CheckoutScreen() {
         });
 
         if (res.success && res.razorpayOrder) {
-          // In standard native flow or simulation
-          const verifyRes = await verifyCheckoutPayment({
-            razorpay_order_id: res.razorpayOrder.order_id,
-            razorpay_payment_id: `pay_mock_${Date.now()}`,
-            razorpay_signature: "mock_signature_verified",
-            items: orderPayloadItems,
-            shippingAddress: selectedAddress,
-            customerName: user?.name || "Customer",
-            customerPhone: user?.phone || "",
-            customerEmail: user?.email || undefined,
-            subtotal,
-            deliveryFee,
-            discount: 0,
-            total,
-          });
+          const razorpayKey =
+            res.razorpayOrder.key_id ||
+            process.env.EXPO_PUBLIC_RAZORPAY_KEY_ID ||
+            "rzp_test_51NVb089Lsz50d";
 
-          if (verifyRes.success && verifyRes.order) {
-            clearCart();
-            setCompletedOrder(verifyRes.order);
-          } else {
-            setErrorMessage(verifyRes.error || "Payment verification failed.");
+          const options = {
+            description: `Order Payment for ${orderPayloadItems.length} item(s)`,
+            image: "https://www.intrihub.com/favicon.png",
+            currency: res.razorpayOrder.currency || "INR",
+            key: razorpayKey,
+            amount: res.razorpayOrder.amount || Math.round(total * 100),
+            name: "Intrihub",
+            order_id: res.razorpayOrder.order_id,
+            prefill: {
+              email: user?.email || "customer@intrihub.com",
+              contact: checkoutPhone || "9999999999",
+              name: user?.name || "Customer",
+            },
+            theme: { color: "#052A51" },
+          };
+
+          try {
+            // Open Native Razorpay Checkout Modal
+            const paymentData: any = await RazorpayCheckout.open(options);
+
+            // Verify real cryptographic signature on backend
+            const verifyRes = await verifyCheckoutPayment({
+              razorpay_order_id: paymentData.razorpay_order_id,
+              razorpay_payment_id: paymentData.razorpay_payment_id,
+              razorpay_signature: paymentData.razorpay_signature,
+              items: orderPayloadItems,
+              shippingAddress: selectedAddress,
+              customerName: user?.name || "Customer",
+              customerPhone: checkoutPhone,
+              customerEmail: user?.email || undefined,
+              subtotal,
+              deliveryFee,
+              discount: 0,
+              total,
+            });
+
+            if (verifyRes.success && verifyRes.order) {
+              clearCart();
+              setCompletedOrder(verifyRes.order);
+            } else {
+              setErrorMessage(
+                verifyRes.error || "Payment received, but order verification failed. Please contact support."
+              );
+            }
+          } catch (razorpayErr: any) {
+            console.log("Razorpay Checkout Error:", razorpayErr);
+            const userFriendlyError =
+              razorpayErr?.description ||
+              razorpayErr?.message ||
+              (razorpayErr?.code === 0
+                ? "Payment was cancelled. You can retry anytime."
+                : "Payment authorization failed. Please try again.");
+            setErrorMessage(userFriendlyError);
           }
         } else {
           setErrorMessage(res.error || "Could not initiate payment gateway.");

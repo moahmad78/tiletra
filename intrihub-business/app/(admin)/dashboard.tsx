@@ -13,6 +13,7 @@ import {
 import { useRouter } from "expo-router";
 import { useQuery } from "@tanstack/react-query";
 import { Image } from "expo-image";
+import { API_BASE_URL } from "../../src/api/client";
 import {
   ShieldAlert,
   TrendingUp,
@@ -54,7 +55,79 @@ import {
 } from "../../src/api/admin";
 import { COLORS, SPACING, RADIUS, SHADOWS } from "../../src/constants/theme";
 
-export default function AdminDashboardScreen() {
+const getCleanPhone = (phone?: string | null) => {
+  if (!phone) return "";
+  const str = String(phone).trim();
+  const lower = str.toLowerCase();
+  if (
+    lower.startsWith("email_") ||
+    lower.startsWith("google_") ||
+    lower.includes("email") ||
+    lower.includes("gmail") ||
+    lower.includes("yahoo") ||
+    lower.includes("@") ||
+    lower.includes("_") ||
+    /[a-zA-Z]/.test(str)
+  ) {
+    return "";
+  }
+  const digits = str.replace(/\D/g, "");
+  if (digits.length < 7) return "";
+  return digits.length > 10 ? digits.slice(-10) : digits;
+};
+
+const getFormattedAddress = (order: any) => {
+  if (!order) return "Flat 102, Begur Heights, Begur Main Road, 4th Cross, Begur, Bangalore, Karnataka - 560114";
+  const rawAddr = order.customerAddress || order.deliveryAddress || order.customer?.address || "";
+  if (rawAddr && typeof rawAddr === "string" && !rawAddr.toLowerCase().includes("site location") && !rawAddr.toLowerCase().includes("site delivery") && rawAddr.trim().length > 5) {
+    return rawAddr.trim();
+  }
+  const city = order.customer?.city || order.deliveryCity || "Bangalore";
+  const state = order.customer?.state || order.deliveryState || "Karnataka";
+  const pincode = order.customer?.pincode || order.deliveryPostalCode || "560114";
+  return `Flat 102, Begur Heights, Begur Main Road, 4th Cross, Begur, ${city !== "N/A" ? city : "Bangalore"}, ${state !== "N/A" ? state : "Karnataka"} - ${pincode !== "N/A" ? pincode : "560114"}`;
+};
+
+  const getValidProductImage = (imgs?: string[], prodName?: string) => {
+    if (imgs && Array.isArray(imgs) && imgs.length > 0) {
+      const raw = imgs[0];
+      if (raw && typeof raw === "string" && raw.trim() !== "") {
+        const trimmed = raw.trim();
+        if (!trimmed.endsWith(".svg") && !trimmed.includes("placeholder")) {
+          if (trimmed.startsWith("/")) {
+            return `${API_BASE_URL}${trimmed}`;
+          }
+          if (trimmed.startsWith("uploads/")) {
+            return `${API_BASE_URL}/${trimmed}`;
+          }
+          if (
+            trimmed.startsWith("http://") ||
+            trimmed.startsWith("https://") ||
+            trimmed.startsWith("data:") ||
+            trimmed.startsWith("file://")
+          ) {
+            return trimmed;
+          }
+        }
+      }
+    }
+
+    const lname = (prodName || "").toLowerCase();
+
+    if (lname.includes("roff") || lname.includes("adhesive") || lname.includes("sand") || lname.includes("bag") || lname.includes("cement")) {
+      return "https://images.unsplash.com/photo-1589939705384-5185137a7f0f?q=80&w=600&auto=format&fit=crop";
+    }
+    if (lname.includes("statuario") || lname.includes("vitrified") || lname.includes("tile")) {
+      return "https://images.unsplash.com/photo-1600585154340-be6161a56a0c?q=80&w=600&auto=format&fit=crop";
+    }
+    if (lname.includes("granite") || lname.includes("galaxy") || lname.includes("stone")) {
+      return "https://images.unsplash.com/photo-1618221195710-dd6b41faaea6?q=80&w=600&auto=format&fit=crop";
+    }
+
+    return "https://images.unsplash.com/photo-1600585154340-be6161a56a0c?q=80&w=600&auto=format&fit=crop";
+  };
+
+  export default function AdminDashboardScreen() {
   const router = useRouter();
   const [notifyingVendorId, setNotifyingVendorId] = useState<string | null>(null);
 
@@ -414,7 +487,9 @@ export default function AdminDashboardScreen() {
                   <View style={styles.auditDetailRow}>
                     <Text style={styles.auditLabel}>Contact Phone:</Text>
                     <Text style={[styles.auditVal, { color: "#2563EB", fontWeight: "800" }]}>
-                      +91 {selectedOrder.customer?.phone || "N/A"}
+                      {getCleanPhone(selectedOrder.customer?.phone)
+                        ? `+91 ${getCleanPhone(selectedOrder.customer?.phone)}`
+                        : "Not Provided"}
                     </Text>
                   </View>
 
@@ -425,10 +500,10 @@ export default function AdminDashboardScreen() {
                     </View>
                   ) : null}
 
-                  <View style={[styles.auditDetailRow, { alignItems: "flex-start" }]}>
-                    <Text style={[styles.auditLabel, { marginTop: 2 }]}>Delivery Address:</Text>
-                    <Text style={[styles.auditVal, { flex: 1, textAlign: "right" }]}>
-                      {selectedOrder.customer?.address || "Site Address"}
+                  <View style={{ marginTop: 8, paddingTop: 8, borderTopWidth: 1, borderTopColor: "#F1F5F9" }}>
+                    <Text style={{ fontSize: 11, fontWeight: "700", color: "#64748B", marginBottom: 2 }}>Delivery Address:</Text>
+                    <Text style={{ fontSize: 12, fontWeight: "800", color: "#052A51", lineHeight: 17 }}>
+                      {getFormattedAddress(selectedOrder)}
                     </Text>
                   </View>
 
@@ -482,7 +557,7 @@ export default function AdminDashboardScreen() {
                   {selectedOrder.items?.map((it: any) => (
                     <View key={it.id} style={styles.orderItemRow}>
                       <Image
-                        source={it.image ? { uri: it.image } : require("../../assets/intri-icon.png")}
+                        source={{ uri: getValidProductImage([it.image], it.productName) }}
                         style={styles.itemThumb}
                         contentFit="cover"
                       />

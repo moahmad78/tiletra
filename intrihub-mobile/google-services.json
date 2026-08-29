@@ -1,0 +1,38 @@
+{
+  "project_info": {
+    "project_number": "602084779648",
+    "project_id": "intrihub-production",
+    "storage_bucket": "intrihub-production.appspot.com"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:602084779648:android:7c786f9702174a68b51f14",
+        "android_client_info": {
+          "package_name": "com.intrihub.app"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "602084779648-bchh5lt1n03g719qisutva4bkhjg17cb.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.intrihub.app",
+            "certificate_hash": "a1b2c3d4e5f60718293a4b5c6d7e8f9012345678"
+          }
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyDummyProductionFCMKeyPlaceholderForBuild"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

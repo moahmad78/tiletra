@@ -35,6 +35,9 @@ import {
   Edit2,
   Trash2,
   UserCheck,
+  Zap,
+  SlidersHorizontal,
+  Truck,
 } from "lucide-react-native";
 import {
   fetchAdminVendors,
@@ -83,7 +86,10 @@ export default function AdminVendorsHubScreen() {
   const [editCommission, setEditCommission] = useState("15.0");
   const [editStatus, setEditStatus] = useState("approved");
   const [editVerified, setEditVerified] = useState(false);
+  const [editAutoPublish, setEditAutoPublish] = useState(false);
+  const [editDeliveryMethod, setEditDeliveryMethod] = useState<"self" | "platform">("self");
   const [savingEdit, setSavingEdit] = useState(false);
+  const [togglingAutoPublishId, setTogglingAutoPublishId] = useState<string | null>(null);
 
   // 1. Vendors Query
   const {
@@ -119,6 +125,32 @@ export default function AdminVendorsHubScreen() {
   );
   const pendingAppsCount = newApplications.length;
 
+  const handleToggleAutoPublish = async (vendor: Vendor) => {
+    const nextState = !vendor.autoPublishEnabled;
+    setTogglingAutoPublishId(vendor.id);
+    try {
+      const res = await updateAdminVendor(vendor.id, {
+        autoPublishEnabled: nextState,
+      });
+      setTogglingAutoPublishId(null);
+      if (res.success) {
+        refetchVendors();
+        queryClient.invalidateQueries({ queryKey: ["admin-vendors"] });
+        Alert.alert(
+          nextState ? "⚡ Auto-Upload Mode ON" : "⏳ Approval Required ON",
+          nextState
+            ? `Items uploaded by "${vendor.businessName}" will now go DIRECTLY LIVE without waiting for review.`
+            : `Items uploaded by "${vendor.businessName}" will now REQUIRE SUPER ADMIN APPROVAL before going live.`
+        );
+      } else {
+        Alert.alert("Error", res.error || "Failed to update upload mode.");
+      }
+    } catch (e: any) {
+      setTogglingAutoPublishId(null);
+      Alert.alert("Error", e?.message || "Something went wrong.");
+    }
+  };
+
   const handleOpenEdit = (v: Vendor) => {
     setEditingVendorId(v.id);
     setEditBusinessName(v.businessName || "");
@@ -131,6 +163,8 @@ export default function AdminVendorsHubScreen() {
     setEditCommission(String(v.commissionRate ?? 15));
     setEditStatus(v.status || "approved");
     setEditVerified(Boolean(v.verified));
+    setEditAutoPublish(Boolean(v.autoPublishEnabled));
+    setEditDeliveryMethod(v.deliveryMethod === "platform" ? "platform" : "self");
     setEditModalOpen(true);
   };
 
@@ -154,6 +188,8 @@ export default function AdminVendorsHubScreen() {
         commissionRate: parseFloat(editCommission) || 15.0,
         status: editStatus,
         verified: editVerified,
+        autoPublishEnabled: editAutoPublish,
+        deliveryMethod: editDeliveryMethod,
       });
 
       setSavingEdit(false);
@@ -306,12 +342,25 @@ export default function AdminVendorsHubScreen() {
       activeOpacity={0.9}
     >
       <View style={styles.cardHeader}>
-        <View style={{ flex: 1 }}>
-          <View style={styles.nameRow}>
-            <Text style={styles.businessName}>{item.businessName}</Text>
-            {item.verified ? <ShieldCheck size={16} color={COLORS.accentGreen} /> : null}
+        <View style={{ flexDirection: "row", alignItems: "center", gap: 10, flex: 1 }}>
+          {item.logo ? (
+            <Image
+              source={{ uri: item.logo }}
+              style={{ width: 40, height: 40, borderRadius: 20, borderWidth: 1, borderColor: "#E2E8F0" }}
+              contentFit="cover"
+            />
+          ) : (
+            <View style={{ width: 40, height: 40, borderRadius: 20, backgroundColor: "#EFF6FF", alignItems: "center", justifyContent: "center" }}>
+              <Store size={20} color="#052A51" />
+            </View>
+          )}
+          <View style={{ flex: 1 }}>
+            <View style={styles.nameRow}>
+              <Text style={styles.businessName} numberOfLines={1}>{item.businessName}</Text>
+              {item.verified ? <ShieldCheck size={16} color={COLORS.accentGreen} /> : null}
+            </View>
+            <Text style={styles.categoryText}>{item.category || "Building Supplies"}</Text>
           </View>
-          <Text style={styles.categoryText}>{item.category || "Building Supplies"}</Text>
         </View>
 
         <View style={[styles.statusBadge, getStatusStyle(item.status)]}>
@@ -348,6 +397,62 @@ export default function AdminVendorsHubScreen() {
         <View style={styles.metricItem}>
           <Text style={styles.metricLabel}>Commission</Text>
           <Text style={styles.metricVal}>{item.commissionRate || 15}%</Text>
+        </View>
+      </View>
+
+      {/* Upload Mode Status Badge */}
+      <View style={[styles.autoUploadStrip, item.autoPublishEnabled ? styles.autoUploadStripActive : styles.autoUploadStripInactive]}>
+        <View style={{ flexDirection: "row", alignItems: "center", gap: 6, flex: 1 }}>
+          <Zap size={14} color={item.autoPublishEnabled ? "#16A34A" : "#D97706"} />
+          <Text style={[styles.autoUploadTitle, { color: item.autoPublishEnabled ? "#166534" : "#92400E" }]}>
+            Upload Mode: {item.autoPublishEnabled ? "Direct Live (Auto-Upload)" : "Admin Approval Required"}
+          </Text>
+        </View>
+        <View
+          style={{
+            paddingHorizontal: 8,
+            paddingVertical: 3,
+            borderRadius: 6,
+            backgroundColor: item.autoPublishEnabled ? "#DCFCE7" : "#FEF3C7",
+          }}
+        >
+          <Text
+            style={{
+              fontSize: 10,
+              fontFamily: "Outfit-Bold",
+              color: item.autoPublishEnabled ? "#15803D" : "#B45309",
+            }}
+          >
+            {item.autoPublishEnabled ? "⚡ LIVE" : "⏳ APPROVAL"}
+          </Text>
+        </View>
+      </View>
+
+      {/* Logistics & Delivery Mode Badge */}
+      <View style={[styles.autoUploadStrip, item.deliveryMethod === "platform" ? { backgroundColor: "#EFF6FF", borderColor: "#BFDBFE", marginTop: 6 } : { backgroundColor: "#FFF7ED", borderColor: "#FFEDD5", marginTop: 6 }]}>
+        <View style={{ flexDirection: "row", alignItems: "center", gap: 6, flex: 1 }}>
+          <Truck size={14} color={item.deliveryMethod === "platform" ? "#1D4ED8" : "#C2410C"} />
+          <Text style={[styles.autoUploadTitle, { color: item.deliveryMethod === "platform" ? "#1E40AF" : "#9A3412" }]}>
+            Logistics: {item.deliveryMethod === "platform" ? "Platform Logistics (IntriHub Fleet)" : "Self-Delivery (Manual Transport)"}
+          </Text>
+        </View>
+        <View
+          style={{
+            paddingHorizontal: 8,
+            paddingVertical: 3,
+            borderRadius: 6,
+            backgroundColor: item.deliveryMethod === "platform" ? "#DBEAFE" : "#FFEDD5",
+          }}
+        >
+          <Text
+            style={{
+              fontSize: 10,
+              fontFamily: "Outfit-Bold",
+              color: item.deliveryMethod === "platform" ? "#1E40AF" : "#C2410C",
+            }}
+          >
+            {item.deliveryMethod === "platform" ? "⚡ AUTO FLEET" : "🚛 MANUAL"}
+          </Text>
         </View>
       </View>
 
@@ -657,6 +762,26 @@ export default function AdminVendorsHubScreen() {
                 ))}
               </View>
 
+              <Text style={[styles.inputLabel, { marginTop: 14 }]}>Logistics & Fulfillment Method</Text>
+              <View style={styles.statusOptionsRow}>
+                <TouchableOpacity
+                  style={[styles.statusOptionChip, editDeliveryMethod === "self" && { backgroundColor: "#FFF7ED", borderColor: "#F97316" }]}
+                  onPress={() => setEditDeliveryMethod("self")}
+                >
+                  <Text style={[styles.statusOptionText, editDeliveryMethod === "self" && { color: "#C2410C", fontWeight: "800" }]}>
+                    🚛 SELF-DELIVERY (MANUAL)
+                  </Text>
+                </TouchableOpacity>
+                <TouchableOpacity
+                  style={[styles.statusOptionChip, editDeliveryMethod === "platform" && { backgroundColor: "#EFF6FF", borderColor: "#3B82F6" }]}
+                  onPress={() => setEditDeliveryMethod("platform")}
+                >
+                  <Text style={[styles.statusOptionText, editDeliveryMethod === "platform" && { color: "#1D4ED8", fontWeight: "800" }]}>
+                    ⚡ PLATFORM LOGISTICS (AUTO)
+                  </Text>
+                </TouchableOpacity>
+              </View>
+
               <TouchableOpacity
                 style={styles.verifyCheckboxRow}
                 onPress={() => setEditVerified(!editVerified)}
@@ -666,6 +791,24 @@ export default function AdminVendorsHubScreen() {
                   {editVerified && <CheckCircle2 size={14} color="#FFFFFF" />}
                 </View>
                 <Text style={styles.verifyCheckboxLabel}>Mark Vendor KYC as Verified</Text>
+              </TouchableOpacity>
+
+              <TouchableOpacity
+                style={[styles.verifyCheckboxRow, { marginTop: 10 }]}
+                onPress={() => setEditAutoPublish(!editAutoPublish)}
+                activeOpacity={0.85}
+              >
+                <View style={[styles.checkbox, editAutoPublish && { backgroundColor: "#16A34A", borderColor: "#16A34A" }]}>
+                  {editAutoPublish && <Zap size={14} color="#FFFFFF" />}
+                </View>
+                <View style={{ flex: 1 }}>
+                  <Text style={[styles.verifyCheckboxLabel, { fontWeight: "800", color: editAutoPublish ? "#166534" : "#1E293B" }]}>
+                    ⚡ Auto-Upload Mode (Direct Live)
+                  </Text>
+                  <Text style={{ fontSize: 11, color: "#64748B", marginTop: 2 }}>
+                    If ON, items added by this vendor become live instantly without Super Admin review.
+                  </Text>
+                </View>
               </TouchableOpacity>
             </View>
 
@@ -1249,5 +1392,70 @@ const styles = StyleSheet.create({
     color: "#64748B",
     textAlign: "center",
     lineHeight: 18,
+  },
+  autoUploadStrip: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    padding: 10,
+    borderRadius: 12,
+    marginVertical: 4,
+    borderWidth: 1,
+  },
+  autoUploadStripActive: {
+    backgroundColor: "#F0FDF4",
+    borderColor: "#BBF7D0",
+  },
+  autoUploadStripInactive: {
+    backgroundColor: "#FFFBEB",
+    borderColor: "#FDE68A",
+  },
+  autoUploadTitle: {
+    fontSize: 12,
+    fontWeight: "800",
+  },
+  autoUploadSubtitle: {
+    fontSize: 10,
+    marginTop: 2,
+    lineHeight: 14,
+  },
+  modeSwitchBtn: {
+    flexDirection: "row",
+    alignItems: "center",
+    paddingHorizontal: 8,
+    paddingVertical: 5,
+    borderRadius: 20,
+    borderWidth: 1,
+    gap: 6,
+  },
+  modeSwitchBtnActive: {
+    backgroundColor: "#16A34A",
+    borderColor: "#15803D",
+  },
+  modeSwitchBtnInactive: {
+    backgroundColor: "#F1F5F9",
+    borderColor: "#CBD5E1",
+  },
+  modeSwitchText: {
+    fontSize: 10,
+    fontWeight: "900",
+    letterSpacing: 0.5,
+  },
+  modeSwitchTextActive: {
+    color: "#FFFFFF",
+  },
+  modeSwitchTextInactive: {
+    color: "#475569",
+  },
+  toggleThumb: {
+    width: 12,
+    height: 12,
+    borderRadius: 6,
+  },
+  toggleThumbActive: {
+    backgroundColor: "#FFFFFF",
+  },
+  toggleThumbInactive: {
+    backgroundColor: "#94A3B8",
   },
 });

@@ -52,11 +52,19 @@ export default function VendorDashboardScreen() {
     <View style={styles.container}>
       {/* Top App Bar */}
       <View style={styles.topBar}>
-        <Image
-          source={require("../../assets/intri-icon.png")}
-          style={styles.vendorHeaderLogo}
-          contentFit="contain"
-        />
+        {vendor?.logo ? (
+          <Image
+            source={{ uri: vendor.logo }}
+            style={{ width: 42, height: 42, borderRadius: 21, borderWidth: 1, borderColor: "#E2E8F0" }}
+            contentFit="cover"
+          />
+        ) : (
+          <Image
+            source={require("../../assets/intri-icon.png")}
+            style={styles.vendorHeaderLogo}
+            contentFit="contain"
+          />
+        )}
         <View style={{ flex: 1, marginLeft: 10 }}>
           <View style={styles.storeBadge}>
             <Building2 size={12} color={COLORS.accentOrange} />

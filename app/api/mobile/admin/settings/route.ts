@@ -34,6 +34,12 @@ export async function GET(req: NextRequest) {
       "setting_new_arrivals_heading",
       "setting_new_arrivals_caption",
       "setting_deals_bar_text",
+      "invoice_signature_text",
+      "invoice_signature_title",
+      "invoice_digital_badge",
+      "invoice_terms_notes",
+      "invoice_footer_tagline",
+      "invoice_watermark_url",
     ];
 
     const extraRecords = await prisma.setting.findMany({
@@ -66,6 +72,12 @@ export async function GET(req: NextRequest) {
         newArrivalsHeading: extraMap["setting_new_arrivals_heading"] || "New In Stock",
         newArrivalsCaption: extraMap["setting_new_arrivals_caption"] || "Latest luxury surfaces and hardware fresh from factory",
         dealsBarText: extraMap["setting_deals_bar_text"] || "Special Launch Offer: Extra 10% off with coupon code FESTIVE10",
+        invoiceSignatureText: extraMap["invoice_signature_text"] || "INTRIHUB",
+        invoiceSignatureTitle: extraMap["invoice_signature_title"] || "Authorized Signatory",
+        invoiceDigitalBadge: extraMap["invoice_digital_badge"] || "✔ Digitally Signed",
+        invoiceTermsNotes: extraMap["invoice_terms_notes"] || "• Computer-generated tax invoice verified by IntriHub.\n• Everything, Every Place • www.intrihub.com",
+        invoiceFooterTagline: extraMap["invoice_footer_tagline"] || "This is an official computer-generated tax invoice verified by IntriHub.",
+        invoiceWatermarkUrl: extraMap["invoice_watermark_url"] || "https://www.intrihub.com/logo/intri-web-logo.png",
       },
     });
   } catch (error: any) {
@@ -298,6 +310,61 @@ export async function PATCH(req: NextRequest) {
           where: { key: "setting_deals_bar_text" },
           update: { value: String(body.dealsBarText).trim() },
           create: { key: "setting_deals_bar_text", value: String(body.dealsBarText).trim() },
+        })
+      );
+    }
+
+    if (body.invoiceSignatureText !== undefined) {
+      extraUpdates.push(
+        prisma.setting.upsert({
+          where: { key: "invoice_signature_text" },
+          update: { value: String(body.invoiceSignatureText).trim() },
+          create: { key: "invoice_signature_text", value: String(body.invoiceSignatureText).trim() },
+        })
+      );
+    }
+    if (body.invoiceSignatureTitle !== undefined) {
+      extraUpdates.push(
+        prisma.setting.upsert({
+          where: { key: "invoice_signature_title" },
+          update: { value: String(body.invoiceSignatureTitle).trim() },
+          create: { key: "invoice_signature_title", value: String(body.invoiceSignatureTitle).trim() },
+        })
+      );
+    }
+    if (body.invoiceDigitalBadge !== undefined) {
+      extraUpdates.push(
+        prisma.setting.upsert({
+          where: { key: "invoice_digital_badge" },
+          update: { value: String(body.invoiceDigitalBadge).trim() },
+          create: { key: "invoice_digital_badge", value: String(body.invoiceDigitalBadge).trim() },
+        })
+      );
+    }
+    if (body.invoiceTermsNotes !== undefined) {
+      extraUpdates.push(
+        prisma.setting.upsert({
+          where: { key: "invoice_terms_notes" },
+          update: { value: String(body.invoiceTermsNotes).trim() },
+          create: { key: "invoice_terms_notes", value: String(body.invoiceTermsNotes).trim() },
+        })
+      );
+    }
+    if (body.invoiceFooterTagline !== undefined) {
+      extraUpdates.push(
+        prisma.setting.upsert({
+          where: { key: "invoice_footer_tagline" },
+          update: { value: String(body.invoiceFooterTagline).trim() },
+          create: { key: "invoice_footer_tagline", value: String(body.invoiceFooterTagline).trim() },
+        })
+      );
+    }
+    if (body.invoiceWatermarkUrl !== undefined) {
+      extraUpdates.push(
+        prisma.setting.upsert({
+          where: { key: "invoice_watermark_url" },
+          update: { value: String(body.invoiceWatermarkUrl).trim() },
+          create: { key: "invoice_watermark_url", value: String(body.invoiceWatermarkUrl).trim() },
         })
       );
     }

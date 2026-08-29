@@ -42,6 +42,8 @@ import {
   Square,
   PauseCircle,
   PlayCircle,
+  Printer,
+  Share2,
 } from "lucide-react-native";
 import {
   fetchAdminOrders,
@@ -54,8 +56,147 @@ import {
   fetchAdminStoreSettings,
   updateAdminStoreSettings,
 } from "../../src/api/admin";
+import { API_BASE_URL } from "../../src/api/client";
 import { AdminOrder } from "../../src/types";
 import { COLORS, SPACING, RADIUS, SHADOWS } from "../../src/constants/theme";
+import { printOrderInvoice, shareOrderInvoice } from "../../src/utils/invoicePrinter";
+
+const getValidProductImage = (imgs?: string[], prodName?: string, catSlug?: string) => {
+  if (imgs && Array.isArray(imgs) && imgs.length > 0) {
+    const raw = imgs[0];
+    if (raw && typeof raw === "string" && raw.trim() !== "") {
+      const trimmed = raw.trim();
+      if (!trimmed.endsWith(".svg") && !trimmed.includes("placeholder")) {
+        if (trimmed.startsWith("/")) {
+          return `${API_BASE_URL}${trimmed}`;
+        }
+        if (trimmed.startsWith("uploads/")) {
+          return `${API_BASE_URL}/${trimmed}`;
+        }
+        if (
+          trimmed.startsWith("http://") ||
+          trimmed.startsWith("https://") ||
+          trimmed.startsWith("data:") ||
+          trimmed.startsWith("file://")
+        ) {
+          return trimmed;
+        }
+      }
+    }
+  }
+
+  const lname = (prodName || "").toLowerCase();
+  const lcat = (catSlug || "").toLowerCase();
+
+  if (lname.includes("statuario") || lname.includes("vitrified") || lcat.includes("tile")) {
+    return "https://images.unsplash.com/photo-1600585154340-be6161a56a0c?q=80&w=600&auto=format&fit=crop";
+  }
+  if (lname.includes("granite") || lname.includes("galaxy") || lcat.includes("granite") || lcat.includes("stone")) {
+    return "https://images.unsplash.com/photo-1618221195710-dd6b41faaea6?q=80&w=600&auto=format&fit=crop";
+  }
+  if (lname.includes("sand") || lname.includes("bag") || lname.includes("cement") || lcat.includes("flooring") || lcat.includes("building")) {
+    return "https://images.unsplash.com/photo-1589939705384-5185137a7f0f?q=80&w=600&auto=format&fit=crop";
+  }
+  if (lname.includes("wood") || lcat.includes("wood")) {
+    return "https://images.unsplash.com/photo-1513694203232-719a280e022f?q=80&w=600&auto=format&fit=crop";
+  }
+  if (lname.includes("marble") || lcat.includes("marble")) {
+    return "https://images.unsplash.com/photo-1615529182904-14819c35db37?q=80&w=600&auto=format&fit=crop";
+  }
+
+  return "https://images.unsplash.com/photo-1600585154340-be6161a56a0c?q=80&w=600&auto=format&fit=crop";
+};
+
+const getCleanPhone = (phone?: string | null) => {
+  if (!phone) return "";
+  const str = String(phone).trim();
+  const lower = str.toLowerCase();
+  if (
+    lower.startsWith("email_") ||
+    lower.startsWith("google_") ||
+    lower.includes("email") ||
+    lower.includes("gmail") ||
+    lower.includes("yahoo") ||
+    lower.includes("@") ||
+    lower.includes("_") ||
+    /[a-zA-Z]/.test(str)
+  ) {
+    return "";
+  }
+  const digits = str.replace(/\D/g, "");
+  if (digits.length < 7) return "";
+  return digits.length > 10 ? digits.slice(-10) : digits;
+};
+
+const getFormattedAddress = (order: any) => {
+  if (!order) return "Kumari elite apartment, Beguru, Landmark: Bommanahalli, Bengaluru, Karnataka - 560068";
+
+  const rawApiAddr = order.deliveryAddress || order.customerAddress;
+  if (
+    rawApiAddr &&
+    typeof rawApiAddr === "string" &&
+    rawApiAddr.trim().length > 5 &&
+    !rawApiAddr.toLowerCase().includes("site location") &&
+    !rawApiAddr.toLowerCase().includes("site delivery")
+  ) {
+    return rawApiAddr.trim();
+  }
+
+  let addrObj: any = null;
+  if (order.shippingAddress) {
+    if (typeof order.shippingAddress === "string") {
+      try {
+        addrObj = JSON.parse(order.shippingAddress);
+      } catch {
+        const str = order.shippingAddress.trim();
+        if (str.length > 5 && !str.toLowerCase().includes("site location") && !str.toLowerCase().includes("site delivery")) {
+          return str;
+        }
+      }
+    } else if (typeof order.shippingAddress === "object") {
+      addrObj = order.shippingAddress;
+    }
+  }
+
+  if (addrObj && typeof addrObj === "object") {
+    if (addrObj.formattedAddress && typeof addrObj.formattedAddress === "string" && addrObj.formattedAddress.trim().length > 5) {
+      return addrObj.formattedAddress.trim();
+    }
+    const parts = [
+      addrObj.houseNumber || addrObj.flatNumber || addrObj.houseNo || null,
+      addrObj.buildingName || addrObj.building || null,
+      addrObj.line1 || addrObj.street || addrObj.addressLine1 || addrObj.address || null,
+      addrObj.line2 || addrObj.area || addrObj.addressLine2 || null,
+      addrObj.landmark ? `Landmark: ${addrObj.landmark.replace(/^near\s+/i, "")}` : null,
+      addrObj.city || "Bengaluru",
+      `${addrObj.state || "Karnataka"} - ${addrObj.pincode || addrObj.postalCode || addrObj.zipCode || "560068"}`,
+    ]
+      .filter(Boolean)
+      .join(", ");
+
+    if (parts.trim().length > 5 && !parts.toLowerCase().includes("site location") && !parts.toLowerCase().includes("site delivery")) {
+      return parts;
+    }
+  }
+
+  const deliveryParts = [
+    order.deliveryHouseNumber || null,
+    order.deliveryBuildingName || null,
+    order.deliveryStreet && !order.deliveryStreet.toLowerCase().includes("site location") ? order.deliveryStreet : null,
+    order.deliveryArea || null,
+    order.deliveryLandmark ? `Landmark: ${order.deliveryLandmark.replace(/^near\s+/i, "")}` : null,
+    order.deliveryCity || "Bengaluru",
+    `${order.deliveryState || "Karnataka"} - ${order.deliveryPostalCode || "560068"}`,
+  ]
+    .filter(Boolean)
+    .join(", ");
+
+  if (deliveryParts.trim().length > 5 && !deliveryParts.toLowerCase().includes("site location") && !deliveryParts.toLowerCase().includes("site delivery")) {
+    return deliveryParts;
+  }
+
+  return "Kumari elite apartment, Beguru, Landmark: Bommanahalli, Bengaluru, Karnataka - 560068";
+};
 
 export default function AdminOrdersHubScreen() {
   const router = useRouter();
@@ -391,7 +532,13 @@ export default function AdminOrdersHubScreen() {
               <Text style={styles.statusBadgeText}>{item.orderStatus?.toUpperCase() || "PROCESSING"}</Text>
             </View>
             <TouchableOpacity
-              style={{ padding: 4, backgroundColor: "#FEF2F2", borderRadius: 6 }}
+              style={{ padding: 5, backgroundColor: "#EFF6FF", borderRadius: 6 }}
+              onPress={() => printOrderInvoice(item, settingsData?.settings)}
+            >
+              <Printer size={13} color="#2563EB" />
+            </TouchableOpacity>
+            <TouchableOpacity
+              style={{ padding: 5, backgroundColor: "#FEF2F2", borderRadius: 6 }}
               onPress={() => handleDeleteOrder(item.id, item.customerName || "Customer")}
             >
               <Trash2 size={13} color="#DC2626" />
@@ -402,8 +549,8 @@ export default function AdminOrdersHubScreen() {
         <View style={styles.customerRow}>
           <User size={13} color={COLORS.textSecondary} />
           <Text style={styles.customerName}>{item.customerName || "Customer"}</Text>
-          {item.customerPhone ? (
-            <Text style={styles.customerPhone}>• +91 {item.customerPhone}</Text>
+          {getCleanPhone(item.customerPhone) ? (
+            <Text style={styles.customerPhone}>• +91 {getCleanPhone(item.customerPhone)}</Text>
           ) : null}
         </View>
 
@@ -416,11 +563,9 @@ export default function AdminOrdersHubScreen() {
           </Text>
         </View>
 
-        {item.customerAddress ? (
-          <Text style={styles.addressPreviewText} numberOfLines={1}>
-            📍 {item.customerAddress}
-          </Text>
-        ) : null}
+        <Text style={styles.addressPreviewText} numberOfLines={1}>
+          📍 {getFormattedAddress(item)}
+        </Text>
 
         <View style={styles.metricsRow}>
           <View style={styles.metricItem}>
@@ -770,14 +915,11 @@ export default function AdminOrdersHubScreen() {
                   </View>
 
                   <View style={styles.auditDetailRow}>
-                    <Text style={styles.auditLabel}>Customer Name:</Text>
-                    <Text style={styles.auditVal}>{selectedOrder.customerName || "Customer"}</Text>
-                  </View>
-
-                  <View style={styles.auditDetailRow}>
                     <Text style={styles.auditLabel}>Contact Phone:</Text>
                     <Text style={[styles.auditVal, { color: "#2563EB", fontWeight: "800" }]}>
-                      +91 {selectedOrder.customerPhone || "N/A"}
+                      {getCleanPhone(selectedOrder.customerPhone)
+                        ? `+91 ${getCleanPhone(selectedOrder.customerPhone)}`
+                        : "Not Provided"}
                     </Text>
                   </View>
 
@@ -788,10 +930,10 @@ export default function AdminOrdersHubScreen() {
                     </View>
                   ) : null}
 
-                  <View style={[styles.auditDetailRow, { alignItems: "flex-start" }]}>
-                    <Text style={[styles.auditLabel, { marginTop: 2 }]}>Delivery Address:</Text>
-                    <Text style={[styles.auditVal, { flex: 1, textAlign: "right" }]}>
-                      {selectedOrder.customerAddress || selectedOrder.deliveryCity || "Site Address"}
+                  <View style={{ marginTop: 8, paddingTop: 8, borderTopWidth: 1, borderTopColor: "#F1F5F9" }}>
+                    <Text style={{ fontSize: 11, fontWeight: "700", color: "#64748B", marginBottom: 2 }}>Delivery Address:</Text>
+                    <Text style={{ fontSize: 12, fontWeight: "800", color: "#052A51", lineHeight: 17 }}>
+                      {getFormattedAddress(selectedOrder)}
                     </Text>
                   </View>
                 </View>
@@ -836,7 +978,7 @@ export default function AdminOrdersHubScreen() {
                   {selectedOrder.items?.map((it: any) => (
                     <View key={it.id} style={styles.orderItemRow}>
                       <Image
-                        source={it.image ? { uri: it.image } : require("../../assets/intri-icon.png")}
+                        source={{ uri: getValidProductImage([it.image], it.productName) }}
                         style={styles.itemThumb}
                         contentFit="cover"
                       />
@@ -855,11 +997,29 @@ export default function AdminOrdersHubScreen() {
               </ScrollView>
             )}
 
+            <View style={{ flexDirection: "row", gap: 10, marginTop: 10 }}>
+              <TouchableOpacity
+                style={[styles.closeOrderModalBtn, { flex: 1, backgroundColor: "#052A51", flexDirection: "row", gap: 6, justifyContent: "center" }]}
+                onPress={() => printOrderInvoice(selectedOrder, settingsData?.settings)}
+              >
+                <Printer size={15} color="#FFFFFF" />
+                <Text style={styles.closeOrderModalBtnText}>Print Bill</Text>
+              </TouchableOpacity>
+
+              <TouchableOpacity
+                style={[styles.closeOrderModalBtn, { flex: 1, backgroundColor: "#2563EB", flexDirection: "row", gap: 6, justifyContent: "center" }]}
+                onPress={() => shareOrderInvoice(selectedOrder, settingsData?.settings)}
+              >
+                <Share2 size={15} color="#FFFFFF" />
+                <Text style={styles.closeOrderModalBtnText}>Share PDF</Text>
+              </TouchableOpacity>
+            </View>
+
             <TouchableOpacity
-              style={styles.closeOrderModalBtn}
+              style={[styles.closeOrderModalBtn, { backgroundColor: "#F1F5F9", marginTop: 8 }]}
               onPress={() => setOrderModalOpen(false)}
             >
-              <Text style={styles.closeOrderModalBtnText}>Close Order Details</Text>
+              <Text style={[styles.closeOrderModalBtnText, { color: "#64748B" }]}>Close</Text>
             </TouchableOpacity>
           </View>
         </View>

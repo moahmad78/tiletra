@@ -130,6 +130,7 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
       commissionRate,
       verified,
       deliveryMethod,
+      autoPublishEnabled,
       ownerId,
     } = body;
 
@@ -144,7 +145,10 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
     if (commissionRate !== undefined) data.commissionRate = Number(commissionRate);
     if (verified !== undefined) data.kycStatus = verified ? "verified" : "pending";
     if (deliveryMethod !== undefined) data.deliveryMethod = deliveryMethod;
+    if (autoPublishEnabled !== undefined) data.autoPublishEnabled = Boolean(autoPublishEnabled);
     if (ownerId !== undefined) data.ownerId = ownerId;
+    if (body.logo !== undefined) data.logo = body.logo ? String(body.logo).trim() : null;
+    if (body.shopPhotoUrl !== undefined) data.shopPhotoUrl = body.shopPhotoUrl ? String(body.shopPhotoUrl).trim() : null;
 
     const updated = await prisma.vendor.update({
       where: { id },

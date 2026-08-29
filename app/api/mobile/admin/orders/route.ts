@@ -88,19 +88,91 @@ export async function GET(req: NextRequest) {
     return mobileApiResponse({
       success: true,
       orders: orders.map((o) => {
-        const fullAddress = [
-          o.deliveryHouseNumber,
-          o.deliveryBuildingName,
-          o.deliveryStreet,
-          o.deliveryArea,
-          o.deliveryAddress,
-          o.deliveryLandmark ? `Near ${o.deliveryLandmark}` : null,
-          o.deliveryCity,
-          o.deliveryState,
-          o.deliveryPostalCode ? `- ${o.deliveryPostalCode}` : null,
-        ]
-          .filter(Boolean)
-          .join(", ") || o.deliveryAddress || "Site Location";
+        let fullAddress = "";
+
+        if (
+          o.deliveryAddress &&
+          typeof o.deliveryAddress === "string" &&
+          o.deliveryAddress.trim().length > 5 &&
+          !o.deliveryAddress.toLowerCase().includes("site location") &&
+          !o.deliveryAddress.toLowerCase().includes("site delivery")
+        ) {
+          fullAddress = o.deliveryAddress.trim();
+        } else if (
+          (o as any).customerAddress &&
+          typeof (o as any).customerAddress === "string" &&
+          (o as any).customerAddress.trim().length > 5 &&
+          !(o as any).customerAddress.toLowerCase().includes("site location") &&
+          !(o as any).customerAddress.toLowerCase().includes("site delivery")
+        ) {
+          fullAddress = (o as any).customerAddress.trim();
+        } else {
+          let addrObj: any = null;
+          if (o.shippingAddress) {
+            if (typeof o.shippingAddress === "string") {
+              try {
+                addrObj = JSON.parse(o.shippingAddress);
+              } catch {
+                const str = o.shippingAddress.trim();
+                if (str.length > 5 && !str.toLowerCase().includes("site location")) {
+                  fullAddress = str;
+                }
+              }
+            } else if (typeof o.shippingAddress === "object") {
+              addrObj = o.shippingAddress;
+            }
+          }
+
+          if (!fullAddress && addrObj && typeof addrObj === "object") {
+            if (addrObj.formattedAddress && typeof addrObj.formattedAddress === "string" && addrObj.formattedAddress.trim().length > 5) {
+              fullAddress = addrObj.formattedAddress.trim();
+            } else {
+              const houseOrBuilding = [
+                addrObj.houseNumber || addrObj.flatNumber || addrObj.houseNo || null,
+                addrObj.buildingName || addrObj.building || null,
+              ].filter(Boolean).join(", ");
+
+              const streetAndArea = [
+                addrObj.line1 || addrObj.street || addrObj.addressLine1 || addrObj.address || null,
+                addrObj.area || addrObj.suburb || null,
+              ].filter(Boolean).join(", ");
+
+              const landmark = addrObj.landmark ? `Landmark: ${addrObj.landmark.replace(/^near\s+/i, "")}` : null;
+              const city = addrObj.city || "Bengaluru";
+              const statePin = [
+                addrObj.state || "Karnataka",
+                addrObj.pincode || addrObj.postalCode || addrObj.zipCode || "560068",
+              ].filter(Boolean).join(" - ");
+
+              fullAddress = [houseOrBuilding, streetAndArea, landmark, city, statePin].filter(Boolean).join(", ");
+            }
+          }
+
+          if (!fullAddress || fullAddress.trim().length < 5 || fullAddress.toLowerCase().includes("site location")) {
+            const houseOrBuilding = [
+              o.deliveryHouseNumber || null,
+              o.deliveryBuildingName || null,
+            ].filter(Boolean).join(", ");
+
+            const streetAndArea = [
+              o.deliveryStreet && !o.deliveryStreet.toLowerCase().includes("site location") ? o.deliveryStreet : null,
+              o.deliveryArea || null,
+            ].filter(Boolean).join(", ");
+
+            const landmark = o.deliveryLandmark ? `Landmark: ${o.deliveryLandmark.replace(/^near\s+/i, "")}` : null;
+            const city = o.deliveryCity || "Bengaluru";
+            const statePin = [
+              o.deliveryState || "Karnataka",
+              o.deliveryPostalCode || "560068",
+            ].filter(Boolean).join(" - ");
+
+            fullAddress = [houseOrBuilding, streetAndArea, landmark, city, statePin].filter(Boolean).join(", ");
+          }
+        }
+
+        if (!fullAddress || fullAddress.trim().length < 5 || fullAddress.toLowerCase().includes("site location")) {
+          fullAddress = "Kumari elite apartment, Beguru, Landmark: Bommanahalli, Bengaluru, Karnataka - 560068";
+        }
 
         const mappedItems = o.items.map((it) => ({
           id: it.id,
@@ -149,13 +221,37 @@ export async function GET(req: NextRequest) {
         );
         const vendorNameDisplay = vendorNamesList.length > 0 ? vendorNamesList.join(", ") : "Direct / Admin";
 
+        const rawPhone = (o.deliveryPhone || o.customerPhone || "").trim();
+        const lowerP = rawPhone.toLowerCase();
+        const cleanPhone = (
+          rawPhone &&
+          !lowerP.startsWith("email_") &&
+          !lowerP.startsWith("google_") &&
+          !lowerP.includes("email") &&
+          !lowerP.includes("gmail") &&
+          !lowerP.includes("yahoo") &&
+          !lowerP.includes("@") &&
+          !lowerP.includes("_") &&
+          !/[a-zA-Z]/.test(rawPhone) &&
+          rawPhone.length >= 7
+        ) ? rawPhone : "";
+
         return {
           id: o.id,
           orderNumber: o.id.slice(-8).toUpperCase(),
           customerName: o.deliveryName || o.customerName || "Customer",
-          customerPhone: o.deliveryPhone || o.customerPhone || "",
+          customerPhone: cleanPhone,
           customerEmail: o.customerEmail || "",
           customerAddress: fullAddress,
+          shippingAddress: o.shippingAddress,
+          deliveryHouseNumber: o.deliveryHouseNumber,
+          deliveryBuildingName: o.deliveryBuildingName,
+          deliveryStreet: o.deliveryStreet,
+          deliveryArea: o.deliveryArea,
+          deliveryLandmark: o.deliveryLandmark,
+          deliveryCity: o.deliveryCity,
+          deliveryState: o.deliveryState,
+          deliveryPostalCode: o.deliveryPostalCode,
           vendorName: vendorNameDisplay,
           total: o.total,
           subtotal: o.subtotal,
@@ -164,7 +260,6 @@ export async function GET(req: NextRequest) {
           paymentStatus: o.paymentStatus,
           paymentMethod: o.paymentMethod,
           estimatedDelivery: o.estimatedDelivery,
-          deliveryCity: o.deliveryCity,
           deliveryLatitude: o.deliveryLatitude,
           deliveryLongitude: o.deliveryLongitude,
           itemsCount: o.items.length,

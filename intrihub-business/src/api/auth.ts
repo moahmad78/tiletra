@@ -5,6 +5,9 @@ export interface AuthResponse {
   success: boolean;
   message?: string;
   error?: string;
+  reason?: "NOT_FOUND" | "PENDING_APPROVAL" | "SUSPENDED" | "REJECTED" | "UNAPPROVED";
+  email?: string;
+  vendorName?: string;
   locked?: boolean;
   lockoutUntil?: number;
   retryAfterSeconds?: number;
@@ -22,6 +25,8 @@ export async function sendOtp(emailOrPhone: string): Promise<{
   success: boolean;
   message?: string;
   error?: string;
+  reason?: "NOT_FOUND" | "PENDING_APPROVAL" | "SUSPENDED" | "REJECTED" | "UNAPPROVED";
+  vendorName?: string;
   locked?: boolean;
   lockoutUntil?: number;
   retryAfterSeconds?: number;

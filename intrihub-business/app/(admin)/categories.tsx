@@ -15,6 +15,7 @@ import {
 import { useRouter } from "expo-router";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { Image } from "expo-image";
+import * as ImagePicker from "expo-image-picker";
 import {
   Layers,
   Search,
@@ -28,6 +29,7 @@ import {
   X,
   CheckCircle2,
   Sparkles,
+  Camera,
 } from "lucide-react-native";
 import {
   fetchAdminCategories,
@@ -35,6 +37,7 @@ import {
   updateAdminCategory,
   deleteAdminCategory,
 } from "../../src/api/admin";
+import { uploadBusinessImage } from "../../src/api/auth";
 import { COLORS, SPACING, RADIUS, SHADOWS } from "../../src/constants/theme";
 
 export default function AdminCategoriesScreen() {
@@ -51,6 +54,39 @@ export default function AdminCategoriesScreen() {
   const [image, setImage] = useState("");
   const [calculatorType, setCalculatorType] = useState("none");
   const [saving, setSaving] = useState(false);
+  const [uploadingImage, setUploadingImage] = useState(false);
+
+  const handlePickAndUploadImage = async () => {
+    try {
+      const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
+      if (status !== "granted") {
+        Alert.alert("Permission Required", "Gallery permission is required to upload category images.");
+        return;
+      }
+
+      const result = await ImagePicker.launchImageLibraryAsync({
+        mediaTypes: ["images"],
+        allowsEditing: false,
+        quality: 0.8,
+      });
+
+      if (!result.canceled && result.assets?.[0]?.uri) {
+        setUploadingImage(true);
+        const res = await uploadBusinessImage(result.assets[0].uri);
+        setUploadingImage(false);
+
+        if (res.success && res.url) {
+          setImage(res.url);
+          Alert.alert("Uploaded 🎉", "Category image uploaded successfully!");
+        } else {
+          Alert.alert("Upload Error", res.error || "Failed to upload image.");
+        }
+      }
+    } catch (e: any) {
+      setUploadingImage(false);
+      Alert.alert("Error", e?.message || "Failed to upload category image.");
+    }
+  };
 
   const {
     data: categoriesData,
@@ -332,14 +368,47 @@ export default function AdminCategoriesScreen() {
                 placeholderTextColor={COLORS.textTertiary}
               />
 
-              <Text style={[styles.inputLabel, { marginTop: 12 }]}>Image URL / Banner Path</Text>
-              <TextInput
-                style={styles.inputBox}
-                value={image}
-                onChangeText={setImage}
-                placeholder="https://... or /categories/tiles.jpg"
-                placeholderTextColor={COLORS.textTertiary}
-              />
+              <Text style={[styles.inputLabel, { marginTop: 12 }]}>Category Image URL / Upload</Text>
+              <View style={{ flexDirection: "row", gap: 8, alignItems: "center" }}>
+                <TextInput
+                  style={[styles.inputBox, { flex: 1 }]}
+                  value={image}
+                  onChangeText={setImage}
+                  placeholder="https://... or /categories/tiles.jpg"
+                  placeholderTextColor={COLORS.textTertiary}
+                />
+                <TouchableOpacity
+                  style={styles.uploadMiniBtn}
+                  onPress={handlePickAndUploadImage}
+                  disabled={uploadingImage}
+                >
+                  <Camera size={14} color="#052A51" />
+                  <Text style={styles.uploadMiniBtnText}>Upload</Text>
+                </TouchableOpacity>
+              </View>
+
+              {image ? (
+                <View style={styles.attachedImageRow}>
+                  <Image source={{ uri: image }} style={styles.attachedImageThumb} contentFit="cover" />
+                  <View style={{ flex: 1 }}>
+                    <Text style={styles.attachedImageLabel}>Category Image Attached</Text>
+                    <Text style={styles.attachedImageSub} numberOfLines={1}>{image}</Text>
+                  </View>
+                  <TouchableOpacity
+                    style={styles.doneImageBtn}
+                    onPress={() => Alert.alert("Confirmed 🎉", "Category image confirmed & ready!")}
+                  >
+                    <CheckCircle2 size={12} color="#FFFFFF" />
+                    <Text style={styles.doneImageBtnText}>Done</Text>
+                  </TouchableOpacity>
+                  <TouchableOpacity
+                    style={styles.removeImageBtn}
+                    onPress={() => setImage("")}
+                  >
+                    <X size={12} color="#DC2626" />
+                  </TouchableOpacity>
+                </View>
+              ) : null}
 
               <Text style={[styles.inputLabel, { marginTop: 12 }]}>Calculator Type</Text>
               <View style={styles.calculatorOptionsRow}>
@@ -654,5 +723,67 @@ const styles = StyleSheet.create({
     color: "#FFFFFF",
     fontSize: 14,
     fontWeight: "800",
+  },
+  uploadMiniBtn: {
+    flexDirection: "row",
+    alignItems: "center",
+    backgroundColor: "#EFF6FF",
+    borderWidth: 1,
+    borderColor: "#BFDBFE",
+    borderRadius: 10,
+    paddingHorizontal: 12,
+    height: 44,
+    gap: 4,
+  },
+  uploadMiniBtnText: {
+    fontSize: 11,
+    fontWeight: "800",
+    color: "#052A51",
+  },
+  attachedImageRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    backgroundColor: "#F0FDF4",
+    borderWidth: 1,
+    borderColor: "#BBF7D0",
+    borderRadius: 10,
+    padding: 8,
+    marginTop: 8,
+    gap: 8,
+  },
+  attachedImageThumb: {
+    width: 42,
+    height: 42,
+    borderRadius: 6,
+    backgroundColor: "#FFFFFF",
+  },
+  attachedImageLabel: {
+    fontSize: 12,
+    fontWeight: "800",
+    color: "#166534",
+  },
+  attachedImageSub: {
+    fontSize: 10,
+    color: "#15803D",
+    marginTop: 2,
+  },
+  doneImageBtn: {
+    flexDirection: "row",
+    alignItems: "center",
+    backgroundColor: "#16A34A",
+    paddingHorizontal: 10,
+    paddingVertical: 5,
+    borderRadius: 6,
+    gap: 4,
+  },
+  doneImageBtnText: {
+    color: "#FFFFFF",
+    fontSize: 11,
+    fontWeight: "800",
+  },
+  removeImageBtn: {
+    padding: 6,
+    backgroundColor: "#FEE2E2",
+    borderRadius: 6,
   },
 });

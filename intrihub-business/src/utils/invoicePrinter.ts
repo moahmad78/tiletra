@@ -1,7 +1,6 @@
 import * as Print from "expo-print";
 import * as Sharing from "expo-sharing";
 import { Alert } from "react-native";
-import { Order } from "../types";
 
 /**
  * Clean phone number helper to prevent showing synthetic identifiers on printed bills.
@@ -14,8 +13,11 @@ function sanitizePhone(phone?: string | null): string {
     lower.startsWith("email_") ||
     lower.startsWith("google_") ||
     lower.includes("email") ||
+    lower.includes("gmail") ||
+    lower.includes("yahoo") ||
     lower.includes("@") ||
-    /[a-zA-Z_]/.test(str)
+    lower.includes("_") ||
+    /[a-zA-Z]/.test(str)
   ) {
     return "";
   }
@@ -24,7 +26,10 @@ function sanitizePhone(phone?: string | null): string {
   return digits.length > 10 ? digits.slice(-10) : digits;
 }
 
-export function getInvoiceHtml(order: any): string {
+/**
+ * Generate standard HTML Tax Invoice template for IntriHub Orders with dynamic CMS controls
+ */
+export function generateOrderInvoiceHtml(order: any, customSettings?: any): string {
   const orderId = order?.orderNumber || order?.id?.slice(-8).toUpperCase() || "ORD-0000";
   const orderDate = order?.createdAt
     ? new Date(order.createdAt).toLocaleDateString("en-IN", {
@@ -64,7 +69,7 @@ export function getInvoiceHtml(order: any): string {
         try {
           addrObj = JSON.parse(order.shippingAddress);
         } catch {
-          if (order.shippingAddress.trim().length > 3 && order.shippingAddress !== "Site Location") {
+          if (order.shippingAddress.trim().length > 3 && !order.shippingAddress.toLowerCase().includes("site location")) {
             fullAddress = order.shippingAddress.trim();
           }
         }
@@ -126,6 +131,23 @@ export function getInvoiceHtml(order: any): string {
 
   const pMethod = String(order?.paymentMethod || "cod").toLowerCase();
   const paymentText = pMethod === "cod" ? "COD Payment" : "Online Payment";
+
+  // Dynamic CMS Settings with fallback
+  const settings = customSettings || order?.storeSettings || {};
+  const gstNo = settings.gstNumber || "29AAAAA0000A1Z5";
+  const supportPhone = settings.contactPhone || "+91 9264920211";
+  const supportEmail = settings.email || "support@intrihub.com";
+  const sigText = settings.invoiceSignatureText || "INTRIHUB";
+  const sigTitle = settings.invoiceSignatureTitle || "Authorized Signatory";
+  const digitalBadge = settings.invoiceDigitalBadge || "✔ Digitally Signed";
+  const termsText = settings.invoiceTermsNotes || "• Computer-generated tax invoice verified by IntriHub.\n• Everything, Every Place • www.intrihub.com";
+  const footerTagline = settings.invoiceFooterTagline || "This is an official computer-generated tax invoice verified by IntriHub.";
+  const watermarkUrl = settings.invoiceWatermarkUrl || "https://www.intrihub.com/logo/intri-web-logo.png";
+
+  const termsListHtml = termsText
+    .split("\n")
+    .map((line: string) => `<div>${line.startsWith("•") ? line : `• ${line}`}</div>`)
+    .join("");
 
   const items = order?.items || [];
   const itemsRows = items.length > 0
@@ -297,17 +319,17 @@ export function getInvoiceHtml(order: any): string {
 </head>
 <body>
   <div class="invoice-card">
-    <img src="https://www.intrihub.com/logo/intri-web-logo.png" class="watermark" alt="IntriHub Watermark" />
+    <img src="${watermarkUrl}" class="watermark" alt="IntriHub Watermark" />
 
     <div class="content-wrapper">
       <table class="header-table">
         <tr>
           <td style="vertical-align: top;">
-            <img src="https://www.intrihub.com/logo/intri-web-logo.png" alt="IntriHub Logo" class="logo-img" onerror="this.style.display='none'" />
+            <img src="${watermarkUrl}" alt="IntriHub Logo" class="logo-img" onerror="this.style.display='none'" />
             <div style="font-size: 11px; color: #334155; margin-top: 4px; line-height: 18px; font-weight: 600;">
-              <div>GSTIN: <b>29AAAAA0000A1Z5</b></div>
-              <div>Mobile: <b>+91 9264920211</b></div>
-              <div>Email: <b>support@intrihub.com</b></div>
+              <div>GSTIN: <b>${gstNo}</b></div>
+              <div>Mobile: <b>${supportPhone}</b></div>
+              <div>Email: <b>${supportEmail}</b></div>
             </div>
           </td>
           <td class="invoice-meta" style="vertical-align: top;">
@@ -348,8 +370,7 @@ export function getInvoiceHtml(order: any): string {
       <div style="width: 100%; margin-top: 16px; display: flex; justify-content: space-between; align-items: flex-end;">
         <div style="font-size: 11px; color: #64748b; line-height: 16px; max-width: 340px;">
           <div style="font-weight: 700; color: #0f172a; margin-bottom: 2px;">Terms & Notes:</div>
-          <div>• Computer-generated tax invoice verified by IntriHub.</div>
-          <div>• Everything, Every Place • www.intrihub.com</div>
+          ${termsListHtml}
         </div>
 
         <div style="text-align: right;">
@@ -370,17 +391,17 @@ export function getInvoiceHtml(order: any): string {
 
           <div style="margin-top: 16px; text-align: center; width: 170px; margin-left: auto;">
             <div class="signature-box">
-              <div style="font-family: cursive, sans-serif; font-size: 18px; color: #052a51; font-weight: bold;">INTRIHUB</div>
-              <div style="font-size: 9px; color: #16a34a; font-weight: 800; text-transform: uppercase; margin-top: 2px;">✔ Digitally Signed</div>
+              <div style="font-family: cursive, sans-serif; font-size: 18px; color: #052a51; font-weight: bold;">${sigText}</div>
+              <div style="font-size: 9px; color: #16a34a; font-weight: 800; text-transform: uppercase; margin-top: 2px;">${digitalBadge}</div>
             </div>
-            <div style="font-size: 10px; color: #475569; font-weight: 600; margin-top: 4px;">Authorized Signatory</div>
+            <div style="font-size: 10px; color: #475569; font-weight: 600; margin-top: 4px;">${sigTitle}</div>
           </div>
         </div>
       </div>
 
       <div class="footer">
-        <div>This is an official computer-generated tax invoice verified by IntriHub.</div>
-        <div>Everything, Every Place • www.intrihub.com • Support: support@intrihub.com</div>
+        <div>${footerTagline}</div>
+        <div>Everything, Every Place • www.intrihub.com • Support: ${supportEmail}</div>
       </div>
     </div>
   </div>
@@ -390,47 +411,36 @@ export function getInvoiceHtml(order: any): string {
 }
 
 /**
- * Direct PDF Download to device storage
+ * Print order invoice via Expo Print
  */
-export async function downloadInvoicePDFDirect(order: Order): Promise<{ success: boolean; uri?: string }> {
+export async function printOrderInvoice(order: any, customSettings?: any): Promise<void> {
   try {
-    const html = getInvoiceHtml(order);
-    const { uri } = await Print.printToFileAsync({ html, base64: false });
-
-    if (await Sharing.isAvailableAsync()) {
-      await Sharing.shareAsync(uri, {
-        mimeType: "application/pdf",
-        dialogTitle: `Save Invoice PDF #${order.id}`,
-        UTI: "com.adobe.pdf",
-      });
-    }
-
-    return { success: true, uri };
+    const html = generateOrderInvoiceHtml(order, customSettings);
+    await Print.printAsync({ html });
   } catch (error: any) {
-    console.error("Direct PDF download error:", error);
-    return { success: false };
+    console.error("Invoice Print Error:", error);
+    Alert.alert("Print Error", error.message || "Failed to trigger print");
   }
 }
 
 /**
- * Share PDF file directly
+ * Share PDF invoice via Expo Sharing
  */
-export async function shareInvoicePDF(order: Order): Promise<{ success: boolean }> {
+export async function shareOrderInvoice(order: any, customSettings?: any): Promise<void> {
   try {
-    const html = getInvoiceHtml(order);
-    const { uri } = await Print.printToFileAsync({ html, base64: false });
-
+    const html = generateOrderInvoiceHtml(order, customSettings);
+    const { uri } = await Print.printToFileAsync({ html });
     if (await Sharing.isAvailableAsync()) {
       await Sharing.shareAsync(uri, {
         mimeType: "application/pdf",
-        dialogTitle: `Share IntriHub Tax Invoice #${order.id}`,
+        dialogTitle: `Tax Invoice #${order.orderNumber || order.id}`,
         UTI: "com.adobe.pdf",
       });
-      return { success: true };
+    } else {
+      Alert.alert("Sharing Unavailable", "Sharing is not supported on this device.");
     }
-    return { success: false };
   } catch (error: any) {
-    console.error("Share PDF error:", error);
-    return { success: false };
+    console.error("Invoice Share Error:", error);
+    Alert.alert("Share Error", error.message || "Failed to share invoice");
   }
 }

@@ -9,6 +9,7 @@ import {
   KeyboardAvoidingView,
   Platform,
   ScrollView,
+  Linking,
 } from "react-native";
 import { Image } from "expo-image";
 import { useRouter } from "expo-router";
@@ -21,12 +22,17 @@ import {
   Building2,
   Mail,
   ArrowRight,
+  ArrowLeft,
   Lock,
   Headphones,
   UserPlus,
   ChevronRight,
   AlertTriangle,
   Clock,
+  ExternalLink,
+  Store,
+  HelpCircle,
+  XCircle,
 } from "lucide-react-native";
 import { loginWithGoogle, sendOtp, verifyOtp } from "../../src/api/auth";
 import { useAuthStore } from "../../src/store/authStore";
@@ -70,7 +76,7 @@ export default function BusinessLoginScreen() {
   const insets = useSafeAreaInsets();
   const { setUser } = useAuthStore();
 
-  const [step, setStep] = useState<"input" | "otp">("input");
+  const [step, setStep] = useState<"input" | "otp" | "unapproved">("input");
   const [email, setEmail] = useState("");
   const [name, setName] = useState("");
   const [otp, setOtp] = useState("");
@@ -79,6 +85,18 @@ export default function BusinessLoginScreen() {
   const [error, setError] = useState("");
   const [timer, setTimer] = useState(60);
   const [canResend, setCanResend] = useState(false);
+
+  // Dedicated Unapproved / Not Found state
+  const [unapprovedDetails, setUnapprovedDetails] = useState<{
+    reason: "NOT_FOUND" | "PENDING_APPROVAL" | "SUSPENDED" | "REJECTED" | "UNAPPROVED";
+    message: string;
+    vendorName?: string;
+    attemptedEmail: string;
+  }>({
+    reason: "NOT_FOUND",
+    message: "",
+    attemptedEmail: "",
+  });
 
   // Brute-force IP Lockout countdown state
   const [isLocked, setIsLocked] = useState(false);
@@ -174,12 +192,32 @@ export default function BusinessLoginScreen() {
               handleRoleRouting(res.user);
             } else {
               handleLockoutResponse(res);
-              setError(res.error || "Google sign-in failed. Please try again.");
+              if (res.reason) {
+                setUnapprovedDetails({
+                  reason: (res.reason as any) || "NOT_FOUND",
+                  message: res.error || "This Google account is not registered as an approved vendor.",
+                  vendorName: (res as any).vendorName,
+                  attemptedEmail: (res as any).email || "Google Account",
+                });
+                setStep("unapproved");
+              } else {
+                setError(res.error || "Google sign-in failed. Please try again.");
+              }
             }
           } catch (err: any) {
             const errData = err?.response?.data;
             handleLockoutResponse(errData);
-            setError(errData?.error || err.message || "Failed to complete Google Sign In");
+            if (errData?.reason) {
+              setUnapprovedDetails({
+                reason: errData.reason,
+                message: errData.error || "This Google account is not registered as an approved vendor.",
+                vendorName: errData.vendorName,
+                attemptedEmail: errData.email || "Google Account",
+              });
+              setStep("unapproved");
+            } else {
+              setError(errData?.error || err.message || "Failed to complete Google Sign In");
+            }
           } finally {
             setGoogleLoading(false);
           }
@@ -207,12 +245,32 @@ export default function BusinessLoginScreen() {
         setCanResend(false);
       } else {
         handleLockoutResponse(res);
-        setError(res.error || "Failed to send OTP code.");
+        if (res.reason) {
+          setUnapprovedDetails({
+            reason: res.reason,
+            message: res.error || "This email is not registered as an approved vendor.",
+            vendorName: res.vendorName,
+            attemptedEmail: email.trim(),
+          });
+          setStep("unapproved");
+        } else {
+          setError(res.error || "Failed to send OTP code.");
+        }
       }
     } catch (err: any) {
       const errData = err?.response?.data;
       handleLockoutResponse(errData);
-      setError(errData?.error || err.message || "Network error. Please try again.");
+      if (errData?.reason) {
+        setUnapprovedDetails({
+          reason: errData.reason,
+          message: errData.error || "This email is not registered as an approved vendor.",
+          vendorName: errData.vendorName,
+          attemptedEmail: email.trim(),
+        });
+        setStep("unapproved");
+      } else {
+        setError(errData?.error || err.message || "Network error. Please try again.");
+      }
     } finally {
       setLoading(false);
     }
@@ -394,7 +452,7 @@ export default function BusinessLoginScreen() {
                 </Text>
               </View>
             </View>
-          ) : (
+          ) : step === "otp" ? (
             <View>
               <Text style={styles.otpHeading}>Enter 6-Digit Code</Text>
               <Text style={styles.otpSubtitle}>
@@ -448,11 +506,108 @@ export default function BusinessLoginScreen() {
                 style={styles.backToInputBtn}
                 onPress={() => {
                   setStep("input");
-                  setOtp("");
                   setError("");
                 }}
               >
                 <Text style={styles.backToInputText}>Change Email Address</Text>
+              </TouchableOpacity>
+            </View>
+          ) : (
+            /* Dedicated Unapproved / Not Registered Screen */
+            <View style={styles.unapprovedContainer}>
+              <View
+                style={[
+                  styles.unapprovedIconBox,
+                  unapprovedDetails.reason === "PENDING_APPROVAL"
+                    ? { backgroundColor: "#FEF3C7" }
+                    : unapprovedDetails.reason === "SUSPENDED" || unapprovedDetails.reason === "REJECTED"
+                    ? { backgroundColor: "#FEE2E2" }
+                    : { backgroundColor: "#FFF7ED" },
+                ]}
+              >
+                {unapprovedDetails.reason === "PENDING_APPROVAL" ? (
+                  <Clock size={36} color="#D97706" />
+                ) : unapprovedDetails.reason === "SUSPENDED" || unapprovedDetails.reason === "REJECTED" ? (
+                  <AlertTriangle size={36} color="#DC2626" />
+                ) : (
+                  <Building2 size={36} color="#EA580C" />
+                )}
+              </View>
+
+              <Text style={styles.unapprovedTitle}>
+                {unapprovedDetails.reason === "PENDING_APPROVAL"
+                  ? "Application Under Review"
+                  : unapprovedDetails.reason === "SUSPENDED"
+                  ? "Account Suspended"
+                  : unapprovedDetails.reason === "REJECTED"
+                  ? "Application Not Approved"
+                  : "Email Not Registered"}
+              </Text>
+
+              <Text style={styles.unapprovedSubtitle}>
+                {unapprovedDetails.message}
+              </Text>
+
+              {/* Attempted Email Badge */}
+              <View style={styles.emailBadge}>
+                <Mail size={13} color={COLORS.textSecondary} />
+                <Text style={styles.emailBadgeText} numberOfLines={1}>
+                  {unapprovedDetails.attemptedEmail}
+                </Text>
+              </View>
+
+              <View style={styles.unapprovedInfoBox}>
+                <Text style={styles.unapprovedInfoText}>
+                  {unapprovedDetails.reason === "PENDING_APPROVAL"
+                    ? "Our onboarding desk verifies GST/trade documents within 24–48 hours. You will receive notification as soon as your store is approved."
+                    : unapprovedDetails.reason === "SUSPENDED" || unapprovedDetails.reason === "REJECTED"
+                    ? "Please reach out to our partner operations desk for assistance or to submit clarification documents."
+                    : "Only approved vendor partners can access the IntriHub Business portal. Apply now to sell your tile catalog to thousands of buyers."}
+                </Text>
+              </View>
+
+              {/* Primary Action Button: Apply / Support */}
+              {unapprovedDetails.reason === "NOT_FOUND" || unapprovedDetails.reason === "REJECTED" ? (
+                <TouchableOpacity
+                  style={styles.applyPartnerBtn}
+                  onPress={() => router.push("/(auth)/apply-vendor" as any)}
+                  activeOpacity={0.85}
+                >
+                  <UserPlus size={18} color="#FFFFFF" />
+                  <Text style={styles.applyPartnerBtnText}>Apply as a Vendor Partner</Text>
+                </TouchableOpacity>
+              ) : (
+                <TouchableOpacity
+                  style={styles.supportPartnerBtn}
+                  onPress={() => router.push("/(auth)/support" as any)}
+                  activeOpacity={0.85}
+                >
+                  <Headphones size={18} color="#FFFFFF" />
+                  <Text style={styles.supportPartnerBtnText}>Contact Partner Support</Text>
+                </TouchableOpacity>
+              )}
+
+              {/* Secondary Button: Visit Website */}
+              <TouchableOpacity
+                style={styles.websiteBtn}
+                onPress={() => Linking.openURL("https://intrihub.com")}
+                activeOpacity={0.85}
+              >
+                <ExternalLink size={16} color="#052A51" />
+                <Text style={styles.websiteBtnText}>Visit our Website (intrihub.com)</Text>
+              </TouchableOpacity>
+
+              {/* Change Email Button */}
+              <TouchableOpacity
+                style={styles.changeEmailBtn}
+                onPress={() => {
+                  setStep("input");
+                  setError("");
+                }}
+                activeOpacity={0.8}
+              >
+                <ArrowLeft size={16} color={COLORS.accentOrange} />
+                <Text style={styles.changeEmailBtnText}>Try a Different Email Address</Text>
               </TouchableOpacity>
             </View>
           )}
@@ -792,5 +947,129 @@ const styles = StyleSheet.create({
     color: "rgba(255, 255, 255, 0.7)",
     fontSize: 11,
     marginTop: 2,
+  },
+  unapprovedContainer: {
+    alignItems: "center",
+    paddingVertical: 8,
+  },
+  unapprovedIconBox: {
+    width: 72,
+    height: 72,
+    borderRadius: 36,
+    alignItems: "center",
+    justifyContent: "center",
+    marginBottom: 16,
+  },
+  unapprovedTitle: {
+    fontSize: 19,
+    fontWeight: "900",
+    color: "#052A51",
+    textAlign: "center",
+    marginBottom: 6,
+  },
+  unapprovedSubtitle: {
+    fontSize: 13,
+    color: "#475569",
+    textAlign: "center",
+    lineHeight: 18,
+    marginBottom: 14,
+    paddingHorizontal: 8,
+  },
+  emailBadge: {
+    flexDirection: "row",
+    alignItems: "center",
+    backgroundColor: "#F1F5F9",
+    borderWidth: 1,
+    borderColor: "#CBD5E1",
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderRadius: 20,
+    gap: 6,
+    marginBottom: 14,
+    maxWidth: "100%",
+  },
+  emailBadgeText: {
+    fontSize: 12,
+    fontWeight: "700",
+    color: "#0F172A",
+  },
+  unapprovedInfoBox: {
+    backgroundColor: "#F8FAFC",
+    borderWidth: 1,
+    borderColor: "#E2E8F0",
+    borderRadius: 12,
+    padding: 12,
+    marginBottom: 18,
+    width: "100%",
+  },
+  unapprovedInfoText: {
+    fontSize: 12,
+    color: "#64748B",
+    lineHeight: 17,
+    textAlign: "center",
+  },
+  applyPartnerBtn: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    backgroundColor: "#F26522",
+    width: "100%",
+    height: 48,
+    borderRadius: 14,
+    gap: 8,
+    marginBottom: 10,
+    ...SHADOWS.button,
+  },
+  applyPartnerBtnText: {
+    color: "#FFFFFF",
+    fontSize: 14,
+    fontWeight: "800",
+  },
+  supportPartnerBtn: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    backgroundColor: "#052A51",
+    width: "100%",
+    height: 48,
+    borderRadius: 14,
+    gap: 8,
+    marginBottom: 10,
+    ...SHADOWS.button,
+  },
+  supportPartnerBtnText: {
+    color: "#FFFFFF",
+    fontSize: 14,
+    fontWeight: "800",
+  },
+  websiteBtn: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    backgroundColor: "#FFFFFF",
+    borderWidth: 1.5,
+    borderColor: "#CBD5E1",
+    width: "100%",
+    height: 46,
+    borderRadius: 14,
+    gap: 8,
+    marginBottom: 12,
+  },
+  websiteBtnText: {
+    color: "#052A51",
+    fontSize: 13,
+    fontWeight: "700",
+  },
+  changeEmailBtn: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    gap: 6,
+    paddingVertical: 8,
+  },
+  changeEmailBtnText: {
+    color: COLORS.accentOrange,
+    fontSize: 13,
+    fontWeight: "800",
   },
 });

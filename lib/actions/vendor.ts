@@ -409,6 +409,14 @@ export async function createVendorProduct(vendorId: string, input: CreateProduct
               },
             },
           });
+
+          // Dispatch Push Notification to Super Admin devices
+          const { notifyAdminPush } = await import("@/lib/push-notifications");
+          await notifyAdminPush({
+            title: "Product Pending Approval ⏳",
+            body: `Vendor "${vendor.businessName}" submitted "${res.product.name}" for approval.`,
+            data: { productId: res.product.id, type: "product_approval" },
+          });
         }
       } catch (notifErr) {
         console.error("Error creating admin notification:", notifErr);
@@ -935,6 +943,50 @@ export async function updateVendorFulfillmentStatus(
       where: { id: splitId },
       data: updateData,
     });
+
+    // Sync tracking & courier to parent Order record so Admin Console & Customer App reflect it instantly
+    try {
+      await prisma.order.update({
+        where: { id: existing.orderId },
+        data: {
+          ...(updateData.trackingNumber ? { trackingNumber: updateData.trackingNumber } : {}),
+          ...(updateData.courierName ? { courierName: updateData.courierName } : {}),
+          ...(normalizedStatus === "dispatched" ? { orderStatus: "dispatched" } : {}),
+          ...(isDelivered ? { orderStatus: "delivered", deliveredAt: new Date() } : {}),
+        },
+      });
+    } catch (parentSyncErr) {
+      console.warn("Parent order tracking sync warning:", parentSyncErr);
+    }
+
+    // Real-Time Socket Broadcast to customer and admin rooms
+    try {
+      const { emitSocketEvent } = await import("@/lib/socket-server-emit");
+      await emitSocketEvent({
+        room: `order_${existing.orderId}`,
+        event: "order-status-updated",
+        data: {
+          orderId: existing.orderId,
+          splitId: updated.id,
+          fulfillmentStatus: updated.fulfillmentStatus,
+          trackingNumber: updated.trackingNumber,
+          courierName: updated.courierName,
+          updatedAt: updated.updatedAt,
+        },
+      });
+      await emitSocketEvent({
+        room: "admin-room",
+        event: "vendor-order-updated",
+        data: {
+          orderId: existing.orderId,
+          splitId: updated.id,
+          vendorId,
+          fulfillmentStatus: updated.fulfillmentStatus,
+        },
+      });
+    } catch (socketErr) {
+      console.error("Failed to emit vendor fulfillment socket update:", socketErr);
+    }
 
     safeRevalidate("/vendor/orders");
     safeRevalidate("/vendor/payouts");

@@ -58,6 +58,7 @@ export async function updateAdminVendor(
     commissionRate?: number;
     verified?: boolean;
     deliveryMethod?: string;
+    autoPublishEnabled?: boolean;
     ownerId?: string;
   }
 ): Promise<{
