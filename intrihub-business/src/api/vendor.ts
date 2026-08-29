@@ -23,6 +23,7 @@ export async function fetchVendorDashboard(): Promise<{
 export async function fetchVendorProducts(params?: {
   search?: string;
   status?: string;
+  approvalStatus?: string;
 }): Promise<{
   success: boolean;
   products?: Product[];
