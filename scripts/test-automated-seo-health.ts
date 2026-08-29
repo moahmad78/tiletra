@@ -142,7 +142,7 @@ async function runAutomatedSeoHealthTests() {
 
     // Clean up test soft-deleted product
     await prisma.product.deleteMany({ where: { slug: testSlugSoft } });
-    await prisma.redirect.deleteMany({ where: { fromPath: `/product/${testSlugHard}` } });
+    await (prisma as any).redirect?.deleteMany({ where: { fromPath: `/product/${testSlugHard}` } });
 
     console.log("\n==========================================================================");
     console.log("🎉 ALL AUTOMATED SEO HEALTH TESTS PASSED (100% SUCCESS)! ✓");
@@ -151,7 +151,7 @@ async function runAutomatedSeoHealthTests() {
     console.error("Test execution error:", error);
     // Cleanup on failure
     await prisma.product.deleteMany({ where: { slug: { in: [testSlugSoft, testSlugHard] } } });
-    await prisma.redirect.deleteMany({ where: { fromPath: { in: [`/product/${testSlugSoft}`, `/product/${testSlugHard}`] } } });
+    await (prisma as any).redirect?.deleteMany({ where: { fromPath: { in: [`/product/${testSlugSoft}`, `/product/${testSlugHard}`] } } });
     process.exit(1);
   }
 }

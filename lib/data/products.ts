@@ -95,7 +95,7 @@ export type Product = {
     businessName: string;
     status: string;
   };
-  status?: "active" | "paused" | "draft" | "archived";
+  status?: "active" | "paused" | "draft" | "archived" | "discontinued" | "out_of_stock";
   approvalStatus?: "pending" | "approved" | "rejected";
   rejectionReason?: string | null;
   coverageRate?: number | null;
