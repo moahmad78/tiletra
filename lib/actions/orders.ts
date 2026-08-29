@@ -316,7 +316,7 @@ export async function createOrder(input: CreateOrderInput) {
       // 4. Create Parent Order & Items inside transaction
       let currentEstDelivery = "Within 60 Minutes";
       try {
-        const storeSettings = await tx.storeSettings.findFirst();
+        const storeSettings: any = await tx.storeSettings.findFirst();
         if (storeSettings?.estimatedDelivery) {
           currentEstDelivery = storeSettings.estimatedDelivery;
         }
