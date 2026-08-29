@@ -79,6 +79,7 @@ export const useVendorAuth = create<VendorAuthState>()(
           try {
             localStorage.removeItem("intrihub-vendor-auth");
             sessionStorage.clear();
+            document.cookie = "intrihub_vendor_session=; path=/; max-age=0;";
           } catch {}
         }
       },

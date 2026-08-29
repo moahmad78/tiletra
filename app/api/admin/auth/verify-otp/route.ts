@@ -1,17 +1,22 @@
 import { NextRequest, NextResponse } from "next/server";
-import { verifyAdmin2FaOtp } from "@/lib/actions/admin-auth-2fa";
+import { verifyAdminWebOtp } from "@/lib/actions/web-portal-auth";
 
 export async function POST(req: NextRequest) {
   try {
     const body = await req.json();
     const { email, otp } = body;
 
-    const result = await verifyAdmin2FaOtp({ email, otp });
+    const result = await verifyAdminWebOtp(email, otp);
 
     if (!result.success) {
       return NextResponse.json(
-        { success: false, error: result.message },
-        { status: 400 }
+        {
+          success: false,
+          error: result.message,
+          locked: result.locked,
+          retryAfterSeconds: result.retryAfterSeconds,
+        },
+        { status: result.locked ? 423 : 400 }
       );
     }
 

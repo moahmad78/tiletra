@@ -8,17 +8,13 @@ import {
   ArrowRight,
   ShieldCheck,
   KeyRound,
-  Eye,
-  EyeOff,
   RefreshCw,
   ArrowLeft,
   AlertCircle,
+  Clock,
 } from "lucide-react";
 import { useAdminAuth } from "@/lib/admin-auth";
-import {
-  validateAdminCredentialsAndSendOtp,
-  verifyAdmin2FaOtp,
-} from "@/lib/actions/admin-auth-2fa";
+import { sendAdminWebOtp, verifyAdminWebOtp } from "@/lib/actions/web-portal-auth";
 import { toast } from "sonner";
 import Link from "next/link";
 
@@ -33,15 +29,15 @@ export default function AdminLoginPage() {
     }
   }, [isAuthenticated, router]);
 
-  // Auth Step: "credentials" (Step 1) | "otp" (Step 2)
-  const [step, setStep] = useState<"credentials" | "otp">("credentials");
+  // Auth Step: "email" (Step 1) | "otp" (Step 2)
+  const [step, setStep] = useState<"email" | "otp">("email");
 
   // Step 1 state
-  const [email, setEmail] = useState("");
-  const [password, setPassword] = useState("");
-  const [showPassword, setShowPassword] = useState(false);
+  const [email, setEmail] = useState("admin@intrihub.com");
   const [loading, setLoading] = useState(false);
   const [errorMessage, setErrorMessage] = useState("");
+  const [isLockedOut, setIsLockedOut] = useState(false);
+  const [lockoutTimer, setLockoutTimer] = useState<number | null>(null);
 
   // Step 2 state (OTP)
   const [otpDigits, setOtpDigits] = useState(["", "", "", "", "", ""]);
@@ -69,51 +65,46 @@ export default function AdminLoginPage() {
     }
   }, [step]);
 
-  // ── Step 1: Submit Credentials & Request OTP ─────────────────────────────
-  const handleCredentialsSubmit = async (e: React.FormEvent) => {
+  // ── Step 1: Request OTP ──────────────────────────────────────────────────
+  const handleEmailSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setErrorMessage("");
 
     const cleanEmail = email.trim().toLowerCase();
     if (!cleanEmail) {
-      setErrorMessage("Please enter your email address.");
-      return;
-    }
-
-    if (!password) {
-      setErrorMessage("Please enter the admin password.");
+      setErrorMessage("Please enter your authorized admin email address.");
       return;
     }
 
     setLoading(true);
 
     try {
-      const res = await validateAdminCredentialsAndSendOtp({
-        email: cleanEmail,
-        password,
-      });
+      const res = await sendAdminWebOtp(cleanEmail);
 
       if (res.success) {
         toast.success(res.message);
         setStep("otp");
         setResendCooldown(60);
       } else {
+        if (res.locked) {
+          setIsLockedOut(true);
+          setLockoutTimer(res.retryAfterSeconds || 900);
+        }
         setErrorMessage(res.message);
         toast.error(res.message);
       }
     } catch (err: any) {
-      console.error("Login error:", err);
-      setErrorMessage("Failed to authenticate. Please check server logs.");
-      toast.error("Failed to connect to authentication server.");
+      console.error("Admin OTP request error:", err);
+      setErrorMessage("Failed to connect to authentication service. Please check network logs.");
+      toast.error("Failed to connect to authentication service.");
     } finally {
       setLoading(false);
     }
   };
 
-  // ── Step 2: Handle OTP Input & Paste ─────────────────────────────────────
+  // ── Step 2: Handle OTP Input & Auto-Advance ──────────────────────────────
   const handleOtpChange = (index: number, value: string) => {
     if (value.length > 1) {
-      // Handle multi-character paste into a single box
       const pasted = value.replace(/\D/g, "").slice(0, 6);
       if (pasted.length > 0) {
         const nextDigits = [...otpDigits];
@@ -132,7 +123,6 @@ export default function AdminLoginPage() {
     nextDigits[index] = clean;
     setOtpDigits(nextDigits);
 
-    // Auto-advance to next box
     if (clean && index < 5) {
       inputRefs.current[index + 1]?.focus();
     }
@@ -173,22 +163,23 @@ export default function AdminLoginPage() {
     setOtpLoading(true);
 
     try {
-      const res = await verifyAdmin2FaOtp({
-        email: email.trim().toLowerCase(),
-        otp: fullOtp,
-      });
+      const res = await verifyAdminWebOtp(email.trim().toLowerCase(), fullOtp);
 
       if (res.success && res.user) {
-        toast.success("Identity Verified! Welcome to Super Admin Portal.");
+        toast.success("Admin identity verified! Welcome to Super Admin Console.");
         setSession(res.user);
         router.push("/admin");
       } else {
+        if (res.locked) {
+          setIsLockedOut(true);
+          setStep("email");
+        }
         setErrorMessage(res.message);
         toast.error(res.message);
       }
     } catch (err: any) {
-      console.error("OTP verification error:", err);
-      setErrorMessage("Verification failed. Please try again.");
+      console.error("Admin OTP verification error:", err);
+      setErrorMessage("Verification failed. Please check network connection.");
       toast.error("Verification failed.");
     } finally {
       setOtpLoading(false);
@@ -202,13 +193,10 @@ export default function AdminLoginPage() {
     setErrorMessage("");
 
     try {
-      const res = await validateAdminCredentialsAndSendOtp({
-        email: email.trim().toLowerCase(),
-        password,
-      });
+      const res = await sendAdminWebOtp(email.trim().toLowerCase());
 
       if (res.success) {
-        toast.success("A new 6-digit OTP code has been sent!");
+        toast.success("A new 6-digit security code has been sent!");
         setResendCooldown(60);
         setOtpDigits(["", "", "", "", "", ""]);
         inputRefs.current[0]?.focus();
@@ -216,7 +204,7 @@ export default function AdminLoginPage() {
         setErrorMessage(res.message);
         toast.error(res.message);
       }
-    } catch (err) {
+    } catch {
       toast.error("Failed to resend OTP code.");
     } finally {
       setOtpLoading(false);
@@ -226,7 +214,7 @@ export default function AdminLoginPage() {
   return (
     <div className="min-h-screen flex items-center justify-center p-4 bg-gradient-to-br from-[#052a51] via-[#031d38] to-[#02152b]">
       <div className="w-full max-w-md bg-white rounded-3xl p-8 sm:p-10 shadow-2xl border border-white/10 relative overflow-hidden">
-        {/* Subtle orange ambient blur inside card */}
+        {/* Subtle orange ambient blur */}
         <div className="absolute top-0 right-0 w-48 h-48 bg-[#F26522]/10 rounded-full blur-2xl pointer-events-none" />
 
         {/* Brand Header */}
@@ -238,28 +226,41 @@ export default function AdminLoginPage() {
           <div className="flex items-center justify-center gap-1.5 mb-1">
             <ShieldCheck size={18} className="text-[#F26522]" />
             <h1 className="text-xl sm:text-2xl font-black text-[#052a51]">
-              {step === "credentials" ? "Admin Management Portal" : "Two-Factor Authentication"}
+              {step === "email" ? "Super Admin Portal" : "Two-Factor Verification"}
             </h1>
           </div>
 
           <p className="text-xs text-gray-500 max-w-xs mx-auto">
-            {step === "credentials"
-              ? "Strict 2FA Security Gated: Email + Password + OTP verification"
+            {step === "email"
+              ? "Strict OTP Gated: Restricted exclusively to authorized admin personnel"
               : `Enter the 6-digit code sent to ${email || "your email"}`}
           </p>
         </div>
 
+        {/* Lockout Alert */}
+        {isLockedOut && (
+          <div className="mb-5 p-4 bg-amber-50 border border-amber-200 rounded-2xl flex items-start gap-3 text-xs text-amber-900 animate-in fade-in">
+            <Clock size={18} className="shrink-0 text-amber-700 mt-0.5" />
+            <div>
+              <p className="font-extrabold text-amber-950">Security Lockout Active</p>
+              <p className="mt-0.5 text-amber-800">
+                Too many failed attempts recorded. For system security, access is temporarily locked for 15 minutes.
+              </p>
+            </div>
+          </div>
+        )}
+
         {/* Error Alert Box */}
-        {errorMessage && (
+        {errorMessage && !isLockedOut && (
           <div className="mb-5 p-3.5 bg-red-50 border border-red-200 rounded-2xl flex items-start gap-2.5 text-xs text-red-700 animate-in fade-in duration-200">
             <AlertCircle size={16} className="shrink-0 mt-0.5 text-red-600" />
             <span className="font-semibold">{errorMessage}</span>
           </div>
         )}
 
-        {/* ── STEP 1: EMAIL & PASSWORD FORM ──────────────────────────────── */}
-        {step === "credentials" ? (
-          <form onSubmit={handleCredentialsSubmit} className="space-y-4">
+        {/* ── STEP 1: EMAIL REQUEST FORM ─────────────────────────────────── */}
+        {step === "email" ? (
+          <form onSubmit={handleEmailSubmit} className="space-y-4">
             <div>
               <label className="text-xs font-bold text-[#052a51] uppercase tracking-wider block mb-1.5">
                 Authorized Admin Email
@@ -274,77 +275,59 @@ export default function AdminLoginPage() {
                   required
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
-                  placeholder="admin@example.com"
+                  placeholder="admin@intrihub.com"
                   className="w-full pl-10 pr-4 py-3 bg-gray-50 border border-gray-200 rounded-xl text-sm font-semibold text-[#052a51] focus:outline-none focus:border-[#F26522] focus:bg-white transition-all shadow-2xs"
                 />
               </div>
               <p className="text-[10px] text-gray-400 mt-1 pl-1">
-                Authorized personnel only.
+                Only whitelisted admin accounts can receive a login OTP.
               </p>
-            </div>
-
-            <div>
-              <label className="text-xs font-bold text-[#052a51] uppercase tracking-wider block mb-1.5">
-                Admin Password
-              </label>
-              <div className="relative">
-                <Lock
-                  size={16}
-                  className="absolute left-3.5 top-1/2 -translate-y-1/2 text-gray-400"
-                />
-                <input
-                  type={showPassword ? "text" : "password"}
-                  required
-                  value={password}
-                  onChange={(e) => setPassword(e.target.value)}
-                  placeholder="Enter admin password"
-                  className="w-full pl-10 pr-10 py-3 bg-gray-50 border border-gray-200 rounded-xl text-sm font-semibold text-[#052a51] focus:outline-none focus:border-[#F26522] focus:bg-white transition-all shadow-2xs"
-                />
-                <button
-                  type="button"
-                  onClick={() => setShowPassword(!showPassword)}
-                  className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 p-1"
-                >
-                  {showPassword ? <EyeOff size={16} /> : <Eye size={16} />}
-                </button>
-              </div>
             </div>
 
             <button
               type="submit"
-              disabled={loading}
-              className="w-full h-12 bg-[#F26522] text-white font-bold text-sm rounded-xl hover:bg-[#d95a1e] active:scale-95 transition-all shadow-md flex items-center justify-center gap-2 mt-2 disabled:opacity-50 cursor-pointer"
+              disabled={loading || isLockedOut}
+              className="w-full py-3.5 px-4 bg-[#052a51] hover:bg-[#031d38] disabled:bg-gray-300 text-white text-sm font-black rounded-xl shadow-md transition-all flex items-center justify-center gap-2 cursor-pointer disabled:cursor-not-allowed group mt-2"
             >
               {loading ? (
                 <>
-                  <RefreshCw size={16} className="animate-spin" />
-                  <span>Validating Credentials...</span>
+                  <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                  <span>Sending Verification Code...</span>
                 </>
               ) : (
                 <>
-                  <span>Verify & Send 2FA Code</span>
-                  <ArrowRight size={16} />
+                  <span>Send Security OTP</span>
+                  <ArrowRight
+                    size={16}
+                    className="group-hover:translate-x-1 transition-transform"
+                  />
                 </>
               )}
             </button>
           </form>
         ) : (
-          /* ── STEP 2: 6-DIGIT OTP VERIFICATION FORM ──────────────────────── */
+          /* ── STEP 2: OTP VERIFICATION FORM ────────────────────────────── */
           <form onSubmit={handleOtpSubmit} className="space-y-5">
-            <div className="bg-orange-50/80 border border-orange-200/60 rounded-2xl p-3.5 text-center">
-              <span className="text-[11px] font-bold text-[#F26522] uppercase tracking-wider block mb-0.5">
-                Security Code Sent
-              </span>
-              <p className="text-xs font-bold text-[#052a51]">{email}</p>
-            </div>
-
             <div>
-              <label className="text-xs font-bold text-[#052a51] uppercase tracking-wider block text-center mb-3">
-                Enter 6-Digit Verification Code
-              </label>
+              <div className="flex items-center justify-between mb-2">
+                <label className="text-xs font-bold text-[#052a51] uppercase tracking-wider">
+                  6-Digit Verification Code
+                </label>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setStep("email");
+                    setErrorMessage("");
+                  }}
+                  className="text-xs text-[#F26522] hover:underline font-bold flex items-center gap-1"
+                >
+                  <ArrowLeft size={12} />
+                  Change Email
+                </button>
+              </div>
 
-              {/* 6 OTP Input Boxes */}
-              <div className="flex items-center justify-center gap-2 sm:gap-2.5">
+              {/* 6 Digit Input Boxes */}
+              <div className="flex justify-between gap-2 sm:gap-3 my-3">
                 {otpDigits.map((digit, idx) => (
                   <input
                     key={idx}
@@ -353,13 +336,16 @@ export default function AdminLoginPage() {
                     }}
                     type="text"
                     inputMode="numeric"
-                    pattern="[0-9]*"
                     maxLength={1}
                     value={digit}
                     onChange={(e) => handleOtpChange(idx, e.target.value)}
                     onKeyDown={(e) => handleOtpKeyDown(idx, e)}
-                    onPaste={handleOtpPaste}
-                    className="w-11 h-13 sm:w-12 sm:h-14 text-center text-xl font-black text-[#052a51] bg-gray-50 border-2 border-gray-200 rounded-xl focus:border-[#F26522] focus:bg-white focus:outline-none transition-all shadow-2xs"
+                    onPaste={idx === 0 ? handleOtpPaste : undefined}
+                    className={`w-11 h-13 sm:w-12 sm:h-14 text-center text-xl font-black rounded-xl border transition-all ${
+                      digit
+                        ? "border-[#052a51] bg-white text-[#052a51] shadow-xs"
+                        : "border-gray-200 bg-gray-50 text-gray-800"
+                    } focus:outline-none focus:border-[#F26522] focus:bg-white focus:ring-2 focus:ring-[#F26522]/20`}
                   />
                 ))}
               </div>
@@ -367,57 +353,50 @@ export default function AdminLoginPage() {
 
             <button
               type="submit"
-              disabled={otpLoading || otpDigits.join("").length !== 6}
-              className="w-full h-12 bg-[#F26522] text-white font-bold text-sm rounded-xl hover:bg-[#d95a1e] active:scale-95 transition-all shadow-md flex items-center justify-center gap-2 mt-2 disabled:opacity-50 cursor-pointer"
+              disabled={otpLoading || otpDigits.some((d) => !d)}
+              className="w-full py-3.5 px-4 bg-[#052a51] hover:bg-[#031d38] disabled:bg-gray-300 text-white text-sm font-black rounded-xl shadow-md transition-all flex items-center justify-center gap-2 cursor-pointer disabled:cursor-not-allowed mt-2"
             >
               {otpLoading ? (
                 <>
-                  <RefreshCw size={16} className="animate-spin" />
+                  <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
                   <span>Verifying Code...</span>
                 </>
               ) : (
                 <>
                   <KeyRound size={16} />
-                  <span>Verify OTP & Enter Admin</span>
+                  <span>Verify & Access Admin Console</span>
                 </>
               )}
             </button>
 
-            {/* Resend & Back controls */}
-            <div className="flex items-center justify-between pt-2 border-t border-gray-100 text-xs">
-              <button
-                type="button"
-                onClick={() => {
-                  setStep("credentials");
-                  setErrorMessage("");
-                }}
-                className="text-gray-500 hover:text-[#052a51] font-bold flex items-center gap-1 cursor-pointer transition-colors"
-              >
-                <ArrowLeft size={13} />
-                <span>Back</span>
-              </button>
-
+            {/* Resend Action */}
+            <div className="text-center pt-2">
               <button
                 type="button"
                 onClick={handleResendOtp}
                 disabled={resendCooldown > 0 || otpLoading}
-                className="text-[#F26522] font-bold hover:underline disabled:opacity-50 disabled:no-underline cursor-pointer"
+                className="text-xs font-bold text-gray-500 hover:text-[#052a51] disabled:text-gray-400 inline-flex items-center gap-1.5 transition-colors disabled:cursor-not-allowed"
               >
+                <RefreshCw
+                  size={13}
+                  className={otpLoading ? "animate-spin" : ""}
+                />
                 {resendCooldown > 0
-                  ? `Resend OTP in ${resendCooldown}s`
-                  : "Resend Security Code"}
+                  ? `Resend code in ${resendCooldown}s`
+                  : "Didn't receive code? Resend OTP"}
               </button>
             </div>
           </form>
         )}
 
-        {/* Public Store Return */}
-        <div className="mt-7 text-center">
+        {/* Footer info */}
+        <div className="mt-8 pt-6 border-t border-gray-100 flex items-center justify-between text-xs text-gray-400">
+          <span>Intrihub Security Gateway</span>
           <Link
             href="/"
-            className="text-xs text-gray-400 hover:text-[#052a51] font-semibold transition-colors"
+            className="hover:text-[#052a51] font-bold transition-colors"
           >
-            ← Return to Intrihub Storefront
+            ← Return to Store
           </Link>
         </div>
       </div>
