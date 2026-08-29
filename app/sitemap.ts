@@ -2,8 +2,10 @@ import { MetadataRoute } from "next";
 import { prisma } from "@/lib/prisma";
 import { BASE_SITE_URL } from "@/lib/seo";
 import { BUYING_GUIDES } from "@/lib/guides-data";
+import { products as defaultProducts } from "@/lib/data/products";
+import { categories as defaultCategories } from "@/lib/data/categories";
 
-export const revalidate = 3600; // Revalidate every 1 hour (Section 4.5)
+export const revalidate = 3600; // Revalidate every 1 hour
 
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   const staticRoutes: MetadataRoute.Sitemap = [
@@ -108,7 +110,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   // Buying Guide Routes
   const guideRoutes: MetadataRoute.Sitemap = BUYING_GUIDES.map((g) => ({
     url: `${BASE_SITE_URL}/guides/${g.slug}`,
-    lastModified: new Date(g.updatedAt),
+    lastModified: new Date(g.updatedAt || Date.now()),
     changeFrequency: "weekly",
     priority: 0.85,
   }));
@@ -128,23 +130,81 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
       }),
     ]);
 
-    const categoryRoutes: MetadataRoute.Sitemap = categories.map((cat) => ({
-      url: `${BASE_SITE_URL}/shop/${cat.slug}`,
-      lastModified: cat.updatedAt || new Date(),
-      changeFrequency: "daily",
-      priority: 0.85,
-    }));
+    const resolvedCategories =
+      categories.length > 0
+        ? categories
+        : defaultCategories.map((c) => ({ slug: c.slug, updatedAt: new Date() }));
 
-    const productRoutes: MetadataRoute.Sitemap = products.map((prod) => ({
-      url: `${BASE_SITE_URL}/product/${prod.slug}`,
-      lastModified: prod.updatedAt || new Date(),
-      changeFrequency: "weekly",
-      priority: 0.8,
-    }));
+    const resolvedProducts =
+      products.length > 0
+        ? products
+        : defaultProducts
+            .filter((p) => (p.status || "active") === "active")
+            .map((p) => ({ slug: p.slug, updatedAt: new Date() }));
 
-    return [...staticRoutes, ...guideRoutes, ...categoryRoutes, ...productRoutes];
+    const categoryRoutes: MetadataRoute.Sitemap = resolvedCategories
+      .filter((cat) => Boolean(cat.slug))
+      .map((cat) => ({
+        url: `${BASE_SITE_URL}/shop/${encodeURIComponent(cat.slug)}`,
+        lastModified: cat.updatedAt instanceof Date ? cat.updatedAt : new Date(),
+        changeFrequency: "daily",
+        priority: 0.85,
+      }));
+
+    const productRoutes: MetadataRoute.Sitemap = resolvedProducts
+      .filter((prod) => Boolean(prod.slug))
+      .map((prod) => ({
+        url: `${BASE_SITE_URL}/product/${encodeURIComponent(prod.slug)}`,
+        lastModified: prod.updatedAt instanceof Date ? prod.updatedAt : new Date(),
+        changeFrequency: "weekly",
+        priority: 0.8,
+      }));
+
+    // Deduplicate entries by canonical URL
+    const allRoutes = [...staticRoutes, ...guideRoutes, ...categoryRoutes, ...productRoutes];
+    const uniqueMap = new Map<string, MetadataRoute.Sitemap[number]>();
+    for (const route of allRoutes) {
+      if (!uniqueMap.has(route.url)) {
+        uniqueMap.set(route.url, route);
+      }
+    }
+
+    return Array.from(uniqueMap.values());
   } catch (error) {
-    console.error("Error generating dynamic sitemap:", error);
-    return [...staticRoutes, ...guideRoutes];
+    console.error("Error generating dynamic sitemap from DB, falling back to static catalog:", error);
+
+    const fallbackCategoryRoutes: MetadataRoute.Sitemap = defaultCategories
+      .filter((cat) => Boolean(cat.slug))
+      .map((cat) => ({
+        url: `${BASE_SITE_URL}/shop/${encodeURIComponent(cat.slug)}`,
+        lastModified: new Date(),
+        changeFrequency: "daily",
+        priority: 0.85,
+      }));
+
+    const fallbackProductRoutes: MetadataRoute.Sitemap = defaultProducts
+      .filter((p) => Boolean(p.slug) && (p.status || "active") === "active")
+      .map((prod) => ({
+        url: `${BASE_SITE_URL}/product/${encodeURIComponent(prod.slug)}`,
+        lastModified: new Date(),
+        changeFrequency: "weekly",
+        priority: 0.8,
+      }));
+
+    const allFallback = [
+      ...staticRoutes,
+      ...guideRoutes,
+      ...fallbackCategoryRoutes,
+      ...fallbackProductRoutes,
+    ];
+
+    const uniqueMap = new Map<string, MetadataRoute.Sitemap[number]>();
+    for (const route of allFallback) {
+      if (!uniqueMap.has(route.url)) {
+        uniqueMap.set(route.url, route);
+      }
+    }
+
+    return Array.from(uniqueMap.values());
   }
 }
