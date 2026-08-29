@@ -3,6 +3,8 @@ import { prisma } from "@/lib/prisma";
 import { BASE_SITE_URL } from "@/lib/seo";
 import { BUYING_GUIDES } from "@/lib/guides-data";
 
+export const revalidate = 3600; // Revalidate every 1 hour (Section 4.5)
+
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   const staticRoutes: MetadataRoute.Sitemap = [
     {

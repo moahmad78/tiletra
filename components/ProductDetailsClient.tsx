@@ -339,6 +339,25 @@ export default function ProductDetailsClient({
 
           {/* ── Consolidated Buy Box (Flipkart Pattern) ── */}
           <div className="space-y-5 lg:sticky lg:top-[125px] h-fit bg-white p-5 sm:p-6 rounded-3xl border border-gray-200/80 shadow-2xs">
+            {/* Discontinued Notice Banner (Section 4.1) */}
+            {definedProduct.status === "discontinued" && (
+              <div className="p-4 rounded-2xl bg-amber-50 border border-amber-200 text-amber-900">
+                <div className="flex items-center gap-2 font-black text-sm">
+                  <span className="text-base">⚠️</span>
+                  <span>This Product is Discontinued</span>
+                </div>
+                <p className="text-xs text-amber-700 mt-1 leading-relaxed">
+                  This item is no longer available in our active catalog. Please explore recommended in-stock alternatives below or explore the category.
+                </p>
+                <Link
+                  href={`/shop/${definedProduct.categorySlug}`}
+                  className="inline-flex items-center gap-1.5 text-xs font-black text-[#052a51] hover:text-[#F26522] mt-2 underline underline-offset-2"
+                >
+                  Browse all {definedProduct.categoryName} →
+                </Link>
+              </div>
+            )}
+
             {/* Header: Category, Title, Rating */}
             <div>
               <span className="text-xs font-bold text-[#F26522] uppercase tracking-widest">
@@ -482,10 +501,12 @@ export default function ProductDetailsClient({
               <button
                 id="add-to-cart-btn"
                 onClick={handleAddToCart}
-                disabled={isOutOfStock}
+                disabled={isOutOfStock || definedProduct.status === "discontinued"}
                 className={`flex-1 min-w-0 h-12 px-3 sm:px-4 font-bold text-xs sm:text-sm rounded-full flex items-center justify-center gap-1.5 transition-all active:scale-95 shadow-md cursor-pointer whitespace-nowrap ${
                   addedToCart
                     ? "bg-[#2F7A4F] text-white"
+                    : definedProduct.status === "discontinued"
+                    ? "bg-gray-200 text-gray-400 cursor-not-allowed"
                     : isOutOfStock
                     ? "bg-gray-200 text-gray-400 cursor-not-allowed"
                     : "bg-[#F26522] text-white hover:bg-[#d95a1e]"
@@ -496,6 +517,8 @@ export default function ProductDetailsClient({
                     <Check size={16} className="shrink-0" />
                     <span className="whitespace-nowrap truncate">Added!</span>
                   </>
+                ) : definedProduct.status === "discontinued" ? (
+                  <span className="whitespace-nowrap truncate">Discontinued</span>
                 ) : isOutOfStock ? (
                   <span className="whitespace-nowrap truncate">Out of Stock</span>
                 ) : (
@@ -508,11 +531,13 @@ export default function ProductDetailsClient({
 
               <button
                 onClick={handleBuyNow}
-                disabled={isOutOfStock}
+                disabled={isOutOfStock || definedProduct.status === "discontinued"}
                 className="flex-1 min-w-0 h-12 px-3 sm:px-4 font-bold text-xs sm:text-sm rounded-full flex items-center justify-center gap-1.5 bg-[#052a51] text-white hover:bg-[#041f3d] active:scale-95 transition-all shadow-md disabled:opacity-40 cursor-pointer whitespace-nowrap"
               >
                 <Zap size={16} className="text-[#F26522] shrink-0" />
-                <span className="whitespace-nowrap truncate">Buy Now</span>
+                <span className="whitespace-nowrap truncate">
+                  {definedProduct.status === "discontinued" ? "Unavailable" : "Buy Now"}
+                </span>
               </button>
             </div>
 

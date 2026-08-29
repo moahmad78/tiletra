@@ -2,8 +2,9 @@ import { Metadata } from "next";
 import { getProductBySlug, getProducts } from "@/lib/actions/products";
 import { prisma } from "@/lib/prisma";
 import ProductDetailsClient from "@/components/ProductDetailsClient";
-import { notFound } from "next/navigation";
+import { notFound, redirect } from "next/navigation";
 import { BASE_SITE_URL, getCanonicalUrl, generateProductSchema, generateBreadcrumbSchema, safeJsonLd } from "@/lib/seo";
+import { getRedirectForPath } from "@/lib/redirects";
 
 export const revalidate = 60;
 
@@ -19,11 +20,18 @@ export async function generateMetadata({
     return {
       title: "Product Not Found | IntriHub",
       description: "The requested interior and construction product could not be found on IntriHub.",
+      robots: {
+        index: false,
+        follow: false,
+      },
     };
   }
 
+  const isDiscontinued = product.status === "discontinued";
   const canonicalUrl = getCanonicalUrl(`/product/${product.slug}`);
-  const title = `${product.name} | IntriHub`;
+  const title = isDiscontinued
+    ? `${product.name} (Discontinued) | IntriHub`
+    : `${product.name} | IntriHub`;
   const description =
     product.description?.slice(0, 160) ||
     `Buy ${product.name} online at IntriHub. Direct-from-factory building & interior materials with rapid delivery across Bangalore & Pan-India.`;
@@ -41,6 +49,16 @@ export async function generateMetadata({
     alternates: {
       canonical: canonicalUrl,
     },
+    // Add noindex for discontinued items per PRD section 4.1 while still returning HTTP 200 with alternatives
+    robots: isDiscontinued
+      ? {
+          index: false,
+          follow: true,
+        }
+      : {
+          index: true,
+          follow: true,
+        },
     openGraph: {
       title,
       description,
@@ -89,6 +107,11 @@ export default async function ProductPage({
   ]);
 
   if (!product) {
+    // Check if a permanent 301 redirect exists for this product URL
+    const redirectRecord = await getRedirectForPath(`/product/${slug}`);
+    if (redirectRecord && redirectRecord.toPath) {
+      redirect(redirectRecord.toPath);
+    }
     notFound();
   }
 

@@ -915,5 +915,20 @@ model WishlistItem {
   @@index([productId])
 }
 
+// ----------------------------------------------------
+// 15. SEO Automated Redirects
+// ----------------------------------------------------
+model Redirect {
+  id         String   @id @default(cuid())
+  fromPath   String   @unique
+  toPath     String
+  statusCode Int      @default(301)
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  @@index([fromPath])
+}
+
+
 
 

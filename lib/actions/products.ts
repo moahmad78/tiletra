@@ -3,6 +3,7 @@
 import { prisma } from "@/lib/prisma";
 import type { Product } from "@/lib/data/products";
 import { formatProduct, safeRevalidate } from "@/lib/formatters";
+import { recordHardDeleteRedirect } from "@/lib/redirects";
 
 export type CreateProductInput = {
   name: string;
@@ -292,7 +293,15 @@ export async function getProductBySlug(slug: string, options?: { includeAllStatu
 
     if (dbProduct) {
       if (!options?.includeAllStatuses) {
-        if (dbProduct.status !== "active" || dbProduct.approvalStatus !== "approved") {
+        // Allow active, discontinued, and out_of_stock on direct URLs to avoid SEO 404s
+        const isPubliclyViewable =
+          dbProduct.approvalStatus === "approved" &&
+          (dbProduct.status === "active" ||
+            dbProduct.status === "discontinued" ||
+            dbProduct.status === "out_of_stock" ||
+            dbProduct.status === "archived");
+
+        if (!isPubliclyViewable) {
           return null;
         }
       }
@@ -830,16 +839,33 @@ export async function updateProduct(id: string, input: Partial<CreateProductInpu
   }
 }
 
-export async function deleteProduct(id: string) {
+export async function deleteProduct(id: string, options?: { hardDelete?: boolean }) {
   try {
     const existing = await prisma.product.findUnique({ where: { id } });
     if (!existing) return { success: false, error: "Product not found" };
 
-    await prisma.product.delete({ where: { id } });
+    if (options?.hardDelete) {
+      // 1. Automatically generate 301 redirect from product slug to its category page before purging
+      await recordHardDeleteRedirect({
+        slug: existing.slug,
+        categorySlug: existing.categorySlug,
+      });
+
+      // 2. Perform hard delete from DB
+      await prisma.product.delete({ where: { id } });
+    } else {
+      // Default: Soft delete (status: discontinued) to preserve Google indexation and return 200 with alternatives
+      await prisma.product.update({
+        where: { id },
+        data: { status: "discontinued" },
+      });
+    }
 
     safeRevalidate("/shop");
     safeRevalidate(`/shop/${existing.categorySlug}`);
+    safeRevalidate(`/product/${existing.slug}`);
     safeRevalidate("/admin/products");
+    safeRevalidate("/vendor/products");
     safeRevalidate("/");
 
     return { success: true };
@@ -848,3 +874,12 @@ export async function deleteProduct(id: string) {
     return { success: false, error: error?.message || "Failed to delete product" };
   }
 }
+
+export async function softDeleteProduct(id: string) {
+  return deleteProduct(id, { hardDelete: false });
+}
+
+export async function hardDeleteProduct(id: string) {
+  return deleteProduct(id, { hardDelete: true });
+}
+
