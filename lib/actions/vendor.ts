@@ -152,6 +152,7 @@ export async function updateVendorProfile(
     shopPhotoUrl?: string;
     category?: string;
     gstNumber?: string;
+    deliveryMethod?: string;
     deliveryFeeEnabled?: boolean;
     customDeliveryFee?: number | null;
     freeDeliveryThreshold?: number | null;
@@ -172,6 +173,7 @@ export async function updateVendorProfile(
         shopPhotoUrl: input.shopPhotoUrl?.trim(),
         category: input.category?.trim(),
         gstNumber: input.gstNumber?.trim().toUpperCase(),
+        ...(input.deliveryMethod !== undefined && { deliveryMethod: input.deliveryMethod.trim() }),
         ...(input.deliveryFeeEnabled !== undefined && { deliveryFeeEnabled: input.deliveryFeeEnabled }),
         ...(input.customDeliveryFee !== undefined && { customDeliveryFee: input.customDeliveryFee }),
         ...(input.freeDeliveryThreshold !== undefined && { freeDeliveryThreshold: input.freeDeliveryThreshold }),

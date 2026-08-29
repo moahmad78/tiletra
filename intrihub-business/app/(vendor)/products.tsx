@@ -22,6 +22,7 @@ import {
   Power,
   Layers,
   IndianRupee,
+  AlertTriangle,
 } from "lucide-react-native";
 import {
   fetchVendorProducts,
@@ -35,15 +36,18 @@ export default function VendorProductsScreen() {
   const router = useRouter();
   const queryClient = useQueryClient();
   const [search, setSearch] = useState("");
-  const [statusFilter, setStatusFilter] = useState<"all" | "active" | "paused">("all");
+  const [statusFilter, setStatusFilter] = useState<"all" | "active" | "paused" | "pending" | "rejected">("all");
 
   const { data, isLoading, refetch, isRefetching } = useQuery({
     queryKey: ["vendor-products", search, statusFilter],
-    queryFn: () =>
-      fetchVendorProducts({
+    queryFn: () => {
+      const isApproval = statusFilter === "pending" || statusFilter === "rejected";
+      return fetchVendorProducts({
         search: search.trim() || undefined,
-        status: statusFilter === "all" ? undefined : statusFilter,
-      }),
+        status: isApproval || statusFilter === "all" ? undefined : statusFilter,
+        approvalStatus: isApproval ? statusFilter : undefined,
+      });
+    },
   });
 
   const toggleMutation = useMutation({
@@ -141,6 +145,17 @@ export default function VendorProductsScreen() {
             ) : null}
           </View>
 
+          {/* Rejection Feedback Banner if Rejected */}
+          {item.approvalStatus === "rejected" ? (
+            <View style={styles.rejectionBox}>
+              <AlertTriangle size={13} color="#DC2626" />
+              <Text style={styles.rejectionText} numberOfLines={2}>
+                <Text style={{ fontWeight: "800", color: "#DC2626" }}>Admin Note: </Text>
+                {item.rejectionReason || "Details require review. Please update specs/pricing."}
+              </Text>
+            </View>
+          ) : null}
+
           {/* Action Row */}
           <View style={styles.actionRow}>
             <TouchableOpacity
@@ -216,7 +231,7 @@ export default function VendorProductsScreen() {
         </View>
 
         <View style={styles.tabsRow}>
-          {(["all", "active", "paused"] as const).map((tab) => (
+          {(["all", "active", "paused", "pending", "rejected"] as const).map((tab) => (
             <TouchableOpacity
               key={tab}
               style={[styles.tabPill, statusFilter === tab && styles.tabPillActive]}
@@ -443,6 +458,24 @@ const styles = StyleSheet.create({
   pricePerSqft: {
     fontSize: 12,
     color: COLORS.textSecondary,
+  },
+  rejectionBox: {
+    flexDirection: "row",
+    alignItems: "center",
+    backgroundColor: "#FEF2F2",
+    borderWidth: 1,
+    borderColor: "#FECACA",
+    borderRadius: 8,
+    paddingHorizontal: 8,
+    paddingVertical: 5,
+    marginTop: 6,
+    gap: 6,
+  },
+  rejectionText: {
+    flex: 1,
+    fontSize: 11,
+    color: "#991B1B",
+    lineHeight: 15,
   },
   actionRow: {
     flexDirection: "row",
