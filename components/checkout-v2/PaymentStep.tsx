@@ -8,7 +8,9 @@ import {
   Sparkles,
   Truck,
   Check,
+  Compass,
 } from "lucide-react";
+import { detectInAppBrowser, openInSystemBrowser } from "@/lib/in-app-browser";
 
 export type PaymentMethod = "online" | "cod" | "upi" | "card" | "netbanking";
 
@@ -126,6 +128,26 @@ export default function PaymentStep({
                 <p className="text-xs text-gray-600 font-medium mt-0.5">
                   UPI (GPay, PhonePe, Paytm), Cards & Net Banking
                 </p>
+
+                {/* In-App Browser Helper Tip */}
+                {isOnline && typeof window !== "undefined" && detectInAppBrowser().isInApp && (
+                  <div className="mt-3 pt-2.5 border-t border-amber-200/60 flex items-center justify-between gap-2 text-[11px] text-amber-950 bg-amber-50/90 p-2 rounded-xl">
+                    <div className="flex items-center gap-1.5">
+                      <Compass className="w-3.5 h-3.5 text-amber-700 shrink-0" />
+                      <span>Viewing in {detectInAppBrowser().appName || "in-app browser"}. For 1-tap UPI app redirects:</span>
+                    </div>
+                    <button
+                      type="button"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        openInSystemBrowser();
+                      }}
+                      className="text-[11px] font-bold text-[#052a51] underline shrink-0 hover:text-blue-900"
+                    >
+                      Open in Browser
+                    </button>
+                  </div>
+                )}
               </div>
             </div>
           </div>

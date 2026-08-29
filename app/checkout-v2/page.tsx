@@ -23,6 +23,8 @@ import PaymentStep, { type PaymentData } from "@/components/checkout-v2/PaymentS
 import OrderSummaryV2 from "@/components/checkout-v2/OrderSummaryV2";
 import Header from "@/components/Header";
 import Footer from "@/components/Footer";
+import InAppBrowserBanner from "@/components/InAppBrowserBanner";
+import { detectInAppBrowser, openInSystemBrowser } from "@/lib/in-app-browser";
 import { toast } from "sonner";
 
 export default function CheckoutV2Page() {
@@ -60,7 +62,12 @@ export default function CheckoutV2Page() {
   // Order ID generated for current session
   const [sessionOrderId] = useState(() => `IH-${Math.floor(100000 + Math.random() * 900000)}`);
 
-  // 1. Fetch Store Settings
+  // 1. Preload Razorpay SDK script on component mount
+  useEffect(() => {
+    loadRazorpayScript().catch((e) => console.warn("[Checkout-V2] Razorpay preload:", e));
+  }, []);
+
+  // 2. Fetch Store Settings
   useEffect(() => {
     async function loadSettings() {
       try {
@@ -417,7 +424,25 @@ export default function CheckoutV2Page() {
         toast.error(response?.error?.description || "Payment failed. Please retry.");
       });
 
-      rzp.open();
+      try {
+        rzp.open();
+      } catch (openErr: any) {
+        console.error("[Checkout-V2] rzp.open() error:", openErr);
+        const inApp = detectInAppBrowser();
+        if (inApp.isInApp) {
+          toast.error("In-app browser blocked payment window. Opening in your main browser...", {
+            action: {
+              label: "Open Browser",
+              onClick: () => openInSystemBrowser(),
+            },
+          });
+          openInSystemBrowser();
+        } else {
+          toast.error("Could not open payment window. Please check your browser popup settings.");
+        }
+        isPayingRef.current = false;
+        setIsProcessingPayment(false);
+      }
     } catch (err: any) {
       console.error("[Checkout-V2] Payment error:", err);
       toast.error(err?.message || "An unexpected error occurred during payment");
@@ -471,6 +496,7 @@ export default function CheckoutV2Page() {
   return (
     <main className="min-h-screen flex flex-col bg-[#F3F4F5] pt-[56px] md:pt-[124px]">
       <Header />
+      <InAppBrowserBanner context="checkout" />
       <div className="w-full max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 sm:py-8 flex-1 space-y-6">
         {/* Top Header */}
         <div className="flex items-center justify-between">
