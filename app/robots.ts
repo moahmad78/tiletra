@@ -5,18 +5,38 @@ export default function robots(): MetadataRoute.Robots {
   return {
     rules: {
       userAgent: "*",
-      allow: "/",
+      allow: [
+        "/",
+        "/shop",
+        "/shop/*",
+        "/categories",
+        "/product/*",
+        "/guides",
+        "/guides/*",
+        "/about",
+        "/contact",
+        "/founder",
+        "/faq",
+        "/designs",
+        "/shipping-policy",
+        "/returns-policy",
+        "/privacy-policy",
+        "/terms",
+        "/for-architects",
+        "/for-contractors",
+        "/for-interior-designers",
+      ],
       disallow: [
         "/api/",
-        "/account/",
-        "/cart/checkout-internal/",
         "/admin/",
         "/vendor/",
+        "/account/",
+        "/cart/",
+        "/checkout/",
+        "/checkout-v2/",
+        "/upload/",
       ],
     },
     sitemap: `${BASE_SITE_URL}/sitemap.xml`,
   };
 }
-
-
-
