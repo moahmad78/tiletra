@@ -30,6 +30,7 @@ import {
   Lock,
 } from "lucide-react";
 import { toast } from "sonner";
+import AuthSupportWidget from "@/components/auth/AuthSupportWidget";
 
 export default function VendorLoginPage() {
   const router = useRouter();
@@ -781,6 +782,9 @@ export default function VendorLoginPage() {
           </div>
         </div>
       </div>
+
+      {/* Floating Support Button strictly on Vendor Login Screen */}
+      <AuthSupportWidget portalType="vendor" />
     </div>
   );
 }

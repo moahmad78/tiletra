@@ -10,6 +10,7 @@ import {
 import { useAuthStore, useAuthHydrated, useAuthStatus } from "@/lib/auth-store";
 import { useCartStore } from "@/lib/cart-store";
 import { toast } from "sonner";
+import AuthSupportWidget from "@/components/auth/AuthSupportWidget";
 
 type LoginTab = "choose" | "email";
 type OtpStep = "input" | "otp";
@@ -432,6 +433,9 @@ export default function LoginModal() {
           </motion.div>
         </AnimatePresence>
       </motion.div>
+
+      {/* Floating Support Button strictly when Customer Login Modal is open */}
+      <AuthSupportWidget portalType="general" />
     </div>
   );
 }

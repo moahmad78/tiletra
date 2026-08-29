@@ -116,21 +116,21 @@ export default function AuthSupportWidget({ portalType = "general" }: AuthSuppor
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                   {/* Phone */}
                   <a
-                    href="tel:+917870935277"
+                    href="tel:+919264920211"
                     className="p-3.5 rounded-2xl bg-gray-50 hover:bg-blue-50/50 border border-gray-200/80 hover:border-blue-200 transition-all flex items-center gap-3 group"
                   >
                     <div className="w-10 h-10 rounded-xl bg-[#052a51] text-white flex items-center justify-center shrink-0 group-hover:scale-105 transition-transform">
                       <Phone size={18} />
                     </div>
                     <div>
-                      <p className="text-xs text-gray-500 font-medium">Partner Hotline</p>
-                      <p className="text-xs font-bold text-gray-900">+91 78709 35277</p>
+                      <p className="text-xs text-gray-500 font-medium">Support Hotline</p>
+                      <p className="text-xs font-bold text-gray-900">+91 92649 20211</p>
                     </div>
                   </a>
 
                   {/* WhatsApp */}
                   <a
-                    href="https://wa.me/917870935277?text=Hello%20Intrihub%20Support,%20I%20need%20help%20with%20Portal%20Login"
+                    href="https://wa.me/919264920211?text=Hello%20Intrihub%20Support,%20I%20need%20help%20with%20Portal%20Login"
                     target="_blank"
                     rel="noopener noreferrer"
                     className="p-3.5 rounded-2xl bg-[#25D366]/5 hover:bg-[#25D366]/10 border border-[#25D366]/30 transition-all flex items-center gap-3 group"
@@ -140,7 +140,7 @@ export default function AuthSupportWidget({ portalType = "general" }: AuthSuppor
                     </div>
                     <div>
                       <p className="text-xs text-emerald-700 font-semibold">WhatsApp Chat</p>
-                      <p className="text-xs font-bold text-gray-900">+91 78709 35277</p>
+                      <p className="text-xs font-bold text-gray-900">+91 92649 20211</p>
                     </div>
                   </a>
 

@@ -17,6 +17,7 @@ import { useAdminAuth } from "@/lib/admin-auth";
 import { sendAdminWebOtp, verifyAdminWebOtp } from "@/lib/actions/web-portal-auth";
 import { toast } from "sonner";
 import Link from "next/link";
+import AuthSupportWidget from "@/components/auth/AuthSupportWidget";
 
 export default function AdminLoginPage() {
   const router = useRouter();
@@ -461,6 +462,9 @@ export default function AdminLoginPage() {
           </Link>
         </div>
       </div>
+
+      {/* Floating Support Button strictly on Admin Login Screen */}
+      <AuthSupportWidget portalType="admin" />
     </div>
   );
 }
