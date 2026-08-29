@@ -1,5 +1,6 @@
 import { Metadata } from "next";
 import { getProductBySlug, getProducts } from "@/lib/actions/products";
+import { prisma } from "@/lib/prisma";
 import ProductDetailsClient from "@/components/ProductDetailsClient";
 import { notFound } from "next/navigation";
 import { BASE_SITE_URL, getCanonicalUrl, generateProductSchema, generateBreadcrumbSchema, safeJsonLd } from "@/lib/seo";
@@ -16,16 +17,16 @@ export async function generateMetadata({
 
   if (!product) {
     return {
-      title: "Product Not Found | Intrihub",
-      description: "The requested interior and construction product could not be found on Intrihub.",
+      title: "Product Not Found | IntriHub",
+      description: "The requested interior and construction product could not be found on IntriHub.",
     };
   }
 
   const canonicalUrl = getCanonicalUrl(`/product/${product.slug}`);
-  const title = `${product.name} | Intrihub`;
+  const title = `${product.name} | IntriHub`;
   const description =
     product.description?.slice(0, 160) ||
-    `Buy ${product.name} online at Intrihub. High quality interior and construction materials with doorstep delivery across Bangalore & Pan-India.`;
+    `Buy ${product.name} online at IntriHub. Direct-from-factory building & interior materials with rapid delivery across Bangalore & Pan-India.`;
 
   const imageUrls =
     product.images && product.images.length > 0
@@ -45,7 +46,7 @@ export async function generateMetadata({
       description,
       url: canonicalUrl,
       type: "website",
-      siteName: "Intrihub",
+      siteName: "IntriHub",
       images: imageUrls.map((url) => ({
         url,
         width: 800,
@@ -68,9 +69,23 @@ export default async function ProductPage({
   params: Promise<{ slug: string }>;
 }) {
   const { slug } = await params;
-  const [product, allProducts] = await Promise.all([
+  const [product, allProducts, approvedReviews] = await Promise.all([
     getProductBySlug(slug),
     getProducts(),
+    prisma.review.findMany({
+      where: {
+        product: { slug },
+        status: "approved",
+      },
+      select: {
+        id: true,
+        author: true,
+        rating: true,
+        comment: true,
+        createdAt: true,
+      },
+      orderBy: { createdAt: "desc" },
+    }).catch(() => []),
   ]);
 
   if (!product) {
@@ -94,7 +109,8 @@ export default async function ProductPage({
     price: minPrice,
     inStock: product.variants?.some((v) => v.stockBoxes > 0) ?? true,
     categoryName: product.categoryName || product.categorySlug,
-    brand: (product as any).brand || "Intrihub",
+    brand: (product as any).brand || "IntriHub",
+    reviews: approvedReviews,
   });
 
   const breadcrumbsSchema = generateBreadcrumbSchema([

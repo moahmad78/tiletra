@@ -33,27 +33,26 @@ export function getCanonicalUrl(path: string = ""): string {
 /**
  * Organization Schema.org structured data for Intrihub
  */
+/**
+ * Organization Schema.org structured data for IntriHub (Compliant with Section 6.1)
+ */
 export function generateOrganizationSchema() {
   return {
     "@context": "https://schema.org",
-    "@type": "Organization",
+    "@type": ["Organization", "OnlineStore"],
     "@id": `${BASE_SITE_URL}/#organization`,
-    name: "Intrihub",
-    alternateName: "Intrihub Marketplace",
+    name: "IntriHub",
+    alternateName: "IntriHub Quick Commerce",
     url: BASE_SITE_URL,
-    logo: {
-      "@type": "ImageObject",
-      url: `${BASE_SITE_URL}/logo/intri-web-logo.png`,
-      caption: "Intrihub - Everything for Every Space",
-    },
+    logo: `${BASE_SITE_URL}/logo/intri-web-logo.png`,
     description:
-      "Intrihub is India's premier online marketplace for interior, construction, home-improvement, and building supplies.",
+      "India's instant building materials quick commerce network. Direct-from-factory delivery for construction & interior products.",
     email: "support@intrihub.com",
     telephone: "+919264920211",
     address: {
       "@type": "PostalAddress",
       streetAddress: "41, 10th A Cross Rd, Janapriya Layout, Begur",
-      addressLocality: "Bengaluru",
+      addressLocality: "Begur, Bengaluru",
       addressRegion: "Karnataka",
       postalCode: "560114",
       addressCountry: "IN",
@@ -79,8 +78,9 @@ export function generateWebSiteSchema() {
     "@type": "WebSite",
     "@id": `${BASE_SITE_URL}/#website`,
     url: BASE_SITE_URL,
-    name: "Intrihub",
-    description: "Everything for Every Space — Interior & Construction Supplies Marketplace",
+    name: "IntriHub",
+    alternateName: "IntriHub Quick Commerce",
+    description: "India's instant building materials quick commerce network. Direct-from-factory delivery for construction & interior products.",
     publisher: {
       "@id": `${BASE_SITE_URL}/#organization`,
     },
@@ -115,8 +115,9 @@ export function generateBreadcrumbSchema(
 }
 
 /**
- * Product Schema.org structured data
- * Strictly outputs genuine data without fake ratings or reviews
+ * Product Schema.org structured data (Compliant with Sections 5.1.2, 5.3, 6.2, and 6.3)
+ * Emits full Offer schema with shippingDetails and hasMerchantReturnPolicy for Google Merchant Center.
+ * Conditionally emits aggregateRating and review ONLY when genuine reviews exist (zero placeholder/fake reviews).
  */
 export function generateProductSchema(product: {
   id: string;
@@ -129,8 +130,13 @@ export function generateProductSchema(product: {
   categoryName?: string;
   sku?: string;
   brand?: string;
-  rating?: number;
-  reviewCount?: number;
+  reviews?: Array<{
+    id?: string;
+    author: string;
+    rating: number;
+    comment: string;
+    createdAt?: string | Date;
+  }>;
 }) {
   const images =
     product.images && product.images.length > 0
@@ -140,6 +146,7 @@ export function generateProductSchema(product: {
       : [`${BASE_SITE_URL}/placeholders/product.svg`];
 
   const productUrl = getCanonicalUrl(`/product/${product.slug}`);
+  const priceVal = String(product.price || 0);
 
   const schema: Record<string, any> = {
     "@context": "https://schema.org",
@@ -150,14 +157,18 @@ export function generateProductSchema(product: {
     image: images,
     description:
       product.description ||
-      `Buy ${product.name} online on Intrihub. Best quality interior & construction supplies delivered directly to your doorstep.`,
+      `Buy ${product.name} online on IntriHub. Factory-direct building & interior materials with rapid delivery.`,
     sku: product.sku || product.id,
     category: product.categoryName || "Interior & Construction",
+    brand: {
+      "@type": "Brand",
+      name: product.brand || "IntriHub",
+    },
     offers: {
       "@type": "Offer",
       url: productUrl,
       priceCurrency: "INR",
-      price: product.price || 0,
+      price: priceVal,
       priceValidUntil: new Date(Date.now() + 1000 * 60 * 60 * 24 * 365).toISOString().split("T")[0],
       itemCondition: "https://schema.org/NewCondition",
       availability:
@@ -166,28 +177,85 @@ export function generateProductSchema(product: {
           : "https://schema.org/OutOfStock",
       seller: {
         "@type": "Organization",
-        name: "Intrihub",
+        name: "IntriHub",
         url: BASE_SITE_URL,
+      },
+      // Google Merchant Center: Offer Shipping Details (Section 5.1.2 / 6.2)
+      shippingDetails: {
+        "@type": "OfferShippingDetails",
+        shippingRate: {
+          "@type": "MonetaryAmount",
+          value: "0",
+          currency: "INR",
+        },
+        shippingDestination: {
+          "@type": "DefinedRegion",
+          addressCountry: "IN",
+        },
+        deliveryTime: {
+          "@type": "ShippingDeliveryTime",
+          handlingTime: {
+            "@type": "QuantitativeValue",
+            minValue: 0,
+            maxValue: 1,
+            unitCode: "DAY",
+          },
+          transitTime: {
+            "@type": "QuantitativeValue",
+            minValue: 1,
+            maxValue: 3,
+            unitCode: "DAY",
+          },
+        },
+      },
+      // Google Merchant Center: Merchant Return Policy (Section 5.1.2 / 6.2)
+      hasMerchantReturnPolicy: {
+        "@type": "MerchantReturnPolicy",
+        applicableCountry: "IN",
+        returnPolicyCategory: "https://schema.org/MerchantReturnFiniteReturnWindow",
+        merchantReturnDays: 7,
+        returnMethod: "https://schema.org/ReturnByMail",
+        returnFees: "https://schema.org/FreeReturn",
       },
     },
   };
 
-  if (product.brand) {
-    schema.brand = {
-      "@type": "Brand",
-      name: product.brand,
-    };
-  }
+  // Section 5.3 & 6.3: Strict Conditional Review / Rating Rendering
+  // ONLY emit aggregateRating and review if genuine, approved customer reviews exist
+  if (product.reviews && Array.isArray(product.reviews) && product.reviews.length > 0) {
+    const validReviews = product.reviews.filter((r) => r && r.rating && r.comment && r.comment.trim().length > 0);
 
-  // Only include genuine aggregateRating if ratings exist
-  if (product.rating && product.reviewCount && product.reviewCount > 0) {
-    schema.aggregateRating = {
-      "@type": "AggregateRating",
-      ratingValue: product.rating,
-      reviewCount: product.reviewCount,
-      bestRating: 5,
-      worstRating: 1,
-    };
+    if (validReviews.length > 0) {
+      const avgRating = (
+        validReviews.reduce((sum, r) => sum + r.rating, 0) / validReviews.length
+      ).toFixed(1);
+
+      schema.aggregateRating = {
+        "@type": "AggregateRating",
+        ratingValue: avgRating,
+        reviewCount: String(validReviews.length),
+        bestRating: "5",
+        worstRating: "1",
+      };
+
+      schema.review = validReviews.slice(0, 10).map((r) => ({
+        "@type": "Review",
+        author: {
+          "@type": "Person",
+          name: r.author || "Verified Customer",
+        },
+        reviewRating: {
+          "@type": "Rating",
+          ratingValue: String(r.rating),
+          bestRating: "5",
+          worstRating: "1",
+        },
+        reviewBody: r.comment,
+        ...(r.createdAt
+          ? { datePublished: new Date(r.createdAt).toISOString().split("T")[0] }
+          : {}),
+      }));
+    }
   }
 
   return schema;

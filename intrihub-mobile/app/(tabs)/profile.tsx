@@ -307,8 +307,8 @@ export default function ProfileScreen() {
         )}
 
         <View style={styles.appInfo}>
-          <Text style={styles.versionText}>Intrihub Mobile v1.0.0 (Android)</Text>
-          <Text style={styles.copyrightText}>© 2026 Intrihub Technologies Private Limited</Text>
+          <Text style={styles.versionText}>IntriHub Mobile v1.0.0 (Android)</Text>
+          <Text style={styles.copyrightText}>© 2026 IntriHub. All Rights Reserved.</Text>
         </View>
       </ScrollView>
 

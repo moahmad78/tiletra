@@ -196,7 +196,7 @@ export default function Footer() {
 
           {/* Bottom bar */}
           <div className="border-t border-white/10 pt-6 flex flex-col md:flex-row justify-between items-center gap-4 text-xs text-white/50">
-            <p>© {new Date().getFullYear()} Intrihub Technologies. All Rights Reserved.</p>
+            <p>© {new Date().getFullYear()} IntriHub. All Rights Reserved.</p>
             <div className="flex items-center gap-4 flex-wrap justify-center">
               <Link href="/privacy-policy" className="hover:text-white transition-colors">Privacy Policy</Link>
               <span>·</span>

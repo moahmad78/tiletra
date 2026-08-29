@@ -25,20 +25,22 @@ const jakarta = Plus_Jakarta_Sans({
 export const metadata: Metadata = {
   metadataBase: new URL(BASE_SITE_URL),
   title: {
-    default: "Intrihub | Everything for Every Space",
-    template: "%s | Intrihub",
+    default: "IntriHub | Everything for Every Space",
+    template: "%s | IntriHub",
   },
   description:
-    "Intrihub — Everything for Every Space. Buy electrical, lighting, tiles, flooring, paint, sanitaryware, hardware, plywood, and furniture online with direct site delivery across Bangalore & Pan-India.",
+    "IntriHub — India's instant building materials quick commerce network. Direct-from-factory delivery for electrical, lighting, tiles, plumbing, hardware, plywood, and interior products.",
   keywords: [
-    "interior materials online",
+    "interior materials quick commerce",
     "construction supplies bangalore",
+    "instant building materials delivery",
     "tiles and sanitaryware online",
     "electrical supplies wholesale",
     "lighting fixtures india",
     "building materials marketplace",
     "plywood and hardware online",
-    "Intrihub",
+    "IntriHub",
+    "IntriHub Quick Commerce",
   ],
   alternates: {
     canonical: BASE_SITE_URL,
@@ -67,27 +69,27 @@ export const metadata: Metadata = {
   },
   manifest: "/site.webmanifest",
   openGraph: {
-    title: "Intrihub | Everything for Every Space",
+    title: "IntriHub | Everything for Every Space",
     description:
-      "Intrihub — India's premier online marketplace for interior & construction materials. Factory-direct delivery for electrical, lighting, tiles, plumbing, and hardware.",
+      "IntriHub — India's instant building materials quick commerce network. Factory-direct delivery for electrical, lighting, tiles, plumbing, and hardware.",
     type: "website",
     url: BASE_SITE_URL,
-    siteName: "Intrihub",
+    siteName: "IntriHub",
     locale: "en_IN",
     images: [
       {
         url: "/logo/intri-web-logo.png",
         width: 1200,
         height: 630,
-        alt: "Intrihub - Everything for Every Space",
+        alt: "IntriHub - Everything for Every Space",
       },
     ],
   },
   twitter: {
     card: "summary_large_image",
-    title: "Intrihub | Everything for Every Space",
+    title: "IntriHub | Everything for Every Space",
     description:
-      "Intrihub — End-to-end interior & construction materials online marketplace.",
+      "IntriHub — India's instant building materials quick commerce network.",
     images: ["/logo/intri-web-logo.png"],
   },
 };
