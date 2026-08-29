@@ -60,6 +60,8 @@ export async function updateAdminVendor(
     deliveryMethod?: string;
     autoPublishEnabled?: boolean;
     ownerId?: string;
+    loginMethod?: "otp" | "password";
+    password?: string;
   }
 ): Promise<{
   success: boolean;

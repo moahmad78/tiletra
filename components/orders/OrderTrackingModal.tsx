@@ -59,11 +59,11 @@ export default function OrderTrackingModal({
                 Status: {currentStatus}
               </span>
               <span className="text-xs text-white/80 font-bold">
-                📅 {order.estimatedDelivery || "3–5 Business Days"}
+                📅 {order.estimatedDelivery || "Within 60 Minutes"}
               </span>
             </div>
             <p className="text-sm font-bold pt-1">
-              Estimated Delivery: {order.estimatedDelivery || "3–5 Business Days"}
+              Estimated Delivery: {order.estimatedDelivery || "Within 60 Minutes"}
             </p>
             {order.trackingNumber && (
               <p className="text-xs text-white/70">

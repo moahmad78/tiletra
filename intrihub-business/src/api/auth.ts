@@ -8,17 +8,57 @@ export interface AuthResponse {
   reason?: "NOT_FOUND" | "PENDING_APPROVAL" | "SUSPENDED" | "REJECTED" | "UNAPPROVED";
   email?: string;
   vendorName?: string;
+  loginMethod?: "otp" | "password" | "not_found";
+  rejectionReason?: string;
   locked?: boolean;
   lockoutUntil?: number;
   retryAfterSeconds?: number;
   remainingAttempts?: number;
   vendorStatus?: string;
   user?: User;
+  vendor?: any;
   tokens?: {
     accessToken: string;
     refreshToken: string;
     expiresIn: number;
   };
+}
+
+export async function checkAuthMethod(emailOrPhone: string): Promise<{
+  success: boolean;
+  loginMethod: "otp" | "password" | "not_found";
+  error?: string;
+  reason?: "NOT_FOUND" | "PENDING_APPROVAL" | "SUSPENDED" | "REJECTED" | "UNAPPROVED";
+  vendorName?: string;
+  rejectionReason?: string;
+  locked?: boolean;
+  lockoutUntil?: number;
+  retryAfterSeconds?: number;
+  remainingAttempts?: number;
+}> {
+  const isEmail = emailOrPhone.includes("@");
+  const payload = {
+    purpose: "business",
+    ...(isEmail ? { email: emailOrPhone } : { phone: emailOrPhone }),
+  };
+  const res = await apiClient.post("/api/mobile/auth/check-method", payload);
+  return res.data;
+}
+
+export async function loginWithPassword(params: {
+  email: string;
+  password: string;
+}): Promise<AuthResponse> {
+  const payload = {
+    email: params.email,
+    password: params.password,
+    purpose: "business",
+  };
+  const res = await apiClient.post<AuthResponse>("/api/mobile/auth/login-password", payload);
+  if (res.data.success && res.data.tokens) {
+    await setStoredTokens(res.data.tokens.accessToken, res.data.tokens.refreshToken);
+  }
+  return res.data;
 }
 
 export async function sendOtp(emailOrPhone: string): Promise<{

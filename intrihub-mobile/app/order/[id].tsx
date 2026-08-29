@@ -230,7 +230,7 @@ IntriHub — Everything, Every Place`;
             <View>
               <Text style={styles.cardHeaderTitle}>Delivery Status</Text>
               <Text style={styles.estimatedDeliveryText}>
-                Estimated Delivery: {order.estimatedDelivery || "3–5 Business Days"}
+                Estimated Delivery: {order.estimatedDelivery || "Within 60 Minutes"}
               </Text>
             </View>
             <TouchableOpacity

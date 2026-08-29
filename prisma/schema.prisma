@@ -340,7 +340,7 @@ model Order {
   courierName            String?
   trackingNumber         String?
   internalNotes          String?
-  estimatedDelivery      String          @default("3–5 Business Days")
+  estimatedDelivery      String          @default("Within 60 Minutes")
 
   // Immutable Delivery Snapshot
   deliveryName           String?
@@ -587,6 +587,7 @@ model StoreSettings {
   codEnabled            Boolean  @default(true)
   codMaxLimit           Float    @default(25000)
   codBlockedPincodes    String[] @default(["560099"])
+  estimatedDelivery     String   @default("Within 60 Minutes")
   updatedAt             DateTime @updatedAt
 }
 
@@ -604,7 +605,7 @@ model ShippingZone {
   pincodes                String[] @default([])
   fee                     Float    @default(999)
   minOrderForFreeShipping Float    @default(15000)
-  estimatedDelivery       String   @default("3–5 Business Days")
+  estimatedDelivery       String   @default("Within 60 Minutes")
   isActive                Boolean  @default(true)
   createdAt               DateTime @default(now())
   updatedAt               DateTime @updatedAt
@@ -758,6 +759,10 @@ model Vendor {
   latitude              Float?
   longitude             Float?
   locationAccuracy      Float?
+
+  // Authentication Method (Admin-Configurable: otp vs password)
+  loginMethod         String             @default("otp") // otp | password
+  passwordHash        String?
 
   createdAt       DateTime           @default(now())
   updatedAt       DateTime           @updatedAt

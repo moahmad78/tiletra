@@ -25,6 +25,7 @@ export async function getStoreSettings() {
           codEnabled: true,
           codMaxLimit: 25000,
           codBlockedPincodes: ["560099", "560088"],
+          estimatedDelivery: "Within 60 Minutes",
         } as any,
       });
     }
@@ -52,6 +53,7 @@ export async function updateStoreSettings(data: {
   codEnabled?: boolean;
   codMaxLimit?: number;
   codBlockedPincodes?: string[];
+  estimatedDelivery?: string;
 }) {
   try {
     let settings = await prisma.storeSettings.findFirst();

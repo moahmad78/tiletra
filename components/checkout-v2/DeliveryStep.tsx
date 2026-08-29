@@ -88,7 +88,7 @@ export default function DeliveryStep({
               </div>
               <p className="text-xs text-gray-500 font-medium mt-0.5 flex items-center gap-1">
                 <Clock size={12} className="text-[#F26522]" />
-                <span>Est. Delivery: 2–4 Days</span>
+                <span>Est. Delivery: {(storeSettings as any)?.estimatedDelivery || "Within 60 Minutes"}</span>
               </p>
             </div>
           </div>

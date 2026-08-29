@@ -101,7 +101,7 @@ function SuccessContent() {
             )}
             <div className="flex justify-between items-center text-xs sm:text-sm">
               <span className="text-gray-500 font-medium">Estimated Delivery</span>
-              <span className="font-bold text-[#052a51]">3–5 Business Days</span>
+              <span className="font-bold text-[#052a51]">Within 60 Minutes</span>
             </div>
             <div className="flex justify-between items-center text-xs sm:text-sm pt-1 border-t border-gray-200/60">
               <span className="text-gray-500 font-medium">Order Status</span>

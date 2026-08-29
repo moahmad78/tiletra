@@ -37,13 +37,31 @@ export default function AdminLoginPage() {
   const [loading, setLoading] = useState(false);
   const [errorMessage, setErrorMessage] = useState("");
   const [isLockedOut, setIsLockedOut] = useState(false);
-  const [lockoutTimer, setLockoutTimer] = useState<number | null>(null);
+  const [lockoutTimer, setLockoutTimer] = useState<number>(0);
 
   // Step 2 state (OTP)
   const [otpDigits, setOtpDigits] = useState(["", "", "", "", "", ""]);
   const [otpLoading, setOtpLoading] = useState(false);
   const [resendCooldown, setResendCooldown] = useState(60);
   const inputRefs = useRef<(HTMLInputElement | null)[]>([]);
+
+  // Lockout countdown timer
+  useEffect(() => {
+    let timer: any;
+    if (isLockedOut && lockoutTimer > 0) {
+      timer = setInterval(() => {
+        setLockoutTimer((prev) => {
+          if (prev <= 1) {
+            setIsLockedOut(false);
+            setErrorMessage("");
+            return 0;
+          }
+          return prev - 1;
+        });
+      }, 1000);
+    }
+    return () => clearInterval(timer);
+  }, [isLockedOut, lockoutTimer]);
 
   // Resend OTP countdown timer
   useEffect(() => {
@@ -64,6 +82,12 @@ export default function AdminLoginPage() {
       }, 100);
     }
   }, [step]);
+
+  const formatLockoutTime = (totalSeconds: number) => {
+    const mins = Math.floor(totalSeconds / 60);
+    const secs = totalSeconds % 60;
+    return `${mins.toString().padStart(2, "0")}:${secs.toString().padStart(2, "0")}`;
+  };
 
   // ── Step 1: Request OTP ──────────────────────────────────────────────────
   const handleEmailSubmit = async (e: React.FormEvent) => {
@@ -89,6 +113,8 @@ export default function AdminLoginPage() {
         if (res.locked) {
           setIsLockedOut(true);
           setLockoutTimer(res.retryAfterSeconds || 900);
+        } else {
+          setIsLockedOut(false);
         }
         setErrorMessage(res.message);
         toast.error(res.message);
@@ -172,7 +198,10 @@ export default function AdminLoginPage() {
       } else {
         if (res.locked) {
           setIsLockedOut(true);
+          setLockoutTimer(res.retryAfterSeconds || 900);
           setStep("email");
+        } else {
+          setIsLockedOut(false);
         }
         setErrorMessage(res.message);
         toast.error(res.message);
@@ -201,6 +230,11 @@ export default function AdminLoginPage() {
         setOtpDigits(["", "", "", "", "", ""]);
         inputRefs.current[0]?.focus();
       } else {
+        if (res.locked) {
+          setIsLockedOut(true);
+          setLockoutTimer(res.retryAfterSeconds || 900);
+          setStep("email");
+        }
         setErrorMessage(res.message);
         toast.error(res.message);
       }
@@ -219,14 +253,28 @@ export default function AdminLoginPage() {
 
         {/* Brand Header */}
         <div className="text-center mb-8 relative">
-          <div className="inline-flex items-center justify-center w-14 h-14 rounded-2xl bg-gradient-to-br from-[#052a51] to-[#0a4275] shadow-lg mb-4 text-white">
-            <Lock size={26} className="text-[#F26522]" />
-          </div>
+          <Link
+            href="/"
+            title="Intrihub Home"
+            className="inline-flex items-center gap-2.5 bg-[#052a51]/5 hover:bg-[#052a51]/10 border border-[#052a51]/10 px-4 py-2.5 rounded-2xl shadow-xs mb-4 transition-all group"
+          >
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img
+              src="/logo/intri-web-logo.png"
+              alt="Intrihub Logo"
+              width={140}
+              height={36}
+              className="h-8 w-auto object-contain transition-transform group-hover:scale-105"
+            />
+            <span className="text-[10px] font-black uppercase tracking-widest px-2.5 py-1 bg-[#052a51] rounded-md text-white shadow-xs">
+              Super Admin
+            </span>
+          </Link>
 
           <div className="flex items-center justify-center gap-1.5 mb-1">
             <ShieldCheck size={18} className="text-[#F26522]" />
             <h1 className="text-xl sm:text-2xl font-black text-[#052a51]">
-              {step === "email" ? "Super Admin Portal" : "Two-Factor Verification"}
+              {step === "email" ? "Admin Security Gateway" : "Two-Factor Verification"}
             </h1>
           </div>
 
@@ -243,8 +291,15 @@ export default function AdminLoginPage() {
             <Clock size={18} className="shrink-0 text-amber-700 mt-0.5" />
             <div>
               <p className="font-extrabold text-amber-950">Security Lockout Active</p>
-              <p className="mt-0.5 text-amber-800">
-                Too many failed attempts recorded. For system security, access is temporarily locked for 15 minutes.
+              <p className="mt-0.5 text-amber-800 leading-relaxed">
+                Too many failed attempts recorded (3/3). For system security, access from this network is locked.
+                {lockoutTimer > 0 ? (
+                  <span className="block mt-1 font-bold text-amber-950">
+                    ⏱ Retry allowed in {formatLockoutTime(lockoutTimer)}
+                  </span>
+                ) : (
+                  <span className="block mt-1">Please wait for 15 minutes before retrying.</span>
+                )}
               </p>
             </div>
           </div>
@@ -274,13 +329,14 @@ export default function AdminLoginPage() {
                   type="email"
                   required
                   value={email}
+                  disabled={isLockedOut}
                   onChange={(e) => setEmail(e.target.value)}
                   placeholder="admin@intrihub.com"
-                  className="w-full pl-10 pr-4 py-3 bg-gray-50 border border-gray-200 rounded-xl text-sm font-semibold text-[#052a51] focus:outline-none focus:border-[#F26522] focus:bg-white transition-all shadow-2xs"
+                  className="w-full pl-10 pr-4 py-3 bg-gray-50 border border-gray-200 rounded-xl text-sm font-semibold text-[#052a51] focus:outline-none focus:border-[#F26522] focus:bg-white transition-all shadow-2xs disabled:bg-gray-100 disabled:text-gray-400"
                 />
               </div>
               <p className="text-[10px] text-gray-400 mt-1 pl-1">
-                Only whitelisted admin accounts can receive a login OTP.
+                Only whitelisted admin accounts can receive a login OTP (Max 3 failed attempts).
               </p>
             </div>
 
@@ -293,6 +349,11 @@ export default function AdminLoginPage() {
                 <>
                   <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
                   <span>Sending Verification Code...</span>
+                </>
+              ) : isLockedOut ? (
+                <>
+                  <Clock size={16} />
+                  <span>Locked ({formatLockoutTime(lockoutTimer)})</span>
                 </>
               ) : (
                 <>
@@ -353,7 +414,7 @@ export default function AdminLoginPage() {
 
             <button
               type="submit"
-              disabled={otpLoading || otpDigits.some((d) => !d)}
+              disabled={otpLoading || otpDigits.some((d) => !d) || isLockedOut}
               className="w-full py-3.5 px-4 bg-[#052a51] hover:bg-[#031d38] disabled:bg-gray-300 text-white text-sm font-black rounded-xl shadow-md transition-all flex items-center justify-center gap-2 cursor-pointer disabled:cursor-not-allowed mt-2"
             >
               {otpLoading ? (
@@ -374,7 +435,7 @@ export default function AdminLoginPage() {
               <button
                 type="button"
                 onClick={handleResendOtp}
-                disabled={resendCooldown > 0 || otpLoading}
+                disabled={resendCooldown > 0 || otpLoading || isLockedOut}
                 className="text-xs font-bold text-gray-500 hover:text-[#052a51] disabled:text-gray-400 inline-flex items-center gap-1.5 transition-colors disabled:cursor-not-allowed"
               >
                 <RefreshCw

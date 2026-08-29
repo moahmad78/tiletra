@@ -38,6 +38,10 @@ import {
   PackageCheck,
   Sliders,
   Trash2,
+  KeyRound,
+  Eye,
+  EyeOff,
+  Sparkles,
 } from "lucide-react";
 import { toast } from "sonner";
 import {
@@ -48,6 +52,7 @@ import {
   updateVendorCommission,
   deleteVendor,
   verifyVendorKyc,
+  updateVendorLoginMethod,
 } from "@/lib/actions/admin-vendor";
 import { toggleVendorAutoPublish } from "@/lib/actions/vendor";
 import { formatPrice } from "@/lib/formatters";
@@ -76,6 +81,12 @@ export default function VendorDetailDashboardPage() {
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const [deleteLoading, setDeleteLoading] = useState(false);
 
+  // Vendor Login Method Configuration State
+  const [selectedLoginMethod, setSelectedLoginMethod] = useState<"otp" | "password">("otp");
+  const [vendorPasswordInput, setVendorPasswordInput] = useState("");
+  const [showVendorPassword, setShowVendorPassword] = useState(false);
+  const [savingLoginMethod, setSavingLoginMethod] = useState(false);
+
   const loadData = async () => {
     if (!vendorId) return;
     try {
@@ -84,6 +95,9 @@ export default function VendorDetailDashboardPage() {
       setData(result);
       if (result?.vendor?.commissionRate) {
         setCommissionInput(result.vendor.commissionRate);
+      }
+      if ((result?.vendor as any)?.loginMethod) {
+        setSelectedLoginMethod((result?.vendor as any).loginMethod as "otp" | "password");
       }
     } catch (e) {
       console.error("Error loading vendor analytics:", e);
@@ -216,6 +230,48 @@ export default function VendorDetailDashboardPage() {
     } else {
       toast.error(res.error || "Failed to update KYC status");
     }
+  };
+
+  const handleSaveLoginMethod = async () => {
+    if (selectedLoginMethod === "password" && !vendorPasswordInput) {
+      toast.error("Please enter or generate a password before saving");
+      return;
+    }
+    if (selectedLoginMethod === "password" && vendorPasswordInput.length < 8) {
+      toast.error("Password must be at least 8 characters long");
+      return;
+    }
+
+    setSavingLoginMethod(true);
+    try {
+      const res = await updateVendorLoginMethod(vendorId, {
+        loginMethod: selectedLoginMethod,
+        password: selectedLoginMethod === "password" ? vendorPasswordInput : undefined,
+      });
+
+      if (res.success) {
+        toast.success(res.message);
+        setVendorPasswordInput("");
+        loadData();
+      } else {
+        toast.error(res.error || "Failed to update login method");
+      }
+    } catch (e: any) {
+      toast.error(e.message || "Failed to update login method");
+    } finally {
+      setSavingLoginMethod(false);
+    }
+  };
+
+  const generateRandomPassword = () => {
+    const chars = "ABCDEFGHJKLMNPQRSTUVWXYZabcdefghjkmnpqrstuvwxyz23456789!@#$%&*";
+    let pwd = "";
+    for (let i = 0; i < 10; i++) {
+      pwd += chars.charAt(Math.floor(Math.random() * chars.length));
+    }
+    setVendorPasswordInput(pwd);
+    setShowVendorPassword(true);
+    toast.success("Generated strong 10-char password!");
   };
 
   if (loading) {
@@ -452,6 +508,169 @@ export default function VendorDetailDashboardPage() {
                 className="px-4 py-2 bg-[#052a51] hover:bg-[#073b70] text-white text-xs font-bold rounded-xl transition-all disabled:opacity-50 cursor-pointer whitespace-nowrap shadow-xs"
               >
                 Save Rate
+              </button>
+            </div>
+          </div>
+
+          {/* 3. Vendor Login Authentication Method (OTP vs Password) */}
+          <div className="md:col-span-2 p-4 sm:p-5 rounded-2xl bg-white border border-gray-200/90 shadow-2xs space-y-4">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-gray-100 pb-3">
+              <div className="flex items-center gap-2.5">
+                <div className="w-8 h-8 rounded-xl bg-orange-50 text-[#F26522] flex items-center justify-center font-bold">
+                  <KeyRound size={16} />
+                </div>
+                <div>
+                  <div className="flex items-center gap-2">
+                    <span className="text-xs font-black uppercase text-[#052a51] tracking-wider">
+                      Vendor Portal Login Method
+                    </span>
+                    <span
+                      className={`px-2 py-0.5 rounded-full text-[10px] font-black uppercase tracking-wider ${
+                        (vendor as any).loginMethod === "password"
+                          ? "bg-amber-100 text-amber-900 border border-amber-300"
+                          : "bg-blue-100 text-blue-900 border border-blue-300"
+                      }`}
+                    >
+                      {(vendor as any).loginMethod === "password" ? "Email + Password" : "Email OTP (Default)"}
+                    </span>
+                  </div>
+                  <p className="text-xs text-gray-500 mt-0.5">
+                    Configure how this vendor partner authenticates on both the Web Vendor Portal and Mobile Business App.
+                  </p>
+                </div>
+              </div>
+            </div>
+
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              {/* Method Option: OTP */}
+              <div
+                onClick={() => setSelectedLoginMethod("otp")}
+                className={`p-3.5 rounded-xl border-2 cursor-pointer transition-all ${
+                  selectedLoginMethod === "otp"
+                    ? "border-[#052a51] bg-[#052a51]/5 shadow-xs"
+                    : "border-gray-200 bg-gray-50 hover:border-gray-300"
+                }`}
+              >
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-2 font-bold text-xs text-[#052a51]">
+                    <Mail size={15} className="text-[#F26522]" />
+                    <span>Email OTP (One-Time Password)</span>
+                  </div>
+                  <input
+                    type="radio"
+                    checked={selectedLoginMethod === "otp"}
+                    onChange={() => setSelectedLoginMethod("otp")}
+                    className="accent-[#052a51]"
+                  />
+                </div>
+                <p className="text-[11px] text-gray-500 mt-1.5 leading-relaxed">
+                  Default: Generates a 6-digit security code sent to vendor's registered email with 5-minute expiry.
+                </p>
+              </div>
+
+              {/* Method Option: Password */}
+              <div
+                onClick={() => setSelectedLoginMethod("password")}
+                className={`p-3.5 rounded-xl border-2 cursor-pointer transition-all ${
+                  selectedLoginMethod === "password"
+                    ? "border-[#052a51] bg-[#052a51]/5 shadow-xs"
+                    : "border-gray-200 bg-gray-50 hover:border-gray-300"
+                }`}
+              >
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-2 font-bold text-xs text-[#052a51]">
+                    <KeyRound size={15} className="text-[#F26522]" />
+                    <span>Email + Password Authentication</span>
+                  </div>
+                  <input
+                    type="radio"
+                    checked={selectedLoginMethod === "password"}
+                    onChange={() => setSelectedLoginMethod("password")}
+                    className="accent-[#052a51]"
+                  />
+                </div>
+                <p className="text-[11px] text-gray-500 mt-1.5 leading-relaxed">
+                  Allows vendor to log in immediately with a secure password without checking inbox every time.
+                </p>
+              </div>
+            </div>
+
+            {/* Password Set / Reset Sub-form */}
+            {selectedLoginMethod === "password" && (
+              <div className="p-4 bg-amber-50/60 border border-amber-200/80 rounded-xl space-y-3 animate-in fade-in">
+                <div className="flex items-center justify-between">
+                  <label className="text-xs font-bold text-amber-950 uppercase tracking-wider block">
+                    {(vendor as any).loginMethod === "password" && (vendor as any).passwordHash
+                      ? "Set New Password (Reset)"
+                      : "Set Vendor Login Password"}
+                  </label>
+                  <button
+                    type="button"
+                    onClick={generateRandomPassword}
+                    className="inline-flex items-center gap-1 px-2.5 py-1 bg-white border border-amber-300 hover:bg-amber-100 text-amber-900 text-[11px] font-bold rounded-lg transition-colors cursor-pointer shadow-2xs"
+                  >
+                    <Sparkles size={12} className="text-[#F26522]" />
+                    <span>Generate Strong Password</span>
+                  </button>
+                </div>
+
+                <div className="relative">
+                  <input
+                    type={showVendorPassword ? "text" : "password"}
+                    value={vendorPasswordInput}
+                    onChange={(e) => setVendorPasswordInput(e.target.value)}
+                    placeholder="Enter password (min 8 characters)"
+                    className="w-full pl-3.5 pr-20 py-2.5 bg-white border border-amber-300 rounded-xl text-xs font-bold text-[#052a51] focus:outline-none focus:border-[#F26522]"
+                  />
+                  <div className="absolute right-2.5 top-1/2 -translate-y-1/2 flex items-center gap-1">
+                    {vendorPasswordInput && (
+                      <button
+                        type="button"
+                        onClick={() => copyToClipboard(vendorPasswordInput, "Password")}
+                        className="p-1 text-gray-400 hover:text-[#052a51]"
+                        title="Copy Password"
+                      >
+                        <Copy size={13} />
+                      </button>
+                    )}
+                    <button
+                      type="button"
+                      onClick={() => setShowVendorPassword(!showVendorPassword)}
+                      className="p-1 text-gray-400 hover:text-[#052a51]"
+                      title={showVendorPassword ? "Hide" : "Show"}
+                    >
+                      {showVendorPassword ? <EyeOff size={14} /> : <Eye size={14} />}
+                    </button>
+                  </div>
+                </div>
+
+                <p className="text-[11px] text-amber-800">
+                  Password will be securely hashed with scrypt/bcrypt. Plaintext password will be shown once at creation time and never stored in plain text.
+                </p>
+              </div>
+            )}
+
+            <div className="flex items-center justify-between pt-2 border-t border-gray-100">
+              <span className="text-[11px] text-gray-400">
+                Applies immediately to Web (`/vendor/login`) & Mobile App
+              </span>
+              <button
+                type="button"
+                disabled={savingLoginMethod}
+                onClick={handleSaveLoginMethod}
+                className="px-5 py-2.5 bg-[#052a51] hover:bg-[#073b70] disabled:bg-gray-300 text-white text-xs font-black rounded-xl transition-all flex items-center gap-2 cursor-pointer shadow-md disabled:cursor-not-allowed"
+              >
+                {savingLoginMethod ? (
+                  <>
+                    <Loader2 size={13} className="animate-spin" />
+                    <span>Saving Method...</span>
+                  </>
+                ) : (
+                  <>
+                    <KeyRound size={13} />
+                    <span>Save Login Configuration</span>
+                  </>
+                )}
               </button>
             </div>
           </div>

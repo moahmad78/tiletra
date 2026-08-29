@@ -114,7 +114,7 @@ export default function HomeClient({
                     Free Delivery on Orders Above ₹15,000
                   </p>
                   <p className="text-[10px] text-white/70 mt-0.5">
-                    Safe transit · 3–7 Days Pan-India Delivery
+                    Safe transit · Within 60 Minutes Delivery
                   </p>
                 </div>
               </div>
@@ -256,7 +256,7 @@ export default function HomeClient({
                 <h2 className="text-[26px] sm:text-[32px] md:text-[40px] font-black text-white leading-tight tracking-tight">
                   Need Materials Fast? <br className="hidden sm:inline" />
                   <span className="text-transparent bg-clip-text bg-gradient-to-r from-[#F26522] via-orange-300 to-amber-300">
-                    Get Same-Day Direct Site Dispatch
+                    Get Direct Site Delivery Within 60 Minutes
                   </span>
                 </h2>
 
@@ -268,7 +268,7 @@ export default function HomeClient({
                 <div className="grid grid-cols-2 sm:grid-cols-3 gap-2.5 pt-2 text-xs font-bold text-white/90">
                   <div className="flex items-center gap-2 p-2 rounded-xl bg-white/5 border border-white/10 backdrop-blur-xs">
                     <span className="text-[#F26522] text-sm font-black">⚡</span>
-                    <span>2–4 Hr Dispatch</span>
+                    <span>Within 60 Minutes</span>
                   </div>
                   <div className="flex items-center gap-2 p-2 rounded-xl bg-white/5 border border-white/10 backdrop-blur-xs">
                     <span className="text-[#2F7A4F] text-sm font-black">✓</span>

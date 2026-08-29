@@ -1,6 +1,7 @@
 import { NextRequest } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { getAuthenticatedAdmin, mobileApiResponse, handleMobileCorsOptions } from "@/lib/mobile-auth";
+import { hashPassword } from "@/lib/password-security";
 
 export async function OPTIONS() {
   return handleMobileCorsOptions();
@@ -87,6 +88,8 @@ export async function GET(req: NextRequest, { params }: { params: Promise<{ id: 
       success: true,
       vendor: {
         ...vendor,
+        loginMethod: vendor.loginMethod || "otp",
+        hasPassword: Boolean(vendor.passwordHash),
         products: enrichedProducts,
         splits: enrichedSplits,
       },
@@ -132,6 +135,8 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
       deliveryMethod,
       autoPublishEnabled,
       ownerId,
+      loginMethod,
+      password,
     } = body;
 
     const data: any = {};
@@ -150,9 +155,37 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
     if (body.logo !== undefined) data.logo = body.logo ? String(body.logo).trim() : null;
     if (body.shopPhotoUrl !== undefined) data.shopPhotoUrl = body.shopPhotoUrl ? String(body.shopPhotoUrl).trim() : null;
 
-    const updated = await prisma.vendor.update({
-      where: { id },
-      data,
+    let hashedPassword: string | null | undefined = undefined;
+
+    if (loginMethod === "password") {
+      data.loginMethod = "password";
+      if (password && typeof password === "string" && password.trim().length >= 6) {
+        hashedPassword = hashPassword(password.trim());
+        data.passwordHash = hashedPassword;
+      }
+    } else if (loginMethod === "otp") {
+      data.loginMethod = "otp";
+      data.passwordHash = null;
+      hashedPassword = null;
+    }
+
+    const updated = await prisma.$transaction(async (tx) => {
+      const v = await tx.vendor.update({
+        where: { id },
+        data,
+      });
+
+      if (hashedPassword !== undefined && v.ownerId) {
+        await tx.user.update({
+          where: { id: v.ownerId },
+          data: {
+            passwordHash: hashedPassword,
+            mustChangePassword: false,
+          },
+        }).catch(() => {});
+      }
+
+      return v;
     });
 
     return mobileApiResponse({

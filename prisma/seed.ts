@@ -247,7 +247,7 @@ async function main() {
       pincodes: ["560001", "560068", "560100", "560114", "560034", "560076", "560099"],
       fee: 999,
       minOrderForFreeShipping: 15000,
-      estimatedDelivery: "2–4 Business Days",
+      estimatedDelivery: "Within 60 Minutes",
       isActive: true,
     },
     create: {
@@ -256,7 +256,7 @@ async function main() {
       pincodes: ["560001", "560068", "560100", "560114", "560034", "560076", "560099"],
       fee: 999,
       minOrderForFreeShipping: 15000,
-      estimatedDelivery: "2–4 Business Days",
+      estimatedDelivery: "Within 60 Minutes",
       isActive: true,
     },
   });

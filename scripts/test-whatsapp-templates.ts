@@ -77,7 +77,7 @@ async function testNotificationSystem() {
     customerName: "Vikram Malhotra",
     status: "Dispatched",
     totalAmount: 14500,
-    estimatedDelivery: "Friday, 22 Aug",
+    estimatedDelivery: "Within 60 Minutes",
     trackingNumber: "DTDC-884920",
   });
   console.log("--------------------------------------------------------------------------");

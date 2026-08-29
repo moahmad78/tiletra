@@ -334,6 +334,7 @@ export interface StoreSettings {
   codEnabled: boolean;
   codMaxLimit: number;
   codBlockedPincodes: string[];
+  estimatedDelivery?: string;
   updatedAt?: string;
 }
 

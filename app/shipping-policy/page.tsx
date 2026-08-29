@@ -27,9 +27,9 @@ export default function ShippingPolicyPage() {
         <div className="p-5 bg-blue-50/80 border border-blue-200/70 rounded-2xl flex items-start gap-3.5">
           <Clock className="text-[#052a51] shrink-0 mt-0.5" size={22} />
           <div>
-            <h3 className="font-extrabold text-[#052a51] text-base">3–7 Business Days Delivery</h3>
+            <h3 className="font-extrabold text-[#052a51] text-base">Within 60 Minutes Delivery</h3>
             <p className="text-xs sm:text-sm text-gray-700 mt-1 leading-relaxed">
-              Real-time LR courier tracking provided across our national logistics fleet (Delhivery, VRL, SafeXpress, and Intrihub Express).
+              Express site delivery with real-time GPS tracking across Bangalore and rapid logistics dispatch nationwide.
             </p>
           </div>
         </div>

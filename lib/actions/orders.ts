@@ -314,6 +314,14 @@ export async function createOrder(input: CreateOrderInput) {
       });
 
       // 4. Create Parent Order & Items inside transaction
+      let currentEstDelivery = "Within 60 Minutes";
+      try {
+        const storeSettings = await tx.storeSettings.findFirst();
+        if (storeSettings?.estimatedDelivery) {
+          currentEstDelivery = storeSettings.estimatedDelivery;
+        }
+      } catch {}
+
       const createdOrder = await tx.order.create({
         data: {
           id: orderId,
@@ -335,7 +343,7 @@ export async function createOrder(input: CreateOrderInput) {
           razorpayPaymentId: input.razorpayPaymentId || null,
           razorpaySignature: input.razorpaySignature || null,
           orderStatus: "Processing",
-          estimatedDelivery: "3–5 Business Days",
+          estimatedDelivery: currentEstDelivery,
 
           // Immutable Delivery Snapshot
           deliveryName: addrFullName,

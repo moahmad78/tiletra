@@ -4,7 +4,13 @@ import { useState, useRef, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { useVendorAuth } from "@/lib/vendor-auth";
-import { sendVendorWebOtp, verifyVendorWebOtp, type VendorWebLoginReason } from "@/lib/actions/web-portal-auth";
+import {
+  checkVendorLoginMethod,
+  sendVendorWebOtp,
+  verifyVendorWebOtp,
+  loginVendorWithPassword,
+  type VendorWebLoginReason,
+} from "@/lib/actions/web-portal-auth";
 import {
   Store,
   ArrowRight,
@@ -18,8 +24,10 @@ import {
   XCircle,
   RefreshCw,
   ArrowLeft,
-  FileText,
   Headphones,
+  Eye,
+  EyeOff,
+  Lock,
 } from "lucide-react";
 import { toast } from "sonner";
 
@@ -34,8 +42,8 @@ export default function VendorLoginPage() {
     }
   }, [isAuthenticated, router]);
 
-  // Auth Steps: "email" | "otp" | "not_found" | "pending" | "rejected"
-  const [step, setStep] = useState<"email" | "otp" | "not_found" | "pending" | "rejected">("email");
+  // Auth Steps: "email" | "otp" | "password" | "not_found" | "pending" | "rejected"
+  const [step, setStep] = useState<"email" | "otp" | "password" | "not_found" | "pending" | "rejected">("email");
 
   // Email form state
   const [email, setEmail] = useState("");
@@ -44,12 +52,37 @@ export default function VendorLoginPage() {
   const [vendorName, setVendorName] = useState<string | null>(null);
   const [rejectionReason, setRejectionReason] = useState<string | null>(null);
   const [isLockedOut, setIsLockedOut] = useState(false);
+  const [lockoutTimer, setLockoutTimer] = useState<number>(0);
+  const [remainingAttempts, setRemainingAttempts] = useState<number>(3);
+
+  // Password state
+  const [password, setPassword] = useState("");
+  const [showPassword, setShowPassword] = useState(false);
+  const [passwordLoading, setPasswordLoading] = useState(false);
 
   // OTP form state
   const [otpDigits, setOtpDigits] = useState(["", "", "", "", "", ""]);
   const [otpLoading, setOtpLoading] = useState(false);
   const [resendCooldown, setResendCooldown] = useState(60);
   const inputRefs = useRef<(HTMLInputElement | null)[]>([]);
+
+  // Lockout countdown timer
+  useEffect(() => {
+    let timer: any;
+    if (isLockedOut && lockoutTimer > 0) {
+      timer = setInterval(() => {
+        setLockoutTimer((prev) => {
+          if (prev <= 1) {
+            setIsLockedOut(false);
+            setErrorMessage("");
+            return 0;
+          }
+          return prev - 1;
+        });
+      }, 1000);
+    }
+    return () => clearInterval(timer);
+  }, [isLockedOut, lockoutTimer]);
 
   // Resend cooldown timer
   useEffect(() => {
@@ -71,7 +104,13 @@ export default function VendorLoginPage() {
     }
   }, [step]);
 
-  // ── Step 1: Submit Email for Pre-OTP Whitelist Check ──────────────────────
+  const formatLockoutTime = (totalSeconds: number) => {
+    const mins = Math.floor(totalSeconds / 60);
+    const secs = totalSeconds % 60;
+    return `${mins.toString().padStart(2, "0")}:${secs.toString().padStart(2, "0")}`;
+  };
+
+  // ── Step 1: Submit Email for Dynamic Method Check ────────────────────────
   const handleEmailSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setErrorMessage("");
@@ -85,30 +124,65 @@ export default function VendorLoginPage() {
     setLoading(true);
 
     try {
-      const res = await sendVendorWebOtp(cleanEmail);
+      // 1. Check login method (OTP vs Password)
+      const methodRes = await checkVendorLoginMethod(cleanEmail);
 
-      if (res.success) {
-        toast.success(res.message);
+      if (!methodRes.success) {
+        if (methodRes.locked) {
+          setIsLockedOut(true);
+          setLockoutTimer(methodRes.retryAfterSeconds || 900);
+          setStep("email");
+        } else {
+          setIsLockedOut(false);
+        }
+
+        if (typeof methodRes.remainingAttempts === "number") {
+          setRemainingAttempts(methodRes.remainingAttempts);
+        }
+
+        if (methodRes.reason === "NOT_FOUND") {
+          if (methodRes.locked) {
+            setStep("email");
+          } else {
+            setStep("not_found");
+          }
+        } else if (methodRes.reason === "PENDING_APPROVAL") {
+          setVendorName(methodRes.vendorName || null);
+          setStep("pending");
+        } else if (methodRes.reason === "REJECTED") {
+          setVendorName(methodRes.vendorName || null);
+          setRejectionReason(methodRes.rejectionReason || null);
+          setStep("rejected");
+        } else {
+          setErrorMessage(methodRes.message || "Unable to find vendor account");
+          toast.error(methodRes.message || "Vendor lookup failed");
+        }
+        return;
+      }
+
+      setVendorName(methodRes.vendorName || null);
+
+      // 2. If vendor configured for Password login:
+      if (methodRes.loginMethod === "password") {
+        setStep("password");
+        setPassword("");
+        return;
+      }
+
+      // 3. If vendor configured for OTP login:
+      const otpRes = await sendVendorWebOtp(cleanEmail);
+      if (otpRes.success) {
+        toast.success(otpRes.message);
         setStep("otp");
         setResendCooldown(60);
       } else {
-        if (res.locked) {
+        if (otpRes.locked) {
           setIsLockedOut(true);
+          setLockoutTimer(otpRes.retryAfterSeconds || 900);
+          setStep("email");
         }
-
-        if (res.reason === "NOT_FOUND") {
-          setStep("not_found");
-        } else if (res.reason === "PENDING_APPROVAL") {
-          setVendorName(res.vendorName || null);
-          setStep("pending");
-        } else if (res.reason === "REJECTED") {
-          setVendorName(res.vendorName || null);
-          setRejectionReason(res.rejectionReason || null);
-          setStep("rejected");
-        } else {
-          setErrorMessage(res.message);
-          toast.error(res.message);
-        }
+        setErrorMessage(otpRes.message);
+        toast.error(otpRes.message);
       }
     } catch (err: any) {
       console.error("Vendor login error:", err);
@@ -119,7 +193,49 @@ export default function VendorLoginPage() {
     }
   };
 
-  // ── Step 2: Handle OTP Input & Paste ─────────────────────────────────────
+  // ── Step 2A: Password Login Submission ───────────────────────────────────
+  const handlePasswordSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setErrorMessage("");
+
+    if (!password) {
+      setErrorMessage("Please enter your vendor account password.");
+      return;
+    }
+
+    setPasswordLoading(true);
+
+    try {
+      const res = await loginVendorWithPassword(email.trim().toLowerCase(), password);
+
+      if (res.success && res.vendor) {
+        toast.success("Welcome to your Vendor Panel!");
+        setVendor(res.vendor);
+        router.push("/vendor");
+      } else {
+        if (res.locked) {
+          setIsLockedOut(true);
+          setLockoutTimer(res.retryAfterSeconds || 900);
+          setStep("email");
+        } else {
+          setIsLockedOut(false);
+        }
+        if (typeof res.remainingAttempts === "number") {
+          setRemainingAttempts(res.remainingAttempts);
+        }
+        setErrorMessage(res.message);
+        toast.error(res.message);
+      }
+    } catch (err: any) {
+      console.error("Vendor password login error:", err);
+      setErrorMessage("Authentication failed. Please check network connection.");
+      toast.error("Authentication failed.");
+    } finally {
+      setPasswordLoading(false);
+    }
+  };
+
+  // ── Step 2B: Handle OTP Input & Paste ─────────────────────────────────────
   const handleOtpChange = (index: number, value: string) => {
     if (value.length > 1) {
       const pasted = value.replace(/\D/g, "").slice(0, 6);
@@ -165,7 +281,7 @@ export default function VendorLoginPage() {
     }
   };
 
-  // ── Step 2: Submit OTP ───────────────────────────────────────────────────
+  // ── Step 2B: Submit OTP ──────────────────────────────────────────────────
   const handleOtpSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setErrorMessage("");
@@ -189,7 +305,10 @@ export default function VendorLoginPage() {
       } else {
         if (res.locked) {
           setIsLockedOut(true);
+          setLockoutTimer(res.retryAfterSeconds || 900);
           setStep("email");
+        } else {
+          setIsLockedOut(false);
         }
         setErrorMessage(res.message);
         toast.error(res.message);
@@ -205,7 +324,7 @@ export default function VendorLoginPage() {
 
   // ── Resend OTP ───────────────────────────────────────────────────────────
   const handleResendOtp = async () => {
-    if (resendCooldown > 0 || otpLoading) return;
+    if (resendCooldown > 0 || otpLoading || isLockedOut) return;
     setOtpLoading(true);
     setErrorMessage("");
 
@@ -218,6 +337,11 @@ export default function VendorLoginPage() {
         setOtpDigits(["", "", "", "", "", ""]);
         inputRefs.current[0]?.focus();
       } else {
+        if (res.locked) {
+          setIsLockedOut(true);
+          setLockoutTimer(res.retryAfterSeconds || 900);
+          setStep("email");
+        }
         setErrorMessage(res.message);
         toast.error(res.message);
       }
@@ -233,17 +357,23 @@ export default function VendorLoginPage() {
       <div className="w-full max-w-md">
         {/* Logo & Header */}
         <div className="text-center mb-8">
-          <div className="inline-flex items-center gap-2 bg-white px-4 py-2 rounded-2xl shadow-lg mb-4">
+          <Link
+            href="/"
+            title="Return to Intrihub"
+            className="inline-flex items-center gap-2.5 bg-white hover:bg-gray-50 px-4 py-2.5 rounded-2xl shadow-xl mb-4 transition-all group border border-white/40"
+          >
             {/* eslint-disable-next-line @next/next/no-img-element */}
             <img
               src="/logo/intri-web-logo.png"
               alt="Intrihub"
-              className="h-7 w-auto object-contain"
+              width={140}
+              height={36}
+              className="h-8 w-auto object-contain transition-transform group-hover:scale-105"
             />
-            <span className="text-[10px] font-black uppercase tracking-widest px-2 py-0.5 bg-[#052a51] rounded text-white">
+            <span className="text-[10px] font-black uppercase tracking-widest px-2.5 py-1 bg-[#052a51] rounded-md text-white shadow-xs">
               Vendor Portal
             </span>
-          </div>
+          </Link>
           <h1 className="text-2xl font-black text-white tracking-tight">
             Seller & Shop Login
           </h1>
@@ -256,12 +386,19 @@ export default function VendorLoginPage() {
         <div className="bg-white rounded-3xl p-6 sm:p-8 shadow-2xl border border-white/10">
           {/* Lockout Warning */}
           {isLockedOut && (
-            <div className="mb-5 p-4 bg-amber-50 border border-amber-200 rounded-2xl flex items-start gap-3 text-xs text-amber-900">
+            <div className="mb-5 p-4 bg-amber-50 border border-amber-200 rounded-2xl flex items-start gap-3 text-xs text-amber-900 animate-in fade-in">
               <Clock size={18} className="shrink-0 text-amber-700 mt-0.5" />
               <div>
                 <p className="font-extrabold text-amber-950">Security Lockout Active</p>
-                <p className="mt-0.5 text-amber-800">
-                  Too many failed attempts recorded. Access from this network is temporarily locked for 15 minutes.
+                <p className="mt-0.5 text-amber-800 leading-relaxed">
+                  Too many failed attempts recorded (3/3). For account security, access from this network is locked.
+                  {lockoutTimer > 0 ? (
+                    <span className="block mt-1 font-bold text-amber-950">
+                      ⏱ Retry allowed in {formatLockoutTime(lockoutTimer)}
+                    </span>
+                  ) : (
+                    <span className="block mt-1">Please wait for 15 minutes before retrying.</span>
+                  )}
                 </p>
               </div>
             </div>
@@ -290,14 +427,15 @@ export default function VendorLoginPage() {
                   <input
                     type="email"
                     value={email}
+                    disabled={isLockedOut}
                     onChange={(e) => setEmail(e.target.value)}
                     placeholder="e.g. vendor@intrihub.com"
-                    className="w-full pl-10 pr-4 py-3 bg-gray-50 border border-gray-200 rounded-xl text-sm font-semibold text-gray-800 placeholder-gray-400 focus:bg-white focus:border-[#052a51] focus:outline-none transition-all"
+                    className="w-full pl-10 pr-4 py-3 bg-gray-50 border border-gray-200 rounded-xl text-sm font-semibold text-gray-800 placeholder-gray-400 focus:bg-white focus:border-[#052a51] focus:outline-none transition-all disabled:bg-gray-100 disabled:text-gray-400"
                     required
                   />
                 </div>
                 <p className="text-[10px] text-gray-400 mt-1 pl-1">
-                  We'll send a 6-digit login OTP to your registered email.
+                  Enter your authorized vendor partner email to proceed.
                 </p>
               </div>
 
@@ -309,11 +447,16 @@ export default function VendorLoginPage() {
                 {loading ? (
                   <>
                     <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
-                    <span>Verifying Vendor Whitelist...</span>
+                    <span>Verifying Vendor Account...</span>
+                  </>
+                ) : isLockedOut ? (
+                  <>
+                    <Clock size={16} />
+                    <span>Locked ({formatLockoutTime(lockoutTimer)})</span>
                   </>
                 ) : (
                   <>
-                    <span>Send Login OTP</span>
+                    <span>Continue</span>
                     <ArrowRight
                       size={16}
                       className="group-hover:translate-x-1 transition-transform"
@@ -324,7 +467,82 @@ export default function VendorLoginPage() {
             </form>
           )}
 
-          {/* ── STATE 2: 6-DIGIT OTP VERIFICATION ────────────────────────── */}
+          {/* ── STATE 2A: PASSWORD LOGIN FORM ────────────────────────────── */}
+          {step === "password" && (
+            <form onSubmit={handlePasswordSubmit} className="space-y-4">
+              <div>
+                <div className="flex items-center justify-between mb-2">
+                  <label className="text-xs font-bold text-gray-700 uppercase tracking-wider">
+                    Vendor Password
+                  </label>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setStep("email");
+                      setErrorMessage("");
+                      setPassword("");
+                    }}
+                    className="text-xs text-[#F26522] hover:underline font-bold flex items-center gap-1"
+                  >
+                    <ArrowLeft size={12} />
+                    Change Email
+                  </button>
+                </div>
+
+                <p className="text-xs text-gray-500 mb-3">
+                  Logging in as <strong className="text-gray-800">{vendorName || email}</strong>
+                </p>
+
+                <div className="relative">
+                  <Lock
+                    size={16}
+                    className="absolute left-3.5 top-1/2 -translate-y-1/2 text-gray-400"
+                  />
+                  <input
+                    type={showPassword ? "text" : "password"}
+                    value={password}
+                    disabled={isLockedOut}
+                    onChange={(e) => setPassword(e.target.value)}
+                    placeholder="Enter your account password"
+                    className="w-full pl-10 pr-10 py-3 bg-gray-50 border border-gray-200 rounded-xl text-sm font-semibold text-gray-800 placeholder-gray-400 focus:bg-white focus:border-[#052a51] focus:outline-none transition-all disabled:bg-gray-100 disabled:text-gray-400"
+                    required
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setShowPassword(!showPassword)}
+                    className="absolute right-3.5 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600"
+                  >
+                    {showPassword ? <EyeOff size={16} /> : <Eye size={16} />}
+                  </button>
+                </div>
+              </div>
+
+              <button
+                type="submit"
+                disabled={passwordLoading || !password || isLockedOut}
+                className="w-full py-3.5 px-4 bg-[#052a51] hover:bg-[#031d38] disabled:bg-gray-300 text-white text-sm font-black rounded-xl shadow-md transition-all flex items-center justify-center gap-2 cursor-pointer disabled:cursor-not-allowed group mt-2"
+              >
+                {passwordLoading ? (
+                  <>
+                    <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                    <span>Signing In...</span>
+                  </>
+                ) : isLockedOut ? (
+                  <>
+                    <Clock size={16} />
+                    <span>Locked ({formatLockoutTime(lockoutTimer)})</span>
+                  </>
+                ) : (
+                  <>
+                    <KeyRound size={16} />
+                    <span>Sign In to Vendor Panel</span>
+                  </>
+                )}
+              </button>
+            </form>
+          )}
+
+          {/* ── STATE 2B: 6-DIGIT OTP VERIFICATION ───────────────────────── */}
           {step === "otp" && (
             <form onSubmit={handleOtpSubmit} className="space-y-5">
               <div>
@@ -346,7 +564,7 @@ export default function VendorLoginPage() {
                 </div>
 
                 <p className="text-xs text-gray-500 mb-3">
-                  Enter the code sent to <strong className="text-gray-800">{email}</strong>
+                  Enter the security code sent to <strong className="text-gray-800">{email}</strong>
                 </p>
 
                 {/* 6 Digit Input Boxes */}
@@ -376,7 +594,7 @@ export default function VendorLoginPage() {
 
               <button
                 type="submit"
-                disabled={otpLoading || otpDigits.some((d) => !d)}
+                disabled={otpLoading || otpDigits.some((d) => !d) || isLockedOut}
                 className="w-full py-3.5 px-4 bg-[#052a51] hover:bg-[#031d38] disabled:bg-gray-300 text-white text-sm font-black rounded-xl shadow-md transition-all flex items-center justify-center gap-2 cursor-pointer disabled:cursor-not-allowed"
               >
                 {otpLoading ? (
@@ -397,7 +615,7 @@ export default function VendorLoginPage() {
                 <button
                   type="button"
                   onClick={handleResendOtp}
-                  disabled={resendCooldown > 0 || otpLoading}
+                  disabled={resendCooldown > 0 || otpLoading || isLockedOut}
                   className="text-xs font-bold text-gray-500 hover:text-[#052a51] disabled:text-gray-400 inline-flex items-center gap-1.5 transition-colors disabled:cursor-not-allowed"
                 >
                   <RefreshCw
@@ -424,6 +642,9 @@ export default function VendorLoginPage() {
                 <p className="text-xs text-gray-600 mt-1 max-w-xs mx-auto leading-relaxed">
                   The email <strong className="text-gray-800">{email}</strong> is not registered as an approved vendor partner on Intrihub.
                 </p>
+                <div className="mt-2 inline-flex items-center gap-1.5 px-3 py-1 bg-amber-50 border border-amber-200/80 rounded-full text-[11px] font-bold text-amber-800">
+                  <span>{remainingAttempts} attempt{remainingAttempts === 1 ? "" : "s"} remaining before 15-min lockout</span>
+                </div>
               </div>
 
               <div className="pt-2 space-y-2.5">
@@ -442,7 +663,7 @@ export default function VendorLoginPage() {
                     setStep("email");
                     setErrorMessage("");
                   }}
-                  className="w-full py-2.5 px-4 bg-gray-100 hover:bg-gray-200 text-gray-700 text-xs font-bold rounded-xl transition-colors flex items-center justify-center gap-1.5"
+                  className="w-full py-2.5 px-4 bg-gray-100 hover:bg-gray-200 text-gray-700 text-xs font-bold rounded-xl transition-colors flex items-center justify-center gap-1.5 cursor-pointer"
                 >
                   <ArrowLeft size={14} />
                   <span>Try Another Email</span>
@@ -556,7 +777,7 @@ export default function VendorLoginPage() {
           <span>•</span>
           <div className="flex items-center gap-1">
             <Zap size={14} />
-            <span>Verified OTP Login</span>
+            <span>Secure Authentication</span>
           </div>
         </div>
       </div>

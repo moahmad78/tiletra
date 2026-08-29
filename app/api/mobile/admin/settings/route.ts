@@ -165,6 +165,10 @@ export async function PATCH(req: NextRequest) {
       }
     }
 
+    if (body.estimatedDelivery !== undefined) {
+      updateData.estimatedDelivery = String(body.estimatedDelivery).trim();
+    }
+
     const res = await updateStoreSettings(updateData);
 
     // Save extra policies/timings/units

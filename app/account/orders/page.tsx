@@ -239,7 +239,7 @@ export default function OrdersPage() {
                 <div className="flex items-center gap-2 text-xs text-gray-600">
                   <Truck size={16} className="text-[#F26522] shrink-0" />
                   <span>
-                    Estimated Delivery: <strong className="text-[#052a51]">{order.estimatedDelivery || "3–5 Business Days"}</strong>
+                    Estimated Delivery: <strong className="text-[#052a51]">{order.estimatedDelivery || "Within 60 Minutes"}</strong>
                   </span>
                 </div>
 

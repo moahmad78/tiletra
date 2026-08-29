@@ -33,8 +33,11 @@ import {
   Store,
   HelpCircle,
   XCircle,
+  Eye,
+  EyeOff,
+  KeyRound,
 } from "lucide-react-native";
-import { loginWithGoogle, sendOtp, verifyOtp } from "../../src/api/auth";
+import { loginWithGoogle, sendOtp, verifyOtp, checkAuthMethod, loginWithPassword } from "../../src/api/auth";
 import { useAuthStore } from "../../src/store/authStore";
 import { COLORS, SHADOWS } from "../../src/constants/theme";
 
@@ -76,9 +79,11 @@ export default function BusinessLoginScreen() {
   const insets = useSafeAreaInsets();
   const { setUser } = useAuthStore();
 
-  const [step, setStep] = useState<"input" | "otp" | "unapproved">("input");
+  const [step, setStep] = useState<"input" | "otp" | "password" | "unapproved">("input");
   const [email, setEmail] = useState("");
   const [name, setName] = useState("");
+  const [password, setPassword] = useState("");
+  const [showPassword, setShowPassword] = useState(false);
   const [otp, setOtp] = useState("");
   const [loading, setLoading] = useState(false);
   const [googleLoading, setGoogleLoading] = useState(false);
@@ -151,7 +156,7 @@ export default function BusinessLoginScreen() {
   }, [isLocked, lockoutSeconds]);
 
   const handleLockoutResponse = (errData: any) => {
-    if (errData?.locked || errData?.retryAfterSeconds) {
+    if (errData?.locked === true) {
       const seconds = errData.retryAfterSeconds || 900;
       setIsLocked(true);
       setLockoutSeconds(seconds);
@@ -238,6 +243,33 @@ export default function BusinessLoginScreen() {
     setError("");
 
     try {
+      // 1. Dynamic pre-auth method lookup
+      const methodCheck = await checkAuthMethod(email.trim());
+
+      if (!methodCheck.success) {
+        handleLockoutResponse(methodCheck);
+        if (methodCheck.reason) {
+          setUnapprovedDetails({
+            reason: methodCheck.reason,
+            message: methodCheck.error || "This email is not registered as an approved vendor.",
+            vendorName: methodCheck.vendorName,
+            attemptedEmail: email.trim(),
+          });
+          setStep("unapproved");
+        } else {
+          setError(methodCheck.error || "Failed to verify vendor account");
+        }
+        return;
+      }
+
+      // 2. If vendor configured for password login
+      if (methodCheck.loginMethod === "password") {
+        setStep("password");
+        setPassword("");
+        return;
+      }
+
+      // 3. If vendor configured for OTP login (default)
       const res = await sendOtp(email.trim());
       if (res.success) {
         setStep("otp");
@@ -271,6 +303,37 @@ export default function BusinessLoginScreen() {
       } else {
         setError(errData?.error || err.message || "Network error. Please try again.");
       }
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handlePasswordLogin = async () => {
+    if (isLocked) return;
+    if (!password) {
+      setError("Please enter your vendor password");
+      return;
+    }
+
+    setLoading(true);
+    setError("");
+
+    try {
+      const res = await loginWithPassword({
+        email: email.trim(),
+        password,
+      });
+
+      if (res.success && res.user) {
+        handleRoleRouting(res.user);
+      } else {
+        handleLockoutResponse(res);
+        setError(res.error || "Invalid password. Please try again.");
+      }
+    } catch (err: any) {
+      const errData = err?.response?.data;
+      handleLockoutResponse(errData);
+      setError(errData?.error || err.message || "Password login failed");
     } finally {
       setLoading(false);
     }
@@ -438,7 +501,7 @@ export default function BusinessLoginScreen() {
                   <ActivityIndicator size="small" color="#FFFFFF" />
                 ) : (
                   <>
-                    <Text style={styles.primaryBtnText}>Request Verification Code</Text>
+                    <Text style={styles.primaryBtnText}>Continue to Login</Text>
                     <ArrowRight size={18} color="#FFFFFF" />
                   </>
                 )}
@@ -451,6 +514,63 @@ export default function BusinessLoginScreen() {
                   Restricted Access: Whitelisted vendor partners & store managers only.
                 </Text>
               </View>
+            </View>
+          ) : step === "password" ? (
+            <View>
+              <Text style={styles.otpHeading}>Enter Password</Text>
+              <Text style={styles.otpSubtitle}>
+                Logging into account <Text style={{ fontWeight: "700", color: COLORS.primary }}>{email}</Text>
+              </Text>
+
+              <View style={[styles.inputWrapper, isLocked && styles.inputWrapperDisabled]}>
+                <Lock size={18} color={COLORS.textSecondary} style={styles.inputIcon} />
+                <TextInput
+                  style={[styles.input, { paddingRight: 40 }]}
+                  placeholder="Enter your vendor password"
+                  placeholderTextColor={COLORS.textTertiary}
+                  value={password}
+                  onChangeText={(val) => {
+                    setPassword(val);
+                    setError("");
+                  }}
+                  secureTextEntry={!showPassword}
+                  autoCapitalize="none"
+                  editable={!isLocked}
+                />
+                <TouchableOpacity
+                  onPress={() => setShowPassword(!showPassword)}
+                  style={{ position: "absolute", right: 12, top: 14 }}
+                >
+                  {showPassword ? <EyeOff size={18} color={COLORS.textSecondary} /> : <Eye size={18} color={COLORS.textSecondary} />}
+                </TouchableOpacity>
+              </View>
+
+              <TouchableOpacity
+                style={[styles.primaryBtn, isLocked && styles.primaryBtnDisabled]}
+                onPress={handlePasswordLogin}
+                disabled={loading || isLocked}
+                activeOpacity={0.85}
+              >
+                {loading ? (
+                  <ActivityIndicator size="small" color="#FFFFFF" />
+                ) : (
+                  <>
+                    <KeyRound size={18} color="#FFFFFF" style={{ marginRight: 6 }} />
+                    <Text style={styles.primaryBtnText}>Sign In with Password</Text>
+                  </>
+                )}
+              </TouchableOpacity>
+
+              <TouchableOpacity
+                style={styles.backToInputBtn}
+                onPress={() => {
+                  setStep("input");
+                  setError("");
+                  setPassword("");
+                }}
+              >
+                <Text style={styles.backToInputText}>Change Email Address</Text>
+              </TouchableOpacity>
             </View>
           ) : step === "otp" ? (
             <View>

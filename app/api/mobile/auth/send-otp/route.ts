@@ -2,6 +2,10 @@ import { NextRequest } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { sendEmailOtp } from "@/lib/actions/email-otp";
 import { mobileApiResponse, handleMobileCorsOptions } from "@/lib/mobile-auth";
+import {
+  checkVendorLoginLockout,
+  recordVendorLoginFailure,
+} from "@/lib/rate-limit";
 
 export async function OPTIONS() {
   return handleMobileCorsOptions();
@@ -12,6 +16,10 @@ export async function POST(req: NextRequest) {
     const body = await req.json().catch(() => ({}));
     const { email, phone, purpose = "customer" } = body;
     const isBusinessPortal = purpose === "business" || purpose === "vendor" || purpose === "admin";
+    const clientIp =
+      req.headers.get("x-forwarded-for")?.split(",")[0]?.trim() ||
+      req.headers.get("x-real-ip") ||
+      "127.0.0.1";
 
     if (!email && !phone) {
       return mobileApiResponse(
@@ -22,6 +30,25 @@ export async function POST(req: NextRequest) {
 
     // Strict pre-OTP checks for Business portal
     if (isBusinessPortal) {
+      // 1. Check IP lockout first (3 failed attempts -> 15-min lockout)
+      const lockoutCheck = checkVendorLoginLockout(clientIp);
+      if (lockoutCheck.locked) {
+        const mins = Math.floor((lockoutCheck.retryAfterSeconds || 0) / 60);
+        const secs = (lockoutCheck.retryAfterSeconds || 0) % 60;
+        const timeStr = `${mins.toString().padStart(2, "0")}:${secs.toString().padStart(2, "0")}`;
+
+        return mobileApiResponse(
+          {
+            success: false,
+            error: `Too many failed attempts. Try again in ${timeStr}`,
+            locked: true,
+            lockoutUntil: lockoutCheck.lockoutUntil,
+            retryAfterSeconds: lockoutCheck.retryAfterSeconds,
+          },
+          429
+        );
+      }
+
       const allowedAdminEmail = (process.env.ADMIN_ALLOWED_EMAIL || "admin@intrihub.com").toLowerCase().trim();
 
       if (email) {
@@ -51,11 +78,29 @@ export async function POST(req: NextRequest) {
             : null;
 
           if (!vendor && !vendorUser) {
+            const failCheck = recordVendorLoginFailure(clientIp);
+            if (failCheck.locked) {
+              return mobileApiResponse(
+                {
+                  success: false,
+                  reason: "NOT_FOUND",
+                  error: "Too many failed attempts. Account login blocked for 15 minutes.",
+                  locked: true,
+                  lockoutUntil: failCheck.lockoutUntil,
+                  retryAfterSeconds: failCheck.retryAfterSeconds,
+                  remainingAttempts: 0,
+                  email: cleanEmail,
+                },
+                429
+              );
+            }
             return mobileApiResponse(
               {
                 success: false,
                 reason: "NOT_FOUND",
                 error: "This email isn't registered as an approved vendor partner on Intrihub Business.",
+                locked: false,
+                remainingAttempts: failCheck.remainingAttempts,
                 email: cleanEmail,
               },
               403
@@ -135,11 +180,29 @@ export async function POST(req: NextRequest) {
         });
 
         if (!vendor) {
+          const failCheck = recordVendorLoginFailure(clientIp);
+          if (failCheck.locked) {
+            return mobileApiResponse(
+              {
+                success: false,
+                reason: "NOT_FOUND",
+                error: "Too many failed attempts. Account login blocked for 15 minutes.",
+                locked: true,
+                lockoutUntil: failCheck.lockoutUntil,
+                retryAfterSeconds: failCheck.retryAfterSeconds,
+                remainingAttempts: 0,
+                phone: cleanPhone,
+              },
+              429
+            );
+          }
           return mobileApiResponse(
             {
               success: false,
               reason: "NOT_FOUND",
               error: "This phone number isn't registered as an approved vendor partner on Intrihub Business.",
+              locked: false,
+              remainingAttempts: failCheck.remainingAttempts,
               phone: cleanPhone,
             },
             403

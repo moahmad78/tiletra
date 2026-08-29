@@ -56,6 +56,7 @@ export default function AdminSettingsScreen() {
   const [fourWheelerDeliveryRate, setFourWheelerDeliveryRate] = useState("349");
   const [weightThresholdKg, setWeightThresholdKg] = useState("20");
   const [lowStockThreshold, setLowStockThreshold] = useState("25");
+  const [estimatedDelivery, setEstimatedDelivery] = useState("Within 60 Minutes");
 
   // COD Rules
   const [codEnabled, setCodEnabled] = useState(true);
@@ -82,6 +83,7 @@ export default function AdminSettingsScreen() {
         setFourWheelerDeliveryRate(String(s.fourWheelerDeliveryRate ?? 349));
         setWeightThresholdKg(String(s.weightThresholdKg ?? 20));
         setLowStockThreshold(String(s.lowStockThreshold ?? 25));
+        setEstimatedDelivery(s.estimatedDelivery || "Within 60 Minutes");
 
         setCodEnabled(s.codEnabled !== false);
         setCodMaxLimit(String(s.codMaxLimit ?? 25000));
@@ -136,6 +138,7 @@ export default function AdminSettingsScreen() {
         fourWheelerDeliveryRate: parseFloat(fourWheelerDeliveryRate) || 0,
         weightThresholdKg: parseFloat(weightThresholdKg) || 0,
         lowStockThreshold: parseInt(lowStockThreshold, 10) || 10,
+        estimatedDelivery: estimatedDelivery.trim() || "Within 60 Minutes",
         codEnabled,
         codMaxLimit: parseFloat(codMaxLimit) || 0,
         codBlockedPincodes: pincodesList,
@@ -362,6 +365,17 @@ export default function AdminSettingsScreen() {
                 onChangeText={setWeightThresholdKg}
               />
             </View>
+          </View>
+
+          <View style={{ marginTop: 10 }}>
+            <Text style={styles.inputLabel}>Estimated Delivery Promise:</Text>
+            <TextInput
+              style={styles.inputBox}
+              value={estimatedDelivery}
+              onChangeText={setEstimatedDelivery}
+              placeholder="e.g. Within 60 Minutes"
+              placeholderTextColor={COLORS.textTertiary}
+            />
           </View>
 
           <View style={{ marginTop: 10 }}>

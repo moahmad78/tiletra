@@ -226,7 +226,7 @@ export default function CheckoutScreen() {
           </View>
           <View style={styles.successRow}>
             <Text style={styles.successKey}>Estimated Delivery</Text>
-            <Text style={styles.successValue}>{completedOrder.estimatedDelivery || "3-5 Days"}</Text>
+            <Text style={styles.successValue}>{completedOrder.estimatedDelivery || "Within 60 Minutes"}</Text>
           </View>
         </View>
 

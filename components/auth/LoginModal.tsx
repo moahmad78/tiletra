@@ -244,9 +244,16 @@ export default function LoginModal() {
                 <ChevronLeft size={16} />
               </button>
             )}
-            <span className="px-2.5 py-0.5 rounded-md bg-[#F26522] text-[10px] font-black uppercase tracking-wider shrink-0">
-              Intrihub
-            </span>
+            <div className="bg-white px-2.5 py-1 rounded-lg shrink-0 inline-flex items-center shadow-xs">
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img
+                src="/logo/intri-web-logo.png"
+                alt="Intrihub"
+                width={90}
+                height={22}
+                className="h-5 w-auto object-contain"
+              />
+            </div>
             <span className="text-xs text-white/70 font-semibold flex items-center gap-1">
               <ShieldCheck size={14} className="text-[#F26522]" /> Secure Login
             </span>

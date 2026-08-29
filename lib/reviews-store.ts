@@ -35,7 +35,7 @@ const INITIAL_REVIEWS: CustomerReview[] = [
     rating: 5,
     title: "Stunning Italian marble finish, zero breakages!",
     comment:
-      "Superb quality tiles! The finish is extremely premium and looks like real Italian marble in our living room. Delivery came in 4 days with sturdy box packaging.",
+      "Superb quality tiles! The finish is extremely premium and looks like real Italian marble in our living room. Delivered within 60 minutes with sturdy box packaging.",
     images: [
       "/placeholders/product.svg",
       "/placeholders/product.svg",

@@ -99,7 +99,7 @@ export default async function CategoryPage({
   const categoryFaqs = [
     {
       question: `What is the standard delivery timeline for ${category.name}?`,
-      answer: `Most ${category.name} orders are dispatched within 24 to 48 hours, with doorstep delivery across Bangalore in 2–4 business days and Pan-India in 4–7 business days.`,
+      answer: `Most ${category.name} orders are delivered directly to your site within 60 minutes across Bangalore via our rapid dispatch quick-commerce fleet.`,
     },
     {
       question: `Can I get bulk contractor discounts on ${category.name}?`,

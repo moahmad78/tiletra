@@ -61,6 +61,8 @@ export default function AdminVendorDetailScreen() {
   const [status, setStatus] = useState("approved");
   const [verified, setVerified] = useState(false);
   const [autoPublish, setAutoPublish] = useState(false);
+  const [loginMethod, setLoginMethod] = useState<"otp" | "password">("otp");
+  const [vendorPassword, setVendorPassword] = useState("");
   const [savingVendor, setSavingVendor] = useState(false);
   const [togglingAutoPublish, setTogglingAutoPublish] = useState(false);
 
@@ -92,6 +94,7 @@ export default function AdminVendorDetailScreen() {
       setStatus(vendor.status || "approved");
       setVerified(Boolean(vendor.verified || vendor.kycStatus === "verified"));
       setAutoPublish(Boolean(vendor.autoPublishEnabled));
+      setLoginMethod(vendor.loginMethod || "otp");
     }
   }, [vendor]);
 
@@ -152,6 +155,10 @@ export default function AdminVendorDetailScreen() {
   };
 
   const handleSaveVendor = async () => {
+    if (loginMethod === "password" && !vendorPassword && !vendor.hasPassword) {
+      Alert.alert("Password Required", "Please enter or generate a password for Password Authentication.");
+      return;
+    }
     setSavingVendor(true);
     try {
       const res = await updateAdminVendor(id as string, {
@@ -162,11 +169,14 @@ export default function AdminVendorDetailScreen() {
         status,
         verified,
         autoPublishEnabled: autoPublish,
+        loginMethod,
+        password: loginMethod === "password" ? (vendorPassword.trim() || undefined) : undefined,
       });
       setSavingVendor(false);
       if (res.success) {
         setVendorEditModalOpen(false);
-        Alert.alert("Vendor Updated", "Partner profile changes saved!");
+        setVendorPassword("");
+        Alert.alert("Vendor Updated", "Partner profile and login configuration saved!");
         refetch();
         queryClient.invalidateQueries({ queryKey: ["admin-vendors"] });
       } else {
@@ -639,6 +649,60 @@ export default function AdminVendorDetailScreen() {
 
               <Text style={[styles.inputLabel, { marginTop: 12 }]}>Commission Rate (%)</Text>
               <TextInput style={styles.inputBox} value={commissionRate} onChangeText={setCommissionRate} keyboardType="decimal-pad" />
+
+              <Text style={[styles.inputLabel, { marginTop: 16 }]}>Vendor Login Authentication Method</Text>
+              <View style={{ flexDirection: "row", gap: 10, marginTop: 4 }}>
+                <TouchableOpacity
+                  style={[styles.statusChip, loginMethod === "otp" && styles.statusChipActive, { flex: 1, alignItems: "center" }]}
+                  onPress={() => setLoginMethod("otp")}
+                >
+                  <Text style={[styles.statusChipText, loginMethod === "otp" && styles.statusChipTextActive]}>
+                    Email OTP (Default)
+                  </Text>
+                </TouchableOpacity>
+
+                <TouchableOpacity
+                  style={[styles.statusChip, loginMethod === "password" && styles.statusChipActive, { flex: 1, alignItems: "center" }]}
+                  onPress={() => setLoginMethod("password")}
+                >
+                  <Text style={[styles.statusChipText, loginMethod === "password" && styles.statusChipTextActive]}>
+                    Email + Password
+                  </Text>
+                </TouchableOpacity>
+              </View>
+
+              {loginMethod === "password" && (
+                <View style={{ marginTop: 12, padding: 12, backgroundColor: "#FEF3C7", borderRadius: 10 }}>
+                  <View style={{ flexDirection: "row", justifyContent: "space-between", alignItems: "center", marginBottom: 6 }}>
+                    <Text style={{ fontSize: 11, fontWeight: "800", color: "#92400E" }}>
+                      {vendor?.hasPassword ? "Set New Password (Reset)" : "Set Account Password"}
+                    </Text>
+                    <TouchableOpacity
+                      onPress={() => {
+                        const chars = "ABCDEFGHJKLMNPQRSTUVWXYZabcdefghjkmnpqrstuvwxyz23456789!@#$%&*";
+                        let pwd = "";
+                        for (let i = 0; i < 10; i++) {
+                          pwd += chars.charAt(Math.floor(Math.random() * chars.length));
+                        }
+                        setVendorPassword(pwd);
+                        Alert.alert("Generated Password", `Password: ${pwd}`);
+                      }}
+                    >
+                      <Text style={{ fontSize: 11, fontWeight: "800", color: COLORS.accentOrange }}>Generate</Text>
+                    </TouchableOpacity>
+                  </View>
+                  <TextInput
+                    style={[styles.inputBox, { backgroundColor: "#FFFFFF" }]}
+                    placeholder="Enter min 8 characters"
+                    value={vendorPassword}
+                    onChangeText={setVendorPassword}
+                    autoCapitalize="none"
+                  />
+                  <Text style={{ fontSize: 10, color: "#92400E", marginTop: 4 }}>
+                    Password is securely encrypted with scrypt. Plaintext is only shown once at creation.
+                  </Text>
+                </View>
+              )}
             </View>
 
             <TouchableOpacity style={styles.saveActionBtn} onPress={handleSaveVendor} disabled={savingVendor}>

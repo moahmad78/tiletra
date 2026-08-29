@@ -3,6 +3,7 @@
 import { prisma } from "@/lib/prisma";
 import { formatProduct, safeRevalidate } from "@/lib/formatters";
 import type { Product } from "@/lib/data/products";
+import { hashPassword } from "@/lib/password-security";
 
 // 1. Get all vendors with status filtering & counts
 export async function getAdminVendors(options?: {
@@ -812,5 +813,98 @@ export async function verifyVendorKyc(
   } catch (error: any) {
     console.error("verifyVendorKyc error:", error);
     return { success: false, error: error?.message || "Failed to update KYC status" };
+  }
+}
+
+// 16. Super Admin: Update Vendor Login Method (OTP vs Password)
+export async function updateVendorLoginMethod(
+  vendorId: string,
+  data: {
+    loginMethod: "otp" | "password";
+    password?: string;
+  }
+) {
+  try {
+    if (!vendorId) return { success: false, error: "Vendor ID required" };
+
+    const vendor = await prisma.vendor.findUnique({
+      where: { id: vendorId },
+      include: { owner: true },
+    });
+
+    if (!vendor) return { success: false, error: "Vendor not found" };
+
+    if (data.loginMethod === "password") {
+      if (!data.password || data.password.trim().length < 8) {
+        return { success: false, error: "Password must be at least 8 characters long" };
+      }
+
+      const hashedPassword = hashPassword(data.password.trim());
+
+      const updated = await prisma.$transaction(async (tx) => {
+        const v = await tx.vendor.update({
+          where: { id: vendorId },
+          data: {
+            loginMethod: "password",
+            passwordHash: hashedPassword,
+          },
+        });
+
+        if (vendor.ownerId) {
+          await tx.user.update({
+            where: { id: vendor.ownerId },
+            data: {
+              passwordHash: hashedPassword,
+              mustChangePassword: false,
+            },
+          });
+        }
+
+        return v;
+      });
+
+      safeRevalidate(`/admin/vendors/${vendorId}`);
+      safeRevalidate("/admin/vendors");
+
+      return {
+        success: true,
+        vendor: updated,
+        message: `Login method for "${vendor.businessName}" updated to Password authentication.`,
+      };
+    } else {
+      // Switching back to OTP: clear passwordHash
+      const updated = await prisma.$transaction(async (tx) => {
+        const v = await tx.vendor.update({
+          where: { id: vendorId },
+          data: {
+            loginMethod: "otp",
+            passwordHash: null,
+          },
+        });
+
+        if (vendor.ownerId) {
+          await tx.user.update({
+            where: { id: vendor.ownerId },
+            data: {
+              passwordHash: null,
+            },
+          });
+        }
+
+        return v;
+      });
+
+      safeRevalidate(`/admin/vendors/${vendorId}`);
+      safeRevalidate("/admin/vendors");
+
+      return {
+        success: true,
+        vendor: updated,
+        message: `Login method for "${vendor.businessName}" reverted to Email OTP authentication.`,
+      };
+    }
+  } catch (error: any) {
+    console.error("updateVendorLoginMethod error:", error);
+    return { success: false, error: error?.message || "Failed to update vendor login method" };
   }
 }
