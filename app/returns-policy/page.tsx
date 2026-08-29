@@ -1,69 +1,86 @@
 "use client";
 
+import React from "react";
 import Link from "next/link";
-import { RotateCcw, ShieldAlert, CheckCircle } from "lucide-react";
-import Header from "@/components/Header";
-import Footer from "@/components/Footer";
+import { CheckCircle, AlertCircle, ShieldAlert, ArrowRight, MessageCircle } from "lucide-react";
+import PolicyLayout from "@/components/PolicyLayout";
 
 export default function ReturnsPolicyPage() {
   return (
-    <main className="min-h-screen flex flex-col bg-[#F3F4F5]">
-      <Header />
-
-      <div
-        className="bg-[#052a51] text-white py-14"
-        style={{ paddingTop: "120px" }}
-      >
-        <div className="w-full max-w-[900px] mx-auto px-[20px] md:px-[24px] lg:px-[32px] text-center">
-          <span className="text-xs font-bold text-[#F26522] uppercase tracking-wider mb-2 block">Policies</span>
-          <h1 className="text-[32px] md:text-[44px] font-black leading-tight">Returns & Replacement Policy</h1>
-          <p className="text-white/70 text-sm mt-2">Last updated: August 2026</p>
+    <PolicyLayout
+      currentTab="returns"
+      title="Returns & Replacement Policy"
+      categoryTag="Customer Protection"
+      lastUpdated="August 2026"
+    >
+      {/* Highlight Box */}
+      <div className="p-5 sm:p-6 bg-emerald-50/80 border border-emerald-200/70 rounded-2xl flex items-start gap-3.5">
+        <CheckCircle className="text-emerald-700 shrink-0 mt-0.5" size={22} />
+        <div>
+          <h3 className="font-extrabold text-emerald-950 text-base">Damage Protection Guarantee</h3>
+          <p className="text-xs sm:text-sm text-emerald-900 mt-1 leading-relaxed">
+            Any building materials or tiles damaged during transit are replaced 100% free of charge or refunded immediately upon photo/video verification.
+          </p>
         </div>
       </div>
 
-      <div className="w-full max-w-[900px] mx-auto px-[20px] md:px-[24px] lg:px-[32px] py-10 flex-1">
-        <div className="bg-white rounded-3xl p-8 md:p-12 shadow-sm border border-gray-100 space-y-6 text-sm text-gray-700 leading-relaxed">
-          <div className="p-5 bg-[#2F7A4F]/10 border border-[#2F7A4F]/20 rounded-2xl flex items-start gap-3">
-            <CheckCircle className="text-[#2F7A4F] shrink-0 mt-0.5" size={20} />
-            <div>
-              <h3 className="font-bold text-[#2F7A4F] text-sm">Damage Protection Guarantee</h3>
-              <p className="text-xs text-gray-600 mt-1">
-                Any items damaged in transit are replaced 100% free of charge or refunded immediately upon proof submission.
-              </p>
-            </div>
-          </div>
+      {/* Sections */}
+      <section className="space-y-2.5 pt-2">
+        <h2 className="text-lg sm:text-xl font-black text-[#052a51] flex items-center gap-2">
+          <span className="w-6 h-6 rounded-full bg-[#052a51]/10 text-[#052a51] flex items-center justify-center text-xs font-black">1</span>
+          7-Day Return Window
+        </h2>
+        <p className="text-gray-700">
+          Unopened, full packages or boxes of materials in their original factory packaging can be returned within <strong>7 calendar days</strong> of delivery. To maintain quality control and site safety, open or partially used boxes cannot be accepted for return.
+        </p>
+      </section>
 
-          <section className="space-y-2">
-            <h2 className="text-lg font-black text-[#052a51]">1. 7-Day Return Window</h2>
-            <p>
-              Unopened, full packages or boxes of materials in their original factory packaging can be returned within 7 calendar days of delivery. Open or partially used materials cannot be accepted for return due to handling hazards.
-            </p>
-          </section>
+      <section className="space-y-2.5 pt-4 border-t border-gray-100">
+        <h2 className="text-lg sm:text-xl font-black text-[#052a51] flex items-center gap-2">
+          <span className="w-6 h-6 rounded-full bg-[#052a51]/10 text-[#052a51] flex items-center justify-center text-xs font-black">2</span>
+          Transit Breakage & Defects
+        </h2>
+        <p className="text-gray-700">
+          If your delivery contains damaged items or cracked tiles, simply record a quick video or take clear photos of the damaged packages and share them with us via WhatsApp (<a href="https://wa.me/917870935277" className="font-bold text-emerald-700 hover:underline">+91 78709 35277</a>) or email (<a href="mailto:support@intrihub.com" className="font-bold text-[#052a51] hover:underline">support@intrihub.com</a>) within <strong>48 hours</strong> of delivery. We will dispatch replacements on priority freight.
+        </p>
+      </section>
 
-          <section className="space-y-2">
-            <h2 className="text-lg font-black text-[#052a51]">2. Transit Breakage & Defects</h2>
-            <p>
-              If your delivery contains damaged items or materials, share photos of the damaged packages via WhatsApp (+91 78709 35277) or email (support@intrihub.com) within 48 hours of delivery. We will dispatch replacements on priority freight.
-            </p>
-          </section>
+      <section className="space-y-2.5 pt-4 border-t border-gray-100">
+        <h2 className="text-lg sm:text-xl font-black text-[#052a51] flex items-center gap-2">
+          <span className="w-6 h-6 rounded-full bg-[#052a51]/10 text-[#052a51] flex items-center justify-center text-xs font-black">3</span>
+          Batch & Tone Variations
+        </h2>
+        <p className="text-gray-700">
+          Ceramic, vitrified tiles, and natural stone may exhibit subtle tone or shade variations across distinct factory production batches. We strongly advise calculating and ordering all required square footage (including a 10% wastage margin) in a single order to guarantee identical manufacturing batch lots.
+        </p>
+      </section>
 
-          <section className="space-y-2">
-            <h2 className="text-lg font-black text-[#052a51]">3. Batch & Tone Variations</h2>
-            <p>
-              Ceramic and vitrified products may have slight tone differences across different production batches. We strongly recommend ordering all required boxes (including a 10% wastage buffer) in a single order to guarantee identical batch numbers.
-            </p>
-          </section>
+      <section className="space-y-2.5 pt-4 border-t border-gray-100">
+        <h2 className="text-lg sm:text-xl font-black text-[#052a51] flex items-center gap-2">
+          <span className="w-6 h-6 rounded-full bg-[#052a51]/10 text-[#052a51] flex items-center justify-center text-xs font-black">4</span>
+          Refund Processing & Timelines
+        </h2>
+        <p className="text-gray-700">
+          Once returned materials are received and inspected at our central warehouse, refunds are initiated back to your original payment method (Razorpay online payment, card, UPI, or verified bank account for COD orders) within <strong>3–5 business days</strong>.
+        </p>
+      </section>
 
-          <section className="space-y-2">
-            <h2 className="text-lg font-black text-[#052a51]">4. Refund Processing</h2>
-            <p>
-              Once returned boxes are inspected at our warehouse, refunds are initiated back to the original payment source via Razorpay within 3–5 business days.
-            </p>
-          </section>
+      {/* Action Footer Callout */}
+      <div className="mt-8 pt-6 border-t border-gray-100 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 bg-gray-50/80 p-5 rounded-2xl">
+        <div>
+          <h4 className="font-bold text-gray-900 text-sm">Need to initiate a return or claim transit damage?</h4>
+          <p className="text-xs text-gray-500 mt-0.5">Reach out to our customer resolution team with your Order ID.</p>
         </div>
+        <a
+          href="https://wa.me/917870935277"
+          target="_blank"
+          rel="noopener noreferrer"
+          className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs shadow-xs transition-colors shrink-0"
+        >
+          <MessageCircle size={15} />
+          <span>Chat on WhatsApp</span>
+        </a>
       </div>
-
-      <Footer />
-    </main>
+    </PolicyLayout>
   );
 }

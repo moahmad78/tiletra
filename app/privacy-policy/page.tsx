@@ -1,60 +1,82 @@
 "use client";
 
-import Header from "@/components/Header";
-import Footer from "@/components/Footer";
+import React from "react";
+import Link from "next/link";
+import { ShieldCheck, Lock, Eye, FileLock, Mail } from "lucide-react";
+import PolicyLayout from "@/components/PolicyLayout";
 
 export default function PrivacyPolicyPage() {
   return (
-    <main className="min-h-screen flex flex-col bg-[#F3F4F5]">
-      <Header />
-
-      <div
-        className="bg-[#052a51] text-white py-14"
-        style={{ paddingTop: "120px" }}
-      >
-        <div className="w-full max-w-[900px] mx-auto px-[20px] md:px-[24px] lg:px-[32px] text-center">
-          <span className="text-xs font-bold text-[#F26522] uppercase tracking-wider mb-2 block">Privacy</span>
-          <h1 className="text-[32px] md:text-[44px] font-black leading-tight">Privacy Policy</h1>
-          <p className="text-white/70 text-sm mt-2">Effective Date: August 2026</p>
+    <PolicyLayout
+      currentTab="privacy"
+      title="Privacy Policy"
+      categoryTag="Data Protection"
+      lastUpdated="August 2026"
+    >
+      {/* Highlight Box */}
+      <div className="p-5 sm:p-6 bg-blue-50/80 border border-blue-200/70 rounded-2xl flex items-start gap-3.5">
+        <ShieldCheck className="text-[#052a51] shrink-0 mt-0.5" size={22} />
+        <div>
+          <h3 className="font-extrabold text-[#052a51] text-base">Your Privacy Matters</h3>
+          <p className="text-xs sm:text-sm text-gray-700 mt-1 leading-relaxed">
+            Intrihub adheres to strict data privacy principles. We never sell, rent, or trade your personal information to third-party advertisers.
+          </p>
         </div>
       </div>
 
-      <div className="w-full max-w-[900px] mx-auto px-[20px] md:px-[24px] lg:px-[32px] py-10 flex-1">
-        <div className="bg-white rounded-3xl p-8 md:p-12 shadow-sm border border-gray-100 space-y-6 text-sm text-gray-700 leading-relaxed">
-          <section className="space-y-2">
-            <h2 className="text-lg font-black text-[#052a51]">1. Information We Collect</h2>
-            <p>
-              We collect information provided directly by you when placing orders, including name, shipping address, contact phone number, and email address. Payment credentials (card/UPI numbers) are processed securely directly through Razorpay and are never stored on our servers.
-            </p>
-          </section>
+      <section className="space-y-2.5 pt-2">
+        <h2 className="text-lg sm:text-xl font-black text-[#052a51] flex items-center gap-2">
+          <span className="w-6 h-6 rounded-full bg-[#052a51]/10 text-[#052a51] flex items-center justify-center text-xs font-black">1</span>
+          Information We Collect
+        </h2>
+        <p className="text-gray-700">
+          We collect information provided directly by you when creating an account, requesting quotes, or placing orders:
+        </p>
+        <ul className="list-disc list-inside space-y-1 text-gray-600 pl-2">
+          <li><strong>Contact Details</strong>: Name, shipping address, delivery pincode, email, and phone number.</li>
+          <li><strong>Order Details</strong>: Selected materials, variant specs, billing preferences, and delivery site instructions.</li>
+          <li><strong>Payment Information</strong>: Card, UPI, and bank details are processed directly through 256-bit SSL encrypted PCI-DSS certified payment gateways (Razorpay). <em>Intrihub never stores raw card or UPI PIN data on our servers.</em></li>
+        </ul>
+      </section>
 
-          <section className="space-y-2">
-            <h2 className="text-lg font-black text-[#052a51]">2. How We Use Your Data</h2>
-            <p>
-              Your contact details are strictly used for order fulfillment, shipping updates, freight driver coordination, and customer service. We do not sell or rent customer data to third-party marketing networks.
-            </p>
-          </section>
+      <section className="space-y-2.5 pt-4 border-t border-gray-100">
+        <h2 className="text-lg sm:text-xl font-black text-[#052a51] flex items-center gap-2">
+          <span className="w-6 h-6 rounded-full bg-[#052a51]/10 text-[#052a51] flex items-center justify-center text-xs font-black">2</span>
+          How We Use Your Data
+        </h2>
+        <p className="text-gray-700">
+          Your personal data is used solely for legitimate business operations:
+        </p>
+        <ul className="list-disc list-inside space-y-1 text-gray-600 pl-2">
+          <li>Fulfilling orders, scheduling heavy freight delivery trucks, and site drop-offs.</li>
+          <li>Sending automated SMS, WhatsApp, and email order tracking notifications.</li>
+          <li>Providing responsive customer support and resolving return/replacement queries.</li>
+          <li>Preventing fraud, unauthorized account access, and spam attacks.</li>
+        </ul>
+      </section>
 
-          <section className="space-y-2">
-            <h2 className="text-lg font-black text-[#052a51]">3. Security</h2>
-            <p>
-              All traffic between your device and Intrihub is encrypted using standard HTTPS/TLS protocols.
-            </p>
-          </section>
+      <section className="space-y-2.5 pt-4 border-t border-gray-100">
+        <h2 className="text-lg sm:text-xl font-black text-[#052a51] flex items-center gap-2">
+          <span className="w-6 h-6 rounded-full bg-[#052a51]/10 text-[#052a51] flex items-center justify-center text-xs font-black">3</span>
+          Data Security & Encryption
+        </h2>
+        <p className="text-gray-700">
+          All client-to-server traffic is encrypted using standard HTTPS/TLS 1.3 encryption. We maintain strict role-based data access policies so only authorized fulfillment officers can view delivery logistics data.
+        </p>
+      </section>
 
-          <section className="space-y-2 pt-2 border-t border-gray-100">
-            <h2 className="text-lg font-black text-[#052a51]">4. Data Protection & Inquiries</h2>
-            <p>
-              For data access requests, privacy concerns, or corporate governance inquiries, please reach out to our privacy desk at{" "}
-              <a href="mailto:info@intrihub.com" className="font-bold text-[#052a51] hover:underline">
-                info@intrihub.com
-              </a>.
-            </p>
-          </section>
-        </div>
-      </div>
-
-      <Footer />
-    </main>
+      <section className="space-y-2.5 pt-4 border-t border-gray-100">
+        <h2 className="text-lg sm:text-xl font-black text-[#052a51] flex items-center gap-2">
+          <span className="w-6 h-6 rounded-full bg-[#052a51]/10 text-[#052a51] flex items-center justify-center text-xs font-black">4</span>
+          Data Access & Privacy Rights
+        </h2>
+        <p className="text-gray-700">
+          Under Indian Digital Personal Data Protection guidelines, you may request access, correction, or deletion of your personal data at any time by contacting our dedicated data privacy desk at{" "}
+          <a href="mailto:info@intrihub.com" className="font-bold text-[#052a51] hover:underline">
+            info@intrihub.com
+          </a>.
+        </p>
+      </section>
+    </PolicyLayout>
   );
 }
