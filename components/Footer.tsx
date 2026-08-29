@@ -206,8 +206,16 @@ export default function Footer() {
               <span>·</span>
               <Link href="/shipping-policy" className="hover:text-white transition-colors">Shipping</Link>
             </div>
-            <p className="text-white/50 text-center">
-              Designed & Built with ❤️ for India's Building & Interior Industry
+            <p className="flex items-center gap-1.5 flex-wrap justify-center">
+              <span>Founded & Developed with ❤️ by</span>
+              <a
+                href="https://www.instagram.com/sahil_sheikh78/"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="text-white hover:text-[#F26522] font-black transition-colors underline underline-offset-2 inline-flex items-center gap-1 bg-white/10 px-2 py-0.5 rounded-md"
+              >
+                <span>Sahil Sheikh</span>
+              </a>
             </p>
           </div>
         </div>
