@@ -170,6 +170,13 @@ export default function ScanAndFindPage() {
 
       const data: ScanMatchResult = await res.json();
       setScanResult(data);
+
+      // Section 9.1: High confidence (>0.85) -> auto-navigate directly to PDP
+      if (data.matched && data.confidenceTier === "high" && data.matchedProduct?.slug) {
+        setTimeout(() => {
+          router.push(`/product/${data.matchedProduct!.slug}`);
+        }, 900);
+      }
     } catch (err: any) {
       setErrorMessage("Could not connect to scan engine. Please check your network and try again.");
     } finally {
@@ -363,9 +370,13 @@ export default function ScanAndFindPage() {
               {scanResult.message}
             </p>
 
-            {/* ── 1. EXACT MATCH CARD ── */}
-            {scanResult.matched && scanResult.matchedProduct && (
+            {/* ── 1. EXACT HIGH-CONFIDENCE MATCH CARD (>0.85) ── */}
+            {scanResult.matched && scanResult.confidenceTier === "high" && scanResult.matchedProduct && (
               <div className="bg-white text-gray-900 rounded-2xl p-4 shadow-xl border border-white/20 space-y-3">
+                <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-emerald-50 text-emerald-800 text-[11px] font-bold">
+                  <Sparkles size={13} className="text-emerald-600 animate-spin" />
+                  <span>High confidence match found! Opening product page...</span>
+                </div>
                 <div className="flex gap-3">
                   <div className="relative w-20 h-20 rounded-xl overflow-hidden bg-gray-100 shrink-0 border border-gray-200">
                     <Image
@@ -426,6 +437,60 @@ export default function ScanAndFindPage() {
                     <span>View Product</span>
                     <ArrowRight size={14} />
                   </Link>
+                </div>
+              </div>
+            )}
+
+            {/* ── 2. POSSIBLE MATCHES LIST (MEDIUM CONFIDENCE 0.50 - 0.85) ── */}
+            {scanResult.matched && scanResult.confidenceTier === "medium" && scanResult.possibleMatches && scanResult.possibleMatches.length > 0 && (
+              <div className="space-y-3 pt-1">
+                <div className="flex items-center justify-between">
+                  <h4 className="text-xs font-bold text-amber-300 uppercase tracking-wider">
+                    Possible Matching Products (Tap to View):
+                  </h4>
+                </div>
+
+                <div className="space-y-2">
+                  {scanResult.possibleMatches.map((item) => {
+                    const priceInfo = getProductPriceInfo(item, item.variants?.[0]);
+                    return (
+                      <Link
+                        key={item.id}
+                        href={`/product/${item.slug}`}
+                        className="bg-white text-gray-900 rounded-xl p-3 flex items-center gap-3 shadow-md hover:border-[#F26522] border border-transparent transition-all active:scale-[0.98]"
+                      >
+                        <div className="relative w-14 h-14 rounded-lg overflow-hidden bg-gray-100 shrink-0 border border-gray-200">
+                          <Image
+                            src={item.images?.[0] || "/placeholders/product.svg"}
+                            alt={item.name}
+                            fill
+                            className="object-cover"
+                          />
+                        </div>
+                        <div className="flex-1 min-w-0">
+                          <span className="text-[9px] font-bold text-[#F26522] uppercase tracking-wider">
+                            {item.brand || "IntriHub"}
+                          </span>
+                          <h5 className="text-xs font-bold text-[#052a51] line-clamp-1">
+                            {item.name}
+                          </h5>
+                          <div className="flex items-baseline gap-1 mt-0.5">
+                            <span className="text-xs font-black text-[#052a51]">
+                              {priceInfo.formattedPrice}
+                            </span>
+                            {priceInfo.unitSuffix && (
+                              <span className="text-[10px] text-gray-500 font-semibold">
+                                /{priceInfo.unitSuffix}
+                              </span>
+                            )}
+                          </div>
+                        </div>
+                        <div className="w-8 h-8 rounded-full bg-[#052a51] text-white flex items-center justify-center shrink-0">
+                          <ArrowRight size={14} />
+                        </div>
+                      </Link>
+                    );
+                  })}
                 </div>
               </div>
             )}

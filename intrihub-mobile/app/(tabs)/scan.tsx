@@ -125,6 +125,13 @@ export default function ScanTabScreen() {
           ? Haptics.NotificationFeedbackType.Success
           : Haptics.NotificationFeedbackType.Warning
       );
+
+      // Section 9.1: High confidence match (> 0.85) -> auto-navigate directly to PDP
+      if (data.matched && data.confidenceTier === "high" && data.matchedProduct?.id) {
+        setTimeout(() => {
+          router.push(`/product/${data.matchedProduct.id}` as any);
+        }, 900);
+      }
     } catch (err: any) {
       setErrorMessage("Failed to analyze product. Please check your connection and try again.");
     } finally {

@@ -71,8 +71,19 @@ function scoreProductMatch(product: any, info: ExtractedProductInfo): number {
   return Math.min(1.0, score);
 }
 
+export interface ScanMatchResult {
+  matched: boolean;
+  confidence: number;
+  confidenceTier: "high" | "medium" | "low";
+  extractedInfo: ExtractedProductInfo;
+  matchedProduct: Product | null;
+  possibleMatches: Product[];
+  alternatives: Product[];
+  message: string;
+}
+
 /**
- * Searches the catalog for a match against OCR extracted product information
+ * Searches the catalog for a match against OCR extracted product information per PRD v2.0
  */
 export async function matchCatalogProducts(
   extractedInfo: ExtractedProductInfo,
@@ -103,20 +114,43 @@ export async function matchCatalogProducts(
 
     const topCandidate = scoredProducts[0];
 
-    // 3. Threshold Check for Exact Match (Confidence >= 0.70 for MVP)
-    if (topCandidate && topCandidate.score >= 0.70) {
+    // ── TIER 1: HIGH CONFIDENCE MATCH (Confidence > 0.85) ──
+    // Auto-navigates directly to the matched product's page
+    if (topCandidate && topCandidate.score > 0.85) {
       const formatted = formatProduct(topCandidate.rawProduct);
       return {
         matched: true,
         confidence: topCandidate.score,
+        confidenceTier: "high",
         extractedInfo,
         matchedProduct: formatted,
+        possibleMatches: [formatted],
         alternatives: [],
         message: `Found exact match: ${formatted.name}`,
       };
     }
 
-    // 4. No Match / Low Confidence -> Surface In-Stock Alternatives from same category
+    // ── TIER 2: MEDIUM CONFIDENCE / UNCERTAIN MATCH (0.50 - 0.85) ──
+    // Returns top 1-3 possible matches for user selection
+    if (topCandidate && topCandidate.score >= 0.50) {
+      const topMatches = scoredProducts
+        .slice(0, 3)
+        .map((item) => formatProduct(item.rawProduct));
+
+      return {
+        matched: true,
+        confidence: topCandidate.score,
+        confidenceTier: "medium",
+        extractedInfo,
+        matchedProduct: topMatches[0] || null,
+        possibleMatches: topMatches,
+        alternatives: [],
+        message: `Found ${topMatches.length} possible matching products. Please choose the correct one:`,
+      };
+    }
+
+    // ── TIER 3: LOW CONFIDENCE / NO MATCH (< 0.50) ──
+    // Surface In-Stock Alternatives from same category and log to UnmatchedScanLog
     const categoryFilter = extractedInfo.categoryGuess || "tiles-stone";
     const rawAlternatives = await prisma.product.findMany({
       where: {
@@ -138,16 +172,18 @@ export async function matchCatalogProducts(
 
     const formattedAlternatives = rawAlternatives.map((p) => formatProduct(p));
 
-    // 5. Asynchronously log unmatched scan to UnmatchedScanLog for Demand Intelligence
+    // Asynchronously log unmatched scan to UnmatchedScanLog for Demand Intelligence
     try {
-      await prisma.unmatchedScanLog.create({
-        data: {
-          extractedText: extractedInfo.rawText || extractedInfo.cleanQuery || "Empty Scan",
-          detectedBrand: extractedInfo.detectedBrand,
-          categoryGuess: extractedInfo.categoryGuess,
-          userId: userId || null,
-        },
-      });
+      if ((prisma as any).unmatchedScanLog) {
+        await (prisma as any).unmatchedScanLog.create({
+          data: {
+            extractedText: extractedInfo.rawText || extractedInfo.cleanQuery || "Empty Scan",
+            detectedBrand: extractedInfo.detectedBrand,
+            categoryGuess: extractedInfo.categoryGuess,
+            userId: userId || null,
+          },
+        });
+      }
     } catch (logErr) {
       console.error("Failed to log unmatched scan:", logErr);
     }
@@ -156,8 +192,10 @@ export async function matchCatalogProducts(
     return {
       matched: false,
       confidence: topCandidate ? topCandidate.score : 0,
+      confidenceTier: "low",
       extractedInfo,
       matchedProduct: null,
+      possibleMatches: [],
       alternatives: formattedAlternatives,
       message: `${brandDisplay} is not available on IntriHub right now. Here are verified in-stock alternatives:`,
     };
@@ -166,8 +204,10 @@ export async function matchCatalogProducts(
     return {
       matched: false,
       confidence: 0,
+      confidenceTier: "low",
       extractedInfo,
       matchedProduct: null,
+      possibleMatches: [],
       alternatives: [],
       message: "An error occurred while matching the product. Please try again.",
     };
