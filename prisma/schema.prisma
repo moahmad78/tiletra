@@ -954,6 +954,22 @@ model Redirect {
   @@index([fromPath])
 }
 
+// ----------------------------------------------------
+// 16. Lens / Scan & Find Demand Intelligence
+// ----------------------------------------------------
+model UnmatchedScanLog {
+  id            String   @id @default(cuid())
+  extractedText String
+  detectedBrand String?
+  categoryGuess String?
+  userId        String?
+  createdAt     DateTime @default(now())
+
+  @@index([detectedBrand])
+  @@index([createdAt])
+}
+
+
 
 
 

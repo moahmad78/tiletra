@@ -1,6 +1,7 @@
 import { Tabs } from "expo-router";
+import { View, StyleSheet } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
-import { Home, Grid, ShoppingBag, Package, User } from "lucide-react-native";
+import { Home, Grid, ShoppingBag, User, ScanLine } from "lucide-react-native";
 import { COLORS } from "../../src/constants/theme";
 import { useCartStore } from "../../src/store/cartStore";
 
@@ -44,6 +45,18 @@ export default function TabLayout() {
         }}
       />
       <Tabs.Screen
+        name="scan"
+        options={{
+          title: "Scan",
+          tabBarIcon: ({ focused }: { focused: boolean }) => (
+            <View style={[styles.fabButton, focused && styles.fabButtonActive]}>
+              <ScanLine size={24} color="#FFFFFF" />
+            </View>
+          ),
+          tabBarLabel: () => null,
+        }}
+      />
+      <Tabs.Screen
         name="cart"
         options={{
           title: "Cart",
@@ -58,13 +71,6 @@ export default function TabLayout() {
         }}
       />
       <Tabs.Screen
-        name="orders"
-        options={{
-          title: "Orders",
-          tabBarIcon: ({ color, size }: { color: string; size?: number }) => <Package size={size || 22} color={color} />,
-        }}
-      />
-      <Tabs.Screen
         name="profile"
         options={{
           title: "Account",
@@ -74,3 +80,25 @@ export default function TabLayout() {
     </Tabs>
   );
 }
+
+const styles = StyleSheet.create({
+  fabButton: {
+    width: 50,
+    height: 50,
+    borderRadius: 25,
+    backgroundColor: COLORS.primary,
+    alignItems: "center",
+    justifyContent: "center",
+    marginBottom: 16,
+    borderWidth: 3,
+    borderColor: "#FFFFFF",
+    shadowColor: COLORS.accentOrange,
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.35,
+    shadowRadius: 8,
+    elevation: 8,
+  },
+  fabButtonActive: {
+    backgroundColor: COLORS.accentOrange,
+  },
+});
