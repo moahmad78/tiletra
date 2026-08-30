@@ -25,6 +25,12 @@ export default function robots(): MetadataRoute.Robots {
         "/for-architects",
         "/for-contractors",
         "/for-interior-designers",
+        "/favicon.ico",
+        "/favicon-32x32.png",
+        "/favicon-16x16.png",
+        "/apple-touch-icon.png",
+        "/og-image.png",
+        "/site.webmanifest",
       ],
       disallow: [
         "/api/",

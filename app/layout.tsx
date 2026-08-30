@@ -75,9 +75,9 @@ export const metadata: Metadata = {
   },
   icons: {
     icon: [
-      { url: "/favicon.ico" },
       { url: "/favicon-32x32.png", sizes: "32x32", type: "image/png" },
       { url: "/favicon-16x16.png", sizes: "16x16", type: "image/png" },
+      { url: "/favicon.ico" },
     ],
     apple: [
       { url: "/apple-touch-icon.png", sizes: "180x180", type: "image/png" },
@@ -95,7 +95,7 @@ export const metadata: Metadata = {
     locale: "en_IN",
     images: [
       {
-        url: "/logo/intri-web-logo.png",
+        url: "/og-image.png",
         width: 1200,
         height: 630,
         alt: "IntriHub - Building & Interior Materials Marketplace",
@@ -107,7 +107,7 @@ export const metadata: Metadata = {
     title: "IntriHub | Building & Interior Materials Marketplace — Bengaluru & Pan-India",
     description:
       "Intrihub — India's instant building materials quick-commerce network. Direct factory site delivery within 60 minutes.",
-    images: ["/logo/intri-web-logo.png"],
+    images: ["/og-image.png"],
   },
 };
 
@@ -132,10 +132,10 @@ export default function RootLayout({
         <meta name="founder" content="Sahil Sheikh (@sahil_sheikh78)" />
         <meta name="developer" content="Sahil Sheikh (@sahil_sheikh78)" />
         <meta name="designer" content="Sahil Sheikh (@sahil_sheikh78)" />
-        <link rel="icon" href="/favicon.ico" sizes="any" />
         <link rel="icon" type="image/png" sizes="32x32" href="/favicon-32x32.png" />
         <link rel="icon" type="image/png" sizes="16x16" href="/favicon-16x16.png" />
         <link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png" />
+        <link rel="icon" href="/favicon.ico" />
         <link rel="manifest" href="/site.webmanifest" />
         <script
           dangerouslySetInnerHTML={{
