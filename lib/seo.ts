@@ -34,7 +34,7 @@ export function getCanonicalUrl(path: string = ""): string {
  * Organization Schema.org structured data for Intrihub
  */
 /**
- * Organization Schema.org structured data for IntriHub (Compliant with Section 6.1)
+ * Organization Schema.org structured data for IntriHub (High Authority Brand Entity)
  */
 export function generateOrganizationSchema() {
   return {
@@ -42,14 +42,36 @@ export function generateOrganizationSchema() {
     "@type": ["Organization", "OnlineStore"],
     "@id": `${BASE_SITE_URL}/#organization`,
     name: "IntriHub",
-    alternateName: "IntriHub QuickCommerce",
+    alternateName: [
+      "Intrihub",
+      "Intrihub.com",
+      "IntriHub QuickCommerce",
+      "Intrihub India",
+      "Intrihub Bangalore",
+      "Intrihub Building Materials",
+      "Intrihub Interior Marketplace",
+      "Intrihub Store",
+    ],
+    legalName: "IntriHub QuickCommerce",
+    slogan: "Everything for Every Space — Instant Building & Interior Materials Marketplace",
     url: BASE_SITE_URL,
     logo: `${BASE_SITE_URL}/logo/intri-web-logo.png`,
+    image: `${BASE_SITE_URL}/logo/intri-web-logo.png`,
     description:
-      "India's instant building materials quick commerce network. Direct-from-factory delivery for construction & interior products.",
+      "Intrihub is India's leading instant building materials and interior supplies marketplace. Factory-direct wholesale rates for tiles, granite, electrical wires, sanitaryware, false ceilings, and hardware with 60-minute site delivery.",
     email: "support@intrihub.com",
     telephone: "+91-92649-20211",
     foundingDate: "2026",
+    knowsAbout: [
+      "Building Materials",
+      "Interior Materials Marketplace",
+      "Vitrified Tiles and Granite",
+      "Electrical Switches and Wires",
+      "Plumbing and CPVC Sanitaryware",
+      "Plywood and Hardware Supplies",
+      "Paints and Surface Finishes",
+      "Quick Commerce Building Delivery",
+    ],
     address: {
       "@type": "PostalAddress",
       streetAddress: "41, 10th A Cross Rd, Janapriya Layout, Begur",
@@ -74,7 +96,7 @@ export function generateOrganizationSchema() {
 }
 
 /**
- * WebSite Schema.org structured data with SearchAction
+ * WebSite Schema.org structured data with SearchAction for Intrihub
  */
 export function generateWebSiteSchema() {
   return {
@@ -83,8 +105,15 @@ export function generateWebSiteSchema() {
     "@id": `${BASE_SITE_URL}/#website`,
     url: BASE_SITE_URL,
     name: "IntriHub",
-    alternateName: "IntriHub Quick Commerce",
-    description: "India's instant building materials quick commerce network. Direct-from-factory delivery for construction & interior products.",
+    alternateName: [
+      "Intrihub",
+      "Intrihub.com",
+      "Intrihub India",
+      "Intrihub Quick Commerce",
+      "IntriHub Marketplace",
+    ],
+    description:
+      "Intrihub is India's instant building materials and interior supplies quick-commerce marketplace with direct factory site delivery.",
     publisher: {
       "@id": `${BASE_SITE_URL}/#organization`,
     },
@@ -97,6 +126,58 @@ export function generateWebSiteSchema() {
       "query-input": "required name=search_term_string",
     },
     inLanguage: "en-IN",
+  };
+}
+
+/**
+ * Brand FAQ Schema.org structured data for Google Knowledge Graph & SGE Rich Snippets
+ */
+export function generateBrandFAQSchema() {
+  return {
+    "@context": "https://schema.org",
+    "@type": "FAQPage",
+    mainEntity: [
+      {
+        "@type": "Question",
+        name: "What is Intrihub?",
+        acceptedAnswer: {
+          "@type": "Answer",
+          text: "Intrihub (IntriHub) is India's instant building and interior materials marketplace. Intrihub provides direct-from-factory supplies for construction, renovation, and architectural projects with 60-minute express delivery across Bengaluru and pan-India.",
+        },
+      },
+      {
+        "@type": "Question",
+        name: "What building materials can I buy on Intrihub?",
+        acceptedAnswer: {
+          "@type": "Answer",
+          text: "On Intrihub, you can buy over 20+ categories including vitrified floor tiles, wall tiles, granite slabs, modular switches, electrical wires, CPVC plumbing pipes, sanitaryware faucets, paints, waterproof plywood, false ceiling boards, and architectural hardware.",
+        },
+      },
+      {
+        "@type": "Question",
+        name: "How does Intrihub deliver in 60 minutes?",
+        acceptedAnswer: {
+          "@type": "Answer",
+          text: "Intrihub operates a localized micro-fulfillment network and direct factory partnerships with live GPS fleet dispatch, ensuring rapid site delivery within 60 minutes for critical construction projects.",
+        },
+      },
+      {
+        "@type": "Question",
+        name: "Who founded Intrihub?",
+        acceptedAnswer: {
+          "@type": "Answer",
+          text: "Intrihub was founded by Sahil Sheikh with the vision to digitize building material procurement and empower homeowners, contractors, architects, and interior designers with transparent wholesale pricing.",
+        },
+      },
+      {
+        "@type": "Question",
+        name: "How can I contact Intrihub customer support?",
+        acceptedAnswer: {
+          "@type": "Answer",
+          text: "You can reach Intrihub support directly by phone/WhatsApp at +91 92649 20211, or by email at support@intrihub.com. The Intrihub head office is located in Begur, Bengaluru, Karnataka, India.",
+        },
+      },
+    ],
   };
 }
 

@@ -244,6 +244,77 @@ export default function Footer() {
           </div>
         </div>
       </footer>
+
+      {/* ── MOBILE FOOTER (md:hidden) ── */}
+      <footer className="bg-[#02152b] text-white/70 pt-8 pb-16 border-t border-white/10 block md:hidden px-4">
+        <div className="space-y-6 text-center">
+          <div className="flex justify-center">
+            <Link href="/" className="inline-flex items-center bg-white px-3.5 py-1.5 rounded-2xl shadow-2xs">
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img
+                src="/logo/intri-web-logo.png"
+                alt="Intrihub Logo"
+                width={130}
+                height={28}
+                className="h-7 w-auto object-contain"
+              />
+            </Link>
+          </div>
+
+          <p className="text-xs text-white/80 leading-relaxed max-w-sm mx-auto font-medium">
+            <strong>Intrihub</strong> — India&apos;s instant building & interior materials marketplace. Direct factory delivery within 60 minutes for tiles, electrical, plumbing, sanitaryware, and hardware.
+          </p>
+
+          <div className="flex justify-center gap-3">
+            <a
+              href="https://wa.me/919264920211"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="px-3.5 py-2 rounded-xl bg-white/10 text-white text-xs font-bold flex items-center gap-1.5"
+            >
+              <span>💬 WhatsApp Desk</span>
+            </a>
+            <a
+              href="tel:+919264920211"
+              className="px-3.5 py-2 rounded-xl bg-white/10 text-white text-xs font-bold flex items-center gap-1.5"
+            >
+              <span>📞 +91 92649 20211</span>
+            </a>
+          </div>
+
+          <div className="text-[11px] text-white/60 space-y-1">
+            <p className="font-bold text-white/90">Intrihub Registered Office</p>
+            <p>41, 10th A Cross Rd, Janapriya Layout, Begur, Bengaluru, Karnataka 560114</p>
+          </div>
+
+          <div className="flex flex-wrap justify-center gap-x-3 gap-y-1.5 text-[11px] text-white/50 pt-2 border-t border-white/10">
+            <Link href="/about" className="hover:text-white">About Intrihub</Link>
+            <span>•</span>
+            <Link href="/shop" className="hover:text-white">Shop</Link>
+            <span>•</span>
+            <Link href="/contact" className="hover:text-white">Contact</Link>
+            <span>•</span>
+            <Link href="/privacy-policy" className="hover:text-white">Privacy</Link>
+            <span>•</span>
+            <Link href="/terms" className="hover:text-white">Terms</Link>
+          </div>
+
+          <div className="text-[10px] text-white/40 pt-2">
+            <p>© {new Date().getFullYear()} IntriHub QuickCommerce. All Rights Reserved.</p>
+            <p className="mt-1">
+              Founded & Developed by{" "}
+              <a
+                href="https://www.instagram.com/sahil_sheikh78/"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="text-white hover:text-[#F26522] font-bold underline"
+              >
+                Sahil Sheikh
+              </a>
+            </p>
+          </div>
+        </div>
+      </footer>
     </>
   );
 }

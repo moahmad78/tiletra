@@ -26,6 +26,7 @@ import RecentlyViewedSlider from "@/components/suggestions/RecentlyViewedSlider"
 import DesktopBannerCarousel, { type BannerSlide } from "@/components/DesktopBannerCarousel";
 import DesktopProductRow from "@/components/DesktopProductRow";
 import DesktopCategoryRow from "@/components/DesktopCategoryRow";
+import IntrihubBrandSEOSection from "@/components/IntrihubBrandSEOSection";
 
 
 
@@ -163,6 +164,12 @@ export default function HomeClient({
             <span>500+ Happy Spaces</span>
           </div>
         </div>
+
+        {/* Brand SEO & FAQs Section for Mobile */}
+        <IntrihubBrandSEOSection />
+
+        {/* Mobile Footer */}
+        <Footer />
       </div>
 
       {/* ========================================================================= */}
@@ -308,6 +315,9 @@ export default function HomeClient({
             </div>
           </div>
         </section>
+
+        {/* Brand SEO & FAQs Section for Desktop */}
+        <IntrihubBrandSEOSection />
 
         <Footer />
       </div>

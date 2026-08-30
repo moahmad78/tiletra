@@ -12,7 +12,13 @@ import AddToCartToast from "@/components/cart/AddToCartToast";
 import PwaInstallPrompt from "@/components/pwa/PwaInstallPrompt";
 import { Toaster } from "sonner";
 
-import { BASE_SITE_URL, generateOrganizationSchema, generateWebSiteSchema, safeJsonLd } from "@/lib/seo";
+import {
+  BASE_SITE_URL,
+  generateOrganizationSchema,
+  generateWebSiteSchema,
+  generateBrandFAQSchema,
+  safeJsonLd,
+} from "@/lib/seo";
 
 const jakarta = Plus_Jakarta_Sans({
   variable: "--font-jakarta",
@@ -24,21 +30,34 @@ const jakarta = Plus_Jakarta_Sans({
 export const metadata: Metadata = {
   metadataBase: new URL(BASE_SITE_URL),
   title: {
-    default: "IntriHub | Building Materials Marketplace — Bengaluru & Pan-India",
+    default: "IntriHub | Building & Interior Materials Marketplace — Bengaluru & Pan-India",
     template: "%s | IntriHub",
   },
   description:
-    "IntriHub — India's instant building & interior materials quick-commerce marketplace. Direct factory delivery within 60 minutes for tiles, electrical, plumbing, sanitaryware, and hardware across Bengaluru & Pan-India.",
+    "Intrihub (IntriHub) — India's leading building & interior materials quick-commerce marketplace. Buy tiles, granite, electrical wires, sanitaryware, false ceilings, and hardware on Intrihub with direct factory prices and 60-minute site delivery.",
   keywords: [
+    "Intrihub",
     "IntriHub",
-    "IntriHub QuickCommerce",
+    "intrihub",
+    "intrihub.com",
+    "www.intrihub.com",
+    "Intrihub India",
+    "Intrihub Bengaluru",
+    "Intrihub Bangalore",
+    "Intrihub QuickCommerce",
+    "Intrihub Building Materials",
+    "Intrihub Tiles",
+    "Intrihub Granite",
+    "Intrihub Sanitaryware",
+    "Intrihub Electrical",
+    "Intrihub Plywood",
+    "Intrihub Interior Supplies",
+    "Intrihub Online Store",
     "building materials marketplace",
     "construction supplies bangalore",
     "instant building materials delivery",
     "tiles and sanitaryware online",
     "electrical supplies wholesale bangalore",
-    "lighting fixtures india",
-    "plywood and hardware online",
   ],
   alternates: {
     canonical: BASE_SITE_URL,
@@ -67,9 +86,9 @@ export const metadata: Metadata = {
   },
   manifest: "/site.webmanifest",
   openGraph: {
-    title: "IntriHub | Building Materials Marketplace — Bengaluru & Pan-India",
+    title: "IntriHub | Building & Interior Materials Marketplace — Bengaluru & Pan-India",
     description:
-      "IntriHub — India's instant building materials quick-commerce network. Factory-direct delivery within 60 minutes for electrical, lighting, tiles, plumbing, and hardware.",
+      "Intrihub — India's instant building materials quick-commerce network. Factory-direct delivery within 60 minutes for electrical, lighting, tiles, plumbing, and hardware.",
     type: "website",
     url: BASE_SITE_URL,
     siteName: "IntriHub",
@@ -79,15 +98,15 @@ export const metadata: Metadata = {
         url: "/logo/intri-web-logo.png",
         width: 1200,
         height: 630,
-        alt: "IntriHub - Building Materials Marketplace",
+        alt: "IntriHub - Building & Interior Materials Marketplace",
       },
     ],
   },
   twitter: {
     card: "summary_large_image",
-    title: "IntriHub | Building Materials Marketplace — Bengaluru & Pan-India",
+    title: "IntriHub | Building & Interior Materials Marketplace — Bengaluru & Pan-India",
     description:
-      "IntriHub — India's instant building materials quick-commerce network. Direct factory site delivery within 60 minutes.",
+      "Intrihub — India's instant building materials quick-commerce network. Direct factory site delivery within 60 minutes.",
     images: ["/logo/intri-web-logo.png"],
   },
 };
@@ -99,6 +118,7 @@ export default function RootLayout({
 }>) {
   const organizationSchema = generateOrganizationSchema();
   const websiteSchema = generateWebSiteSchema();
+  const brandFAQSchema = generateBrandFAQSchema();
   const gaMeasurementId = process.env.NEXT_PUBLIC_GA_MEASUREMENT_ID || "G-EGVGF17EPS";
 
   return (
@@ -161,6 +181,12 @@ export default function RootLayout({
           type="application/ld+json"
           dangerouslySetInnerHTML={{
             __html: safeJsonLd(websiteSchema),
+          }}
+        />
+        <script
+          type="application/ld+json"
+          dangerouslySetInnerHTML={{
+            __html: safeJsonLd(brandFAQSchema),
           }}
         />
         <QuoteModalProvider>
