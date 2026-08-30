@@ -140,6 +140,7 @@ export interface Product {
   approvalStatus?: string;
   featuredImage?: string;
   coverageRate?: number | null;
+  piecesPerBox?: number | null;
   wastageFactor?: number | null;
   isTrending?: boolean;
   isBestseller?: boolean;

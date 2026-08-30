@@ -105,6 +105,7 @@ model Category {
   popularFinishes String[]   @default([])
   popularSizes    String[]   @default([])
   calculatorType  String     @default("none") // none | area_to_boxes | area_to_volume | length_to_units
+  calculatorInputType String @default("area") // area | length | none
   order           Int        @default(0)
   parentId        String?
   createdAt       DateTime   @default(now())
@@ -134,6 +135,7 @@ model Product {
   baseUnit          String?            // Reference unit e.g. "sqft", "meter", "piece", "litre", "kg"
   conversionRatio   Float?             // e.g. 4.5 sqft per box, 90m per roll, 20L per bucket
   coverageRate      Float?             // Coverage in sq.ft per selling unit
+  piecesPerBox      Int?               // Pieces per box (for box-based items like tiles)
   piecesPerUnit     Int?               // Pieces per pack/box
   lengthPerUnit     Float?             // Length per roll/bundle in meters
   weightKg          Float?             // Weight per selling unit in kg
@@ -174,7 +176,8 @@ model Product {
   description       String             @default("")
   shortDescription  String?
   rating            Float              @default(4.8)
-  reviewCount       Int                @default(12)
+  avgRating         Float?             @default(0)
+  reviewCount       Int                @default(0)
   manualRating      Float?
   manualReviewCount Int?
   specs             Json?
@@ -376,6 +379,7 @@ model Order {
   deliveryPartner        DeliveryPartner? @relation(fields: [deliveryPartnerId], references: [id], onDelete: SetNull)
   items                  OrderItem[]
   returnRequests         ReturnRequest[]
+  reviews                Review[]
   locationLogs           DeliveryLocationLog[]
 
   @@index([customerPhone])
@@ -491,27 +495,48 @@ model Customer {
 // 6. Reviews
 // ----------------------------------------------------
 model Review {
-  id               String   @id @default(cuid())
-  productId        String
-  productName      String
-  userId           String?
-  author           String
-  city             String   @default("Bangalore")
-  rating           Int      @default(5)
-  comment          String
-  date             String
-  status           String   @default("approved") // pending | approved | rejected
-  photos           String[] @default([])
-  verifiedPurchase Boolean  @default(false)
-  createdAt        DateTime @default(now())
-  updatedAt        DateTime @updatedAt
+  id            String       @id @default(cuid())
+  productId     String
+  product       Product      @relation(fields: [productId], references: [id], onDelete: Cascade)
+  userId        String
+  user          User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+  orderId       String       // the order that proves verified purchase
+  order         Order        @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  rating        Int          // 1-5
+  title         String?
+  body          String?
+  status        ReviewStatus @default(PUBLISHED) // PUBLISHED | HIDDEN
+  hiddenReason  String?      // set by admin when hiding
+  createdAt     DateTime     @default(now())
+  updatedAt     DateTime     @updatedAt
+  media         ReviewMedia[]
 
-  product          Product? @relation(fields: [productId], references: [id], onDelete: Cascade)
-  user             User?    @relation(fields: [userId], references: [id], onDelete: SetNull)
-
-  @@index([productId])
-  @@index([status])
+  @@unique([userId, productId, orderId]) // one review per purchase-line, not per product overall
+  @@index([productId, status])
   @@index([userId])
+  @@index([orderId])
+}
+
+model ReviewMedia {
+  id           String    @id @default(cuid())
+  reviewId     String
+  review       Review    @relation(fields: [reviewId], references: [id], onDelete: Cascade)
+  type         MediaType // IMAGE | VIDEO
+  url          String    // Vercel Blob URL
+  thumbnailUrl String?   // for video, generated thumbnail
+  createdAt    DateTime  @default(now())
+
+  @@index([reviewId])
+}
+
+enum ReviewStatus {
+  PUBLISHED
+  HIDDEN
+}
+
+enum MediaType {
+  IMAGE
+  VIDEO
 }
 
 // ----------------------------------------------------

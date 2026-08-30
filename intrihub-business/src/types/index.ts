@@ -60,6 +60,9 @@ export interface Product {
   price?: number;
   stock?: number;
   coveragePerBox?: number;
+  coverageRate?: number | null;
+  piecesPerBox?: number | null;
+  wastageFactor?: number | null;
   approvalStatus?: string;
   rejectionReason?: string;
   vendorName?: string;
@@ -338,27 +341,52 @@ export interface StoreSettings {
   updatedAt?: string;
 }
 
+export interface ReviewMedia {
+  id: string;
+  type: "IMAGE" | "VIDEO";
+  url: string;
+  thumbnailUrl?: string | null;
+}
+
 export interface Review {
   id: string;
   productId: string;
-  productName: string;
+  productName?: string;
   userId?: string | null;
-  author: string;
-  city: string;
+  author?: string;
+  city?: string;
   rating: number;
-  comment: string;
-  date: string;
-  status: "pending" | "approved" | "rejected";
-  photos: string[];
-  verifiedPurchase: boolean;
+  title?: string | null;
+  body?: string | null;
+  comment?: string;
+  date?: string;
+  status: "PUBLISHED" | "HIDDEN" | "pending" | "approved" | "rejected";
+  hiddenReason?: string | null;
+  photos?: string[];
+  media?: ReviewMedia[];
+  verifiedPurchase?: boolean;
   createdAt?: string;
   updatedAt?: string;
+  user?: {
+    id?: string;
+    name?: string | null;
+    phone?: string | null;
+    email?: string | null;
+    avatar?: string | null;
+  };
   product?: {
     id: string;
     name: string;
+    slug?: string;
     images?: string[];
     pricePerSqft?: number;
     mrp?: number;
     categoryName?: string;
+  };
+  order?: {
+    id: string;
+    orderStatus?: string;
+    deliveredAt?: string | null;
+    createdAt?: string;
   };
 }

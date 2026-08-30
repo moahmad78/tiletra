@@ -87,20 +87,33 @@ export default async function ProductPage({
   params: Promise<{ slug: string }>;
 }) {
   const { slug } = await params;
-  const [product, allProducts, approvedReviews] = await Promise.all([
+  const [product, allProducts, publishedReviews] = await Promise.all([
     getProductBySlug(slug),
     getProducts(),
     prisma.review.findMany({
       where: {
         product: { slug },
-        status: "approved",
+        status: "PUBLISHED",
       },
       select: {
         id: true,
-        author: true,
         rating: true,
-        comment: true,
+        title: true,
+        body: true,
         createdAt: true,
+        user: {
+          select: {
+            name: true,
+          },
+        },
+        media: {
+          select: {
+            id: true,
+            type: true,
+            url: true,
+            thumbnailUrl: true,
+          },
+        },
       },
       orderBy: { createdAt: "desc" },
     }).catch(() => []),
@@ -133,7 +146,16 @@ export default async function ProductPage({
     inStock: product.variants?.some((v) => v.stockBoxes > 0) ?? true,
     categoryName: product.categoryName || product.categorySlug,
     brand: (product as any).brand || "IntriHub",
-    reviews: approvedReviews,
+    avgRating: (product as any).avgRating ?? (product as any).rating,
+    reviewCount: (product as any).reviewCount ?? publishedReviews.length,
+    reviews: publishedReviews.map((r) => ({
+      id: r.id,
+      rating: r.rating,
+      title: r.title,
+      body: r.body,
+      createdAt: r.createdAt,
+      author: r.user?.name || "Verified Customer",
+    })),
   });
 
   const breadcrumbsSchema = generateBreadcrumbSchema([

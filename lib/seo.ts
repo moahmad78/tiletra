@@ -134,12 +134,17 @@ export function generateProductSchema(product: {
   categoryName?: string;
   sku?: string;
   brand?: string;
+  avgRating?: number | null;
+  reviewCount?: number;
   reviews?: Array<{
     id?: string;
-    author: string;
+    author?: string;
     rating: number;
-    comment: string;
+    comment?: string | null;
+    body?: string | null;
+    title?: string | null;
     createdAt?: string | Date;
+    user?: { name?: string | null };
   }>;
 }) {
   const images =
@@ -225,40 +230,53 @@ export function generateProductSchema(product: {
   };
 
   // Section 5.3 & 6.3: Strict Conditional Review / Rating Rendering
-  // ONLY emit aggregateRating and review if genuine, approved customer reviews exist
-  if (product.reviews && Array.isArray(product.reviews) && product.reviews.length > 0) {
-    const validReviews = product.reviews.filter((r) => r && r.rating && r.comment && r.comment.trim().length > 0);
+  // ONLY emit aggregateRating and review if genuine published customer reviews exist
+  const reviewsList = product.reviews || [];
+  const validReviews = reviewsList.filter((r) => r && r.rating && ((r.body && r.body.trim().length > 0) || (r.comment && r.comment.trim().length > 0) || (r.title && r.title.trim().length > 0)));
+
+  const hasRatingCache = product.reviewCount !== undefined && product.reviewCount > 0 && product.avgRating !== undefined && product.avgRating !== null && product.avgRating > 0;
+
+  if (hasRatingCache || validReviews.length > 0) {
+    const computedAvg = validReviews.length > 0
+      ? (validReviews.reduce((sum, r) => sum + r.rating, 0) / validReviews.length).toFixed(1)
+      : String(product.avgRating || 0);
+
+    const countVal = String(product.reviewCount || validReviews.length);
+
+    schema.aggregateRating = {
+      "@type": "AggregateRating",
+      ratingValue: String(product.avgRating ? product.avgRating.toFixed(1) : computedAvg),
+      reviewCount: countVal,
+      bestRating: "5",
+      worstRating: "1",
+    };
 
     if (validReviews.length > 0) {
-      const avgRating = (
-        validReviews.reduce((sum, r) => sum + r.rating, 0) / validReviews.length
-      ).toFixed(1);
+      schema.review = validReviews.slice(0, 10).map((r) => {
+        let authorName = r.author || r.user?.name || "Verified Customer";
+        const parts = authorName.trim().split(" ");
+        if (parts.length > 1) {
+          authorName = `${parts[0]} ${parts[parts.length - 1][0].toUpperCase()}.`;
+        }
 
-      schema.aggregateRating = {
-        "@type": "AggregateRating",
-        ratingValue: avgRating,
-        reviewCount: String(validReviews.length),
-        bestRating: "5",
-        worstRating: "1",
-      };
-
-      schema.review = validReviews.slice(0, 10).map((r) => ({
-        "@type": "Review",
-        author: {
-          "@type": "Person",
-          name: r.author || "Verified Customer",
-        },
-        reviewRating: {
-          "@type": "Rating",
-          ratingValue: String(r.rating),
-          bestRating: "5",
-          worstRating: "1",
-        },
-        reviewBody: r.comment,
-        ...(r.createdAt
-          ? { datePublished: new Date(r.createdAt).toISOString().split("T")[0] }
-          : {}),
-      }));
+        return {
+          "@type": "Review",
+          author: {
+            "@type": "Person",
+            name: authorName,
+          },
+          reviewRating: {
+            "@type": "Rating",
+            ratingValue: String(r.rating),
+            bestRating: "5",
+            worstRating: "1",
+          },
+          reviewBody: r.body || r.comment || r.title || "Verified product review",
+          ...(r.createdAt
+            ? { datePublished: new Date(r.createdAt).toISOString().split("T")[0] }
+            : {}),
+        };
+      });
     }
   }
 

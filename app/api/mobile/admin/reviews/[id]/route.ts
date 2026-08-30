@@ -1,6 +1,6 @@
 import { NextRequest } from "next/server";
 import { getAuthenticatedAdmin, mobileApiResponse, handleMobileCorsOptions } from "@/lib/mobile-auth";
-import { updateReviewStatus, deleteReview } from "@/lib/actions/reviews";
+import { hideReviewByAdmin, restoreReviewByAdmin, deleteReviewAction } from "@/lib/actions/reviews";
 import { prisma } from "@/lib/prisma";
 
 export async function OPTIONS() {
@@ -20,7 +20,12 @@ export async function GET(
     const { id } = await params;
     const review = await prisma.review.findUnique({
       where: { id },
-      include: { product: true, user: true },
+      include: {
+        product: true,
+        user: { select: { id: true, name: true, phone: true, email: true, avatar: true } },
+        order: true,
+        media: true,
+      },
     });
 
     if (!review) {
@@ -49,23 +54,28 @@ export async function PATCH(
 
     const { id } = await params;
     const body = await req.json().catch(() => ({}));
-    const { status = "approved" } = body;
+    const { status, hiddenReason } = body;
 
-    if (!["approved", "rejected", "pending"].includes(status)) {
-      return mobileApiResponse({ success: false, error: "Invalid review status" }, 400);
+    const normalizedStatus = (status || "").toUpperCase();
+
+    if (normalizedStatus === "HIDDEN" || status === "rejected") {
+      if (!hiddenReason || !hiddenReason.trim()) {
+        return mobileApiResponse(
+          { success: false, error: "hiddenReason is required when hiding a review." },
+          400
+        );
+      }
+      const res = await hideReviewByAdmin(id, hiddenReason);
+      return mobileApiResponse(res);
+    } else if (normalizedStatus === "PUBLISHED" || status === "approved") {
+      const res = await restoreReviewByAdmin(id);
+      return mobileApiResponse(res);
+    } else {
+      return mobileApiResponse(
+        { success: false, error: "Invalid review status. Use 'PUBLISHED' or 'HIDDEN'." },
+        400
+      );
     }
-
-    const res = await updateReviewStatus(id, status);
-
-    if (!res.success) {
-      return mobileApiResponse({ success: false, error: res.error }, 400);
-    }
-
-    return mobileApiResponse({
-      success: true,
-      message: `Review ${status === "approved" ? "approved for storefront" : "marked as " + status}!`,
-      review: res.review,
-    });
   } catch (error: any) {
     console.error("[Mobile Admin Review Update Error]", error);
     return mobileApiResponse(
@@ -86,7 +96,7 @@ export async function DELETE(
     }
 
     const { id } = await params;
-    const res = await deleteReview(id);
+    const res = await deleteReviewAction(id);
 
     if (!res.success) {
       return mobileApiResponse({ success: false, error: res.error }, 400);

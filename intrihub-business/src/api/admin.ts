@@ -617,15 +617,20 @@ export async function updateAdminStoreSettings(data: any): Promise<{
 export async function fetchAdminReviews(params?: {
   search?: string;
   status?: string;
+  productId?: string;
+  page?: number;
+  limit?: number;
 }): Promise<{
   success: boolean;
   reviews?: any[];
   total?: number;
   counts?: {
     all: number;
-    pending: number;
-    approved: number;
-    rejected: number;
+    published?: number;
+    hidden?: number;
+    pending?: number;
+    approved?: number;
+    rejected?: number;
   };
   error?: string;
 }> {
@@ -633,25 +638,57 @@ export async function fetchAdminReviews(params?: {
   return res.data;
 }
 
-export async function updateAdminReviewStatus(
+export async function hideAdminReview(
   id: string,
-  status: "approved" | "rejected" | "pending"
+  reason: string
 ): Promise<{
   success: boolean;
   review?: any;
   message?: string;
   error?: string;
 }> {
-  const res = await apiClient.patch(`/api/mobile/admin/reviews/${id}`, { status });
+  const res = await apiClient.patch(`/api/mobile/admin/reviews/${id}`, {
+    status: "HIDDEN",
+    hiddenReason: reason,
+  });
+  return res.data;
+}
+
+export async function restoreAdminReview(id: string): Promise<{
+  success: boolean;
+  review?: any;
+  message?: string;
+  error?: string;
+}> {
+  const res = await apiClient.patch(`/api/mobile/admin/reviews/${id}`, {
+    status: "PUBLISHED",
+  });
+  return res.data;
+}
+
+export async function updateAdminReviewStatus(
+  id: string,
+  status: string,
+  hiddenReason?: string
+): Promise<{
+  success: boolean;
+  review?: any;
+  message?: string;
+  error?: string;
+}> {
+  const res = await apiClient.patch(`/api/mobile/admin/reviews/${id}`, {
+    status,
+    hiddenReason,
+  });
   return res.data;
 }
 
 export async function approveAdminReview(id: string) {
-  return updateAdminReviewStatus(id, "approved");
+  return restoreAdminReview(id);
 }
 
-export async function rejectAdminReview(id: string) {
-  return updateAdminReviewStatus(id, "rejected");
+export async function rejectAdminReview(id: string, reason?: string) {
+  return hideAdminReview(id, reason || "Rejected by admin");
 }
 
 export async function deleteAdminReview(id: string): Promise<{
@@ -916,3 +953,6 @@ export async function executeAdminVendorPayout(data: {
   const res = await apiClient.post("/api/mobile/admin/settlements", data);
   return res.data;
 }
+
+
+

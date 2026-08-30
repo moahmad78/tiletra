@@ -369,12 +369,18 @@ export default function ProductDetailsClient({
 
               {/* Rating & Specifications */}
               {(() => {
+                const avgRatingVal = (definedProduct as any).avgRating;
+                const reviewCountVal = (definedProduct as any).reviewCount;
                 const displayRating =
-                  definedProduct.manualRating !== null && definedProduct.manualRating !== undefined
+                  avgRatingVal !== null && avgRatingVal !== undefined && avgRatingVal > 0
+                    ? avgRatingVal
+                    : definedProduct.manualRating !== null && definedProduct.manualRating !== undefined
                     ? definedProduct.manualRating
                     : definedProduct.rating;
                 const displayReviewCount =
-                  definedProduct.manualReviewCount !== null && definedProduct.manualReviewCount !== undefined
+                  reviewCountVal !== null && reviewCountVal !== undefined && reviewCountVal > 0
+                    ? reviewCountVal
+                    : definedProduct.manualReviewCount !== null && definedProduct.manualReviewCount !== undefined
                     ? definedProduct.manualReviewCount
                     : definedProduct.reviewCount;
 
@@ -383,10 +389,10 @@ export default function ProductDetailsClient({
                     {displayRating && displayRating > 0 ? (
                       <div className="flex items-center gap-1.5 bg-amber-50/90 px-2.5 py-1 rounded-xl border border-amber-200/80 shadow-2xs">
                         <Star size={13} className="fill-amber-400 text-amber-400 shrink-0" />
-                        <span className="text-xs font-black text-amber-900 leading-none">{displayRating}</span>
+                        <span className="text-xs font-black text-amber-900 leading-none">{Number(displayRating).toFixed(1)}</span>
                         {displayReviewCount !== null && displayReviewCount !== undefined && displayReviewCount > 0 && (
                           <span className="text-[11px] font-semibold text-gray-500">
-                            ({displayReviewCount} reviews)
+                            ({displayReviewCount} {displayReviewCount === 1 ? "review" : "reviews"})
                           </span>
                         )}
                       </div>
@@ -656,6 +662,11 @@ export default function ProductDetailsClient({
         {/* ── Frequently Bought Together ── */}
         <div className="mt-12">
           <FrequentlyBoughtTogether product={definedProduct} />
+        </div>
+
+        {/* ── Customer Reviews & Ratings Section ── */}
+        <div className="mt-12">
+          <ReviewSection productId={definedProduct.id} productName={definedProduct.name} />
         </div>
 
         {/* ── Related Products (Same Category) ── */}

@@ -49,6 +49,7 @@ export default function VendorEditProductPage() {
   // Dynamic Attributes
   const [attributes, setAttributes] = useState<{ key: string; value: string }[]>([]);
   const [coverageRate, setCoverageRate] = useState<string>("");
+  const [piecesPerBox, setPiecesPerBox] = useState<string>("");
   const [wastagePercent, setWastagePercent] = useState<string>("10");
   const [vendorProfile, setVendorProfile] = useState<any | null>(null);
 
@@ -88,6 +89,7 @@ export default function VendorEditProductPage() {
           setDescription(prod.description || "");
           setImages(prod.images && prod.images.length > 0 ? prod.images : ["/placeholders/product.svg"]);
           setCoverageRate(prod.coverageRate ? String(prod.coverageRate) : "");
+          setPiecesPerBox(prod.piecesPerBox ? String(prod.piecesPerBox) : "");
           setWastagePercent(prod.wastageFactor ? String(Math.round((prod.wastageFactor - 1) * 100)) : "10");
           if (prod.variants && prod.variants.length > 0) {
             setVariants(
@@ -205,6 +207,7 @@ export default function VendorEditProductPage() {
       images: images.filter((img) => img.trim().length > 0),
       attributes: cleanAttributes,
       coverageRate: !isNaN(parseFloat(coverageRate)) && parseFloat(coverageRate) > 0 ? parseFloat(coverageRate) : null,
+      piecesPerBox: !isNaN(parseInt(piecesPerBox, 10)) && parseInt(piecesPerBox, 10) > 0 ? parseInt(piecesPerBox, 10) : null,
       wastageFactor: (parseFloat(wastagePercent) || 10) / 100 + 1.0,
       variants,
     });
@@ -434,10 +437,24 @@ export default function VendorEditProductPage() {
           />
 
           {/* Smart Calculator Estimator Settings */}
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 pt-4 border-t border-gray-100">
+          <div className={`grid grid-cols-1 ${unitOfSale === "box" ? "sm:grid-cols-3" : "sm:grid-cols-2"} gap-4 pt-4 border-t border-gray-100`}>
             <div>
               <label className="text-xs font-bold text-gray-800 uppercase tracking-wider block mb-1.5 flex justify-between">
-                <span>Coverage / Length Rate</span>
+                <span>
+                  {unitOfSale === "box"
+                    ? "Coverage Rate (sq.ft / box)"
+                    : unitOfSale === "litre" || unitOfSale === "can" || unitOfSale === "bucket" || unitOfSale === "bottle"
+                    ? "Coverage Rate (sq.ft / litre / coat)"
+                    : unitOfSale === "meter" || unitOfSale === "coil"
+                    ? "Length (meters / coil or unit)"
+                    : unitOfSale === "roll"
+                    ? "Coverage Rate (sq.ft / roll)"
+                    : unitOfSale === "kg"
+                    ? "Coverage Rate (sq.ft / kg)"
+                    : unitOfSale === "sqft"
+                    ? "Direct Area Unit (1:1 sq.ft)"
+                    : "Coverage / Yield per Unit"}
+                </span>
                 <span className="text-[10px] text-gray-400 font-normal">Powers Calculator</span>
               </label>
               <input
@@ -446,13 +463,57 @@ export default function VendorEditProductPage() {
                 min={0}
                 value={coverageRate}
                 onChange={(e) => setCoverageRate(e.target.value)}
-                placeholder="e.g. 16 for tiles, 120 for paint, 90 for wire"
+                placeholder={
+                  unitOfSale === "box"
+                    ? "e.g. 16 (sq.ft per box)"
+                    : unitOfSale === "litre" || unitOfSale === "can" || unitOfSale === "bucket"
+                    ? "e.g. 120 (sq.ft per litre)"
+                    : unitOfSale === "meter" || unitOfSale === "coil"
+                    ? "e.g. 90 (meters per coil)"
+                    : unitOfSale === "roll"
+                    ? "e.g. 57 (sq.ft per roll)"
+                    : unitOfSale === "kg"
+                    ? "e.g. 20 (sq.ft per kg)"
+                    : "e.g. 20"
+                }
                 className="w-full px-4 py-2.5 bg-gray-50 border border-gray-200 rounded-xl text-xs font-bold text-gray-800 focus:bg-white focus:outline-none focus:border-emerald-600"
               />
               <p className="text-[10px] text-gray-400 mt-1">
-                Sq.ft/box (Tiles), Sq.ft/Litre (Paint), Meters/coil (Wires)
+                {unitOfSale === "box"
+                  ? "Sq.ft covered per box (e.g. 16 for standard 600x600 tiles)"
+                  : unitOfSale === "litre" || unitOfSale === "can" || unitOfSale === "bucket"
+                  ? "Sq.ft covered per litre per coat (e.g. 120 for emulsion)"
+                  : unitOfSale === "meter" || unitOfSale === "coil"
+                  ? "Meters in one coil/unit (e.g. 90m for wire coils)"
+                  : unitOfSale === "roll"
+                  ? "Sq.ft covered per roll (e.g. 57 for wallpaper)"
+                  : unitOfSale === "kg"
+                  ? "Sq.ft covered per kg (e.g. 20 for tile adhesive/putty)"
+                  : "Leave empty if product does not require calculator"}
               </p>
             </div>
+
+            {/* Pieces Per Box (Tiles Specific) */}
+            {unitOfSale === "box" && (
+              <div>
+                <label className="text-xs font-bold text-gray-800 uppercase tracking-wider block mb-1.5 flex justify-between">
+                  <span>Pieces per Box</span>
+                  <span className="text-[10px] text-gray-400 font-normal">Optional</span>
+                </label>
+                <input
+                  type="number"
+                  step="1"
+                  min={1}
+                  value={piecesPerBox}
+                  onChange={(e) => setPiecesPerBox(e.target.value)}
+                  placeholder="e.g. 4 or 6"
+                  className="w-full px-4 py-2.5 bg-gray-50 border border-gray-200 rounded-xl text-xs font-bold text-gray-800 focus:bg-white focus:outline-none focus:border-emerald-600"
+                />
+                <p className="text-[10px] text-gray-400 mt-1">
+                  Pieces per retail box (allows piece-count estimation)
+                </p>
+              </div>
+            )}
 
             <div>
               <label className="text-xs font-bold text-gray-800 uppercase tracking-wider block mb-1.5 flex justify-between">

@@ -32,11 +32,14 @@ import {
   Headphones,
   MessageCircle,
   Navigation,
+  Star,
+  Edit3,
 } from "lucide-react-native";
 import { getOrderDetails } from "../../src/api/orders";
 import { socketService } from "../../src/store/socketStore";
 import { COLORS, SPACING, RADIUS, SHADOWS } from "../../src/constants/theme";
 import { downloadInvoicePDFDirect, shareInvoicePDF } from "../../src/utils/pdfInvoiceGenerator";
+import { WriteReviewModal } from "../../src/components/WriteReviewModal";
 
 const getCleanPhone = (phone?: string | null) => {
   if (!phone) return "";
@@ -62,6 +65,7 @@ export default function OrderDetailScreen() {
   const queryClient = useQueryClient();
   const [showInvoiceModal, setShowInvoiceModal] = useState(false);
   const [downloadingPdf, setDownloadingPdf] = useState(false);
+  const [reviewItem, setReviewItem] = useState<{ productId: string; productName: string; orderId: string } | null>(null);
 
   const { data, isLoading, error } = useQuery({
     queryKey: ["mobile-order-detail", id],
@@ -407,6 +411,24 @@ IntriHub — Everything, Every Place`;
                 <Text style={styles.itemQtyPrice}>
                   Qty: {item.boxQuantity} Box(es) • ₹{item.totalPrice?.toLocaleString("en-IN")}
                 </Text>
+
+                {/* Write Review Button for Delivered Items */}
+                {order.orderStatus?.toLowerCase().includes("deliver") && item.productId && (
+                  <TouchableOpacity
+                    style={styles.itemReviewBtn}
+                    onPress={() =>
+                      setReviewItem({
+                        productId: item.productId,
+                        productName: item.productName,
+                        orderId: order.id,
+                      })
+                    }
+                    activeOpacity={0.8}
+                  >
+                    <Star size={12} color="#F59E0B" fill="#F59E0B" style={{ marginRight: 4 }} />
+                    <Text style={styles.itemReviewBtnText}>Write Review</Text>
+                  </TouchableOpacity>
+                )}
               </View>
             </View>
           ))}
@@ -487,6 +509,20 @@ IntriHub — Everything, Every Place`;
 
         <View style={{ height: 40 }} />
       </ScrollView>
+
+      {/* Write Review Modal */}
+      {reviewItem && (
+        <WriteReviewModal
+          visible={Boolean(reviewItem)}
+          productId={reviewItem.productId}
+          productName={reviewItem.productName}
+          orderId={reviewItem.orderId}
+          onClose={() => setReviewItem(null)}
+          onSuccess={() => {
+            queryClient.invalidateQueries({ queryKey: ["mobile-order-detail", id] });
+          }}
+        />
+      )}
 
       {/* Official Tax Invoice / Bill Modal */}
       <Modal
@@ -1212,5 +1248,22 @@ const styles = StyleSheet.create({
     fontWeight: "900",
     color: "#fff",
     letterSpacing: 0.5,
+  },
+  itemReviewBtn: {
+    flexDirection: "row",
+    alignItems: "center",
+    alignSelf: "flex-start",
+    backgroundColor: "#FFFBEB",
+    borderWidth: 1,
+    borderColor: "#FDE68A",
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    borderRadius: RADIUS.sm,
+    marginTop: 6,
+  },
+  itemReviewBtnText: {
+    fontSize: 11,
+    fontWeight: "800",
+    color: "#92400E",
   },
 });

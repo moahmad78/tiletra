@@ -99,6 +99,7 @@ export type Product = {
   approvalStatus?: "pending" | "approved" | "rejected";
   rejectionReason?: string | null;
   coverageRate?: number | null;
+  piecesPerBox?: number | null;
   wastageFactor?: number | null;
   size?: string;
   finish?: string;

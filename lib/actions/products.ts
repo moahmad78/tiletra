@@ -72,6 +72,7 @@ export type CreateProductInput = {
   approvalStatus?: "pending" | "approved" | "rejected";
   rejectionReason?: string | null;
   coverageRate?: number | null;
+  piecesPerBox?: number | null;
   wastageFactor?: number | null;
 };
 
@@ -487,6 +488,7 @@ export async function createProduct(input: CreateProductInput) {
         approvalStatus: initialApprovalStatus,
         rejectionReason: input.rejectionReason || null,
         coverageRate: input.coverageRate !== undefined && input.coverageRate !== null ? Number(input.coverageRate) : (primaryVariant.sqftPerBox ? Number(primaryVariant.sqftPerBox) : null),
+        piecesPerBox: input.piecesPerBox !== undefined && input.piecesPerBox !== null ? Number(input.piecesPerBox) : (primaryVariant.piecesPerBox ? Number(primaryVariant.piecesPerBox) : null),
         wastageFactor: input.wastageFactor !== undefined && input.wastageFactor !== null ? Number(input.wastageFactor) : 1.1,
         variants: {
           create: (input.variants && input.variants.length > 0 ? input.variants : [primaryVariant]).map((v: any) => ({
@@ -749,6 +751,7 @@ export async function updateProduct(id: string, input: Partial<CreateProductInpu
     if (input.specs !== undefined) updateData.specs = input.specs;
     if (input.mrp !== undefined) updateData.mrp = input.mrp !== null ? Number(input.mrp) : null;
     if (input.coverageRate !== undefined) updateData.coverageRate = input.coverageRate !== null ? Number(input.coverageRate) : null;
+    if (input.piecesPerBox !== undefined) updateData.piecesPerBox = input.piecesPerBox !== null ? Number(input.piecesPerBox) : null;
     if (input.wastageFactor !== undefined) updateData.wastageFactor = input.wastageFactor !== null ? Number(input.wastageFactor) : 1.1;
 
     if (input.variants && input.variants.length > 0) {

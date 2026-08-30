@@ -42,6 +42,7 @@ export async function getCategories(): Promise<Category[]> {
         parentId: c.parentId || null,
         icon: c.icon || "Grid",
         calculatorType: inferCalculatorType(c.slug, c.calculatorType),
+        calculatorInputType: c.calculatorInputType || "area",
       }));
     }
   } catch (error) {
@@ -74,6 +75,7 @@ export async function getCategoryBySlug(slug: string): Promise<Category | null> 
         parentId: c.parentId || null,
         icon: c.icon || "Grid",
         calculatorType: inferCalculatorType(c.slug, (c as any).calculatorType),
+        calculatorInputType: (c as any).calculatorInputType || "area",
       };
     }
   } catch (error) {
@@ -92,6 +94,7 @@ export async function createCategory(data: {
   image?: string;
   parentId?: string | null;
   calculatorType?: string;
+  calculatorInputType?: "area" | "length" | "none";
 }) {
   try {
     const slug = data.slug || data.name.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-+|-+$/g, "");
@@ -106,6 +109,7 @@ export async function createCategory(data: {
         order: count,
         parentId: data.parentId || null,
         calculatorType: data.calculatorType || "none",
+        calculatorInputType: data.calculatorInputType || "area",
       },
     });
 
@@ -126,6 +130,7 @@ export async function updateCategory(id: string, data: {
   image?: string;
   parentId?: string | null;
   calculatorType?: string;
+  calculatorInputType?: "area" | "length" | "none";
 }) {
   try {
     const category = await prisma.category.update({

@@ -29,8 +29,14 @@ import {
   Sparkles,
   ChevronLeft,
   ChevronRight,
+  MessageSquare,
+  Edit3,
+  Film,
+  X as CloseIcon,
 } from "lucide-react-native";
 import { getProductDetails, getProducts } from "../../src/api/products";
+import { getProductReviews, checkReviewEligibility, ReviewMedia } from "../../src/api/reviews";
+import { WriteReviewModal } from "../../src/components/WriteReviewModal";
 import { useCartStore } from "../../src/store/cartStore";
 import { useWishlistStore } from "../../src/store/wishlistStore";
 import { Product, ProductVariant } from "../../src/types";
@@ -182,8 +188,11 @@ export default function ProductDetailScreen() {
   const [selectedVariant, setSelectedVariant] = useState<ProductVariant | null>(null);
   const [calculatorArea, setCalculatorArea] = useState("");
   const [calculatedBoxes, setCalculatedBoxes] = useState<number | null>(null);
+  const [calculatedPieces, setCalculatedPieces] = useState<number | null>(null);
   const [quantity, setQuantity] = useState(1);
   const [addedToast, setAddedToast] = useState(false);
+  const [writeReviewOpen, setWriteReviewOpen] = useState(false);
+  const [activeMediaModal, setActiveMediaModal] = useState<ReviewMedia | null>(null);
 
   // 1. Fetch Current Product Details
   const { data, isLoading, error } = useQuery({
@@ -228,6 +237,28 @@ export default function ProductDetailScreen() {
   const catalogProducts =
     infiniteCatalogData?.pages.flatMap((page) => page.products) || [];
 
+  // 4. Fetch Reviews & Check Eligibility for Current Product
+  const { data: reviewsData, refetch: refetchReviews } = useQuery({
+    queryKey: ["mobile-product-reviews", id],
+    queryFn: () => getProductReviews(id),
+    enabled: Boolean(id),
+  });
+
+  const { data: eligibilityData, refetch: refetchEligibility } = useQuery({
+    queryKey: ["mobile-review-eligibility", id],
+    queryFn: () => checkReviewEligibility(id),
+    enabled: Boolean(id),
+  });
+
+  const reviewsList = reviewsData?.reviews || [];
+  const reviewStats = reviewsData?.stats || {
+    avgRating: (product as any)?.avgRating || (product as any)?.rating || 0,
+    reviewCount: (product as any)?.reviewCount || reviewsList.length,
+    distribution: { 5: 0, 4: 0, 3: 0, 2: 0, 1: 0 },
+  };
+  const isReviewEligible = eligibilityData?.eligible && (eligibilityData?.eligibleOrders?.length || 0) > 0;
+  const eligibleOrderId = eligibilityData?.eligibleOrders?.[0]?.id;
+
   // Pricing calculation matching Home page ProductCard
   const activeVariant = selectedVariant || product?.variants?.[0] || null;
   const price =
@@ -259,15 +290,31 @@ export default function ProductDetailScreen() {
 
   const handleCalculateBoxes = (text: string) => {
     setCalculatorArea(text);
-    const sqft = parseFloat(text);
-    if (!isNaN(sqft) && sqft > 0) {
-      const coverageRate = product?.coverageRate || 15.5;
+    const val = parseFloat(text);
+    if (!isNaN(val) && val > 0) {
+      const u = (product?.unitOfSale || "box").toLowerCase().trim();
+      const coverageRate = product?.coverageRate || (u === "box" ? (selectedVariant?.sqftPerBox || 16) : 1);
       const wastage = product?.wastageFactor || 1.1;
-      const requiredBoxes = Math.ceil((sqft * wastage) / coverageRate);
-      setCalculatedBoxes(requiredBoxes);
-      setQuantity(requiredBoxes);
+      const isDirectSqft = u === "sqft";
+      const safeCeil = (n: number) => Math.ceil(Math.round(n * 10000) / 10000);
+
+      const units = isDirectSqft
+        ? Math.max(1, safeCeil(val * wastage))
+        : Math.max(1, safeCeil((val * wastage) / coverageRate));
+
+      setCalculatedBoxes(units);
+      setQuantity(units);
+
+      const piecesPerBoxVal = product?.piecesPerBox || (selectedVariant as any)?.piecesPerBox;
+      if (u === "box" && piecesPerBoxVal && piecesPerBoxVal > 0) {
+        const sqftPerPiece = coverageRate / piecesPerBoxVal;
+        setCalculatedPieces(safeCeil((val * wastage) / sqftPerPiece));
+      } else {
+        setCalculatedPieces(null);
+      }
     } else {
       setCalculatedBoxes(null);
+      setCalculatedPieces(null);
     }
   };
 
@@ -357,39 +404,64 @@ export default function ProductDetailScreen() {
         <Text style={styles.taxNote}>Inclusive of all taxes • Factory Direct Pricing</Text>
       </View>
 
-      {/* Area & Box Calculator Tool */}
-      <View style={styles.calculatorCard}>
-        <View style={styles.calcHeader}>
-          <Calculator size={18} color={COLORS.primary} />
-          <Text style={styles.calcTitle}>Area & Box Calculator</Text>
-        </View>
-        <Text style={styles.calcSub}>
-          Enter your floor or wall area to auto-calculate required boxes (includes 10% cutting wastage)
-        </Text>
-
-        <View style={styles.calcInputRow}>
-          <TextInput
-            style={styles.calcInput}
-            placeholder="e.g. 250"
-            placeholderTextColor="#94a3b8"
-            keyboardType="numeric"
-            value={calculatorArea}
-            onChangeText={handleCalculateBoxes}
-          />
-          <Text style={styles.calcUnit}>sq.ft</Text>
-        </View>
-
-        {calculatedBoxes !== null && (
-          <View style={styles.calcResultBox}>
-            <Text style={styles.calcResultText}>
-              Required: <Text style={styles.boldPrimary}>{calculatedBoxes} Boxes</Text>
-            </Text>
-            <Text style={styles.calcResultSub}>
-              Estimated: ₹{(calculatedBoxes * (product.pricePerSqft * (product.coverageRate || 15.5))).toLocaleString("en-IN")}
+      {/* Smart Quantity & Coverage Calculator Tool (Data-driven) */}
+      {(Boolean(product.coverageRate && product.coverageRate > 0) || product.unitOfSale === "sqft" || (product.unitOfSale === "box" && Boolean(selectedVariant?.sqftPerBox))) && (
+        <View style={styles.calculatorCard}>
+          <View style={styles.calcHeader}>
+            <Calculator size={18} color={COLORS.primary} />
+            <Text style={styles.calcTitle}>
+              {product.unitOfSale === "metre" || product.unitOfSale === "meter" || product.unitOfSale === "coil"
+                ? "Length & Wiring Estimator"
+                : product.unitOfSale === "litre"
+                ? "Paint & Surface Estimator"
+                : "Area & Quantity Calculator"}
             </Text>
           </View>
-        )}
-      </View>
+          <Text style={styles.calcSub}>
+            {product.unitOfSale === "meter" || product.unitOfSale === "coil"
+              ? "Enter required circuit length in meters to calculate coils needed"
+              : "Enter your floor or wall area to auto-calculate required quantity (includes +10% buffer)"}
+          </Text>
+
+          <View style={styles.calcInputRow}>
+            <TextInput
+              style={styles.calcInput}
+              placeholder={product.unitOfSale === "meter" || product.unitOfSale === "coil" ? "e.g. 180" : "e.g. 250"}
+              placeholderTextColor="#94a3b8"
+              keyboardType="numeric"
+              value={calculatorArea}
+              onChangeText={handleCalculateBoxes}
+            />
+            <Text style={styles.calcUnit}>
+              {product.unitOfSale === "meter" || product.unitOfSale === "coil" ? "meters" : "sq.ft"}
+            </Text>
+          </View>
+
+          {calculatedBoxes !== null && (
+            <View style={styles.calcResultBox}>
+              <Text style={styles.calcResultText}>
+                Required:{" "}
+                <Text style={styles.boldPrimary}>
+                  {calculatedBoxes}{" "}
+                  {product.unitOfSale === "box"
+                    ? "Boxes"
+                    : product.unitOfSale === "sqft"
+                    ? "sq.ft"
+                    : product.unitOfSale === "litre"
+                    ? "Litres"
+                    : product.unitOfSale === "coil"
+                    ? "Coils"
+                    : product.unitOfSale || "Units"}
+                  {calculatedPieces !== null ? ` (${calculatedPieces} Pieces)` : ""}
+                </Text>
+              </Text>
+              <Text style={styles.calcResultSub}>
+                Estimated: ₹{(calculatedBoxes * price).toLocaleString("en-IN")}
+              </Text>
+            </View>
+          )}
+        </View>
+      )}
 
       {/* Available Sizes, Finishes & Colour Swatches (Variants) */}
       {product.variants && product.variants.length > 0 && (
@@ -538,6 +610,148 @@ export default function ProductDetailScreen() {
         </View>
       ) : null}
 
+      {/* ── Customer Ratings & Reviews Section ── */}
+      <View style={styles.sectionCard}>
+        <View style={styles.reviewsHeaderRow}>
+          <View>
+            <Text style={styles.sectionHeading}>Customer Reviews</Text>
+            <Text style={styles.reviewsSubText}>
+              {reviewStats.reviewCount} verified buyer {reviewStats.reviewCount === 1 ? "review" : "reviews"}
+            </Text>
+          </View>
+          {isReviewEligible && (
+            <TouchableOpacity
+              style={styles.writeReviewBtn}
+              onPress={() => setWriteReviewOpen(true)}
+              activeOpacity={0.8}
+            >
+              <Edit3 size={13} color="#FFFFFF" style={{ marginRight: 4 }} />
+              <Text style={styles.writeReviewBtnText}>Write Review</Text>
+            </TouchableOpacity>
+          )}
+        </View>
+
+        {reviewsList.length === 0 ? (
+          <View style={styles.emptyReviewsBox}>
+            <MessageSquare size={32} color={COLORS.textMuted} />
+            <Text style={styles.emptyReviewsTitle}>No reviews yet</Text>
+            <Text style={styles.emptyReviewsSub}>
+              Have you ordered this item? You can leave a review once your delivery is complete!
+            </Text>
+            {isReviewEligible && (
+              <TouchableOpacity
+                style={styles.firstReviewBtn}
+                onPress={() => setWriteReviewOpen(true)}
+              >
+                <Text style={styles.firstReviewBtnText}>Be the first to review</Text>
+              </TouchableOpacity>
+            )}
+          </View>
+        ) : (
+          <View style={{ marginTop: 12 }}>
+            {/* Rating Summary Score & Bars */}
+            <View style={styles.ratingSummaryRow}>
+              <View style={styles.ratingScoreCol}>
+                <Text style={styles.bigScoreText}>
+                  {reviewStats.avgRating > 0 ? reviewStats.avgRating.toFixed(1) : "0.0"}
+                </Text>
+                <View style={styles.starsRowCompact}>
+                  {[1, 2, 3, 4, 5].map((s) => (
+                    <Star
+                      key={s}
+                      size={14}
+                      color={s <= Math.round(reviewStats.avgRating) ? "#F59E0B" : "#CBD5E1"}
+                      fill={s <= Math.round(reviewStats.avgRating) ? "#F59E0B" : "none"}
+                    />
+                  ))}
+                </View>
+                <Text style={styles.ratingOutOfText}>out of 5 stars</Text>
+              </View>
+
+              {/* Distribution Bars */}
+              <View style={styles.distributionCol}>
+                {[5, 4, 3, 2, 1].map((star) => {
+                  const count = (reviewStats.distribution as Record<number, number>)?.[star] || 0;
+                  const total = reviewStats.reviewCount || reviewsList.length || 1;
+                  const percent = Math.round((count / total) * 100);
+
+                  return (
+                    <View key={star} style={styles.distRow}>
+                      <Text style={styles.distStarText}>{star}★</Text>
+                      <View style={styles.distTrack}>
+                        <View style={[styles.distFill, { width: `${percent}%` }]} />
+                      </View>
+                      <Text style={styles.distCountText}>{count}</Text>
+                    </View>
+                  );
+                })}
+              </View>
+            </View>
+
+            {/* Individual Reviews List */}
+            <View style={styles.reviewsListContainer}>
+              {reviewsList.slice(0, 10).map((rev) => (
+                <View key={rev.id} style={styles.reviewCardItem}>
+                  <View style={styles.reviewTopRow}>
+                    <View style={{ flex: 1 }}>
+                      <View style={styles.reviewerMetaRow}>
+                        <Text style={styles.reviewerName}>{rev.author}</Text>
+                        <View style={styles.verifiedBadgeMobile}>
+                          <ShieldCheck size={11} color="#059669" />
+                          <Text style={styles.verifiedBadgeTextMobile}>Verified</Text>
+                        </View>
+                      </View>
+                      <Text style={styles.reviewDateMobile}>
+                        {new Date(rev.createdAt).toLocaleDateString("en-IN", {
+                          day: "numeric",
+                          month: "short",
+                          year: "numeric",
+                        })}
+                      </Text>
+                    </View>
+
+                    <View style={styles.ratingBadgeMobile}>
+                      <Star size={11} color="#F59E0B" fill="#F59E0B" />
+                      <Text style={styles.ratingBadgeTextMobile}>{rev.rating}.0</Text>
+                    </View>
+                  </View>
+
+                  {rev.title ? (
+                    <Text style={styles.reviewTitleMobile}>{rev.title}</Text>
+                  ) : null}
+
+                  {rev.body ? (
+                    <Text style={styles.reviewBodyMobile}>{rev.body}</Text>
+                  ) : null}
+
+                  {/* Attached Photos / Videos */}
+                  {rev.media && rev.media.length > 0 && (
+                    <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.mediaGalleryMobile}>
+                      {rev.media.map((m) => (
+                        <TouchableOpacity
+                          key={m.id}
+                          style={styles.reviewMediaThumbWrap}
+                          onPress={() => setActiveMediaModal(m)}
+                          activeOpacity={0.85}
+                        >
+                          {m.type === "VIDEO" ? (
+                            <View style={styles.videoThumbMobile}>
+                              <Film size={18} color="#F26522" />
+                            </View>
+                          ) : (
+                            <Image source={{ uri: m.url }} style={styles.reviewMediaImg} contentFit="cover" />
+                          )}
+                        </TouchableOpacity>
+                      ))}
+                    </ScrollView>
+                  )}
+                </View>
+              ))}
+            </View>
+          </View>
+        )}
+      </View>
+
       {/* TASK 1: Similar Products Horizontal Carousel (Same Category, excludes current) */}
       {similarProducts.length > 0 && (
         <View style={styles.similarSection}>
@@ -621,6 +835,40 @@ export default function ProductDetailScreen() {
           </TouchableOpacity>
         </View>
       </View>
+
+      {/* Write Review Modal */}
+      {product && (
+        <WriteReviewModal
+          visible={writeReviewOpen}
+          productId={product.id}
+          productName={product.name}
+          orderId={eligibleOrderId}
+          onClose={() => setWriteReviewOpen(false)}
+          onSuccess={() => {
+            refetchReviews();
+            refetchEligibility();
+          }}
+        />
+      )}
+
+      {/* Media Fullscreen Preview Modal */}
+      {activeMediaModal && (
+        <View style={styles.mediaModalOverlay}>
+          <TouchableOpacity
+            style={styles.mediaModalCloseBtn}
+            onPress={() => setActiveMediaModal(null)}
+          >
+            <CloseIcon size={24} color="#FFFFFF" />
+          </TouchableOpacity>
+          <View style={styles.mediaModalContent}>
+            <Image
+              source={{ uri: activeMediaModal.url }}
+              style={styles.mediaModalImage}
+              contentFit="contain"
+            />
+          </View>
+        </View>
+      )}
 
       {/* Root Infinite-Scroll FlatList (Zero Nesting Conflict) */}
       <FlatList
@@ -1161,5 +1409,244 @@ const styles = StyleSheet.create({
     color: COLORS.textWhite,
     fontWeight: "700",
     fontSize: 13,
+  },
+
+  // Reviews Styles
+  reviewsHeaderRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+  },
+  reviewsSubText: {
+    fontSize: 11,
+    color: COLORS.textMuted,
+    marginTop: 2,
+    fontWeight: "600",
+  },
+  writeReviewBtn: {
+    flexDirection: "row",
+    alignItems: "center",
+    backgroundColor: COLORS.accentOrange,
+    paddingHorizontal: 12,
+    paddingVertical: 7,
+    borderRadius: RADIUS.sm,
+  },
+  writeReviewBtnText: {
+    color: "#FFFFFF",
+    fontSize: 11,
+    fontWeight: "800",
+  },
+  emptyReviewsBox: {
+    alignItems: "center",
+    justifyContent: "center",
+    paddingVertical: 24,
+    gap: 6,
+  },
+  emptyReviewsTitle: {
+    fontSize: 14,
+    fontWeight: "800",
+    color: COLORS.primary,
+    marginTop: 4,
+  },
+  emptyReviewsSub: {
+    fontSize: 12,
+    color: COLORS.textMuted,
+    textAlign: "center",
+    paddingHorizontal: 20,
+    lineHeight: 16,
+  },
+  firstReviewBtn: {
+    marginTop: 8,
+    backgroundColor: COLORS.primary,
+    paddingHorizontal: 14,
+    paddingVertical: 8,
+    borderRadius: RADIUS.sm,
+  },
+  firstReviewBtnText: {
+    color: "#FFFFFF",
+    fontSize: 12,
+    fontWeight: "800",
+  },
+  ratingSummaryRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 16,
+    paddingBottom: 12,
+    borderBottomWidth: 1,
+    borderBottomColor: COLORS.border,
+  },
+  ratingScoreCol: {
+    alignItems: "center",
+    justifyContent: "center",
+    width: 90,
+  },
+  bigScoreText: {
+    fontSize: 32,
+    fontWeight: "900",
+    color: COLORS.primary,
+    lineHeight: 36,
+  },
+  starsRowCompact: {
+    flexDirection: "row",
+    gap: 2,
+    marginVertical: 3,
+  },
+  ratingOutOfText: {
+    fontSize: 10,
+    color: COLORS.textMuted,
+    fontWeight: "600",
+  },
+  distributionCol: {
+    flex: 1,
+    gap: 3,
+  },
+  distRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 6,
+  },
+  distStarText: {
+    fontSize: 10,
+    fontWeight: "700",
+    color: COLORS.primary,
+    width: 18,
+  },
+  distTrack: {
+    flex: 1,
+    height: 6,
+    backgroundColor: COLORS.border,
+    borderRadius: 3,
+    overflow: "hidden",
+  },
+  distFill: {
+    height: "100%",
+    backgroundColor: COLORS.accentOrange,
+    borderRadius: 3,
+  },
+  distCountText: {
+    fontSize: 10,
+    color: COLORS.textMuted,
+    fontWeight: "600",
+    width: 20,
+    textAlign: "right",
+  },
+  reviewsListContainer: {
+    marginTop: 12,
+    gap: 12,
+  },
+  reviewCardItem: {
+    paddingTop: 10,
+    borderTopWidth: 1,
+    borderTopColor: "rgba(0,0,0,0.05)",
+    gap: 4,
+  },
+  reviewTopRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+  },
+  reviewerMetaRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 6,
+  },
+  reviewerName: {
+    fontSize: 13,
+    fontWeight: "800",
+    color: COLORS.primary,
+  },
+  verifiedBadgeMobile: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 2,
+    backgroundColor: "#ECFDF5",
+    paddingHorizontal: 5,
+    paddingVertical: 1,
+    borderRadius: 4,
+  },
+  verifiedBadgeTextMobile: {
+    fontSize: 9,
+    fontWeight: "700",
+    color: "#059669",
+  },
+  reviewDateMobile: {
+    fontSize: 10,
+    color: COLORS.textMuted,
+    marginTop: 1,
+  },
+  ratingBadgeMobile: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 3,
+    backgroundColor: "#FFFBEB",
+    paddingHorizontal: 6,
+    paddingVertical: 2,
+    borderRadius: 6,
+    borderWidth: 1,
+    borderColor: "#FDE68A",
+  },
+  ratingBadgeTextMobile: {
+    fontSize: 11,
+    fontWeight: "800",
+    color: "#92400E",
+  },
+  reviewTitleMobile: {
+    fontSize: 12,
+    fontWeight: "800",
+    color: COLORS.primary,
+    marginTop: 2,
+  },
+  reviewBodyMobile: {
+    fontSize: 12,
+    color: COLORS.text,
+    lineHeight: 17,
+  },
+  mediaGalleryMobile: {
+    marginTop: 6,
+  },
+  reviewMediaThumbWrap: {
+    width: 60,
+    height: 60,
+    borderRadius: 8,
+    overflow: "hidden",
+    marginRight: 6,
+    borderWidth: 1,
+    borderColor: COLORS.border,
+    backgroundColor: "#0F172A",
+  },
+  reviewMediaImg: {
+    width: "100%",
+    height: "100%",
+  },
+  videoThumbMobile: {
+    flex: 1,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  mediaModalOverlay: {
+    position: "absolute",
+    top: 0,
+    bottom: 0,
+    left: 0,
+    right: 0,
+    backgroundColor: "rgba(0,0,0,0.9)",
+    zIndex: 9999,
+    justifyContent: "center",
+    alignItems: "center",
+  },
+  mediaModalCloseBtn: {
+    position: "absolute",
+    top: 50,
+    right: 20,
+    padding: 8,
+    zIndex: 10,
+  },
+  mediaModalContent: {
+    width: "90%",
+    height: "70%",
+  },
+  mediaModalImage: {
+    width: "100%",
+    height: "100%",
   },
 });

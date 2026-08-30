@@ -258,6 +258,7 @@ export default function DynamicProductUploadForm({
 
   // ── Smart Calculator Estimations ──
   const [coverageRate, setCoverageRate] = useState<string>("");
+  const [piecesPerBox, setPiecesPerBox] = useState<string>("");
   const [wastagePercent, setWastagePercent] = useState<string>("10");
 
   // ── 3. Images ──
@@ -443,6 +444,7 @@ export default function DynamicProductUploadForm({
         ];
 
     const coverageNum = parseFloat(coverageRate);
+    const piecesPerBoxNum = parseInt(piecesPerBox, 10);
     const wastageNum = (parseFloat(wastagePercent) || 10) / 100 + 1.0;
 
     const res = await createProduct({
@@ -456,6 +458,7 @@ export default function DynamicProductUploadForm({
       mrp: mrpVal,
       vendorId: vendorId || null,
       coverageRate: !isNaN(coverageNum) && coverageNum > 0 ? coverageNum : null,
+      piecesPerBox: !isNaN(piecesPerBoxNum) && piecesPerBoxNum > 0 ? piecesPerBoxNum : null,
       wastageFactor: wastageNum,
       isBestseller,
       isNew: isNewArrival,
@@ -1130,31 +1133,41 @@ export default function DynamicProductUploadForm({
         </div>
 
         {/* Coverage Rate & Estimator Settings */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-5 pt-2 border-t border-gray-100">
+        <div className={`grid grid-cols-1 ${unitOfSale === "box" ? "sm:grid-cols-3" : "sm:grid-cols-2"} gap-5 pt-2 border-t border-gray-100`}>
           <div>
             <label className="block text-xs font-bold text-gray-700 uppercase tracking-wider mb-1.5 flex items-center justify-between">
               <span>
-                {currentCategoryConfig.slug === "tiles-granite"
+                {unitOfSale === "box"
                   ? "Coverage Rate (sq.ft / box)"
-                  : currentCategoryConfig.slug === "paints"
+                  : unitOfSale === "litre" || unitOfSale === "can" || unitOfSale === "bucket" || unitOfSale === "bottle"
                   ? "Coverage Rate (sq.ft / litre / coat)"
-                  : currentCategoryConfig.slug === "electrical" || currentCategoryConfig.slug === "electrical-wires"
-                  ? "Length (meters / coil)"
+                  : unitOfSale === "meter" || unitOfSale === "coil"
+                  ? "Length (meters / coil or unit)"
+                  : unitOfSale === "roll"
+                  ? "Coverage Rate (sq.ft / roll)"
+                  : unitOfSale === "kg"
+                  ? "Coverage Rate (sq.ft / kg)"
+                  : unitOfSale === "sqft"
+                  ? "Direct Area Unit (1:1 sq.ft)"
                   : "Coverage / Yield per Unit (Optional)"}
               </span>
-              <span className="text-[10px] font-normal text-gray-400">Powers Smart Calculator</span>
+              <span className="text-[10px] font-normal text-gray-400">Powers Calculator</span>
             </label>
             <input
               type="number"
               step="any"
               min={0}
               placeholder={
-                currentCategoryConfig.slug === "tiles-granite"
+                unitOfSale === "box"
                   ? "e.g. 16 (sq.ft per box)"
-                  : currentCategoryConfig.slug === "paints"
+                  : unitOfSale === "litre" || unitOfSale === "can" || unitOfSale === "bucket"
                   ? "e.g. 120 (sq.ft per litre)"
-                  : currentCategoryConfig.slug === "electrical" || currentCategoryConfig.slug === "electrical-wires"
+                  : unitOfSale === "meter" || unitOfSale === "coil"
                   ? "e.g. 90 (meters per coil)"
+                  : unitOfSale === "roll"
+                  ? "e.g. 57 (sq.ft per roll)"
+                  : unitOfSale === "kg"
+                  ? "e.g. 20 (sq.ft per kg)"
                   : "e.g. 20"
               }
               value={coverageRate}
@@ -1162,15 +1175,41 @@ export default function DynamicProductUploadForm({
               className="w-full px-4 py-3 bg-gray-50/70 border border-gray-200 rounded-2xl text-xs font-bold text-gray-800 focus:bg-white focus:outline-none focus:border-[#F26522]"
             />
             <p className="text-[10px] text-gray-400 mt-1">
-              {currentCategoryConfig.slug === "tiles-granite"
-                ? "How many sq.ft does one box cover? (e.g. 16 sq.ft for standard 600x600 tiles)"
-                : currentCategoryConfig.slug === "paints"
-                ? "How many sq.ft does one litre cover per coat? (e.g. 120 sq.ft for luxury emulsion)"
-                : currentCategoryConfig.slug === "electrical" || currentCategoryConfig.slug === "electrical-wires"
+              {unitOfSale === "box"
+                ? "How many sq.ft does one box cover? (e.g. 16 sq.ft for 600x600 tiles)"
+                : unitOfSale === "litre" || unitOfSale === "can" || unitOfSale === "bucket"
+                ? "How many sq.ft does one litre cover per coat? (e.g. 120 sq.ft for emulsion)"
+                : unitOfSale === "meter" || unitOfSale === "coil"
                 ? "How many meters are in one standard coil? (e.g. 90m for wire coils)"
+                : unitOfSale === "roll"
+                ? "How many sq.ft does one roll cover? (e.g. 57 sq.ft for wallpaper rolls)"
+                : unitOfSale === "kg"
+                ? "How many sq.ft does one kg cover? (e.g. 20 sq.ft for adhesives/putty)"
                 : "Leave empty if product does not need automated calculator"}
             </p>
           </div>
+
+          {/* Pieces Per Box (Tiles Specific) */}
+          {unitOfSale === "box" && (
+            <div>
+              <label className="block text-xs font-bold text-gray-700 uppercase tracking-wider mb-1.5 flex items-center justify-between">
+                <span>Pieces per Box</span>
+                <span className="text-[10px] font-normal text-gray-400">Optional</span>
+              </label>
+              <input
+                type="number"
+                step="1"
+                min={1}
+                placeholder="e.g. 4 or 6"
+                value={piecesPerBox}
+                onChange={(e) => setPiecesPerBox(e.target.value)}
+                className="w-full px-4 py-3 bg-gray-50/70 border border-gray-200 rounded-2xl text-xs font-bold text-gray-800 focus:bg-white focus:outline-none focus:border-[#F26522]"
+              />
+              <p className="text-[10px] text-gray-400 mt-1">
+                Number of individual pieces inside one box (allows piece-count calculation)
+              </p>
+            </div>
+          )}
 
           <div>
             <label className="block text-xs font-bold text-gray-700 uppercase tracking-wider mb-1.5 flex items-center justify-between">

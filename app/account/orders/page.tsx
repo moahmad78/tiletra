@@ -22,7 +22,7 @@ export default function OrdersPage() {
   const [orders, setOrders] = useState<any[]>([]);
   // Start in loading state — show skeleton until we know hydration status
   const [loading, setLoading] = useState(true);
-  const [reviewProduct, setReviewProduct] = useState<{ id: string; name: string } | null>(null);
+  const [reviewProduct, setReviewProduct] = useState<{ id: string; name: string; orderId: string } | null>(null);
   const [selectedTrackingOrder, setSelectedTrackingOrder] = useState<any>(null);
   const [selectedInvoiceOrder, setSelectedInvoiceOrder] = useState<any>(null);
 
@@ -221,15 +221,21 @@ export default function OrdersPage() {
                       </div>
                     </div>
 
-                    <button
-                      onClick={() =>
-                        setReviewProduct({ id: item.productId, name: item.productName })
-                      }
-                      className="shrink-0 inline-flex items-center gap-1.5 px-3 py-1.5 bg-[#052a51]/5 hover:bg-[#F26522] hover:text-white text-[#052a51] text-xs font-bold rounded-xl transition-all shadow-2xs cursor-pointer"
-                    >
-                      <Star size={13} className="text-amber-500 fill-amber-500" />
-                      <span>Review</span>
-                    </button>
+                    {order.orderStatus?.toLowerCase() === "delivered" ? (
+                      <button
+                        onClick={() =>
+                          setReviewProduct({ id: item.productId, name: item.productName, orderId: order.id })
+                        }
+                        className="shrink-0 inline-flex items-center gap-1.5 px-3 py-1.5 bg-[#052a51]/5 hover:bg-[#F26522] hover:text-white text-[#052a51] text-xs font-bold rounded-xl transition-all shadow-2xs cursor-pointer"
+                      >
+                        <Star size={13} className="text-amber-500 fill-amber-500" />
+                        <span>Write Review</span>
+                      </button>
+                    ) : (
+                      <span className="text-[11px] font-semibold text-gray-400 shrink-0">
+                        Delivered items can be reviewed
+                      </span>
+                    )}
                   </div>
                 ))}
               </div>
@@ -274,6 +280,7 @@ export default function OrdersPage() {
         <WriteReviewModal
           productId={reviewProduct.id}
           productName={reviewProduct.name}
+          orderId={reviewProduct.orderId}
           isOpen={Boolean(reviewProduct)}
           onClose={() => setReviewProduct(null)}
         />

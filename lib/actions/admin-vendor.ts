@@ -367,7 +367,7 @@ export async function getAdminMarketplaceStats() {
       prisma.product.count({ where: { vendorId: { not: null } } }),
       prisma.vendorApplication.count({ where: { status: "new_inquiry" } }),
       prisma.order.count({ where: { orderStatus: { in: ["Processing", "Confirmed"] } } }),
-      prisma.review.count({ where: { status: "pending" } }),
+      prisma.review.count({ where: { status: "PUBLISHED" } }),
       prisma.productVariant.count({ where: { stockBoxes: { lt: 15 } } }),
     ]);
 
