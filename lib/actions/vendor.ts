@@ -916,6 +916,8 @@ export async function updateVendorFulfillmentStatus(
 
     const normalizedStatus = status.toLowerCase();
     const isDelivered = normalizedStatus === "delivered";
+    const isConfirmed = normalizedStatus === "confirmed";
+    const isReadyForPickup = normalizedStatus === "ready_for_pickup";
 
     const updateData: any = {
       fulfillmentStatus: normalizedStatus,
@@ -925,6 +927,17 @@ export async function updateVendorFulfillmentStatus(
 
     if (paymentCollected !== undefined) {
       updateData.paymentCollected = paymentCollected;
+    }
+
+    // ── F4: SLA Timer — Set acceptedAt + packingDeadline when order is confirmed ──
+    if (isConfirmed && !existing.acceptedAt) {
+      const { DELIVERY_CONFIG } = await import("@/lib/delivery/config");
+      const now = new Date();
+      const deadline = new Date(now.getTime() + DELIVERY_CONFIG.PACKING_SLA_MINUTES * 60 * 1000);
+      updateData.acceptedAt = now;
+      updateData.packingDeadline = deadline;
+      updateData.slaBreach = false;
+      updateData.packingBreachAt = null;
     }
 
     // Finalize Commission & Payout calculations when reaching "delivered" status
@@ -953,6 +966,7 @@ export async function updateVendorFulfillmentStatus(
         data: {
           ...(updateData.trackingNumber ? { trackingNumber: updateData.trackingNumber } : {}),
           ...(updateData.courierName ? { courierName: updateData.courierName } : {}),
+          ...(isConfirmed ? { orderStatus: "Confirmed" } : {}),
           ...(normalizedStatus === "dispatched" ? { orderStatus: "dispatched" } : {}),
           ...(isDelivered ? { orderStatus: "delivered", deliveredAt: new Date() } : {}),
         },
@@ -973,6 +987,8 @@ export async function updateVendorFulfillmentStatus(
           fulfillmentStatus: updated.fulfillmentStatus,
           trackingNumber: updated.trackingNumber,
           courierName: updated.courierName,
+          packingDeadline: updated.packingDeadline,
+          slaBreach: updated.slaBreach,
           updatedAt: updated.updatedAt,
         },
       });
@@ -984,10 +1000,32 @@ export async function updateVendorFulfillmentStatus(
           splitId: updated.id,
           vendorId,
           fulfillmentStatus: updated.fulfillmentStatus,
+          packingDeadline: updated.packingDeadline,
+          slaBreach: updated.slaBreach,
         },
       });
     } catch (socketErr) {
       console.error("Failed to emit vendor fulfillment socket update:", socketErr);
+    }
+
+    // ── F5: Auto-Assign Nearest Rider when order is ready_for_pickup ──────────
+    if (isReadyForPickup) {
+      // setImmediate: fire after response is returned to vendor — non-blocking
+      setImmediate(async () => {
+        try {
+          const { autoAssignNearestRider } = await import("@/lib/actions/rider-assignment");
+          const assignResult = await autoAssignNearestRider(vendorId, existing.orderId, splitId);
+          if (assignResult.assigned) {
+            console.info(`[Vendor] Rider auto-assigned: ${assignResult.riderName} for order ${existing.orderId}`);
+          } else if (assignResult.fallbackTriggered) {
+            console.info(`[Vendor] Porter fallback triggered for order ${existing.orderId}: ${assignResult.fallbackBookingId}`);
+          } else {
+            console.warn(`[Vendor] Auto-assign failed for ${existing.orderId}: ${assignResult.error}`);
+          }
+        } catch (assignErr) {
+          console.error("[Vendor] autoAssignNearestRider post-trigger error:", assignErr);
+        }
+      });
     }
 
     safeRevalidate("/vendor/orders");

@@ -58,6 +58,10 @@ export default function VendorProfileScreen() {
   const [editEmail, setEditEmail] = useState("");
   const [editAddress, setEditAddress] = useState("");
   const [editDeliveryMethod, setEditDeliveryMethod] = useState("");
+  const [editLat, setEditLat] = useState("");
+  const [editLng, setEditLng] = useState("");
+  const [editAutoAccept, setEditAutoAccept] = useState(false);
+  const [fetchingGps, setFetchingGps] = useState(false);
   const [storeLogo, setStoreLogo] = useState("");
   const [uploadingLogo, setUploadingLogo] = useState(false);
   const [saving, setSaving] = useState(false);
@@ -122,6 +126,9 @@ export default function VendorProfileScreen() {
     setEditEmail(vendor?.contactEmail || user?.email || "");
     setEditAddress(vendor?.businessAddress || "");
     setEditDeliveryMethod(vendor?.deliveryMethod === "platform" ? "platform" : "self");
+    setEditLat(vendor?.latitude ? String(vendor.latitude) : "");
+    setEditLng(vendor?.longitude ? String(vendor.longitude) : "");
+    setEditAutoAccept(Boolean(vendor?.autoAcceptOrders));
     setEditModalOpen(true);
   };
 
@@ -140,6 +147,9 @@ export default function VendorProfileScreen() {
         businessAddress: editAddress.trim() || undefined,
         deliveryMethod: editDeliveryMethod === "platform" ? "platform" : "self",
         logo: storeLogo || undefined,
+        latitude: editLat ? Number(editLat) : undefined,
+        longitude: editLng ? Number(editLng) : undefined,
+        autoAcceptOrders: editAutoAccept,
       });
 
       setSaving(false);
@@ -267,6 +277,26 @@ export default function VendorProfileScreen() {
             <Text style={styles.infoText}>
               Logistics: <Text style={{ fontWeight: "800", color: vendor?.deliveryMethod === "platform" ? "#1E40AF" : "#9A3412" }}>
                 {vendor?.deliveryMethod === "platform" ? "⚡ Platform Logistics (Auto)" : "🚛 Self-Delivery (Manual)"}
+              </Text>
+            </Text>
+          </View>
+          <View style={styles.infoRow}>
+            <MapPin size={16} color={vendor?.latitude ? COLORS.accentGreen : COLORS.error} />
+            <Text style={styles.infoText}>
+              Shop GPS:{" "}
+              <Text style={{ fontWeight: "800", color: vendor?.latitude ? COLORS.accentGreen : COLORS.error }}>
+                {vendor?.latitude && vendor?.longitude
+                  ? `${Number(vendor.latitude).toFixed(4)}, ${Number(vendor.longitude).toFixed(4)}`
+                  : "Not Set (Required for 60-min delivery)"}
+              </Text>
+            </Text>
+          </View>
+          <View style={styles.infoRow}>
+            <CheckCircle2 size={16} color={vendor?.autoAcceptOrders ? COLORS.accentGreen : COLORS.textTertiary} />
+            <Text style={styles.infoText}>
+              Auto-Accept Orders:{" "}
+              <Text style={{ fontWeight: "800", color: vendor?.autoAcceptOrders ? COLORS.accentGreen : COLORS.textSecondary }}>
+                {vendor?.autoAcceptOrders ? "Enabled ⚡" : "Disabled (Manual)"}
               </Text>
             </Text>
           </View>
@@ -426,6 +456,86 @@ export default function VendorProfileScreen() {
                 placeholder="Warehouse / Pickup Address..."
                 placeholderTextColor={COLORS.textTertiary}
               />
+
+              {/* F1: GPS Coordinates Section */}
+              <View style={{ marginTop: 16, padding: 12, backgroundColor: "#F8FAFC", borderRadius: 10, borderWidth: 1, borderColor: "#E2E8F0" }}>
+                <View style={{ flexDirection: "row", alignItems: "center", justifyContent: "space-between", marginBottom: 8 }}>
+                  <Text style={{ fontSize: 13, fontWeight: "800", color: COLORS.primaryDark }}>📍 Shop GPS Location</Text>
+                  {editLat && editLng ? (
+                    <TouchableOpacity
+                      onPress={() => Linking.openURL(`https://www.google.com/maps/search/?api=1&query=${editLat},${editLng}`)}
+                    >
+                      <Text style={{ fontSize: 11, fontWeight: "800", color: COLORS.accentOrange }}>View on Map ↗</Text>
+                    </TouchableOpacity>
+                  ) : null}
+                </View>
+                <Text style={{ fontSize: 11, color: COLORS.textSecondary, marginBottom: 8 }}>
+                  Enables 60-minute nearest-vendor order routing & rider pickup navigation.
+                </Text>
+                <View style={{ flexDirection: "row", gap: 8 }}>
+                  <View style={{ flex: 1 }}>
+                    <Text style={{ fontSize: 11, fontWeight: "600", color: COLORS.textSecondary, marginBottom: 2 }}>Latitude</Text>
+                    <TextInput
+                      style={[styles.inputBox, { height: 40 }]}
+                      value={editLat}
+                      onChangeText={setEditLat}
+                      placeholder="e.g. 12.9716"
+                      keyboardType="numeric"
+                      placeholderTextColor={COLORS.textTertiary}
+                    />
+                  </View>
+                  <View style={{ flex: 1 }}>
+                    <Text style={{ fontSize: 11, fontWeight: "600", color: COLORS.textSecondary, marginBottom: 2 }}>Longitude</Text>
+                    <TextInput
+                      style={[styles.inputBox, { height: 40 }]}
+                      value={editLng}
+                      onChangeText={setEditLng}
+                      placeholder="e.g. 77.5946"
+                      keyboardType="numeric"
+                      placeholderTextColor={COLORS.textTertiary}
+                    />
+                  </View>
+                </View>
+              </View>
+
+              {/* F3: Auto-Accept Orders Toggle */}
+              <TouchableOpacity
+                style={{
+                  marginTop: 12,
+                  padding: 12,
+                  backgroundColor: editAutoAccept ? "#F0FDF4" : "#F8FAFC",
+                  borderRadius: 10,
+                  borderWidth: 1,
+                  borderColor: editAutoAccept ? "#BBF7D0" : "#E2E8F0",
+                  flexDirection: "row",
+                  alignItems: "center",
+                  justifyContent: "space-between",
+                }}
+                onPress={() => setEditAutoAccept(!editAutoAccept)}
+                activeOpacity={0.85}
+              >
+                <View style={{ flex: 1, marginRight: 10 }}>
+                  <Text style={{ fontSize: 13, fontWeight: "800", color: editAutoAccept ? "#166534" : COLORS.primaryDark }}>
+                    ⚡ Auto-Accept Orders
+                  </Text>
+                  <Text style={{ fontSize: 11, color: COLORS.textSecondary, marginTop: 2 }}>
+                    Instantly confirms orders without manual approval, starting the 10-minute packing timer.
+                  </Text>
+                </View>
+                <View
+                  style={{
+                    width: 44,
+                    height: 24,
+                    borderRadius: 12,
+                    backgroundColor: editAutoAccept ? COLORS.accentGreen : "#CBD5E1",
+                    justifyContent: "center",
+                    paddingHorizontal: 2,
+                    alignItems: editAutoAccept ? "flex-end" : "flex-start",
+                  }}
+                >
+                  <View style={{ width: 20, height: 20, borderRadius: 10, backgroundColor: "#FFFFFF" }} />
+                </View>
+              </TouchableOpacity>
 
               <Text style={[styles.inputLabel, { marginTop: 16 }]}>Logistics & Fulfillment Method:</Text>
               

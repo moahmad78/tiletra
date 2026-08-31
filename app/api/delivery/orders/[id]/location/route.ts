@@ -52,6 +52,52 @@ export async function GET(req: NextRequest, { params }: { params: Promise<{ id: 
     const googleMapsUrl = LocationService.getGoogleMapsNavUrl(lat, lng, order.deliveryLandmark || order.deliveryAddress || "Customer Delivery");
     const appleMapsUrl = LocationService.getAppleMapsNavUrl(lat, lng, order.deliveryLandmark || order.deliveryAddress || "Customer Delivery");
 
+    // F7: Load assigned vendor's GPS coordinates as pickup point
+    // Lookup VendorOrderSplit → Vendor for this order
+    let pickupPoint: {
+      lat: number | null;
+      lng: number | null;
+      name: string | null;
+      address: string | null;
+      phone: string | null;
+      thirdPartyProvider: string | null;
+    } | null = null;
+
+    try {
+      const split = await prisma.vendorOrderSplit.findFirst({
+        where: {
+          orderId: id,
+          fulfillmentStatus: { notIn: ["cancelled", "returned"] },
+        },
+        orderBy: { createdAt: "desc" },
+        select: {
+          thirdPartyProvider: true,
+          vendor: {
+            select: {
+              businessName: true,
+              businessAddress: true,
+              contactPhone: true,
+              latitude: true,
+              longitude: true,
+            },
+          },
+        },
+      });
+
+      if (split?.vendor) {
+        pickupPoint = {
+          lat: split.vendor.latitude,
+          lng: split.vendor.longitude,
+          name: split.vendor.businessName,
+          address: split.vendor.businessAddress,
+          phone: split.vendor.contactPhone,
+          thirdPartyProvider: split.thirdPartyProvider,
+        };
+      }
+    } catch (pickupErr) {
+      console.warn("[OrderLocation] Could not load vendor pickup point:", pickupErr);
+    }
+
     return NextResponse.json({
       success: true,
       order: {
@@ -61,9 +107,19 @@ export async function GET(req: NextRequest, { params }: { params: Promise<{ id: 
         googleMapsNavUrl: googleMapsUrl,
         appleMapsNavUrl: appleMapsUrl,
       },
+      // F7: Pickup and drop for two-stage tracking (vendor → customer)
+      pickupPoint,
+      dropPoint: {
+        lat,
+        lng,
+        name: order.deliveryName || order.customerName,
+        address: order.deliveryAddress,
+        phone: order.deliveryPhone || order.customerPhone,
+      },
     });
   } catch (error: any) {
     console.error("Delivery order location GET error:", error);
     return NextResponse.json({ success: false, error: error?.message || "Failed to fetch delivery location" }, { status: 500 });
   }
 }
+

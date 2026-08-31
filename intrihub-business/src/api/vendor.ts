@@ -196,6 +196,11 @@ export async function updateVendorProfile(data: {
   description?: string;
   logo?: string;
   shopPhotoUrl?: string;
+  latitude?: number;
+  longitude?: number;
+  locationAccuracy?: number;
+  autoAcceptOrders?: boolean;
+  serviceAreaRadiusKm?: number;
 }): Promise<{
   success: boolean;
   message?: string;
@@ -205,3 +210,4 @@ export async function updateVendorProfile(data: {
   const res = await apiClient.patch("/api/mobile/vendor/profile", data);
   return res.data;
 }
+

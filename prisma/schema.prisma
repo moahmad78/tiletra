@@ -785,6 +785,10 @@ model Vendor {
   longitude             Float?
   locationAccuracy      Float?
 
+  // Quick Commerce Automation (F3 / F5)
+  autoAcceptOrders      Boolean            @default(false) // per-vendor: skip manual accept step
+  serviceAreaRadiusKm   Float              @default(10)    // max km from vendor to accept geo-routed orders
+
   // Authentication Method (Admin-Configurable: otp vs password)
   loginMethod         String             @default("otp") // otp | password
   passwordHash        String?
@@ -828,31 +832,44 @@ model VendorApplication {
 }
 
 model VendorOrderSplit {
-  id                 String    @id @default(cuid())
-  orderId            String
-  vendorId           String
-  subtotal           Float
-  commissionRate     Float     @default(15.0)
-  commissionAmount   Float     @default(0)
-  vendorPayoutAmount Float     @default(0)
-  deliveryMethod     String    @default("self") // self | platform (captured at order creation)
-  fulfillmentStatus  String    @default("processing") // processing | ready_for_pickup | picked_up | dispatched | out_for_delivery | delivered | cancelled | returned
-  paymentCollected   Boolean   @default(false)  // true once cash/online payment is collected
-  trackingNumber     String?
-  courierName        String?
-  deliveredAt        DateTime?
-  payoutId           String?
-  createdAt          DateTime  @default(now())
-  updatedAt          DateTime  @updatedAt
+  id                   String    @id @default(cuid())
+  orderId              String
+  vendorId             String
+  subtotal             Float
+  commissionRate       Float     @default(15.0)
+  commissionAmount     Float     @default(0)
+  vendorPayoutAmount   Float     @default(0)
+  deliveryMethod       String    @default("self") // self | platform (captured at order creation)
+  fulfillmentStatus    String    @default("processing") // processing | confirmed | ready_for_pickup | picked_up | dispatched | out_for_delivery | delivered | cancelled | returned
+  paymentCollected     Boolean   @default(false)  // true once cash/online payment is collected
+  trackingNumber       String?
+  courierName          String?
+  deliveredAt          DateTime?
+  payoutId             String?
 
-  vendor             Vendor    @relation(fields: [vendorId], references: [id], onDelete: Cascade)
-  payout             Payout?   @relation(fields: [payoutId], references: [id], onDelete: SetNull)
+  // ── SLA Packing Timer (F4) ──────────────────────────────────────────────────
+  acceptedAt           DateTime? // set when status → "confirmed" (auto or manual)
+  packingDeadline      DateTime? // acceptedAt + PACKING_SLA_MINUTES (default 10 min)
+  packingBreachAt      DateTime? // set by SLA cron when deadline missed without ready_for_pickup
+  slaBreach            Boolean   @default(false)
+
+  // ── Third-Party Delivery Fallback (F6) ─────────────────────────────────────
+  thirdPartyRef        String?   // Porter/Dunzo booking reference ID
+  thirdPartyProvider   String?   // "porter" | "dunzo" | "shiprocket"
+
+  createdAt            DateTime  @default(now())
+  updatedAt            DateTime  @updatedAt
+
+  vendor               Vendor    @relation(fields: [vendorId], references: [id], onDelete: Cascade)
+  payout               Payout?   @relation(fields: [payoutId], references: [id], onDelete: SetNull)
 
   @@index([orderId])
   @@index([vendorId])
   @@index([fulfillmentStatus])
   @@index([deliveryMethod])
   @@index([payoutId])
+  @@index([slaBreach])
+  @@index([packingDeadline])
 }
 
 model Payout {

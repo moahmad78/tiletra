@@ -41,6 +41,13 @@ export async function GET(req: NextRequest) {
         description: vendor.description,
         status: vendor.status,
         commissionRate: vendor.commissionRate,
+        // F1: GPS / Shop Location
+        latitude: vendor.latitude,
+        longitude: vendor.longitude,
+        locationAccuracy: vendor.locationAccuracy,
+        // F3: Automation
+        autoAcceptOrders: vendor.autoAcceptOrders,
+        serviceAreaRadiusKm: vendor.serviceAreaRadiusKm,
       },
     });
   } catch (error: any) {
@@ -111,6 +118,23 @@ export async function PATCH(req: NextRequest) {
     if (description !== undefined) updateData.description = String(description).trim();
     if (logo !== undefined) updateData.logo = logo ? String(logo).trim() : null;
     if (shopPhotoUrl !== undefined) updateData.shopPhotoUrl = shopPhotoUrl ? String(shopPhotoUrl).trim() : null;
+
+    // F1: GPS coordinate update from body
+    const { latitude, longitude, locationAccuracy, autoAcceptOrders, serviceAreaRadiusKm } = body;
+    if (latitude !== undefined && longitude !== undefined) {
+      const lat = Number(latitude);
+      const lng = Number(longitude);
+      if (!isNaN(lat) && !isNaN(lng) && lat >= -90 && lat <= 90 && lng >= -180 && lng <= 180) {
+        updateData.latitude = lat;
+        updateData.longitude = lng;
+        if (locationAccuracy !== undefined) updateData.locationAccuracy = Number(locationAccuracy);
+      }
+    }
+    // F3: Per-vendor auto-accept toggle
+    if (autoAcceptOrders !== undefined) updateData.autoAcceptOrders = Boolean(autoAcceptOrders);
+    if (serviceAreaRadiusKm !== undefined) {
+      updateData.serviceAreaRadiusKm = Math.max(1, Math.min(50, Number(serviceAreaRadiusKm)));
+    }
 
     const updatedVendor = await prisma.vendor.update({
       where: { id: vendor.id },

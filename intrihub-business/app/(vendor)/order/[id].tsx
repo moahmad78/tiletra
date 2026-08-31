@@ -28,6 +28,7 @@ import { fetchVendorOrders, updateVendorOrderStatus } from "../../../src/api/ven
 import { COURIER_PARTNERS } from "../../../src/constants/logistics";
 import { COLORS, SPACING, RADIUS, SHADOWS } from "../../../src/constants/theme";
 import { printOrderInvoice } from "../../../src/utils/invoicePrinter";
+import { PackingTimer } from "../../../src/components/PackingTimer";
 
 const getCleanPhone = (phone?: string | null) => {
   if (!phone) return "";
@@ -119,6 +120,19 @@ export default function VendorOrderDetailScreen() {
           <Text style={styles.statusValue}>
             {split.fulfillmentStatus.replace(/_/g, " ").toUpperCase()}
           </Text>
+
+          {/* F4: Live Packing Countdown Timer & SLA Alert */}
+          {(split as any).packingDeadline &&
+            ["confirmed", "processing"].includes(split.fulfillmentStatus) && (
+              <View style={{ marginTop: 12 }}>
+                <PackingTimer
+                  deadline={(split as any).packingDeadline}
+                  onExpired={() => {
+                    queryClient.invalidateQueries({ queryKey: ["vendor-orders"] });
+                  }}
+                />
+              </View>
+            )}
 
           <View style={styles.statusActions}>
             <TouchableOpacity

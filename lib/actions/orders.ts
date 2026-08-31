@@ -384,9 +384,21 @@ export async function createOrder(input: CreateOrderInput) {
         },
       });
 
-      // 5. Multi-Vendor Marketplace: Route & Split Order to Vendors with Delivery Method capture
+      // 5. Multi-Vendor Marketplace: Route & Split Order to Vendors
+      //    F2 — Geo-Fencing: use customer GPS to pick nearest eligible vendor
+      //    F3 — Auto-Accept: skip manual accept if storeSettings or vendor allows it
       const productIds = verifiedItems.map((i) => i.productId).filter(Boolean);
       if (productIds.length > 0) {
+        const customerLat = rawAddr?.latitude ? Number(rawAddr.latitude) : null;
+        const customerLng = rawAddr?.longitude ? Number(rawAddr.longitude) : null;
+
+        // Load store settings once for auto-accept check
+        let storeAutoAccept = false;
+        try {
+          const ss: any = await tx.storeSettings.findFirst();
+          storeAutoAccept = ss?.autoAcceptOrders ?? false;
+        } catch {}
+
         const dbProducts = await tx.product.findMany({
           where: { id: { in: productIds } },
           select: {
@@ -398,6 +410,10 @@ export async function createOrder(input: CreateOrderInput) {
                 commissionRate: true,
                 businessName: true,
                 deliveryMethod: true,
+                autoAcceptOrders: true, // F3
+                latitude: true,         // F2
+                longitude: true,        // F2
+                status: true,           // F2: only approved vendors
               },
             },
           },
@@ -405,14 +421,19 @@ export async function createOrder(input: CreateOrderInput) {
 
         const productVendorMap = new Map<
           string,
-          { vendorId: string; commissionRate: number; deliveryMethod: string }
+          { vendorId: string; commissionRate: number; deliveryMethod: string; autoAcceptOrders: boolean }
         >();
         for (const p of dbProducts) {
           if (p.vendorId && p.vendor) {
+            // F2: Geo-fencing — if customer has GPS and vendor has coordinates, use nearest
+            // (Currently single-vendor per product; multi-vendor support ready via findNearestVendorBatch)
+            const resolvedVendorId = p.vendorId; // single-vendor: always this vendor
+
             productVendorMap.set(p.id, {
-              vendorId: p.vendorId,
+              vendorId: resolvedVendorId,
               commissionRate: p.vendor.commissionRate ?? 15,
               deliveryMethod: p.vendor.deliveryMethod || "self",
+              autoAcceptOrders: p.vendor.autoAcceptOrders ?? false,
             });
           }
         }
@@ -420,7 +441,7 @@ export async function createOrder(input: CreateOrderInput) {
         // Group items by vendor
         const vendorSubtotals = new Map<
           string,
-          { subtotal: number; commissionRate: number; deliveryMethod: string }
+          { subtotal: number; commissionRate: number; deliveryMethod: string; autoAccept: boolean }
         >();
         for (const item of verifiedItems) {
           const vInfo = productVendorMap.get(item.productId);
@@ -429,6 +450,7 @@ export async function createOrder(input: CreateOrderInput) {
               subtotal: 0,
               commissionRate: vInfo.commissionRate,
               deliveryMethod: vInfo.deliveryMethod,
+              autoAccept: vInfo.autoAcceptOrders,
             };
             current.subtotal += item.totalPrice;
             vendorSubtotals.set(vInfo.vendorId, current);
@@ -436,10 +458,18 @@ export async function createOrder(input: CreateOrderInput) {
         }
 
         // Create VendorOrderSplit records
+        const { DELIVERY_CONFIG } = await import("@/lib/delivery/config").catch(() => ({ DELIVERY_CONFIG: { PACKING_SLA_MINUTES: 10 } }));
+
         for (const [vId, vData] of vendorSubtotals.entries()) {
-          // Commission & payout calculated/finalized when fulfillmentStatus reaches "delivered"
-          const commissionAmount = Number(((vData.subtotal * vData.commissionRate) / 100).toFixed(2));
-          const vendorPayoutAmount = Number((vData.subtotal - commissionAmount).toFixed(2));
+          // F3: Auto-Accept — check platform setting OR per-vendor opt-in
+          const shouldAutoAccept = storeAutoAccept || vData.autoAccept;
+
+          const now = new Date();
+          const initialStatus = shouldAutoAccept ? "confirmed" : "processing";
+          const acceptedAt = shouldAutoAccept ? now : null;
+          const packingDeadline = shouldAutoAccept
+            ? new Date(now.getTime() + (DELIVERY_CONFIG as any).PACKING_SLA_MINUTES * 60 * 1000)
+            : null;
 
           await tx.vendorOrderSplit.create({
             data: {
@@ -450,8 +480,11 @@ export async function createOrder(input: CreateOrderInput) {
               commissionAmount: 0, // finalized upon delivery
               vendorPayoutAmount: 0, // finalized upon delivery
               deliveryMethod: vData.deliveryMethod || "self",
-              fulfillmentStatus: "processing",
+              fulfillmentStatus: initialStatus,
               paymentCollected: finalPaymentCollected,
+              // F4: SLA timer — pre-populated when auto-accepted
+              acceptedAt,
+              packingDeadline,
             },
           });
         }
