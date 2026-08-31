@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect, useRef, useCallback } from "react";
-import { Loader2, Sparkles, CheckCircle2, ArrowUp, Layers } from "lucide-react";
+import { Loader2, CheckCircle2, ArrowUp, Layers } from "lucide-react";
 import CompactProductCard from "@/components/CompactProductCard";
 import type { Product } from "@/lib/data/products";
 import type { Category } from "@/lib/data/categories";
@@ -121,18 +121,11 @@ export default function InfiniteProductCatalog({
   return (
     <section className="w-full max-w-[1400px] mx-auto px-3 sm:px-4 md:px-6 lg:px-8 py-8 md:py-12 space-y-6">
       {/* ── Section Header ── */}
-      <div className="flex flex-col md:flex-row md:items-end justify-between gap-4 border-b border-gray-200/80 pb-5">
-        <div className="space-y-1.5">
-          <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-orange-50 border border-orange-200/70 text-[10px] font-black uppercase tracking-wider text-[#F26522]">
-            <Sparkles size={12} />
-            <span>Complete Catalog</span>
-          </div>
+      <div className="flex flex-col md:flex-row md:items-end justify-between gap-4 border-b border-gray-200/80 pb-3 sm:pb-4">
+        <div>
           <h2 className="text-xl sm:text-2xl md:text-3xl font-black text-[#052a51] tracking-tight">
-            Explore All Materials & Supplies
+            All Materials & Supplies
           </h2>
-          <p className="text-xs sm:text-sm text-gray-500 font-medium max-w-xl">
-            Factory-direct tiles, electrical wires, sanitaryware, paints & hardware with direct 60-min delivery.
-          </p>
         </div>
 
         {/* Total Product Count Counter */}

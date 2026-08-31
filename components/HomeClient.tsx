@@ -10,8 +10,6 @@ import {
   ChevronRight,
   Heart,
   ShoppingCart,
-  ShieldCheck,
-  Award,
   Zap,
   Clock,
   CheckCircle2,
@@ -170,18 +168,6 @@ export default function HomeClient({
           <RecentlyViewedSlider />
         </div>
 
-        {/* Mini Trust Badges on Mobile */}
-        <div className="px-4 py-4 grid grid-cols-2 gap-2 text-[11px] text-[#052a51] font-bold">
-          <div className="flex items-center gap-2 p-2.5 bg-white rounded-xl border border-neutral-200 shadow-2xs">
-            <ShieldCheck size={16} className="text-[#F26522] shrink-0" />
-            <span>100% Quality Assured</span>
-          </div>
-          <div className="flex items-center gap-2 p-2.5 bg-white rounded-xl border border-neutral-200 shadow-2xs">
-            <Award size={16} className="text-[#F26522] shrink-0" />
-            <span>500+ Verified Spaces</span>
-          </div>
-        </div>
-
         {/* Continuous Loading Infinite Catalog Section on Mobile */}
         <InfiniteProductCatalog categories={categories} />
 
@@ -265,7 +251,13 @@ export default function HomeClient({
           />
         )}
 
-        {/* ── QUICK COMMERCE DISPATCH & SITE DELIVERY BANNER ──────────────── */}
+        {/* Continuous Loading Infinite Catalog Section on Desktop */}
+        <InfiniteProductCatalog categories={categories} />
+
+        {/* Brand Narrative Section for Desktop */}
+        <IntrihubBrandSEOSection />
+
+        {/* ── QUICK COMMERCE DISPATCH & SITE DELIVERY BANNER (Desktop Only, Above Footer) ──────────────── */}
         <section className="relative overflow-hidden py-12 md:py-16 bg-gradient-to-r from-[#031b34] via-[#052a51] to-[#08386a] border-y border-white/10 text-white">
           {/* Subtle Ambient Glow Orbs */}
           <div className="absolute -top-24 -left-24 w-80 h-80 bg-[#F26522]/15 rounded-full blur-3xl pointer-events-none" />
@@ -340,12 +332,6 @@ export default function HomeClient({
             </div>
           </div>
         </section>
-
-        {/* Continuous Loading Infinite Catalog Section on Desktop */}
-        <InfiniteProductCatalog categories={categories} />
-
-        {/* Brand Narrative Section for Desktop */}
-        <IntrihubBrandSEOSection />
 
         <Footer />
       </div>

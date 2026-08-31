@@ -148,8 +148,7 @@ export default function HomeScreen() {
       {/* Infinite Product Catalog Section Title */}
       <View style={styles.sectionHeader}>
         <View>
-          <Text style={styles.sectionTitle}>All Products & Materials</Text>
-          <Text style={styles.sectionSubtitle}>Direct prices for home, project & commercial spaces</Text>
+          <Text style={styles.sectionTitle}>All Materials & Supplies</Text>
         </View>
       </View>
     </View>
