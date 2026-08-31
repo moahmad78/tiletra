@@ -1,13 +1,15 @@
 export const COLORS = {
   primary: "#052A51",
   primaryLight: "#0A3D74",
-  primaryDark: "#031B34",
-  accentOrange: "#EA580C",
-  accentGreen: "#10B981",
-  accentAmber: "#F59E0B",
-  accentBlue: "#2563EB",
+  primaryDark: "#022046",
+  accentOrange: "#F26522", // Standardized Single Brand Orange
+  accent: "#F26522",
+  accentHover: "#d95a1e",
+  accentGreen: "#1E9E6B",
+  accentAmber: "#D68A1E",
+  accentBlue: "#2E6FBD",
   accentPurple: "#7C3AED",
-  accentRed: "#EF4444",
+  accentRed: "#D64545",
 
   background: "#F8FAFC",
   surface: "#FFFFFF",
@@ -23,10 +25,18 @@ export const COLORS = {
   borderLight: "#F1F5F9",
   borderFocus: "#052A51",
 
-  success: "#10B981",
-  warning: "#F59E0B",
-  error: "#EF4444",
-  info: "#3B82F6",
+  success: "#1E9E6B",
+  warning: "#D68A1E",
+  error: "#D64545",
+  info: "#2E6FBD",
+};
+
+export const FONTS = {
+  regular: "PlusJakartaSans_400Regular",
+  medium: "PlusJakartaSans_500Medium",
+  semiBold: "PlusJakartaSans_600SemiBold",
+  bold: "PlusJakartaSans_700Bold",
+  extraBold: "PlusJakartaSans_800ExtraBold",
 };
 
 export const SPACING = {
@@ -78,7 +88,7 @@ export const SHADOWS = {
     elevation: 4,
   },
   button: {
-    shadowColor: "#EA580C",
+    shadowColor: "#F26522",
     shadowOffset: { width: 0, height: 3 },
     shadowOpacity: 0.25,
     shadowRadius: 6,

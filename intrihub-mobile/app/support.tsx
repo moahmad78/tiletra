@@ -143,7 +143,7 @@ export default function CustomerSupportScreen() {
         <View style={styles.heroBanner}>
           <View style={styles.heroLeft}>
             <View style={styles.badge247}>
-              <Sparkles size={12} color="#f97316" />
+              <Sparkles size={12} color={COLORS.accent} />
               <Text style={styles.badge247Text}>24*7 LIVE ASSISTANCE</Text>
             </View>
             <Text style={styles.heroHeading}>How can we assist you today?</Text>

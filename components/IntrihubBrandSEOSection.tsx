@@ -10,34 +10,33 @@ import {
   Calculator,
   ChevronDown,
   ArrowRight,
-  CheckCircle2,
   PhoneCall,
 } from "lucide-react";
 
 const BRAND_FAQS = [
   {
     q: "What is Intrihub?",
-    a: "Intrihub (IntriHub) is India's premier instant building and interior materials marketplace. Intrihub connects homeowners, architects, interior designers, and contractors directly to certified manufacturing hubs, providing wholesale pricing on tiles, granite, electrical wires, sanitaryware, false ceilings, and hardware with 60-minute site delivery in Bengaluru and pan-India dispatch.",
+    a: "IntriHub is India's premier instant building and interior materials marketplace. We connect homeowners, architects, interior designers, and contractors directly to certified manufacturing hubs, providing wholesale pricing on tiles, granite, electrical wires, sanitaryware, false ceilings, and hardware with 60-minute site delivery in Bengaluru and pan-India dispatch.",
   },
   {
-    q: "How does Intrihub deliver building materials within 60 minutes?",
-    a: "Intrihub operates a specialized quick-commerce network with micro-dark stores and direct tier-1 manufacturer hubs across Bengaluru. Once you place an order on Intrihub, our automated dispatch system assigns the nearest delivery fleet with live GPS tracking directly to your construction or renovation site.",
+    q: "How does 60-minute site delivery work?",
+    a: "We operate a specialized quick-commerce network with micro-dark stores and direct tier-1 manufacturer hubs across Bengaluru. Once you place an order, our automated dispatch system assigns the nearest delivery fleet with live GPS tracking directly to your construction or renovation site.",
   },
   {
     q: "What product categories are available on Intrihub?",
-    a: "Intrihub features over 20+ certified categories including Vitrified Floor & Wall Tiles, Natural Granite Slabs, Modular Switches & Electrical Wires, CPVC Plumbing & Sanitaryware, Designer Wallpapers, Waterproof Plywood, False Ceiling Materials, and Architectural Hardware.",
+    a: "Our catalog features over 20+ certified categories including Vitrified Floor & Wall Tiles, Natural Granite Slabs, Modular Switches & Electrical Wires, CPVC Plumbing & Sanitaryware, Designer Wallpapers, Waterproof Plywood, False Ceiling Materials, and Architectural Hardware.",
   },
   {
-    q: "How does the Intrihub Smart Calculator help save costs?",
-    a: "Intrihub includes a built-in, unit-aware smart calculator on product pages. By simply entering your room dimensions (sq.ft or meters), Intrihub calculates exact box counts, tile pieces, and coil lengths including standard cutting buffers (+10%), preventing over-purchasing and material wastage.",
+    q: "How does the Smart Calculator help prevent wastage?",
+    a: "Our built-in, unit-aware smart calculator lives right on product pages. By simply entering your room dimensions (sq.ft or meters), it calculates exact box counts, tile pieces, and coil lengths including standard cutting buffers (+10%), preventing over-purchasing and material wastage.",
   },
   {
-    q: "Who is the founder of Intrihub?",
-    a: "Intrihub was founded by Sahil Sheikh to streamline, digitize, and modernize the building material procurement supply chain across India, providing transparent wholesale rates and rapid site delivery.",
+    q: "Who founded Intrihub?",
+    a: "IntriHub was founded by Sahil Sheikh to streamline, digitize, and modernize the building material procurement supply chain across India, providing transparent wholesale rates and rapid site delivery.",
   },
   {
-    q: "How can I contact Intrihub for bulk project discounts?",
-    a: "You can contact Intrihub directly via phone or WhatsApp at +91 92649 20211, or email support@intrihub.com. Intrihub provides dedicated relationship managers and custom GST invoicing for large residential and commercial projects.",
+    q: "How can I get bulk project discounts?",
+    a: "You can reach our enterprise desk directly via phone or WhatsApp at +91 92649 20211, or email support@intrihub.com. We provide dedicated relationship managers and custom GST invoicing for large residential and commercial projects.",
   },
 ];
 
@@ -45,64 +44,64 @@ export default function IntrihubBrandSEOSection() {
   const [openIdx, setOpenIdx] = useState<number | null>(0);
 
   return (
-    <section className="bg-white py-12 md:py-16 border-t border-gray-100 text-gray-900">
-      <div className="w-full max-w-[1400px] mx-auto px-4 sm:px-6 lg:px-8 space-y-12">
+    <section className="bg-white py-12 md:py-16 border-t border-neutral-200 text-neutral-900">
+      <div className="w-full max-w-[1400px] mx-auto px-[20px] md:px-[24px] lg:px-[32px] space-y-12">
         {/* ── 1. Main Brand Headline & Narrative ── */}
         <div className="max-w-3xl mx-auto text-center space-y-4">
           <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-[#052a51]/5 border border-[#052a51]/10 text-xs font-black uppercase tracking-wider text-[#052a51]">
             <Sparkles size={14} className="text-[#F26522]" />
-            <span>Intrihub • India's Building & Interior Marketplace</span>
+            <span>India's Building & Interior Marketplace</span>
           </div>
 
           <h2 className="text-2xl sm:text-3xl md:text-4xl font-black text-[#052a51] tracking-tight leading-tight">
-            Why Thousands of Builders, Designers & Homeowners Trust{" "}
-            <span className="text-[#F26522]">Intrihub</span>
+            Why Builders, Designers & Homeowners Trust{" "}
+            <span className="text-[#F26522]">IntriHub</span>
           </h2>
 
-          <p className="text-xs sm:text-sm md:text-base text-gray-600 leading-relaxed font-medium">
-            <strong>Intrihub</strong> is India&apos;s complete quick-commerce ecosystem for interior finishes and construction supplies. From foundation to final fixtures, Intrihub delivers factory-direct vitrified tiles, granite, electrical wires, sanitaryware, and hardware directly to your site within 60 minutes across Bengaluru and Pan-India.
+          <p className="text-xs sm:text-sm md:text-base text-neutral-600 leading-relaxed font-medium">
+            A comprehensive quick-commerce ecosystem for interior finishes and construction supplies. From foundation to final fixtures, we deliver factory-direct vitrified tiles, granite, electrical wires, sanitaryware, and hardware directly to your site within 60 minutes across Bengaluru and Pan-India.
           </p>
         </div>
 
         {/* ── 2. Brand Pillars Grid ── */}
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5">
-          <div className="bg-gray-50/80 p-5 rounded-2xl border border-gray-200/70 space-y-3 hover:border-[#F26522]/40 transition-colors">
+          <div className="bg-neutral-50 p-5 rounded-2xl border border-neutral-200 space-y-3 hover:border-[#F26522]/40 transition-colors">
             <div className="w-10 h-10 rounded-xl bg-[#052a51] text-white flex items-center justify-center shadow-xs">
               <Building2 size={20} className="text-[#F26522]" />
             </div>
-            <h3 className="text-sm font-black text-[#052a51]">Factory-Direct Intrihub Pricing</h3>
-            <p className="text-xs text-gray-600 leading-relaxed">
-              Intrihub bypasses multi-tier middleman margins to provide wholesale factory rates on 20,000+ certified interior products.
+            <h3 className="text-sm font-black text-[#052a51]">Factory-Direct Pricing</h3>
+            <p className="text-xs text-neutral-600 leading-relaxed">
+              Bypass multi-tier distributor markups to access verified wholesale rates on 20,000+ certified products.
             </p>
           </div>
 
-          <div className="bg-gray-50/80 p-5 rounded-2xl border border-gray-200/70 space-y-3 hover:border-[#F26522]/40 transition-colors">
+          <div className="bg-neutral-50 p-5 rounded-2xl border border-neutral-200 space-y-3 hover:border-[#F26522]/40 transition-colors">
             <div className="w-10 h-10 rounded-xl bg-[#052a51] text-white flex items-center justify-center shadow-xs">
               <Truck size={20} className="text-[#F26522]" />
             </div>
             <h3 className="text-sm font-black text-[#052a51]">60-Minute Site Dispatch</h3>
-            <p className="text-xs text-gray-600 leading-relaxed">
-              Never halt on-site work. Intrihub delivers critical materials directly to your doorstep or site with real-time GPS tracking.
+            <p className="text-xs text-neutral-600 leading-relaxed">
+              Never halt on-site work. Real-time GPS tracked delivery fleet dispatches critical materials straight to your project.
             </p>
           </div>
 
-          <div className="bg-gray-50/80 p-5 rounded-2xl border border-gray-200/70 space-y-3 hover:border-[#F26522]/40 transition-colors">
+          <div className="bg-neutral-50 p-5 rounded-2xl border border-neutral-200 space-y-3 hover:border-[#F26522]/40 transition-colors">
             <div className="w-10 h-10 rounded-xl bg-[#052a51] text-white flex items-center justify-center shadow-xs">
               <Calculator size={20} className="text-[#F26522]" />
             </div>
-            <h3 className="text-sm font-black text-[#052a51]">Intrihub Smart Calculator</h3>
-            <p className="text-xs text-gray-600 leading-relaxed">
-              Calculate exact box counts, tile pieces, and wire lengths automatically with +10% standard cutting buffer to prevent waste.
+            <h3 className="text-sm font-black text-[#052a51]">Smart Quantity Calculator</h3>
+            <p className="text-xs text-neutral-600 leading-relaxed">
+              Automatically calculate exact box counts, tile pieces, and wire lengths with a standard +10% cutting buffer.
             </p>
           </div>
 
-          <div className="bg-gray-50/80 p-5 rounded-2xl border border-gray-200/70 space-y-3 hover:border-[#F26522]/40 transition-colors">
+          <div className="bg-neutral-50 p-5 rounded-2xl border border-neutral-200 space-y-3 hover:border-[#F26522]/40 transition-colors">
             <div className="w-10 h-10 rounded-xl bg-[#052a51] text-white flex items-center justify-center shadow-xs">
               <ShieldCheck size={20} className="text-[#F26522]" />
             </div>
-            <h3 className="text-sm font-black text-[#052a51]">100% Genuine Intrihub Guarantee</h3>
-            <p className="text-xs text-gray-600 leading-relaxed">
-              Every item on Intrihub is quality-inspected, backed by standard manufacturer warranties, and safely transit-packed.
+            <h3 className="text-sm font-black text-[#052a51]">100% Genuine Guarantee</h3>
+            <p className="text-xs text-neutral-600 leading-relaxed">
+              Every item is quality-inspected, backed by standard manufacturer warranties, and transit-packed for zero breakage.
             </p>
           </div>
         </div>
@@ -111,10 +110,10 @@ export default function IntrihubBrandSEOSection() {
         <div className="max-w-4xl mx-auto space-y-4 pt-4">
           <div className="text-center space-y-1 pb-2">
             <h3 className="text-lg sm:text-xl font-black text-[#052a51]">
-              Frequently Asked Questions About Intrihub
+              Frequently Asked Questions
             </h3>
-            <p className="text-xs text-gray-500 font-medium">
-              Everything you need to know about ordering on Intrihub
+            <p className="text-xs text-neutral-500 font-medium">
+              Everything you need to know about procurement and delivery on IntriHub
             </p>
           </div>
 
@@ -124,12 +123,12 @@ export default function IntrihubBrandSEOSection() {
               return (
                 <div
                   key={idx}
-                  className="rounded-2xl border border-gray-200/80 bg-white overflow-hidden transition-all shadow-2xs"
+                  className="rounded-2xl border border-neutral-200 bg-white overflow-hidden transition-all shadow-2xs"
                 >
                   <button
                     type="button"
                     onClick={() => setOpenIdx(isOpen ? null : idx)}
-                    className="w-full p-4 sm:p-5 flex items-center justify-between text-left gap-4 hover:bg-gray-50/50 transition-colors cursor-pointer"
+                    className="w-full p-4 sm:p-5 flex items-center justify-between text-left gap-4 hover:bg-neutral-50 transition-colors cursor-pointer"
                   >
                     <span className="text-xs sm:text-sm font-bold text-[#052a51]">
                       {faq.q}
@@ -143,7 +142,7 @@ export default function IntrihubBrandSEOSection() {
                   </button>
 
                   {isOpen && (
-                    <div className="px-4 pb-4 sm:px-5 sm:pb-5 text-xs text-gray-600 leading-relaxed border-t border-gray-100 pt-3 font-medium">
+                    <div className="px-4 pb-4 sm:px-5 sm:pb-5 text-xs text-neutral-600 leading-relaxed border-t border-neutral-100 pt-3 font-medium">
                       {faq.a}
                     </div>
                   )}
@@ -157,10 +156,10 @@ export default function IntrihubBrandSEOSection() {
         <div className="bg-gradient-to-r from-[#052a51] via-[#073666] to-[#052a51] rounded-3xl p-6 sm:p-8 text-white flex flex-col md:flex-row items-center justify-between gap-6 shadow-md border border-white/10">
           <div className="space-y-1.5 text-center md:text-left">
             <h4 className="text-base sm:text-lg font-black text-white">
-              Ready to Upgrade Your Space with Intrihub?
+              Ready to Upgrade Your Space?
             </h4>
             <p className="text-xs text-white/80 max-w-xl font-medium">
-              Browse 20+ categories on Intrihub or get immediate architectural consultation & bulk quotation via WhatsApp.
+              Browse 20+ categories or get immediate architectural consultation & bulk quotation via WhatsApp.
             </p>
           </div>
 
@@ -169,7 +168,7 @@ export default function IntrihubBrandSEOSection() {
               href="/shop"
               className="px-5 py-2.5 bg-[#F26522] hover:bg-[#d95a1e] text-white text-xs font-black rounded-xl shadow-xs transition-transform active:scale-95 flex items-center gap-1.5 cursor-pointer"
             >
-              <span>Explore Intrihub Catalog</span>
+              <span>Explore Catalog</span>
               <ArrowRight size={14} />
             </Link>
 
@@ -179,8 +178,8 @@ export default function IntrihubBrandSEOSection() {
               rel="noopener noreferrer"
               className="px-4 py-2.5 bg-white/10 hover:bg-white/20 border border-white/20 text-white text-xs font-bold rounded-xl transition-colors flex items-center gap-1.5 cursor-pointer"
             >
-              <PhoneCall size={13} className="text-emerald-400" />
-              <span>Talk to Intrihub Expert</span>
+              <PhoneCall size={13} className="text-[#1E9E6B]" />
+              <span>Talk to Material Expert</span>
             </a>
           </div>
         </div>

@@ -1,54 +1,52 @@
 "use client";
 
 import Link from "next/link";
-import { HelpCircle, ArrowRight } from "lucide-react";
+import { HelpCircle, ArrowRight, Sparkles, MessageCircle, PhoneCall, ChevronRight } from "lucide-react";
 import Header from "@/components/Header";
 import Footer from "@/components/Footer";
 import FAQ from "@/components/FAQ";
 
 export default function FAQPage() {
   return (
-    <main className="min-h-screen flex flex-col bg-[#F3F4F5]">
+    <main className="min-h-screen flex flex-col bg-neutral-50 font-sans">
       <Header />
 
-      <div
-        className="bg-[#052a51] text-white pt-[110px] md:pt-[168px] pb-14 md:pb-20"
-      >
-        <div className="w-full max-w-[1000px] mx-auto px-[20px] md:px-[24px] lg:px-[32px] text-center">
-          <div className="w-12 h-12 rounded-2xl bg-[#F26522] flex items-center justify-center mx-auto mb-4 text-white shadow-md">
-            <HelpCircle size={26} />
+      {/* Top Hero Banner in Brand Navy */}
+      <section className="bg-gradient-to-b from-[#031c38] via-[#052a51] to-[#0a396b] text-white pt-[140px] md:pt-[175px] pb-12 sm:pb-16 border-b border-white/10 relative overflow-hidden">
+        {/* Ambient background glow */}
+        <div className="absolute top-0 right-1/4 w-96 h-96 bg-[#F26522]/15 rounded-full blur-3xl pointer-events-none" />
+        <div className="absolute bottom-0 left-1/4 w-80 h-80 bg-blue-400/10 rounded-full blur-3xl pointer-events-none" />
+
+        <div className="w-full max-w-[1400px] mx-auto px-[20px] md:px-[24px] lg:px-[32px] relative z-10 text-center">
+          {/* Breadcrumbs */}
+          <nav className="flex items-center justify-center gap-1.5 text-xs text-white/70 mb-4">
+            <Link href="/" className="hover:text-white transition-colors">
+              Home
+            </Link>
+            <ChevronRight size={12} />
+            <span className="text-white/80">Support & Guidance</span>
+            <ChevronRight size={12} />
+            <span className="text-[#F26522] font-bold">Frequently Asked Questions</span>
+          </nav>
+
+          <div className="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-full bg-white/10 text-[#F26522] text-xs font-black uppercase tracking-wider mb-4 border border-white/15">
+            <Sparkles size={13} />
+            <span>IntriHub Knowledge Center</span>
           </div>
-          <h1 className="text-[34px] md:text-[48px] font-black leading-tight">
+
+          <h1 className="text-3xl sm:text-4xl md:text-5xl lg:text-6xl font-black text-white tracking-tight leading-tight">
             Frequently Asked <span className="text-[#F26522]">Questions</span>
           </h1>
-          <p className="text-white/70 text-sm md:text-base mt-3 max-w-lg mx-auto">
-            Everything you need to know about purchasing, calculating box quantities, delivery times, and returns.
+
+          <p className="text-white/80 text-xs sm:text-sm md:text-base mt-4 max-w-2xl mx-auto leading-relaxed font-medium">
+            Everything you need to know about factory-direct procurement, 60-minute site delivery in Bengaluru, smart quantity estimations, and transit damage protection.
           </p>
         </div>
-      </div>
+      </section>
 
-      <div className="w-full max-w-[1000px] mx-auto px-[20px] md:px-[24px] lg:px-[32px] py-10 flex-1">
+      {/* Main FAQ Container */}
+      <div className="w-full max-w-[1400px] mx-auto px-[20px] md:px-[24px] lg:px-[32px] py-8 sm:py-12 flex-1">
         <FAQ />
-
-        <div className="mt-8 bg-white rounded-3xl p-8 text-center border border-gray-100 shadow-sm">
-          <h3 className="text-xl font-black text-[#052a51]">Still have questions?</h3>
-          <p className="text-gray-500 text-sm mt-1">Our customer support team is available Mon-Sat, 9AM to 8PM.</p>
-          <div className="flex flex-wrap items-center justify-center gap-3 mt-5">
-            <a
-              href="https://wa.me/919264920211"
-              target="_blank"
-              rel="noopener noreferrer"
-              className="px-6 h-11 bg-[#25D366] text-white text-sm font-bold rounded-xl flex items-center gap-2 hover:opacity-90 active:scale-95 transition-all shadow-sm"
-            >
-              Chat on WhatsApp
-            </a>
-            <Link href="/contact">
-              <button className="px-6 h-11 bg-[#052a51] text-white text-sm font-bold rounded-xl flex items-center gap-2 hover:bg-[#041f3d] active:scale-95 transition-all">
-                Contact Us <ArrowRight size={15} />
-              </button>
-            </Link>
-          </div>
-        </div>
       </div>
 
       <Footer />

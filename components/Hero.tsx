@@ -97,7 +97,8 @@ export default function Hero() {
           >
             {/* Badge */}
             <motion.div variants={itemVariants} className="inline-flex items-center gap-2 bg-[#052a51]/80 backdrop-blur-sm text-white px-5 py-2.5 rounded-full mb-8 border border-white/10">
-              <span className="font-bold text-sm tracking-wide">⭐ Premium Tile Contractor in Bangalore</span>
+              <Star size={14} className="text-[#F26522] fill-[#F26522]" />
+              <span className="font-bold text-sm tracking-wide">Premium Tile Contractor in Bangalore</span>
             </motion.div>
 
             {/* Heading */}
@@ -114,19 +115,19 @@ export default function Hero() {
             {/* Trust Points */}
             <motion.div variants={itemVariants} className="flex flex-wrap items-center gap-x-6 gap-y-4 mb-10 text-sm font-semibold">
               <div className="flex items-center gap-2">
-                <ShieldCheck className="text-[#25D366] w-5 h-5" />
+                <ShieldCheck className="text-[#1E9E6B] w-5 h-5" />
                 <span className="text-white">Free Site Visit</span>
               </div>
               <div className="flex items-center gap-2">
-                <ShieldCheck className="text-[#25D366] w-5 h-5" />
+                <ShieldCheck className="text-[#1E9E6B] w-5 h-5" />
                 <span className="text-white">Same-Day Quote</span>
               </div>
               <div className="flex items-center gap-2">
-                <ShieldCheck className="text-[#25D366] w-5 h-5" />
+                <ShieldCheck className="text-[#1E9E6B] w-5 h-5" />
                 <span className="text-white">Expert Team</span>
               </div>
               <div className="flex items-center gap-2">
-                <ShieldCheck className="text-[#25D366] w-5 h-5" />
+                <ShieldCheck className="text-[#1E9E6B] w-5 h-5" />
                 <span className="text-white">Premium Finish</span>
               </div>
             </motion.div>
@@ -236,28 +237,11 @@ export default function Hero() {
       </div>
     </section>
 
-
-    <div className="w-full max-w-[1400px] mx-auto px-[20px] md:px-[24px] lg:px-[32px] relative z-10 mt-4">
-      <motion.div
-        initial={{ opacity: 0, y: 20 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.6, delay: 0.4 }}
-        className="grid grid-cols-2 md:grid-cols-4 gap-4 md:gap-[20px] lg:gap-6"
-      >
-        {[{ value: "500+", label: "Projects Delivered" }, { value: "10+", label: "Years Experience" }, { value: "100%", label: "Client Satisfaction" }, { value: "24Hrs", label: "Quote Turnaround" }].map((stat, idx) => (
-          <div key={idx} className="bg-white rounded-[20px] p-6 shadow-[0_10px_30px_rgba(0,0,0,0.06)] hover:shadow-[0_20px_40px_rgba(0,0,0,0.1)] hover:-translate-y-1 transition-all duration-300 border border-gray-100 flex flex-col items-center">
-            <span className="text-3xl font-[800] text-[#F26522] mb-1">{stat.value}</span>
-            <span className="text-sm font-bold text-[#052a51]">{stat.label}</span>
-          </div>
-        ))}
-      </motion.div>
-    </div>
-      {/* Custom animation keyframes */}
-      <style dangerouslySetInnerHTML={{ __html: `
-        @keyframes float { 0%,100% { transform: translateY(0); } 50% { transform: translateY(-8px); } }
-        @keyframes kenburns { 0% { transform: scale(1); } 100% { transform: scale(1.08); } }
-        .animate-kenburns { animation: kenburns 6s linear forwards; }
-      `}} />
- 
+    {/* Custom animation keyframes */}
+    <style dangerouslySetInnerHTML={{ __html: `
+      @keyframes float { 0%,100% { transform: translateY(0); } 50% { transform: translateY(-8px); } }
+      @keyframes kenburns { 0% { transform: scale(1); } 100% { transform: scale(1.08); } }
+      .animate-kenburns { animation: kenburns 6s linear forwards; }
+    `}} />
   </> );
 }

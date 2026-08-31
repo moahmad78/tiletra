@@ -5,7 +5,8 @@ import { Suspense } from "react";
 import { Metadata } from "next";
 
 export const metadata: Metadata = {
-  title: "My Account",
+  title: "My Account | IntriHub",
+  description: "Manage your profile, delivery addresses, GST credentials, and track live building materials freight orders.",
   robots: {
     index: false,
     follow: false,
@@ -18,13 +19,13 @@ export default function AccountLayout({
   children: React.ReactNode;
 }) {
   return (
-    <main className="min-h-screen flex flex-col bg-[#F1F3F6]">
+    <main className="min-h-screen flex flex-col bg-neutral-50 font-sans">
       <Header />
 
-      <div className="w-full max-w-[1340px] mx-auto px-3 sm:px-6 lg:px-8 pt-[76px] sm:pt-[84px] md:pt-[175px] lg:pt-[180px] pb-14 flex-1">
+      <div className="w-full max-w-[1400px] mx-auto px-[20px] md:px-[24px] lg:px-[32px] pt-[76px] sm:pt-[84px] md:pt-[175px] lg:pt-[180px] pb-14 flex-1">
         {/* ── DESKTOP VIEW (2-column with persistent sidebar on all /account/* routes) ── */}
         <div className="hidden md:grid grid-cols-[280px_1fr] lg:grid-cols-[300px_1fr] gap-6 items-start">
-          <Suspense fallback={<div className="w-full h-96 bg-white rounded-2xl animate-pulse" />}>
+          <Suspense fallback={<div className="w-full h-96 bg-white rounded-3xl animate-pulse" />}>
             <AccountSidebar />
           </Suspense>
 

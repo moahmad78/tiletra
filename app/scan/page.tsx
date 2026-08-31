@@ -10,7 +10,6 @@ import {
   FlashlightOff,
   SwitchCamera,
   Upload,
-  Sparkles,
   ArrowLeft,
   X,
   CheckCircle2,
@@ -20,7 +19,9 @@ import {
   RefreshCw,
   Search,
   MessageCircle,
-  HelpCircle,
+  ScanLine,
+  Focus,
+  Boxes,
 } from "lucide-react";
 import { useCartStore } from "@/lib/cart-store";
 import { getProductPriceInfo, formatPrice } from "@/lib/formatters";
@@ -209,13 +210,15 @@ export default function ScanAndFindPage() {
         <Link
           href="/"
           className="w-10 h-10 rounded-full bg-white/10 flex items-center justify-center text-white active:scale-90 transition-transform"
+          aria-label="Back to home"
         >
           <ArrowLeft size={20} />
         </Link>
 
-        <div className="flex items-center gap-1.5 px-3 py-1 rounded-full bg-white/10 border border-white/15 backdrop-blur-md">
-          <Sparkles size={14} className="text-[#F26522] animate-pulse" />
-          <span className="text-xs font-black tracking-wide uppercase text-white">IntriHub Lens</span>
+        {/* Brand-Owned "Scan & Find" Header Badge */}
+        <div className="flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-white/10 border border-white/15 backdrop-blur-md">
+          <ScanLine size={15} className="text-[#F26522]" strokeWidth={2.4} />
+          <span className="text-xs font-black tracking-wide uppercase text-white">Scan & Find</span>
         </div>
 
         <div className="flex items-center gap-2">
@@ -226,6 +229,7 @@ export default function ScanAndFindPage() {
               className={`w-10 h-10 rounded-full flex items-center justify-center transition-all ${
                 isTorchOn ? "bg-[#F26522] text-white shadow-md shadow-orange-500/40" : "bg-white/10 text-white"
               }`}
+              aria-label="Toggle Flashlight"
             >
               {isTorchOn ? <FlashlightOff size={18} /> : <Flashlight size={18} />}
             </button>
@@ -235,6 +239,7 @@ export default function ScanAndFindPage() {
             onClick={toggleCameraFacing}
             type="button"
             className="w-10 h-10 rounded-full bg-white/10 flex items-center justify-center text-white active:rotate-180 transition-transform"
+            aria-label="Switch Camera"
           >
             <SwitchCamera size={18} />
           </button>
@@ -281,7 +286,7 @@ export default function ScanAndFindPage() {
             </div>
             <button
               onClick={() => fileInputRef.current?.click()}
-              className="px-6 py-3 rounded-2xl bg-[#F26522] text-white font-bold text-xs flex items-center gap-2 shadow-lg"
+              className="px-6 py-3 rounded-2xl bg-[#F26522] text-white font-bold text-xs flex items-center gap-2 shadow-lg cursor-pointer active:scale-95"
             >
               <Upload size={16} />
               <span>Upload Photo from Gallery</span>
@@ -289,28 +294,45 @@ export default function ScanAndFindPage() {
           </div>
         )}
 
-        {/* ── SCANNING RETICLE / BOUNDING BOX OVERLAY ── */}
+        {/* ── BRAND-OWNED BLUEPRINT VIEWFINDER OVERLAY ── */}
         {!scanResult && (
           <div className="relative z-10 w-[78vw] max-w-[320px] aspect-square pointer-events-none flex items-center justify-center">
-            {/* 4 Corner Markers */}
-            <div className="absolute top-0 left-0 w-8 h-8 border-t-4 border-l-4 border-[#F26522] rounded-tl-xl" />
-            <div className="absolute top-0 right-0 w-8 h-8 border-t-4 border-r-4 border-[#F26522] rounded-tr-xl" />
-            <div className="absolute bottom-0 left-0 w-8 h-8 border-b-4 border-l-4 border-[#F26522] rounded-bl-xl" />
-            <div className="absolute bottom-0 right-0 w-8 h-8 border-b-4 border-r-4 border-[#F26522] rounded-br-xl" />
+            {/* Viewfinder Blueprint Frame */}
+            <div className="absolute inset-0 rounded-3xl border-2 border-[#F26522]/70 shadow-2xl">
+              {/* 4 Precision Blueprint Corner Brackets */}
+              <div className="absolute -top-1 -left-1 w-6 h-6 border-t-3 border-l-3 border-[#F26522] rounded-tl-xl" />
+              <div className="absolute -top-1 -right-1 w-6 h-6 border-t-3 border-r-3 border-[#F26522] rounded-tr-xl" />
+              <div className="absolute -bottom-1 -left-1 w-6 h-6 border-b-3 border-l-3 border-[#F26522] rounded-bl-xl" />
+              <div className="absolute -bottom-1 -right-1 w-6 h-6 border-b-3 border-r-3 border-[#F26522] rounded-br-xl" />
 
-            {/* Glowing Laser Radar Line (when active or scanning) */}
-            <div
-              className={`absolute left-2 right-2 h-0.5 bg-gradient-to-r from-transparent via-[#F26522] to-transparent shadow-[0_0_12px_#F26522] ${
-                isProcessing ? "animate-bounce" : "animate-pulse"
-              }`}
-            />
+              {/* Blueprint Grid Measurement Ticks */}
+              <div className="absolute top-1/2 left-0 w-2 h-0.5 bg-[#F26522]/80 -translate-y-1/2" />
+              <div className="absolute top-1/2 right-0 w-2 h-0.5 bg-[#F26522]/80 -translate-y-1/2" />
+              <div className="absolute left-1/2 top-0 w-0.5 h-2 bg-[#F26522]/80 -translate-x-1/2" />
+              <div className="absolute left-1/2 bottom-0 w-0.5 h-2 bg-[#F26522]/80 -translate-x-1/2" />
 
-            {/* Guidance Text */}
-            <div className="absolute -bottom-10 left-0 right-0 text-center">
-              <span className="px-3 py-1 rounded-full bg-black/60 backdrop-blur-md text-[11px] font-semibold text-white/90">
-                {isProcessing
-                  ? "⚡ Analyzing packaging & brand..."
-                  : "Aim camera at packaging label (Cement, Paint, Tile)"}
+              {/* Center Target Indicator */}
+              <div className="absolute inset-0 flex items-center justify-center opacity-40">
+                <div className="w-8 h-8 rounded-full border border-white/40 flex items-center justify-center">
+                  <div className="w-1.5 h-1.5 rounded-full bg-[#F26522]" />
+                </div>
+              </div>
+            </div>
+
+            {/* Instruction Badge Styled with Brand Pill Component */}
+            <div className="absolute -bottom-12 left-0 right-0 text-center flex justify-center px-4">
+              <span className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-neutral-950/80 border border-white/15 backdrop-blur-md text-xs font-bold text-white shadow-lg">
+                {isProcessing ? (
+                  <>
+                    <RefreshCw size={13} className="text-[#F26522] animate-spin" />
+                    <span>Matching IntriHub catalog...</span>
+                  </>
+                ) : (
+                  <>
+                    <ScanLine size={13} className="text-[#F26522]" />
+                    <span>Aim at packaging label (Cement, Paint, Tile)</span>
+                  </>
+                )}
               </span>
             </div>
           </div>
@@ -328,7 +350,7 @@ export default function ScanAndFindPage() {
       </div>
 
       {/* ── BOTTOM CONTROLS & RESULT DRAWER ── */}
-      <div className="relative z-20 bg-[#052a51] border-t border-white/10 px-4 pt-3 pb-8 space-y-3">
+      <div className="relative z-20 bg-[#052a51] border-t border-white/10 px-4 pt-4 pb-8 space-y-4">
         {/* Error Alert */}
         {errorMessage && (
           <div className="p-3 rounded-xl bg-red-500/20 border border-red-500/40 text-red-200 text-xs flex items-center gap-2">
@@ -358,7 +380,7 @@ export default function ScanAndFindPage() {
 
               <button
                 onClick={handleResetScan}
-                className="text-xs text-white/70 hover:text-white flex items-center gap-1 bg-white/10 px-2.5 py-1 rounded-lg"
+                className="text-xs text-white/80 hover:text-white flex items-center gap-1 bg-white/10 px-3 py-1.5 rounded-xl cursor-pointer transition-colors"
               >
                 <RefreshCw size={12} />
                 <span>Scan New</span>
@@ -374,7 +396,7 @@ export default function ScanAndFindPage() {
             {scanResult.matched && scanResult.confidenceTier === "high" && scanResult.matchedProduct && (
               <div className="bg-white text-gray-900 rounded-2xl p-4 shadow-xl border border-white/20 space-y-3">
                 <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-emerald-50 text-emerald-800 text-[11px] font-bold">
-                  <Sparkles size={13} className="text-emerald-600 animate-spin" />
+                  <CheckCircle2 size={13} className="text-emerald-600" />
                   <span>High confidence match found! Opening product page...</span>
                 </div>
                 <div className="flex gap-3">
@@ -424,7 +446,7 @@ export default function ScanAndFindPage() {
                 <div className="grid grid-cols-2 gap-2 pt-1">
                   <button
                     onClick={() => handleAddToCart(scanResult.matchedProduct!)}
-                    className="h-11 rounded-xl bg-[#F26522] hover:bg-[#d95a1e] text-white font-bold text-xs flex items-center justify-center gap-1.5 shadow-md active:scale-95 transition-transform"
+                    className="h-11 rounded-xl bg-[#F26522] hover:bg-[#d95a1e] text-white font-bold text-xs flex items-center justify-center gap-1.5 shadow-md active:scale-95 transition-transform cursor-pointer"
                   >
                     <ShoppingBag size={14} />
                     <span>Add to Cart</span>
@@ -495,7 +517,7 @@ export default function ScanAndFindPage() {
               </div>
             )}
 
-            {/* ── 2. ALTERNATIVES LIST (IF UNMATCHED) ── */}
+            {/* ── 3. ALTERNATIVES LIST (IF UNMATCHED) ── */}
             {scanResult.alternatives && scanResult.alternatives.length > 0 && (
               <div className="space-y-2.5 pt-1">
                 <h4 className="text-xs font-bold text-amber-300 uppercase tracking-wider">
@@ -537,7 +559,7 @@ export default function ScanAndFindPage() {
                         <div className="pt-2 flex gap-1">
                           <button
                             onClick={() => handleAddToCart(alt)}
-                            className="flex-1 py-1.5 bg-[#F26522] text-white rounded-lg text-[10px] font-bold flex items-center justify-center gap-1 active:scale-95"
+                            className="flex-1 py-1.5 bg-[#F26522] text-white rounded-lg text-[10px] font-bold flex items-center justify-center gap-1 active:scale-95 cursor-pointer"
                           >
                             <ShoppingBag size={11} />
                             <span>Add</span>
@@ -561,7 +583,7 @@ export default function ScanAndFindPage() {
                   )}%20and%20need%20help%20sourcing%20it.`}
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="w-full h-11 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs flex items-center justify-center gap-2 shadow-md transition-colors mt-2"
+                  className="w-full h-11 rounded-xl bg-[#1E9E6B] hover:bg-emerald-700 text-white font-bold text-xs flex items-center justify-center gap-2 shadow-md transition-colors mt-2"
                 >
                   <MessageCircle size={15} />
                   <span>Enquire on WhatsApp for Custom Sourcing</span>
@@ -574,17 +596,17 @@ export default function ScanAndFindPage() {
         {/* ── CASE 2: SCAN CONTROLS (WHEN NOT SHOWING RESULTS) ── */}
         {!scanResult && (
           <div className="space-y-4">
-            {/* Main Shutter & Upload Buttons */}
-            <div className="flex items-center justify-around px-4">
-              {/* Gallery Upload Button */}
+            {/* Consolidated Shutter Action with Secondary Gallery Upload */}
+            <div className="flex items-center justify-center relative py-1">
+              {/* Secondary Gallery Upload Icon Button */}
               <button
                 type="button"
                 onClick={() => fileInputRef.current?.click()}
-                className="w-12 h-12 rounded-full bg-white/10 flex flex-col items-center justify-center text-white active:scale-90 transition-transform"
-                title="Upload from gallery"
+                className="absolute left-8 w-11 h-11 rounded-full bg-white/10 border border-white/15 flex items-center justify-center text-white hover:bg-white/20 active:scale-95 transition-all cursor-pointer"
+                title="Upload photo from gallery"
+                aria-label="Upload photo from gallery"
               >
-                <Upload size={20} />
-                <span className="text-[9px] text-white/70 font-semibold mt-0.5">Gallery</span>
+                <Upload size={18} />
               </button>
 
               <input
@@ -595,24 +617,18 @@ export default function ScanAndFindPage() {
                 className="hidden"
               />
 
-              {/* Central Shutter Capture Button */}
+              {/* Central Shutter Capture Button with Brand Scan Icon */}
               <button
                 type="button"
                 onClick={handleCaptureFrame}
                 disabled={isProcessing}
-                className="w-18 h-18 rounded-full border-4 border-white flex items-center justify-center p-1.5 active:scale-95 transition-transform shadow-xl shadow-orange-500/20 bg-[#F26522]"
+                className="w-20 h-20 rounded-full border-4 border-white/90 flex items-center justify-center p-1.5 active:scale-95 transition-transform shadow-xl shadow-orange-500/25 bg-gradient-to-tr from-[#d95a1e] to-[#F26522] cursor-pointer"
                 aria-label="Capture and Scan Product"
               >
                 <div className="w-full h-full rounded-full bg-white flex items-center justify-center text-[#F26522]">
-                  <Sparkles size={26} className="animate-pulse" />
+                  <ScanLine size={28} strokeWidth={2.4} />
                 </div>
               </button>
-
-              {/* Quick Info Modal Trigger */}
-              <div className="w-12 h-12 flex flex-col items-center justify-center text-white/60 text-center">
-                <HelpCircle size={18} />
-                <span className="text-[9px] text-white/50 font-semibold mt-0.5">Pilot MVP</span>
-              </div>
             </div>
 
             {/* Quick Text Search Bar Fallback */}
@@ -630,7 +646,7 @@ export default function ScanAndFindPage() {
               <button
                 type="submit"
                 disabled={!manualQuery.trim() || isProcessing}
-                className="px-4 h-10 rounded-xl bg-white/15 hover:bg-[#F26522] text-white text-xs font-bold transition-colors disabled:opacity-40"
+                className="px-4 h-10 rounded-xl bg-white/15 hover:bg-[#F26522] text-white text-xs font-bold transition-colors disabled:opacity-40 cursor-pointer"
               >
                 Search
               </button>

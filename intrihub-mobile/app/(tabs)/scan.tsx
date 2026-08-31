@@ -17,7 +17,6 @@ import * as Haptics from "expo-haptics";
 import {
   Camera,
   Upload,
-  Sparkles,
   ShoppingBag,
   ArrowRight,
   RefreshCw,
@@ -25,6 +24,7 @@ import {
   MessageCircle,
   CheckCircle2,
   AlertCircle,
+  ScanLine,
 } from "lucide-react-native";
 import { COLORS } from "../../src/constants/theme";
 import { useCartStore } from "../../src/store/cartStore";
@@ -152,16 +152,16 @@ export default function ScanTabScreen() {
       {/* ── HEADER ── */}
       <View style={styles.header}>
         <View style={styles.headerBadge}>
-          <Sparkles size={14} color={COLORS.accentOrange} />
-          <Text style={styles.headerBadgeText}>IntriHub Lens</Text>
+          <ScanLine size={13} color={COLORS.accent} />
+          <Text style={styles.headerBadgeText}>Scan & Find</Text>
         </View>
-        <Text style={styles.headerTitle}>Scan & Find Products</Text>
+        <Text style={styles.headerTitle}>Scan Physical Packaging</Text>
         <Text style={styles.headerSub}>
           Point camera at packaging label (Cement, Paint, Adhesives, Wires)
         </Text>
       </View>
 
-      <ScrollView contentContainerStyle={styles.contentContainer}>
+      <ScrollView contentContainerStyle={styles.contentContainer} showsVerticalScrollIndicator={false}>
         {/* Error banner */}
         {errorMessage && (
           <View style={styles.errorCard}>
@@ -176,19 +176,27 @@ export default function ScanTabScreen() {
             <Image source={{ uri: imageUri }} style={styles.previewImage} />
           ) : (
             <View style={styles.emptyReticle}>
+              {/* Precision Blueprint Corner Markers */}
               <View style={[styles.corner, styles.tl]} />
               <View style={[styles.corner, styles.tr]} />
               <View style={[styles.corner, styles.bl]} />
               <View style={[styles.corner, styles.br]} />
-              <Camera size={44} color="rgba(255,255,255,0.4)" />
-              <Text style={styles.reticleHint}>Tap Camera below to scan packaging</Text>
+
+              {/* Central Target Reticle */}
+              <View style={styles.centerTarget}>
+                <ScanLine size={32} color={COLORS.accent} />
+              </View>
+
+              <View style={styles.instructionPill}>
+                <Text style={styles.reticleHint}>Tap shutter button below to scan</Text>
+              </View>
             </View>
           )}
 
           {isProcessing && (
             <View style={styles.processingOverlay}>
-              <ActivityIndicator size="large" color={COLORS.accentOrange} />
-              <Text style={styles.processingText}>Analyzing Packaging & Brand...</Text>
+              <ActivityIndicator size="large" color={COLORS.accent} />
+              <Text style={styles.processingText}>Matching IntriHub catalog...</Text>
             </View>
           )}
         </View>
@@ -212,7 +220,7 @@ export default function ScanTabScreen() {
                 </View>
               )}
 
-              <TouchableOpacity style={styles.resetButton} onPress={handleReset}>
+              <TouchableOpacity style={styles.resetButton} onPress={handleReset} activeOpacity={0.8}>
                 <RefreshCw size={13} color={COLORS.textWhite} />
                 <Text style={styles.resetButtonText}>Scan Again</Text>
               </TouchableOpacity>
@@ -243,6 +251,7 @@ export default function ScanTabScreen() {
                         addItem(scanResult.matchedProduct, scanResult.matchedProduct.variants?.[0] || null, 1);
                         Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
                       }}
+                      activeOpacity={0.8}
                     >
                       <ShoppingBag size={14} color="#FFFFFF" />
                       <Text style={styles.cartButtonText}>Add to Cart</Text>
@@ -251,6 +260,7 @@ export default function ScanTabScreen() {
                     <TouchableOpacity
                       style={styles.viewButton}
                       onPress={() => router.push(`/product/${scanResult.matchedProduct.id}` as any)}
+                      activeOpacity={0.8}
                     >
                       <Text style={styles.viewButtonText}>View Details</Text>
                       <ArrowRight size={13} color="#FFFFFF" />
@@ -270,6 +280,7 @@ export default function ScanTabScreen() {
                       key={alt.id}
                       style={styles.altCard}
                       onPress={() => router.push(`/product/${alt.id}` as any)}
+                      activeOpacity={0.85}
                     >
                       <Image
                         source={{ uri: alt.images?.[0] || "https://images.unsplash.com/photo-1590381105924-c72589b9ef3f?w=400" }}
@@ -294,6 +305,7 @@ export default function ScanTabScreen() {
                       )}%20on%20the%20app%20and%20need%20help%20sourcing%20it.`
                     );
                   }}
+                  activeOpacity={0.85}
                 >
                   <MessageCircle size={16} color="#FFFFFF" />
                   <Text style={styles.whatsappButtonText}>Enquire on WhatsApp</Text>
@@ -307,25 +319,29 @@ export default function ScanTabScreen() {
         {!scanResult && (
           <View style={styles.controlsSection}>
             <View style={styles.buttonRow}>
-              <TouchableOpacity style={styles.galleryButton} onPress={handlePickGallery}>
+              {/* Secondary Gallery Upload Action */}
+              <TouchableOpacity style={styles.galleryButton} onPress={handlePickGallery} activeOpacity={0.8}>
                 <Upload size={20} color="#FFFFFF" />
                 <Text style={styles.actionBtnLabel}>Gallery</Text>
               </TouchableOpacity>
 
-              <TouchableOpacity style={styles.shutterButton} onPress={handleTakePhoto}>
+              {/* Shutter Button with Scan Icon */}
+              <TouchableOpacity style={styles.shutterButton} onPress={handleTakePhoto} activeOpacity={0.85}>
                 <View style={styles.shutterInner}>
-                  <Camera size={30} color={COLORS.accentOrange} />
+                  <ScanLine size={28} color={COLORS.accent} />
                 </View>
               </TouchableOpacity>
 
+              {/* WhatsApp Support Help */}
               <TouchableOpacity
                 style={styles.galleryButton}
                 onPress={() => {
                   Linking.openURL("https://wa.me/919264920211?text=Hi%20IntriHub,%20I%20need%20help%20identifying%20a%20product.");
                 }}
+                activeOpacity={0.8}
               >
                 <MessageCircle size={20} color="#FFFFFF" />
-                <Text style={styles.actionBtnLabel}>Support</Text>
+                <Text style={styles.actionBtnLabel}>Help</Text>
               </TouchableOpacity>
             </View>
 
@@ -345,6 +361,7 @@ export default function ScanTabScreen() {
                 style={styles.searchSubmitButton}
                 onPress={handleManualSearch}
                 disabled={!manualQuery.trim() || isProcessing}
+                activeOpacity={0.8}
               >
                 <Text style={styles.searchSubmitText}>Search</Text>
               </TouchableOpacity>
@@ -375,9 +392,11 @@ const styles = StyleSheet.create({
     alignItems: "center",
     gap: 6,
     backgroundColor: "rgba(255,255,255,0.1)",
-    paddingHorizontal: 10,
-    paddingVertical: 4,
-    borderRadius: 16,
+    paddingHorizontal: 12,
+    paddingVertical: 5,
+    borderRadius: 20,
+    borderWidth: 1,
+    borderColor: "rgba(255,255,255,0.15)",
     marginBottom: 8,
   },
   headerBadgeText: {
@@ -385,10 +404,11 @@ const styles = StyleSheet.create({
     fontSize: 11,
     fontWeight: "800",
     textTransform: "uppercase",
+    letterSpacing: 0.5,
   },
   headerTitle: {
     color: "#FFFFFF",
-    fontSize: 20,
+    fontSize: 19,
     fontWeight: "900",
     letterSpacing: -0.3,
   },
@@ -426,7 +446,7 @@ const styles = StyleSheet.create({
     overflow: "hidden",
     backgroundColor: "#000000",
     borderWidth: 2,
-    borderColor: "rgba(255,255,255,0.15)",
+    borderColor: "rgba(242, 101, 34, 0.5)",
     alignItems: "center",
     justifyContent: "center",
     marginBottom: 20,
@@ -444,24 +464,42 @@ const styles = StyleSheet.create({
   },
   corner: {
     position: "absolute",
-    width: 24,
-    height: 24,
-    borderColor: COLORS.accentOrange,
+    width: 22,
+    height: 22,
+    borderColor: COLORS.accent,
   },
-  tl: { top: 16, left: 16, borderTopWidth: 4, borderLeftWidth: 4, borderTopLeftRadius: 8 },
-  tr: { top: 16, right: 16, borderTopWidth: 4, borderRightWidth: 4, borderTopRightRadius: 8 },
-  bl: { bottom: 16, left: 16, borderBottomWidth: 4, borderLeftWidth: 4, borderBottomLeftRadius: 8 },
-  br: { bottom: 16, right: 16, borderBottomWidth: 4, borderRightWidth: 4, borderBottomRightRadius: 8 },
+  tl: { top: 14, left: 14, borderTopWidth: 3.5, borderLeftWidth: 3.5, borderTopLeftRadius: 10 },
+  tr: { top: 14, right: 14, borderTopWidth: 3.5, borderRightWidth: 3.5, borderTopRightRadius: 10 },
+  bl: { bottom: 14, left: 14, borderBottomWidth: 3.5, borderLeftWidth: 3.5, borderBottomLeftRadius: 10 },
+  br: { bottom: 14, right: 14, borderBottomWidth: 3.5, borderRightWidth: 3.5, borderBottomRightRadius: 10 },
+  centerTarget: {
+    width: 60,
+    height: 60,
+    borderRadius: 30,
+    backgroundColor: "rgba(242, 101, 34, 0.1)",
+    borderWidth: 1,
+    borderColor: "rgba(242, 101, 34, 0.3)",
+    alignItems: "center",
+    justifyContent: "center",
+    marginBottom: 16,
+  },
+  instructionPill: {
+    backgroundColor: "rgba(0, 0, 0, 0.7)",
+    borderWidth: 1,
+    borderColor: "rgba(255, 255, 255, 0.15)",
+    paddingHorizontal: 14,
+    paddingVertical: 6,
+    borderRadius: 20,
+  },
   reticleHint: {
-    color: "rgba(255,255,255,0.7)",
-    fontSize: 12,
-    marginTop: 12,
-    fontWeight: "600",
+    color: "rgba(255,255,255,0.85)",
+    fontSize: 11,
+    fontWeight: "700",
     textAlign: "center",
   },
   processingOverlay: {
     ...StyleSheet.absoluteFillObject,
-    backgroundColor: "rgba(0,0,0,0.75)",
+    backgroundColor: "rgba(0,0,0,0.8)",
     alignItems: "center",
     justifyContent: "center",
     gap: 12,
@@ -485,10 +523,12 @@ const styles = StyleSheet.create({
   galleryButton: {
     alignItems: "center",
     justifyContent: "center",
-    width: 60,
-    height: 60,
-    borderRadius: 30,
+    width: 54,
+    height: 54,
+    borderRadius: 27,
     backgroundColor: "rgba(255,255,255,0.1)",
+    borderWidth: 1,
+    borderColor: "rgba(255,255,255,0.15)",
   },
   actionBtnLabel: {
     color: "rgba(255,255,255,0.8)",
@@ -497,10 +537,10 @@ const styles = StyleSheet.create({
     marginTop: 2,
   },
   shutterButton: {
-    width: 76,
-    height: 76,
-    borderRadius: 38,
-    backgroundColor: COLORS.accentOrange,
+    width: 78,
+    height: 78,
+    borderRadius: 39,
+    backgroundColor: COLORS.accent,
     alignItems: "center",
     justifyContent: "center",
     borderWidth: 4,
@@ -508,9 +548,9 @@ const styles = StyleSheet.create({
     elevation: 8,
   },
   shutterInner: {
-    width: 60,
-    height: 60,
-    borderRadius: 30,
+    width: 62,
+    height: 62,
+    borderRadius: 31,
     backgroundColor: "#FFFFFF",
     alignItems: "center",
     justifyContent: "center",
@@ -518,7 +558,7 @@ const styles = StyleSheet.create({
   searchRow: {
     flexDirection: "row",
     alignItems: "center",
-    backgroundColor: "rgba(255,255,255,0.1)",
+    backgroundColor: "rgba(255,255,255,0.08)",
     borderRadius: 14,
     borderWidth: 1,
     borderColor: "rgba(255,255,255,0.15)",
@@ -536,7 +576,7 @@ const styles = StyleSheet.create({
     height: "100%",
   },
   searchSubmitButton: {
-    backgroundColor: COLORS.accentOrange,
+    backgroundColor: COLORS.accent,
     paddingHorizontal: 14,
     height: "100%",
     justifyContent: "center",
@@ -602,7 +642,6 @@ const styles = StyleSheet.create({
   resultMessage: {
     color: "rgba(255,255,255,0.85)",
     fontSize: 12,
-    fontWeight: "500",
     lineHeight: 18,
   },
   productCard: {
@@ -615,56 +654,56 @@ const styles = StyleSheet.create({
   productImage: {
     width: 80,
     height: 80,
-    borderRadius: 12,
-    backgroundColor: "#f1f5f9",
+    borderRadius: 10,
+    backgroundColor: "#f3f4f6",
   },
   productInfo: {
     flex: 1,
     justifyContent: "space-between",
   },
   productBrand: {
-    color: COLORS.accentOrange,
+    color: COLORS.accent,
     fontSize: 10,
     fontWeight: "800",
     textTransform: "uppercase",
   },
   productName: {
-    color: COLORS.primary,
+    color: "#052a51",
     fontSize: 13,
-    fontWeight: "700",
-    marginTop: 2,
+    fontWeight: "800",
+    marginTop: 1,
   },
   productPrice: {
-    color: COLORS.primary,
-    fontSize: 15,
+    color: "#052a51",
+    fontSize: 14,
     fontWeight: "900",
-    marginTop: 4,
+    marginTop: 2,
   },
   cardActions: {
     flexDirection: "row",
-    gap: 8,
-    marginTop: 8,
+    gap: 6,
+    marginTop: 6,
   },
   cartButton: {
     flex: 1,
-    backgroundColor: COLORS.accentOrange,
-    paddingVertical: 8,
-    borderRadius: 10,
+    backgroundColor: COLORS.accent,
+    paddingVertical: 7,
+    borderRadius: 8,
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "center",
-    gap: 6,
+    gap: 4,
   },
   cartButtonText: {
     color: "#FFFFFF",
     fontSize: 11,
-    fontWeight: "700",
+    fontWeight: "800",
   },
   viewButton: {
-    flex: 1,
-    backgroundColor: COLORS.primary,
-    paddingVertical: 8,
-    borderRadius: 10,
+    backgroundColor: "#052a51",
+    paddingHorizontal: 8,
+    paddingVertical: 7,
+    borderRadius: 8,
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "center",
@@ -672,26 +711,26 @@ const styles = StyleSheet.create({
   },
   viewButtonText: {
     color: "#FFFFFF",
-    fontSize: 11,
+    fontSize: 10,
     fontWeight: "700",
   },
   alternativesSection: {
     gap: 8,
-    marginTop: 4,
   },
   altHeading: {
     color: "#fbbf24",
-    fontSize: 11,
+    fontSize: 12,
     fontWeight: "800",
     textTransform: "uppercase",
+    letterSpacing: 0.5,
   },
   altGrid: {
     flexDirection: "row",
     flexWrap: "wrap",
-    gap: 10,
+    gap: 8,
   },
   altCard: {
-    width: (SCREEN_WIDTH - 58) / 2,
+    width: (SCREEN_WIDTH - 48) / 2 - 4,
     backgroundColor: "#FFFFFF",
     borderRadius: 12,
     padding: 8,
@@ -700,33 +739,34 @@ const styles = StyleSheet.create({
     width: "100%",
     aspectRatio: 1,
     borderRadius: 8,
-    backgroundColor: "#f1f5f9",
+    backgroundColor: "#f3f4f6",
     marginBottom: 6,
   },
   altName: {
-    color: COLORS.primary,
+    color: "#052a51",
     fontSize: 11,
     fontWeight: "700",
+    lineHeight: 15,
   },
   altPrice: {
-    color: COLORS.primary,
+    color: "#052a51",
     fontSize: 12,
     fontWeight: "900",
-    marginTop: 4,
+    marginTop: 3,
   },
   whatsappButton: {
-    backgroundColor: "#16a34a",
-    paddingVertical: 12,
-    borderRadius: 12,
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "center",
-    gap: 8,
+    gap: 6,
+    backgroundColor: "#16a34a",
+    paddingVertical: 12,
+    borderRadius: 12,
     marginTop: 6,
   },
   whatsappButtonText: {
     color: "#FFFFFF",
     fontSize: 12,
-    fontWeight: "700",
+    fontWeight: "800",
   },
 });

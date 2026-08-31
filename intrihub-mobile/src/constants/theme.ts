@@ -1,13 +1,15 @@
 export const COLORS = {
-  primary: "#052a51", // Deep Brand Navy
+  primary: "#052A51", // Deep Brand Navy
   primaryLight: "#0a3f78",
-  primaryDark: "#031d38",
-  accent: "#ff9900", // Flipkart / Amazon warm accent
-  accentOrange: "#f97316",
-  secondary: "#f97316", // IntriHub orange
-  accentGreen: "#10b981",
-  accentRed: "#ef4444",
-  accentBlue: "#2563eb",
+  primaryDark: "#022046",
+  accent: "#F26522", // Standardized Single Brand Orange
+  accentOrange: "#F26522",
+  accentHover: "#d95a1e",
+  secondary: "#F26522",
+  accentGreen: "#1E9E6B",
+  accentRed: "#D64545",
+  accentBlue: "#2E6FBD",
+  whatsapp: "#25D366",
   
   // Backgrounds
   background: "#f8fafc",
@@ -28,11 +30,19 @@ export const COLORS = {
   borderLight: "#f1f5f9",
   borderDark: "#cbd5e1",
 
-  // Status
-  success: "#10b981",
-  warning: "#f59e0b",
-  error: "#ef4444",
-  info: "#0284c7",
+  // Semantic Status Tokens
+  success: "#1E9E6B",
+  warning: "#D68A1E",
+  error: "#D64545",
+  info: "#2E6FBD",
+};
+
+export const FONTS = {
+  regular: "PlusJakartaSans_400Regular",
+  medium: "PlusJakartaSans_500Medium",
+  semiBold: "PlusJakartaSans_600SemiBold",
+  bold: "PlusJakartaSans_700Bold",
+  extraBold: "PlusJakartaSans_800ExtraBold",
 };
 
 export const SPACING = {

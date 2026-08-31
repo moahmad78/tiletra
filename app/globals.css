@@ -3,15 +3,33 @@
 @theme inline {
   --color-primary: #052a51;
   --color-primary-hover: #022046;
-  --color-dark: #1f2937;
+  --color-accent: #f26522;
+  --color-accent-hover: #d95a1e;
+  --color-success: #1e9e6b;
+  --color-error: #d64545;
+  --color-warning: #d68a1e;
+  --color-info: #2e6fbd;
   --color-whatsapp: #25d366;
-  
+
+  /* Unified Neutral Palette */
+  --color-neutral-50: #f8fafc;
+  --color-neutral-100: #f1f5f9;
+  --color-neutral-200: #e2e8f0;
+  --color-neutral-300: #cbd5e1;
+  --color-neutral-400: #94a3b8;
+  --color-neutral-500: #64748b;
+  --color-neutral-600: #475569;
+  --color-neutral-700: #334155;
+  --color-neutral-800: #1e293b;
+  --color-neutral-900: #0f172a;
+
   --font-sans: var(--font-jakarta);
 }
 
 :root {
   --background: #ffffff;
-  --foreground: #1f2937;
+  --foreground: #0f172a;
+  --header-desktop-offset: 168px;
 }
 
 html {
@@ -22,4 +40,5 @@ html {
 body {
   background: var(--background);
   color: var(--foreground);
+  font-family: var(--font-sans), system-ui, -apple-system, sans-serif;
 }

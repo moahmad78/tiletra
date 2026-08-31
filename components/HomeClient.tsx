@@ -12,6 +12,11 @@ import {
   ShoppingCart,
   ShieldCheck,
   Award,
+  Zap,
+  Clock,
+  CheckCircle2,
+  BadgeCheck,
+  MessageCircle,
 } from "lucide-react";
 import type { Category } from "@/lib/data/categories";
 import type { Product } from "@/lib/data/products";
@@ -28,8 +33,6 @@ import DesktopProductRow from "@/components/DesktopProductRow";
 import DesktopCategoryRow from "@/components/DesktopCategoryRow";
 import IntrihubBrandSEOSection from "@/components/IntrihubBrandSEOSection";
 
-
-
 interface HomeClientProps {
   categories: Category[];
   trending: Product[];
@@ -40,20 +43,29 @@ interface HomeClientProps {
 
 export default function HomeClient({
   categories,
-  trending,
-  bestsellers,
-  newArrivals,
-  banners,
+  trending = [],
+  bestsellers = [],
+  newArrivals = [],
+  banners = [],
 }: HomeClientProps) {
   const [mounted, setMounted] = useState(false);
-
-  const { toggleCart } = useCartStore();
-  const totalBoxes = useCartStore((s) => s.getTotalBoxes());
-  const wishlistCount = useWishlistStore((s) => s.items.length);
 
   useEffect(() => {
     setMounted(true);
   }, []);
+
+  // Filter distinct product lists to prevent duplicate carousels
+  const trendingIds = new Set(trending.map((p) => p.id));
+  const distinctBestsellers = bestsellers.filter((p) => !trendingIds.has(p.id));
+  const usedIds = new Set([...trendingIds, ...distinctBestsellers.map((p) => p.id)]);
+  const distinctNewArrivals = newArrivals.filter((p) => !usedIds.has(p.id));
+
+  const hasTrending = trending.length > 0;
+  const hasBestsellers = distinctBestsellers.length >= 3 || (bestsellers.length >= 3 && trending.length === 0);
+  const hasNewArrivals = distinctNewArrivals.length >= 3;
+
+  const displayBestsellers = distinctBestsellers.length >= 3 ? distinctBestsellers : bestsellers;
+  const displayNewArrivals = distinctNewArrivals.length >= 3 ? distinctNewArrivals : newArrivals;
 
   const desktopBannerSlides: BannerSlide[] = banners.map((b) => ({
     id: b.id,
@@ -84,7 +96,7 @@ export default function HomeClient({
       {/* ========================================================================= */}
       {/* MOBILE VIEWPORT LAYOUT (Flipkart / Amazon App Pattern) - < md breakpoint   */}
       {/* ========================================================================= */}
-      <div className="md:hidden flex flex-col bg-[#F8F9FA] pt-[56px] pb-10">
+      <div className="md:hidden flex flex-col bg-neutral-50 pt-[56px] pb-10">
         {/* 1. Category Icons Row (Horizontal Scroll) */}
         <CategoryIconRow categories={categories} />
 
@@ -92,15 +104,17 @@ export default function HomeClient({
         <OfferBanner slides={mobileBannerSlides} />
 
         {/* 3. Product Row: Trending Products */}
-        <div className="bg-white my-1 py-1 shadow-2xs">
-          <ProductSlider
-            title="Trending Products"
-            subtitle="Most viewed and favored by builders & homeowners"
-            tag="Trending"
-            products={trending}
-            viewAllHref="/shop"
-          />
-        </div>
+        {hasTrending && (
+          <div className="bg-white my-1 py-1 shadow-2xs">
+            <ProductSlider
+              title="Trending Products"
+              subtitle="Most viewed and favored by builders & homeowners"
+              tag="Trending"
+              products={trending}
+              viewAllHref="/shop"
+            />
+          </div>
+        )}
 
         {/* 5. Mid Banner: Promo & Trust Strip */}
         <div className="px-3 py-2">
@@ -125,47 +139,49 @@ export default function HomeClient({
         </div>
 
         {/* 6. Product Row: Bestsellers */}
-        <div className="bg-white my-1 py-1 shadow-2xs">
-          <ProductSlider
-            title="Bestselling Products"
-            subtitle="Highest rated materials with proven quality"
-            tag="Top Rated"
-            products={bestsellers}
-            viewAllHref="/shop"
-          />
-        </div>
+        {hasBestsellers && (
+          <div className="bg-white my-1 py-1 shadow-2xs">
+            <ProductSlider
+              title="Bestselling Products"
+              subtitle="Highest rated materials with proven quality"
+              tag="Top Rated"
+              products={displayBestsellers}
+              viewAllHref="/shop"
+            />
+          </div>
+        )}
 
         {/* 7. Product Row: New Arrivals */}
-        <div className="bg-white my-1 py-1 shadow-2xs">
-          <ProductSlider
-            title="New Arrivals"
-            subtitle="Fresh artisan patterns, zellige & marble textures"
-            tag="New"
-            products={newArrivals}
-            viewAllHref="/shop"
-          />
-        </div>
+        {hasNewArrivals && (
+          <div className="bg-white my-1 py-1 shadow-2xs">
+            <ProductSlider
+              title="New Arrivals"
+              subtitle="Fresh artisan patterns, zellige & marble textures"
+              tag="New"
+              products={displayNewArrivals}
+              viewAllHref="/shop"
+            />
+          </div>
+        )}
 
         {/* Recently Viewed on Mobile */}
         <div className="px-2 my-1">
           <RecentlyViewedSlider />
         </div>
 
-
-
         {/* Mini Trust Badges on Mobile */}
         <div className="px-4 py-4 grid grid-cols-2 gap-2 text-[11px] text-[#052a51] font-bold">
-          <div className="flex items-center gap-2 p-2.5 bg-white rounded-xl border border-gray-100 shadow-2xs">
+          <div className="flex items-center gap-2 p-2.5 bg-white rounded-xl border border-neutral-200 shadow-2xs">
             <ShieldCheck size={16} className="text-[#F26522] shrink-0" />
             <span>100% Quality Assured</span>
           </div>
-          <div className="flex items-center gap-2 p-2.5 bg-white rounded-xl border border-gray-100 shadow-2xs">
+          <div className="flex items-center gap-2 p-2.5 bg-white rounded-xl border border-neutral-200 shadow-2xs">
             <Award size={16} className="text-[#F26522] shrink-0" />
-            <span>500+ Happy Spaces</span>
+            <span>500+ Verified Spaces</span>
           </div>
         </div>
 
-        {/* Brand SEO & FAQs Section for Mobile */}
+        {/* Brand Narrative Section for Mobile */}
         <IntrihubBrandSEOSection />
 
         {/* Mobile Footer */}
@@ -175,7 +191,7 @@ export default function HomeClient({
       {/* ========================================================================= */}
       {/* DESKTOP VIEWPORT LAYOUT (Flipkart / Amazon Desktop Pattern) - >= md        */}
       {/* ========================================================================= */}
-      <div className="hidden md:block bg-[#F8F9FA]" style={{ paddingTop: "168px" }}>
+      <div className="hidden md:block bg-neutral-50 pt-[var(--header-desktop-offset,168px)]">
         {/* 1. Desktop Banner Carousel */}
         <DesktopBannerCarousel slides={desktopBannerSlides} />
 
@@ -183,13 +199,15 @@ export default function HomeClient({
         <DesktopCategoryRow categories={categories} />
 
         {/* 3. Trending Products Row */}
-        <DesktopProductRow
-          title="Trending Products"
-          badge="High Demand"
-          subtitle="Top picked supplies, materials, and designer finishes for modern renovations"
-          products={trending}
-          viewAllHref="/shop"
-        />
+        {hasTrending && (
+          <DesktopProductRow
+            title="Trending Products"
+            badge="High Demand"
+            subtitle="Top picked supplies, materials, and designer finishes for modern renovations"
+            products={trending}
+            viewAllHref="/shop"
+          />
+        )}
 
         {/* 4. Mid Promo Banner Strip */}
         <div className="w-full max-w-[1400px] mx-auto px-[20px] md:px-[24px] lg:px-[32px] py-4">
@@ -222,30 +240,32 @@ export default function HomeClient({
         </div>
 
         {/* 5. Bestselling Products Row */}
-        <DesktopProductRow
-          title="Bestselling Products"
-          badge="Most Popular"
-          subtitle="Consistently 5-star rated by 500+ verified builders & homeowners"
-          products={bestsellers}
-          viewAllHref="/shop"
-        />
+        {hasBestsellers && (
+          <DesktopProductRow
+            title="Bestselling Products"
+            badge="Most Popular"
+            subtitle="Consistently 5-star rated by verified builders & homeowners"
+            products={displayBestsellers}
+            viewAllHref="/shop"
+          />
+        )}
 
         {/* 6. New Arrivals Product Row */}
-        <DesktopProductRow
-          title="New Arrivals"
-          badge="Fresh Stock"
-          subtitle="Freshly added electricals, sanitaryware, hardware, and designer surfaces"
-          products={newArrivals}
-          viewAllHref="/shop"
-        />
-
-
+        {hasNewArrivals && (
+          <DesktopProductRow
+            title="New Arrivals"
+            badge="Fresh Stock"
+            subtitle="Freshly added electricals, sanitaryware, hardware, and designer surfaces"
+            products={displayNewArrivals}
+            viewAllHref="/shop"
+          />
+        )}
 
         {/* ── QUICK COMMERCE DISPATCH & SITE DELIVERY BANNER ──────────────── */}
         <section className="relative overflow-hidden py-12 md:py-16 bg-gradient-to-r from-[#031b34] via-[#052a51] to-[#08386a] border-y border-white/10 text-white">
           {/* Subtle Ambient Glow Orbs */}
           <div className="absolute -top-24 -left-24 w-80 h-80 bg-[#F26522]/15 rounded-full blur-3xl pointer-events-none" />
-          <div className="absolute -bottom-24 -right-24 w-80 h-80 bg-[#2F7A4F]/20 rounded-full blur-3xl pointer-events-none" />
+          <div className="absolute -bottom-24 -right-24 w-80 h-80 bg-[#1E9E6B]/20 rounded-full blur-3xl pointer-events-none" />
 
           <div className="relative w-full max-w-[1400px] mx-auto px-[20px] md:px-[24px] lg:px-[32px]">
             <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-8 md:gap-12">
@@ -256,8 +276,8 @@ export default function HomeClient({
                 className="max-w-2xl space-y-4"
               >
                 <div className="inline-flex items-center gap-2 px-3 py-1 bg-white/10 backdrop-blur-md rounded-full border border-white/15 text-[11px] font-black uppercase tracking-wider text-amber-300">
-                  <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
-                  <span>⚡ Quick Commerce Express Site Delivery</span>
+                  <Zap size={13} className="text-[#F26522]" />
+                  <span>Quick Commerce Express Site Delivery</span>
                 </div>
 
                 <h2 className="text-[26px] sm:text-[32px] md:text-[40px] font-black text-white leading-tight tracking-tight">
@@ -274,15 +294,15 @@ export default function HomeClient({
                 {/* Quick-Commerce Feature Badges */}
                 <div className="grid grid-cols-2 sm:grid-cols-3 gap-2.5 pt-2 text-xs font-bold text-white/90">
                   <div className="flex items-center gap-2 p-2 rounded-xl bg-white/5 border border-white/10 backdrop-blur-xs">
-                    <span className="text-[#F26522] text-sm font-black">⚡</span>
+                    <Clock size={15} className="text-[#F26522] shrink-0" />
                     <span>Within 60 Minutes</span>
                   </div>
                   <div className="flex items-center gap-2 p-2 rounded-xl bg-white/5 border border-white/10 backdrop-blur-xs">
-                    <span className="text-[#2F7A4F] text-sm font-black">✓</span>
+                    <CheckCircle2 size={15} className="text-[#1E9E6B] shrink-0" />
                     <span>Free Above ₹15,000</span>
                   </div>
                   <div className="flex items-center gap-2 p-2 rounded-xl bg-white/5 border border-white/10 backdrop-blur-xs col-span-2 sm:col-span-1">
-                    <span className="text-amber-400 text-sm font-black">★</span>
+                    <BadgeCheck size={15} className="text-amber-300 shrink-0" />
                     <span>Wholesale Rates</span>
                   </div>
                 </div>
@@ -308,7 +328,8 @@ export default function HomeClient({
                   className="w-full sm:w-auto"
                 >
                   <button className="w-full sm:w-auto h-12 px-6 bg-white/10 hover:bg-white/15 border border-white/20 text-white font-bold text-xs md:text-sm rounded-2xl transition-all flex items-center justify-center gap-2 cursor-pointer backdrop-blur-md">
-                    <span>💬 WhatsApp Quick Order Desk</span>
+                    <MessageCircle size={16} className="text-[#1E9E6B]" />
+                    <span>WhatsApp Quick Order Desk</span>
                   </button>
                 </a>
               </motion.div>
@@ -316,7 +337,7 @@ export default function HomeClient({
           </div>
         </section>
 
-        {/* Brand SEO & FAQs Section for Desktop */}
+        {/* Brand Narrative Section for Desktop */}
         <IntrihubBrandSEOSection />
 
         <Footer />

@@ -3,7 +3,7 @@
 import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/Button";
 import { cn } from "@/lib/utils";
-import { Menu, X, MapPin, Phone, Mail, ShoppingCart, Search, Heart, User as UserIcon, Store } from "lucide-react";
+import { Menu, X, MapPin, Phone, Mail, ShoppingCart, Search, Heart, User as UserIcon, Store, Sparkles } from "lucide-react";
 import Link from "next/link";
 import { useCartStore } from "@/lib/cart-store";
 import { useWishlistStore } from "@/lib/wishlist-store";
@@ -77,7 +77,10 @@ export default function Header() {
                 </a>
               </div>
               <div className="flex items-center gap-4">
-                <span className="text-[#F26522] font-bold">✨ Everything for Every Space</span>
+                <span className="text-[#F26522] font-bold inline-flex items-center gap-1.5">
+                  <Sparkles size={13} className="text-[#F26522]" />
+                  <span>Everything for Every Space</span>
+                </span>
                 <span className="text-white/30">|</span>
                 <RotatingHeaderContact />
               </div>

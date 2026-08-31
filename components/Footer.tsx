@@ -2,7 +2,20 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { MapPin, Phone, Mail, ExternalLink } from "lucide-react";
+import {
+  MapPin,
+  Phone,
+  Mail,
+  ExternalLink,
+  Clock,
+  Truck,
+  Lock,
+  ShieldCheck,
+  Package,
+  MessageCircle,
+  PhoneCall,
+  ArrowRight,
+} from "lucide-react";
 import RotatingFooterContact from "@/components/RotatingFooterContact";
 
 const shopLinks = [
@@ -28,29 +41,37 @@ const helpLinks = [
   { label: "For Contractors", href: "/for-contractors" },
   { label: "About Us", href: "/about" },
   { label: "Contact Us", href: "/contact" },
-  { label: "FAQ", href: "/faq" },
-  { label: "Track My Order", href: "/account/orders" },
   { label: "Shipping Policy", href: "/shipping-policy" },
-  { label: "Returns & Refunds", href: "/returns-policy" },
-  { label: "Terms of Service", href: "/terms" },
+  { label: "Returns & Replacements", href: "/returns-policy" },
+  { label: "Terms & Conditions", href: "/terms" },
+  { label: "Privacy Policy", href: "/privacy-policy" },
+  { label: "Frequently Asked Questions", href: "/faq" },
 ];
 
 export default function Footer() {
   const pathname = usePathname();
-  const isProductPage = pathname?.startsWith("/product");
+
+  // Hide footer on full-screen flows (checkout, login, scan camera)
+  if (
+    pathname?.startsWith("/checkout") ||
+    pathname?.startsWith("/login") ||
+    pathname?.startsWith("/admin") ||
+    pathname?.startsWith("/scan")
+  ) {
+    return null;
+  }
 
   return (
     <>
-      <footer className="bg-[#02152b] text-white/70 pt-[60px] pb-[30px] border-t border-white/10 hidden md:block">
+      {/* ── DESKTOP & TABLET FOOTER (md:block) ── */}
+      <footer className="bg-[#052a51] text-white pt-16 pb-8 border-t border-white/10 hidden md:block">
         <div className="w-full max-w-[1400px] mx-auto px-[20px] md:px-[24px] lg:px-[32px]">
-
-          {/* Top Grid */}
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-10 mb-14">
-
-            {/* Brand & Founder Info */}
-            <div className="lg:col-span-1 pr-4">
-              <div className="mb-5">
-                <Link href="/" className="inline-flex items-center bg-white px-3.5 py-1.5 rounded-2xl shadow-2xs hover:opacity-95 transition-opacity">
+          {/* Main 4-column Grid */}
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-8 pb-12 border-b border-white/10">
+            {/* Col 1: Brand info (Spans 2 cols on lg) */}
+            <div className="lg:col-span-2 space-y-4 pr-0 lg:pr-8">
+              <div className="flex items-center gap-3">
+                <Link href="/" className="inline-flex items-center bg-white px-4 py-2 rounded-2xl shadow-xs">
                   {/* eslint-disable-next-line @next/next/no-img-element */}
                   <img
                     src="/logo/intri-web-logo.png"
@@ -66,7 +87,8 @@ export default function Footer() {
               </p>
               {/* Free delivery badge */}
               <div className="inline-flex items-center gap-2 px-3 py-1.5 bg-[#F26522]/20 border border-[#F26522]/30 rounded-full text-[#F26522] text-xs font-bold mb-5">
-                🚚 Free delivery above ₹15,000
+                <Truck size={14} />
+                <span>Free delivery above ₹15,000</span>
               </div>
 
               {/* Socials */}
@@ -167,51 +189,24 @@ export default function Footer() {
                 <li>
                   <RotatingFooterContact />
                 </li>
-                <li className="flex items-start gap-3">
-                  <div className="w-8 h-8 rounded-full bg-white/5 flex items-center justify-center text-[#F26522] shrink-0 mt-0.5">
-                    <MapPin size={15} />
-                  </div>
-                  <div className="flex flex-col justify-center">
-                    <span className="font-bold text-white text-xs">Registered Head Office</span>
-                    <span className="text-white/70 text-xs leading-relaxed mt-0.5">41, 10th A Cross Rd, Janapriya Layout, Begur, Bengaluru, Karnataka 560114</span>
-                  </div>
-                </li>
-                <li>
-                  <a href="mailto:support@intrihub.com" className="flex items-center gap-3 hover:text-white transition-colors break-all">
-                    <div className="w-8 h-8 rounded-full bg-white/5 flex items-center justify-center text-[#F26522] shrink-0">
-                      <Mail size={15} />
-                    </div>
-                    <div className="flex flex-col justify-center">
-                      <span className="font-bold text-white text-xs">Customer Support & Dispatch</span>
-                      <span className="text-white/70 text-xs mt-0.5">support@intrihub.com</span>
-                    </div>
-                  </a>
-                </li>
-                <li>
-                  <a href="mailto:info@intrihub.com" className="flex items-center gap-3 hover:text-white transition-colors break-all">
-                    <div className="w-8 h-8 rounded-full bg-white/5 flex items-center justify-center text-blue-400 shrink-0">
-                      <Mail size={15} />
-                    </div>
-                    <div className="flex flex-col justify-center">
-                      <span className="font-bold text-white text-xs">General / Corporate Desk</span>
-                      <span className="text-white/70 text-xs mt-0.5">info@intrihub.com</span>
-                    </div>
-                  </a>
+                <li className="flex items-center gap-2.5">
+                  <Clock size={16} className="text-[#F26522] shrink-0" />
+                  <span>Mon – Sat: 8:00 AM – 8:00 PM</span>
                 </li>
               </ul>
 
               {/* Trust badges */}
               <div className="mt-6 space-y-2">
                 <div className="flex items-center gap-2 text-xs">
-                  <span className="text-green-400">🔒</span>
+                  <Lock size={14} className="text-[#1E9E6B] shrink-0" />
                   <span>Secure payments via Razorpay</span>
                 </div>
                 <div className="flex items-center gap-2 text-xs">
-                  <span>✅</span>
+                  <ShieldCheck size={14} className="text-[#1E9E6B] shrink-0" />
                   <span>100% Genuine Project Materials</span>
                 </div>
                 <div className="flex items-center gap-2 text-xs">
-                  <span>📦</span>
+                  <Package size={14} className="text-[#F26522] shrink-0" />
                   <span>Direct Site Dispatch & Tracking</span>
                 </div>
               </div>
@@ -231,7 +226,7 @@ export default function Footer() {
               <Link href="/shipping-policy" className="hover:text-white transition-colors">Shipping</Link>
             </div>
             <p className="flex items-center gap-1.5 flex-wrap justify-center">
-              <span>Founded & Developed with ❤️ by</span>
+              <span>Founded & Developed by</span>
               <a
                 href="https://www.instagram.com/sahil_sheikh78/"
                 target="_blank"
@@ -239,46 +234,36 @@ export default function Footer() {
                 className="text-white hover:text-[#F26522] font-black transition-colors underline underline-offset-2 inline-flex items-center gap-1 bg-white/10 px-2 py-0.5 rounded-md"
               >
                 <span>Sahil Sheikh</span>
+                <ArrowRight size={11} />
               </a>
             </p>
           </div>
         </div>
       </footer>
 
-      {/* ── MOBILE FOOTER (md:hidden) ── */}
-      <footer className="bg-[#02152b] text-white/70 pt-8 pb-16 border-t border-white/10 block md:hidden px-4">
-        <div className="space-y-6 text-center">
-          <div className="flex justify-center">
-            <Link href="/" className="inline-flex items-center bg-white px-3.5 py-1.5 rounded-2xl shadow-2xs">
-              {/* eslint-disable-next-line @next/next/no-img-element */}
-              <img
-                src="/logo/intri-web-logo.png"
-                alt="Intrihub Logo"
-                width={130}
-                height={28}
-                className="h-7 w-auto object-contain"
-              />
-            </Link>
-          </div>
-
-          <p className="text-xs text-white/80 leading-relaxed max-w-sm mx-auto font-medium">
-            <strong>Intrihub</strong> — India&apos;s instant building & interior materials marketplace. Direct factory delivery within 60 minutes for tiles, electrical, plumbing, sanitaryware, and hardware.
+      {/* ── MOBILE VIEWPORT FOOTER ── */}
+      <footer className="md:hidden bg-[#031b34] text-white px-4 py-8 border-t border-white/10 text-center space-y-5">
+        <div className="space-y-2">
+          <p className="text-xs text-white/80 leading-relaxed max-w-xs mx-auto">
+            <strong>IntriHub</strong> — India&apos;s instant building & interior materials marketplace. Direct factory delivery within 60 minutes.
           </p>
 
-          <div className="flex justify-center gap-3">
+          <div className="flex justify-center gap-3 pt-2">
             <a
               href="https://wa.me/919264920211"
               target="_blank"
               rel="noopener noreferrer"
               className="px-3.5 py-2 rounded-xl bg-white/10 text-white text-xs font-bold flex items-center gap-1.5"
             >
-              <span>💬 WhatsApp Desk</span>
+              <MessageCircle size={14} className="text-[#1E9E6B]" />
+              <span>WhatsApp Desk</span>
             </a>
             <a
               href="tel:+919264920211"
               className="px-3.5 py-2 rounded-xl bg-white/10 text-white text-xs font-bold flex items-center gap-1.5"
             >
-              <span>📞 +91 92649 20211</span>
+              <PhoneCall size={14} className="text-[#F26522]" />
+              <span>+91 92649 20211</span>
             </a>
           </div>
 
