@@ -66,7 +66,7 @@ export default function ScanAndFindPage() {
     }
     const interval = setInterval(() => {
       setStatusMessageIndex((prev) => (prev + 1) % rotatingStatusTexts.length);
-    }, 1200);
+    }, 1100);
     return () => clearInterval(interval);
   }, [isProcessing, rotatingStatusTexts.length]);
 
@@ -331,37 +331,37 @@ export default function ScanAndFindPage() {
   };
 
   return (
-    <div className="fixed inset-0 z-50 bg-[#052a51]/75 backdrop-blur-sm flex flex-col justify-end md:justify-center md:items-center p-0 md:p-6 transition-all duration-300">
+    <div className="fixed inset-0 z-50 bg-black/50 backdrop-blur-[2px] flex flex-col justify-end md:justify-center md:items-center p-0 md:p-6 transition-all duration-300 animate-in fade-in">
       {/* Click Outside / Backdrop Dismiss Layer */}
       <div className="fixed inset-0 -z-10" onClick={handleClose} />
 
-      {/* ── ON-BRAND HALF-SCREEN BOTTOM-SHEET / CARD MODAL ── */}
+      {/* ── ON-BRAND WHITE BOTTOM-SHEET / CARD MODAL ── */}
       <div
-        className="w-full md:max-w-[560px] max-h-[92vh] md:max-h-[85vh] bg-[#052a51] text-white rounded-t-[32px] md:rounded-3xl border-t md:border border-white/15 shadow-[0_-10px_40px_rgba(0,0,0,0.5)] flex flex-col overflow-hidden animate-in slide-in-from-bottom-8 duration-300"
+        className="w-full md:max-w-[540px] max-h-[92vh] md:max-h-[86vh] bg-white text-gray-900 rounded-t-[32px] md:rounded-3xl border-t md:border border-gray-200 shadow-[0_-12px_48px_rgba(0,0,0,0.25)] flex flex-col overflow-hidden animate-in slide-in-from-bottom-8 duration-300"
         role="dialog"
         aria-modal="true"
         aria-label="Scan & Find Products"
       >
         {/* Drag Handle Indicator (Mobile only) */}
-        <div className="w-12 h-1.5 bg-white/25 rounded-full mx-auto mt-2.5 mb-1 md:hidden" />
+        <div className="w-12 h-1.5 bg-gray-200 rounded-full mx-auto mt-2.5 mb-1 md:hidden" />
 
-        {/* ── SHEET HEADER ── */}
-        <div className="flex items-center justify-between px-5 py-3.5 border-b border-white/10 shrink-0">
+        {/* ── SHEET HEADER (WHITE WITH NAVY & ORANGE ACCENTS) ── */}
+        <div className="flex items-center justify-between px-5 py-3.5 border-b border-gray-100 shrink-0 bg-white">
           <div className="flex items-center gap-2.5">
-            <div className="w-8 h-8 rounded-xl bg-[#F26522] flex items-center justify-center text-white shadow-xs">
+            <div className="w-8 h-8 rounded-xl bg-orange-50 border border-orange-200/60 flex items-center justify-center text-[#F26522] shadow-2xs">
               <ScanLine size={17} strokeWidth={2.4} />
             </div>
             <div>
               <div className="flex items-center gap-1.5">
                 <span className="text-[10px] font-black uppercase tracking-wider text-[#F26522]">
-                  IntriHub Lens
+                  INTRIHUB LENS
                 </span>
-                <span className="text-white/30">•</span>
-                <span className="inline-flex items-center gap-1 text-[10px] font-bold text-emerald-400">
-                  <Sparkles size={10} /> AI Vision
+                <span className="text-gray-300">•</span>
+                <span className="inline-flex items-center gap-1 text-[10px] font-bold text-emerald-600">
+                  <Sparkles size={10} /> Google Vision
                 </span>
               </div>
-              <h3 className="text-sm md:text-base font-black text-white leading-tight">
+              <h3 className="text-sm md:text-base font-black text-[#052a51] leading-tight">
                 Scan & Find Products
               </h3>
             </div>
@@ -373,7 +373,9 @@ export default function ScanAndFindPage() {
                 onClick={toggleTorch}
                 type="button"
                 className={`w-9 h-9 rounded-full flex items-center justify-center transition-all ${
-                  isTorchOn ? "bg-[#F26522] text-white shadow-xs" : "bg-white/10 text-white/80 hover:text-white"
+                  isTorchOn
+                    ? "bg-[#F26522] text-white shadow-xs"
+                    : "bg-gray-100 hover:bg-gray-200 text-gray-700"
                 }`}
                 title="Toggle Flashlight"
                 aria-label="Toggle Flashlight"
@@ -386,7 +388,7 @@ export default function ScanAndFindPage() {
               <button
                 onClick={toggleCameraFacing}
                 type="button"
-                className="w-9 h-9 rounded-full bg-white/10 hover:bg-white/20 flex items-center justify-center text-white/80 hover:text-white transition-transform active:rotate-180"
+                className="w-9 h-9 rounded-full bg-gray-100 hover:bg-gray-200 flex items-center justify-center text-gray-700 transition-transform active:rotate-180"
                 title="Flip Camera"
                 aria-label="Flip Camera"
               >
@@ -397,7 +399,7 @@ export default function ScanAndFindPage() {
             <button
               onClick={handleClose}
               type="button"
-              className="w-9 h-9 rounded-full bg-white/10 hover:bg-white/20 flex items-center justify-center text-white/80 hover:text-white transition-colors cursor-pointer ml-1"
+              className="w-9 h-9 rounded-full bg-gray-100 hover:bg-gray-200 flex items-center justify-center text-gray-700 transition-colors cursor-pointer ml-1"
               aria-label="Close scanner"
             >
               <X size={18} />
@@ -406,103 +408,103 @@ export default function ScanAndFindPage() {
         </div>
 
         {/* ── SCROLLABLE BODY (VIEWFINDER / RESULTS) ── */}
-        <div className="flex-1 overflow-y-auto px-5 py-4 space-y-4">
+        <div className="flex-1 overflow-y-auto px-5 py-4 space-y-4 bg-gray-50/50">
           {/* Error Banner */}
           {errorMessage && (
-            <div className="p-3 rounded-2xl bg-red-500/20 border border-red-500/40 text-red-200 text-xs flex items-center gap-2">
-              <AlertCircle size={16} className="shrink-0 text-red-400" />
+            <div className="p-3 rounded-2xl bg-red-50 border border-red-200 text-red-700 text-xs flex items-center gap-2">
+              <AlertCircle size={16} className="shrink-0 text-red-500" />
               <span className="flex-1 font-medium">{errorMessage}</span>
             </div>
           )}
 
-          {/* ── CASE 1: SCANNER VIEWFINDER BOX (READY STATE) ── */}
+          {/* ── CASE 1: SCANNER VIEWFINDER BOX WITH GEMINI-STYLE FLOWING BORDER ── */}
           {!scanResult && (
-            <div className="relative w-full aspect-4/3 rounded-2xl overflow-hidden bg-black border border-white/15 shadow-inner flex items-center justify-center">
-              {/* Hidden Canvas for Capture */}
-              <canvas ref={canvasRef} className="hidden" />
+            <div className="relative p-[2.5px] rounded-2xl overflow-hidden shadow-md aspect-4/3 w-full bg-slate-900">
+              {/* ── ANIMATED MULTI-COLOR FLOWING BORDER (ORANGE → NAVY → BLUE GLOW) ── */}
+              <div className="absolute inset-[-50%] bg-[conic-gradient(from_0deg,#F26522_0%,#052a51_30%,#38bdf8_50%,#F26522_75%,#052a51_100%)] animate-border-flow pointer-events-none" />
 
-              {/* Live Camera Video */}
-              {!capturedImagePreview && (
-                <video
-                  ref={videoRef}
-                  playsInline
-                  muted
-                  autoPlay
-                  className="w-full h-full object-cover"
-                />
-              )}
+              {/* Inner Camera Box */}
+              <div className="relative w-full h-full rounded-[13px] bg-black overflow-hidden flex items-center justify-center">
+                {/* Hidden Canvas for Capture */}
+                <canvas ref={canvasRef} className="hidden" />
 
-              {/* Captured Image Preview */}
-              {capturedImagePreview && (
-                // eslint-disable-next-line @next/next/no-img-element
-                <img
-                  src={capturedImagePreview}
-                  alt="Scanned item"
-                  className="w-full h-full object-cover"
-                />
-              )}
+                {/* Live Camera Video */}
+                {!capturedImagePreview && (
+                  <video
+                    ref={videoRef}
+                    playsInline
+                    muted
+                    autoPlay
+                    className="w-full h-full object-cover"
+                  />
+                )}
 
-              {/* Camera Permission Denied Fallback */}
-              {hasCameraPermission === false && !capturedImagePreview && (
-                <div className="absolute inset-0 z-10 flex flex-col items-center justify-center p-4 text-center bg-[#052a51]/95 space-y-3">
-                  <div className="w-12 h-12 rounded-2xl bg-white/10 flex items-center justify-center text-[#F26522]">
-                    <Camera size={24} />
+                {/* Captured Image Preview */}
+                {capturedImagePreview && (
+                  // eslint-disable-next-line @next/next/no-img-element
+                  <img
+                    src={capturedImagePreview}
+                    alt="Scanned item"
+                    className="w-full h-full object-cover"
+                  />
+                )}
+
+                {/* Camera Permission Denied Fallback */}
+                {hasCameraPermission === false && !capturedImagePreview && (
+                  <div className="absolute inset-0 z-10 flex flex-col items-center justify-center p-4 text-center bg-[#052a51] text-white space-y-3">
+                    <div className="w-12 h-12 rounded-2xl bg-white/10 flex items-center justify-center text-[#F26522]">
+                      <Camera size={24} />
+                    </div>
+                    <div className="space-y-0.5 max-w-xs">
+                      <p className="text-xs font-bold text-white">Camera Access Required</p>
+                      <p className="text-[11px] text-white/70">
+                        Allow camera access in your browser or select a photo from your gallery.
+                      </p>
+                    </div>
+                    <button
+                      onClick={() => fileInputRef.current?.click()}
+                      type="button"
+                      className="px-4 py-2 rounded-xl bg-[#F26522] text-white font-bold text-xs flex items-center gap-1.5 shadow-md active:scale-95 cursor-pointer"
+                    >
+                      <Upload size={14} />
+                      <span>Upload from Gallery</span>
+                    </button>
                   </div>
-                  <div className="space-y-0.5 max-w-xs">
-                    <p className="text-xs font-bold text-white">Camera Access Required</p>
-                    <p className="text-[11px] text-white/70">
-                      Allow camera access in your browser or select a photo from your gallery.
-                    </p>
+                )}
+
+                {/* ── GEMINI-STYLE AI SCANNING LASER BEAM ANIMATION (WHEN PROCESSING) ── */}
+                {isProcessing && (
+                  <div className="absolute inset-0 z-30 bg-black/45 backdrop-blur-2xs flex flex-col items-center justify-center pointer-events-none">
+                    {/* Sweeping Laser Beam */}
+                    <div className="absolute inset-x-0 h-1 bg-gradient-to-r from-transparent via-[#F26522] to-transparent shadow-[0_0_24px_#F26522] animate-laser" />
+
+                    {/* AI Status Badge */}
+                    <div className="px-4 py-2 rounded-full bg-[#052a51]/95 border border-[#F26522]/50 shadow-xl flex items-center gap-2.5 backdrop-blur-md">
+                      <RefreshCw size={14} className="text-[#F26522] animate-spin" />
+                      <span className="text-xs font-bold text-white tracking-wide">
+                        {rotatingStatusTexts[statusMessageIndex]}
+                      </span>
+                    </div>
                   </div>
-                  <button
-                    onClick={() => fileInputRef.current?.click()}
-                    type="button"
-                    className="px-4 py-2 rounded-xl bg-[#F26522] text-white font-bold text-xs flex items-center gap-1.5 shadow-md active:scale-95 cursor-pointer"
-                  >
-                    <Upload size={14} />
-                    <span>Upload from Gallery</span>
-                  </button>
-                </div>
-              )}
+                )}
 
-              {/* ── GEMINI-STYLE AI SCANNING LASER BEAM ANIMATION (WHEN PROCESSING) ── */}
-              {isProcessing && (
-                <div className="absolute inset-0 z-30 bg-black/40 backdrop-blur-2xs flex flex-col items-center justify-center pointer-events-none">
-                  {/* Sweeping Laser Beam */}
-                  <div className="absolute inset-x-0 h-1 bg-gradient-to-r from-transparent via-[#F26522] to-transparent shadow-[0_0_20px_#F26522] animate-laser" />
+                {/* Viewfinder Target Reticle Indicator */}
+                {!isProcessing && !capturedImagePreview && (
+                  <div className="absolute inset-4 rounded-xl border border-white/20 pointer-events-none flex items-center justify-center">
+                    {/* Center Target Dot */}
+                    <div className="w-6 h-6 rounded-full border border-white/40 flex items-center justify-center opacity-70">
+                      <div className="w-1.5 h-1.5 rounded-full bg-[#F26522]" />
+                    </div>
 
-                  {/* AI Status Badge */}
-                  <div className="px-4 py-2 rounded-full bg-[#052a51]/90 border border-[#F26522]/50 shadow-xl flex items-center gap-2.5 backdrop-blur-md">
-                    <RefreshCw size={14} className="text-[#F26522] animate-spin" />
-                    <span className="text-xs font-bold text-white tracking-wide">
-                      {rotatingStatusTexts[statusMessageIndex]}
-                    </span>
+                    {/* Bottom Hint Pill */}
+                    <div className="absolute bottom-2 inset-x-0 flex justify-center">
+                      <span className="px-3 py-1 rounded-full bg-black/75 text-[10px] font-bold text-white/90 border border-white/10 backdrop-blur-md">
+                        Align packaging label in frame
+                      </span>
+                    </div>
                   </div>
-                </div>
-              )}
-
-              {/* Viewfinder Target Reticle Frame */}
-              {!isProcessing && !capturedImagePreview && (
-                <div className="absolute inset-4 rounded-xl border border-white/20 pointer-events-none flex items-center justify-center">
-                  {/* 4 Precision Corner Accents in Brand Orange */}
-                  <div className="absolute -top-0.5 -left-0.5 w-4 h-4 border-t-2 border-l-2 border-[#F26522] rounded-tl-md" />
-                  <div className="absolute -top-0.5 -right-0.5 w-4 h-4 border-t-2 border-r-2 border-[#F26522] rounded-tr-md" />
-                  <div className="absolute -bottom-0.5 -left-0.5 w-4 h-4 border-b-2 border-l-2 border-[#F26522] rounded-bl-md" />
-                  <div className="absolute -bottom-0.5 -right-0.5 w-4 h-4 border-b-2 border-r-2 border-[#F26522] rounded-br-md" />
-
-                  {/* Center Target Indicator */}
-                  <div className="w-6 h-6 rounded-full border border-white/30 flex items-center justify-center opacity-60">
-                    <div className="w-1.5 h-1.5 rounded-full bg-[#F26522]" />
-                  </div>
-
-                  {/* Bottom Hint Pill */}
-                  <div className="absolute bottom-2 inset-x-0 flex justify-center">
-                    <span className="px-3 py-1 rounded-full bg-black/75 text-[10px] font-bold text-white/90 border border-white/10 backdrop-blur-md">
-                      Align packaging label in frame
-                    </span>
-                  </div>
-                </div>
-              )}
+                )}
+              </div>
             </div>
           )}
 
@@ -513,13 +515,13 @@ export default function ScanAndFindPage() {
               <div className="flex items-center justify-between">
                 <div>
                   {scanResult.matched ? (
-                    <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-emerald-500/20 border border-emerald-500/40 text-emerald-300 text-xs font-bold">
-                      <CheckCircle2 size={13} />
+                    <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-emerald-50 border border-emerald-200 text-emerald-700 text-xs font-bold">
+                      <CheckCircle2 size={13} className="text-emerald-600" />
                       <span>Exact Match Found ({Math.round(scanResult.confidence * 100)}%)</span>
                     </span>
                   ) : (
-                    <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-amber-500/20 border border-amber-500/40 text-amber-300 text-xs font-bold">
-                      <AlertCircle size={13} />
+                    <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-amber-50 border border-amber-200 text-amber-800 text-xs font-bold">
+                      <AlertCircle size={13} className="text-amber-600" />
                       <span>Alternative Recommendations</span>
                     </span>
                   )}
@@ -528,20 +530,20 @@ export default function ScanAndFindPage() {
                 <button
                   onClick={handleResetScan}
                   type="button"
-                  className="text-xs text-white/80 hover:text-white flex items-center gap-1 bg-white/10 hover:bg-white/20 px-3 py-1.5 rounded-xl cursor-pointer transition-colors font-bold"
+                  className="text-xs text-gray-700 hover:text-[#052a51] flex items-center gap-1 bg-white border border-gray-200 hover:border-gray-300 px-3 py-1.5 rounded-xl cursor-pointer transition-colors font-bold shadow-2xs"
                 >
-                  <RefreshCw size={12} />
+                  <RefreshCw size={12} className="text-[#F26522]" />
                   <span>Scan New</span>
                 </button>
               </div>
 
-              <p className="text-xs text-white/80 font-medium leading-relaxed">
+              <p className="text-xs text-gray-600 font-medium leading-relaxed">
                 {scanResult.message}
               </p>
 
               {/* 1. EXACT HIGH CONFIDENCE MATCH CARD */}
               {scanResult.matched && scanResult.matchedProduct && (
-                <div className="bg-white text-gray-900 rounded-2xl p-4 shadow-xl border border-white/20 space-y-3">
+                <div className="bg-white text-gray-900 rounded-2xl p-4 shadow-md border border-gray-200 space-y-3">
                   <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-emerald-50 text-emerald-800 text-[11px] font-bold">
                     <CheckCircle2 size={13} className="text-emerald-600" />
                     <span>In-Stock on IntriHub</span>
@@ -597,7 +599,7 @@ export default function ScanAndFindPage() {
                     <button
                       onClick={() => handleAddToCart(scanResult.matchedProduct!)}
                       type="button"
-                      className="h-10 rounded-xl bg-[#F26522] hover:bg-[#d95a1e] text-white font-bold text-xs flex items-center justify-center gap-1.5 shadow-md active:scale-95 transition-transform cursor-pointer"
+                      className="h-11 rounded-xl bg-[#F26522] hover:bg-[#d95a1e] text-white font-bold text-xs flex items-center justify-center gap-1.5 shadow-md shadow-orange-500/20 active:scale-95 transition-transform cursor-pointer"
                     >
                       <ShoppingBag size={14} />
                       <span>Add to Cart</span>
@@ -606,7 +608,7 @@ export default function ScanAndFindPage() {
                     <Link
                       href={`/product/${scanResult.matchedProduct.slug}`}
                       onClick={() => stopCamera()}
-                      className="h-10 rounded-xl bg-[#052a51] hover:bg-[#08386a] text-white font-bold text-xs flex items-center justify-center gap-1.5 active:scale-95 transition-transform"
+                      className="h-11 rounded-xl bg-[#052a51] hover:bg-[#08386a] text-white font-bold text-xs flex items-center justify-center gap-1.5 active:scale-95 transition-transform"
                     >
                       <span>View Product</span>
                       <ArrowRight size={14} />
@@ -621,7 +623,7 @@ export default function ScanAndFindPage() {
                 scanResult.possibleMatches &&
                 scanResult.possibleMatches.length > 0 && (
                   <div className="space-y-2 pt-1">
-                    <h4 className="text-xs font-bold text-amber-300 uppercase tracking-wider">
+                    <h4 className="text-xs font-bold text-[#052a51] uppercase tracking-wider">
                       Possible Matching Products:
                     </h4>
                     <div className="space-y-2">
@@ -632,7 +634,7 @@ export default function ScanAndFindPage() {
                             key={item.id}
                             href={`/product/${item.slug}`}
                             onClick={() => stopCamera()}
-                            className="bg-white text-gray-900 rounded-xl p-3 flex items-center gap-3 shadow-md hover:border-[#F26522] border border-transparent transition-all active:scale-[0.98]"
+                            className="bg-white text-gray-900 rounded-xl p-3 flex items-center gap-3 shadow-xs hover:border-[#F26522] border border-gray-200 transition-all active:scale-[0.98]"
                           >
                             <div className="relative w-12 h-12 rounded-lg overflow-hidden bg-gray-100 shrink-0 border border-gray-200">
                               <Image
@@ -673,7 +675,7 @@ export default function ScanAndFindPage() {
               {/* 3. ALTERNATIVES LIST */}
               {scanResult.alternatives && scanResult.alternatives.length > 0 && (
                 <div className="space-y-2 pt-1">
-                  <h4 className="text-xs font-bold text-amber-300 uppercase tracking-wider">
+                  <h4 className="text-xs font-bold text-[#052a51] uppercase tracking-wider">
                     In-Stock Options in {scanResult.extractedInfo?.categoryGuess || "Category"}:
                   </h4>
 
@@ -683,7 +685,7 @@ export default function ScanAndFindPage() {
                       return (
                         <div
                           key={alt.id}
-                          className="bg-white text-gray-900 rounded-xl p-2.5 flex flex-col justify-between shadow-md"
+                          className="bg-white text-gray-900 rounded-xl p-2.5 flex flex-col justify-between shadow-xs border border-gray-200"
                         >
                           <div className="space-y-1">
                             <div className="relative w-full aspect-square rounded-lg overflow-hidden bg-gray-100">
@@ -713,7 +715,7 @@ export default function ScanAndFindPage() {
                             <button
                               onClick={() => handleAddToCart(alt)}
                               type="button"
-                              className="flex-1 py-1.5 bg-[#F26522] text-white rounded-lg text-[10px] font-bold flex items-center justify-center gap-1 active:scale-95 cursor-pointer"
+                              className="flex-1 py-1.5 bg-[#F26522] hover:bg-[#d95a1e] text-white rounded-lg text-[10px] font-bold flex items-center justify-center gap-1 active:scale-95 cursor-pointer transition-colors"
                             >
                               <ShoppingBag size={11} />
                               <span>Add</span>
@@ -721,7 +723,7 @@ export default function ScanAndFindPage() {
                             <Link
                               href={`/product/${alt.slug}`}
                               onClick={() => stopCamera()}
-                              className="px-2 py-1.5 bg-gray-100 text-gray-700 rounded-lg text-[10px] font-bold flex items-center justify-center"
+                              className="px-2 py-1.5 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-lg text-[10px] font-bold flex items-center justify-center transition-colors"
                             >
                               <ArrowRight size={11} />
                             </Link>
@@ -739,7 +741,7 @@ export default function ScanAndFindPage() {
                     target="_blank"
                     rel="noopener noreferrer"
                     onClick={() => stopCamera()}
-                    className="w-full h-10 rounded-xl bg-[#1E9E6B] hover:bg-emerald-700 text-white font-bold text-xs flex items-center justify-center gap-2 shadow-md transition-colors mt-2"
+                    className="w-full h-11 rounded-xl bg-[#1E9E6B] hover:bg-emerald-700 text-white font-bold text-xs flex items-center justify-center gap-2 shadow-sm transition-colors mt-2"
                   >
                     <MessageCircle size={15} />
                     <span>Enquire on WhatsApp for Custom Sourcing</span>
@@ -750,9 +752,9 @@ export default function ScanAndFindPage() {
           )}
         </div>
 
-        {/* ── SHEET BOTTOM CONTROLS (SIMPLIFIED TO 2 MAIN ACTIONS) ── */}
+        {/* ── SHEET BOTTOM CONTROLS (ELEVATED 2 MAIN ACTIONS ON WHITE BACKGROUND) ── */}
         {!scanResult && (
-          <div className="px-5 pt-3 pb-6 border-t border-white/10 bg-[#04203f] space-y-3 shrink-0">
+          <div className="px-5 pt-3.5 pb-6 border-t border-gray-100 bg-white space-y-3 shrink-0">
             {/* Hidden File Input for Gallery Selection */}
             <input
               ref={fileInputRef}
@@ -762,27 +764,27 @@ export default function ScanAndFindPage() {
               className="hidden"
             />
 
-            {/* Exactly 2 Clean Primary Actions: [ Upload Photo ] & [ Scan / Shutter ] */}
-            <div className="grid grid-cols-2 gap-2.5">
-              {/* Action 1: Upload from Gallery */}
+            {/* Exactly 2 Elevated Primary Actions: [ Upload Photo ] & [ Scan Product ] */}
+            <div className="grid grid-cols-2 gap-3">
+              {/* Action 1: Upload from Gallery (Secondary Button) */}
               <button
                 type="button"
                 onClick={() => fileInputRef.current?.click()}
                 disabled={isProcessing}
-                className="h-12 rounded-2xl bg-white/10 hover:bg-white/15 border border-white/15 text-white font-bold text-xs flex items-center justify-center gap-2 active:scale-95 transition-all cursor-pointer disabled:opacity-50"
+                className="h-[48px] rounded-2xl bg-gray-50 hover:bg-gray-100 border border-gray-200/90 text-[#052a51] font-bold text-xs flex items-center justify-center gap-2 shadow-2xs active:scale-[0.97] transition-all cursor-pointer disabled:opacity-50"
               >
-                <Upload size={16} className="text-[#F26522]" />
+                <Upload size={17} className="text-[#F26522]" />
                 <span>Upload Photo</span>
               </button>
 
-              {/* Action 2: Scan Camera Shutter */}
+              {/* Action 2: Scan Product (Primary Prominent Action with Orange Glow) */}
               <button
                 type="button"
                 onClick={handleCaptureFrame}
                 disabled={isProcessing || hasCameraPermission === false}
-                className="h-12 rounded-2xl bg-gradient-to-r from-[#F26522] to-[#d95a1e] hover:from-[#d95a1e] hover:to-[#c44e18] text-white font-black text-xs flex items-center justify-center gap-2 shadow-lg shadow-orange-500/25 active:scale-95 transition-all cursor-pointer disabled:opacity-50"
+                className="h-[48px] rounded-2xl bg-gradient-to-r from-[#F26522] via-[#ea580c] to-[#d95a1e] hover:from-[#d95a1e] hover:to-[#c2410c] text-white font-black text-xs flex items-center justify-center gap-2 shadow-md shadow-orange-500/30 hover:shadow-orange-500/40 active:scale-[0.97] transition-all cursor-pointer disabled:opacity-50"
               >
-                <Camera size={16} />
+                <Camera size={18} className="text-white" />
                 <span>Scan Product</span>
               </button>
             </div>
@@ -790,19 +792,19 @@ export default function ScanAndFindPage() {
             {/* Manual Query Fallback Search Bar */}
             <form onSubmit={handleManualSearch} className="flex gap-2 pt-0.5">
               <div className="relative flex-1">
-                <Search size={13} className="absolute left-3 top-1/2 -translate-y-1/2 text-white/40" />
+                <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
                 <input
                   type="text"
                   placeholder="Or type brand / grade (e.g. Roff T01)..."
                   value={manualQuery}
                   onChange={(e) => setManualQuery(e.target.value)}
-                  className="w-full h-9 pl-8 pr-2.5 rounded-xl bg-white/10 border border-white/15 text-white text-xs placeholder:text-white/40 focus:outline-hidden focus:border-[#F26522]"
+                  className="w-full h-10 pl-9 pr-3 rounded-xl bg-gray-50 border border-gray-200 text-[#052a51] font-medium text-xs placeholder:text-gray-400 focus:outline-hidden focus:border-[#F26522] focus:bg-white transition-all"
                 />
               </div>
               <button
                 type="submit"
                 disabled={!manualQuery.trim() || isProcessing}
-                className="px-3.5 h-9 rounded-xl bg-white/15 hover:bg-[#F26522] text-white text-xs font-bold transition-colors disabled:opacity-30 cursor-pointer shrink-0"
+                className="px-4 h-10 rounded-xl bg-[#052a51] hover:bg-[#08386a] text-white text-xs font-bold transition-colors disabled:opacity-40 cursor-pointer shrink-0 shadow-2xs"
               >
                 Search
               </button>
