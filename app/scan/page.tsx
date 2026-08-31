@@ -35,6 +35,8 @@ export default function ScanAndFindPage() {
   const videoRef = useRef<HTMLVideoElement | null>(null);
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
   const fileInputRef = useRef<HTMLInputElement | null>(null);
+  const streamRef = useRef<MediaStream | null>(null);
+  const isMountedRef = useRef<boolean>(true);
 
   // States
   const [stream, setStream] = useState<MediaStream | null>(null);
@@ -49,14 +51,49 @@ export default function ScanAndFindPage() {
   const [manualQuery, setManualQuery] = useState("");
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
 
-  // 1. Initialize Camera
+  // 1. Explicit Stop Function for Camera Hardware & Tracks
+  const stopCamera = useCallback(() => {
+    if (streamRef.current) {
+      try {
+        const tracks = streamRef.current.getTracks();
+        tracks.forEach((track) => {
+          try {
+            track.stop();
+          } catch (e) {
+            console.warn("Failed to stop media track:", e);
+          }
+        });
+      } catch (e) {
+        console.warn("Failed to retrieve tracks from stream:", e);
+      }
+      streamRef.current = null;
+    }
+
+    setStream(null);
+    setIsTorchOn(false);
+    setHasTorchCapability(false);
+
+    if (videoRef.current) {
+      videoRef.current.srcObject = null;
+    }
+  }, []);
+
+  // 2. Initialize Camera
   const startCamera = useCallback(async (mode: "environment" | "user") => {
+    // Release any previously held camera track before requesting a new one
+    stopCamera();
+
     try {
-      if (stream) {
-        stream.getTracks().forEach((t) => t.stop());
+      setErrorMessage(null);
+
+      if (!navigator?.mediaDevices?.getUserMedia) {
+        if (isMountedRef.current) {
+          setHasCameraPermission(false);
+          setErrorMessage("Camera access is not supported by this browser.");
+        }
+        return;
       }
 
-      setErrorMessage(null);
       const constraints: MediaStreamConstraints = {
         video: {
           facingMode: mode,
@@ -67,12 +104,28 @@ export default function ScanAndFindPage() {
       };
 
       const mediaStream = await navigator.mediaDevices.getUserMedia(constraints);
+
+      // If the component unmounted while getUserMedia was resolving, release immediately
+      if (!isMountedRef.current) {
+        mediaStream.getTracks().forEach((track) => {
+          try {
+            track.stop();
+          } catch (e) {
+            console.warn("Error stopping track after unmount:", e);
+          }
+        });
+        return;
+      }
+
+      streamRef.current = mediaStream;
       setStream(mediaStream);
       setHasCameraPermission(true);
 
       if (videoRef.current) {
         videoRef.current.srcObject = mediaStream;
-        await videoRef.current.play();
+        await videoRef.current.play().catch((err) => {
+          console.warn("Video play interrupted/prevented:", err);
+        });
       }
 
       // Check torch capability
@@ -80,25 +133,61 @@ export default function ScanAndFindPage() {
       const capabilities = (videoTrack?.getCapabilities?.() as any) || {};
       setHasTorchCapability(Boolean(capabilities.torch));
     } catch (err: any) {
-      console.warn("Camera access failed:", err);
-      setHasCameraPermission(false);
+      if (isMountedRef.current) {
+        console.warn("Camera access failed:", err);
+        setHasCameraPermission(false);
+      }
     }
-  }, [stream]);
+  }, [stopCamera]);
 
+  // 3. Lifecycle Effect: Start on Mount / Facing change & Stop on Unmount
   useEffect(() => {
+    isMountedRef.current = true;
     startCamera(facingMode);
 
     return () => {
-      if (stream) {
-        stream.getTracks().forEach((t) => t.stop());
+      isMountedRef.current = false;
+      stopCamera();
+    };
+  }, [facingMode, startCamera, stopCamera]);
+
+  // 4. Background / Visibility & Window Lifecycle Handlers (stop camera on tab switch / window hide)
+  useEffect(() => {
+    const handleVisibilityChange = () => {
+      if (document.visibilityState === "hidden") {
+        stopCamera();
+      } else if (
+        document.visibilityState === "visible" &&
+        isMountedRef.current &&
+        !capturedImagePreview &&
+        !scanResult
+      ) {
+        startCamera(facingMode);
       }
     };
-  }, [facingMode]);
 
-  // 2. Toggle Flashlight / Torch
+    const handleWindowHide = () => {
+      stopCamera();
+    };
+
+    document.addEventListener("visibilitychange", handleVisibilityChange);
+    window.addEventListener("pagehide", handleWindowHide);
+    window.addEventListener("beforeunload", handleWindowHide);
+    window.addEventListener("popstate", handleWindowHide);
+
+    return () => {
+      document.removeEventListener("visibilitychange", handleVisibilityChange);
+      window.removeEventListener("pagehide", handleWindowHide);
+      window.removeEventListener("beforeunload", handleWindowHide);
+      window.removeEventListener("popstate", handleWindowHide);
+    };
+  }, [facingMode, capturedImagePreview, scanResult, startCamera, stopCamera]);
+
+  // 5. Toggle Flashlight / Torch
   const toggleTorch = async () => {
-    if (!stream) return;
-    const videoTrack = stream.getVideoTracks()[0];
+    const activeStream = streamRef.current;
+    if (!activeStream) return;
+    const videoTrack = activeStream.getVideoTracks()[0];
     if (!videoTrack) return;
 
     try {
@@ -112,12 +201,23 @@ export default function ScanAndFindPage() {
     }
   };
 
-  // 3. Flip Camera
+  // 6. Flip Camera
   const toggleCameraFacing = () => {
     setFacingMode((prev) => (prev === "environment" ? "user" : "environment"));
   };
 
-  // 4. Capture Canvas Frame & Send to API
+  // 7. Explicit Close Handler for Back Button
+  const handleClose = (e?: React.MouseEvent) => {
+    if (e) e.preventDefault();
+    stopCamera();
+    if (typeof window !== "undefined" && window.history.length > 1) {
+      router.back();
+    } else {
+      router.push("/");
+    }
+  };
+
+  // 8. Capture Canvas Frame & Send to API
   const handleCaptureFrame = async () => {
     if (!videoRef.current || isProcessing) return;
 
@@ -132,14 +232,20 @@ export default function ScanAndFindPage() {
     ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
     const dataUrl = canvas.toDataURL("image/jpeg", 0.85);
 
+    // Explicitly stop the hardware camera stream since a frame has been captured
+    stopCamera();
+
     setCapturedImagePreview(dataUrl);
     await processScanPayload({ image: dataUrl });
   };
 
-  // 5. Gallery Upload Handler
+  // 9. Gallery Upload Handler
   const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
+
+    // Explicitly release camera hardware on gallery upload
+    stopCamera();
 
     const reader = new FileReader();
     reader.onload = async () => {
@@ -150,14 +256,15 @@ export default function ScanAndFindPage() {
     reader.readAsDataURL(file);
   };
 
-  // 6. Manual Text Search Fallback
+  // 10. Manual Text Search Fallback
   const handleManualSearch = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!manualQuery.trim() || isProcessing) return;
+    stopCamera();
     await processScanPayload({ text: manualQuery.trim() });
   };
 
-  // 7. Core Scan Request
+  // 11. Core Scan Request
   const processScanPayload = async (payload: { image?: string; text?: string }) => {
     setIsProcessing(true);
     setErrorMessage(null);
@@ -175,6 +282,7 @@ export default function ScanAndFindPage() {
       // Section 9.1: High confidence (>0.85) -> auto-navigate directly to PDP
       if (data.matched && data.confidenceTier === "high" && data.matchedProduct?.slug) {
         setTimeout(() => {
+          stopCamera();
           router.push(`/product/${data.matchedProduct!.slug}`);
         }, 900);
       }
@@ -185,7 +293,7 @@ export default function ScanAndFindPage() {
     }
   };
 
-  // 8. Reset to Scan Again
+  // 12. Reset to Scan Again
   const handleResetScan = () => {
     setScanResult(null);
     setCapturedImagePreview(null);
@@ -196,7 +304,7 @@ export default function ScanAndFindPage() {
     }
   };
 
-  // 9. Quick Add to Cart
+  // 13. Quick Add to Cart
   const handleAddToCart = (product: Product) => {
     const defaultVariant = product.variants?.[0] || null;
     addItem(product, defaultVariant, 1);
@@ -207,13 +315,14 @@ export default function ScanAndFindPage() {
     <div className="fixed inset-0 z-50 bg-[#02152b] text-white flex flex-col overflow-hidden font-sans">
       {/* ── TOP HEADER BAR ── */}
       <header className="relative z-20 flex items-center justify-between px-4 py-3 bg-gradient-to-b from-[#02152b]/90 to-transparent backdrop-blur-xs">
-        <Link
-          href="/"
-          className="w-10 h-10 rounded-full bg-white/10 flex items-center justify-center text-white active:scale-90 transition-transform"
+        <button
+          onClick={handleClose}
+          type="button"
+          className="w-10 h-10 rounded-full bg-white/10 flex items-center justify-center text-white active:scale-90 transition-transform cursor-pointer"
           aria-label="Back to home"
         >
           <ArrowLeft size={20} />
-        </Link>
+        </button>
 
         {/* Brand-Owned "Scan & Find" Header Badge */}
         <div className="flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-white/10 border border-white/15 backdrop-blur-md">
@@ -454,6 +563,7 @@ export default function ScanAndFindPage() {
 
                   <Link
                     href={`/product/${scanResult.matchedProduct.slug}`}
+                    onClick={() => stopCamera()}
                     className="h-11 rounded-xl bg-[#052a51] hover:bg-[#08386a] text-white font-bold text-xs flex items-center justify-center gap-1.5 active:scale-95 transition-transform"
                   >
                     <span>View Product</span>
@@ -479,6 +589,7 @@ export default function ScanAndFindPage() {
                       <Link
                         key={item.id}
                         href={`/product/${item.slug}`}
+                        onClick={() => stopCamera()}
                         className="bg-white text-gray-900 rounded-xl p-3 flex items-center gap-3 shadow-md hover:border-[#F26522] border border-transparent transition-all active:scale-[0.98]"
                       >
                         <div className="relative w-14 h-14 rounded-lg overflow-hidden bg-gray-100 shrink-0 border border-gray-200">
@@ -566,6 +677,7 @@ export default function ScanAndFindPage() {
                           </button>
                           <Link
                             href={`/product/${alt.slug}`}
+                            onClick={() => stopCamera()}
                             className="px-2 py-1.5 bg-gray-100 text-gray-700 rounded-lg text-[10px] font-bold flex items-center justify-center"
                           >
                             <ArrowRight size={11} />
@@ -583,6 +695,7 @@ export default function ScanAndFindPage() {
                   )}%20and%20need%20help%20sourcing%20it.`}
                   target="_blank"
                   rel="noopener noreferrer"
+                  onClick={() => stopCamera()}
                   className="w-full h-11 rounded-xl bg-[#1E9E6B] hover:bg-emerald-700 text-white font-bold text-xs flex items-center justify-center gap-2 shadow-md transition-colors mt-2"
                 >
                   <MessageCircle size={15} />

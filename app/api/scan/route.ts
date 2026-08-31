@@ -1,11 +1,33 @@
 import { NextRequest, NextResponse } from "next/server";
-import { extractRawTextFromBuffer, normalizeExtractedText } from "@/lib/lens/ocr-engine";
+import { extractProductVisualData, normalizeExtractedText } from "@/lib/lens/ocr-engine";
 import { matchCatalogProducts } from "@/lib/lens/catalog-matcher";
 
 export const maxDuration = 30; // 30s timeout for OCR on serverless
 
+// In-memory rate limiting: Max 20 scans per IP / user per hour
+const scanRateLimitMap = new Map<string, { count: number; resetTime: number }>();
+
+function isRateLimited(identifier: string, maxRequests = 20, windowMs = 60 * 60 * 1000): boolean {
+  const now = Date.now();
+  const entry = scanRateLimitMap.get(identifier);
+
+  if (!entry || now > entry.resetTime) {
+    scanRateLimitMap.set(identifier, { count: 1, resetTime: now + windowMs });
+    return false;
+  }
+
+  if (entry.count >= maxRequests) {
+    return true;
+  }
+
+  entry.count += 1;
+  return false;
+}
+
 export async function POST(req: NextRequest) {
   try {
+    const ip = req.headers.get("x-forwarded-for") || req.headers.get("x-real-ip") || "anonymous";
+
     let imageBuffer: Buffer | null = null;
     let fallbackText: string = "";
     let userId: string | null = null;
@@ -34,14 +56,31 @@ export async function POST(req: NextRequest) {
       }
     }
 
-    let rawExtractedText = fallbackText;
+    const rateLimitKey = userId || ip;
+    if (isRateLimited(rateLimitKey, 25, 60 * 60 * 1000)) {
+      return NextResponse.json(
+        {
+          matched: false,
+          confidence: 0,
+          message: "Scan rate limit reached (max 25 scans/hr). Please try again later or use manual search.",
+          extractedInfo: null,
+          matchedProduct: null,
+          alternatives: [],
+        },
+        { status: 429 }
+      );
+    }
 
-    // Run OCR if image was provided
+    let rawExtractedText = fallbackText;
+    let detectedLabels: string[] = [];
+
+    // Run OCR + Visual Label Analysis if image was provided
     if (imageBuffer && imageBuffer.length > 0) {
-      const ocrResult = await extractRawTextFromBuffer(imageBuffer);
-      if (ocrResult && ocrResult.trim().length > 0) {
-        rawExtractedText = ocrResult;
+      const visualData = await extractProductVisualData(imageBuffer);
+      if (visualData.rawText && visualData.rawText.trim().length > 0) {
+        rawExtractedText = visualData.rawText;
       }
+      detectedLabels = visualData.labels || [];
     }
 
     if (!rawExtractedText || rawExtractedText.trim().length === 0) {
@@ -49,7 +88,7 @@ export async function POST(req: NextRequest) {
         {
           matched: false,
           confidence: 0,
-          message: "No readable text or product could be detected. Please ensure good lighting and clear product packaging.",
+          message: "No readable text or packaging could be identified. Please ensure good lighting and clear product labels.",
           extractedInfo: null,
           matchedProduct: null,
           alternatives: [],
@@ -58,8 +97,8 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    // Normalize and extract brand, grade, packaging
-    const extractedInfo = normalizeExtractedText(rawExtractedText);
+    // Normalize and extract brand, grade, packaging & label insights
+    const extractedInfo = normalizeExtractedText(rawExtractedText, detectedLabels);
 
     // Match against catalog
     const matchResult = await matchCatalogProducts(extractedInfo, userId);

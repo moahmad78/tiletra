@@ -4,7 +4,7 @@ import { useState, useEffect, useRef } from "react";
 import Link from "next/link";
 import Image from "next/image";
 import { useRouter } from "next/navigation";
-import { Search, X, ArrowRight, Tag, Loader2 } from "lucide-react";
+import { Search, X, ArrowRight, Tag, Loader2, Camera, ScanLine } from "lucide-react";
 import { searchProducts } from "@/lib/actions/products";
 import { getLowestPrice } from "@/lib/data/products";
 import type { Product } from "@/lib/data/products";
@@ -142,6 +142,17 @@ export default function SearchModal({
               <X size={18} />
             </button>
           )}
+
+          <Link
+            href="/scan"
+            onClick={onClose}
+            title="Scan Physical Product (IntriHub Lens)"
+            className="p-2 rounded-xl bg-orange-50 hover:bg-orange-100 text-[#F26522] transition-colors flex items-center gap-1.5 text-xs font-bold shrink-0"
+          >
+            <Camera size={16} />
+            <span className="hidden sm:inline">Scan & Find</span>
+          </Link>
+
           <button
             type="submit"
             className="px-3.5 py-1.5 bg-[#F26522] hover:bg-[#d95a1e] text-white text-xs font-bold rounded-xl transition-colors cursor-pointer shrink-0 shadow-xs"
@@ -160,6 +171,32 @@ export default function SearchModal({
 
         {/* Content Area */}
         <div className="flex-1 overflow-y-auto p-4 sm:p-6 space-y-4">
+          {/* Visual Scan Promo Banner */}
+          {!query.trim() && (
+            <Link
+              href="/scan"
+              onClick={onClose}
+              className="block p-3.5 rounded-2xl bg-gradient-to-r from-[#052a51] to-[#0a4687] text-white transition-all hover:scale-[0.99] active:scale-[0.98] shadow-md border border-white/10"
+            >
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-3">
+                  <div className="w-10 h-10 rounded-xl bg-[#F26522] flex items-center justify-center text-white shrink-0 shadow-sm">
+                    <ScanLine size={20} strokeWidth={2.4} />
+                  </div>
+                  <div>
+                    <h4 className="text-xs font-black tracking-wide uppercase text-orange-400">
+                      Scan Physical Packaging
+                    </h4>
+                    <p className="text-xs text-white/80 font-medium">
+                      Point camera at cement, tiles, paint or wire labels to find on IntriHub
+                    </p>
+                  </div>
+                </div>
+                <ArrowRight size={16} className="text-white/60 shrink-0 ml-2" />
+              </div>
+            </Link>
+          )}
+
           {!query.trim() ? (
             <div>
               <p className="text-xs font-bold text-gray-400 uppercase tracking-wider mb-3">

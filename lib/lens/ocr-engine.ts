@@ -103,6 +103,18 @@ const PACKAGING_PATTERNS = [
   /\b(\d+)\s*(?:sqft|sq\.ft|sq_ft|m|mtr|meter|meters)\b/i,
 ];
 
+export interface ExtractedProductInfo {
+  rawText: string;
+  detectedBrand: string | null;
+  detectedSeries: string | null;
+  detectedGrade: string | null;
+  detectedPackaging: string | null;
+  detectedLabels?: string[];
+  categoryGuess: string;
+  keywords: string[];
+  cleanQuery: string;
+}
+
 /**
  * Pre-processes an image buffer with sharp for optimal OCR text recognition
  */
@@ -122,38 +134,105 @@ export async function preprocessImageForOcr(imageBuffer: Buffer): Promise<Buffer
 }
 
 /**
- * Runs Tesseract OCR on an image buffer
+ * Calls Google Cloud Vision API for TEXT_DETECTION and LABEL_DETECTION if API key is configured
  */
-export async function extractRawTextFromBuffer(imageBuffer: Buffer): Promise<string> {
+async function callGoogleVisionApi(imageBuffer: Buffer): Promise<{ text: string; labels: string[] } | null> {
+  const apiKey = process.env.GOOGLE_VISION_API_KEY || process.env.GOOGLE_CLOUD_VISION_API_KEY;
+  if (!apiKey) return null;
+
+  try {
+    const base64Image = imageBuffer.toString("base64");
+    const response = await fetch(`https://vision.googleapis.com/v1/images:annotate?key=${apiKey}`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        requests: [
+          {
+            image: { content: base64Image },
+            features: [
+              { type: "TEXT_DETECTION", maxResults: 1 },
+              { type: "LABEL_DETECTION", maxResults: 10 },
+            ],
+          },
+        ],
+      }),
+    });
+
+    if (!response.ok) {
+      console.warn("Google Vision API returned non-OK status:", response.status);
+      return null;
+    }
+
+    const data = await response.json();
+    const result = data.responses?.[0];
+    if (!result) return null;
+
+    const text = result.fullTextAnnotation?.text || result.textAnnotations?.[0]?.description || "";
+    const labels = (result.labelAnnotations || []).map((l: any) => (l.description || "").toLowerCase());
+
+    return { text, labels };
+  } catch (err) {
+    console.error("Google Vision API error:", err);
+    return null;
+  }
+}
+
+/**
+ * Analyzes image buffer using Google Cloud Vision (if configured) or local Tesseract OCR
+ */
+export async function extractProductVisualData(
+  imageBuffer: Buffer
+): Promise<{ rawText: string; labels: string[] }> {
+  // 1. Attempt Google Cloud Vision API (Combined OCR + Label Detection)
+  const gVisionResult = await callGoogleVisionApi(imageBuffer);
+  if (gVisionResult && gVisionResult.text.trim().length > 0) {
+    return {
+      rawText: gVisionResult.text,
+      labels: gVisionResult.labels,
+    };
+  }
+
+  // 2. Fallback to local Sharp + Tesseract OCR
   let worker: any = null;
   try {
     const preprocessed = await preprocessImageForOcr(imageBuffer);
     worker = await createWorker("eng");
     const ret = await worker.recognize(preprocessed);
     await worker.terminate();
-    return ret.data.text || "";
+    return {
+      rawText: ret.data.text || "",
+      labels: [],
+    };
   } catch (err) {
     if (worker) {
       try {
         await worker.terminate();
       } catch {}
     }
-    console.error("OCR recognition error:", err);
-    return "";
+    console.error("Local OCR recognition error:", err);
+    return { rawText: "", labels: [] };
   }
 }
 
 /**
- * Parses and normalizes extracted text into canonical brand, grade, and keywords
+ * Runs Tesseract or Google Vision OCR on an image buffer (backwards compatible)
  */
-export function normalizeExtractedText(rawText: string): ExtractedProductInfo {
+export async function extractRawTextFromBuffer(imageBuffer: Buffer): Promise<string> {
+  const result = await extractProductVisualData(imageBuffer);
+  return result.rawText;
+}
+
+/**
+ * Parses and normalizes extracted text & labels into canonical brand, grade, and keywords
+ */
+export function normalizeExtractedText(rawText: string, detectedLabels: string[] = []): ExtractedProductInfo {
   const text = (rawText || "").replace(/\r?\n+/g, " ").trim();
   const lowerText = text.toLowerCase();
 
   let detectedBrand: string | null = null;
   let categoryGuess = "tiles-stone"; // Default pilot category
 
-  // 1. Detect Brand
+  // 1. Detect Brand from Text
   for (const item of KNOWN_BRANDS) {
     for (const alias of item.aliases) {
       const regex = new RegExp(`\\b${alias.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")}\\b`, "i");
@@ -164,6 +243,22 @@ export function normalizeExtractedText(rawText: string): ExtractedProductInfo {
       }
     }
     if (detectedBrand) break;
+  }
+
+  // 2. Infer Category from Label Detection if not determined by brand
+  if (!detectedBrand && detectedLabels && detectedLabels.length > 0) {
+    const labelsStr = detectedLabels.join(" ");
+    if (/cement|concrete|mortar|plaster|grout/i.test(labelsStr)) {
+      categoryGuess = "tiles-stone";
+    } else if (/paint|coating|varnish|wall/i.test(labelsStr)) {
+      categoryGuess = "paint-finishes";
+    } else if (/wire|cable|electric|plug|switch/i.test(labelsStr)) {
+      categoryGuess = "electrical";
+    } else if (/pipe|faucet|plumb|sanitary|drain/i.test(labelsStr)) {
+      categoryGuess = "plumbing-sanitary";
+    } else if (/tile|flooring|marble|granite|ceramic/i.test(labelsStr)) {
+      categoryGuess = "tiles-stone";
+    }
   }
 
   // 2. Detect Series / Grade

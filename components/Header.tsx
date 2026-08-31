@@ -3,7 +3,7 @@
 import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/Button";
 import { cn } from "@/lib/utils";
-import { Menu, X, MapPin, Phone, Mail, ShoppingCart, Search, Heart, User as UserIcon, Store, Sparkles } from "lucide-react";
+import { Menu, X, MapPin, Phone, Mail, ShoppingCart, Search, Heart, User as UserIcon, Store, Sparkles, Camera } from "lucide-react";
 import Link from "next/link";
 import { useCartStore } from "@/lib/cart-store";
 import { useWishlistStore } from "@/lib/wishlist-store";
@@ -110,37 +110,58 @@ export default function Header() {
               </Link>
             </div>
 
-            {/* Mobile Prominent Search Bar (Center) */}
+            {/* Mobile Prominent Search Bar (Center) with Lens Camera Button */}
             <div className="flex md:hidden flex-1 min-w-0">
-              <button
-                type="button"
-                onClick={() => setSearchOpen(true)}
-                aria-label="Search products"
-                className="w-full h-9 bg-gray-100/90 hover:bg-gray-100 border border-gray-200/80 rounded-full px-3 flex items-center gap-2 text-left transition-all shadow-2xs group active:scale-[0.99]"
-              >
-                <Search size={14} className="text-[#F26522] shrink-0" />
-                <span className="text-xs text-gray-600 group-hover:text-gray-800 font-medium truncate">
-                  Search tiles, wires, pipes, plywood...
-                </span>
-              </button>
+              <div className="w-full h-9 bg-gray-100/90 hover:bg-gray-100 border border-gray-200/80 rounded-full px-3 flex items-center gap-2 text-left transition-all shadow-2xs group">
+                <button
+                  type="button"
+                  onClick={() => setSearchOpen(true)}
+                  aria-label="Search products"
+                  className="flex-1 flex items-center gap-2 min-w-0 text-left"
+                >
+                  <Search size={14} className="text-[#F26522] shrink-0" />
+                  <span className="text-xs text-gray-600 group-hover:text-gray-800 font-medium truncate">
+                    Search tiles, wires, pipes...
+                  </span>
+                </button>
+                <Link
+                  href="/scan"
+                  title="Scan & Find Products"
+                  aria-label="Scan physical product"
+                  className="p-1 text-gray-500 hover:text-[#F26522] transition-colors"
+                >
+                  <Camera size={15} />
+                </Link>
+              </div>
             </div>
 
-            {/* Desktop Large Prominent Search Bar (Flipkart / Amazon Pattern) */}
+            {/* Desktop Large Prominent Search Bar (Flipkart / Amazon Pattern) with Lens Camera Button */}
             <div className="hidden md:flex flex-1 max-w-[520px] xl:max-w-[620px] mx-6">
-              <button
-                type="button"
-                onClick={() => setSearchOpen(true)}
-                aria-label="Search catalog"
-                className="w-full h-11 bg-gray-50 hover:bg-gray-100/80 border border-gray-200 hover:border-[#F26522] rounded-2xl px-4 flex items-center justify-between text-left transition-all shadow-2xs group"
-              >
-                <div className="flex items-center gap-2.5 text-gray-600 group-hover:text-gray-800 text-xs font-semibold">
-                  <Search size={16} className="text-gray-500 group-hover:text-[#F26522] transition-colors" />
-                  <span>Search tiles, electrical, plumbing, hardware, plywood, granite...</span>
+              <div className="w-full h-11 bg-gray-50 hover:bg-gray-100/80 border border-gray-200 hover:border-[#F26522] rounded-2xl px-4 flex items-center justify-between text-left transition-all shadow-2xs group">
+                <button
+                  type="button"
+                  onClick={() => setSearchOpen(true)}
+                  aria-label="Search catalog"
+                  className="flex-1 flex items-center gap-2.5 text-gray-600 group-hover:text-gray-800 text-xs font-semibold mr-2 overflow-hidden"
+                >
+                  <Search size={16} className="text-gray-500 group-hover:text-[#F26522] transition-colors shrink-0" />
+                  <span className="truncate">Search tiles, electrical, plumbing, hardware, plywood, granite...</span>
+                </button>
+                <div className="flex items-center gap-2 shrink-0">
+                  <Link
+                    href="/scan"
+                    title="Scan & Find Physical Products"
+                    aria-label="Scan physical product"
+                    className="px-2 py-1 rounded-lg bg-orange-50 hover:bg-orange-100 text-[#F26522] text-[11px] font-bold flex items-center gap-1.5 transition-colors"
+                  >
+                    <Camera size={14} />
+                    <span className="hidden xl:inline">Scan</span>
+                  </Link>
+                  <span className="text-[10px] font-bold text-gray-600 bg-white border border-gray-300 px-2 py-0.5 rounded-md shadow-2xs">
+                    ⌘K
+                  </span>
                 </div>
-                <span className="text-[10px] font-bold text-gray-600 bg-white border border-gray-300 px-2 py-0.5 rounded-md shadow-2xs">
-                  ⌘K
-                </span>
-              </button>
+              </div>
             </div>
 
             {/* Right Actions */}
