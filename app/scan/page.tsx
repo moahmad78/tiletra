@@ -888,7 +888,10 @@ export default function ScanAndFindPage() {
 
           {/* ── SHEET BOTTOM CONTROLS (ELEVATED 2 MAIN ACTIONS ON WHITE BACKGROUND) ── */}
           {!scanResult && (
-            <div className="px-5 pt-3.5 pb-6 border-t border-gray-100 bg-white space-y-3 shrink-0">
+            <div
+              className="px-5 pt-3.5 pb-6 border-t border-gray-100 bg-white space-y-3 shrink-0"
+              style={{ paddingBottom: "max(1.5rem, env(safe-area-inset-bottom, 1.5rem))" }}
+            >
               {/* Hidden File Input for Gallery Selection */}
               <input
                 ref={fileInputRef}
