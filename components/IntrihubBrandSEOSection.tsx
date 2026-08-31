@@ -1,17 +1,4 @@
-"use client";
-
-import { useState } from "react";
-import Link from "next/link";
-import {
-  Sparkles,
-  Truck,
-  ShieldCheck,
-  Building2,
-  Calculator,
-  ChevronDown,
-  ArrowRight,
-  PhoneCall,
-} from "lucide-react";
+import React from "react";
 
 const BRAND_FAQS = [
   {
@@ -41,149 +28,94 @@ const BRAND_FAQS = [
 ];
 
 export default function IntrihubBrandSEOSection() {
-  const [openIdx, setOpenIdx] = useState<number | null>(0);
+  // JSON-LD Structured Data Schema for Google Search Rich Snippets
+  const faqSchema = {
+    "@context": "https://schema.org",
+    "@type": "FAQPage",
+    mainEntity: BRAND_FAQS.map((faq) => ({
+      "@type": "Question",
+      name: faq.q,
+      acceptedAnswer: {
+        "@type": "Answer",
+        text: faq.a,
+      },
+    })),
+  };
+
+  const organizationSchema = {
+    "@context": "https://schema.org",
+    "@type": "Organization",
+    name: "IntriHub",
+    url: "https://www.intrihub.com",
+    logo: "https://www.intrihub.com/logo/intri-web-logo.png",
+    description:
+      "India's Premier Instant Building and Interior Materials Marketplace delivering factory-direct tiles, granite, electrical, and sanitaryware across Bengaluru and pan-India.",
+    contactPoint: {
+      "@type": "ContactPoint",
+      telephone: "+91-9264920211",
+      contactType: "customer service",
+      areaServed: "IN",
+      availableLanguage: ["English", "Hindi"],
+    },
+  };
 
   return (
-    <section className="bg-white py-12 md:py-16 border-t border-neutral-200 text-neutral-900">
-      <div className="w-full max-w-[1400px] mx-auto px-[20px] md:px-[24px] lg:px-[32px] space-y-12">
-        {/* ── 1. Main Brand Headline & Narrative ── */}
-        <div className="max-w-3xl mx-auto text-center space-y-4">
-          <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-[#052a51]/5 border border-[#052a51]/10 text-xs font-black uppercase tracking-wider text-[#052a51]">
-            <Sparkles size={14} className="text-[#F26522]" />
-            <span>India's Building & Interior Marketplace</span>
-          </div>
+    <>
+      {/* ── 1. Structured JSON-LD Data for Google Search Indexing ── */}
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(faqSchema) }}
+      />
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(organizationSchema) }}
+      />
 
-          <h2 className="text-2xl sm:text-3xl md:text-4xl font-black text-[#052a51] tracking-tight leading-tight">
-            Why Builders, Designers & Homeowners Trust{" "}
-            <span className="text-[#F26522]">IntriHub</span>
-          </h2>
+      {/* ── 2. Semantic Crawlable HTML for Search Engines (Visually Hidden via sr-only) ── */}
+      <section className="sr-only" aria-hidden="false" aria-label="About IntriHub Building Materials">
+        <h2>Why Builders, Designers & Homeowners Trust IntriHub</h2>
+        <p>
+          India&apos;s Building & Interior Marketplace. A comprehensive quick-commerce ecosystem
+          for interior finishes and construction supplies. From foundation to final fixtures, we
+          deliver factory-direct vitrified tiles, granite, electrical wires, sanitaryware, and
+          hardware directly to your site within 60 minutes across Bengaluru and Pan-India.
+        </p>
 
-          <p className="text-xs sm:text-sm md:text-base text-neutral-600 leading-relaxed font-medium">
-            A comprehensive quick-commerce ecosystem for interior finishes and construction supplies. From foundation to final fixtures, we deliver factory-direct vitrified tiles, granite, electrical wires, sanitaryware, and hardware directly to your site within 60 minutes across Bengaluru and Pan-India.
-          </p>
+        <h3>Key Brand Pillars & Services</h3>
+        <ul>
+          <li>
+            <strong>Factory-Direct Pricing:</strong> Bypass multi-tier distributor markups to access
+            verified wholesale rates on 20,000+ certified products.
+          </li>
+          <li>
+            <strong>60-Minute Site Dispatch:</strong> Never halt on-site work. Real-time GPS tracked
+            delivery fleet dispatches critical materials straight to your project.
+          </li>
+          <li>
+            <strong>Smart Quantity Calculator:</strong> Automatically calculate exact box counts, tile
+            pieces, and wire lengths with a standard +10% cutting buffer.
+          </li>
+          <li>
+            <strong>100% Genuine Guarantee:</strong> Every item is quality-inspected, backed by standard
+            manufacturer warranties, and transit-packed for zero breakage.
+          </li>
+        </ul>
+
+        <h3>Frequently Asked Questions</h3>
+        <dl>
+          {BRAND_FAQS.map((faq, idx) => (
+            <React.Fragment key={idx}>
+              <dt>{faq.q}</dt>
+              <dd>{faq.a}</dd>
+            </React.Fragment>
+          ))}
+        </dl>
+
+        <div>
+          <a href="/shop">Explore Catalog</a>
+          <a href="https://wa.me/919264920211">Talk to Material Expert</a>
         </div>
-
-        {/* ── 2. Brand Pillars Grid ── */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5">
-          <div className="bg-neutral-50 p-5 rounded-2xl border border-neutral-200 space-y-3 hover:border-[#F26522]/40 transition-colors">
-            <div className="w-10 h-10 rounded-xl bg-[#052a51] text-white flex items-center justify-center shadow-xs">
-              <Building2 size={20} className="text-[#F26522]" />
-            </div>
-            <h3 className="text-sm font-black text-[#052a51]">Factory-Direct Pricing</h3>
-            <p className="text-xs text-neutral-600 leading-relaxed">
-              Bypass multi-tier distributor markups to access verified wholesale rates on 20,000+ certified products.
-            </p>
-          </div>
-
-          <div className="bg-neutral-50 p-5 rounded-2xl border border-neutral-200 space-y-3 hover:border-[#F26522]/40 transition-colors">
-            <div className="w-10 h-10 rounded-xl bg-[#052a51] text-white flex items-center justify-center shadow-xs">
-              <Truck size={20} className="text-[#F26522]" />
-            </div>
-            <h3 className="text-sm font-black text-[#052a51]">60-Minute Site Dispatch</h3>
-            <p className="text-xs text-neutral-600 leading-relaxed">
-              Never halt on-site work. Real-time GPS tracked delivery fleet dispatches critical materials straight to your project.
-            </p>
-          </div>
-
-          <div className="bg-neutral-50 p-5 rounded-2xl border border-neutral-200 space-y-3 hover:border-[#F26522]/40 transition-colors">
-            <div className="w-10 h-10 rounded-xl bg-[#052a51] text-white flex items-center justify-center shadow-xs">
-              <Calculator size={20} className="text-[#F26522]" />
-            </div>
-            <h3 className="text-sm font-black text-[#052a51]">Smart Quantity Calculator</h3>
-            <p className="text-xs text-neutral-600 leading-relaxed">
-              Automatically calculate exact box counts, tile pieces, and wire lengths with a standard +10% cutting buffer.
-            </p>
-          </div>
-
-          <div className="bg-neutral-50 p-5 rounded-2xl border border-neutral-200 space-y-3 hover:border-[#F26522]/40 transition-colors">
-            <div className="w-10 h-10 rounded-xl bg-[#052a51] text-white flex items-center justify-center shadow-xs">
-              <ShieldCheck size={20} className="text-[#F26522]" />
-            </div>
-            <h3 className="text-sm font-black text-[#052a51]">100% Genuine Guarantee</h3>
-            <p className="text-xs text-neutral-600 leading-relaxed">
-              Every item is quality-inspected, backed by standard manufacturer warranties, and transit-packed for zero breakage.
-            </p>
-          </div>
-        </div>
-
-        {/* ── 3. Brand FAQ Accordion (Google Search Rich Snippets) ── */}
-        <div className="max-w-4xl mx-auto space-y-4 pt-4">
-          <div className="text-center space-y-1 pb-2">
-            <h3 className="text-lg sm:text-xl font-black text-[#052a51]">
-              Frequently Asked Questions
-            </h3>
-            <p className="text-xs text-neutral-500 font-medium">
-              Everything you need to know about procurement and delivery on IntriHub
-            </p>
-          </div>
-
-          <div className="space-y-2.5">
-            {BRAND_FAQS.map((faq, idx) => {
-              const isOpen = openIdx === idx;
-              return (
-                <div
-                  key={idx}
-                  className="rounded-2xl border border-neutral-200 bg-white overflow-hidden transition-all shadow-2xs"
-                >
-                  <button
-                    type="button"
-                    onClick={() => setOpenIdx(isOpen ? null : idx)}
-                    className="w-full p-4 sm:p-5 flex items-center justify-between text-left gap-4 hover:bg-neutral-50 transition-colors cursor-pointer"
-                  >
-                    <span className="text-xs sm:text-sm font-bold text-[#052a51]">
-                      {faq.q}
-                    </span>
-                    <ChevronDown
-                      size={16}
-                      className={`text-[#F26522] shrink-0 transition-transform duration-200 ${
-                        isOpen ? "rotate-180" : ""
-                      }`}
-                    />
-                  </button>
-
-                  {isOpen && (
-                    <div className="px-4 pb-4 sm:px-5 sm:pb-5 text-xs text-neutral-600 leading-relaxed border-t border-neutral-100 pt-3 font-medium">
-                      {faq.a}
-                    </div>
-                  )}
-                </div>
-              );
-            })}
-          </div>
-        </div>
-
-        {/* ── 4. Bottom Brand CTA Strip ── */}
-        <div className="bg-gradient-to-r from-[#052a51] via-[#073666] to-[#052a51] rounded-3xl p-6 sm:p-8 text-white flex flex-col md:flex-row items-center justify-between gap-6 shadow-md border border-white/10">
-          <div className="space-y-1.5 text-center md:text-left">
-            <h4 className="text-base sm:text-lg font-black text-white">
-              Ready to Upgrade Your Space?
-            </h4>
-            <p className="text-xs text-white/80 max-w-xl font-medium">
-              Browse 20+ categories or get immediate architectural consultation & bulk quotation via WhatsApp.
-            </p>
-          </div>
-
-          <div className="flex items-center gap-3 shrink-0 flex-wrap justify-center">
-            <Link
-              href="/shop"
-              className="px-5 py-2.5 bg-[#F26522] hover:bg-[#d95a1e] text-white text-xs font-black rounded-xl shadow-xs transition-transform active:scale-95 flex items-center gap-1.5 cursor-pointer"
-            >
-              <span>Explore Catalog</span>
-              <ArrowRight size={14} />
-            </Link>
-
-            <a
-              href="https://wa.me/919264920211?text=Hi%20Intrihub,%20I%20want%20to%20know%20more%20about%20your%20products."
-              target="_blank"
-              rel="noopener noreferrer"
-              className="px-4 py-2.5 bg-white/10 hover:bg-white/20 border border-white/20 text-white text-xs font-bold rounded-xl transition-colors flex items-center gap-1.5 cursor-pointer"
-            >
-              <PhoneCall size={13} className="text-[#1E9E6B]" />
-              <span>Talk to Material Expert</span>
-            </a>
-          </div>
-        </div>
-      </div>
-    </section>
+      </section>
+    </>
   );
 }
