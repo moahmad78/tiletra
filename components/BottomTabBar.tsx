@@ -6,24 +6,26 @@ import { usePathname } from "next/navigation";
 import { Home, Grid3x3, ShoppingBag, User, ScanLine } from "lucide-react";
 import { useCartStore } from "@/lib/cart-store";
 import { cn } from "@/lib/utils";
+import { useScanStore } from "@/lib/scan-store";
 
 export default function BottomTabBar() {
   const pathname = usePathname();
+  const cartCount = useCartStore((state) => state.getTotalItems());
+  const { openScan, isOpen: isScanOpen } = useScanStore();
   const [mounted, setMounted] = useState(false);
-  const cartCount = useCartStore((s) => s.getTotalBoxes());
 
   useEffect(() => {
     setMounted(true);
   }, []);
 
-  // Hide completely on all admin, vendor, and scan routes
-  if (pathname?.startsWith("/admin") || pathname?.startsWith("/vendor") || pathname === "/scan") {
+  // Hide completely on all admin and vendor routes
+  if (pathname?.startsWith("/admin") || pathname?.startsWith("/vendor")) {
     return null;
   }
 
   const isHomeActive = pathname === "/";
   const isCategoriesActive = pathname.startsWith("/categories") || pathname.startsWith("/shop");
-  const isScanActive = pathname === "/scan";
+  const isScanActive = isScanOpen || pathname === "/scan";
   const isCartActive = pathname.startsWith("/cart");
   const isAccountActive = pathname.startsWith("/account");
 
@@ -74,10 +76,11 @@ export default function BottomTabBar() {
 
         {/* 3. CENTER ELEVATED SCAN & FIND (LENS) FAB */}
         <div className="flex-1 flex justify-center -mt-5 relative z-10">
-          <Link
-            href="/scan"
+          <button
+            type="button"
+            onClick={() => openScan()}
             className={cn(
-              "w-13 h-13 rounded-full flex flex-col items-center justify-center shadow-lg shadow-orange-500/30 transition-all duration-200",
+              "w-13 h-13 rounded-full flex flex-col items-center justify-center shadow-lg shadow-orange-500/30 transition-all duration-200 cursor-pointer",
               "border-[3px] border-white active:scale-95",
               isScanActive
                 ? "bg-gradient-to-tr from-[#d95a1e] to-[#F26522] ring-2 ring-[#052a51]"
@@ -89,7 +92,7 @@ export default function BottomTabBar() {
             <span className="text-[8px] font-black text-white uppercase tracking-tighter leading-none mt-0.5">
               Scan
             </span>
-          </Link>
+          </button>
         </div>
 
         {/* 4. Cart Tab */}

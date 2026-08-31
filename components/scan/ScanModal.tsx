@@ -1,0 +1,787 @@
+"use client";
+
+import { useState, useRef, useEffect, useCallback } from "react";
+import Image from "next/image";
+import Link from "next/link";
+import { useRouter } from "next/navigation";
+import {
+  Camera,
+  Flashlight,
+  FlashlightOff,
+  SwitchCamera,
+  Upload,
+  X,
+  CheckCircle2,
+  AlertCircle,
+  ShoppingBag,
+  ArrowRight,
+  RefreshCw,
+  MessageCircle,
+  ScanLine,
+} from "lucide-react";
+import { useScanStore } from "@/lib/scan-store";
+import { useCartStore } from "@/lib/cart-store";
+import { getProductPriceInfo } from "@/lib/formatters";
+import type { Product } from "@/lib/data/products";
+import type { ScanMatchResult } from "@/lib/lens/catalog-matcher";
+
+export default function ScanModal() {
+  const router = useRouter();
+  const { isOpen, closeScan } = useScanStore();
+  const { addItem, openCart } = useCartStore();
+
+  const videoRef = useRef<HTMLVideoElement | null>(null);
+  const canvasRef = useRef<HTMLCanvasElement | null>(null);
+  const fileInputRef = useRef<HTMLInputElement | null>(null);
+  const streamRef = useRef<MediaStream | null>(null);
+  const isMountedRef = useRef<boolean>(true);
+
+  // Camera & Scanner States
+  const [stream, setStream] = useState<MediaStream | null>(null);
+  const [hasCameraPermission, setHasCameraPermission] = useState<boolean | null>(null);
+  const [facingMode, setFacingMode] = useState<"environment" | "user">("environment");
+  const [isTorchOn, setIsTorchOn] = useState(false);
+  const [hasTorchCapability, setHasTorchCapability] = useState(false);
+
+  // Processing & Match States
+  const [isProcessing, setIsProcessing] = useState(false);
+  const [capturedImagePreview, setCapturedImagePreview] = useState<string | null>(null);
+  const [scanResult, setScanResult] = useState<ScanMatchResult | null>(null);
+  const [errorMessage, setErrorMessage] = useState<string | null>(null);
+  const [statusMessageIndex, setStatusMessageIndex] = useState(0);
+
+  const rotatingStatusTexts = [
+    "Reading packaging label...",
+    "Extracting product specifications...",
+    "Matching IntriHub catalog...",
+    "Almost there...",
+  ];
+
+  // Rotate AI status texts during processing
+  useEffect(() => {
+    if (!isProcessing) {
+      setStatusMessageIndex(0);
+      return;
+    }
+    const interval = setInterval(() => {
+      setStatusMessageIndex((prev) => (prev + 1) % rotatingStatusTexts.length);
+    }, 1100);
+    return () => clearInterval(interval);
+  }, [isProcessing, rotatingStatusTexts.length]);
+
+  // 1. Explicit Stop Function for Camera Hardware & Tracks
+  const stopCamera = useCallback(() => {
+    if (streamRef.current) {
+      try {
+        const tracks = streamRef.current.getTracks();
+        tracks.forEach((track) => {
+          try {
+            track.stop();
+          } catch (e) {
+            console.warn("Failed to stop media track:", e);
+          }
+        });
+      } catch (e) {
+        console.warn("Failed to retrieve tracks from stream:", e);
+      }
+      streamRef.current = null;
+    }
+
+    setStream(null);
+    setIsTorchOn(false);
+    setHasTorchCapability(false);
+
+    if (videoRef.current) {
+      videoRef.current.srcObject = null;
+    }
+  }, []);
+
+  // 2. Initialize Camera
+  const startCamera = useCallback(async (mode: "environment" | "user") => {
+    stopCamera();
+
+    try {
+      setErrorMessage(null);
+
+      if (!navigator?.mediaDevices?.getUserMedia) {
+        if (isMountedRef.current) {
+          setHasCameraPermission(false);
+          setErrorMessage("Camera access is not supported by this browser.");
+        }
+        return;
+      }
+
+      const constraints: MediaStreamConstraints = {
+        video: {
+          facingMode: mode,
+          width: { ideal: 1280 },
+          height: { ideal: 720 },
+        },
+        audio: false,
+      };
+
+      const mediaStream = await navigator.mediaDevices.getUserMedia(constraints);
+
+      if (!isMountedRef.current || !useScanStore.getState().isOpen) {
+        mediaStream.getTracks().forEach((track) => {
+          try {
+            track.stop();
+          } catch (e) {
+            console.warn("Error stopping track:", e);
+          }
+        });
+        return;
+      }
+
+      streamRef.current = mediaStream;
+      setStream(mediaStream);
+      setHasCameraPermission(true);
+
+      if (videoRef.current) {
+        videoRef.current.srcObject = mediaStream;
+        await videoRef.current.play().catch((err) => {
+          console.warn("Video play interrupted:", err);
+        });
+      }
+
+      // Check torch capability
+      const videoTrack = mediaStream.getVideoTracks()[0];
+      const capabilities = (videoTrack?.getCapabilities?.() as any) || {};
+      setHasTorchCapability(Boolean(capabilities.torch));
+    } catch (err: any) {
+      if (isMountedRef.current) {
+        console.warn("Camera access failed:", err);
+        setHasCameraPermission(false);
+      }
+    }
+  }, [stopCamera]);
+
+  // 3. Lifecycle Effect: Start camera when modal opens, stop when closes
+  useEffect(() => {
+    isMountedRef.current = true;
+
+    if (isOpen) {
+      document.body.style.overflow = "hidden";
+      startCamera(facingMode);
+    } else {
+      document.body.style.overflow = "";
+      stopCamera();
+      setScanResult(null);
+      setCapturedImagePreview(null);
+      setErrorMessage(null);
+    }
+
+    return () => {
+      document.body.style.overflow = "";
+      stopCamera();
+    };
+  }, [isOpen, facingMode, startCamera, stopCamera]);
+
+  // 4. Background / Visibility Handlers
+  useEffect(() => {
+    const handleVisibilityChange = () => {
+      if (document.visibilityState === "hidden") {
+        stopCamera();
+      } else if (
+        document.visibilityState === "visible" &&
+        isOpen &&
+        !capturedImagePreview &&
+        !scanResult
+      ) {
+        startCamera(facingMode);
+      }
+    };
+
+    const handleWindowHide = () => {
+      stopCamera();
+    };
+
+    document.addEventListener("visibilitychange", handleVisibilityChange);
+    window.addEventListener("pagehide", handleWindowHide);
+    window.addEventListener("beforeunload", handleWindowHide);
+
+    return () => {
+      document.removeEventListener("visibilitychange", handleVisibilityChange);
+      window.removeEventListener("pagehide", handleWindowHide);
+      window.removeEventListener("beforeunload", handleWindowHide);
+    };
+  }, [isOpen, facingMode, capturedImagePreview, scanResult, startCamera, stopCamera]);
+
+  // 5. Toggle Flashlight / Torch
+  const toggleTorch = async () => {
+    const activeStream = streamRef.current;
+    if (!activeStream) return;
+    const videoTrack = activeStream.getVideoTracks()[0];
+    if (!videoTrack) return;
+
+    try {
+      const newTorchState = !isTorchOn;
+      await (videoTrack as any).applyConstraints({
+        advanced: [{ torch: newTorchState }],
+      });
+      setIsTorchOn(newTorchState);
+    } catch (e) {
+      console.warn("Torch toggle not supported", e);
+    }
+  };
+
+  // 6. Flip Camera
+  const toggleCameraFacing = () => {
+    setFacingMode((prev) => (prev === "environment" ? "user" : "environment"));
+  };
+
+  // 7. Explicit Close Handler
+  const handleClose = () => {
+    stopCamera();
+    closeScan();
+  };
+
+  // 8. Capture Canvas Frame & Send to API
+  const handleCaptureFrame = async () => {
+    if (!videoRef.current || isProcessing) return;
+
+    const video = videoRef.current;
+    const canvas = canvasRef.current || document.createElement("canvas");
+    canvas.width = video.videoWidth || 640;
+    canvas.height = video.videoHeight || 480;
+
+    const ctx = canvas.getContext("2d");
+    if (!ctx) return;
+
+    ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+    const dataUrl = canvas.toDataURL("image/jpeg", 0.85);
+
+    stopCamera();
+    setCapturedImagePreview(dataUrl);
+    await processScanPayload({ image: dataUrl });
+  };
+
+  // 9. Gallery Upload Handler
+  const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    stopCamera();
+
+    const reader = new FileReader();
+    reader.onload = async () => {
+      const dataUrl = reader.result as string;
+      setCapturedImagePreview(dataUrl);
+      await processScanPayload({ image: dataUrl });
+    };
+    reader.readAsDataURL(file);
+  };
+
+  // 10. Core Scan Request
+  const processScanPayload = async (payload: { image?: string; text?: string }) => {
+    setIsProcessing(true);
+    setErrorMessage(null);
+
+    try {
+      const res = await fetch("/api/scan", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(payload),
+      });
+
+      const data: ScanMatchResult = await res.json();
+      setScanResult(data);
+
+      if (data.matched && data.confidenceTier === "high" && data.matchedProduct?.slug) {
+        setTimeout(() => {
+          handleClose();
+          router.push(`/product/${data.matchedProduct!.slug}`);
+        }, 900);
+      }
+    } catch (err: any) {
+      setErrorMessage("Could not connect to scan engine. Please check your connection and try again.");
+    } finally {
+      setIsProcessing(false);
+    }
+  };
+
+  // 11. Reset to Scan Again
+  const handleResetScan = () => {
+    setScanResult(null);
+    setCapturedImagePreview(null);
+    setErrorMessage(null);
+    if (facingMode) {
+      startCamera(facingMode);
+    }
+  };
+
+  // 12. Quick Add to Cart
+  const handleAddToCart = (product: Product) => {
+    const defaultVariant = product.variants?.[0] || null;
+    addItem(product, defaultVariant, 1);
+    openCart();
+  };
+
+  if (!isOpen) return null;
+
+  return (
+    <div className="fixed inset-0 z-[100] flex flex-col justify-end md:justify-center md:items-center p-0 md:p-6 transition-all duration-300 animate-in fade-in">
+      {/* ── SEMI-TRANSPARENT BACKDROP (SHOWS CURRENT ACTUAL PAGE BEHIND) ── */}
+      <div
+        className="fixed inset-0 bg-black/50 backdrop-blur-[2px] transition-opacity"
+        onClick={handleClose}
+      />
+
+      {/* ── ON-BRAND WHITE BOTTOM-SHEET / CARD MODAL (SLIDES UP OVER CURRENT PAGE) ── */}
+      <div
+        className="relative z-10 w-full md:max-w-[540px] max-h-[92vh] md:max-h-[86vh] bg-white text-gray-900 rounded-t-[32px] md:rounded-3xl border-t md:border border-gray-200 shadow-[0_-12px_48px_rgba(0,0,0,0.3)] flex flex-col overflow-hidden animate-in slide-in-from-bottom-8 duration-300"
+        role="dialog"
+        aria-modal="true"
+        aria-label="Scan & Find Products"
+      >
+        {/* Drag Handle Indicator (Mobile only) */}
+        <div className="w-12 h-1.5 bg-gray-200 rounded-full mx-auto mt-2.5 mb-1 md:hidden" />
+
+        {/* ── SHEET HEADER (WHITE WITH NAVY & ORANGE ACCENTS) ── */}
+        <div className="flex items-center justify-between px-5 py-3.5 border-b border-gray-100 shrink-0 bg-white">
+          <div className="flex items-center gap-2.5">
+            <div className="w-8 h-8 rounded-xl bg-orange-50 border border-orange-200/60 flex items-center justify-center text-[#F26522] shadow-2xs">
+              <ScanLine size={17} strokeWidth={2.4} />
+            </div>
+            <div>
+              <div className="flex items-center gap-1.5">
+                <span className="text-[10px] font-black uppercase tracking-wider text-[#F26522]">
+                  INTRIHUB LENS
+                </span>
+              </div>
+              <h3 className="text-sm md:text-base font-black text-[#052a51] leading-tight">
+                Scan & Find Products
+              </h3>
+            </div>
+          </div>
+
+          <div className="flex items-center gap-1.5">
+            {hasTorchCapability && !scanResult && (
+              <button
+                onClick={toggleTorch}
+                type="button"
+                className={`w-9 h-9 rounded-full flex items-center justify-center transition-all ${
+                  isTorchOn
+                    ? "bg-[#F26522] text-white shadow-xs"
+                    : "bg-gray-100 hover:bg-gray-200 text-gray-700"
+                }`}
+                title="Toggle Flashlight"
+                aria-label="Toggle Flashlight"
+              >
+                {isTorchOn ? <FlashlightOff size={16} /> : <Flashlight size={16} />}
+              </button>
+            )}
+
+            {!scanResult && (
+              <button
+                onClick={toggleCameraFacing}
+                type="button"
+                className="w-9 h-9 rounded-full bg-gray-100 hover:bg-gray-200 flex items-center justify-center text-gray-700 transition-transform active:rotate-180"
+                title="Flip Camera"
+                aria-label="Flip Camera"
+              >
+                <SwitchCamera size={16} />
+              </button>
+            )}
+
+            <button
+              onClick={handleClose}
+              type="button"
+              className="w-9 h-9 rounded-full bg-gray-100 hover:bg-gray-200 flex items-center justify-center text-gray-700 transition-colors cursor-pointer ml-1"
+              aria-label="Close scanner"
+            >
+              <X size={18} />
+            </button>
+          </div>
+        </div>
+
+        {/* ── SCROLLABLE BODY (VIEWFINDER / RESULTS) ── */}
+        <div className="flex-1 overflow-y-auto px-5 py-4 space-y-4 bg-gray-50/50">
+          {/* Error Banner */}
+          {errorMessage && (
+            <div className="p-3 rounded-2xl bg-red-50 border border-red-200 text-red-700 text-xs flex items-center gap-2">
+              <AlertCircle size={16} className="shrink-0 text-red-500" />
+              <span className="flex-1 font-medium">{errorMessage}</span>
+            </div>
+          )}
+
+          {/* ── CASE 1: SCANNER VIEWFINDER BOX WITH GEMINI-STYLE FLOWING BORDER ── */}
+          {!scanResult && (
+            <div className="relative p-[2.5px] rounded-2xl overflow-hidden shadow-md aspect-4/3 w-full bg-slate-900">
+              {/* ── ANIMATED MULTI-COLOR FLOWING BORDER (ORANGE → NAVY → BLUE GLOW) ── */}
+              <div className="absolute inset-[-50%] bg-[conic-gradient(from_0deg,#F26522_0%,#052a51_30%,#38bdf8_50%,#F26522_75%,#052a51_100%)] animate-border-flow pointer-events-none" />
+
+              {/* Inner Camera Box */}
+              <div className="relative w-full h-full rounded-[13px] bg-black overflow-hidden flex items-center justify-center">
+                {/* Hidden Canvas for Capture */}
+                <canvas ref={canvasRef} className="hidden" />
+
+                {/* Live Camera Video */}
+                {!capturedImagePreview && (
+                  <video
+                    ref={videoRef}
+                    playsInline
+                    muted
+                    autoPlay
+                    className="w-full h-full object-cover"
+                  />
+                )}
+
+                {/* Captured Image Preview */}
+                {capturedImagePreview && (
+                  // eslint-disable-next-line @next/next/no-img-element
+                  <img
+                    src={capturedImagePreview}
+                    alt="Scanned item"
+                    className="w-full h-full object-cover"
+                  />
+                )}
+
+                {/* Camera Permission Denied Fallback */}
+                {hasCameraPermission === false && !capturedImagePreview && (
+                  <div className="absolute inset-0 z-10 flex flex-col items-center justify-center p-4 text-center bg-[#052a51] text-white space-y-3">
+                    <div className="w-12 h-12 rounded-2xl bg-white/10 flex items-center justify-center text-[#F26522]">
+                      <Camera size={24} />
+                    </div>
+                    <div className="space-y-0.5 max-w-xs">
+                      <p className="text-xs font-bold text-white">Camera Access Required</p>
+                      <p className="text-[11px] text-white/70">
+                        Allow camera access in your browser or select a photo from your gallery.
+                      </p>
+                    </div>
+                    <button
+                      onClick={() => fileInputRef.current?.click()}
+                      type="button"
+                      className="px-4 py-2 rounded-xl bg-[#F26522] text-white font-bold text-xs flex items-center gap-1.5 shadow-md active:scale-95 cursor-pointer"
+                    >
+                      <Upload size={14} />
+                      <span>Upload from Gallery</span>
+                    </button>
+                  </div>
+                )}
+
+                {/* ── GEMINI-STYLE AI SCANNING LASER BEAM ANIMATION (WHEN PROCESSING) ── */}
+                {isProcessing && (
+                  <div className="absolute inset-0 z-30 bg-black/45 backdrop-blur-2xs flex flex-col items-center justify-center pointer-events-none">
+                    {/* Sweeping Laser Beam */}
+                    <div className="absolute inset-x-0 h-1 bg-gradient-to-r from-transparent via-[#F26522] to-transparent shadow-[0_0_24px_#F26522] animate-laser" />
+
+                    {/* AI Status Badge */}
+                    <div className="px-4 py-2 rounded-full bg-[#052a51]/95 border border-[#F26522]/50 shadow-xl flex items-center gap-2.5 backdrop-blur-md">
+                      <RefreshCw size={14} className="text-[#F26522] animate-spin" />
+                      <span className="text-xs font-bold text-white tracking-wide">
+                        {rotatingStatusTexts[statusMessageIndex]}
+                      </span>
+                    </div>
+                  </div>
+                )}
+
+                {/* Viewfinder Target Reticle Indicator */}
+                {!isProcessing && !capturedImagePreview && (
+                  <div className="absolute inset-4 rounded-xl border border-white/20 pointer-events-none flex items-center justify-center">
+                    {/* Center Target Dot */}
+                    <div className="w-6 h-6 rounded-full border border-white/40 flex items-center justify-center opacity-70">
+                      <div className="w-1.5 h-1.5 rounded-full bg-[#F26522]" />
+                    </div>
+
+                    {/* Bottom Hint Pill */}
+                    <div className="absolute bottom-2 inset-x-0 flex justify-center">
+                      <span className="px-3 py-1 rounded-full bg-black/75 text-[10px] font-bold text-white/90 border border-white/10 backdrop-blur-md">
+                        Align packaging label in frame
+                      </span>
+                    </div>
+                  </div>
+                )}
+              </div>
+            </div>
+          )}
+
+          {/* ── CASE 2: SCAN RESULTS READY ── */}
+          {scanResult && (
+            <div className="space-y-3.5 pt-1">
+              {/* Header Status Row */}
+              <div className="flex items-center justify-between">
+                <div>
+                  {scanResult.matched ? (
+                    <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-emerald-50 border border-emerald-200 text-emerald-700 text-xs font-bold">
+                      <CheckCircle2 size={13} className="text-emerald-600" />
+                      <span>Exact Match Found ({Math.round(scanResult.confidence * 100)}%)</span>
+                    </span>
+                  ) : (
+                    <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-amber-50 border border-amber-200 text-amber-800 text-xs font-bold">
+                      <AlertCircle size={13} className="text-amber-600" />
+                      <span>Alternative Recommendations</span>
+                    </span>
+                  )}
+                </div>
+
+                <button
+                  onClick={handleResetScan}
+                  type="button"
+                  className="text-xs text-gray-700 hover:text-[#052a51] flex items-center gap-1 bg-white border border-gray-200 hover:border-gray-300 px-3 py-1.5 rounded-xl cursor-pointer transition-colors font-bold shadow-2xs"
+                >
+                  <RefreshCw size={12} className="text-[#F26522]" />
+                  <span>Scan New</span>
+                </button>
+              </div>
+
+              <p className="text-xs text-gray-600 font-medium leading-relaxed">
+                {scanResult.message}
+              </p>
+
+              {/* 1. EXACT HIGH CONFIDENCE MATCH CARD */}
+              {scanResult.matched && scanResult.matchedProduct && (
+                <div className="bg-white text-gray-900 rounded-2xl p-4 shadow-md border border-gray-200 space-y-3">
+                  <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-emerald-50 text-emerald-800 text-[11px] font-bold">
+                    <CheckCircle2 size={13} className="text-emerald-600" />
+                    <span>In-Stock on IntriHub</span>
+                  </div>
+                  <div className="flex gap-3">
+                    <div className="relative w-20 h-20 rounded-xl overflow-hidden bg-gray-100 shrink-0 border border-gray-200">
+                      <Image
+                        src={scanResult.matchedProduct.images?.[0] || "/placeholders/product.svg"}
+                        alt={scanResult.matchedProduct.name}
+                        fill
+                        className="object-cover"
+                      />
+                    </div>
+
+                    <div className="flex-1 min-w-0 flex flex-col justify-between">
+                      <div>
+                        <span className="text-[10px] font-bold uppercase tracking-wider text-[#F26522]">
+                          {scanResult.matchedProduct.brand || "IntriHub"}
+                        </span>
+                        <h4 className="text-sm font-bold text-[#052a51] line-clamp-2 leading-snug">
+                          {scanResult.matchedProduct.name}
+                        </h4>
+                      </div>
+
+                      {(() => {
+                        const priceInfo = getProductPriceInfo(
+                          scanResult.matchedProduct!,
+                          scanResult.matchedProduct!.variants?.[0]
+                        );
+                        return (
+                          <div className="flex items-baseline gap-2 pt-1">
+                            <span className="text-base font-black text-[#052a51]">
+                              {priceInfo.formattedPrice}
+                            </span>
+                            {priceInfo.unitSuffix && (
+                              <span className="text-xs font-semibold text-gray-500">
+                                /{priceInfo.unitSuffix}
+                              </span>
+                            )}
+                            {priceInfo.discountPercent > 0 && (
+                              <span className="text-[10px] font-bold text-emerald-700">
+                                {priceInfo.discountPercent}% OFF
+                              </span>
+                            )}
+                          </div>
+                        );
+                      })()}
+                    </div>
+                  </div>
+
+                  {/* Actions */}
+                  <div className="grid grid-cols-2 gap-2 pt-1">
+                    <button
+                      onClick={() => handleAddToCart(scanResult.matchedProduct!)}
+                      type="button"
+                      className="h-11 rounded-xl bg-[#F26522] hover:bg-[#d95a1e] text-white font-bold text-xs flex items-center justify-center gap-1.5 shadow-md shadow-orange-500/20 active:scale-95 transition-transform cursor-pointer"
+                    >
+                      <ShoppingBag size={14} />
+                      <span>Add to Cart</span>
+                    </button>
+
+                    <Link
+                      href={`/product/${scanResult.matchedProduct.slug}`}
+                      onClick={handleClose}
+                      className="h-11 rounded-xl bg-[#052a51] hover:bg-[#08386a] text-white font-bold text-xs flex items-center justify-center gap-1.5 active:scale-95 transition-transform"
+                    >
+                      <span>View Product</span>
+                      <ArrowRight size={14} />
+                    </Link>
+                  </div>
+                </div>
+              )}
+
+              {/* 2. POSSIBLE CANDIDATES LIST */}
+              {scanResult.matched &&
+                scanResult.confidenceTier === "medium" &&
+                scanResult.possibleMatches &&
+                scanResult.possibleMatches.length > 0 && (
+                  <div className="space-y-2 pt-1">
+                    <h4 className="text-xs font-bold text-[#052a51] uppercase tracking-wider">
+                      Possible Matching Products:
+                    </h4>
+                    <div className="space-y-2">
+                      {scanResult.possibleMatches.map((item) => {
+                        const priceInfo = getProductPriceInfo(item, item.variants?.[0]);
+                        return (
+                          <Link
+                            key={item.id}
+                            href={`/product/${item.slug}`}
+                            onClick={handleClose}
+                            className="bg-white text-gray-900 rounded-xl p-3 flex items-center gap-3 shadow-xs hover:border-[#F26522] border border-gray-200 transition-all active:scale-[0.98]"
+                          >
+                            <div className="relative w-12 h-12 rounded-lg overflow-hidden bg-gray-100 shrink-0 border border-gray-200">
+                              <Image
+                                src={item.images?.[0] || "/placeholders/product.svg"}
+                                alt={item.name}
+                                fill
+                                className="object-cover"
+                              />
+                            </div>
+                            <div className="flex-1 min-w-0">
+                              <span className="text-[9px] font-bold text-[#F26522] uppercase tracking-wider">
+                                {item.brand || "IntriHub"}
+                              </span>
+                              <h5 className="text-xs font-bold text-[#052a51] line-clamp-1">
+                                {item.name}
+                              </h5>
+                              <div className="flex items-baseline gap-1 mt-0.5">
+                                <span className="text-xs font-black text-[#052a51]">
+                                  {priceInfo.formattedPrice}
+                                </span>
+                                {priceInfo.unitSuffix && (
+                                  <span className="text-[10px] text-gray-500 font-semibold">
+                                    /{priceInfo.unitSuffix}
+                                  </span>
+                                )}
+                              </div>
+                            </div>
+                            <div className="w-7 h-7 rounded-full bg-[#052a51] text-white flex items-center justify-center shrink-0">
+                              <ArrowRight size={13} />
+                            </div>
+                          </Link>
+                        );
+                      })}
+                    </div>
+                  </div>
+                )}
+
+              {/* 3. ALTERNATIVES LIST */}
+              {scanResult.alternatives && scanResult.alternatives.length > 0 && (
+                <div className="space-y-2 pt-1">
+                  <h4 className="text-xs font-bold text-[#052a51] uppercase tracking-wider">
+                    In-Stock Options in {scanResult.extractedInfo?.categoryGuess || "Category"}:
+                  </h4>
+
+                  <div className="grid grid-cols-2 gap-2">
+                    {scanResult.alternatives.slice(0, 4).map((alt) => {
+                      const priceInfo = getProductPriceInfo(alt, alt.variants?.[0]);
+                      return (
+                        <div
+                          key={alt.id}
+                          className="bg-white text-gray-900 rounded-xl p-2.5 flex flex-col justify-between shadow-xs border border-gray-200"
+                        >
+                          <div className="space-y-1">
+                            <div className="relative w-full aspect-square rounded-lg overflow-hidden bg-gray-100">
+                              <Image
+                                src={alt.images?.[0] || "/placeholders/product.svg"}
+                                alt={alt.name}
+                                fill
+                                className="object-cover"
+                              />
+                            </div>
+                            <p className="text-[11px] font-bold text-[#052a51] line-clamp-2 leading-tight">
+                              {alt.name}
+                            </p>
+                            <div className="flex items-baseline gap-1">
+                              <span className="text-xs font-black text-[#052a51]">
+                                {priceInfo.formattedPrice}
+                              </span>
+                              {priceInfo.unitSuffix && (
+                                <span className="text-[9px] text-gray-500 font-semibold">
+                                  /{priceInfo.unitSuffix}
+                                </span>
+                              )}
+                            </div>
+                          </div>
+
+                          <div className="pt-2 flex gap-1">
+                            <button
+                              onClick={() => handleAddToCart(alt)}
+                              type="button"
+                              className="flex-1 py-1.5 bg-[#F26522] hover:bg-[#d95a1e] text-white rounded-lg text-[10px] font-bold flex items-center justify-center gap-1 active:scale-95 cursor-pointer transition-colors"
+                            >
+                              <ShoppingBag size={11} />
+                              <span>Add</span>
+                            </button>
+                            <Link
+                              href={`/product/${alt.slug}`}
+                              onClick={handleClose}
+                              className="px-2 py-1.5 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-lg text-[10px] font-bold flex items-center justify-center transition-colors"
+                            >
+                              <ArrowRight size={11} />
+                            </Link>
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+
+                  {/* WhatsApp Custom Sourcing Button */}
+                  <a
+                    href={`https://wa.me/919264920211?text=Hi%20IntriHub,%20I%20scanned%20${encodeURIComponent(
+                      scanResult.extractedInfo?.detectedBrand || "a product"
+                    )}%20and%20need%20help%20sourcing%20it.`}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    onClick={handleClose}
+                    className="w-full h-11 rounded-xl bg-[#1E9E6B] hover:bg-emerald-700 text-white font-bold text-xs flex items-center justify-center gap-2 shadow-sm transition-colors mt-2"
+                  >
+                    <MessageCircle size={15} />
+                    <span>Enquire on WhatsApp for Custom Sourcing</span>
+                  </a>
+                </div>
+              )}
+            </div>
+          )}
+        </div>
+
+        {/* ── SHEET BOTTOM CONTROLS (EXACTLY 2 ELEVATED MAIN ACTIONS: UPLOAD & SCAN) ── */}
+        {!scanResult && (
+          <div
+            className="px-5 pt-3.5 pb-6 border-t border-gray-100 bg-white shrink-0"
+            style={{ paddingBottom: "max(1.5rem, env(safe-area-inset-bottom, 1.5rem))" }}
+          >
+            {/* Hidden File Input for Gallery Selection */}
+            <input
+              ref={fileInputRef}
+              type="file"
+              accept="image/*"
+              onChange={handleFileUpload}
+              className="hidden"
+            />
+
+            {/* Exactly 2 Clean Elevated Actions: [ Upload Photo ] & [ Scan Product ] */}
+            <div className="grid grid-cols-2 gap-3">
+              {/* Action 1: Upload from Gallery (Secondary Button) */}
+              <button
+                type="button"
+                onClick={() => fileInputRef.current?.click()}
+                disabled={isProcessing}
+                className="h-[48px] rounded-2xl bg-gray-50 hover:bg-gray-100 border border-gray-200/90 text-[#052a51] font-bold text-xs flex items-center justify-center gap-2 shadow-2xs active:scale-[0.97] transition-all cursor-pointer disabled:opacity-50"
+              >
+                <Upload size={17} className="text-[#F26522]" />
+                <span>Upload Photo</span>
+              </button>
+
+              {/* Action 2: Scan Product (Primary Prominent Action with Orange Glow) */}
+              <button
+                type="button"
+                onClick={handleCaptureFrame}
+                disabled={isProcessing || hasCameraPermission === false}
+                className="h-[48px] rounded-2xl bg-gradient-to-r from-[#F26522] via-[#ea580c] to-[#d95a1e] hover:from-[#d95a1e] hover:to-[#c2410c] text-white font-black text-xs flex items-center justify-center gap-2 shadow-md shadow-orange-500/30 hover:shadow-orange-500/40 active:scale-[0.97] transition-all cursor-pointer disabled:opacity-50"
+              >
+                <Camera size={18} className="text-white" />
+                <span>Scan Product</span>
+              </button>
+            </div>
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}

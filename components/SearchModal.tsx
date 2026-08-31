@@ -10,6 +10,8 @@ import { getLowestPrice } from "@/lib/data/products";
 import type { Product } from "@/lib/data/products";
 import { formatPrice, formatUnitLabel, getProductPriceInfo } from "@/lib/formatters";
 
+import { useScanStore } from "@/lib/scan-store";
+
 export default function SearchModal({
   isOpen,
   onClose,
@@ -17,6 +19,7 @@ export default function SearchModal({
   isOpen: boolean;
   onClose: () => void;
 }) {
+  const { openScan } = useScanStore();
   const [query, setQuery] = useState("");
   const [results, setResults] = useState<Product[]>([]);
   const [loading, setLoading] = useState(false);
@@ -143,15 +146,18 @@ export default function SearchModal({
             </button>
           )}
 
-          <Link
-            href="/scan"
-            onClick={onClose}
+          <button
+            type="button"
+            onClick={() => {
+              onClose();
+              openScan();
+            }}
             title="Scan Physical Product (IntriHub Lens)"
-            className="p-2 rounded-xl bg-orange-50 hover:bg-orange-100 text-[#F26522] transition-colors flex items-center gap-1.5 text-xs font-bold shrink-0"
+            className="p-2 rounded-xl bg-orange-50 hover:bg-orange-100 text-[#F26522] transition-colors flex items-center gap-1.5 text-xs font-bold shrink-0 cursor-pointer"
           >
             <Camera size={16} />
             <span className="hidden sm:inline">Scan & Find</span>
-          </Link>
+          </button>
 
           <button
             type="submit"
@@ -173,10 +179,13 @@ export default function SearchModal({
         <div className="flex-1 overflow-y-auto p-4 sm:p-6 space-y-4">
           {/* Visual Scan Promo Banner */}
           {!query.trim() && (
-            <Link
-              href="/scan"
-              onClick={onClose}
-              className="block p-3.5 rounded-2xl bg-gradient-to-r from-[#052a51] to-[#0a4687] text-white transition-all hover:scale-[0.99] active:scale-[0.98] shadow-md border border-white/10"
+            <button
+              type="button"
+              onClick={() => {
+                onClose();
+                openScan();
+              }}
+              className="w-full text-left block p-3.5 rounded-2xl bg-gradient-to-r from-[#052a51] to-[#0a4687] text-white transition-all hover:scale-[0.99] active:scale-[0.98] shadow-md border border-white/10 cursor-pointer"
             >
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-3">
@@ -194,7 +203,7 @@ export default function SearchModal({
                 </div>
                 <ArrowRight size={16} className="text-white/60 shrink-0 ml-2" />
               </div>
-            </Link>
+            </button>
           )}
 
           {!query.trim() ? (

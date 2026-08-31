@@ -85,6 +85,8 @@ export async function getProducts(options?: {
   isNewArrival?: boolean;
   search?: string;
   limit?: number;
+  skip?: number;
+  offset?: number;
   inStockOnly?: boolean;
   vendorId?: string;
   status?: string;
@@ -212,6 +214,7 @@ export async function getProducts(options?: {
       },
       orderBy: { createdAt: "desc" },
       take: options?.limit,
+      skip: options?.skip ?? options?.offset ?? undefined,
     });
 
     return dbProducts.map(formatProduct);
@@ -266,6 +269,10 @@ export async function getProducts(options?: {
 
       return words.every((word) => searchTarget.includes(word));
     });
+  }
+  if (options?.skip || options?.offset) {
+    const start = options.skip ?? options.offset ?? 0;
+    result = result.slice(start);
   }
   if (options?.limit) {
     result = result.slice(0, options.limit);

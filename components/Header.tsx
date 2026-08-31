@@ -8,6 +8,7 @@ import Link from "next/link";
 import { useCartStore } from "@/lib/cart-store";
 import { useWishlistStore } from "@/lib/wishlist-store";
 import { useAuthStore, useAuthStatus } from "@/lib/auth-store";
+import { useScanStore } from "@/lib/scan-store";
 import SearchModal from "@/components/SearchModal";
 import NotificationCenter from "@/components/notifications/NotificationCenter";
 import CategoryNavBar from "@/components/CategoryNavBar";
@@ -19,6 +20,7 @@ export default function Header() {
   const [searchOpen, setSearchOpen] = useState(false);
   const [mounted, setMounted] = useState(false);
 
+  const { openScan } = useScanStore();
   const authStatus = useAuthStatus();
   const { user, openLoginModal } = useAuthStore();
   const { toggleCart } = useCartStore();
@@ -124,14 +126,15 @@ export default function Header() {
                     Search tiles, wires, pipes...
                   </span>
                 </button>
-                <Link
-                  href="/scan"
+                <button
+                  type="button"
+                  onClick={() => openScan()}
                   title="Scan & Find Products"
                   aria-label="Scan physical product"
-                  className="p-1 text-gray-500 hover:text-[#F26522] transition-colors"
+                  className="p-1 text-gray-500 hover:text-[#F26522] transition-colors cursor-pointer"
                 >
                   <Camera size={15} />
-                </Link>
+                </button>
               </div>
             </div>
 
@@ -148,15 +151,16 @@ export default function Header() {
                   <span className="truncate">Search tiles, electrical, plumbing, hardware, plywood, granite...</span>
                 </button>
                 <div className="flex items-center gap-2 shrink-0">
-                  <Link
-                    href="/scan"
+                  <button
+                    type="button"
+                    onClick={() => openScan()}
                     title="Scan & Find Physical Products"
                     aria-label="Scan physical product"
-                    className="px-2 py-1 rounded-lg bg-orange-50 hover:bg-orange-100 text-[#F26522] text-[11px] font-bold flex items-center gap-1.5 transition-colors"
+                    className="px-2 py-1 rounded-lg bg-orange-50 hover:bg-orange-100 text-[#F26522] text-[11px] font-bold flex items-center gap-1.5 transition-colors cursor-pointer"
                   >
                     <Camera size={14} />
                     <span className="hidden xl:inline">Scan</span>
-                  </Link>
+                  </button>
                   <span className="text-[10px] font-bold text-gray-600 bg-white border border-gray-300 px-2 py-0.5 rounded-md shadow-2xs">
                     ⌘K
                   </span>

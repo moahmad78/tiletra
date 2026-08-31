@@ -6,11 +6,14 @@ import { QuoteModalProvider } from "@/components/QuoteModalProvider";
 import CartDrawer from "@/components/cart/CartDrawer";
 import BottomTabBar from "@/components/BottomTabBar";
 import LoginModal from "@/components/auth/LoginModal";
+import ScanModal from "@/components/scan/ScanModal";
 import GoogleSessionHydrator from "@/components/auth/GoogleSessionHydrator";
 import GoogleAnalyticsTracker from "@/components/analytics/GoogleAnalyticsTracker";
 import AddToCartToast from "@/components/cart/AddToCartToast";
 import PwaInstallPrompt from "@/components/pwa/PwaInstallPrompt";
 import { Toaster } from "sonner";
+
+import Script from "next/script";
 
 import {
   BASE_SITE_URL,
@@ -137,7 +140,9 @@ export default function RootLayout({
         <link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png" />
         <link rel="icon" href="/favicon.ico" />
         <link rel="manifest" href="/site.webmanifest" />
-        <script
+        <Script
+          id="developer-credit"
+          strategy="afterInteractive"
           dangerouslySetInnerHTML={{
             __html: `console.log("%c🚀 Intrihub — Everything for Every Space%c\\n✨ Founded & Developed by Sahil Sheikh (@sahil_sheikh78)\\n📸 Instagram: https://instagram.com/sahil_sheikh78\\n💼 Founder & CEO | Intrihub Supply Network", "background: #052a51; color: #F26522; font-size: 14px; font-weight: 900; padding: 6px 12px; border-radius: 6px;", "color: #052a51; font-size: 12px; font-weight: 700; line-height: 1.6;");`,
           }}
@@ -152,11 +157,13 @@ export default function RootLayout({
         <link rel="preconnect" href="https://www.googletagmanager.com" crossOrigin="anonymous" />
 
         {/* Google Analytics 4 (gtag.js) */}
-        <script
-          async
+        <Script
+          strategy="afterInteractive"
           src={`https://www.googletagmanager.com/gtag/js?id=${gaMeasurementId}`}
         />
-        <script
+        <Script
+          id="google-analytics"
+          strategy="afterInteractive"
           dangerouslySetInnerHTML={{
             __html: `
               window.dataLayer = window.dataLayer || [];
@@ -195,6 +202,7 @@ export default function RootLayout({
           <AddToCartToast />
           <BottomTabBar />
           <LoginModal />
+          <ScanModal />
           <PwaInstallPrompt />
           <Toaster position="top-center" richColors />
           <Suspense fallback={null}>

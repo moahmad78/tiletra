@@ -32,6 +32,7 @@ import DesktopBannerCarousel, { type BannerSlide } from "@/components/DesktopBan
 import DesktopProductRow from "@/components/DesktopProductRow";
 import DesktopCategoryRow from "@/components/DesktopCategoryRow";
 import IntrihubBrandSEOSection from "@/components/IntrihubBrandSEOSection";
+import InfiniteProductCatalog from "@/components/InfiniteProductCatalog";
 
 interface HomeClientProps {
   categories: Category[];
@@ -180,6 +181,9 @@ export default function HomeClient({
             <span>500+ Verified Spaces</span>
           </div>
         </div>
+
+        {/* Continuous Loading Infinite Catalog Section on Mobile */}
+        <InfiniteProductCatalog categories={categories} />
 
         {/* Brand Narrative Section for Mobile */}
         <IntrihubBrandSEOSection />
@@ -336,6 +340,9 @@ export default function HomeClient({
             </div>
           </div>
         </section>
+
+        {/* Continuous Loading Infinite Catalog Section on Desktop */}
+        <InfiniteProductCatalog categories={categories} />
 
         {/* Brand Narrative Section for Desktop */}
         <IntrihubBrandSEOSection />
