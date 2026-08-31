@@ -76,6 +76,8 @@ export default function AddProductScreen() {
   const [pricePerBox, setPricePerBox] = useState("750");
   const [mrp, setMrp] = useState("950");
   const [stockBoxes, setStockBoxes] = useState("100");
+  const [weightKg, setWeightKg] = useState("2.5");
+  const [isBulky, setIsBulky] = useState(false);
   const [description, setDescription] = useState("");
   const [size, setSize] = useState("600x600 mm (2x2 ft)");
   const [finish, setFinish] = useState("Glossy");
@@ -314,6 +316,12 @@ export default function AddProductScreen() {
       return;
     }
 
+    const parsedWeight = parseFloat(weightKg);
+    if (isNaN(parsedWeight) || parsedWeight <= 0) {
+      Alert.alert("Validation Error", "Please enter an approximate weight in kg (required for delivery vehicle routing).");
+      return;
+    }
+
     const allImages = [...images];
     if (primaryImageUrlInput.trim() && !allImages.includes(primaryImageUrlInput.trim())) {
       allImages.unshift(primaryImageUrlInput.trim());
@@ -333,6 +341,8 @@ export default function AddProductScreen() {
       size,
       finish,
       material,
+      weightKg: parsedWeight,
+      isBulky,
       images: allImages,
       variants: hasVariants ? variants : undefined,
     });
@@ -512,6 +522,70 @@ export default function AddProductScreen() {
                 placeholder="100"
               />
             </View>
+          </View>
+
+          {/* F8: Weight & Bulkiness Section */}
+          <View style={{ marginTop: 14, padding: 12, backgroundColor: "#F8FAFC", borderRadius: 10, borderWidth: 1, borderColor: "#E2E8F0" }}>
+            <View style={{ flexDirection: "row", alignItems: "center", gap: 6, marginBottom: 4 }}>
+              <Scale size={16} color="#052A51" />
+              <Text style={{ fontSize: 13, fontWeight: "800", color: "#052A51" }}>Weight & Cargo Sizing *</Text>
+            </View>
+            <Text style={{ fontSize: 11, color: "#64748B", marginBottom: 10 }}>
+              Required to automatically route orders to the correct vehicle (Borzo Bike, Porter 3-Wheeler, or Tata Ace).
+            </Text>
+
+            <View style={{ flexDirection: "row", gap: 10, alignItems: "center" }}>
+              <View style={{ flex: 1 }}>
+                <Text style={styles.inputLabel}>Weight per {unitOfSale.toUpperCase()} (kg) *</Text>
+                <TextInput
+                  style={styles.inputBox}
+                  value={weightKg}
+                  onChangeText={setWeightKg}
+                  keyboardType="decimal-pad"
+                  placeholder="e.g. 2.5"
+                />
+              </View>
+            </View>
+
+            {/* isBulky Checkbox Toggle */}
+            <TouchableOpacity
+              style={{
+                marginTop: 10,
+                padding: 10,
+                backgroundColor: isBulky ? "#FEF3C7" : "#FFFFFF",
+                borderRadius: 8,
+                borderWidth: 1,
+                borderColor: isBulky ? "#F59E0B" : "#CBD5E1",
+                flexDirection: "row",
+                alignItems: "center",
+                justifyContent: "space-between",
+              }}
+              onPress={() => setIsBulky(!isBulky)}
+              activeOpacity={0.85}
+            >
+              <View style={{ flex: 1, marginRight: 8 }}>
+                <Text style={{ fontSize: 12, fontWeight: "800", color: isBulky ? "#92400E" : "#1E293B" }}>
+                  📦 Oversized / Bulky Item
+                </Text>
+                <Text style={{ fontSize: 10, color: "#64748B", marginTop: 2 }}>
+                  Check this for plywood, PVC pipes, ceiling panels, or doors (routes directly to Tata Ace mini-truck).
+                </Text>
+              </View>
+              <View
+                style={{
+                  width: 22,
+                  height: 22,
+                  borderRadius: 6,
+                  borderWidth: 2,
+                  borderColor: isBulky ? "#D97706" : "#94A3B8",
+                  backgroundColor: isBulky ? "#D97706" : "#FFFFFF",
+                  alignItems: "center",
+                  justifyContent: "center",
+                }}
+              >
+                {isBulky ? <Check size={14} color="#FFFFFF" strokeWidth={3} /> : null}
+              </View>
+            </TouchableOpacity>
           </View>
 
           {/* Primary Images URL & Upload */}

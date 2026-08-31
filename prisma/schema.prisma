@@ -139,6 +139,7 @@ model Product {
   piecesPerUnit     Int?               // Pieces per pack/box
   lengthPerUnit     Float?             // Length per roll/bundle in meters
   weightKg          Float?             // Weight per selling unit in kg
+  isBulky           Boolean            @default(false) // Oversized items e.g. plywood, pipes, false-ceiling panels
 
   // Quantities & Ordering Rules
   minOrderQuantity  Float              @default(1)
@@ -853,9 +854,12 @@ model VendorOrderSplit {
   packingBreachAt      DateTime? // set by SLA cron when deadline missed without ready_for_pickup
   slaBreach            Boolean   @default(false)
 
-  // ── Third-Party Delivery Fallback (F6) ─────────────────────────────────────
-  thirdPartyRef        String?   // Porter/Dunzo booking reference ID
-  thirdPartyProvider   String?   // "porter" | "dunzo" | "shiprocket"
+  // ── Third-Party Delivery Fallback & Carrier Routing (F6 / F8) ─────────────
+  thirdPartyRef        String?   // Porter/Borzo booking reference ID
+  thirdPartyProvider   String?   // "in_house" | "borzo" | "porter" | "dunzo" | "shiprocket"
+  vehicleType          String?   // "bike" | "3-wheeler" | "tata-ace" | "truck"
+  totalWeightKg        Float?    // Total sum weight of items in split (kg)
+  isBulky              Boolean   @default(false) // True if any item in split is bulky
 
   createdAt            DateTime  @default(now())
   updatedAt            DateTime  @updatedAt

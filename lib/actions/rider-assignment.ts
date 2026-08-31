@@ -5,17 +5,24 @@ import { findNearest, filterWithinRadius } from "@/lib/delivery/geo";
 import { DELIVERY_CONFIG } from "@/lib/delivery/config";
 
 /**
- * F5 — Auto-Assign Nearest Rider
+ * F5 / F8 — Weight-Based Carrier Routing & Rider Auto-Assignment Engine
  *
  * Triggered the moment a VendorOrderSplit's fulfillmentStatus → "ready_for_pickup".
- * Searches for the nearest available in-house DeliveryPartner within the configured
- * radius. If none found → triggers Porter fallback (F6).
+ *
+ * Routing Rules:
+ *   1. Heavy / Bulky (> 300 kg OR isBulky = true):
+ *      -> Routes directly to Porter (Tata Ace / Mini-Truck)
+ *   2. Medium (20 - 300 kg, non-bulky):
+ *      -> Routes directly to Porter (3-Wheeler Ape)
+ *   3. Light (0 - 20 kg, non-bulky):
+ *      -> Step 1: Search available in-house 2-wheeler riders within 5km radius.
+ *      -> Step 2: If no in-house rider available -> Fallback to Borzo Bike API
+ *                 (or Porter Bike fallback).
  *
  * Side effects:
- *   - Assigns rider to Order (deliveryPartnerId, deliveryAssignedAt)
- *   - Sets DeliveryPartner.status = "on_delivery"
- *   - Sends push notification to rider with vendor pickup location
- *   - On fallback: books Porter, stores thirdPartyRef on VendorOrderSplit
+ *   - Updates VendorOrderSplit (carrierName, vehicleType, thirdPartyRef, thirdPartyProvider)
+ *   - Dispatches navigation push to in-house rider OR books 3rd-party delivery
+ *   - Broadcasts real-time Socket.IO events to admin and customer rooms
  */
 export async function autoAssignNearestRider(
   vendorId: string,
@@ -23,6 +30,8 @@ export async function autoAssignNearestRider(
   splitId: string
 ): Promise<{
   assigned: boolean;
+  carrier?: string;
+  vehicleType?: string;
   riderId?: string;
   riderName?: string;
   distanceKm?: number;
@@ -31,7 +40,21 @@ export async function autoAssignNearestRider(
   error?: string;
 }> {
   try {
-    // 1. Load vendor to get pickup coordinates
+    // 1. Load VendorOrderSplit metadata (weight & bulkiness)
+    const split = await prisma.vendorOrderSplit.findUnique({
+      where: { id: splitId },
+      select: {
+        id: true,
+        totalWeightKg: true,
+        isBulky: true,
+        vehicleType: true,
+      },
+    });
+
+    const totalWeightKg = split?.totalWeightKg ?? 2.5;
+    const isBulky = split?.isBulky ?? false;
+
+    // 2. Load vendor to get pickup coordinates
     const vendor = await prisma.vendor.findUnique({
       where: { id: vendorId },
       select: {
@@ -50,12 +73,12 @@ export async function autoAssignNearestRider(
 
     if (vendor.latitude == null || vendor.longitude == null) {
       console.warn(
-        `[RiderAssign] Vendor ${vendorId} has no GPS — cannot auto-assign rider for order ${orderId}`
+        `[CarrierRouting] Vendor ${vendorId} has no GPS — cannot auto-assign carrier for order ${orderId}`
       );
       return { assigned: false, error: "Vendor GPS coordinates missing" };
     }
 
-    // 2. Load order for customer drop coordinates
+    // 3. Load order for customer drop coordinates
     const order = await prisma.order.findUnique({
       where: { id: orderId },
       select: {
@@ -77,7 +100,52 @@ export async function autoAssignNearestRider(
       return { assigned: false, error: "Order not found" };
     }
 
-    // 3. Find all available in-house riders
+    const safeVendor = {
+      ...vendor,
+      latitude: vendor.latitude!,
+      longitude: vendor.longitude!,
+    };
+
+    // ── F8: WEIGHT-BASED CARRIER ROUTING ENGINE ─────────────────────────────
+
+    // TIER 3: Heavy / Bulky (> 300kg or isBulky) -> Porter Tata Ace / Mini-Truck
+    if (isBulky || totalWeightKg > 300) {
+      console.info(
+        `[CarrierRouting] Order ${orderId} Split ${splitId}: Weight ${totalWeightKg}kg (Bulky: ${isBulky}) -> Routing to Porter (Tata Ace)`
+      );
+      const booking = await routeToPorterVehicle(safeVendor, order, splitId, "small-truck", "tata-ace");
+      return {
+        assigned: false,
+        carrier: "porter",
+        vehicleType: "tata-ace",
+        fallbackTriggered: true,
+        fallbackBookingId: booking.bookingId,
+        error: booking.error,
+      };
+    }
+
+    // TIER 2: Medium (20 - 300kg) -> Porter 3-Wheeler (Ape)
+    if (totalWeightKg > 20) {
+      console.info(
+        `[CarrierRouting] Order ${orderId} Split ${splitId}: Weight ${totalWeightKg}kg -> Routing to Porter (3-Wheeler)`
+      );
+      const booking = await routeToPorterVehicle(safeVendor, order, splitId, "3-wheeler-auto", "3-wheeler");
+      return {
+        assigned: false,
+        carrier: "porter",
+        vehicleType: "3-wheeler",
+        fallbackTriggered: true,
+        fallbackBookingId: booking.bookingId,
+        error: booking.error,
+      };
+    }
+
+    // TIER 1: Light (0 - 20kg, non-bulky) -> In-House Rider with Borzo Bike Fallback
+    console.info(
+      `[CarrierRouting] Order ${orderId} Split ${splitId}: Weight ${totalWeightKg}kg -> Attempting In-House Rider Search`
+    );
+
+    // 4. Find all available in-house riders
     const availableRiders = await prisma.deliveryPartner.findMany({
       where: { status: "available", isActive: true },
       select: {
@@ -92,7 +160,6 @@ export async function autoAssignNearestRider(
       },
     });
 
-    // Normalise lat/lng field names to match filterWithinRadius expectations
     const candidatesWithCoords = availableRiders
       .filter((r) => r.currentLatitude != null && r.currentLongitude != null)
       .map((r) => ({
@@ -101,42 +168,33 @@ export async function autoAssignNearestRider(
         longitude: r.currentLongitude,
       }));
 
-    // 4. Find riders within RIDER_SEARCH_RADIUS_KM of vendor
     const nearbyRiders = filterWithinRadius(
-      vendor.latitude,
-      vendor.longitude,
+      safeVendor.latitude,
+      safeVendor.longitude,
       candidatesWithCoords,
       DELIVERY_CONFIG.RIDER_SEARCH_RADIUS_KM
     );
 
+    // In-House Rider NOT available -> Fallback to Borzo Bike API
     if (nearbyRiders.length === 0) {
       console.warn(
-        `[RiderAssign] No available rider within ${DELIVERY_CONFIG.RIDER_SEARCH_RADIUS_KM} km of vendor ${vendorId} — triggering Porter fallback`
+        `[CarrierRouting] No in-house rider within ${DELIVERY_CONFIG.RIDER_SEARCH_RADIUS_KM}km -> Triggering Borzo Bike fallback`
       );
-      // Trigger third-party fallback
-      const fallbackResult = await triggerThirdPartyFallback(
-        {
-          ...vendor,
-          latitude: vendor.latitude!,
-          longitude: vendor.longitude!,
-        },
-        order,
-        splitId
-      );
+      const fallbackResult = await routeToBorzoBike(safeVendor, order, splitId, totalWeightKg);
       return {
         assigned: false,
+        carrier: fallbackResult.carrier || "borzo",
+        vehicleType: "bike",
         fallbackTriggered: true,
         fallbackBookingId: fallbackResult.bookingId,
         error: fallbackResult.error,
       };
-
     }
 
-    // 5. Assign nearest rider
+    // In-House Rider FOUND -> Assign nearest rider
     const { candidate: nearestRider, distanceKm } = nearbyRiders[0];
 
     await prisma.$transaction([
-      // Assign rider to order
       prisma.order.update({
         where: { id: orderId },
         data: {
@@ -145,33 +203,37 @@ export async function autoAssignNearestRider(
           orderStatus: "Dispatched",
         },
       }),
-      // Mark rider as on_delivery
       prisma.deliveryPartner.update({
         where: { id: nearestRider.id },
         data: { status: "on_delivery" },
       }),
+      prisma.vendorOrderSplit.update({
+        where: { id: splitId },
+        data: {
+          thirdPartyProvider: "in_house",
+          vehicleType: "bike",
+        },
+      }),
     ]);
 
-    // 6. Push notification to rider with BOTH pickup (vendor) and drop (customer) details
+    // Push notification to in-house rider with pickup & drop directions
     try {
       const { sendPushToUser } = await import("@/lib/push-notifications");
       if (nearestRider.userId) {
-        const vendorNavUrl = vendor.latitude && vendor.longitude
-          ? `https://www.google.com/maps/dir/?api=1&destination=${vendor.latitude},${vendor.longitude}`
-          : null;
+        const vendorNavUrl = `https://www.google.com/maps/dir/?api=1&destination=${safeVendor.latitude},${safeVendor.longitude}`;
 
         await sendPushToUser(nearestRider.userId, {
-          title: `📦 New Pickup — ${vendor.businessName}`,
-          body: `Order #${orderId}: Pickup from ${vendor.businessName}${vendor.businessAddress ? ` — ${vendor.businessAddress}` : ""}. Deliver to ${order.deliveryName || order.customerName}.`,
+          title: `📦 New Pickup (${totalWeightKg}kg) — ${safeVendor.businessName}`,
+          body: `Order #${orderId.slice(-6)}: Pickup from ${safeVendor.businessName}. Deliver to ${order.deliveryName || order.customerName}.`,
           data: {
             type: "rider_assigned",
             orderId,
             splitId,
             vendorId,
-            vendorName: vendor.businessName,
-            vendorAddress: vendor.businessAddress,
-            vendorLat: vendor.latitude,
-            vendorLng: vendor.longitude,
+            vendorName: safeVendor.businessName,
+            vendorAddress: safeVendor.businessAddress,
+            vendorLat: safeVendor.latitude,
+            vendorLng: safeVendor.longitude,
             vendorNavUrl,
             customerName: order.deliveryName || order.customerName,
             customerAddress: order.deliveryAddress,
@@ -184,7 +246,7 @@ export async function autoAssignNearestRider(
       console.warn("[RiderAssign] Push notification to rider failed:", pushErr);
     }
 
-    // 7. Socket broadcast — admin room gets real-time rider assignment update
+    // Socket broadcasts
     try {
       const { emitSocketEvent } = await import("@/lib/socket-server-emit");
       await emitSocketEvent({
@@ -195,6 +257,8 @@ export async function autoAssignNearestRider(
           splitId,
           riderId: nearestRider.id,
           riderName: nearestRider.name,
+          carrier: "in_house",
+          vehicleType: "bike",
           distanceKm: distanceKm.toFixed(2),
           vendorId,
         },
@@ -206,6 +270,7 @@ export async function autoAssignNearestRider(
           orderId,
           orderStatus: "Dispatched",
           riderAssigned: true,
+          carrier: "in_house",
           riderName: nearestRider.name,
           riderPhone: nearestRider.phone,
         },
@@ -214,27 +279,25 @@ export async function autoAssignNearestRider(
       console.warn("[RiderAssign] Socket emit failed:", socketErr);
     }
 
-    console.info(
-      `[RiderAssign] Rider ${nearestRider.name} (${nearestRider.id}) assigned to order ${orderId} — ${distanceKm.toFixed(2)} km from vendor`
-    );
-
     return {
       assigned: true,
+      carrier: "in_house",
+      vehicleType: "bike",
       riderId: nearestRider.id,
       riderName: nearestRider.name,
       distanceKm,
     };
   } catch (error: any) {
-    console.error("[RiderAssign] autoAssignNearestRider error:", error);
+    console.error("[CarrierRouting] autoAssignNearestRider error:", error);
     return { assigned: false, error: error?.message || "Auto-assignment failed" };
   }
 }
 
 /**
- * Triggers Porter (or configured third-party) delivery booking as fallback.
- * Called when no in-house rider is within range.
+ * Routes delivery to Borzo (WeFast) Bike API for light packages (0-20kg).
+ * If Borzo fails or is not configured, gracefully falls back to Porter Bike.
  */
-async function triggerThirdPartyFallback(
+async function routeToBorzoBike(
   vendor: {
     id: string;
     businessName: string;
@@ -256,7 +319,91 @@ async function triggerThirdPartyFallback(
     deliveryName: string | null;
     deliveryPhone: string | null;
   },
-  splitId: string
+  splitId: string,
+  weightKg: number
+): Promise<{ bookingId?: string; carrier?: string; error?: string }> {
+  try {
+    const { createBorzoDelivery } = await import("@/lib/delivery/borzo");
+
+    const borzoResult = await createBorzoDelivery({
+      pickup: {
+        address: vendor.businessAddress || vendor.businessName,
+        lat: vendor.latitude,
+        lng: vendor.longitude,
+        contact_name: vendor.businessName,
+        contact_phone: vendor.contactPhone,
+      },
+      drop: {
+        address: order.deliveryAddress || order.customerName,
+        lat: order.deliveryLatitude || undefined,
+        lng: order.deliveryLongitude || undefined,
+        contact_name: order.deliveryName || order.customerName,
+        contact_phone: order.deliveryPhone || order.customerPhone,
+      },
+      order_id: order.id,
+      total_weight_kg: weightKg,
+    });
+
+    if (borzoResult.success && borzoResult.bookingId) {
+      await prisma.vendorOrderSplit.update({
+        where: { id: splitId },
+        data: {
+          thirdPartyRef: borzoResult.bookingId,
+          thirdPartyProvider: "borzo",
+          vehicleType: "bike",
+        },
+      });
+
+      try {
+        const { notifyAdminPush } = await import("@/lib/push-notifications");
+        await notifyAdminPush({
+          title: `🛵 Borzo Bike Booked — Order #${order.id.slice(-6)}`,
+          body: `Light order (${weightKg}kg) sent via Borzo Bike. Booking: ${borzoResult.bookingId}`,
+          data: { orderId: order.id, type: "borzo_booked", bookingId: borzoResult.bookingId },
+        });
+      } catch {}
+
+      return { bookingId: borzoResult.bookingId, carrier: "borzo" };
+    }
+
+    // If Borzo returned error, fall back to Porter Bike
+    console.warn(`[CarrierRouting] Borzo booking failed (${borzoResult.error}) — falling back to Porter Bike`);
+    const porterResult = await routeToPorterVehicle(vendor, order, splitId, "bike", "bike");
+    return { ...porterResult, carrier: "porter" };
+  } catch (err: any) {
+    console.error("[CarrierRouting] routeToBorzoBike error:", err);
+    return { error: err?.message };
+  }
+}
+
+/**
+ * Routes delivery to Porter with a specific vehicle type (3-Wheeler or Tata Ace).
+ */
+async function routeToPorterVehicle(
+  vendor: {
+    id: string;
+    businessName: string;
+    businessAddress: string | null;
+    contactPhone: string;
+    latitude: number;
+    longitude: number;
+  },
+  order: {
+    id: string;
+    customerName: string;
+    customerPhone: string;
+    deliveryLatitude: number | null;
+    deliveryLongitude: number | null;
+    deliveryAddress: string | null;
+    deliveryCity: string | null;
+    deliveryState: string | null;
+    deliveryPostalCode: string | null;
+    deliveryName: string | null;
+    deliveryPhone: string | null;
+  },
+  splitId: string,
+  porterVehicle: "bike" | "3-wheeler-auto" | "small-truck" | "large-truck",
+  vehicleLabel: string
 ): Promise<{ bookingId?: string; error?: string }> {
   try {
     if (!order.deliveryLatitude || !order.deliveryLongitude) {
@@ -264,7 +411,6 @@ async function triggerThirdPartyFallback(
     }
 
     const { createPorterDelivery } = await import("@/lib/delivery/porter");
-    const { DELIVERY_CONFIG } = await import("@/lib/delivery/config");
 
     const result = await createPorterDelivery({
       pickup: {
@@ -305,37 +451,36 @@ async function triggerThirdPartyFallback(
         mobile: { country_code: "+91", mobile: order.customerPhone.replace(/\D/g, "").slice(-10) },
       },
       order_id: order.id,
-      vehicle_type: "bike",
-      notes: `IntriHub building materials delivery — Order #${order.id}`,
+      vehicle_type: porterVehicle,
+      notes: `IntriHub delivery — Vehicle: ${vehicleLabel} — Order #${order.id}`,
     });
 
     if (result.success && result.bookingId) {
-      // Store Porter booking reference on the split
       await prisma.vendorOrderSplit.update({
         where: { id: splitId },
         data: {
           thirdPartyRef: result.bookingId,
-          thirdPartyProvider: DELIVERY_CONFIG.THIRD_PARTY_PROVIDER,
+          thirdPartyProvider: "porter",
+          vehicleType: vehicleLabel,
         },
       });
 
-      // Notify admin about Porter fallback
       try {
         const { notifyAdminPush } = await import("@/lib/push-notifications");
         await notifyAdminPush({
-          title: `🚗 Porter Fallback — Order #${order.id}`,
-          body: `No in-house rider found. Porter booked: ${result.bookingId}`,
-          data: { orderId: order.id, type: "porter_fallback", bookingId: result.bookingId },
+          title: `🚚 Porter (${vehicleLabel}) Booked — Order #${order.id.slice(-6)}`,
+          body: `Order booked on Porter (${vehicleLabel}). Booking ID: ${result.bookingId}`,
+          data: { orderId: order.id, type: "porter_booked", bookingId: result.bookingId, vehicleLabel },
         });
       } catch {}
 
       return { bookingId: result.bookingId };
     } else {
-      console.error("[RiderAssign] Porter fallback failed:", result.error);
+      console.error(`[CarrierRouting] Porter (${vehicleLabel}) booking failed:`, result.error);
       return { error: result.error };
     }
   } catch (error: any) {
-    console.error("[RiderAssign] triggerThirdPartyFallback error:", error);
+    console.error(`[CarrierRouting] routeToPorterVehicle error:`, error);
     return { error: error?.message };
   }
 }

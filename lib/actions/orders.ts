@@ -403,6 +403,8 @@ export async function createOrder(input: CreateOrderInput) {
           where: { id: { in: productIds } },
           select: {
             id: true,
+            weightKg: true,
+            isBulky: true,
             vendorId: true,
             vendor: {
               select: {
@@ -421,27 +423,39 @@ export async function createOrder(input: CreateOrderInput) {
 
         const productVendorMap = new Map<
           string,
-          { vendorId: string; commissionRate: number; deliveryMethod: string; autoAcceptOrders: boolean }
+          {
+            vendorId: string;
+            commissionRate: number;
+            deliveryMethod: string;
+            autoAcceptOrders: boolean;
+            weightKg: number;
+            isBulky: boolean;
+          }
         >();
         for (const p of dbProducts) {
           if (p.vendorId && p.vendor) {
-            // F2: Geo-fencing — if customer has GPS and vendor has coordinates, use nearest
-            // (Currently single-vendor per product; multi-vendor support ready via findNearestVendorBatch)
-            const resolvedVendorId = p.vendorId; // single-vendor: always this vendor
-
             productVendorMap.set(p.id, {
-              vendorId: resolvedVendorId,
+              vendorId: p.vendorId,
               commissionRate: p.vendor.commissionRate ?? 15,
               deliveryMethod: p.vendor.deliveryMethod || "self",
               autoAcceptOrders: p.vendor.autoAcceptOrders ?? false,
+              weightKg: p.weightKg || 2.5, // default 2.5kg if unspecified
+              isBulky: Boolean(p.isBulky),
             });
           }
         }
 
-        // Group items by vendor
+        // Group items by vendor with weight & bulkiness calculation (F8)
         const vendorSubtotals = new Map<
           string,
-          { subtotal: number; commissionRate: number; deliveryMethod: string; autoAccept: boolean }
+          {
+            subtotal: number;
+            commissionRate: number;
+            deliveryMethod: string;
+            autoAccept: boolean;
+            totalWeightKg: number;
+            hasBulkyItem: boolean;
+          }
         >();
         for (const item of verifiedItems) {
           const vInfo = productVendorMap.get(item.productId);
@@ -451,14 +465,21 @@ export async function createOrder(input: CreateOrderInput) {
               commissionRate: vInfo.commissionRate,
               deliveryMethod: vInfo.deliveryMethod,
               autoAccept: vInfo.autoAcceptOrders,
+              totalWeightKg: 0,
+              hasBulkyItem: false,
             };
+            const itemWeight = (vInfo.weightKg || 2.5) * (item.boxQuantity || 1);
             current.subtotal += item.totalPrice;
+            current.totalWeightKg += itemWeight;
+            if (vInfo.isBulky) current.hasBulkyItem = true;
             vendorSubtotals.set(vInfo.vendorId, current);
           }
         }
 
         // Create VendorOrderSplit records
-        const { DELIVERY_CONFIG } = await import("@/lib/delivery/config").catch(() => ({ DELIVERY_CONFIG: { PACKING_SLA_MINUTES: 10 } }));
+        const { DELIVERY_CONFIG } = await import("@/lib/delivery/config").catch(() => ({
+          DELIVERY_CONFIG: { PACKING_SLA_MINUTES: 10 },
+        }));
 
         for (const [vId, vData] of vendorSubtotals.entries()) {
           // F3: Auto-Accept — check platform setting OR per-vendor opt-in
@@ -470,6 +491,14 @@ export async function createOrder(input: CreateOrderInput) {
           const packingDeadline = shouldAutoAccept
             ? new Date(now.getTime() + (DELIVERY_CONFIG as any).PACKING_SLA_MINUTES * 60 * 1000)
             : null;
+
+          // F8: Initial vehicle recommendation based on weight & bulkiness
+          let initialVehicle = "bike";
+          if (vData.hasBulkyItem || vData.totalWeightKg > 300) {
+            initialVehicle = "tata-ace";
+          } else if (vData.totalWeightKg > 20) {
+            initialVehicle = "3-wheeler";
+          }
 
           await tx.vendorOrderSplit.create({
             data: {
@@ -485,6 +514,10 @@ export async function createOrder(input: CreateOrderInput) {
               // F4: SLA timer — pre-populated when auto-accepted
               acceptedAt,
               packingDeadline,
+              // F8: Weight-based routing metadata
+              totalWeightKg: Number(vData.totalWeightKg.toFixed(2)),
+              isBulky: vData.hasBulkyItem,
+              vehicleType: initialVehicle,
             },
           });
         }

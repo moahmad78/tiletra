@@ -60,6 +60,8 @@ export async function createVendorProduct(data: {
   size?: string;
   usage?: string;
   look?: string;
+  weightKg?: number;
+  isBulky?: boolean;
   status?: "active" | "paused" | "draft";
   variants?: any[];
 }): Promise<{
@@ -92,6 +94,8 @@ export async function updateVendorProduct(
     thickness: string;
     usage: string;
     look: string;
+    weightKg: number;
+    isBulky: boolean;
     status: "active" | "paused" | "draft";
   }>
 ): Promise<{

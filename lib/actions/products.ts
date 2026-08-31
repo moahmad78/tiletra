@@ -27,6 +27,7 @@ export type CreateProductInput = {
   piecesPerUnit?: number | null;
   lengthPerUnit?: number | null;
   weightKg?: number | null;
+  isBulky?: boolean;
   minOrderQuantity?: number;
   maxOrderQuantity?: number | null;
   incrementQuantity?: number;
@@ -459,6 +460,7 @@ export async function createProduct(input: CreateProductInput) {
         piecesPerUnit: input.piecesPerUnit !== undefined && input.piecesPerUnit !== null ? Number(input.piecesPerUnit) : (primaryVariant.piecesPerBox ? Number(primaryVariant.piecesPerBox) : null),
         lengthPerUnit: input.lengthPerUnit !== undefined && input.lengthPerUnit !== null ? Number(input.lengthPerUnit) : null,
         weightKg: input.weightKg !== undefined && input.weightKg !== null ? Number(input.weightKg) : (primaryVariant.weightKg ? Number(primaryVariant.weightKg) : null),
+        isBulky: Boolean(input.isBulky),
         minOrderQuantity: input.minOrderQuantity !== undefined && input.minOrderQuantity !== null ? Number(input.minOrderQuantity) : 1,
         maxOrderQuantity: input.maxOrderQuantity !== undefined && input.maxOrderQuantity !== null ? Number(input.maxOrderQuantity) : null,
         incrementQuantity: input.incrementQuantity !== undefined && input.incrementQuantity !== null ? Number(input.incrementQuantity) : 1,
@@ -718,6 +720,7 @@ export async function updateProduct(id: string, input: Partial<CreateProductInpu
     if (input.piecesPerUnit !== undefined) updateData.piecesPerUnit = input.piecesPerUnit !== null ? Number(input.piecesPerUnit) : null;
     if (input.lengthPerUnit !== undefined) updateData.lengthPerUnit = input.lengthPerUnit !== null ? Number(input.lengthPerUnit) : null;
     if (input.weightKg !== undefined) updateData.weightKg = input.weightKg !== null ? Number(input.weightKg) : null;
+    if (input.isBulky !== undefined) updateData.isBulky = Boolean(input.isBulky);
     if (input.minOrderQuantity !== undefined) updateData.minOrderQuantity = Number(input.minOrderQuantity);
     if (input.maxOrderQuantity !== undefined) updateData.maxOrderQuantity = input.maxOrderQuantity !== null ? Number(input.maxOrderQuantity) : null;
     if (input.incrementQuantity !== undefined) updateData.incrementQuantity = Number(input.incrementQuantity);
