@@ -152,13 +152,15 @@ export async function matchCatalogProducts(
     // ── TIER 3: LOW CONFIDENCE / NO MATCH (< 0.50) ──
     // Surface In-Stock Alternatives from same category and log to UnmatchedScanLog
     const categoryFilter = extractedInfo.categoryGuess || "tiles-stone";
-    const rawAlternatives = await prisma.product.findMany({
+    let rawAlternatives = await prisma.product.findMany({
       where: {
         status: { not: "draft" },
         OR: [
           { categorySlug: categoryFilter },
           { categorySlug: "tiles-stone" },
-          { categorySlug: "flooring" },
+          { categorySlug: "paint-finishes" },
+          { categorySlug: "plumbing-sanitary" },
+          { categorySlug: "electrical" },
         ],
       },
       include: {
@@ -170,6 +172,14 @@ export async function matchCatalogProducts(
       orderBy: { rating: "desc" },
     });
 
+    if (rawAlternatives.length === 0) {
+      rawAlternatives = await prisma.product.findMany({
+        where: { status: { not: "draft" } },
+        include: { variants: { orderBy: { createdAt: "asc" } } },
+        take: 6,
+      });
+    }
+
     const formattedAlternatives = rawAlternatives.map((p) => formatProduct(p));
 
     // Asynchronously log unmatched scan to UnmatchedScanLog for Demand Intelligence
@@ -177,7 +187,7 @@ export async function matchCatalogProducts(
       if ((prisma as any).unmatchedScanLog) {
         await (prisma as any).unmatchedScanLog.create({
           data: {
-            extractedText: extractedInfo.rawText || extractedInfo.cleanQuery || "Empty Scan",
+            extractedText: extractedInfo.rawText || extractedInfo.cleanQuery || "Unmatched Scan",
             detectedBrand: extractedInfo.detectedBrand,
             categoryGuess: extractedInfo.categoryGuess,
             userId: userId || null,
@@ -185,10 +195,13 @@ export async function matchCatalogProducts(
         });
       }
     } catch (logErr) {
-      console.error("Failed to log unmatched scan:", logErr);
+      console.error("[Lens Matcher] Failed to log unmatched scan:", logErr);
     }
 
-    const brandDisplay = extractedInfo.detectedBrand || "The scanned product";
+    const brandDisplay = extractedInfo.detectedBrand 
+      ? `"${extractedInfo.detectedBrand}"` 
+      : "This item";
+
     return {
       matched: false,
       confidence: topCandidate ? topCandidate.score : 0,
@@ -197,10 +210,10 @@ export async function matchCatalogProducts(
       matchedProduct: null,
       possibleMatches: [],
       alternatives: formattedAlternatives,
-      message: `${brandDisplay} is not available on IntriHub right now. Here are verified in-stock alternatives:`,
+      message: `${brandDisplay} isn't listed on IntriHub yet. Here are verified in-stock alternatives in our catalog:`,
     };
   } catch (err) {
-    console.error("Error matching catalog products:", err);
+    console.error("[Lens Matcher] Error matching catalog products:", err);
     return {
       matched: false,
       confidence: 0,

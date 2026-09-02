@@ -44,6 +44,8 @@ export async function POST(req: NextRequest) {
       );
     }
 
+    console.log(`[Mobile Scan API] Processing scan request (IP: ${ip})`);
+
     let imageBuffer: Buffer | null = null;
     let rawExtractedText: string = text || "";
     let detectedLabels: string[] = [];
@@ -54,37 +56,36 @@ export async function POST(req: NextRequest) {
     }
 
     if (imageBuffer && imageBuffer.length > 0) {
+      console.log(`[Mobile Scan API] Image buffer received (${imageBuffer.length} bytes). Invoking visual analysis engine...`);
       const visualData = await extractProductVisualData(imageBuffer);
       if (visualData.rawText && visualData.rawText.trim().length > 0) {
         rawExtractedText = visualData.rawText;
       }
       detectedLabels = visualData.labels || [];
-    }
-
-    if (!rawExtractedText || rawExtractedText.trim().length === 0) {
-      return NextResponse.json(
-        {
-          matched: false,
-          confidence: 0,
-          message: "No readable text detected. Please aim at the product name or packaging label.",
-          extractedInfo: null,
-          matchedProduct: null,
-          alternatives: [],
-        },
-        { status: 200 }
-      );
+      console.log(`[Mobile Scan API] Visual analysis complete. Text length: ${rawExtractedText.length}, Labels: ${detectedLabels.length}`);
     }
 
     const extractedInfo = normalizeExtractedText(rawExtractedText, detectedLabels);
     const matchResult = await matchCatalogProducts(extractedInfo, userId);
 
+    if ((!rawExtractedText || rawExtractedText.trim().length === 0) && !matchResult.matched) {
+      matchResult.message = "No packaging text detected. Ensure good lighting and center the label, or browse verified in-stock materials below:";
+    }
+
     return NextResponse.json(matchResult, { status: 200 });
   } catch (err: any) {
-    console.error("Mobile Scan API Error:", err);
+    console.error("[Mobile Scan API] Error:", err);
     return NextResponse.json(
       {
         matched: false,
+        confidence: 0,
+        confidenceTier: "low",
+        extractedInfo: null,
+        matchedProduct: null,
+        possibleMatches: [],
+        alternatives: [],
         error: err.message || "Failed to process mobile scan",
+        message: "Something went wrong while analyzing the scan. Please try again.",
       },
       { status: 500 }
     );

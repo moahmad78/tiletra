@@ -121,6 +121,7 @@ export interface ExtractedProductInfo {
 export async function preprocessImageForOcr(imageBuffer: Buffer): Promise<Buffer> {
   try {
     return await sharp(imageBuffer)
+      .rotate() // Auto-orient based on EXIF orientation tag from mobile cameras
       .resize({ width: 1400, height: 1400, fit: "inside", withoutEnlargement: false })
       .grayscale()
       .normalize()
@@ -128,7 +129,7 @@ export async function preprocessImageForOcr(imageBuffer: Buffer): Promise<Buffer
       .png()
       .toBuffer();
   } catch (err) {
-    console.error("Error preprocessing image for OCR:", err);
+    console.error("[Lens OCR] Error preprocessing image for OCR:", err);
     return imageBuffer;
   }
 }
@@ -138,9 +139,13 @@ export async function preprocessImageForOcr(imageBuffer: Buffer): Promise<Buffer
  */
 async function callGoogleVisionApi(imageBuffer: Buffer): Promise<{ text: string; labels: string[] } | null> {
   const apiKey = process.env.GOOGLE_VISION_API_KEY || process.env.GOOGLE_CLOUD_VISION_API_KEY;
-  if (!apiKey) return null;
+  if (!apiKey) {
+    console.log("[Lens Vision API] No GOOGLE_VISION_API_KEY configured in environment. Using local OCR engine.");
+    return null;
+  }
 
   try {
+    console.log(`[Lens Vision API] Calling Google Cloud Vision API (Key: ${apiKey.substring(0, 6)}...)...`);
     const base64Image = imageBuffer.toString("base64");
     const response = await fetch(`https://vision.googleapis.com/v1/images:annotate?key=${apiKey}`, {
       method: "POST",
@@ -159,20 +164,31 @@ async function callGoogleVisionApi(imageBuffer: Buffer): Promise<{ text: string;
     });
 
     if (!response.ok) {
-      console.warn("Google Vision API returned non-OK status:", response.status);
+      let errorBody = "";
+      try {
+        const errorJson = await response.json();
+        errorBody = JSON.stringify(errorJson?.error || errorJson);
+      } catch {
+        errorBody = await response.text();
+      }
+      console.warn(`[Lens Vision API] Google Vision API returned non-OK HTTP ${response.status} (${response.statusText}): ${errorBody}`);
       return null;
     }
 
     const data = await response.json();
     const result = data.responses?.[0];
-    if (!result) return null;
+    if (!result) {
+      console.warn("[Lens Vision API] Empty response from Google Vision API");
+      return null;
+    }
 
     const text = result.fullTextAnnotation?.text || result.textAnnotations?.[0]?.description || "";
     const labels = (result.labelAnnotations || []).map((l: any) => (l.description || "").toLowerCase());
 
+    console.log(`[Lens Vision API] Vision API success! Extracted ${text.length} chars text, ${labels.length} labels: [${labels.slice(0, 5).join(", ")}]`);
     return { text, labels };
-  } catch (err) {
-    console.error("Google Vision API error:", err);
+  } catch (err: any) {
+    console.error("[Lens Vision API] Exception calling Google Vision API:", err?.message || err);
     return null;
   }
 }
@@ -183,25 +199,38 @@ async function callGoogleVisionApi(imageBuffer: Buffer): Promise<{ text: string;
 export async function extractProductVisualData(
   imageBuffer: Buffer
 ): Promise<{ rawText: string; labels: string[] }> {
+  let gVisionLabels: string[] = [];
+
   // 1. Attempt Google Cloud Vision API (Combined OCR + Label Detection)
-  const gVisionResult = await callGoogleVisionApi(imageBuffer);
-  if (gVisionResult && gVisionResult.text.trim().length > 0) {
-    return {
-      rawText: gVisionResult.text,
-      labels: gVisionResult.labels,
-    };
+  try {
+    const gVisionResult = await callGoogleVisionApi(imageBuffer);
+    if (gVisionResult) {
+      gVisionLabels = gVisionResult.labels || [];
+      if (gVisionResult.text && gVisionResult.text.trim().length > 0) {
+        return {
+          rawText: gVisionResult.text,
+          labels: gVisionLabels,
+        };
+      }
+    }
+  } catch (visionErr) {
+    console.warn("[Lens Engine] Google Vision call failed, falling back to local OCR:", visionErr);
   }
 
   // 2. Fallback to local Sharp + Tesseract OCR
+  console.log("[Lens Engine] Executing local Sharp + Tesseract OCR fallback...");
   let worker: any = null;
   try {
     const preprocessed = await preprocessImageForOcr(imageBuffer);
     worker = await createWorker("eng");
     const ret = await worker.recognize(preprocessed);
     await worker.terminate();
+
+    const localText = ret.data?.text || "";
+    console.log(`[Lens Engine] Local OCR finished. Extracted ${localText.length} chars text.`);
     return {
-      rawText: ret.data.text || "",
-      labels: [],
+      rawText: localText,
+      labels: gVisionLabels,
     };
   } catch (err) {
     if (worker) {
@@ -209,8 +238,8 @@ export async function extractProductVisualData(
         await worker.terminate();
       } catch {}
     }
-    console.error("Local OCR recognition error:", err);
-    return { rawText: "", labels: [] };
+    console.error("[Lens Engine] Local OCR recognition error:", err);
+    return { rawText: "", labels: gVisionLabels };
   }
 }
 

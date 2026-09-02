@@ -71,46 +71,51 @@ export async function POST(req: NextRequest) {
       );
     }
 
+    console.log(`[Scan API] Processing scan request (Content-Type: ${contentType || "json"}, IP: ${ip})`);
+
     let rawExtractedText = fallbackText;
     let detectedLabels: string[] = [];
 
-    // Run OCR + Visual Label Analysis if image was provided
+    // Step 1: Run OCR + Visual Label Analysis if image was provided
     if (imageBuffer && imageBuffer.length > 0) {
+      console.log(`[Scan API] Image buffer received (${imageBuffer.length} bytes). Invoking visual analysis engine...`);
       const visualData = await extractProductVisualData(imageBuffer);
       if (visualData.rawText && visualData.rawText.trim().length > 0) {
         rawExtractedText = visualData.rawText;
       }
       detectedLabels = visualData.labels || [];
+      console.log(`[Scan API] Visual analysis complete. Extracted text length: ${rawExtractedText.length}, Labels: ${detectedLabels.length}`);
+    } else {
+      console.log(`[Scan API] Text-only payload provided: "${fallbackText}"`);
     }
 
-    if (!rawExtractedText || rawExtractedText.trim().length === 0) {
-      return NextResponse.json(
-        {
-          matched: false,
-          confidence: 0,
-          message: "No readable text or packaging could be identified. Please ensure good lighting and clear product labels.",
-          extractedInfo: null,
-          matchedProduct: null,
-          alternatives: [],
-        },
-        { status: 200 }
-      );
-    }
-
-    // Normalize and extract brand, grade, packaging & label insights
+    // Step 2: Normalize and extract brand, grade, packaging & label insights
     const extractedInfo = normalizeExtractedText(rawExtractedText, detectedLabels);
+    console.log(`[Scan API] Normalized info: Brand="${extractedInfo.detectedBrand}", Series="${extractedInfo.detectedSeries}", Category="${extractedInfo.categoryGuess}", Keywords=[${extractedInfo.keywords.slice(0, 5).join(", ")}]`);
 
-    // Match against catalog
+    // Step 3: Match against catalog (even if text is empty, returns category alternatives)
     const matchResult = await matchCatalogProducts(extractedInfo, userId);
+    console.log(`[Scan API] Catalog match complete. Matched: ${matchResult.matched}, Tier: ${matchResult.confidenceTier}, Confidence: ${Math.round(matchResult.confidence * 100)}%, Product: "${matchResult.matchedProduct?.name || "None"}", Alternatives: ${matchResult.alternatives.length}`);
+
+    // If no text was recognized and it wasn't matched, provide a clear instructional message with the alternatives
+    if ((!rawExtractedText || rawExtractedText.trim().length === 0) && !matchResult.matched) {
+      matchResult.message = "No packaging text could be recognized clearly. Ensure good lighting and center the label, or browse verified in-stock materials below:";
+    }
 
     return NextResponse.json(matchResult, { status: 200 });
   } catch (err: any) {
-    console.error("Scan API Error:", err);
+    console.error("[Scan API] Uncaught scan error:", err);
     return NextResponse.json(
       {
         matched: false,
+        confidence: 0,
+        confidenceTier: "low",
+        extractedInfo: null,
+        matchedProduct: null,
+        possibleMatches: [],
+        alternatives: [],
         error: err.message || "Failed to process scan",
-        message: "Something went wrong while analyzing the scan. Please try again.",
+        message: "Something went wrong while analyzing the scan. Please try again or use search.",
       },
       { status: 500 }
     );
