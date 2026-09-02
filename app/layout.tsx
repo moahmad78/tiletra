@@ -6,7 +6,6 @@ import { QuoteModalProvider } from "@/components/QuoteModalProvider";
 import CartDrawer from "@/components/cart/CartDrawer";
 import BottomTabBar from "@/components/BottomTabBar";
 import LoginModal from "@/components/auth/LoginModal";
-import ScanModal from "@/components/scan/ScanModal";
 import GoogleSessionHydrator from "@/components/auth/GoogleSessionHydrator";
 import GoogleAnalyticsTracker from "@/components/analytics/GoogleAnalyticsTracker";
 import AddToCartToast from "@/components/cart/AddToCartToast";
@@ -202,7 +201,6 @@ export default function RootLayout({
           <AddToCartToast />
           <BottomTabBar />
           <LoginModal />
-          <ScanModal />
           <PwaInstallPrompt />
           <Toaster position="top-center" richColors />
           <Suspense fallback={null}>

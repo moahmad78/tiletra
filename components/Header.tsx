@@ -3,12 +3,11 @@
 import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/Button";
 import { cn } from "@/lib/utils";
-import { Menu, X, MapPin, Phone, Mail, ShoppingCart, Search, Heart, User as UserIcon, Store, Sparkles, Camera } from "lucide-react";
+import { Menu, X, MapPin, Phone, Mail, ShoppingCart, Search, Heart, User as UserIcon, Store, Sparkles } from "lucide-react";
 import Link from "next/link";
 import { useCartStore } from "@/lib/cart-store";
 import { useWishlistStore } from "@/lib/wishlist-store";
 import { useAuthStore, useAuthStatus } from "@/lib/auth-store";
-import { useScanStore } from "@/lib/scan-store";
 import SearchModal from "@/components/SearchModal";
 import NotificationCenter from "@/components/notifications/NotificationCenter";
 import CategoryNavBar from "@/components/CategoryNavBar";
@@ -20,7 +19,6 @@ export default function Header() {
   const [searchOpen, setSearchOpen] = useState(false);
   const [mounted, setMounted] = useState(false);
 
-  const { openScan } = useScanStore();
   const authStatus = useAuthStatus();
   const { user, openLoginModal } = useAuthStore();
   const { toggleCart } = useCartStore();
@@ -112,7 +110,7 @@ export default function Header() {
               </Link>
             </div>
 
-            {/* Mobile Prominent Search Bar (Center) with Lens Camera Button */}
+            {/* Mobile Prominent Search Bar (Center) */}
             <div className="flex md:hidden flex-1 min-w-0">
               <div className="w-full h-9 bg-gray-100/90 hover:bg-gray-100 border border-gray-200/80 rounded-full px-3 flex items-center gap-2 text-left transition-all shadow-2xs group">
                 <button
@@ -126,19 +124,10 @@ export default function Header() {
                     Search tiles, wires, pipes...
                   </span>
                 </button>
-                <button
-                  type="button"
-                  onClick={() => openScan()}
-                  title="Scan & Find Products"
-                  aria-label="Scan physical product"
-                  className="p-1 text-gray-500 hover:text-[#F26522] transition-colors cursor-pointer"
-                >
-                  <Camera size={15} />
-                </button>
               </div>
             </div>
 
-            {/* Desktop Large Prominent Search Bar (Flipkart / Amazon Pattern) with Lens Camera Button */}
+            {/* Desktop Large Prominent Search Bar (Flipkart / Amazon Pattern) */}
             <div className="hidden md:flex flex-1 max-w-[520px] xl:max-w-[620px] mx-6">
               <div className="w-full h-11 bg-gray-50 hover:bg-gray-100/80 border border-gray-200 hover:border-[#F26522] rounded-2xl px-4 flex items-center justify-between text-left transition-all shadow-2xs group">
                 <button
@@ -151,16 +140,6 @@ export default function Header() {
                   <span className="truncate">Search tiles, electrical, plumbing, hardware, plywood, granite...</span>
                 </button>
                 <div className="flex items-center gap-2 shrink-0">
-                  <button
-                    type="button"
-                    onClick={() => openScan()}
-                    title="Scan & Find Physical Products"
-                    aria-label="Scan physical product"
-                    className="px-2 py-1 rounded-lg bg-orange-50 hover:bg-orange-100 text-[#F26522] text-[11px] font-bold flex items-center gap-1.5 transition-colors cursor-pointer"
-                  >
-                    <Camera size={14} />
-                    <span className="hidden xl:inline">Scan</span>
-                  </button>
                   <span className="text-[10px] font-bold text-gray-600 bg-white border border-gray-300 px-2 py-0.5 rounded-md shadow-2xs">
                     ⌘K
                   </span>

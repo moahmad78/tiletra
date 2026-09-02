@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from "react";
+import React, { useState, useEffect } from "react";
 import {
   View,
   Text,
@@ -8,8 +8,6 @@ import {
   TextInput,
   ScrollView,
   ActivityIndicator,
-  Alert,
-  Platform,
 } from "react-native";
 import {
   X,
@@ -20,19 +18,11 @@ import {
   Home,
   Briefcase,
   HardHat,
-  Compass,
-  Navigation,
-  Search,
-  Sparkles,
-  CheckCircle2,
   AlertCircle,
 } from "lucide-react-native";
-import * as Location from "expo-location";
 import { Address } from "../types";
 import { COLORS, SPACING, RADIUS, SHADOWS } from "../constants/theme";
 import { useAuthStore } from "../store/authStore";
-import { API_BASE_URL } from "../constants/config";
-import { InteractiveLocationMap } from "./InteractiveLocationMap";
 
 interface AddressModalProps {
   visible: boolean;
@@ -45,22 +35,6 @@ export const AddressModal: React.FC<AddressModalProps> = ({ visible, onClose, on
   const addresses: Address[] = user?.addresses || [];
   const [isAddingNew, setIsAddingNew] = useState(false);
   const [loading, setLoading] = useState(false);
-  const [locatingGps, setLocatingGps] = useState(false);
-  const [reverseGeocoding, setReverseGeocoding] = useState(false);
-
-  // Address Coordinates & Source
-  const [coords, setCoords] = useState<{ lat: number; lng: number }>({
-    lat: 12.9716,
-    lng: 77.5946,
-  });
-  const [accuracy, setAccuracy] = useState<number | null>(null);
-  const [source, setSource] = useState<"GPS" | "MAP_PIN" | "SEARCH" | "MANUAL">("GPS");
-  const [detectedSummary, setDetectedSummary] = useState<string>("");
-
-  // Search Autocomplete State
-  const [searchQuery, setSearchQuery] = useState("");
-  const [searchResults, setSearchResults] = useState<any[]>([]);
-  const [isSearching, setIsSearching] = useState(false);
 
   // Form Fields
   const [label, setLabel] = useState<"Home" | "Work" | "Site" | "Other">("Home");
@@ -92,215 +66,6 @@ export const AddressModal: React.FC<AddressModalProps> = ({ visible, onClose, on
     onClose();
   };
 
-  // ── REVERSE GEOCODE HELPER ──
-  const performReverseGeocode = async (
-    lat: number,
-    lng: number,
-    acc?: number | null,
-    locSource: "GPS" | "MAP_PIN" | "SEARCH" = "MAP_PIN"
-  ) => {
-    try {
-      setReverseGeocoding(true);
-
-      // Try Backend API First
-      let addressData: any = null;
-      try {
-        const res = await fetch(`${API_BASE_URL}/api/location/reverse-geocode`, {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ latitude: lat, longitude: lng, accuracy: acc, source: locSource }),
-        });
-        if (res.ok) {
-          const data = await res.json();
-          if (data.success && data.address) {
-            addressData = data.address;
-          }
-        }
-      } catch (e) {
-        console.warn("Backend reverse-geocode failed, using client fallback:", e);
-      }
-
-      // Client-side Fallback (BigDataCloud Client API)
-      if (!addressData) {
-        try {
-          const bdcRes = await fetch(
-            `https://api.bigdatacloud.net/data/reverse-geocode-client?latitude=${lat}&longitude=${lng}&localityLanguage=en`
-          );
-          if (bdcRes.ok) {
-            const bdcData = await bdcRes.json();
-            addressData = {
-              houseNumber: bdcData.localityInfo?.informative?.[0]?.name || "",
-              buildingName: "",
-              street: bdcData.localityInfo?.administrative?.[3]?.name || bdcData.locality || "",
-              area: bdcData.locality || bdcData.city || "",
-              city: bdcData.city || bdcData.principalSubdivision || "Bengaluru",
-              state: bdcData.principalSubdivision || "Karnataka",
-              postalCode: bdcData.postcode || "",
-              formattedAddress: [bdcData.locality, bdcData.city, bdcData.principalSubdivision, bdcData.postcode]
-                .filter(Boolean)
-                .join(", "),
-            };
-          }
-        } catch (err) {
-          console.warn("Client fallback reverse-geocode failed:", err);
-        }
-      }
-
-      if (addressData) {
-        // Auto-fill detected fields (preserve manual input if customer already typed)
-        if (addressData.houseNumber && !houseNumber) setHouseNumber(addressData.houseNumber);
-        if (addressData.buildingName && !buildingName) setBuildingName(addressData.buildingName);
-        if (addressData.street) setStreet(addressData.street);
-        if (addressData.area) setArea(addressData.area);
-        if (addressData.city) setCity(addressData.city);
-        if (addressData.state) setState(addressData.state);
-        if (addressData.postalCode) setPincode(addressData.postalCode);
-        if (addressData.landmark && !landmark) setLandmark(addressData.landmark);
-
-        const summary = [addressData.area, addressData.city, addressData.postalCode]
-          .filter(Boolean)
-          .join(", ");
-        setDetectedSummary(summary || addressData.formattedAddress || "Location detected");
-      }
-    } catch (err) {
-      console.warn("Reverse geocode handler error:", err);
-    } finally {
-      setReverseGeocoding(false);
-    }
-  };
-
-  // ── GPS CURRENT LOCATION HANDLER ──
-  const handleDetectGps = async () => {
-    try {
-      setLocatingGps(true);
-      setError("");
-
-      const { status } = await Location.requestForegroundPermissionsAsync();
-      if (status !== "granted") {
-        setLocatingGps(false);
-        Alert.alert(
-          "Location Permission",
-          "Location permission was denied. You can search your building or adjust the map pin."
-        );
-        return;
-      }
-
-      const loc = await Location.getCurrentPositionAsync({
-        accuracy: Location.Accuracy.High,
-      });
-
-      const { latitude, longitude, accuracy: acc } = loc.coords;
-      setCoords({ lat: latitude, lng: longitude });
-      setAccuracy(acc);
-      setSource("GPS");
-
-      await performReverseGeocode(latitude, longitude, acc, "GPS");
-    } catch (err: any) {
-      console.warn("Mobile GPS error:", err);
-      Alert.alert("GPS Warning", "Could not fetch GPS location. Please search or pick on map.");
-    } finally {
-      setLocatingGps(false);
-    }
-  };
-
-  // ── MAP PIN DRAGGED / MOVED ──
-  const handleMapLocationChange = async (lat: number, lng: number, locSource: "MAP_PIN" | "GPS") => {
-    setCoords({ lat, lng });
-    setSource(locSource);
-    await performReverseGeocode(lat, lng, accuracy, locSource);
-  };
-
-  // ── SEARCH AUTOCOMPLETE HANDLER ──
-  useEffect(() => {
-    if (!searchQuery || searchQuery.trim().length < 2) {
-      setSearchResults([]);
-      return;
-    }
-
-    const timer = setTimeout(async () => {
-      setIsSearching(true);
-      try {
-        let results: any[] = [];
-
-        // 1. Try Backend API
-        try {
-          const res = await fetch(`${API_BASE_URL}/api/location/geocode`, {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ query: searchQuery }),
-          });
-          if (res.ok) {
-            const data = await res.json();
-            if (data.success && data.results && data.results.length > 0) {
-              results = data.results;
-            }
-          }
-        } catch (e) {
-          console.warn("Backend geocode search failed, trying Photon mirror:", e);
-        }
-
-        // 2. Client-side Photon OSM Mirror Fallback
-        if (results.length === 0) {
-          try {
-            const photonRes = await fetch(
-              `https://photon.komoot.io/api/?q=${encodeURIComponent(searchQuery)}&limit=5&lang=en`
-            );
-            if (photonRes.ok) {
-              const photonData = await photonRes.json();
-              if (photonData.features) {
-                results = photonData.features.map((f: any) => {
-                  const p = f.properties;
-                  const [lng, lat] = f.geometry.coordinates;
-                  return {
-                    latitude: lat,
-                    longitude: lng,
-                    formattedAddress: [p.name, p.street, p.district, p.city, p.state, p.postcode]
-                      .filter(Boolean)
-                      .join(", "),
-                    street: p.street || p.name || "",
-                    area: p.district || p.suburb || p.city || "",
-                    city: p.city || p.county || "Bengaluru",
-                    state: p.state || "Karnataka",
-                    postalCode: p.postcode || "",
-                  };
-                });
-              }
-            }
-          } catch (err) {
-            console.warn("Client Photon search fallback failed:", err);
-          }
-        }
-
-        setSearchResults(results);
-      } catch (err) {
-        console.warn("Search geocode error:", err);
-      } finally {
-        setIsSearching(false);
-      }
-    }, 350);
-
-    return () => clearTimeout(timer);
-  }, [searchQuery]);
-
-  const handleSelectSearchResult = (res: any) => {
-    const lat = Number(res.latitude);
-    const lng = Number(res.longitude);
-    setCoords({ lat, lng });
-    setSource("SEARCH");
-    setAccuracy(null);
-    setSearchQuery("");
-    setSearchResults([]);
-
-    if (res.buildingName) setBuildingName(res.buildingName);
-    if (res.street) setStreet(res.street);
-    if (res.area) setArea(res.area);
-    if (res.city) setCity(res.city);
-    if (res.state) setState(res.state);
-    if (res.postalCode) setPincode(res.postalCode);
-
-    setDetectedSummary(res.formattedAddress || `${res.street || res.area}, ${res.city}`);
-  };
-
   // ── SAVE ADDRESS HANDLER ──
   const handleSaveAddress = async () => {
     if (!fullName.trim()) {
@@ -328,75 +93,61 @@ export const AddressModal: React.FC<AddressModalProps> = ({ visible, onClose, on
       setLoading(true);
       setError("");
 
-      const newAddressPayload = {
+      const formatted = [
+        houseNumber ? `Flat ${houseNumber}` : null,
+        buildingName,
+        street,
+        area,
+        city,
+        pincode,
+      ]
+        .filter(Boolean)
+        .join(", ");
+
+      const newAddressPayload: Address = {
+        id: `addr_${Date.now()}_${Math.random().toString(36).substring(2, 7)}`,
         fullName: fullName.trim(),
         phone: phone.trim(),
         label,
-        houseNumber: houseNumber.trim() || null,
-        buildingName: buildingName.trim() || null,
-        floor: floor.trim() || null,
+        houseNumber: houseNumber.trim() || undefined,
+        buildingName: buildingName.trim() || undefined,
+        floor: floor.trim() || undefined,
         street: street.trim() || area.trim(),
-        area: area.trim() || null,
-        landmark: landmark.trim() || null,
+        area: area.trim() || undefined,
+        landmark: landmark.trim() || undefined,
         city: city.trim(),
         district: city.trim(),
         state: state.trim() || "Karnataka",
         country: "India",
         pincode: pincode.trim(),
         postalCode: pincode.trim(),
-        latitude: coords.lat,
-        longitude: coords.lng,
-        accuracy: accuracy || 15.0,
-        source,
-        deliveryInstructions: deliveryInstructions.trim() || null,
-        isDefault: true,
+        deliveryInstructions: deliveryInstructions.trim() || undefined,
+        formattedAddress: formatted,
+        isDefault: addresses.length === 0,
+        addressLine1: [houseNumber, buildingName, street].filter(Boolean).join(", "),
+        addressLine2: [area, landmark].filter(Boolean).join(", "),
       };
 
-      // 1. Sync via Backend API if authenticated
-      try {
-        const res = await fetch(`${API_BASE_URL}/api/addresses`, {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify(newAddressPayload),
-        });
-        if (res.ok) {
-          const data = await res.json();
-          if (data.success && data.address) {
-            handleSelect(data.address);
-            return;
-          }
-        }
-      } catch (err) {
-        console.warn("Backend address save failed, saving locally in store:", err);
-      }
+      // Update auth store addresses
+      const updatedAddresses = [...addresses, newAddressPayload];
+      const { updateUserProfile } = useAuthStore.getState();
+      await updateUserProfile({ addresses: updatedAddresses });
 
-      // 2. Local fallback save in auth store
-      const localAddress: Address = {
-        id: `addr_${Date.now()}`,
-        userId: user?.id || "guest",
-        ...newAddressPayload,
-      } as any;
-
-      handleSelect(localAddress);
+      // Automatically select newly saved address
+      handleSelect(newAddressPayload);
+      setIsAddingNew(false);
     } catch (err: any) {
-      console.warn("Address save error:", err);
+      console.error("Save address error:", err);
       setError(err?.message || "Failed to save address");
     } finally {
       setLoading(false);
     }
   };
 
-  const getAccuracyBadge = () => {
-    if (!accuracy) return { text: "Pin Confirmed", color: COLORS.primary };
-    if (accuracy <= 15) return { text: `GPS High Precision (±${Math.round(accuracy)}m)`, color: "#10b981" };
-    if (accuracy <= 50) return { text: `GPS Acceptable (±${Math.round(accuracy)}m)`, color: "#0284c7" };
-    return { text: `Approximate (±${Math.round(accuracy)}m)`, color: "#f59e0b" };
-  };
-
   return (
     <Modal visible={visible} animationType="slide" transparent onRequestClose={onClose}>
       <View style={styles.overlay}>
-        <View style={styles.modal}>
+        <View style={styles.modalCard}>
           {/* Header */}
           <View style={styles.header}>
             <View>
@@ -405,7 +156,7 @@ export const AddressModal: React.FC<AddressModalProps> = ({ visible, onClose, on
               </Text>
               <Text style={styles.headerSubtitle}>
                 {isAddingNew
-                  ? "Pin exact delivery point for turn-by-turn navigation"
+                  ? "Enter accurate delivery details for swift material dispatch"
                   : "Choose where your materials should be delivered"}
               </Text>
             </View>
@@ -423,99 +174,6 @@ export const AddressModal: React.FC<AddressModalProps> = ({ visible, onClose, on
                     <Text style={styles.errorText}>{error}</Text>
                   </View>
                 ) : null}
-
-                {/* Search Address Bar */}
-                <View style={styles.searchContainer}>
-                  <Search size={16} color={COLORS.textTertiary} style={styles.searchIcon} />
-                  <TextInput
-                    style={styles.searchInput}
-                    placeholder="Search apartment, building, road, area..."
-                    placeholderTextColor={COLORS.textTertiary}
-                    value={searchQuery}
-                    onChangeText={setSearchQuery}
-                  />
-                  {isSearching && <ActivityIndicator size="small" color={COLORS.primary} />}
-                </View>
-
-                {/* Autocomplete Results Dropdown */}
-                {searchResults.length > 0 && (
-                  <View style={styles.searchDropdown}>
-                    {searchResults.map((res, i) => (
-                      <TouchableOpacity
-                        key={i}
-                        style={styles.searchResultItem}
-                        onPress={() => handleSelectSearchResult(res)}
-                      >
-                        <MapPin size={15} color={COLORS.secondary} style={{ marginTop: 2 }} />
-                        <View style={{ flex: 1 }}>
-                          <Text style={styles.searchResultTitle}>
-                            {res.street || res.area || "Location Point"}
-                          </Text>
-                          <Text style={styles.searchResultSub} numberOfLines={2}>
-                            {res.formattedAddress}
-                          </Text>
-                        </View>
-                      </TouchableOpacity>
-                    ))}
-                  </View>
-                )}
-
-                {/* GPS Trigger Button */}
-                <TouchableOpacity
-                  style={styles.gpsButton}
-                  onPress={handleDetectGps}
-                  disabled={locatingGps}
-                  activeOpacity={0.88}
-                >
-                  {locatingGps ? (
-                    <ActivityIndicator size="small" color="#fff" />
-                  ) : (
-                    <Navigation size={16} color="#fff" />
-                  )}
-                  <Text style={styles.gpsButtonText}>
-                    {locatingGps ? "Detecting Satellite GPS..." : "Use Current GPS Location"}
-                  </Text>
-                </TouchableOpacity>
-
-                {/* ── INTERACTIVE MAP VIEW WITH DRAGGABLE PIN ── */}
-                <InteractiveLocationMap
-                  latitude={coords.lat}
-                  longitude={coords.lng}
-                  accuracy={accuracy}
-                  onLocationChange={handleMapLocationChange}
-                  onRecenter={handleDetectGps}
-                  height={220}
-                />
-
-                {/* Detected Location Status Banner */}
-                <View style={styles.detectedStatusCard}>
-                  <View style={styles.detectedStatusHeader}>
-                    <View style={styles.detectedStatusRow}>
-                      <CheckCircle2 size={15} color="#10b981" />
-                      <Text style={styles.detectedStatusTitle}>Delivery Point Selected</Text>
-                    </View>
-                    <View
-                      style={[
-                        styles.accuracyPill,
-                        { borderColor: getAccuracyBadge().color + "40" },
-                      ]}
-                    >
-                      <Text
-                        style={[
-                          styles.accuracyPillText,
-                          { color: getAccuracyBadge().color },
-                        ]}
-                      >
-                        {getAccuracyBadge().text}
-                      </Text>
-                    </View>
-                  </View>
-                  <Text style={styles.detectedStatusSummary}>
-                    {reverseGeocoding
-                      ? "Fetching address details..."
-                      : detectedSummary || `${area || "Bangalore"}, ${city}`}
-                  </Text>
-                </View>
 
                 {/* Address Type Selector */}
                 <Text style={styles.inputLabel}>Address Type</Text>
@@ -753,13 +411,14 @@ export const AddressModal: React.FC<AddressModalProps> = ({ visible, onClose, on
                             addr.buildingName,
                             addr.street,
                             addr.area,
+                            addr.landmark ? `Near ${addr.landmark}` : null,
                             addr.city,
                             addr.pincode,
                           ]
                             .filter(Boolean)
                             .join(", ")}
                         </Text>
-                        <Text style={styles.addressPhone}>Phone: {addr.phone}</Text>
+                        <Text style={styles.addressPhone}>Phone: +91 {addr.phone}</Text>
                       </TouchableOpacity>
                     );
                   })
@@ -776,151 +435,70 @@ export const AddressModal: React.FC<AddressModalProps> = ({ visible, onClose, on
 const styles = StyleSheet.create({
   overlay: {
     flex: 1,
-    backgroundColor: "rgba(0, 0, 0, 0.6)",
+    backgroundColor: "rgba(0,0,0,0.5)",
     justifyContent: "flex-end",
   },
-  modal: {
+  modalCard: {
     backgroundColor: COLORS.surface,
     borderTopLeftRadius: RADIUS.xl,
     borderTopRightRadius: RADIUS.xl,
-    maxHeight: "92%",
-    minHeight: "55%",
-    paddingBottom: Platform.OS === "ios" ? 30 : 16,
-  },
-  form: {
-    paddingBottom: SPACING.xl,
-  },
-  addressList: {
+    maxHeight: "90%",
     paddingBottom: SPACING.xl,
   },
   header: {
     flexDirection: "row",
-    justifyContent: "space-between",
     alignItems: "flex-start",
+    justifyContent: "space-between",
     padding: SPACING.lg,
     borderBottomWidth: 1,
     borderBottomColor: COLORS.border,
   },
   headerTitle: {
-    fontSize: 18,
+    fontSize: 17,
     fontWeight: "800",
-    color: COLORS.primary,
+    color: COLORS.textPrimary,
   },
   headerSubtitle: {
-    fontSize: 11,
-    color: COLORS.textSecondary,
+    fontSize: 12,
+    color: COLORS.textTertiary,
     marginTop: 2,
   },
   closeBtn: {
-    padding: 6,
+    padding: SPACING.xs,
   },
   content: {
-    padding: SPACING.lg,
+    paddingHorizontal: SPACING.lg,
+    paddingTop: SPACING.md,
   },
-  searchContainer: {
+  form: {
+    paddingBottom: SPACING.xxl,
+  },
+  errorBanner: {
     flexDirection: "row",
     alignItems: "center",
-    backgroundColor: COLORS.surfaceSecondary,
-    borderRadius: RADIUS.md,
-    paddingHorizontal: SPACING.md,
-    borderWidth: 1,
-    borderColor: COLORS.border,
-    marginBottom: SPACING.sm,
-  },
-  searchIcon: {
-    marginRight: 8,
-  },
-  searchInput: {
-    flex: 1,
-    height: 44,
-    fontSize: 13,
-    color: COLORS.text,
-  },
-  searchDropdown: {
-    backgroundColor: COLORS.surface,
-    borderRadius: RADIUS.md,
-    borderWidth: 1,
-    borderColor: COLORS.border,
-    marginBottom: SPACING.md,
-    maxHeight: 180,
-    ...SHADOWS.sm,
-  },
-  searchResultItem: {
-    flexDirection: "row",
-    alignItems: "flex-start",
-    gap: 8,
+    gap: SPACING.xs,
+    backgroundColor: "#FEE2E2",
     padding: SPACING.sm,
-    borderBottomWidth: 1,
-    borderBottomColor: COLORS.borderLight,
-  },
-  searchResultTitle: {
-    fontSize: 12,
-    fontWeight: "700",
-    color: COLORS.primary,
-  },
-  searchResultSub: {
-    fontSize: 10,
-    color: COLORS.textSecondary,
-    marginTop: 1,
-  },
-  gpsButton: {
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "center",
-    gap: 8,
-    backgroundColor: COLORS.primary,
-    paddingVertical: 12,
-    borderRadius: RADIUS.md,
+    borderRadius: RADIUS.sm,
     marginBottom: SPACING.md,
   },
-  gpsButtonText: {
-    color: COLORS.textWhite,
-    fontSize: 13,
-    fontWeight: "700",
-  },
-  detectedStatusCard: {
-    backgroundColor: "#f0fdf4",
-    borderRadius: RADIUS.md,
-    borderWidth: 1,
-    borderColor: "#bbf7d0",
-    padding: SPACING.md,
-    marginBottom: SPACING.md,
-  },
-  detectedStatusHeader: {
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "space-between",
-    marginBottom: 4,
-  },
-  detectedStatusRow: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 6,
-  },
-  detectedStatusTitle: {
+  errorText: {
     fontSize: 12,
-    fontWeight: "700",
-    color: "#166534",
+    color: COLORS.accentRed,
+    fontWeight: "600",
+    flex: 1,
   },
-  detectedStatusSummary: {
+  inputLabel: {
     fontSize: 11,
-    color: "#15803d",
-    fontWeight: "500",
-  },
-  accuracyPill: {
-    paddingHorizontal: 8,
-    paddingVertical: 2,
-    borderRadius: RADIUS.full,
-    borderWidth: 1,
-    backgroundColor: "#ffffff",
-  },
-  accuracyPillText: {
-    fontSize: 9,
-    fontWeight: "800",
+    fontWeight: "700",
+    color: COLORS.textSecondary,
+    marginBottom: 6,
+    textTransform: "uppercase",
+    letterSpacing: 0.5,
   },
   labelRow: {
     flexDirection: "row",
-    gap: 8,
+    gap: SPACING.sm,
     marginBottom: SPACING.md,
   },
   labelBtn: {
@@ -929,9 +507,9 @@ const styles = StyleSheet.create({
     alignItems: "center",
     justifyContent: "center",
     gap: 4,
-    paddingVertical: 8,
-    borderRadius: RADIUS.sm,
-    backgroundColor: COLORS.surfaceSecondary,
+    paddingVertical: 10,
+    backgroundColor: COLORS.background,
+    borderRadius: RADIUS.md,
     borderWidth: 1,
     borderColor: COLORS.border,
   },
@@ -940,12 +518,15 @@ const styles = StyleSheet.create({
     borderColor: COLORS.primary,
   },
   labelText: {
-    fontSize: 11,
+    fontSize: 12,
     fontWeight: "700",
     color: COLORS.textSecondary,
   },
   labelTextActive: {
     color: COLORS.textWhite,
+  },
+  field: {
+    marginBottom: SPACING.md,
   },
   fieldRow: {
     flexDirection: "row",
@@ -955,58 +536,35 @@ const styles = StyleSheet.create({
   fieldHalf: {
     flex: 1,
   },
-  field: {
-    marginBottom: SPACING.md,
-  },
-  inputLabel: {
-    fontSize: 11,
-    fontWeight: "700",
-    color: COLORS.text,
-    marginBottom: 4,
-  },
   input: {
-    height: 42,
+    backgroundColor: COLORS.background,
     borderWidth: 1,
     borderColor: COLORS.border,
-    borderRadius: RADIUS.sm,
+    borderRadius: RADIUS.md,
     paddingHorizontal: SPACING.md,
-    fontSize: 12,
-    color: COLORS.text,
-    backgroundColor: COLORS.surface,
+    height: 44,
+    fontSize: 13,
+    color: COLORS.textPrimary,
   },
   textArea: {
     height: 60,
-    paddingTop: 8,
+    paddingTop: SPACING.sm,
     textAlignVertical: "top",
-  },
-  errorBanner: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 6,
-    backgroundColor: "#fef2f2",
-    padding: SPACING.sm,
-    borderRadius: RADIUS.sm,
-    marginBottom: SPACING.md,
-    borderWidth: 1,
-    borderColor: "#fecaca",
-  },
-  errorText: {
-    fontSize: 11,
-    color: COLORS.accentRed,
-    fontWeight: "600",
   },
   formActions: {
     flexDirection: "row",
     gap: SPACING.md,
-    marginTop: SPACING.sm,
-    marginBottom: SPACING.xl,
+    marginTop: SPACING.md,
   },
   cancelBtn: {
     flex: 1,
-    paddingVertical: 12,
-    borderRadius: RADIUS.md,
-    backgroundColor: COLORS.surfaceSecondary,
+    height: 48,
     alignItems: "center",
+    justifyContent: "center",
+    backgroundColor: COLORS.background,
+    borderRadius: RADIUS.md,
+    borderWidth: 1,
+    borderColor: COLORS.border,
   },
   cancelBtnText: {
     fontSize: 13,
@@ -1015,103 +573,110 @@ const styles = StyleSheet.create({
   },
   saveBtn: {
     flex: 2,
-    paddingVertical: 12,
-    borderRadius: RADIUS.md,
-    backgroundColor: COLORS.primary,
+    height: 48,
     alignItems: "center",
+    justifyContent: "center",
+    backgroundColor: COLORS.accentOrange,
+    borderRadius: RADIUS.md,
+    ...SHADOWS.sm,
   },
   saveBtnText: {
     fontSize: 13,
     fontWeight: "800",
     color: COLORS.textWhite,
   },
+  addressList: {
+    paddingBottom: SPACING.xxl,
+  },
   addNewBtn: {
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "center",
-    gap: 8,
-    paddingVertical: 14,
+    gap: SPACING.xs,
+    paddingVertical: SPACING.md,
     borderRadius: RADIUS.md,
     borderWidth: 1.5,
-    borderStyle: "dashed",
     borderColor: COLORS.primary,
-    backgroundColor: COLORS.surfaceSecondary,
+    borderStyle: "dashed",
     marginBottom: SPACING.md,
   },
   addNewText: {
     fontSize: 13,
-    fontWeight: "800",
+    fontWeight: "700",
     color: COLORS.primary,
   },
   emptyState: {
     alignItems: "center",
-    justifyContent: "center",
-    paddingVertical: 30,
-    gap: 6,
+    paddingVertical: SPACING.xxl,
   },
   emptyTitle: {
-    fontSize: 14,
+    fontSize: 15,
     fontWeight: "800",
-    color: COLORS.text,
+    color: COLORS.textPrimary,
+    marginTop: SPACING.sm,
   },
   emptySub: {
-    fontSize: 11,
-    color: COLORS.textSecondary,
+    fontSize: 12,
+    color: COLORS.textTertiary,
+    marginTop: 4,
     textAlign: "center",
-    paddingHorizontal: 20,
+    paddingHorizontal: SPACING.xl,
   },
   addressCard: {
-    backgroundColor: COLORS.surface,
+    backgroundColor: COLORS.background,
     borderRadius: RADIUS.md,
-    borderWidth: 1,
-    borderColor: COLORS.border,
     padding: SPACING.md,
     marginBottom: SPACING.sm,
+    borderWidth: 1,
+    borderColor: COLORS.border,
   },
   addressCardSelected: {
     borderColor: COLORS.primary,
-    backgroundColor: "#f8fafc",
+    borderWidth: 2,
+    backgroundColor: "#EFF6FF",
   },
   addressCardHeader: {
     flexDirection: "row",
-    justifyContent: "space-between",
     alignItems: "center",
+    justifyContent: "space-between",
     marginBottom: 6,
   },
   labelBadge: {
-    backgroundColor: COLORS.surfaceSecondary,
+    backgroundColor: COLORS.surface,
     paddingHorizontal: 8,
     paddingVertical: 2,
-    borderRadius: RADIUS.sm,
+    borderRadius: RADIUS.xs,
+    borderWidth: 1,
+    borderColor: COLORS.border,
   },
   labelBadgeText: {
     fontSize: 10,
-    fontWeight: "700",
-    color: COLORS.primary,
+    fontWeight: "800",
+    color: COLORS.textSecondary,
+    textTransform: "uppercase",
   },
   selectedBadge: {
     width: 20,
     height: 20,
-    borderRadius: RADIUS.full,
+    borderRadius: 10,
     backgroundColor: COLORS.primary,
     alignItems: "center",
     justifyContent: "center",
   },
   addressName: {
-    fontSize: 13,
-    fontWeight: "800",
-    color: COLORS.text,
-    marginBottom: 2,
+    fontSize: 14,
+    fontWeight: "700",
+    color: COLORS.textPrimary,
   },
   addressDetails: {
-    fontSize: 11,
+    fontSize: 12,
     color: COLORS.textSecondary,
+    marginTop: 2,
     lineHeight: 16,
-    marginBottom: 4,
   },
   addressPhone: {
-    fontSize: 11,
-    color: COLORS.textSecondary,
-    fontWeight: "600",
+    fontSize: 12,
+    color: COLORS.textTertiary,
+    marginTop: 4,
   },
 });

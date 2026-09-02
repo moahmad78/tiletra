@@ -3,15 +3,13 @@
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { Home, Grid3x3, ShoppingBag, User, ScanLine } from "lucide-react";
+import { Home, Grid3x3, ShoppingBag, User } from "lucide-react";
 import { useCartStore } from "@/lib/cart-store";
 import { cn } from "@/lib/utils";
-import { useScanStore } from "@/lib/scan-store";
 
 export default function BottomTabBar() {
   const pathname = usePathname();
   const cartCount = useCartStore((state) => state.getTotalItems());
-  const { openScan, isOpen: isScanOpen } = useScanStore();
   const [mounted, setMounted] = useState(false);
 
   useEffect(() => {
@@ -25,7 +23,6 @@ export default function BottomTabBar() {
 
   const isHomeActive = pathname === "/";
   const isCategoriesActive = pathname.startsWith("/categories") || pathname.startsWith("/shop");
-  const isScanActive = isScanOpen || pathname === "/scan";
   const isCartActive = pathname.startsWith("/cart");
   const isAccountActive = pathname.startsWith("/account");
 
@@ -74,28 +71,7 @@ export default function BottomTabBar() {
           {isCategoriesActive && <span className="absolute top-0 left-1/2 -translate-x-1/2 w-1 h-1 rounded-full bg-[#F26522]" />}
         </Link>
 
-        {/* 3. CENTER ELEVATED SCAN & FIND (LENS) FAB */}
-        <div className="flex-1 flex justify-center -mt-5 relative z-10">
-          <button
-            type="button"
-            onClick={() => openScan()}
-            className={cn(
-              "w-13 h-13 rounded-full flex flex-col items-center justify-center shadow-lg shadow-orange-500/30 transition-all duration-200 cursor-pointer",
-              "border-[3px] border-white active:scale-95",
-              isScanActive
-                ? "bg-gradient-to-tr from-[#d95a1e] to-[#F26522] ring-2 ring-[#052a51]"
-                : "bg-gradient-to-tr from-[#052a51] via-[#093c70] to-[#F26522]"
-            )}
-            aria-label="Scan & Find Products"
-          >
-            <ScanLine size={22} className="text-white animate-pulse" strokeWidth={2.4} />
-            <span className="text-[8px] font-black text-white uppercase tracking-tighter leading-none mt-0.5">
-              Scan
-            </span>
-          </button>
-        </div>
-
-        {/* 4. Cart Tab */}
+        {/* 3. Cart Tab */}
         <Link
           href="/cart"
           className="flex flex-col items-center justify-center gap-0.5 flex-1 h-full relative active:scale-90 transition-transform duration-150"
@@ -119,7 +95,7 @@ export default function BottomTabBar() {
           {isCartActive && <span className="absolute top-0 left-1/2 -translate-x-1/2 w-1 h-1 rounded-full bg-[#F26522]" />}
         </Link>
 
-        {/* 5. Account Tab */}
+        {/* 4. Account Tab */}
         <Link
           href="/account"
           className="flex flex-col items-center justify-center gap-0.5 flex-1 h-full relative active:scale-90 transition-transform duration-150"

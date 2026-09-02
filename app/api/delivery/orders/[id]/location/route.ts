@@ -1,6 +1,15 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
-import { LocationService } from "@/lib/location/location-service";
+
+function getGoogleMapsNavUrl(lat: number, lng: number, label?: string): string {
+  const query = label ? encodeURIComponent(label) : `${lat},${lng}`;
+  return `https://www.google.com/maps/dir/?api=1&destination=${lat},${lng}&destination_place_id=${query}`;
+}
+
+function getAppleMapsNavUrl(lat: number, lng: number, label?: string): string {
+  const query = label ? encodeURIComponent(label) : `${lat},${lng}`;
+  return `https://maps.apple.com/?daddr=${lat},${lng}&q=${query}`;
+}
 
 export async function GET(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   try {
@@ -49,8 +58,8 @@ export async function GET(req: NextRequest, { params }: { params: Promise<{ id: 
     const lat = order.deliveryLatitude ?? (order.shippingAddress as any)?.latitude ?? 12.9716;
     const lng = order.deliveryLongitude ?? (order.shippingAddress as any)?.longitude ?? 77.5946;
 
-    const googleMapsUrl = LocationService.getGoogleMapsNavUrl(lat, lng, order.deliveryLandmark || order.deliveryAddress || "Customer Delivery");
-    const appleMapsUrl = LocationService.getAppleMapsNavUrl(lat, lng, order.deliveryLandmark || order.deliveryAddress || "Customer Delivery");
+    const googleMapsUrl = getGoogleMapsNavUrl(lat, lng, order.deliveryLandmark || order.deliveryAddress || "Customer Delivery");
+    const appleMapsUrl = getAppleMapsNavUrl(lat, lng, order.deliveryLandmark || order.deliveryAddress || "Customer Delivery");
 
     // F7: Load assigned vendor's GPS coordinates as pickup point
     // Lookup VendorOrderSplit → Vendor for this order
