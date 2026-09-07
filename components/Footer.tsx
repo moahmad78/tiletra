@@ -16,7 +16,6 @@ import {
   PhoneCall,
   ArrowRight,
 } from "lucide-react";
-import RotatingFooterContact from "@/components/RotatingFooterContact";
 
 const shopLinks = [
   { label: "Electrical", href: "/shop/electrical" },
@@ -186,8 +185,19 @@ export default function Footer() {
             <div>
               <h3 className="text-white font-bold text-sm uppercase tracking-[2px] mb-5">Contact Us</h3>
               <ul className="space-y-4 text-sm">
-                <li>
-                  <RotatingFooterContact />
+                <li className="flex items-center gap-3 select-none">
+                  <div className="w-8 h-8 rounded-full bg-[#F26522]/20 flex items-center justify-center text-[#F26522] shrink-0">
+                    <Phone size={15} />
+                  </div>
+                  <div className="flex flex-col justify-center">
+                    <span className="font-bold text-white block leading-tight text-xs md:text-sm">Intrihub Support</span>
+                    <a
+                      href="tel:+917090120211"
+                      className="text-[#F26522] hover:text-white font-semibold text-xs tracking-wide transition-colors"
+                    >
+                      +91 70901 20211
+                    </a>
+                  </div>
                 </li>
                 <li className="flex items-center gap-2.5">
                   <Clock size={16} className="text-[#F26522] shrink-0" />
