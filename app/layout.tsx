@@ -95,10 +95,10 @@ export const metadata: Metadata = {
     locale: "en_IN",
     images: [
       {
-        url: `${BASE_SITE_URL}/og-image.png`,
+        url: `${BASE_SITE_URL}/og-image.png?v=2`,
         width: 1200,
         height: 630,
-        alt: "IntriHub - Construction & Interior Materials Bangalore",
+        alt: "IntriHub QuickCommerce — Build Better. We Deliver Faster. Delivery in 60 Minutes — Shop Now at www.intrihub.com",
       },
     ],
   },
@@ -107,7 +107,7 @@ export const metadata: Metadata = {
     title: "IntriHub - Construction & Interior Materials Bangalore",
     description:
       "Buy tiles, electrical, plumbing, plywood, hardware & furniture online at wholesale prices. Delivery across Bengaluru.",
-    images: [`${BASE_SITE_URL}/og-image.png`],
+    images: [`${BASE_SITE_URL}/og-image.png?v=2`],
   },
 };
 
