@@ -70,7 +70,7 @@ export const CORE_DEPARTMENTS: DepartmentContact[] = [
     email: "vishal@intrihub.com",
     lead: "Vishal Poddar",
     role: "Chief Product Officer (CPO)",
-    description: "Catalog onboardings, wholesale sample requests & brand partnerships.",
+    description: "Catalog onboardings, material sample requests & brand partnerships.",
   },
 ];
 

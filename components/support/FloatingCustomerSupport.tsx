@@ -37,7 +37,7 @@ const FAQS = [
   },
   {
     q: "Do you offer bulk project discounts for Contractors & Architects?",
-    a: "Yes! We offer wholesale project pricing and dedicated credit lines for architects, interior designers, and contractors. Tap the WhatsApp button to connect directly with our B2B team.",
+    a: "Yes! We offer factory-direct project pricing and dedicated credit lines for architects, interior designers, and contractors. Tap the WhatsApp button to connect directly with our B2B team.",
   },
   {
     q: "I didn't receive my 6-digit login OTP code. What should I do?",

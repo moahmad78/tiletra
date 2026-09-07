@@ -3,7 +3,7 @@ import React from "react";
 const BRAND_FAQS = [
   {
     q: "What is Intrihub?",
-    a: "IntriHub is India's premier instant building and interior materials marketplace. We connect homeowners, architects, interior designers, and contractors directly to certified manufacturing hubs, providing wholesale pricing on tiles, granite, electrical wires, sanitaryware, false ceilings, and hardware with 60-minute site delivery in Bengaluru and pan-India dispatch.",
+    a: "IntriHub is India's premier instant building and interior materials marketplace. We connect homeowners, architects, interior designers, and contractors directly to certified manufacturing hubs, providing factory-direct pricing on tiles, granite, electrical wires, sanitaryware, false ceilings, and hardware with 60-minute site delivery in Bengaluru and pan-India dispatch.",
   },
   {
     q: "How does 60-minute site delivery work?",
@@ -19,7 +19,7 @@ const BRAND_FAQS = [
   },
   {
     q: "Who founded Intrihub?",
-    a: "IntriHub was founded by Sahil Sheikh to streamline, digitize, and modernize the building material procurement supply chain across India, providing transparent wholesale rates and rapid site delivery.",
+    a: "IntriHub was founded by Sahil Sheikh to streamline, digitize, and modernize the building material procurement supply chain across India, providing transparent factory rates and rapid site delivery.",
   },
   {
     q: "How can I get bulk project discounts?",
@@ -44,7 +44,7 @@ export default function IntrihubBrandSEOSection() {
         <ul>
           <li>
             <strong>Factory-Direct Pricing:</strong> Bypass multi-tier distributor markups to access
-            verified wholesale rates on 20,000+ certified products.
+            verified direct rates on 20,000+ certified products.
           </li>
           <li>
             <strong>60-Minute Site Dispatch:</strong> Never halt on-site work. Real-time GPS tracked

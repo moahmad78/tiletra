@@ -148,7 +148,7 @@ export function generateOrganizationSchema() {
     logo: `${BASE_SITE_URL}/logo/intri-web-logo.png`,
     image: `${BASE_SITE_URL}/og-image.png`,
     description:
-      "Intrihub is India's leading instant building materials and interior supplies marketplace. Factory-direct wholesale rates for tiles, granite, electrical wires, sanitaryware, false ceilings, and hardware with 60-minute site delivery.",
+      "Intrihub is India's leading instant building materials and interior supplies marketplace. Factory-direct rates for tiles, granite, electrical wires, sanitaryware, false ceilings, and hardware with 60-minute site delivery.",
     email: "support@intrihub.com",
     telephone: "+91-92649-20211",
     foundingDate: "2026",
@@ -228,7 +228,7 @@ export function generateHomepageFaqSchema() {
         name: "What is Intrihub?",
         acceptedAnswer: {
           "@type": "Answer",
-          text: "IntriHub is India's premier instant building and interior materials marketplace. We connect homeowners, architects, interior designers, and contractors directly to certified manufacturing hubs, providing wholesale pricing on tiles, granite, electrical wires, sanitaryware, false ceilings, and hardware with 60-minute site delivery in Bengaluru and pan-India dispatch.",
+          text: "IntriHub is India's premier instant building and interior materials marketplace. We connect homeowners, architects, interior designers, and contractors directly to certified manufacturing hubs, providing factory-direct pricing on tiles, granite, electrical wires, sanitaryware, false ceilings, and hardware with 60-minute site delivery in Bengaluru and pan-India dispatch.",
         },
       },
       {
@@ -260,7 +260,7 @@ export function generateHomepageFaqSchema() {
         name: "Who founded Intrihub?",
         acceptedAnswer: {
           "@type": "Answer",
-          text: "IntriHub was founded by Sahil Sheikh to streamline, digitize, and modernize the building material procurement supply chain across India, providing transparent wholesale rates and rapid site delivery.",
+          text: "IntriHub was founded by Sahil Sheikh to streamline, digitize, and modernize the building material procurement supply chain across India, providing transparent factory-direct rates and rapid site delivery.",
         },
       },
       {
@@ -494,7 +494,7 @@ export function generateArchitectServiceSchema() {
       audienceType: "Architects, Interior Designers, Contractors",
     },
     description:
-      "Dedicated relationship managers, custom GST invoicing, and wholesale factory-direct rates for large residential and commercial projects.",
+      "Dedicated relationship managers, custom GST invoicing, and factory-direct rates for large residential and commercial projects.",
   };
 }
 
@@ -695,7 +695,7 @@ export function generateLocationIntro(opts: {
   const templates: Record<string, string> = {
     residential: `${context} For homeowners and renovation contractors working across ${locationName}, Intrihub delivers ${categoryName} directly to your site \u2014 no warehouse trips, no middlemen. Browse our complete ${categoryName} catalog and get same-day dispatch to ${locationName} and the surrounding ${locationArea} area on all in-stock orders placed before 2\u202fPM.`,
     commercial: `${locationName} hosts a dense mix of commercial construction and interior fit-out projects that demand quality ${categoryName} at competitive trade pricing. ${context} Intrihub serves ${locationName}-based contractors, architects, and interior firms with a verified ${categoryName} catalog, B2B GST invoicing, and reliable site delivery \u2014 so your project timeline stays intact.`,
-    tech_hub: `${context} As ${locationName}\u2019s residential footprint grows alongside its tech corridor, demand for quality ${categoryName} at transparent wholesale prices has grown sharply. Intrihub\u2019s direct-dispatch model eliminates the local dealer markup \u2014 bringing factory-verified ${categoryName} to your ${locationName} site with same-day delivery on in-stock items.`,
+    tech_hub: `${context} As ${locationName}\u2019s residential footprint grows alongside its tech corridor, demand for quality ${categoryName} at transparent factory-direct prices has grown sharply. Intrihub\u2019s direct-dispatch model eliminates the local dealer markup \u2014 bringing factory-verified ${categoryName} to your ${locationName} site with same-day delivery on in-stock items.`,
     industrial: `${context} Intrihub\u2019s ${categoryName} catalog serves ${locationName}-area projects with verified technical specifications, volume pricing for bulk orders, and direct site logistics. Contractors and procurement managers operating in ${locationName} and ${locationArea} can order online and receive scheduled deliveries with consolidated GST B2B invoicing for every purchase.`,
   };
 

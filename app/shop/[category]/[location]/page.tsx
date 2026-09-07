@@ -52,8 +52,8 @@ export async function generateMetadata({
   }
 
   const canonicalUrl = getCanonicalUrl(`/shop/${category.slug}/${location.slug}`);
-  const title = `${category.name} in ${location.name}, Bangalore | Wholesale Prices | Intrihub`;
-  const description = `Buy ${category.name} in ${location.name}, ${location.area}. Intrihub delivers wholesale ${category.name} directly to your ${location.name} site — same-day dispatch, factory-direct prices.`;
+  const title = `${category.name} in ${location.name}, Bangalore | Factory-Direct Prices | Intrihub`;
+  const description = `Buy ${category.name} in ${location.name}, ${location.area}. Intrihub delivers ${category.name} directly to your ${location.name} site — same-day dispatch, factory-direct prices.`;
 
   return {
     title,

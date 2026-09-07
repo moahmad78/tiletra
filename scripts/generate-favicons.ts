@@ -91,7 +91,7 @@ async function generateFavicons() {
           INDIA'S BUILDING &amp; INTERIOR MATERIALS MARKETPLACE
         </text>
         <text x="600" y="465" text-anchor="middle" fill="#F26522" font-family="system-ui, -apple-system, sans-serif" font-size="20" font-weight="700">
-          ⚡ 60-Minute Site Delivery • Wholesale Factory Rates • 20+ Categories
+          ⚡ 60-Minute Site Delivery • Direct Factory Rates • 20+ Categories
         </text>
         <text x="600" y="520" text-anchor="middle" fill="rgba(255,255,255,0.7)" font-family="system-ui, -apple-system, sans-serif" font-size="16" font-weight="500">
           Tiles • Granite • Electrical • Plumbing • Sanitaryware • Hardware • Begur, Bengaluru

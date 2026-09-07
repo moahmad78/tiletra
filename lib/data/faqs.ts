@@ -82,7 +82,7 @@ export const INTRIHUB_FAQS: FAQItem[] = [
     id: "blk-1",
     categoryId: "bulk",
     question: "Do contractors, interior designers, and architects get trade pricing?",
-    answer: "Yes. We offer tiered wholesale trade discounts on commercial volume orders. You can connect with our Trade Desk via WhatsApp (+91 92649 20211) or register for a Contractor Account to receive dedicated relationship management and custom quotes.",
+    answer: "Yes. We offer tiered bulk trade discounts on commercial volume orders. You can connect with our Trade Desk via WhatsApp (+91 92649 20211) or register for a Contractor Account to receive dedicated relationship management and custom quotes.",
   },
   {
     id: "blk-2",

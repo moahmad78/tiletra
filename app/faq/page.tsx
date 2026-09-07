@@ -11,7 +11,7 @@ import { getCanonicalUrl, generateBreadcrumbSchema, generateFAQSchema } from "@/
 export const metadata: Metadata = {
   title: "Frequently Asked Questions (FAQ) | IntriHub Building Materials",
   description:
-    "Find answers to frequently asked questions about purchasing tiles, granite, electrical wires, sanitaryware, 60-minute site delivery in Bengaluru, returns, and wholesale pricing on IntriHub.",
+    "Find answers to frequently asked questions about purchasing tiles, granite, electrical wires, sanitaryware, 60-minute site delivery in Bengaluru, returns, and factory-direct pricing on IntriHub.",
   alternates: {
     canonical: getCanonicalUrl("/faq"),
   },

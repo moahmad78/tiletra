@@ -79,7 +79,7 @@ const FAQ_DATA: FAQItem[] = [
     id: "5",
     category: "Bulk Site Orders",
     icon: Headphones,
-    question: "Do you offer wholesale/bulk pricing for construction sites?",
+    question: "Do you offer bulk project pricing for construction sites?",
     answer:
       "Yes! For architects, builders, contractors, and large residential projects, contact our dedicated B2B desk directly on WhatsApp or Call for volume discounts and specialized crane/forklift site unloading.",
   },

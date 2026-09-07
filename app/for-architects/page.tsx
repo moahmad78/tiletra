@@ -78,7 +78,7 @@ const architectFaqs = [
   {
     question: "What credit terms and BOQ pricing support are available for registered specifiers?",
     answer:
-      "Architectural partners and project specifiers receive volume wholesale pricing tiers, dedicated account managers, custom Bill of Quantities (BOQ) matching, and milestone-based scheduled site deliveries.",
+      "Architectural partners and project specifiers receive volume project pricing tiers, dedicated account managers, custom Bill of Quantities (BOQ) matching, and milestone-based scheduled site deliveries.",
   },
 ];
 
@@ -111,7 +111,7 @@ export default function ForArchitectsPage() {
                 Precision Material Sourcing for Architects & Specifiers
               </h1>
               <p className="text-white/80 text-base sm:text-lg mt-5 leading-relaxed">
-                Streamline your design intent into physical reality. Access lab-certified technical data sheets, physical sample swatch boxes delivered to your studio, single-batch manufacturing allocations, and factory-direct wholesale pricing for luxury residential, commercial, and hospitality projects.
+                Streamline your design intent into physical reality. Access lab-certified technical data sheets, physical sample swatch boxes delivered to your studio, single-batch manufacturing allocations, and factory-direct project pricing for luxury residential, commercial, and hospitality projects.
               </p>
 
               <div className="mt-8 flex flex-wrap items-center gap-4">
@@ -202,7 +202,7 @@ export default function ForArchitectsPage() {
                 {
                   step: "01",
                   title: "BOQ & Spec Mapping",
-                  desc: "Submit your Bill of Quantities (BOQ) or design schedule. Our technical team maps exact factory equivalents with verified physical specs and wholesale price benchmarks.",
+                  desc: "Submit your Bill of Quantities (BOQ) or design schedule. Our technical team maps exact factory equivalents with verified physical specs and direct price benchmarks.",
                 },
                 {
                   step: "02",

@@ -21,10 +21,10 @@ export type CategorySeoData = {
 
 export const CATEGORY_SEO: Record<string, CategorySeoData> = {
   "tiles-stone": {
-    metaTitle: "Tiles & Stone Online in Bangalore | Wholesale Prices | Intrihub",
+    metaTitle: "Tiles & Stone Online in Bangalore | Factory-Direct Prices | Intrihub",
     metaDescription:
-      "Buy vitrified tiles, granite slabs & stone cladding online in Bangalore. Factory-direct wholesale prices, 60-min delivery. Explore 500+ designs on Intrihub.",
-    seoHeading: "Buy Tiles & Stone Online in Bangalore — Factory-Direct Wholesale Prices",
+      "Buy vitrified tiles, granite slabs & stone cladding online in Bangalore. Factory-direct prices, 60-min delivery. Explore 500+ designs on Intrihub.",
+    seoHeading: "Buy Tiles & Stone Online in Bangalore — Factory-Direct Prices",
     seoContent: `Choosing the right tile is one of the most impactful decisions in any interior or construction project — it defines the character of every floor, wall, and outdoor surface in the space. At Intrihub, we bring the factory floor directly to your project site: our Tiles & Stone catalog spans vitrified floor tiles, ceramic wall tiles, natural granite slabs, Italian marble, rough-cut stone cladding, and high-gloss porcelain — all sourced from ISO-certified manufacturing hubs in Rajasthan, Morbi, and Karnataka.
 
 Every tile listing on Intrihub includes verified technical specs: slip resistance class, water absorption percentage, PEI wear rating, and coverage per box. Our built-in smart calculator on each product page takes your room's square footage and instantly computes the exact number of boxes you need — including a standard 10% cutting wastage buffer — so you never over-order or run short mid-project.
@@ -50,10 +50,10 @@ Whether you're laying 600×600mm vitrified tiles for a modern living room, 300×
   },
 
   electrical: {
-    metaTitle: "Electrical Materials Online in Bangalore | Wholesale Prices | Intrihub",
+    metaTitle: "Electrical Materials Online in Bangalore | Factory-Direct Prices | Intrihub",
     metaDescription:
-      "Buy wires, switches, MCBs & conduits online in Bangalore. ISI-certified electrical materials at wholesale prices. Fast site delivery — Intrihub.",
-    seoHeading: "Buy Electrical Materials Online in Bangalore — ISI-Certified, Wholesale Rates",
+      "Buy wires, switches, MCBs & conduits online in Bangalore. ISI-certified electrical materials at factory-direct prices. Fast site delivery — Intrihub.",
+    seoHeading: "Buy Electrical Materials Online in Bangalore — ISI-Certified, Direct Factory Rates",
     seoContent: `Electrical work is the invisible backbone of every building — done right, it lasts decades; done wrong, it creates hazards that no renovation can easily undo. Intrihub's Electrical category is curated specifically for the construction and renovation market: every product listed has passed ISI, BEE, or FRLS certification, and we display the certification details on each product page so you can verify before ordering.
 
 Our catalog covers the full electrical supply chain from bare conductor to finished fitting. FRLS (Flame Retardant Low Smoke) wires from Havells, Polycab, Finolex, and RR Kabel are available in 1.5 sq.mm, 2.5 sq.mm, 4 sq.mm, 6 sq.mm, and 10 sq.mm sizes — the most common gauges for residential and light commercial wiring. For higher amperage circuits, we stock armored cables (AYFY/AYWY) and industrial-grade flexible cables for machinery and HVAC applications.
@@ -79,9 +79,9 @@ For large residential projects or commercial fit-outs requiring multi-phase cabl
   },
 
   lighting: {
-    metaTitle: "Lighting Online in Bangalore | Wholesale Prices | Intrihub",
+    metaTitle: "Lighting Online in Bangalore | Factory-Direct Prices | Intrihub",
     metaDescription:
-      "Buy LED lights, chandeliers, downlights & strip lights online in Bangalore. Wholesale prices, fast delivery. Premium brands on Intrihub.",
+      "Buy LED lights, chandeliers, downlights & strip lights online in Bangalore. Factory-direct prices, fast delivery. Premium brands on Intrihub.",
     seoHeading: "Buy Lighting Online in Bangalore — LED, Decorative & Architectural Solutions",
     seoContent: `Lighting is the element that elevates a finished interior from functional to extraordinary — the same room feels entirely different under warm ambient downlights versus cold overhead panels. Intrihub's Lighting catalog bridges the gap between electrical supply stores and premium design showrooms: you get specification-grade luminaires at trade prices, delivered to your site.
 
@@ -108,9 +108,9 @@ Intrihub also offers architectural exterior lighting — bollard lights, step li
   },
 
   "plumbing-sanitary": {
-    metaTitle: "Plumbing & Sanitaryware Online in Bangalore | Wholesale Prices | Intrihub",
+    metaTitle: "Plumbing & Sanitaryware Online in Bangalore | Factory-Direct Prices | Intrihub",
     metaDescription:
-      "Buy CPVC pipes, faucets, washbasins & water closets online in Bangalore. Wholesale plumbing materials, site delivery. Shop Intrihub.",
+      "Buy CPVC pipes, faucets, washbasins & water closets online in Bangalore. Quality plumbing materials, site delivery. Shop Intrihub.",
     seoHeading: "Buy Plumbing & Sanitaryware Online in Bangalore — Direct Factory Prices",
     seoContent: `Plumbing is the circulatory system of every building, and the quality of materials used determines whether you're dealing with zero maintenance or chronic leaks for the next 20 years. Intrihub's Plumbing & Sanitary category covers the entire water supply and drainage ecosystem: from CPVC/UPVC pipes at the input to designer faucets, washbasins, EWCs, and shower panels at the output.
 
@@ -137,9 +137,9 @@ For site managers handling multiple bathroom units across a residential project,
   },
 
   plywood: {
-    metaTitle: "Plywood & Laminates Online in Bangalore | Wholesale Prices | Intrihub",
+    metaTitle: "Plywood & Laminates Online in Bangalore | Factory-Direct Prices | Intrihub",
     metaDescription:
-      "Buy BWP marine ply, commercial MR plywood, MDF & laminates online in Bangalore. Wholesale rates, bulk supply. Intrihub.",
+      "Buy BWP marine ply, commercial MR plywood, MDF & laminates online in Bangalore. Direct factory rates, bulk supply. Intrihub.",
     seoHeading: "Buy Plywood & Laminates Online in Bangalore — BWP, MR Grade, MDF",
     seoContent: `Plywood is the structural foundation of every wardrobe, kitchen cabinet, false ceiling frame, and wooden furniture piece — choosing the wrong grade compromises everything built on top of it. Intrihub's Plywood & Laminates category is engineered for the construction trade: clear grade labeling, verified ISI marks, and consistent thickness tolerance across every sheet.
 
@@ -166,9 +166,9 @@ Decorative laminates from Merino, Century, Greenlam, and Virgo are organized by 
   },
 
   "hardware-fittings": {
-    metaTitle: "Hardware & Fittings Online in Bangalore | Wholesale Prices | Intrihub",
+    metaTitle: "Hardware & Fittings Online in Bangalore | Factory-Direct Prices | Intrihub",
     metaDescription:
-      "Buy hinges, locks, screws, drawer slides & handles online in Bangalore. Wholesale hardware prices, fast delivery. Intrihub.",
+      "Buy hinges, locks, screws, drawer slides & handles online in Bangalore. Direct hardware prices, fast delivery. Intrihub.",
     seoHeading: "Buy Hardware & Fittings Online in Bangalore — Trade Prices on Hinges, Locks & More",
     seoContent: `Hardware and architectural fittings are the functional detail that determines how a finished interior actually performs in daily use — a kitchen cabinet that doesn't close silently, a bathroom door that drags, or a wardrobe whose drawer slides fail within a year are all hardware failures, not joinery failures. Intrihub's Hardware & Fittings category carries the full range of architectural and furniture hardware required for professional interior fit-outs.
 
@@ -197,10 +197,10 @@ Stainless steel screws, bolts, rawl plugs, and construction fasteners round out 
   },
 
   furniture: {
-    metaTitle: "Furniture Online in Bangalore | Wholesale Prices | Intrihub",
+    metaTitle: "Furniture Online in Bangalore | Factory-Direct Prices | Intrihub",
     metaDescription:
-      "Buy living room, bedroom & dining furniture online in Bangalore. Wholesale prices, fast delivery. Premium furniture catalog on Intrihub.",
-    seoHeading: "Buy Furniture Online in Bangalore — Living, Bedroom & Dining at Wholesale Prices",
+      "Buy living room, bedroom & dining furniture online in Bangalore. Factory-direct prices, fast delivery. Premium furniture catalog on Intrihub.",
+    seoHeading: "Buy Furniture Online in Bangalore — Living, Bedroom & Dining at Factory-Direct Prices",
     seoContent: `Furniture procurement for a home, office, or commercial space involves navigating an overwhelming market of quality tiers, finish options, and size configurations. Intrihub simplifies this by curating furniture across living, dining, bedroom, study, and outdoor categories — with verified dimensions, material specifications, and assembly requirements clearly displayed on every listing.
 
 Living room furniture at Intrihub spans solid wood sofas with fabric and leatherette upholstery, coffee tables in glass-top and solid wood finishes, TV units in engineered wood with open shelving and concealed storage, and accent chairs in premium weave and velvet. Every sofa listing specifies foam density (minimum 32 density for long-term comfort), spring type, and frame material.
@@ -226,9 +226,9 @@ For office and commercial spaces, Intrihub stocks workstation desks, height-adju
   },
 
   "false-ceiling": {
-    metaTitle: "False Ceiling Materials Online in Bangalore | Wholesale Prices | Intrihub",
+    metaTitle: "False Ceiling Materials Online in Bangalore | Factory-Direct Prices | Intrihub",
     metaDescription:
-      "Buy gypsum boards, GI channels, POP & ceiling tiles online in Bangalore. Wholesale prices, fast delivery. Intrihub.",
+      "Buy gypsum boards, GI channels, POP & ceiling tiles online in Bangalore. Factory-direct prices, fast delivery. Intrihub.",
     seoHeading: "Buy False Ceiling Materials Online in Bangalore — Gypsum, POP & Grid Systems",
     seoContent: `False ceilings are one of the most transformative elements of interior design — they conceal structural slabs, integrate lighting, improve acoustics, and define the architectural character of every room. Intrihub's False Ceiling category supplies the complete material set for gypsum board, POP (Plaster of Paris), grid ceiling, and decorative ceiling tile installations.
 
@@ -255,9 +255,9 @@ Acoustic ceiling tiles and mineral fiber panels for commercial applications — 
   },
 
   "paint-finishes": {
-    metaTitle: "Paints & Finishes Online in Bangalore | Wholesale Prices | Intrihub",
+    metaTitle: "Paints & Finishes Online in Bangalore | Factory-Direct Prices | Intrihub",
     metaDescription:
-      "Buy interior emulsions, exterior paints & wood polishes online in Bangalore. Wholesale prices, fast delivery. Intrihub.",
+      "Buy interior emulsions, exterior paints & wood polishes online in Bangalore. Factory-direct prices, fast delivery. Intrihub.",
     seoHeading: "Buy Paints & Finishes Online in Bangalore — Interior, Exterior & Wood Finishes",
     seoContent: `Paint selection is the final act of any interior or exterior construction project — yet it's where the most costly mistakes happen when coverage rates are misjudged or the wrong finish is specified for an application. Intrihub's Paint & Finishes category organizes products by surface type, finish category, and coverage specification to remove guesswork from your purchase.
 
@@ -284,9 +284,9 @@ Texture coatings, sand finishes, and designer wall plasters for feature wall app
   },
 
   "doors-windows": {
-    metaTitle: "Doors & Windows Online in Bangalore | Wholesale Prices | Intrihub",
+    metaTitle: "Doors & Windows Online in Bangalore | Factory-Direct Prices | Intrihub",
     metaDescription:
-      "Buy flush doors, UPVC windows & aluminium frames online in Bangalore. Wholesale prices, site delivery. Intrihub.",
+      "Buy flush doors, UPVC windows & aluminium frames online in Bangalore. Factory-direct prices, site delivery. Intrihub.",
     seoHeading: "Buy Doors & Windows Online in Bangalore — Flush Doors, UPVC & Aluminium Profiles",
     seoContent: `Doors and windows define the relationship between interior spaces and determine how natural light, ventilation, and acoustics work across a building. Intrihub's Doors & Windows category covers the material supply chain from structural door frames to finished window systems.
 
@@ -325,9 +325,9 @@ export function getCategorySeo(slug: string): CategorySeoData {
     .replace(/\b\w/g, (c) => c.toUpperCase());
 
   return {
-    metaTitle: `${cleanName} Online in Bangalore | Wholesale Prices | Intrihub`,
-    metaDescription: `Buy ${cleanName} online in Bangalore at wholesale prices. Fast site delivery across Bengaluru. Explore Intrihub's curated catalog of interior & construction materials.`,
-    seoHeading: `Buy ${cleanName} Online in Bangalore — Factory-Direct Wholesale Prices`,
+    metaTitle: `${cleanName} Online in Bangalore | Factory-Direct Prices | Intrihub`,
+    metaDescription: `Buy ${cleanName} online in Bangalore at factory-direct prices. Fast site delivery across Bengaluru. Explore Intrihub's curated catalog of interior & construction materials.`,
+    seoHeading: `Buy ${cleanName} Online in Bangalore — Factory-Direct Prices`,
     seoContent: `Intrihub brings you a curated selection of ${cleanName} products sourced directly from certified manufacturers and authorized distributors across India. Our ${cleanName} catalog is designed for homeowners, architects, interior designers, and contractors who need reliable quality at trade-competitive prices without navigating multiple local dealers.
 
 Every ${cleanName} product on Intrihub is verified for quality compliance and listed with full technical specifications — so you can compare options meaningfully and order with confidence. Our team reviews each listing for accurate dimension data, load ratings, and compatibility information before it goes live.

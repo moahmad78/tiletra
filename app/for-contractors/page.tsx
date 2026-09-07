@@ -9,14 +9,14 @@ import JsonLd from "@/components/JsonLd";
 export const metadata: Metadata = {
   title: "Bulk Material Sourcing for Civil & Interior Contractors | Intrihub",
   description:
-    "Wholesale interior & construction materials for contractors: bulk vitrified tiles, CPVC pipes, FRLS cables, tile adhesives, and sanitaryware with direct site delivery and GST billing.",
+    "Bulk interior & construction materials for contractors: vitrified tiles, CPVC pipes, FRLS cables, tile adhesives, and sanitaryware with direct site delivery and GST billing.",
   alternates: {
     canonical: getCanonicalUrl("/for-contractors"),
   },
   openGraph: {
     title: "Bulk Material Sourcing for Civil & Interior Contractors | Intrihub",
     description:
-      "Wholesale interior & construction materials for contractors with GST invoices, phased site deliveries, and factory pricing.",
+      "Direct interior & construction materials for contractors with GST invoices, phased site deliveries, and factory pricing.",
     url: getCanonicalUrl("/for-contractors"),
     type: "website",
     siteName: "Intrihub",
@@ -76,7 +76,7 @@ export default function ForContractorsPage() {
               <div className="w-12 h-12 rounded-xl bg-amber-50 text-[#FF9900] flex items-center justify-center mb-5">
                 <Percent size={24} />
               </div>
-              <h2 className="text-lg font-bold text-slate-900 mb-2">Wholesale Tier Pricing</h2>
+              <h2 className="text-lg font-bold text-slate-900 mb-2">Volume Tier Pricing</h2>
               <p className="text-slate-600 text-sm leading-relaxed">
                 Unlock direct volume discounts on full-truckload and multi-pallet orders of tiles, adhesive bags, electrical coils, and bathroom packages.
               </p>

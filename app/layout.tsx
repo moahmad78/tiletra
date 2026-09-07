@@ -34,7 +34,7 @@ export const metadata: Metadata = {
     template: "%s | IntriHub",
   },
   description:
-    "Buy tiles, electrical, plumbing, plywood, hardware & furniture online at wholesale prices. Fast delivery across Bengaluru & Pan-India with IntriHub.",
+    "Buy tiles, electrical, plumbing, plywood, hardware & furniture online at best prices. Fast delivery across Bengaluru & Pan-India with IntriHub.",
   keywords: [
     "Intrihub",
     "IntriHub",
@@ -57,7 +57,7 @@ export const metadata: Metadata = {
     "construction supplies bangalore",
     "instant building materials delivery",
     "tiles and sanitaryware online",
-    "electrical supplies wholesale bangalore",
+    "electrical supplies direct bangalore",
   ],
   alternates: {
     canonical: BASE_SITE_URL,
@@ -88,7 +88,7 @@ export const metadata: Metadata = {
   openGraph: {
     title: "IntriHub - Construction & Interior Materials Bangalore",
     description:
-      "Buy tiles, electrical, plumbing, plywood, hardware & furniture online at wholesale prices. Delivery across Bengaluru.",
+      "Buy tiles, electrical, plumbing, plywood, hardware & furniture online at best prices. Delivery across Bengaluru.",
     type: "website",
     url: "https://www.intrihub.com/",
     siteName: "IntriHub",
@@ -106,7 +106,7 @@ export const metadata: Metadata = {
     card: "summary_large_image",
     title: "IntriHub - Construction & Interior Materials Bangalore",
     description:
-      "Buy tiles, electrical, plumbing, plywood, hardware & furniture online at wholesale prices. Delivery across Bengaluru.",
+      "Buy tiles, electrical, plumbing, plywood, hardware & furniture online at best prices. Delivery across Bengaluru.",
     images: [`${BASE_SITE_URL}/og-image.png?v=2`],
   },
 };

@@ -216,7 +216,7 @@ export const BUYING_GUIDES: BuyingGuide[] = [
       {
         question: "Can Intrihub provide GST invoices and bulk trade pricing for contractors?",
         answer:
-          "Yes. Intrihub provides full GST compliant input tax credit (ITC) invoices, consolidated project billing, and direct factory wholesale pricing on bulk orders.",
+          "Yes. Intrihub provides full GST compliant input tax credit (ITC) invoices, consolidated project billing, and direct factory pricing on bulk orders.",
       },
       {
         question: "Does Intrihub offer multi-drop site deliveries for commercial projects?",
@@ -302,7 +302,7 @@ export const BUYING_GUIDES: BuyingGuide[] = [
         ],
         bulletPoints: [
           "Direct-from-factory sourcing with guaranteed ISI and ISO certifications.",
-          "Wholesale trade rates available for both individual homeowners and commercial contractors.",
+          "Direct factory rates available for both individual homeowners and commercial contractors.",
           "Tech-driven inventory and rapid dispatch fleet anchored in Bengaluru.",
         ],
       },

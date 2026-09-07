@@ -17,7 +17,7 @@ export const metadata: Metadata = {
   openGraph: {
     title: "Contact IntriHub | Building & Interior Materials Marketplace",
     description:
-      "Get in touch with IntriHub for building materials, wholesale quotations, and 60-minute site delivery in Bengaluru.",
+      "Get in touch with IntriHub for building materials, bulk material quotations, and 60-minute site delivery in Bengaluru.",
     url: getCanonicalUrl("/contact"),
     type: "website",
     siteName: "IntriHub",
@@ -92,7 +92,7 @@ export default function ContactPage() {
               Get in <span className="text-[#F26522]">Touch with IntriHub</span>
             </h1>
             <p className="text-white/80 text-base sm:text-lg md:text-xl max-w-2xl mx-auto leading-relaxed">
-              We&apos;re here to power your construction and interior projects. Reach out for 60-minute site dispatch, wholesale trade queries, or custom material quotes.
+              We&apos;re here to power your construction and interior projects. Reach out for 60-minute site dispatch, project trade queries, or custom material quotes.
             </p>
           </div>
         </div>

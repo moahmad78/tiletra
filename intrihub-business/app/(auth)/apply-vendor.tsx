@@ -38,7 +38,7 @@ const CATEGORIES = [
   "Hardware & Sanitary",
   "Pharmacy & Wellness",
   "Stationery & Gifts",
-  "Other Wholesale / Retail",
+  "Other Distribution / Retail",
 ];
 
 export default function ApplyVendorScreen() {

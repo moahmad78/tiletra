@@ -149,7 +149,7 @@ export class PersonalizedNotificationEngine {
         const complement = CROSS_SELL_MAP[catSlug] || CROSS_SELL_MAP["tiles-stone"];
 
         targetTitle = `🛠️ Complete your ${prod?.name ? prod.name.split(" ")[0] : "Project"}!`;
-        targetMessage = `${complement.pitch} at wholesale contractor rates. Delivered directly to your site!`;
+        targetMessage = `${complement.pitch} at contractor trade rates. Delivered directly to your site!`;
         targetLink = `/shop?category=${complement.categorySlug}`;
         targetType = "promo";
       }
@@ -171,7 +171,7 @@ export class PersonalizedNotificationEngine {
         });
         targetTitle = `🔥 Today's Top Builder Offer!`;
         targetMessage = trendingProduct
-          ? `Special wholesale pricing on "${trendingProduct.name}". Direct factory delivery guaranteed!`
+          ? `Special factory pricing on "${trendingProduct.name}". Direct factory delivery guaranteed!`
           : `Explore new construction arrivals and bulk contractor discounts on IntriHub today!`;
         targetLink = trendingProduct ? `/product/${trendingProduct.slug}` : `/shop`;
         targetType = "offer";

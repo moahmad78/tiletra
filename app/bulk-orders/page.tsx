@@ -28,14 +28,14 @@ import {
 export const metadata: Metadata = {
   title: "Bulk Construction Material Orders for Contractors | Intrihub Bangalore",
   description:
-    "Order bulk tiles, electrical, plumbing, plywood & hardware for construction projects in Bangalore. Wholesale pricing, GST invoices, phased site delivery. Intrihub.",
+    "Order bulk tiles, electrical, plumbing, plywood & hardware for construction projects in Bangalore. Factory-direct pricing, GST invoices, phased site delivery. Intrihub.",
   alternates: {
     canonical: getCanonicalUrl("/bulk-orders"),
   },
   openGraph: {
     title: "Bulk Construction Material Orders for Contractors | Intrihub Bangalore",
     description:
-      "Wholesale construction materials for contractors in Bangalore — tiles, electrical, plumbing, plywood, hardware. GST invoices & site delivery.",
+      "Bulk construction materials for contractors in Bangalore — tiles, electrical, plumbing, plywood, hardware. GST invoices & site delivery.",
     url: getCanonicalUrl("/bulk-orders"),
     type: "website",
     siteName: "Intrihub",
@@ -45,7 +45,7 @@ export const metadata: Metadata = {
     card: "summary_large_image",
     title: "Bulk Construction Material Orders for Contractors | Intrihub Bangalore",
     description:
-      "Wholesale construction materials for contractors in Bangalore — tiles, electrical, plumbing, plywood, hardware.",
+      "Bulk construction materials for contractors in Bangalore — tiles, electrical, plumbing, plywood, hardware.",
     images: ["https://intrihub.com/og-image.png"],
   },
 };
@@ -67,7 +67,7 @@ const PROCESS_STEPS = [
   },
   {
     step: "02",
-    title: "Receive a Wholesale Quote",
+    title: "Receive a Project Quote",
     desc: "We prepare a consolidated quote with tiered pricing based on quantity — no per-item haggling, just transparent volume rates with GST included.",
   },
   {
@@ -144,7 +144,7 @@ export default function BulkOrdersPage() {
               </h1>
               <p className="text-white/80 text-base sm:text-lg mt-5 leading-relaxed max-w-2xl">
                 Order tiles, electrical, plumbing, plywood, hardware, and more in bulk — with
-                transparent wholesale pricing, phased site delivery, and GST B2B invoices on every
+                transparent factory-direct pricing, phased site delivery, and GST B2B invoices on every
                 order. No middleman. No hidden markup.
               </p>
 
@@ -179,7 +179,7 @@ export default function BulkOrdersPage() {
                 {
                   icon: Percent,
                   color: "amber",
-                  title: "Wholesale Tier Pricing",
+                  title: "Volume Tier Pricing",
                   desc: "Volume-based pricing tiers activate automatically — the more you order, the lower the per-unit cost. No negotiation required, rates are transparent.",
                 },
                 {
@@ -337,7 +337,7 @@ export default function BulkOrdersPage() {
             </h2>
             <p className="text-white/70 text-sm max-w-xl mx-auto mb-8 leading-relaxed">
               Share your material list on WhatsApp or fill the quote form — our project desk will respond
-              within 2 hours with a consolidated wholesale quote.
+              within 2 hours with a consolidated project quote.
             </p>
             <div className="flex flex-wrap justify-center gap-4">
               <a

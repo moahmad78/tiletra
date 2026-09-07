@@ -284,7 +284,7 @@ export default function HomeClient({
                 </h2>
 
                 <p className="text-sm md:text-base text-white/80 leading-relaxed max-w-xl font-medium">
-                  Order Tiles, Granite, Paints, Plywood & Hardware with real-time GPS tracking, verified wholesale rates, and guaranteed damage-free unloading directly at your project.
+                  Order Tiles, Granite, Paints, Plywood & Hardware with real-time GPS tracking, verified direct rates, and guaranteed damage-free unloading directly at your project.
                 </p>
 
                 {/* Quick-Commerce Feature Badges */}
@@ -299,7 +299,7 @@ export default function HomeClient({
                   </div>
                   <div className="flex items-center gap-2 p-2 rounded-xl bg-white/5 border border-white/10 backdrop-blur-xs col-span-2 sm:col-span-1">
                     <BadgeCheck size={15} className="text-amber-300 shrink-0" />
-                    <span>Wholesale Rates</span>
+                    <span>Factory-Direct Rates</span>
                   </div>
                 </div>
               </motion.div>
