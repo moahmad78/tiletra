@@ -44,3 +44,11 @@ next-env.d.ts
 # ocr / tesseract data
 *.traineddata
 
+# ide and mobile builds
+.vscode/
+**/.vscode/
+intrihub-mobile/android/
+intrihub-mobile/keystore/
+*.jks
+*.keystore
+

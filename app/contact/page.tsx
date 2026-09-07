@@ -4,7 +4,8 @@ import Footer from "@/components/Footer";
 import Contact from "@/components/Contact";
 import GoogleMap from "@/components/GoogleMap";
 import { QuoteModalProvider } from "@/components/QuoteModalProvider";
-import { BASE_SITE_URL, getCanonicalUrl, generateBreadcrumbSchema, safeJsonLd } from "@/lib/seo";
+import { BASE_SITE_URL, getCanonicalUrl, generateBreadcrumbSchema } from "@/lib/seo";
+import JsonLd from "@/components/JsonLd";
 
 export const metadata: Metadata = {
   title: "Contact IntriHub | Building & Interior Materials Marketplace Bengaluru",
@@ -76,18 +77,8 @@ export default function ContactPage() {
 
   return (
     <QuoteModalProvider>
-      <script
-        type="application/ld+json"
-        dangerouslySetInnerHTML={{
-          __html: safeJsonLd(contactPageSchema),
-        }}
-      />
-      <script
-        type="application/ld+json"
-        dangerouslySetInnerHTML={{
-          __html: safeJsonLd(breadcrumbsSchema),
-        }}
-      />
+      <JsonLd data={contactPageSchema} id="contact-page-schema" />
+      <JsonLd data={breadcrumbsSchema} id="contact-breadcrumbs-schema" />
       <main className="min-h-screen bg-[#F8FAFC] flex flex-col">
         <Header />
 

@@ -3,7 +3,8 @@ import Link from "next/link";
 import { Sparkles, Palette, Layers, Truck, ArrowRight, ShieldCheck } from "lucide-react";
 import Header from "@/components/Header";
 import Footer from "@/components/Footer";
-import { getCanonicalUrl, generateBreadcrumbSchema, safeJsonLd } from "@/lib/seo";
+import { getCanonicalUrl, generateBreadcrumbSchema, generateArchitectServiceSchema } from "@/lib/seo";
+import JsonLd from "@/components/JsonLd";
 
 export const metadata: Metadata = {
   title: "Material Sourcing for Interior Designers & Studios | Intrihub",
@@ -27,13 +28,12 @@ export default function ForInteriorDesignersPage() {
     { name: "Home", url: "/" },
     { name: "For Interior Designers", url: "/for-interior-designers" },
   ]);
+  const serviceSchema = generateArchitectServiceSchema();
 
   return (
     <>
-      <script
-        type="application/ld+json"
-        dangerouslySetInnerHTML={{ __html: safeJsonLd(breadcrumbsSchema) }}
-      />
+      <JsonLd data={breadcrumbsSchema} id="designers-breadcrumbs-schema" />
+      <JsonLd data={serviceSchema} id="designers-service-schema" />
       <main className="min-h-screen flex flex-col bg-[#F8FAFC]">
         <Header />
 

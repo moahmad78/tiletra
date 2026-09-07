@@ -35,7 +35,7 @@ export async function syncProductRatingAggregate(
       avgRating,
       reviewCount,
       // Keep legacy rating aligned for backwards compatibility if needed
-      rating: avgRating > 0 ? avgRating : 4.8,
+      rating: avgRating > 0 ? avgRating : 0,
     },
   });
 

@@ -106,18 +106,25 @@ export default function ProductCard({ product }: { product: Product }) {
             {defaultVariant.size} · {defaultVariant.finish} · {product.material}
           </p>
 
-          {/* Rating (Admin Controlled / DB) */}
+          {/* Rating (Admin Controlled / DB) - Only show if genuine reviews exist */}
           {(() => {
-            const cardRating =
-              product.manualRating !== null && product.manualRating !== undefined
-                ? product.manualRating
-                : product.rating;
             const cardReviewCount =
-              product.manualReviewCount !== null && product.manualReviewCount !== undefined
+              product.manualReviewCount !== null && product.manualReviewCount !== undefined && product.manualReviewCount > 0
                 ? product.manualReviewCount
-                : product.reviewCount;
+                : product.reviewCount && product.reviewCount > 0
+                ? product.reviewCount
+                : 0;
 
-            if (!cardRating || cardRating <= 0) return null;
+            const cardRating =
+              product.manualRating !== null && product.manualRating !== undefined && product.manualRating > 0
+                ? product.manualRating
+                : product.avgRating && product.avgRating > 0
+                ? product.avgRating
+                : product.rating && product.rating > 0
+                ? product.rating
+                : 0;
+
+            if (cardReviewCount <= 0 || cardRating <= 0) return null;
 
             return (
               <div className="flex items-center gap-1.5 mt-2">

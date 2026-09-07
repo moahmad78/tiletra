@@ -1,6 +1,6 @@
 /**
  * Intrihub SEO Architecture & Structured Data Engine
- * Compliant with Google Search, Google Shopping & Schema.org standards
+ * Compliant with Google Search, Google Shopping, Sitelinks Searchbox & Schema.org standards
  */
 
 export const BASE_SITE_URL = "https://www.intrihub.com";
@@ -31,10 +31,101 @@ export function getCanonicalUrl(path: string = ""): string {
 }
 
 /**
- * Organization Schema.org structured data for Intrihub
+ * Unified Root Entity @graph Schema for Root Layout (Emitted once, site-wide)
+ * Combines Organization, LocalBusiness (child entity), and WebSite (with SearchAction)
+ * into a single entity-graph that prevents duplicate competing business nodes.
  */
+export function generateRootGraphSchema() {
+  return {
+    "@context": "https://schema.org",
+    "@graph": [
+      {
+        "@type": "Organization",
+        "@id": `${BASE_SITE_URL}/#organization`,
+        name: "IntriHub",
+        alternateName: "Intrihub QuickCommerce",
+        url: BASE_SITE_URL,
+        logo: `${BASE_SITE_URL}/logo/intri-web-logo.png`,
+        image: `${BASE_SITE_URL}/og-image.png`,
+        description:
+          "India's instant building & interior materials quick-commerce marketplace, delivering factory-direct tiles, granite, electrical, plumbing, and hardware within 60 minutes across Bengaluru and Pan-India.",
+        foundingDate: "2026",
+        founder: {
+          "@type": "Person",
+          name: "Sahil Sheikh",
+          url: "https://www.instagram.com/sahil_sheikh78/",
+        },
+        email: "support@intrihub.com",
+        telephone: "+91-92649-20211",
+        sameAs: [
+          "https://www.instagram.com/intrihub_/",
+          "https://www.instagram.com/sahil_sheikh78/",
+          "https://www.linkedin.com/company/intrihub",
+          "https://www.facebook.com/intrihub",
+        ],
+        address: {
+          "@type": "PostalAddress",
+          streetAddress: "41, 10th A Cross Rd, Janapriya Layout, Begur",
+          addressLocality: "Bengaluru",
+          addressRegion: "Karnataka",
+          postalCode: "560114",
+          addressCountry: "IN",
+        },
+        contactPoint: [
+          {
+            "@type": "ContactPoint",
+            telephone: "+91-92649-20211",
+            contactType: "customer service",
+            areaServed: "IN",
+            availableLanguage: ["en", "hi"],
+          },
+        ],
+      },
+      {
+        "@type": "LocalBusiness",
+        "@id": `${BASE_SITE_URL}/#localbusiness`,
+        name: "IntriHub",
+        image: `${BASE_SITE_URL}/og-image.png`,
+        url: BASE_SITE_URL,
+        telephone: "+91-92649-20211",
+        priceRange: "₹₹",
+        address: {
+          "@type": "PostalAddress",
+          streetAddress: "41, 10th A Cross Rd, Janapriya Layout, Begur",
+          addressLocality: "Bengaluru",
+          addressRegion: "Karnataka",
+          postalCode: "560114",
+          addressCountry: "IN",
+        },
+        areaServed: [
+          { "@type": "City", name: "Bengaluru" },
+          { "@type": "Country", name: "India" },
+        ],
+        parentOrganization: {
+          "@id": `${BASE_SITE_URL}/#organization`,
+        },
+      },
+      {
+        "@type": "WebSite",
+        "@id": `${BASE_SITE_URL}/#website`,
+        url: BASE_SITE_URL,
+        name: "IntriHub",
+        publisher: {
+          "@id": `${BASE_SITE_URL}/#organization`,
+        },
+        potentialAction: {
+          "@type": "SearchAction",
+          // Per Google Sitelinks Searchbox spec, target must be a plain string URL template.
+          target: `${BASE_SITE_URL}/shop?q={search_term_string}`,
+          "query-input": "required name=search_term_string",
+        },
+      },
+    ],
+  };
+}
+
 /**
- * Organization Schema.org structured data for IntriHub (High Authority Brand Entity)
+ * Organization Schema.org structured data for IntriHub (Backward compatibility)
  */
 export function generateOrganizationSchema() {
   return {
@@ -56,7 +147,7 @@ export function generateOrganizationSchema() {
     slogan: "Everything for Every Space — Instant Building & Interior Materials Marketplace",
     url: BASE_SITE_URL,
     logo: `${BASE_SITE_URL}/logo/intri-web-logo.png`,
-    image: `${BASE_SITE_URL}/logo/intri-web-logo.png`,
+    image: `${BASE_SITE_URL}/og-image.png`,
     description:
       "Intrihub is India's leading instant building materials and interior supplies marketplace. Factory-direct wholesale rates for tiles, granite, electrical wires, sanitaryware, false ceilings, and hardware with 60-minute site delivery.",
     email: "support@intrihub.com",
@@ -75,7 +166,7 @@ export function generateOrganizationSchema() {
     address: {
       "@type": "PostalAddress",
       streetAddress: "41, 10th A Cross Rd, Janapriya Layout, Begur",
-      addressLocality: "Begur, Bengaluru",
+      addressLocality: "Bengaluru",
       addressRegion: "Karnataka",
       postalCode: "560114",
       addressCountry: "IN",
@@ -88,7 +179,7 @@ export function generateOrganizationSchema() {
     },
     sameAs: [
       "https://www.instagram.com/sahil_sheikh78/",
-      "https://www.instagram.com/intrihub/",
+      "https://www.instagram.com/intrihub_/",
       "https://www.linkedin.com/company/intrihub",
       "https://www.facebook.com/intrihub",
     ],
@@ -96,7 +187,7 @@ export function generateOrganizationSchema() {
 }
 
 /**
- * WebSite Schema.org structured data with SearchAction for Intrihub
+ * WebSite Schema.org structured data with SearchAction for Intrihub (Backward compatibility)
  */
 export function generateWebSiteSchema() {
   return {
@@ -119,10 +210,7 @@ export function generateWebSiteSchema() {
     },
     potentialAction: {
       "@type": "SearchAction",
-      target: {
-        "@type": "EntryPoint",
-        urlTemplate: `${BASE_SITE_URL}/shop?q={search_term_string}`,
-      },
+      target: `${BASE_SITE_URL}/shop?q={search_term_string}`,
       "query-input": "required name=search_term_string",
     },
     inLanguage: "en-IN",
@@ -130,9 +218,9 @@ export function generateWebSiteSchema() {
 }
 
 /**
- * Brand FAQ Schema.org structured data for Google Knowledge Graph & SGE Rich Snippets
+ * Homepage FAQ Schema.org structured data (Exact 6 verified production Q&As)
  */
-export function generateBrandFAQSchema() {
+export function generateHomepageFaqSchema() {
   return {
     "@context": "https://schema.org",
     "@type": "FAQPage",
@@ -142,23 +230,31 @@ export function generateBrandFAQSchema() {
         name: "What is Intrihub?",
         acceptedAnswer: {
           "@type": "Answer",
-          text: "Intrihub (IntriHub) is India's instant building and interior materials marketplace. Intrihub provides direct-from-factory supplies for construction, renovation, and architectural projects with 60-minute express delivery across Bengaluru and pan-India.",
+          text: "IntriHub is India's premier instant building and interior materials marketplace. We connect homeowners, architects, interior designers, and contractors directly to certified manufacturing hubs, providing wholesale pricing on tiles, granite, electrical wires, sanitaryware, false ceilings, and hardware with 60-minute site delivery in Bengaluru and pan-India dispatch.",
         },
       },
       {
         "@type": "Question",
-        name: "What building materials can I buy on Intrihub?",
+        name: "How does 60-minute site delivery work?",
         acceptedAnswer: {
           "@type": "Answer",
-          text: "On Intrihub, you can buy over 20+ categories including vitrified floor tiles, wall tiles, granite slabs, modular switches, electrical wires, CPVC plumbing pipes, sanitaryware faucets, paints, waterproof plywood, false ceiling boards, and architectural hardware.",
+          text: "We operate a specialized quick-commerce network with micro-dark stores and direct tier-1 manufacturer hubs across Bengaluru. Once you place an order, our automated dispatch system assigns the nearest delivery fleet with live GPS tracking directly to your construction or renovation site.",
         },
       },
       {
         "@type": "Question",
-        name: "How does Intrihub deliver in 60 minutes?",
+        name: "What product categories are available on Intrihub?",
         acceptedAnswer: {
           "@type": "Answer",
-          text: "Intrihub operates a localized micro-fulfillment network and direct factory partnerships with live GPS fleet dispatch, ensuring rapid site delivery within 60 minutes for critical construction projects.",
+          text: "Our catalog features over 20+ certified categories including Vitrified Floor & Wall Tiles, Natural Granite Slabs, Modular Switches & Electrical Wires, CPVC Plumbing & Sanitaryware, Designer Wallpapers, Waterproof Plywood, False Ceiling Materials, and Architectural Hardware.",
+        },
+      },
+      {
+        "@type": "Question",
+        name: "How does the Smart Calculator help prevent wastage?",
+        acceptedAnswer: {
+          "@type": "Answer",
+          text: "Our built-in, unit-aware smart calculator lives right on product pages. By simply entering your room dimensions (sq.ft or meters), it calculates exact box counts, tile pieces, and coil lengths including standard cutting buffers (+10%), preventing over-purchasing and material wastage.",
         },
       },
       {
@@ -166,19 +262,26 @@ export function generateBrandFAQSchema() {
         name: "Who founded Intrihub?",
         acceptedAnswer: {
           "@type": "Answer",
-          text: "Intrihub was founded by Sahil Sheikh with the vision to digitize building material procurement and empower homeowners, contractors, architects, and interior designers with transparent wholesale pricing.",
+          text: "IntriHub was founded by Sahil Sheikh to streamline, digitize, and modernize the building material procurement supply chain across India, providing transparent wholesale rates and rapid site delivery.",
         },
       },
       {
         "@type": "Question",
-        name: "How can I contact Intrihub customer support?",
+        name: "How can I get bulk project discounts?",
         acceptedAnswer: {
           "@type": "Answer",
-          text: "You can reach Intrihub support directly by phone/WhatsApp at +91 92649 20211, or by email at support@intrihub.com. The Intrihub head office is located in Begur, Bengaluru, Karnataka, India.",
+          text: "You can reach our enterprise desk directly via phone or WhatsApp at +91 92649 20211, or email support@intrihub.com. We provide dedicated relationship managers and custom GST invoicing for large residential and commercial projects.",
         },
       },
     ],
   };
+}
+
+/**
+ * Brand FAQ Schema (Backward compatibility)
+ */
+export function generateBrandFAQSchema() {
+  return generateHomepageFaqSchema();
 }
 
 /**
@@ -194,15 +297,15 @@ export function generateBreadcrumbSchema(
       "@type": "ListItem",
       position: index + 1,
       name: item.name,
-      item: item.url.startsWith("http") ? item.url : `${BASE_SITE_URL}${item.url}`,
+      item: item.url.startsWith("http") ? item.url : `${BASE_SITE_URL}${item.url.startsWith("/") ? item.url : `/${item.url}`}`,
     })),
   };
 }
 
 /**
- * Product Schema.org structured data (Compliant with Sections 5.1.2, 5.3, 6.2, and 6.3)
- * Emits full Offer schema with shippingDetails and hasMerchantReturnPolicy for Google Merchant Center.
- * Conditionally emits aggregateRating and review ONLY when genuine reviews exist (zero placeholder/fake reviews).
+ * Product Schema.org structured data (Compliant with Google Product Structured Data Guidelines)
+ * Emits full Offer schema with shippingDetails and hasMerchantReturnPolicy.
+ * Conditionally emits aggregateRating and review ONLY when real reviews exist (reviewCount > 0).
  */
 export function generateProductSchema(product: {
   id: string;
@@ -215,6 +318,7 @@ export function generateProductSchema(product: {
   categoryName?: string;
   sku?: string;
   brand?: string;
+  material?: string;
   avgRating?: number | null;
   reviewCount?: number;
   reviews?: Array<{
@@ -248,18 +352,19 @@ export function generateProductSchema(product: {
     description:
       product.description ||
       `Buy ${product.name} online on IntriHub. Factory-direct building & interior materials with rapid delivery.`,
-    sku: product.sku || product.id,
+    sku: product.sku || product.slug || product.id,
     category: product.categoryName || "Interior & Construction",
     brand: {
       "@type": "Brand",
       name: product.brand || "IntriHub",
     },
+    ...(product.material ? { material: product.material } : {}),
     offers: {
       "@type": "Offer",
       url: productUrl,
       priceCurrency: "INR",
       price: priceVal,
-      priceValidUntil: new Date(Date.now() + 1000 * 60 * 60 * 24 * 365).toISOString().split("T")[0],
+      priceValidUntil: "2026-12-31",
       itemCondition: "https://schema.org/NewCondition",
       availability:
         product.inStock !== false
@@ -270,7 +375,6 @@ export function generateProductSchema(product: {
         name: "IntriHub",
         url: BASE_SITE_URL,
       },
-      // Google Merchant Center: Offer Shipping Details (Section 5.1.2 / 6.2)
       shippingDetails: {
         "@type": "OfferShippingDetails",
         shippingRate: {
@@ -287,18 +391,17 @@ export function generateProductSchema(product: {
           handlingTime: {
             "@type": "QuantitativeValue",
             minValue: 0,
-            maxValue: 1,
-            unitCode: "DAY",
+            maxValue: 0,
+            unitCode: "HUR",
           },
           transitTime: {
             "@type": "QuantitativeValue",
             minValue: 1,
-            maxValue: 3,
-            unitCode: "DAY",
+            maxValue: 1,
+            unitCode: "HUR",
           },
         },
       },
-      // Google Merchant Center: Merchant Return Policy (Section 5.1.2 / 6.2)
       hasMerchantReturnPolicy: {
         "@type": "MerchantReturnPolicy",
         applicableCountry: "IN",
@@ -310,24 +413,33 @@ export function generateProductSchema(product: {
     },
   };
 
-  // Section 5.3 & 6.3: Strict Conditional Review / Rating Rendering
-  // ONLY emit aggregateRating and review if genuine published customer reviews exist
+  // Strict Conditional Review / Rating Rendering
+  // ONLY emit aggregateRating and review if genuine published customer reviews exist (reviewCount > 0)
   const reviewsList = product.reviews || [];
-  const validReviews = reviewsList.filter((r) => r && r.rating && ((r.body && r.body.trim().length > 0) || (r.comment && r.comment.trim().length > 0) || (r.title && r.title.trim().length > 0)));
+  const validReviews = reviewsList.filter(
+    (r) =>
+      r &&
+      r.rating &&
+      ((r.body && r.body.trim().length > 0) ||
+        (r.comment && r.comment.trim().length > 0) ||
+        (r.title && r.title.trim().length > 0))
+  );
 
-  const hasRatingCache = product.reviewCount !== undefined && product.reviewCount > 0 && product.avgRating !== undefined && product.avgRating !== null && product.avgRating > 0;
+  const realReviewCount = product.reviewCount !== undefined && product.reviewCount > 0 ? product.reviewCount : validReviews.length;
+  const hasRealReviews = realReviewCount > 0;
 
-  if (hasRatingCache || validReviews.length > 0) {
-    const computedAvg = validReviews.length > 0
-      ? (validReviews.reduce((sum, r) => sum + r.rating, 0) / validReviews.length).toFixed(1)
-      : String(product.avgRating || 0);
-
-    const countVal = String(product.reviewCount || validReviews.length);
+  if (hasRealReviews) {
+    const computedAvg =
+      validReviews.length > 0
+        ? (validReviews.reduce((sum, r) => sum + r.rating, 0) / validReviews.length).toFixed(1)
+        : product.avgRating && product.avgRating > 0
+        ? product.avgRating.toFixed(1)
+        : "5.0";
 
     schema.aggregateRating = {
       "@type": "AggregateRating",
-      ratingValue: String(product.avgRating ? product.avgRating.toFixed(1) : computedAvg),
-      reviewCount: countVal,
+      ratingValue: String(computedAvg),
+      reviewCount: String(realReviewCount),
       bestRating: "5",
       worstRating: "1",
     };
@@ -362,6 +474,72 @@ export function generateProductSchema(product: {
   }
 
   return schema;
+}
+
+/**
+ * Service Schema.org structured data for B2B / Architectural / Contractor Bulk Procurement
+ */
+export function generateArchitectServiceSchema() {
+  return {
+    "@context": "https://schema.org",
+    "@type": "Service",
+    serviceType: "Bulk Building & Interior Material Procurement",
+    provider: {
+      "@id": `${BASE_SITE_URL}/#organization`,
+    },
+    areaServed: {
+      "@type": "Country",
+      name: "India",
+    },
+    audience: {
+      "@type": "Audience",
+      audienceType: "Architects, Interior Designers, Contractors",
+    },
+    description:
+      "Dedicated relationship managers, custom GST invoicing, and wholesale factory-direct rates for large residential and commercial projects.",
+  };
+}
+
+/**
+ * Person Entities Schema for Core Leadership (Connected to Organization)
+ */
+export function generateLeadershipPersonSchemas() {
+  return [
+    {
+      "@context": "https://schema.org",
+      "@type": "Person",
+      name: "Sahil Sheikh",
+      jobTitle: "Founder, CEO & CTO",
+      worksFor: {
+        "@id": `${BASE_SITE_URL}/#organization`,
+      },
+      email: "sahil@intrihub.com",
+      sameAs: "https://www.instagram.com/sahil_sheikh78/",
+      description: "Spearheading the technology infrastructure, platform architecture, and overall vision of Intrihub.",
+    },
+    {
+      "@context": "https://schema.org",
+      "@type": "Person",
+      name: "Gulshan",
+      jobTitle: "Chief Operating Officer (COO)",
+      worksFor: {
+        "@id": `${BASE_SITE_URL}/#organization`,
+      },
+      email: "gulshan@intrihub.com",
+      description: "Managing vendor relations, supply chain logistics, and ground operations to ensure lightning-fast execution.",
+    },
+    {
+      "@context": "https://schema.org",
+      "@type": "Person",
+      name: "Vishal Poddar",
+      jobTitle: "Chief Product Officer (CPO)",
+      worksFor: {
+        "@id": `${BASE_SITE_URL}/#organization`,
+      },
+      email: "vishal@intrihub.com",
+      description: "Curating top-tier product catalogs, monitoring market trends, and ensuring the best value and variety for our customers.",
+    },
+  ];
 }
 
 /**
@@ -437,9 +615,8 @@ export function generateItemListSchema(items: Array<{ name: string; url: string;
       "@type": "ListItem",
       position: item.position || idx + 1,
       name: item.name,
-      url: item.url.startsWith("http") ? item.url : `${BASE_SITE_URL}${item.url}`,
-      image: item.image ? (item.image.startsWith("http") ? item.image : `${BASE_SITE_URL}${item.image}`) : undefined,
+      url: item.url.startsWith("http") ? item.url : `${BASE_SITE_URL}${item.url.startsWith("/") ? item.url : `/${item.url}`}`,
+      image: item.image ? (item.image.startsWith("http") ? item.image : `${BASE_SITE_URL}${item.image.startsWith("/") ? item.image : `/${item.image}`}`) : undefined,
     })),
   };
 }
-

@@ -3,7 +3,8 @@ import Link from "next/link";
 import { HardHat, Truck, FileCheck, Percent, ArrowRight, ShieldCheck } from "lucide-react";
 import Header from "@/components/Header";
 import Footer from "@/components/Footer";
-import { getCanonicalUrl, generateBreadcrumbSchema, safeJsonLd } from "@/lib/seo";
+import { getCanonicalUrl, generateBreadcrumbSchema, generateArchitectServiceSchema } from "@/lib/seo";
+import JsonLd from "@/components/JsonLd";
 
 export const metadata: Metadata = {
   title: "Bulk Material Sourcing for Civil & Interior Contractors | Intrihub",
@@ -27,13 +28,12 @@ export default function ForContractorsPage() {
     { name: "Home", url: "/" },
     { name: "For Contractors", url: "/for-contractors" },
   ]);
+  const serviceSchema = generateArchitectServiceSchema();
 
   return (
     <>
-      <script
-        type="application/ld+json"
-        dangerouslySetInnerHTML={{ __html: safeJsonLd(breadcrumbsSchema) }}
-      />
+      <JsonLd data={breadcrumbsSchema} id="contractors-breadcrumbs-schema" />
+      <JsonLd data={serviceSchema} id="contractors-service-schema" />
       <main className="min-h-screen flex flex-col bg-[#F8FAFC]">
         <Header />
 

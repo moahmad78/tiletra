@@ -4,6 +4,7 @@ import { prisma } from "@/lib/prisma";
 import ProductDetailsClient from "@/components/ProductDetailsClient";
 import { notFound, redirect } from "next/navigation";
 import { BASE_SITE_URL, getCanonicalUrl, generateProductSchema, generateBreadcrumbSchema, safeJsonLd } from "@/lib/seo";
+import JsonLd from "@/components/JsonLd";
 import { getRedirectForPath } from "@/lib/redirects";
 
 export const revalidate = 60;
@@ -136,6 +137,20 @@ export default async function ProductPage({
     ? Math.min(...product.variants.map((v) => v.pricePerBox || v.pricePerSqft || 0))
     : 0;
 
+  const realReviewCount =
+    publishedReviews.length > 0
+      ? publishedReviews.length
+      : (product as any).reviewCount && (product as any).reviewCount > 0
+      ? Number((product as any).reviewCount)
+      : 0;
+
+  const realAvgRating =
+    publishedReviews.length > 0
+      ? Number((publishedReviews.reduce((sum, r) => sum + r.rating, 0) / publishedReviews.length).toFixed(1))
+      : (product as any).avgRating && (product as any).avgRating > 0
+      ? Number((product as any).avgRating)
+      : null;
+
   const productSchema = generateProductSchema({
     id: product.id,
     name: product.name,
@@ -146,8 +161,9 @@ export default async function ProductPage({
     inStock: product.variants?.some((v) => v.stockBoxes > 0) ?? true,
     categoryName: product.categoryName || product.categorySlug,
     brand: (product as any).brand || "IntriHub",
-    avgRating: (product as any).avgRating ?? (product as any).rating,
-    reviewCount: (product as any).reviewCount ?? publishedReviews.length,
+    material: product.material,
+    avgRating: realAvgRating,
+    reviewCount: realReviewCount,
     reviews: publishedReviews.map((r) => ({
       id: r.id,
       rating: r.rating,
@@ -169,18 +185,8 @@ export default async function ProductPage({
 
   return (
     <>
-      <script
-        type="application/ld+json"
-        dangerouslySetInnerHTML={{
-          __html: safeJsonLd(productSchema),
-        }}
-      />
-      <script
-        type="application/ld+json"
-        dangerouslySetInnerHTML={{
-          __html: safeJsonLd(breadcrumbsSchema),
-        }}
-      />
+      <JsonLd data={productSchema} />
+      <JsonLd data={breadcrumbsSchema} />
       <ProductDetailsClient
         product={product}
         relatedProducts={relatedProducts}

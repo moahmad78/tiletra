@@ -77,7 +77,7 @@ export default function ProductDetailsClient({
   const [activeImage, setActiveImage] = useState(0);
   const [roomSqft, setRoomSqft] = useState<string>("");
   const [addedToCart, setAddedToCart] = useState(false);
-  const [specsOpen, setSpecsOpen] = useState(false);
+  const [specsOpen, setSpecsOpen] = useState(true);
   const [reviewsOpen, setReviewsOpen] = useState(false);
   const [mounted, setMounted] = useState(false);
 
@@ -367,34 +367,35 @@ export default function ProductDetailsClient({
                 {definedProduct.name}
               </h1>
 
-              {/* Rating & Specifications */}
+              {/* Rating & Specifications - Only show rating badge if genuine reviews exist */}
               {(() => {
                 const avgRatingVal = (definedProduct as any).avgRating;
                 const reviewCountVal = (definedProduct as any).reviewCount;
-                const displayRating =
-                  avgRatingVal !== null && avgRatingVal !== undefined && avgRatingVal > 0
-                    ? avgRatingVal
-                    : definedProduct.manualRating !== null && definedProduct.manualRating !== undefined
-                    ? definedProduct.manualRating
-                    : definedProduct.rating;
                 const displayReviewCount =
                   reviewCountVal !== null && reviewCountVal !== undefined && reviewCountVal > 0
                     ? reviewCountVal
-                    : definedProduct.manualReviewCount !== null && definedProduct.manualReviewCount !== undefined
+                    : definedProduct.manualReviewCount !== null && definedProduct.manualReviewCount !== undefined && definedProduct.manualReviewCount > 0
                     ? definedProduct.manualReviewCount
-                    : definedProduct.reviewCount;
+                    : 0;
+
+                const displayRating =
+                  avgRatingVal !== null && avgRatingVal !== undefined && avgRatingVal > 0
+                    ? avgRatingVal
+                    : definedProduct.manualRating !== null && definedProduct.manualRating !== undefined && definedProduct.manualRating > 0
+                    ? definedProduct.manualRating
+                    : definedProduct.rating && definedProduct.rating > 0
+                    ? definedProduct.rating
+                    : 0;
 
                 return (
                   <div className="flex items-center gap-3 mt-2.5 flex-wrap">
-                    {displayRating && displayRating > 0 ? (
+                    {displayReviewCount > 0 && displayRating > 0 ? (
                       <div className="flex items-center gap-1.5 bg-amber-50/90 px-2.5 py-1 rounded-xl border border-amber-200/80 shadow-2xs">
                         <Star size={13} className="fill-amber-400 text-amber-400 shrink-0" />
                         <span className="text-xs font-black text-amber-900 leading-none">{Number(displayRating).toFixed(1)}</span>
-                        {displayReviewCount !== null && displayReviewCount !== undefined && displayReviewCount > 0 && (
-                          <span className="text-[11px] font-semibold text-gray-500">
-                            ({displayReviewCount} {displayReviewCount === 1 ? "review" : "reviews"})
-                          </span>
-                        )}
+                        <span className="text-[11px] font-semibold text-gray-500">
+                          ({displayReviewCount} {displayReviewCount === 1 ? "review" : "reviews"})
+                        </span>
                       </div>
                     ) : null}
                     <span className="text-xs font-semibold text-gray-600">Material: {definedProduct.material}</span>

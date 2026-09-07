@@ -79,6 +79,7 @@ export type Product = {
   variants: ProductVariant[];
   priceTiers?: PriceTier[];
   rating: number;
+  avgRating?: number | null;
   reviewCount: number;
   manualRating?: number | null;
   manualReviewCount?: number | null;

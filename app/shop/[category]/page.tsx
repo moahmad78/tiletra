@@ -11,8 +11,8 @@ import {
   generateBreadcrumbSchema,
   generateItemListSchema,
   generateFAQSchema,
-  safeJsonLd,
 } from "@/lib/seo";
+import JsonLd from "@/components/JsonLd";
 
 export const revalidate = 60;
 
@@ -111,24 +111,9 @@ export default async function CategoryPage({
 
   return (
     <>
-      <script
-        type="application/ld+json"
-        dangerouslySetInnerHTML={{
-          __html: safeJsonLd(breadcrumbsSchema),
-        }}
-      />
-      <script
-        type="application/ld+json"
-        dangerouslySetInnerHTML={{
-          __html: safeJsonLd(itemListSchema),
-        }}
-      />
-      <script
-        type="application/ld+json"
-        dangerouslySetInnerHTML={{
-          __html: safeJsonLd(faqSchema),
-        }}
-      />
+      <JsonLd data={breadcrumbsSchema} id="category-breadcrumbs-schema" />
+      <JsonLd data={itemListSchema} id="category-itemlist-schema" />
+      <JsonLd data={faqSchema} id="category-faq-schema" />
       <main className="min-h-screen flex flex-col bg-[#F3F4F5] pt-[56px] md:pt-[175px] lg:pt-[180px]">
         <Header />
 

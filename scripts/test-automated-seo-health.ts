@@ -93,15 +93,17 @@ async function runAutomatedSeoHealthTests() {
     assert(redirectRecord?.statusCode === 301, "Redirect statusCode is 301 Permanent");
 
     // ─────────────────────────────────────────────────────────────────────────────
-    // 3. KNOWN GSC 404s RESOLUTION (PRD Section 6, Task 10)
+    // 3. KNOWN GSC URLs RESOLUTION (Active Canonical Products with Rich Content)
     // ─────────────────────────────────────────────────────────────────────────────
-    console.log("\n[TEST 3] Known GSC 404s Automated Resolution (Section 6, Task 10):");
+    console.log("\n[TEST 3] Known GSC URLs Live Resolution (Active Products with Rich Content):");
 
-    const gscRedirect1 = await getRedirectForPath("/product/solid-pine-wood-core-flush-door-7x3");
-    assert(gscRedirect1 !== null && gscRedirect1.toPath === "/shop/doors-windows", "/product/solid-pine-wood-core-flush-door-7x3 -> /shop/doors-windows (301)");
+    const doorProd = await getProductBySlug("solid-pine-wood-core-flush-door-7x3");
+    assert(doorProd !== null, "/product/solid-pine-wood-core-flush-door-7x3 resolves to active product (200 OK)");
+    assert(Boolean(doorProd?.description && doorProd.description.length > 200), "Door product has >200 chars rich description");
 
-    const gscRedirect2 = await getRedirectForPath("/product/moroccan-heritage-pattern-kitchen");
-    assert(gscRedirect2 !== null && gscRedirect2.toPath === "/shop/wall-surface", "/product/moroccan-heritage-pattern-kitchen -> /shop/wall-surface (301)");
+    const moroccanProd = await getProductBySlug("moroccan-heritage-pattern-kitchen");
+    assert(moroccanProd !== null, "/product/moroccan-heritage-pattern-kitchen resolves to active product (200 OK)");
+    assert(Boolean(moroccanProd?.description && moroccanProd.description.length > 200), "Moroccan tile product has >200 chars rich description");
 
     // ─────────────────────────────────────────────────────────────────────────────
     // 4. DYNAMIC SITEMAP EXCLUSION OF DISCONTINUED PRODUCTS (PRD Section 4.5)

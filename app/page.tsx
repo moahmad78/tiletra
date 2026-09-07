@@ -6,6 +6,8 @@ import {
 } from "@/lib/actions/products";
 import { getOfferBanners } from "@/lib/actions/settings";
 import HomeClient from "@/components/HomeClient";
+import JsonLd from "@/components/JsonLd";
+import { generateHomepageFaqSchema } from "@/lib/seo";
 
 // Revalidate page on demand or periodically
 export const revalidate = 60;
@@ -19,13 +21,18 @@ export default async function HomePage() {
     getOfferBanners(),
   ]);
 
+  const faqSchema = generateHomepageFaqSchema();
+
   return (
-    <HomeClient
-      categories={categories}
-      trending={trending}
-      bestsellers={bestsellers}
-      newArrivals={newArrivals}
-      banners={banners}
-    />
+    <>
+      <JsonLd data={faqSchema} id="homepage-faq-schema" />
+      <HomeClient
+        categories={categories}
+        trending={trending}
+        bestsellers={bestsellers}
+        newArrivals={newArrivals}
+        banners={banners}
+      />
+    </>
   );
 }

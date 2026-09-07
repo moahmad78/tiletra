@@ -53,18 +53,10 @@ async function generateFavicons() {
     }
   }
 
-  // Also update Next.js app directory conventions
-  const appIcon32 = await sharp(path.join(process.cwd(), "public/favicon-32x32.png")).toBuffer();
-  fs.writeFileSync(path.join(process.cwd(), "app/icon.png"), appIcon32);
-
-  const appApple180 = await sharp(path.join(process.cwd(), "public/apple-touch-icon.png")).toBuffer();
-  fs.writeFileSync(path.join(process.cwd(), "app/apple-icon.png"), appApple180);
-
-  // 2. Generate multi-resolution favicon.ico (16, 32, 48)
+  // 2. Generate multi-resolution favicon.ico (16, 32, 48) in public/
   const icoBuffer = createIcoFromPngs(pngBuffers);
   fs.writeFileSync(path.join(process.cwd(), "public/favicon.ico"), icoBuffer);
-  fs.writeFileSync(path.join(process.cwd(), "app/favicon.ico"), icoBuffer);
-  console.log("✓ Generated multi-resolution: public/favicon.ico and app/favicon.ico");
+  console.log("✓ Generated multi-resolution: public/favicon.ico");
 
   // 3. Generate 1200x630 Open Graph preview banner (og-image.png)
   if (fs.existsSync(sourceWebLogo)) {

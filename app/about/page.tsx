@@ -5,7 +5,8 @@ import { ShieldCheck, Truck, Sparkles, ArrowRight, HeartHandshake, Mail, Award, 
 import Header from "@/components/Header";
 import Footer from "@/components/Footer";
 import { LEADERSHIP_TEAM } from "@/lib/data/contacts";
-import { BASE_SITE_URL, getCanonicalUrl, generateBreadcrumbSchema, safeJsonLd } from "@/lib/seo";
+import { BASE_SITE_URL, getCanonicalUrl, generateBreadcrumbSchema } from "@/lib/seo";
+import JsonLd from "@/components/JsonLd";
 
 export const metadata: Metadata = {
   title: "About IntriHub | Building & Interior Materials Marketplace Bengaluru",
@@ -43,9 +44,27 @@ export default function AboutPage() {
       founder: {
         "@type": "Person",
         name: "Sahil Sheikh",
-        jobTitle: "Founder & Lead Architect",
+        jobTitle: "Founder, CEO & CTO",
+        email: "sahil@intrihub.com",
         sameAs: "https://www.instagram.com/sahil_sheikh78/",
+        description: "Spearheading the technology infrastructure, platform architecture, and overall vision of Intrihub.",
       },
+      employee: [
+        {
+          "@type": "Person",
+          name: "Gulshan",
+          jobTitle: "Chief Operating Officer (COO)",
+          email: "gulshan@intrihub.com",
+          description: "Managing vendor relations, supply chain logistics, and ground operations to ensure lightning-fast execution.",
+        },
+        {
+          "@type": "Person",
+          name: "Vishal Poddar",
+          jobTitle: "Chief Product Officer (CPO)",
+          email: "vishal@intrihub.com",
+          description: "Curating top-tier product catalogs, monitoring market trends, and ensuring the best value and variety for our customers.",
+        },
+      ],
       address: {
         "@type": "PostalAddress",
         streetAddress: "41, 10th A Cross Rd, Janapriya Layout, Begur",
@@ -64,18 +83,8 @@ export default function AboutPage() {
 
   return (
     <>
-      <script
-        type="application/ld+json"
-        dangerouslySetInnerHTML={{
-          __html: safeJsonLd(aboutPageSchema),
-        }}
-      />
-      <script
-        type="application/ld+json"
-        dangerouslySetInnerHTML={{
-          __html: safeJsonLd(breadcrumbsSchema),
-        }}
-      />
+      <JsonLd data={aboutPageSchema} id="about-page-schema" />
+      <JsonLd data={breadcrumbsSchema} id="about-breadcrumbs-schema" />
       <main className="min-h-screen flex flex-col bg-[#F3F4F5]">
         <Header />
 

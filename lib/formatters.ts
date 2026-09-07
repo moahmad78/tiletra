@@ -252,10 +252,11 @@ export function formatProduct(dbProduct: any): Product {
     variants,
     rating: dbProduct.manualRating !== null && dbProduct.manualRating !== undefined
       ? Number(dbProduct.manualRating)
-      : Number(dbProduct.rating || 4.8),
+      : Number(dbProduct.avgRating || 0),
     reviewCount: dbProduct.manualReviewCount !== null && dbProduct.manualReviewCount !== undefined
       ? Number(dbProduct.manualReviewCount)
       : Number(dbProduct.reviewCount || 0),
+    avgRating: Number(dbProduct.avgRating || dbProduct.manualRating || 0),
     manualRating: dbProduct.manualRating !== null && dbProduct.manualRating !== undefined ? Number(dbProduct.manualRating) : null,
     manualReviewCount: dbProduct.manualReviewCount !== null && dbProduct.manualReviewCount !== undefined ? Number(dbProduct.manualReviewCount) : null,
     isBestseller: Boolean(dbProduct.isBestseller),

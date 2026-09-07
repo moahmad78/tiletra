@@ -28,50 +28,9 @@ const BRAND_FAQS = [
 ];
 
 export default function IntrihubBrandSEOSection() {
-  // JSON-LD Structured Data Schema for Google Search Rich Snippets
-  const faqSchema = {
-    "@context": "https://schema.org",
-    "@type": "FAQPage",
-    mainEntity: BRAND_FAQS.map((faq) => ({
-      "@type": "Question",
-      name: faq.q,
-      acceptedAnswer: {
-        "@type": "Answer",
-        text: faq.a,
-      },
-    })),
-  };
-
-  const organizationSchema = {
-    "@context": "https://schema.org",
-    "@type": "Organization",
-    name: "IntriHub",
-    url: "https://www.intrihub.com",
-    logo: "https://www.intrihub.com/logo/intri-web-logo.png",
-    description:
-      "India's Premier Instant Building and Interior Materials Marketplace delivering factory-direct tiles, granite, electrical, and sanitaryware across Bengaluru and pan-India.",
-    contactPoint: {
-      "@type": "ContactPoint",
-      telephone: "+91-9264920211",
-      contactType: "customer service",
-      areaServed: "IN",
-      availableLanguage: ["English", "Hindi"],
-    },
-  };
-
   return (
     <>
-      {/* ── 1. Structured JSON-LD Data for Google Search Indexing ── */}
-      <script
-        type="application/ld+json"
-        dangerouslySetInnerHTML={{ __html: JSON.stringify(faqSchema) }}
-      />
-      <script
-        type="application/ld+json"
-        dangerouslySetInnerHTML={{ __html: JSON.stringify(organizationSchema) }}
-      />
-
-      {/* ── 2. Semantic Crawlable HTML for Search Engines (Visually Hidden via sr-only) ── */}
+      {/* ── Semantic Crawlable HTML for Search Engines (Visually Hidden via sr-only) ── */}
       <section className="sr-only" aria-hidden="false" aria-label="About IntriHub Building Materials">
         <h2>Why Builders, Designers & Homeowners Trust IntriHub</h2>
         <p>

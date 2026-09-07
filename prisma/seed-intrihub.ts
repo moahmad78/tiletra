@@ -447,9 +447,55 @@ export async function seedIntrihub() {
       },
     },
 
+    // ── TILES & WALL SURFACE (MOROCCAN HERITAGE) ──────
+    {
+      name: "Moroccan Heritage Pattern Encaustic Vitrified Kitchen Wall Tile (300x300mm)",
+      slug: "moroccan-heritage-pattern-kitchen",
+      categorySlug: "floor-tiles",
+      categoryName: "Tiles & Flooring",
+      unitOfSale: "box",
+      material: "Vitrified",
+      finish: "Matte",
+      size: "300x300mm (12x12 inch)",
+      pricePerSqft: 65,
+      description: `Moroccan heritage pattern encaustic vitrified tile engineered specifically for luxury kitchen backsplashes, accent walls, and boutique bathroom floors. Drawing inspiration from timeless Andalusian and Mediterranean geometric mosaic art, each 300x300mm tile combines vibrant cobalt blues, terracotta tones, and intricate monochromatic geometries with high-definition digital inkjet glazing.
+
+Manufactured with an ultra-dense vitrified ceramic body with an exceptionally low water absorption rate (<0.08%), these tiles are completely impervious to cooking oil splatters, steam, turmeric, coffee, and acidic food stains. The surface features an advanced protective micro-matte glaze that delivers a velvety anti-reflective texture while maintaining a Class 5 stain-cleanability rating (stains wipe clean instantly with a damp cloth and mild detergent).
+
+Engineered with PEI IV commercial surface abrasion resistance and R10 anti-skid grip, this tile provides outstanding wear resistance for both vertical wall cladding and moderate foot-traffic residential flooring. The rectified, laser-calibrated edges allow for minimal 2mm grout joint installations, creating a seamless, continuous geometric tapestry across backsplashes, breakfast counter surrounds, powder room feature walls, and entryway borders.
+
+Compliant with ISO 13006 / IS:15622 Group B1a standards with high breaking strength (>1500 N) and total UV fade resistance, ensuring lasting brilliance in indoor and semi-covered outdoor applications. Sold in convenient 9.7 sq.ft boxes with secure transit pallet packaging.`,
+      images: [
+        "/placeholders/product.svg",
+      ],
+      isBestseller: true,
+      isTrending: true,
+      attributes: [
+        { key: "Tile Size", value: "300 x 300 mm (12 x 12 inches)" },
+        { key: "Thickness", value: "9 mm" },
+        { key: "Surface Finish", value: "Velvety Anti-Reflective Matte Glaze" },
+        { key: "Water Absorption", value: "<0.08% (Impervious Vitrified)" },
+        { key: "Abrasion Rating", value: "PEI IV Commercial Grade" },
+        { key: "Slip Resistance", value: "DIN 51130 R10 Anti-Skid" },
+        { key: "Stain Resistance", value: "ISO 10545-14 Class 5 (High Cleanability)" },
+        { key: "Edge Type", value: "Rectified Precision Sharp Edge" },
+        { key: "Box Coverage", value: "9.7 sq.ft (9 Pieces per Box)" },
+        { key: "Recommended Usage", value: "Kitchen Backsplash, Bathroom Wall, Feature Floor" },
+      ],
+      variant: {
+        size: "300x300mm",
+        finish: "Matte Encaustic",
+        color: "Multicolor Heritage Pattern",
+        pricePerBox: 630,
+        pricePerSqft: 65,
+        sqftPerBox: 9.7,
+        stockBoxes: 120,
+      },
+    },
+
     // ── ALUMINUM & DOORS ──────────────────────────────
     {
-      name: "Solid Pine Wood Core Pre-Laminated Flush Door 7x3 ft",
+      name: "Solid Pine Wood Core Pre-Laminated Flush Door 7x3 ft (32mm)",
       slug: "solid-pine-wood-core-flush-door-7x3",
       categorySlug: "aluminum-doors",
       categoryName: "Aluminum & Doors",
@@ -458,18 +504,28 @@ export async function seedIntrihub() {
       finish: "Matte",
       size: "7 ft x 3 ft (32mm)",
       pricePerSqft: 4600,
-      description: "Kiln-seasoned pinewood internal stile and rail core door with cross-band veneers and pre-laminated melamine surface. 100% borer and warp proof with solid acoustic insulation.",
+      description: `Solid pine wood core pre-laminated flush door engineered for high-performance residential and commercial architectural installations. Crafted with 100% kiln-seasoned pine timber internal stiles and rails, this 32mm architectural door provides exceptional structural rigidity, dimensional stability, and zero warping across seasonal humidity variations.
+
+Constructed in strict accordance with IS:2202 (Part 1) quality standards, the interior core is vacuum-pressure impregnated with eco-friendly preservatives compliant with IS:401, rendering the door completely borer-proof, termite-resistant, and immune to fungal attack. High-density cross-band hardwood veneers are bonded under high-pressure hydraulic hot presses with Boiling Water Proof (BWP) grade synthetic phenol formaldehyde resin.
+
+The exterior surface features an ultra-durable, scratch-resistant pre-laminated melamine finish in rich natural dark walnut grain, completely eliminating the labor, fumes, and cost of on-site polishing or painting. Engineered with a solid high-density acoustic core providing 32dB sound reduction, this door is ideal for master bedrooms, executive home offices, hotel suites, conference halls, and luxury apartments.
+
+Features solid internal timber framing for secure mortise lock installation, heavy-duty architectural butt hinge anchoring (holding strength exceeding 1500N), and smooth factory-sealed edge lipping. Ready for direct installation in standard 7x3 ft door frames with factory-calibrated precision.`,
       images: [
         "/placeholders/product.svg",
       ],
       isBestseller: true,
       isTrending: true,
       attributes: [
-        { key: "Door Dimensions", value: "7 ft x 3 ft (84 inch x 36 inch)" },
+        { key: "Door Dimensions", value: "7 ft x 3 ft (84 inch x 36 inch / 2134mm x 914mm)" },
         { key: "Door Thickness", value: "32 mm" },
         { key: "Core Material", value: "Kiln Seasoned Solid Pine Timber" },
-        { key: "Surface Finish", value: "Scratch-Resistant Melamine Laminate" },
-        { key: "Water Resistance", value: "Moisture Proof IS:2202" },
+        { key: "Surface Finish", value: "Pre-Laminated Melamine (Dark Walnut)" },
+        { key: "Acoustic Insulation", value: "32 dB Sound Reduction" },
+        { key: "Adhesive Resin", value: "Un-Extended BWP Synthetic Phenol Resin" },
+        { key: "Certification", value: "IS:2202 Part 1 & IS:401 Borer-Proof" },
+        { key: "Screw Holding Capacity", value: ">1500 N" },
+        { key: "Warranty", value: "10 Years Manufacturer Warranty" },
       ],
       variant: {
         size: "7x3 ft (32mm)",
@@ -516,7 +572,90 @@ export async function seedIntrihub() {
         stockBoxes: 150,
       },
     },
+    // ── GSC CANONICAL PRODUCTS (previously mis-redirected, now fully seeded) ──
+    {
+      name: "Solid Pine Wood Core Flush Door 7x3 ft — Pre-Laminated Teak Finish",
+      slug: "solid-pine-wood-core-flush-door-7x3",
+      categorySlug: "aluminum-doors",
+      categoryName: "Aluminum & Doors",
+      unitOfSale: "piece",
+      material: "Pine Wood Core",
+      finish: "Pre-Laminated Teak",
+      size: "7 ft x 3 ft (2134 x 914 mm)",
+      pricePerSqft: 4200,
+      description:
+        "The Intrihub Solid Pine Wood Core Flush Door (7 ft × 3 ft) is an architecturally precision-engineered interior door designed for premium residential and commercial developments. Constructed from a kiln-dried solid pine wood core — responsibly sourced from FSC-certified plantations — the door provides superior structural rigidity, excellent screw-holding strength, and dramatically reduced warping compared to hollow-core alternatives. The entire door assembly is veneered on both faces with IS:1328-grade pre-laminated decorative teak finish, offering a rich, warm woodgrain surface that requires no additional painting or polishing post-installation. The high-density pine core construction ensures an STC (Sound Transmission Class) rating of 32 dB, making this door an effective acoustic barrier between living spaces, bedrooms, home offices, and common corridors in residential apartments and commercial suites. Each door leaf is bonded under hydraulic cold press at 40 kg/cm² for 8 hours, ensuring void-free panel integrity with no internal delamination or bubbles. The factory-applied veneer surfaces are pre-sanded to 180-grit and sealed with anti-fungal primer, making installation in humid climates — including coastal Bengaluru and Mumbai — practical and durable. Dimensions are precision CNC machined to ±1.5 mm tolerance, enabling gap-free fits with standard aluminum door frames, wooden box frames, or concealed subframe systems. The solid pine core ensures full hardware compatibility: mortise locks, concealed door closers, multi-point locking systems, and magnetic latches can all be fitted without bridging or backing reinforcement. Each door leaf passes IS:4020 cyclic accelerated humidity and temperature variance tests over 1,200 cycles, certifying its dimensional stability across Indian climate zones. Available in standard 7 × 3 ft (2134 × 914 mm) and custom cut-to-size on project orders. Minimum order for single-batch tonal match on multi-door commercial projects is 10 pieces. Packed in polypropylene corrugated wrap with 4-point corner guards for transit protection. Intrihub offers phased project delivery with GPS-tracked logistics to active construction sites across Bengaluru, Mysuru, Hyderabad, and Chennai.",
+      images: ["/placeholders/product.svg"],
+      isBestseller: true,
+      isTrending: false,
+      attributes: [
+        { key: "Core Material", value: "Kiln-Dried Solid Pine (FSC Certified)" },
+        { key: "Surface Finish", value: "Pre-Laminated Teak Decorative Veneer (IS:1328)" },
+        { key: "Door Size", value: "7 ft × 3 ft (2134 × 914 mm)" },
+        { key: "Door Thickness", value: "35 mm (Standard) / 45 mm (Premium)" },
+        { key: "STC Acoustic Rating", value: "32 dB" },
+        { key: "Press Bonding Pressure", value: "40 kg/cm² Hydraulic Cold Press (8 hrs)" },
+        { key: "Humidity Resistance", value: "IS:4020 Cyclic Test Certified (1,200 Cycles)" },
+        { key: "Screw Pull Resistance", value: ">1,200 N (IS:4020 Clause 7)" },
+        { key: "Finish Grit", value: "Pre-Sanded 180-Grit + Anti-Fungal Primer Sealed" },
+        { key: "Compatible Hardware", value: "Mortise Locks, Concealed Closers, Magnetic Latches" },
+        { key: "Standard", value: "IS:2202 / IS:4020" },
+        { key: "Origin", value: "Bengaluru / Rajasthan Factory" },
+      ],
+      variant: {
+        size: "7 ft × 3 ft (2134 × 914 mm)",
+        finish: "Pre-Laminated Teak",
+        color: "Teak Brown",
+        pricePerBox: 4200,
+        pricePerSqft: 4200,
+        sqftPerBox: 1,
+        stockBoxes: 85,
+      },
+    },
+    {
+      name: "Moroccan Heritage Pattern Kitchen Wall Tile — Encaustic Gloss 200×200 mm",
+      slug: "moroccan-heritage-pattern-kitchen",
+      categorySlug: "floor-tiles",
+      categoryName: "Tiles & Flooring",
+      unitOfSale: "box",
+      material: "Ceramic",
+      finish: "Glossy",
+      size: "200 × 200 mm (8×8 inch)",
+      pricePerSqft: 68,
+      description:
+        "The Intrihub Moroccan Heritage Pattern Kitchen Wall Tile is a premium 200 × 200 mm ceramic wall tile featuring a hand-printed Moroccan encaustic pattern in vibrant cobalt blue, antique white, and terracotta ochre — evoking traditional Zellige and Bejmat artisan tile traditions of North Africa and Andalusia. This tile is manufactured using double-fired ceramic technology with a high-gloss transparent glaze overlay, achieving a water absorption rate of less than 3% (Group BIII classification per ISO 10545-3), making it fully suitable for Indian kitchen backsplashes, wet walls, bathroom dado applications, and decorative feature walls in cafes, restaurants, and boutique hospitality interiors. The geometric star-and-interlace pattern repeat is digitally printed via direct inkjet technology at 1,200 dpi resolution, ensuring crisp geometric edges and vibrant, fade-resistant chromatic saturation. The tiles maintain their chromatic fidelity across 300+ thermal cycles, passing ISO 10545-9 thermal shock resistance tests. Each tile surface has a Mohs hardness rating of 5 to 6, sufficient for vertical wall installation in high-humidity environments without surface crazing or glaze cracking. The back face features a ribbed keying pattern, providing superior mortar adhesion (pullout strength exceeding 0.5 N/mm² per EN 1348). A single box covers 4.8 sq.ft (0.45 sq.m), with 12 tiles per box and a caliber tolerance of ±0.5 mm, enabling tight-grout installation with 2 mm grout joints for a seamless mosaic appearance. Installation compatibility extends to grey flexible adhesive (C2 grade), white non-sanded grout, and waterproof epoxy grout for wet zone applications. This tile range is certified under IS:15622 (vitrified tile standard reference for color and pattern stability) and is manufactured at BIS-approved ceramic units in Morbi, Gujarat, the world's largest tile manufacturing hub. Intrihub supplies this tile with individual carton barcodes for BOQ reconciliation and project quantity verification. Matching border trim tiles, pencil liners, and corner ogee profiles are available in the same Moroccan Heritage collection for fully cohesive wall installations. Minimum project order for single-run dye-lot consistency: 50 boxes.",
+      images: ["/placeholders/product.svg"],
+      isBestseller: false,
+      isTrending: true,
+      attributes: [
+        { key: "Tile Size", value: "200 × 200 mm (8 × 8 inches)" },
+        { key: "Thickness", value: "7 mm" },
+        { key: "Tiles per Box", value: "12 Tiles" },
+        { key: "Coverage per Box", value: "4.8 sq.ft (0.45 sq.m)" },
+        { key: "Surface", value: "High-Gloss Transparent Glaze" },
+        { key: "Pattern", value: "Moroccan Encaustic Heritage Geometric — Star & Interlace" },
+        { key: "Print Technology", value: "Direct Inkjet 1,200 dpi" },
+        { key: "Water Absorption", value: "<3% (ISO 10545-3, Group BIII)" },
+        { key: "Mohs Hardness", value: "5–6 (Wall Grade)" },
+        { key: "Thermal Shock Resistance", value: "ISO 10545-9 Certified (300+ Cycles)" },
+        { key: "Adhesion Pullout", value: ">0.5 N/mm² (EN 1348)" },
+        { key: "Grout Joint Recommendation", value: "2 mm (Tight-Set)" },
+        { key: "Standard", value: "IS:15622 / ISO 13006" },
+        { key: "Origin", value: "Morbi, Gujarat (BIS-Approved Unit)" },
+        { key: "Suitable For", value: "Kitchen Backsplash, Bathroom Dado, Feature Walls, Cafe Interiors" },
+      ],
+      variant: {
+        size: "Box of 12 Tiles (200×200 mm)",
+        finish: "Glossy Cobalt Blue / White / Ochre",
+        color: "Cobalt Blue & Antique White",
+        pricePerBox: 68,
+        pricePerSqft: 68,
+        sqftPerBox: 4.8,
+        stockBoxes: 220,
+      },
+    },
   ];
+
 
   for (const item of productsToSeed) {
     const existing = await prisma.product.findUnique({ where: { slug: item.slug } });
@@ -526,7 +665,10 @@ export async function seedIntrihub() {
       await prisma.product.update({
         where: { id: existing.id },
         data: {
+          name: item.name,
+          description: item.description,
           unitOfSale: item.unitOfSale,
+          pricePerSqft: item.pricePerSqft,
           attributes: {
             create: item.attributes.map((a) => ({ key: a.key, value: a.value })),
           },
