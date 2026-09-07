@@ -5,7 +5,7 @@
     "owner": "sahil_sheikh78",
     "version": "1.0.0",
     "orientation": "portrait",
-    "icon": "./assets/intri-icon.png",
+    "icon": "./assets/icon.png",
     "scheme": "intrihub-biz",
     "userInterfaceStyle": "light",
     "newArchEnabled": false,
@@ -22,7 +22,7 @@
       "package": "com.intrihub.business",
       "googleServicesFile": "./google-services.json",
       "adaptiveIcon": {
-        "foregroundImage": "./assets/intri-icon.png",
+        "foregroundImage": "./assets/adaptive-icon.png",
         "backgroundColor": "#052A51"
       }
     },
@@ -36,7 +36,7 @@
       [
         "expo-notifications",
         {
-          "icon": "./assets/intri-icon.png",
+          "icon": "./assets/notification-icon.png",
           "color": "#052A51"
         }
       ],
