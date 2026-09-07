@@ -56,7 +56,7 @@ export function generateRootGraphSchema() {
           url: "https://www.instagram.com/sahil_sheikh78/",
         },
         email: "support@intrihub.com",
-        telephone: "+91-92649-20211",
+        telephone: "+91-70901-20211",
         sameAs: [
           "https://www.instagram.com/intrihub_/",
           "https://www.linkedin.com/company/intrihub",
@@ -73,7 +73,7 @@ export function generateRootGraphSchema() {
         contactPoint: [
           {
             "@type": "ContactPoint",
-            telephone: "+91-92649-20211",
+            telephone: "+91-70901-20211",
             contactType: "customer service",
             areaServed: "IN",
             availableLanguage: ["en", "hi"],
@@ -86,7 +86,7 @@ export function generateRootGraphSchema() {
         name: "IntriHub",
         image: `${BASE_SITE_URL}/og-image.png`,
         url: BASE_SITE_URL,
-        telephone: "+91-92649-20211",
+        telephone: "+91-70901-20211",
         priceRange: "₹₹",
         address: {
           "@type": "PostalAddress",
@@ -150,7 +150,7 @@ export function generateOrganizationSchema() {
     description:
       "Intrihub is India's leading instant building materials and interior supplies marketplace. Factory-direct rates for tiles, granite, electrical wires, sanitaryware, false ceilings, and hardware with 60-minute site delivery.",
     email: "support@intrihub.com",
-    telephone: "+91-92649-20211",
+    telephone: "+91-70901-20211",
     foundingDate: "2026",
     knowsAbout: [
       "Building Materials",
@@ -268,7 +268,7 @@ export function generateHomepageFaqSchema() {
         name: "How can I get bulk project discounts?",
         acceptedAnswer: {
           "@type": "Answer",
-          text: "You can reach our enterprise desk directly via phone or WhatsApp at +91 92649 20211, or email support@intrihub.com. We provide dedicated relationship managers and custom GST invoicing for large residential and commercial projects.",
+          text: "You can reach our enterprise desk directly via phone or WhatsApp at +91 70901 20211, or email support@intrihub.com. We provide dedicated relationship managers and custom GST invoicing for large residential and commercial projects.",
         },
       },
     ],
@@ -646,7 +646,7 @@ export function generateLocalBusinessCategorySchema(opts: {
     "@id": `${BASE_SITE_URL}/#localbusiness`,
     name: `Intrihub ${categoryName}${nameSuffix}`,
     url: pageUrl,
-    telephone: "+91-92649-20211",
+    telephone: "+91-70901-20211",
     image: `${BASE_SITE_URL}/og-image.png`,
     priceRange: "\u20b9\u20b9",
     knowsAbout: [

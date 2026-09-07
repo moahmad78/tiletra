@@ -29,8 +29,8 @@ export default function PartnerSupportScreen() {
   const insets = useSafeAreaInsets();
 
   const handleCallExecutive = () => {
-    Linking.openURL("tel:+919264920211").catch(() => {
-      Alert.alert("Call Support", "Partner Helpline: +91 9264920211");
+    Linking.openURL("tel:+917090120211").catch(() => {
+      Alert.alert("Call Support", "Partner Helpline: +91 7090120211");
     });
   };
 
@@ -38,8 +38,8 @@ export default function PartnerSupportScreen() {
     const text = encodeURIComponent(
       "Hello Intrihub Partner Support, I am a vendor / store owner and need assistance with my account."
     );
-    Linking.openURL(`https://wa.me/919264920211?text=${text}`).catch(() => {
-      Alert.alert("WhatsApp", "Please message our support team on WhatsApp at +91 9264920211");
+    Linking.openURL(`https://wa.me/917090120211?text=${text}`).catch(() => {
+      Alert.alert("WhatsApp", "Please message our support team on WhatsApp at +91 7090120211");
     });
   };
 
@@ -99,7 +99,7 @@ export default function PartnerSupportScreen() {
           <View style={styles.channelInfo}>
             <Text style={styles.channelTitle}>Call Key Account Manager</Text>
             <Text style={styles.channelDesc}>Immediate assistance for urgent dispatch & order issues</Text>
-            <Text style={styles.channelContact}>+91 9264920211</Text>
+            <Text style={styles.channelContact}>+91 7090120211</Text>
           </View>
           <ChevronRight size={20} color={COLORS.textTertiary} />
         </TouchableOpacity>

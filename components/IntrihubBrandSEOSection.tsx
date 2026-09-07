@@ -23,7 +23,7 @@ const BRAND_FAQS = [
   },
   {
     q: "How can I get bulk project discounts?",
-    a: "You can reach our enterprise desk directly via phone or WhatsApp at +91 92649 20211, or email support@intrihub.com. We provide dedicated relationship managers and custom GST invoicing for large residential and commercial projects.",
+    a: "You can reach our enterprise desk directly via phone or WhatsApp at +91 70901 20211, or email support@intrihub.com. We provide dedicated relationship managers and custom GST invoicing for large residential and commercial projects.",
   },
 ];
 
@@ -72,7 +72,7 @@ export default function IntrihubBrandSEOSection() {
 
         <div>
           <a href="/shop">Explore Catalog</a>
-          <a href="https://wa.me/919264920211">Talk to Material Expert</a>
+          <a href="https://wa.me/917090120211">Talk to Material Expert</a>
         </div>
       </section>
     </>

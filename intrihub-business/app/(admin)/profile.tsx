@@ -177,7 +177,7 @@ export default function AdminAccountMasterHubScreen() {
 
   // Tax Invoice & Bill PDF CMS Form
   const [invGstNumber, setInvGstNumber] = useState("29AAAAA0000A1Z5");
-  const [invSupportPhone, setInvSupportPhone] = useState("+91 9264920211");
+  const [invSupportPhone, setInvSupportPhone] = useState("+91 7090120211");
   const [invSupportEmail, setInvSupportEmail] = useState("support@intrihub.com");
   const [invSigText, setInvSigText] = useState("INTRIHUB");
   const [invSigTitle, setInvSigTitle] = useState("Authorized Signatory");
@@ -1176,7 +1176,7 @@ export default function AdminAccountMasterHubScreen() {
               <TextInput style={styles.inputBox} value={invGstNumber} onChangeText={setInvGstNumber} placeholder="29AAAAA0000A1Z5" />
 
               <Text style={[styles.inputLabel, { marginTop: 12 }]}>Bill Support Phone</Text>
-              <TextInput style={styles.inputBox} value={invSupportPhone} onChangeText={setInvSupportPhone} placeholder="+91 9264920211" />
+              <TextInput style={styles.inputBox} value={invSupportPhone} onChangeText={setInvSupportPhone} placeholder="+91 7090120211" />
 
               <Text style={[styles.inputLabel, { marginTop: 12 }]}>Bill Support Email</Text>
               <TextInput style={styles.inputBox} value={invSupportEmail} onChangeText={setInvSupportEmail} placeholder="support@intrihub.com" />
@@ -2231,7 +2231,7 @@ export default function AdminAccountMasterHubScreen() {
               <TextInput style={styles.inputBox} value={invGstNumber} onChangeText={setInvGstNumber} placeholder="29AAAAA0000A1Z5" />
 
               <Text style={[styles.inputLabel, { marginTop: 12 }]}>Bill Support Phone</Text>
-              <TextInput style={styles.inputBox} value={invSupportPhone} onChangeText={setInvSupportPhone} placeholder="+91 9264920211" />
+              <TextInput style={styles.inputBox} value={invSupportPhone} onChangeText={setInvSupportPhone} placeholder="+91 7090120211" />
 
               <Text style={[styles.inputLabel, { marginTop: 12 }]}>Bill Support Email</Text>
               <TextInput style={styles.inputBox} value={invSupportEmail} onChangeText={setInvSupportEmail} placeholder="support@intrihub.com" />

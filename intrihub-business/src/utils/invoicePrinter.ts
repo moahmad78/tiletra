@@ -135,7 +135,7 @@ export function generateOrderInvoiceHtml(order: any, customSettings?: any): stri
   // Dynamic CMS Settings with fallback
   const settings = customSettings || order?.storeSettings || {};
   const gstNo = settings.gstNumber || "29AAAAA0000A1Z5";
-  const supportPhone = settings.contactPhone || "+91 9264920211";
+  const supportPhone = settings.contactPhone || "+91 7090120211";
   const supportEmail = settings.email || "support@intrihub.com";
   const sigText = settings.invoiceSignatureText || "INTRIHUB";
   const sigTitle = settings.invoiceSignatureTitle || "Authorized Signatory";

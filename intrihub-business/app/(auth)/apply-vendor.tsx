@@ -93,7 +93,7 @@ export default function ApplyVendorScreen() {
     const text = encodeURIComponent(
       `Hello Intrihub Team, I submitted vendor application ${appRefNumber || ""} for ${businessName || "my business"}. Please assist me with onboarding.`
     );
-    Linking.openURL(`https://wa.me/919264920211?text=${text}`).catch(() => {
+    Linking.openURL(`https://wa.me/917090120211?text=${text}`).catch(() => {
       Alert.alert("WhatsApp", "Please reach out to vendor@intrihub.com");
     });
   };

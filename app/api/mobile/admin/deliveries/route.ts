@@ -83,7 +83,7 @@ export async function GET(req: NextRequest) {
         id: order.id,
         orderId: order.id,
         vendorId: null,
-        vendor: { businessName: "Intrihub Central Warehouse", contactPhone: "9264920211" },
+        vendor: { businessName: "Intrihub Central Warehouse", contactPhone: "7090120211" },
         subtotal: order.subtotal || order.total,
         deliveryMethod: "platform",
         fulfillmentStatus: order.orderStatus === "delivered" ? "delivered" : "ready_for_pickup",

@@ -181,7 +181,7 @@ ${order.deliveryAddress || [
   .filter(Boolean)
   .join(", ") || order.shippingAddress?.street || ""}
 
-Official Helpline: +91 9264920211
+Official Helpline: +91 7090120211
 IntriHub — Everything, Every Place`;
 
               await Share.share({
@@ -485,7 +485,7 @@ IntriHub — Everything, Every Place`;
           <View style={styles.quickSupportRow}>
             <TouchableOpacity
               style={styles.quickSupportBtn}
-              onPress={() => Linking.openURL("tel:9264920211")}
+              onPress={() => Linking.openURL("tel:7090120211")}
               activeOpacity={0.8}
             >
               <PhoneCall size={14} color={COLORS.primary} />
@@ -496,7 +496,7 @@ IntriHub — Everything, Every Place`;
               style={styles.quickSupportBtn}
               onPress={() =>
                 Linking.openURL(
-                  `https://wa.me/919264920211?text=Hi%20Intrihub%20Support,%20I%20need%20help%20with%20Order%20#${order.id}`
+                  `https://wa.me/917090120211?text=Hi%20Intrihub%20Support,%20I%20need%20help%20with%20Order%20#${order.id}`
                 )
               }
               activeOpacity={0.8}

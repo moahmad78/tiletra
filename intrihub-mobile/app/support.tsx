@@ -73,7 +73,7 @@ const FAQ_DATA: FAQItem[] = [
     icon: RotateCcw,
     question: "What is the return or replacement policy for damaged tiles?",
     answer:
-      "If you receive any damaged, defective, or incorrect material, report it within 48 hours of delivery via WhatsApp support (+91 92649 20211) with photos of the damaged items. Our team will arrange free replacement or immediate refund.",
+      "If you receive any damaged, defective, or incorrect material, report it within 48 hours of delivery via WhatsApp support (+91 70901 20211) with photos of the damaged items. Our team will arrange free replacement or immediate refund.",
   },
   {
     id: "5",
@@ -92,11 +92,11 @@ export default function CustomerSupportScreen() {
   const [sendingQuery, setSendingQuery] = useState(false);
 
   const handleWhatsApp = () => {
-    Linking.openURL("https://wa.me/919264920211?text=Hello%20Intrihub%20Support,%20I%20need%20assistance%20with%20my%20order/product.");
+    Linking.openURL("https://wa.me/917090120211?text=Hello%20Intrihub%20Support,%20I%20need%20assistance%20with%20my%20order/product.");
   };
 
   const handleCall = () => {
-    Linking.openURL("tel:9264920211");
+    Linking.openURL("tel:7090120211");
   };
 
   const handleEmail = () => {
@@ -168,7 +168,7 @@ export default function CustomerSupportScreen() {
             <Text style={styles.contactCardTitle}>Chat on WhatsApp</Text>
             <Text style={styles.contactCardSub}>Instant reply in &lt;5 mins</Text>
             <View style={styles.contactActionBadge}>
-              <Text style={styles.contactActionTextGreen}>+91 92649 20211</Text>
+              <Text style={styles.contactActionTextGreen}>+91 70901 20211</Text>
             </View>
           </TouchableOpacity>
 

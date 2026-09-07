@@ -194,7 +194,7 @@ export async function POST(req: NextRequest) {
           if (vendor.status === "pending") {
             msg = "Your vendor application is currently under review by the Intrihub Admin team. You will be notified upon approval.";
           } else if (vendor.status === "suspended") {
-            msg = "Your vendor store has been suspended. Please contact Intrihub Partner Support at +91 9264920211.";
+            msg = "Your vendor store has been suspended. Please contact Intrihub Partner Support at +91 7090120211.";
           } else if (vendor.status === "rejected") {
             msg = `Your vendor application was not approved. ${vendor.rejectionReason ? `Reason: ${vendor.rejectionReason}` : "Please contact partner support."}`;
           }

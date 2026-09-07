@@ -622,7 +622,7 @@ function AccountPageContent() {
             </h3>
 
             <a
-              href="https://wa.me/919198035803?text=Hi%20Gulshan,%20I%20need%20assistance%20with%20my%20Intrihub%20order%20or%20delivery"
+              href="https://wa.me/917090120211?text=Hi%20Gulshan,%20I%20need%20assistance%20with%20my%20Intrihub%20order%20or%20delivery"
               target="_blank"
               rel="noopener noreferrer"
               className="w-full flex items-center justify-between p-3 rounded-2xl hover:bg-gray-50 active:bg-gray-100 transition-colors"
@@ -631,14 +631,14 @@ function AccountPageContent() {
                 <MessageCircle size={18} className="text-[#25D366]" />
                 <div>
                   <p className="text-xs font-bold text-[#052a51]">Operations & Logistics (Gulshan)</p>
-                  <p className="text-[10px] text-gray-400">+91 91980 35803 · gulshan@intrihub.com</p>
+                  <p className="text-[10px] text-gray-400">+91 70901 20211 · gulshan@intrihub.com</p>
                 </div>
               </div>
               <ArrowRight size={14} className="text-gray-400" />
             </a>
 
             <a
-              href="https://wa.me/917870935277?text=Hi%20Vishal,%20I%20need%20product%20guidance%20or%20catalog%20help"
+              href="https://wa.me/917090120211?text=Hi%20Vishal,%20I%20need%20product%20guidance%20or%20catalog%20help"
               target="_blank"
               rel="noopener noreferrer"
               className="w-full flex items-center justify-between p-3 rounded-2xl hover:bg-gray-50 active:bg-gray-100 transition-colors"
@@ -647,14 +647,14 @@ function AccountPageContent() {
                 <MessageCircle size={18} className="text-purple-600" />
                 <div>
                   <p className="text-xs font-bold text-[#052a51]">Product & Sourcing (Vishal Poddar)</p>
-                  <p className="text-[10px] text-gray-400">+91 78709 35277 · vishal@intrihub.com</p>
+                  <p className="text-[10px] text-gray-400">+91 70901 20211 · vishal@intrihub.com</p>
                 </div>
               </div>
               <ArrowRight size={14} className="text-gray-400" />
             </a>
 
             <a
-              href="https://wa.me/919264920211?text=Hi%20Sahil%20Sheikh,%20I%20need%20escalation%20support%20for%20my%20account"
+              href="https://wa.me/917090120211?text=Hi%20Sahil%20Sheikh,%20I%20need%20escalation%20support%20for%20my%20account"
               target="_blank"
               rel="noopener noreferrer"
               className="w-full flex items-center justify-between p-3 rounded-2xl hover:bg-gray-50 active:bg-gray-100 transition-colors"
@@ -663,7 +663,7 @@ function AccountPageContent() {
                 <ShieldCheck size={18} className="text-amber-600" />
                 <div>
                   <p className="text-xs font-bold text-[#052a51]">Founder & CEO Escalation (Sahil Sheikh)</p>
-                  <p className="text-[10px] text-gray-400">+91 92649 20211 · sahil@intrihub.com</p>
+                  <p className="text-[10px] text-gray-400">+91 70901 20211 · sahil@intrihub.com</p>
                 </div>
               </div>
               <ArrowRight size={14} className="text-gray-400" />

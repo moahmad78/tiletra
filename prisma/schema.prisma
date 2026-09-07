@@ -597,8 +597,8 @@ model Banner {
 model StoreSettings {
   id                    String   @id @default("default-settings")
   storeName             String   @default("Intrihub")
-  contactPhone          String   @default("+91 78709 35277")
-  whatsappNumber        String   @default("+91 78709 35277")
+  contactPhone          String   @default("+91 70901 20211")
+  whatsappNumber        String   @default("+91 70901 20211")
   email                 String   @default("support@intrihub.com")
   address               String   @default("Intrihub Central Supply Hub, Begur, Bengaluru, Karnataka 560114")
   gstNumber             String?  @default("29AABCT1234F1Z8")

@@ -62,7 +62,7 @@ export const INTRIHUB_FAQS: FAQItem[] = [
     id: "ret-1",
     categoryId: "returns",
     question: "What if tiles or delicate sanitaryware arrive broken or damaged?",
-    answer: "We offer an unconditional Damage Protection Guarantee. Simply take clear photos or a short video of the damaged carton or tiles and WhatsApp them to our priority resolution desk at +91 78709 35277 within 48 hours of delivery. We immediately dispatch free priority replacement crates.",
+    answer: "We offer an unconditional Damage Protection Guarantee. Simply take clear photos or a short video of the damaged carton or tiles and WhatsApp them to our priority resolution desk at +91 70901 20211 within 48 hours of delivery. We immediately dispatch free priority replacement crates.",
   },
   {
     id: "ret-2",
@@ -82,7 +82,7 @@ export const INTRIHUB_FAQS: FAQItem[] = [
     id: "blk-1",
     categoryId: "bulk",
     question: "Do contractors, interior designers, and architects get trade pricing?",
-    answer: "Yes. We offer tiered bulk trade discounts on commercial volume orders. You can connect with our Trade Desk via WhatsApp (+91 92649 20211) or register for a Contractor Account to receive dedicated relationship management and custom quotes.",
+    answer: "Yes. We offer tiered bulk trade discounts on commercial volume orders. You can connect with our Trade Desk via WhatsApp (+91 70901 20211) or register for a Contractor Account to receive dedicated relationship management and custom quotes.",
   },
   {
     id: "blk-2",

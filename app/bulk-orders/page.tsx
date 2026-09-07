@@ -150,7 +150,7 @@ export default function BulkOrdersPage() {
 
               <div className="mt-8 flex flex-wrap items-center gap-4">
                 <a
-                  href="https://wa.me/919264920211?text=Hi%2C%20I%20want%20to%20place%20a%20bulk%20construction%20material%20order"
+                  href="https://wa.me/917090120211?text=Hi%2C%20I%20want%20to%20place%20a%20bulk%20construction%20material%20order"
                   target="_blank"
                   rel="noopener noreferrer"
                   className="inline-flex items-center gap-2 px-6 py-3.5 bg-[#25D366] hover:bg-[#1ebe5d] text-white font-bold rounded-xl text-sm transition-colors shadow-lg shadow-green-500/30"
@@ -341,7 +341,7 @@ export default function BulkOrdersPage() {
             </p>
             <div className="flex flex-wrap justify-center gap-4">
               <a
-                href="https://wa.me/919264920211?text=Hi%2C%20I%20want%20to%20place%20a%20bulk%20construction%20material%20order"
+                href="https://wa.me/917090120211?text=Hi%2C%20I%20want%20to%20place%20a%20bulk%20construction%20material%20order"
                 target="_blank"
                 rel="noopener noreferrer"
                 className="inline-flex items-center gap-2 px-7 py-3.5 bg-[#25D366] hover:bg-[#1ebe5d] text-white font-bold rounded-xl text-sm transition-colors shadow-lg shadow-green-500/30"

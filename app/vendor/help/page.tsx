@@ -38,7 +38,7 @@ const FAQS = [
   },
   {
     q: "How can I contact my Dedicated Vendor Account Manager?",
-    a: "You can reach out via WhatsApp at +91 78709 35277 or email support@intrihub.com with your Shop ID. Priority support is active from 9:30 AM to 7:30 PM IST (Monday to Saturday).",
+    a: "You can reach out via WhatsApp at +91 70901 20211 or email support@intrihub.com with your Shop ID. Priority support is active from 9:30 AM to 7:30 PM IST (Monday to Saturday).",
   },
 ];
 
@@ -50,14 +50,14 @@ export default function VendorHelpPage() {
   const [submitted, setSubmitted] = useState(false);
 
   const whatsappText = `Hi Intrihub Seller Desk, I am reaching out regarding my vendor shop "${vendor?.businessName || "My Store"}" (ID: ${vendor?.id || "N/A"}). I need assistance with: `;
-  const whatsappDeskUrl = `https://wa.me/917870935277?text=${encodeURIComponent(whatsappText)}`;
+  const whatsappDeskUrl = `https://wa.me/917090120211?text=${encodeURIComponent(whatsappText)}`;
 
   const handleQuickInquiry = (e: React.FormEvent) => {
     e.preventDefault();
     if (!inquiryMessage.trim()) return;
 
     const fullText = `*Vendor Support Request*\n• Shop: ${vendor?.businessName || "My Store"}\n• Email: ${vendor?.contactEmail || "N/A"}\n• Subject: ${inquirySubject || "General Inquiry"}\n• Details: ${inquiryMessage}`;
-    const url = `https://wa.me/917870935277?text=${encodeURIComponent(fullText)}`;
+    const url = `https://wa.me/917090120211?text=${encodeURIComponent(fullText)}`;
     window.open(url, "_blank");
     setSubmitted(true);
     setInquiryMessage("");
@@ -107,7 +107,7 @@ export default function VendorHelpPage() {
             </div>
             <div className="space-y-1 pt-1 text-xs font-semibold text-gray-700">
               <div className="p-2 bg-white rounded-xl border border-amber-200 flex items-center justify-between text-[11px]">
-                <span>+91 92649 20211</span>
+                <span>+91 70901 20211</span>
                 <span className="text-[10px] text-amber-700 font-extrabold uppercase">Direct</span>
               </div>
               <p className="text-[11px] text-gray-500 truncate">sahil@intrihub.com</p>
@@ -116,7 +116,7 @@ export default function VendorHelpPage() {
 
           <div className="grid grid-cols-2 gap-2 mt-4">
             <a
-              href={`https://wa.me/919264920211?text=${encodeURIComponent(`Hi Sahil Sheikh (Founder & CEO), I am reaching out regarding vendor store "${vendor?.businessName || "My Store"}" (ID: ${vendor?.id || "N/A"}). I need escalation support for: `)}`}
+              href={`https://wa.me/917090120211?text=${encodeURIComponent(`Hi Sahil Sheikh (Founder & CEO), I am reaching out regarding vendor store "${vendor?.businessName || "My Store"}" (ID: ${vendor?.id || "N/A"}). I need escalation support for: `)}`}
               target="_blank"
               rel="noopener noreferrer"
               className="py-2.5 px-3 rounded-xl bg-amber-600 hover:bg-amber-700 text-white text-[11px] font-bold transition-colors flex items-center justify-center gap-1.5 shadow-xs cursor-pointer"
@@ -152,7 +152,7 @@ export default function VendorHelpPage() {
             </div>
             <div className="space-y-1 pt-1 text-xs font-semibold text-gray-700">
               <div className="p-2 bg-white rounded-xl border border-blue-200 flex items-center justify-between text-[11px]">
-                <span>+91 91980 35803</span>
+                <span>+91 70901 20211</span>
                 <span className="text-[10px] text-blue-700 font-extrabold uppercase">COO</span>
               </div>
               <p className="text-[11px] text-gray-500 truncate">gulshan@intrihub.com</p>
@@ -161,7 +161,7 @@ export default function VendorHelpPage() {
 
           <div className="grid grid-cols-2 gap-2 mt-4">
             <a
-              href={`https://wa.me/919198035803?text=${encodeURIComponent(`Hi Gulshan (COO), I am reaching out regarding vendor store "${vendor?.businessName || "My Store"}" (ID: ${vendor?.id || "N/A"}). I need assistance with logistics/operations: `)}`}
+              href={`https://wa.me/917090120211?text=${encodeURIComponent(`Hi Gulshan (COO), I am reaching out regarding vendor store "${vendor?.businessName || "My Store"}" (ID: ${vendor?.id || "N/A"}). I need assistance with logistics/operations: `)}`}
               target="_blank"
               rel="noopener noreferrer"
               className="py-2.5 px-3 rounded-xl bg-[#052a51] hover:bg-[#0a3e74] text-white text-[11px] font-bold transition-colors flex items-center justify-center gap-1.5 shadow-xs cursor-pointer"
@@ -197,7 +197,7 @@ export default function VendorHelpPage() {
             </div>
             <div className="space-y-1 pt-1 text-xs font-semibold text-gray-700">
               <div className="p-2 bg-white rounded-xl border border-purple-200 flex items-center justify-between text-[11px]">
-                <span>+91 78709 35277</span>
+                <span>+91 70901 20211</span>
                 <span className="text-[10px] text-purple-700 font-extrabold uppercase">CPO</span>
               </div>
               <p className="text-[11px] text-gray-500 truncate">vishal@intrihub.com</p>
@@ -206,7 +206,7 @@ export default function VendorHelpPage() {
 
           <div className="grid grid-cols-2 gap-2 mt-4">
             <a
-              href={`https://wa.me/917870935277?text=${encodeURIComponent(`Hi Vishal Poddar (CPO), I am reaching out regarding vendor store "${vendor?.businessName || "My Store"}" (ID: ${vendor?.id || "N/A"}). I need assistance with products/catalog: `)}`}
+              href={`https://wa.me/917090120211?text=${encodeURIComponent(`Hi Vishal Poddar (CPO), I am reaching out regarding vendor store "${vendor?.businessName || "My Store"}" (ID: ${vendor?.id || "N/A"}). I need assistance with products/catalog: `)}`}
               target="_blank"
               rel="noopener noreferrer"
               className="py-2.5 px-3 rounded-xl bg-purple-700 hover:bg-purple-800 text-white text-[11px] font-bold transition-colors flex items-center justify-center gap-1.5 shadow-xs cursor-pointer"
@@ -242,7 +242,7 @@ export default function VendorHelpPage() {
             </div>
             <div className="space-y-1 pt-1 text-xs font-semibold text-gray-700">
               <div className="p-2 bg-white rounded-xl border border-orange-200 flex items-center justify-between text-[11px]">
-                <span>+91 78709 35277</span>
+                <span>+91 70901 20211</span>
                 <span className="text-[10px] text-[#F26522] font-extrabold uppercase">Live</span>
               </div>
               <p className="text-[11px] text-gray-500 truncate">support@intrihub.com</p>

@@ -16,7 +16,7 @@ async function main() {
     testUser = await prisma.user.create({
       data: {
         name: "Ahmad Builder",
-        phone: "9264920211",
+        phone: "7090120211",
         email: "ahmad.builder@intrihub.com",
         role: "customer",
       },

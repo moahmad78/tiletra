@@ -342,7 +342,7 @@ We deliver ${cleanName} via our specialized site-delivery logistics network — 
       },
       {
         question: `Can I get bulk pricing for ${cleanName} for a large project in Bangalore?`,
-        answer: `Yes. Intrihub offers volume pricing and project-level quotes for bulk ${cleanName} orders. Contact our contractor desk via WhatsApp at +91 92649 20211 or fill the quote request form for dedicated project support, GST B2B invoicing, and phased delivery scheduling.`,
+        answer: `Yes. Intrihub offers volume pricing and project-level quotes for bulk ${cleanName} orders. Contact our contractor desk via WhatsApp at +91 70901 20211 or fill the quote request form for dedicated project support, GST B2B invoicing, and phased delivery scheduling.`,
       },
     ],
     crossLinks: [],

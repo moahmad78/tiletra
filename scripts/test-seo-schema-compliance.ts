@@ -46,7 +46,7 @@ async function runSeoSchemaTests() {
   assert(!JSON.stringify(org).includes("Technologies"), "Org schema contains NO 'Technologies' references");
   assert(org.address && org.address["@type"] === "PostalAddress", "Org schema has valid PostalAddress");
   assert(org.address.addressCountry === "IN", "Org address country is IN");
-  assert(org.telephone === "+91-92649-20211", "Org telephone formatted consistently (+91-92649-20211)");
+  assert(org.telephone === "+91-70901-20211", "Org telephone formatted consistently (+91-70901-20211)");
   assert(org.foundingDate === "2026", "Org foundingDate is set to 2026");
   assert(Array.isArray(org.sameAs) && org.sameAs.length >= 3, "Org sameAs has live social/brand profile links");
 

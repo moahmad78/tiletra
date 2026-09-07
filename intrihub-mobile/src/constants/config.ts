@@ -17,9 +17,9 @@ export const RAZORPAY_KEY_ID =
   "rzp_live_default";
 
 export const APP_VERSION = "1.0.0";
-export const SUPPORT_PHONE = "9264920211";
-export const SUPPORT_CALL_URL = "tel:9264920211";
-export const SUPPORT_WHATSAPP_URL = "https://wa.me/919264920211?text=Hello%20Intrihub%20Support";
+export const SUPPORT_PHONE = "7090120211";
+export const SUPPORT_CALL_URL = "tel:7090120211";
+export const SUPPORT_WHATSAPP_URL = "https://wa.me/917090120211?text=Hello%20Intrihub%20Support";
 
 export function getImageUrl(
   imagePath?: string | null,

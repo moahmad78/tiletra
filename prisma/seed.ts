@@ -171,8 +171,8 @@ async function main() {
     where: { id: "default-settings" },
     update: {
       storeName: "Intrihub",
-      contactPhone: "+91 78709 35277",
-      whatsappNumber: "+91 78709 35277",
+      contactPhone: "+91 70901 20211",
+      whatsappNumber: "+91 70901 20211",
       email: "support@intrihub.com",
       address: "Intrihub Central Supply Hub, Begur, Bengaluru, Karnataka 560114",
       freeDeliveryThreshold: 15000,
@@ -186,8 +186,8 @@ async function main() {
     create: {
       id: "default-settings",
       storeName: "Intrihub",
-      contactPhone: "+91 78709 35277",
-      whatsappNumber: "+91 78709 35277",
+      contactPhone: "+91 70901 20211",
+      whatsappNumber: "+91 70901 20211",
       email: "support@intrihub.com",
       address: "Intrihub Central Supply Hub, Begur, Bengaluru, Karnataka 560114",
       freeDeliveryThreshold: 15000,

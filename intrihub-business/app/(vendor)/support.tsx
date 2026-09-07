@@ -105,14 +105,14 @@ export default function VendorPartnerSupportScreen() {
     const text = encodeURIComponent(
       "Hello Intrihub Partner Support Desk, I am an onboarded vendor partner and need operational assistance."
     );
-    Linking.openURL(`https://wa.me/919264920211?text=${text}`).catch(() => {
-      Alert.alert("WhatsApp Helpline", "Message our Partner Support Desk at +91 9264920211");
+    Linking.openURL(`https://wa.me/917090120211?text=${text}`).catch(() => {
+      Alert.alert("WhatsApp Helpline", "Message our Partner Support Desk at +91 7090120211");
     });
   };
 
   const handleCallExecutive = () => {
-    Linking.openURL("tel:+919264920211").catch(() => {
-      Alert.alert("Call Support", "Partner Hotline: +91 9264920211");
+    Linking.openURL("tel:+917090120211").catch(() => {
+      Alert.alert("Call Support", "Partner Hotline: +91 7090120211");
     });
   };
 
@@ -196,7 +196,7 @@ export default function VendorPartnerSupportScreen() {
               <PhoneCall size={22} color="#1D4ED8" />
             </View>
             <Text style={styles.channelName}>Priority Hotline</Text>
-            <Text style={styles.channelDesc}>+91 9264920211 (Toll-Free Helpline)</Text>
+            <Text style={styles.channelDesc}>+91 7090120211 (Toll-Free Helpline)</Text>
             <View style={[styles.channelActionBtn, { backgroundColor: "#052A51" }]}>
               <Text style={styles.channelActionBtnText}>Call Executive</Text>
             </View>

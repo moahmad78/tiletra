@@ -762,7 +762,7 @@ export default function BusinessLoginScreen() {
             </View>
             <View style={styles.actionInfo}>
               <Text style={styles.actionTitle}>Partner & Executive Desk</Text>
-              <Text style={styles.actionDesc}>Call +91 9264920211 / 24/7 Helpline</Text>
+              <Text style={styles.actionDesc}>Call +91 7090120211 / 24/7 Helpline</Text>
             </View>
             <ChevronRight size={18} color="rgba(255, 255, 255, 0.6)" />
           </TouchableOpacity>

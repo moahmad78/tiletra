@@ -49,7 +49,7 @@ export default function ReturnsPolicyPage() {
           Transit Breakage & Defects
         </h2>
         <p className="text-neutral-700">
-          If your delivery contains damaged items or cracked tiles, simply record a quick video or take clear photos of the damaged packages and share them with us via WhatsApp (<a href="https://wa.me/917870935277" className="font-bold text-[#1E9E6B] hover:underline">+91 78709 35277</a>) or email (<a href="mailto:support@intrihub.com" className="font-bold text-[#052a51] hover:underline">support@intrihub.com</a>) within <strong>48 hours</strong> of delivery. We will dispatch replacements on priority freight.
+          If your delivery contains damaged items or cracked tiles, simply record a quick video or take clear photos of the damaged packages and share them with us via WhatsApp (<a href="https://wa.me/917090120211" className="font-bold text-[#1E9E6B] hover:underline">+91 70901 20211</a>) or email (<a href="mailto:support@intrihub.com" className="font-bold text-[#052a51] hover:underline">support@intrihub.com</a>) within <strong>48 hours</strong> of delivery. We will dispatch replacements on priority freight.
         </p>
       </section>
 
@@ -80,7 +80,7 @@ export default function ReturnsPolicyPage() {
           <p className="text-xs text-neutral-500 mt-0.5">Reach out to our customer resolution team with your Order ID.</p>
         </div>
         <a
-          href="https://wa.me/917870935277"
+          href="https://wa.me/917090120211"
           target="_blank"
           rel="noopener noreferrer"
           className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl bg-[#1E9E6B] hover:bg-emerald-700 text-white font-bold text-xs shadow-xs transition-colors shrink-0"

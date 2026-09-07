@@ -567,7 +567,7 @@ export default function ProductDetailsClient({
             {/* ── 7. Dedicated Inline WhatsApp Support (Gulshan Ali Sheikh) ── */}
             <div className="pt-2 border-t border-gray-100">
               <a
-                href={`https://wa.me/919198035803?text=${encodeURIComponent(`Hi Gulshan (Intrihub), I need expert guidance or project quote for ${definedProduct.name}`)}`}
+                href={`https://wa.me/917090120211?text=${encodeURIComponent(`Hi Gulshan (Intrihub), I need expert guidance or project quote for ${definedProduct.name}`)}`}
                 target="_blank"
                 rel="noopener noreferrer"
                 className="w-full py-2.5 px-3.5 bg-emerald-50 hover:bg-emerald-100 border border-emerald-200 text-emerald-800 rounded-2xl text-xs font-bold flex items-center justify-between transition-colors group cursor-pointer"

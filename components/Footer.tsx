@@ -132,7 +132,7 @@ export default function Footer() {
                   </svg>
                 </a>
                 <a
-                  href="https://wa.me/919264920211"
+                  href="https://wa.me/917090120211"
                   target="_blank"
                   rel="noopener noreferrer"
                   className="w-9 h-9 rounded-full bg-white/10 flex items-center justify-center hover:bg-[#25D366] text-white transition-all hover:scale-110"
@@ -250,7 +250,7 @@ export default function Footer() {
 
           <div className="flex justify-center gap-3 pt-2">
             <a
-              href="https://wa.me/919264920211"
+              href="https://wa.me/917090120211"
               target="_blank"
               rel="noopener noreferrer"
               className="px-3.5 py-2 rounded-xl bg-white/10 text-white text-xs font-bold flex items-center gap-1.5"
@@ -259,11 +259,11 @@ export default function Footer() {
               <span>WhatsApp Desk</span>
             </a>
             <a
-              href="tel:+919264920211"
+              href="tel:+917090120211"
               className="px-3.5 py-2 rounded-xl bg-white/10 text-white text-xs font-bold flex items-center gap-1.5"
             >
               <PhoneCall size={14} className="text-[#F26522]" />
-              <span>+91 92649 20211</span>
+              <span>+91 70901 20211</span>
             </a>
           </div>
 

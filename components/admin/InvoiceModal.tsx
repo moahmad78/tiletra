@@ -193,7 +193,7 @@ export default function InvoiceModal({
                 />
                 <div className="text-[11px] text-slate-700 font-semibold leading-relaxed">
                   <div>GSTIN: <b>29AAAAA0000A1Z5</b></div>
-                  <div>Mobile: <b>+91 9264920211</b></div>
+                  <div>Mobile: <b>+91 7090120211</b></div>
                   <div>Email: <b>support@intrihub.com</b></div>
                 </div>
               </div>

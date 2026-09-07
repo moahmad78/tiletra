@@ -241,7 +241,7 @@ export default function FloatingCustomerSupport() {
                         {/* Central Phone Hotline */}
                         <div className="p-3.5 rounded-2xl bg-gray-50 border border-gray-200/90 hover:border-blue-300 transition-all flex items-center justify-between group">
                           <a
-                            href="tel:+919264920211"
+                            href="tel:+917090120211"
                             className="flex items-center gap-3 flex-1 min-w-0"
                           >
                             <div className="w-10 h-10 rounded-xl bg-[#052a51] text-white flex items-center justify-center shrink-0 group-hover:scale-105 transition-transform">
@@ -249,23 +249,23 @@ export default function FloatingCustomerSupport() {
                             </div>
                             <div className="min-w-0">
                               <p className="text-[11px] text-gray-500 font-medium truncate">Customer Hotline</p>
-                              <p className="text-xs font-bold text-gray-900 truncate">+91 92649 20211</p>
+                              <p className="text-xs font-bold text-gray-900 truncate">+91 70901 20211</p>
                             </div>
                           </a>
                           <button
                             type="button"
-                            onClick={() => copyToClipboard("+919264920211", "Customer Hotline")}
+                            onClick={() => copyToClipboard("+917090120211", "Customer Hotline")}
                             title="Copy number"
                             className="p-1.5 text-gray-400 hover:text-[#052a51] transition-colors rounded-lg hover:bg-gray-200"
                           >
-                            {copiedText === "+919264920211" ? <Check size={14} className="text-green-600" /> : <Copy size={14} />}
+                            {copiedText === "+917090120211" ? <Check size={14} className="text-green-600" /> : <Copy size={14} />}
                           </button>
                         </div>
 
                         {/* WhatsApp Support Desk */}
                         <div className="p-3.5 rounded-2xl bg-emerald-50/60 border border-emerald-200/80 hover:border-emerald-300 transition-all flex items-center justify-between group">
                           <a
-                            href="https://wa.me/919264920211?text=Hello%20Intrihub%20Support,%20I%20need%20assistance."
+                            href="https://wa.me/917090120211?text=Hello%20Intrihub%20Support,%20I%20need%20assistance."
                             target="_blank"
                             rel="noopener noreferrer"
                             className="flex items-center gap-3 flex-1 min-w-0"
@@ -275,7 +275,7 @@ export default function FloatingCustomerSupport() {
                             </div>
                             <div className="min-w-0">
                               <p className="text-[11px] text-emerald-800 font-semibold truncate">WhatsApp Chat</p>
-                              <p className="text-xs font-bold text-gray-900 truncate">+91 92649 20211</p>
+                              <p className="text-xs font-bold text-gray-900 truncate">+91 70901 20211</p>
                             </div>
                           </a>
                           <span className="px-2 py-0.5 text-[9.5px] font-black uppercase tracking-wider bg-emerald-200 text-emerald-900 rounded-md">
@@ -286,7 +286,7 @@ export default function FloatingCustomerSupport() {
                         {/* Operations & Logistics Hotline */}
                         <div className="p-3.5 rounded-2xl bg-gray-50 border border-gray-200/90 hover:border-blue-300 transition-all flex items-center justify-between group">
                           <a
-                            href="tel:+919198035803"
+                            href="tel:+917090120211"
                             className="flex items-center gap-3 flex-1 min-w-0"
                           >
                             <div className="w-10 h-10 rounded-xl bg-[#083666] text-white flex items-center justify-center shrink-0 group-hover:scale-105 transition-transform">
@@ -294,16 +294,16 @@ export default function FloatingCustomerSupport() {
                             </div>
                             <div className="min-w-0">
                               <p className="text-[11px] text-gray-500 font-medium truncate">Operations & Dispatch</p>
-                              <p className="text-xs font-bold text-gray-900 truncate">+91 91980 35803</p>
+                              <p className="text-xs font-bold text-gray-900 truncate">+91 70901 20211</p>
                             </div>
                           </a>
                           <button
                             type="button"
-                            onClick={() => copyToClipboard("+919198035803", "Operations Hotline")}
+                            onClick={() => copyToClipboard("+917090120211", "Operations Hotline")}
                             title="Copy number"
                             className="p-1.5 text-gray-400 hover:text-[#052a51] transition-colors rounded-lg hover:bg-gray-200"
                           >
-                            {copiedText === "+919198035803" ? <Check size={14} className="text-green-600" /> : <Copy size={14} />}
+                            {copiedText === "+917090120211" ? <Check size={14} className="text-green-600" /> : <Copy size={14} />}
                           </button>
                         </div>
 
@@ -486,7 +486,7 @@ export default function FloatingCustomerSupport() {
               {/* Modal Bottom Action Bar */}
               <div className="p-4 bg-gray-50 border-t border-gray-100 flex items-center justify-between gap-3">
                 <a
-                  href="https://wa.me/919264920211?text=Hello%20Intrihub%20Team,%20I%20have%20an%20urgent%20query."
+                  href="https://wa.me/917090120211?text=Hello%20Intrihub%20Team,%20I%20have%20an%20urgent%20query."
                   target="_blank"
                   rel="noopener noreferrer"
                   className="flex-1 py-2.5 px-4 bg-[#25D366] hover:bg-[#20b858] text-white text-xs font-black rounded-xl transition-all shadow-xs flex items-center justify-center gap-2"

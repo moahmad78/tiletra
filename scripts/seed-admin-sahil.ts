@@ -7,7 +7,7 @@ async function main() {
   const email = "sahil@intrihub.com";
   const password = "sahil@7814";
   const passwordHash = crypto.createHash("sha256").update(password).digest("hex");
-  const phone = "+919264920211";
+  const phone = "+917090120211";
 
   console.log("Upserting Super Admin User: Sahil Sheikh...");
 

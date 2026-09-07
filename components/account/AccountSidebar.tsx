@@ -307,7 +307,7 @@ export default function AccountSidebar() {
           Need sample boxes, installation advice, or tile quantity calculations?
         </p>
         <a
-          href="https://wa.me/919198035803?text=Hi%20Gulshan,%20I%20need%20assistance%20with%20my%20Intrihub%20account"
+          href="https://wa.me/917090120211?text=Hi%20Gulshan,%20I%20need%20assistance%20with%20my%20Intrihub%20account"
           target="_blank"
           rel="noopener noreferrer"
           className="inline-flex items-center gap-1.5 text-xs font-black text-[#25D366] hover:underline"

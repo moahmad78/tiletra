@@ -318,7 +318,7 @@ export default function HomeClient({
                 </Link>
 
                 <a
-                  href="https://wa.me/919264920211?text=Hi%20Intrihub,%20I%20need%20urgent%20building%20materials%20delivery%20to%20my%20site."
+                  href="https://wa.me/917090120211?text=Hi%20Intrihub,%20I%20need%20urgent%20building%20materials%20delivery%20to%20my%20site."
                   target="_blank"
                   rel="noopener noreferrer"
                   className="w-full sm:w-auto"

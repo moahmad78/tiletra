@@ -18,7 +18,7 @@ async function runTests() {
       const testUser = await prisma.user.create({
         data: {
           email: `testvendor_${Date.now()}@intrihub.test`,
-          phone: `9178709${Math.floor(10000 + Math.random() * 90000)}`,
+          phone: `9170901${Math.floor(10000 + Math.random() * 90000)}`,
           role: "vendor",
           name: "Test Vendor Hub",
         },

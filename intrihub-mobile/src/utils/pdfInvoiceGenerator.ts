@@ -306,7 +306,7 @@ export function getInvoiceHtml(order: any): string {
             <img src="https://www.intrihub.com/logo/intri-web-logo.png" alt="IntriHub Logo" class="logo-img" onerror="this.style.display='none'" />
             <div style="font-size: 11px; color: #334155; margin-top: 4px; line-height: 18px; font-weight: 600;">
               <div>GSTIN: <b>29AAAAA0000A1Z5</b></div>
-              <div>Mobile: <b>+91 9264920211</b></div>
+              <div>Mobile: <b>+91 7090120211</b></div>
               <div>Email: <b>support@intrihub.com</b></div>
             </div>
           </td>

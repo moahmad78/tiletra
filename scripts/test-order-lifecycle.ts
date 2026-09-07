@@ -91,11 +91,11 @@ async function main() {
   console.log("\n🧪 Test 2: Valid Order Placement & Stock Decrement...");
   const orderRes = await createOrder({
     customerName: "Sahil Test Customer",
-    customerPhone: "9264920211",
+    customerPhone: "7090120211",
     customerEmail: "customer@test.com",
     shippingAddress: {
       fullName: "Sahil Test Customer",
-      phone: "9264920211",
+      phone: "7090120211",
       street: "45 MG Road",
       city: "Bangalore",
       state: "Karnataka",

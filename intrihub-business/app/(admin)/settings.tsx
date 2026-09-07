@@ -43,8 +43,8 @@ export default function AdminSettingsScreen() {
   // Form State
   const [storeName, setStoreName] = useState("Intrihub");
   const [gstNumber, setGstNumber] = useState("29AABCT1234F1Z8");
-  const [contactPhone, setContactPhone] = useState("+91 78709 35277");
-  const [whatsappNumber, setWhatsappNumber] = useState("+91 78709 35277");
+  const [contactPhone, setContactPhone] = useState("+91 70901 20211");
+  const [whatsappNumber, setWhatsappNumber] = useState("+91 70901 20211");
   const [email, setEmail] = useState("support@intrihub.com");
   const [address, setAddress] = useState("Intrihub Central Supply Hub, Begur, Bangalore, Karnataka - 560114");
 
@@ -231,7 +231,7 @@ export default function AdminSettingsScreen() {
                 value={contactPhone}
                 onChangeText={setContactPhone}
                 keyboardType="phone-pad"
-                placeholder="+91 78709 35277"
+                placeholder="+91 70901 20211"
                 placeholderTextColor={COLORS.textTertiary}
               />
             </View>
@@ -243,7 +243,7 @@ export default function AdminSettingsScreen() {
                 value={whatsappNumber}
                 onChangeText={setWhatsappNumber}
                 keyboardType="phone-pad"
-                placeholder="+91 78709 35277"
+                placeholder="+91 70901 20211"
                 placeholderTextColor={COLORS.textTertiary}
               />
             </View>

@@ -312,7 +312,7 @@ export default function ForArchitectsPage() {
             </div>
             <div className="flex items-center gap-3 shrink-0">
               <a
-                href="https://wa.me/919264920211?text=Hi%20Intrihub%20Trade%20Desk,%20I%20am%20an%20architect%20specifier%20requesting%20BOQ%20support%20and%20sample%20boxes."
+                href="https://wa.me/917090120211?text=Hi%20Intrihub%20Trade%20Desk,%20I%20am%20an%20architect%20specifier%20requesting%20BOQ%20support%20and%20sample%20boxes."
                 target="_blank"
                 rel="noopener noreferrer"
                 className="px-6 py-3 bg-[#25D366] hover:bg-[#20ba59] text-white font-bold rounded-xl text-xs sm:text-sm transition-all flex items-center gap-2"
@@ -321,7 +321,7 @@ export default function ForArchitectsPage() {
                 <ArrowRight size={14} />
               </a>
               <a
-                href="tel:+919264920211"
+                href="tel:+917090120211"
                 className="px-6 py-3 bg-white/10 hover:bg-white/20 text-white font-bold rounded-xl text-xs sm:text-sm transition-all border border-white/20 flex items-center gap-2"
               >
                 <PhoneCall size={14} />

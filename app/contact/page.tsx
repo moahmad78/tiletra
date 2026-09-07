@@ -38,7 +38,7 @@ export default function ContactPage() {
       name: "IntriHub",
       alternateName: "IntriHub QuickCommerce",
       url: BASE_SITE_URL,
-      telephone: "+91-92649-20211",
+      telephone: "+91-70901-20211",
       email: "support@intrihub.com",
       address: {
         "@type": "PostalAddress",

@@ -129,7 +129,7 @@ export default function FAQ() {
                 We couldn't find an exact answer for "{searchQuery}". You can chat with our team on WhatsApp for immediate guidance.
               </p>
               <a
-                href={`https://wa.me/919264920211?text=Hi%20IntriHub,%20I%20have%20a%20question:%20${encodeURIComponent(
+                href={`https://wa.me/917090120211?text=Hi%20IntriHub,%20I%20have%20a%20question:%20${encodeURIComponent(
                   searchQuery
                 )}`}
                 target="_blank"
@@ -202,7 +202,7 @@ export default function FAQ() {
 
             <div className="space-y-2.5 pt-2">
               <a
-                href="https://wa.me/919264920211?text=Hi%20Intrihub,%20I%20need%20assistance%20with%20an%20order."
+                href="https://wa.me/917090120211?text=Hi%20Intrihub,%20I%20need%20assistance%20with%20an%20order."
                 target="_blank"
                 rel="noopener noreferrer"
                 className="w-full h-11 bg-[#1E9E6B] hover:bg-emerald-600 text-white text-xs font-black rounded-xl flex items-center justify-center gap-2 shadow-xs transition-transform active:scale-95"
@@ -212,11 +212,11 @@ export default function FAQ() {
               </a>
 
               <a
-                href="tel:+919264920211"
+                href="tel:+917090120211"
                 className="w-full h-11 bg-white/10 hover:bg-white/15 border border-white/20 text-white text-xs font-bold rounded-xl flex items-center justify-center gap-2 transition-colors"
               >
                 <PhoneCall size={14} className="text-[#F26522]" />
-                <span>Call Helpline (+91 92649 20211)</span>
+                <span>Call Helpline (+91 70901 20211)</span>
               </a>
             </div>
 

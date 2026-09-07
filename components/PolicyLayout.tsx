@@ -306,7 +306,7 @@ export default function PolicyLayout({
               </p>
               <div className="space-y-2 pt-1">
                 <a
-                  href="https://wa.me/919264920211?text=Hi%20Intrihub,%20I%20have%20a%20query%20regarding%20policies%20or%20orders."
+                  href="https://wa.me/917090120211?text=Hi%20Intrihub,%20I%20have%20a%20query%20regarding%20policies%20or%20orders."
                   target="_blank"
                   rel="noopener noreferrer"
                   className="flex items-center gap-2 text-xs font-bold text-[#1E9E6B] hover:underline"
@@ -315,11 +315,11 @@ export default function PolicyLayout({
                   <span>WhatsApp Priority Desk</span>
                 </a>
                 <a
-                  href="tel:+919264920211"
+                  href="tel:+917090120211"
                   className="flex items-center gap-2 text-xs font-bold text-neutral-800 hover:text-[#052a51] transition-colors"
                 >
                   <Phone size={13} className="text-[#F26522]" />
-                  <span>+91 92649 20211</span>
+                  <span>+91 70901 20211</span>
                 </a>
                 <a
                   href="mailto:support@intrihub.com"

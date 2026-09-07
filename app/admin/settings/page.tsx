@@ -17,8 +17,8 @@ export default function AdminSettingsPage() {
 
   const [storeName, setStoreName] = useState("Intrihub");
   const [gstNumber, setGstNumber] = useState("29AABCT1234F1Z8");
-  const [contactPhone, setContactPhone] = useState("+91 78709 35277");
-  const [whatsappNumber, setWhatsappNumber] = useState("+91 78709 35277");
+  const [contactPhone, setContactPhone] = useState("+91 70901 20211");
+  const [whatsappNumber, setWhatsappNumber] = useState("+91 70901 20211");
   const [email, setEmail] = useState("support@intrihub.com");
   const [address, setAddress] = useState("Intrihub Central Supply Hub, Begur, Bangalore, Karnataka - 560114");
   const [freeDeliveryThreshold, setFreeDeliveryThreshold] = useState(15000);
@@ -224,7 +224,7 @@ export default function AdminSettingsPage() {
                 <p className="font-black text-[#052a51] text-sm">Sahil Sheikh</p>
                 <p className="text-[11px] text-amber-800 font-bold">Tech & Platform Architecture</p>
                 <p className="text-[11px] text-gray-600">Email: sahil@intrihub.com</p>
-                <p className="text-[11px] text-gray-600">Phone: +91 92649 20211</p>
+                <p className="text-[11px] text-gray-600">Phone: +91 70901 20211</p>
               </div>
 
               {/* Gulshan */}
@@ -235,7 +235,7 @@ export default function AdminSettingsPage() {
                 <p className="font-black text-[#052a51] text-sm">Gulshan</p>
                 <p className="text-[11px] text-blue-800 font-bold">Operations & Logistics</p>
                 <p className="text-[11px] text-gray-600">Email: gulshan@intrihub.com</p>
-                <p className="text-[11px] text-gray-600">Phone: +91 91980 35803</p>
+                <p className="text-[11px] text-gray-600">Phone: +91 70901 20211</p>
               </div>
 
               {/* Vishal Poddar */}
@@ -246,7 +246,7 @@ export default function AdminSettingsPage() {
                 <p className="font-black text-[#052a51] text-sm">Vishal Poddar</p>
                 <p className="text-[11px] text-purple-800 font-bold">Product & Merchandising</p>
                 <p className="text-[11px] text-gray-600">Email: vishal@intrihub.com</p>
-                <p className="text-[11px] text-gray-600">Phone: +91 78709 35277</p>
+                <p className="text-[11px] text-gray-600">Phone: +91 70901 20211</p>
               </div>
             </div>
           </div>

@@ -16,7 +16,7 @@ export const INTRIHUB_BRAND = {
   adminLoginUrl: "https://intrihub.com/admin/login",
   customerShopUrl: "https://intrihub.com/shop",
   ordersUrl: "https://intrihub.com/account/orders",
-  supportPhone: "+91 78709 35277",
+  supportPhone: "+91 70901 20211",
   supportEmail: "support@intrihub.com",
   vendorEmail: "vendor@intrihub.com",
   logoUrl: "https://intrihub.com/logo/intri-web-logo.png",
