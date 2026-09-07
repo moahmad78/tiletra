@@ -103,8 +103,9 @@ export async function validateAdminCredentialsAndSendOtp(formData: {
               <p style="font-size: 12px; color: #64748b; margin: 0;">This code is valid for <strong>10 minutes</strong>. Never share this code with anyone.</p>
             </div>
             
-            <div style="text-align: center; margin-top: 24px;">
-              <p style="font-size: 11px; color: #94a3b8; margin: 0;">If you did not initiate this admin login attempt, please secure your credentials immediately.</p>
+            <div style="text-align: center; margin-top: 24px; border-top: 1px solid rgba(255,255,255,0.1); padding-top: 16px;">
+              <p style="font-size: 11px; color: #94a3b8; margin: 0 0 6px 0;">IntriHub&apos;s only official website is <a href="https://www.intrihub.com" style="color:#ffffff;font-weight:bold;text-decoration:underline;">www.intrihub.com</a>. We are not affiliated with any other website using a similar name.</p>
+              <p style="font-size: 10px; color: #64748b; margin: 0;">If you did not initiate this admin login attempt, please secure your credentials immediately.</p>
             </div>
           </div>
         `,

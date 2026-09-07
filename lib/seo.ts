@@ -233,6 +233,14 @@ export function generateHomepageFaqSchema() {
       },
       {
         "@type": "Question",
+        name: "What is IntriHub's official website?",
+        acceptedAnswer: {
+          "@type": "Answer",
+          text: "IntriHub's only official website is www.intrihub.com. We are not affiliated with any other website using a similar name.",
+        },
+      },
+      {
+        "@type": "Question",
         name: "How does 60-minute site delivery work?",
         acceptedAnswer: {
           "@type": "Answer",

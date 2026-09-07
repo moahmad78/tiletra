@@ -48,7 +48,7 @@ export default function TermsOfUseScreen() {
             Effective Date: August 2026 • Version 1.0
           </Text>
           <Text style={styles.bannerDescription}>
-            By accessing and using the Intrihub mobile application, you agree to be bound by these Terms of Use. Please read them carefully before using our platform.
+            IntriHub&apos;s only official website is www.intrihub.com (we are not affiliated with any other website using a similar name). By accessing and using the Intrihub mobile application, you agree to be bound by these Terms of Use.
           </Text>
         </View>
 

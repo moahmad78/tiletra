@@ -98,7 +98,7 @@ export default function AboutPage() {
               Quality Supplies for <span className="text-[#F26522]">Every Space</span>
             </h1>
             <p className="text-white/80 text-base md:text-lg mt-4 max-w-xl mx-auto leading-relaxed">
-              IntriHub is on a mission to revolutionize interior & construction material procurement for homeowners, architects, and builders. From electricals and plumbing to vitrified tiles, hardware, plywood, and sanitaryware, we deliver factory-fresh supplies in 60 minutes across Bengaluru & Pan-India.
+              IntriHub is on a mission to revolutionize interior & construction material procurement for homeowners, architects, and builders. From electricals and plumbing to vitrified tiles, hardware, plywood, and sanitaryware, we deliver factory-fresh supplies in 60 minutes across Bengaluru & Pan-India. IntriHub&apos;s only official website is <strong className="text-white font-bold underline decoration-[#F26522] underline-offset-2">www.intrihub.com</strong> — we are not affiliated with any other website using a similar name.
             </p>
           </div>
         </div>

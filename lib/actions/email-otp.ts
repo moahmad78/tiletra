@@ -237,9 +237,14 @@ export async function sendEmailOtp(
         </p>
       </div>
 
-      <p style="color:#94a3b8;font-size:12px;text-align:center;margin-top:24px;line-height:1.4;">
-        If you did not request this verification code, you can safely ignore this email.
-      </p>
+      <div style="border-top:1px solid #e2e8f0;margin-top:24px;padding-top:16px;text-align:center;">
+        <p style="color:#64748b;font-size:11px;margin:0 0 6px;line-height:1.4;">
+          IntriHub&apos;s only official website is <a href="https://www.intrihub.com" style="color:#052a51;font-weight:bold;text-decoration:none;">www.intrihub.com</a>. We are not affiliated with any other website using a similar name.
+        </p>
+        <p style="color:#94a3b8;font-size:11px;margin:0;line-height:1.4;">
+          If you did not request this verification code, you can safely ignore this email.
+        </p>
+      </div>
     </div>
   `;
 

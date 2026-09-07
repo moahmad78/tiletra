@@ -335,6 +335,14 @@ export default function PolicyLayout({
           {/* Right Main Policy Content Body */}
           <div className="flex-1 w-full min-w-0">
             <div className="bg-white rounded-3xl p-6 sm:p-8 md:p-12 shadow-xs border border-neutral-200 space-y-6 text-sm sm:text-base text-neutral-700 leading-relaxed font-normal">
+              {/* Official Website Notice Banner */}
+              <div className="p-4 rounded-2xl bg-blue-50/70 border border-blue-200/80 text-[#052a51] text-xs sm:text-sm leading-relaxed flex items-start gap-3">
+                <ShieldCheck size={18} className="text-[#F26522] shrink-0 mt-0.5" />
+                <p>
+                  IntriHub&apos;s only official website is <strong className="font-bold underline decoration-[#F26522] underline-offset-2">www.intrihub.com</strong>. We are not affiliated with any other website using a similar name.
+                </p>
+              </div>
+
               {children}
             </div>
           </div>

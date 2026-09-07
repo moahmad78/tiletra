@@ -48,7 +48,7 @@ export default function PrivacyPolicyScreen() {
             Effective Date: August 2026 • Version 1.0
           </Text>
           <Text style={styles.bannerDescription}>
-            At Intrihub, we respect your personal data and ensure all interior supply transactions and delivery details remain encrypted and secure.
+            IntriHub&apos;s only official website is www.intrihub.com. We respect your personal data and ensure all interior supply transactions and delivery details remain encrypted and secure.
           </Text>
         </View>
 

@@ -238,6 +238,13 @@ export default function Footer() {
               </a>
             </p>
           </div>
+
+          {/* Official Website Disclaimer */}
+          <div className="pt-4 border-t border-white/5 text-center text-xs text-white/50">
+            <p>
+              IntriHub&apos;s only official website is <strong className="text-white/80 font-bold">www.intrihub.com</strong>. We are not affiliated with any other website using a similar name.
+            </p>
+          </div>
         </div>
       </footer>
 
@@ -284,7 +291,11 @@ export default function Footer() {
             <Link href="/terms" className="hover:text-white">Terms</Link>
           </div>
 
-          <div className="text-[10px] text-white/40 pt-2">
+          <p className="text-[11px] text-white/50 pt-1 leading-relaxed max-w-sm mx-auto">
+            IntriHub&apos;s only official website is <strong className="text-white/80 font-bold">www.intrihub.com</strong>. We are not affiliated with any other website using a similar name.
+          </p>
+
+          <div className="text-[10px] text-white/40 pt-1">
             <p>© {new Date().getFullYear()} IntriHub QuickCommerce. All Rights Reserved.</p>
             <p className="mt-1">
               Founded & Developed by{" "}

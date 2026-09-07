@@ -390,6 +390,16 @@ function AccountPageContent() {
             </div>
           </div>
 
+          {/* Anti-phishing trust notice */}
+          {!isAuthenticated && (
+            <div className="p-3.5 bg-blue-50/90 border border-blue-200/80 rounded-2xl flex items-center gap-2.5 text-xs text-[#052a51] shadow-xs">
+              <ShieldCheck size={16} className="text-[#1E9E6B] shrink-0" />
+              <p>
+                Our official website is <strong className="font-bold underline decoration-[#F26522] underline-offset-2">www.intrihub.com</strong> — please do not enter your details on any other site.
+              </p>
+            </div>
+          )}
+
           {/* ── Mobile Edit Profile Sheet ── */}
           {isAuthenticated && isEditingProfile && (
             <div className="bg-white rounded-3xl border border-gray-200/90 shadow-xs p-5 space-y-4">

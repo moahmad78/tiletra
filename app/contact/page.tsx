@@ -94,6 +94,11 @@ export default function ContactPage() {
             <p className="text-white/80 text-base sm:text-lg md:text-xl max-w-2xl mx-auto leading-relaxed">
               We&apos;re here to power your construction and interior projects. Reach out for 60-minute site dispatch, project trade queries, or custom material quotes.
             </p>
+            <div className="inline-flex items-center gap-2 mt-5 px-4 py-2.5 rounded-2xl bg-white/10 border border-white/15 text-white/90 text-xs sm:text-sm max-w-xl mx-auto backdrop-blur-xs">
+              <span>
+                IntriHub&apos;s only official website is <strong className="text-white font-bold underline decoration-[#F26522] underline-offset-2">www.intrihub.com</strong>. We are not affiliated with any other website using a similar name.
+              </span>
+            </div>
           </div>
         </div>
 

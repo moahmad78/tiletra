@@ -432,6 +432,14 @@ export default function LoginModal() {
             )}
           </motion.div>
         </AnimatePresence>
+
+        {/* Anti-phishing official website notice */}
+        <div className="px-6 py-3 bg-gray-50 border-t border-gray-100 flex items-center justify-center gap-2 text-[11px] text-gray-500 text-center">
+          <ShieldCheck size={14} className="text-[#1E9E6B] shrink-0" />
+          <span>
+            Our official website is <strong className="text-gray-800 font-bold">www.intrihub.com</strong> — please do not enter your details on any other site.
+          </span>
+        </div>
       </motion.div>
 
       {/* Floating Support Button strictly when Customer Login Modal is open */}

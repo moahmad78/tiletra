@@ -39,6 +39,12 @@ export const INTRIHUB_FAQS: FAQItem[] = [
 
   // ── Ordering & Payment ──
   {
+    id: "ord-0",
+    categoryId: "orders",
+    question: "What is IntriHub's official website?",
+    answer: "IntriHub's only official website is www.intrihub.com. We are not affiliated with any other website using a similar name.",
+  },
+  {
     id: "ord-1",
     categoryId: "orders",
     question: "How does the Smart Calculator on product pages work?",
