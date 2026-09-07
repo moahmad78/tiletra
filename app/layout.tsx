@@ -30,11 +30,11 @@ const jakarta = Plus_Jakarta_Sans({
 export const metadata: Metadata = {
   metadataBase: new URL(BASE_SITE_URL),
   title: {
-    default: "IntriHub | Building & Interior Materials Marketplace — Bengaluru & Pan-India",
+    default: "IntriHub - Construction & Interior Materials Bangalore",
     template: "%s | IntriHub",
   },
   description:
-    "Intrihub (IntriHub) — India's leading building & interior materials quick-commerce marketplace. Buy tiles, granite, electrical wires, sanitaryware, false ceilings, and hardware on Intrihub with direct factory prices and 60-minute site delivery.",
+    "Buy tiles, electrical, plumbing, plywood, hardware & furniture online at wholesale prices. Fast delivery across Bengaluru & Pan-India with IntriHub.",
   keywords: [
     "Intrihub",
     "IntriHub",
@@ -86,28 +86,28 @@ export const metadata: Metadata = {
   },
   manifest: "/site.webmanifest",
   openGraph: {
-    title: "IntriHub | Building & Interior Materials Marketplace — Bengaluru & Pan-India",
+    title: "IntriHub - Construction & Interior Materials Bangalore",
     description:
-      "Intrihub — India's instant building materials quick-commerce network. Factory-direct delivery within 60 minutes for electrical, lighting, tiles, plumbing, and hardware.",
+      "Buy tiles, electrical, plumbing, plywood, hardware & furniture online at wholesale prices. Delivery across Bengaluru.",
     type: "website",
-    url: BASE_SITE_URL,
+    url: "https://www.intrihub.com/",
     siteName: "IntriHub",
     locale: "en_IN",
     images: [
       {
-        url: "/og-image.png",
+        url: `${BASE_SITE_URL}/og-image.png`,
         width: 1200,
         height: 630,
-        alt: "IntriHub - Building & Interior Materials Marketplace",
+        alt: "IntriHub - Construction & Interior Materials Bangalore",
       },
     ],
   },
   twitter: {
     card: "summary_large_image",
-    title: "IntriHub | Building & Interior Materials Marketplace — Bengaluru & Pan-India",
+    title: "IntriHub - Construction & Interior Materials Bangalore",
     description:
-      "Intrihub — India's instant building materials quick-commerce network. Direct factory site delivery within 60 minutes.",
-    images: ["/og-image.png"],
+      "Buy tiles, electrical, plumbing, plywood, hardware & furniture online at wholesale prices. Delivery across Bengaluru.",
+    images: [`${BASE_SITE_URL}/og-image.png`],
   },
 };
 

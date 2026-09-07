@@ -59,7 +59,6 @@ export function generateRootGraphSchema() {
         telephone: "+91-92649-20211",
         sameAs: [
           "https://www.instagram.com/intrihub_/",
-          "https://www.instagram.com/sahil_sheikh78/",
           "https://www.linkedin.com/company/intrihub",
           "https://www.facebook.com/intrihub",
         ],
@@ -178,7 +177,6 @@ export function generateOrganizationSchema() {
       sameAs: "https://www.instagram.com/sahil_sheikh78/",
     },
     sameAs: [
-      "https://www.instagram.com/sahil_sheikh78/",
       "https://www.instagram.com/intrihub_/",
       "https://www.linkedin.com/company/intrihub",
       "https://www.facebook.com/intrihub",
@@ -616,7 +614,90 @@ export function generateItemListSchema(items: Array<{ name: string; url: string;
       position: item.position || idx + 1,
       name: item.name,
       url: item.url.startsWith("http") ? item.url : `${BASE_SITE_URL}${item.url.startsWith("/") ? item.url : `/${item.url}`}`,
-      image: item.image ? (item.image.startsWith("http") ? item.image : `${BASE_SITE_URL}${item.image.startsWith("/") ? item.image : `/${item.image}`}`) : undefined,
     })),
   };
+}
+
+/**
+ * LocalBusiness Schema scoped to a specific product category (and optionally a sub-location).
+ * Used on /shop/[category] and /shop/[category]/[location] pages.
+ */
+export function generateLocalBusinessCategorySchema(opts: {
+  categoryName: string;
+  categorySlug: string;
+  locationName?: string;
+  locationArea?: string;
+  pincodes?: string[];
+}) {
+  const { categoryName, categorySlug, locationName, locationArea, pincodes } = opts;
+  const pageUrl = locationName
+    ? getCanonicalUrl(
+        `/shop/${categorySlug}/${locationName.toLowerCase().replace(/\s+/g, "-")}`
+      )
+    : getCanonicalUrl(`/shop/${categorySlug}`);
+
+  const nameSuffix = locationName
+    ? ` \u2014 ${locationName}, ${locationArea || "Bangalore"}`
+    : " \u2014 Bangalore";
+
+  return {
+    "@context": "https://schema.org",
+    "@type": "LocalBusiness",
+    "@id": `${BASE_SITE_URL}/#localbusiness`,
+    name: `Intrihub ${categoryName}${nameSuffix}`,
+    url: pageUrl,
+    telephone: "+91-92649-20211",
+    image: `${BASE_SITE_URL}/og-image.png`,
+    priceRange: "\u20b9\u20b9",
+    knowsAbout: [
+      categoryName,
+      "Interior Materials",
+      "Construction Supplies",
+      "Building Materials Bangalore",
+    ],
+    address: {
+      "@type": "PostalAddress",
+      streetAddress: "41, 10th A Cross Rd, Janapriya Layout, Begur",
+      addressLocality: locationName || "Bengaluru",
+      addressRegion: "Karnataka",
+      postalCode: pincodes?.[0] || "560114",
+      addressCountry: "IN",
+    },
+    areaServed: locationName
+      ? [
+          { "@type": "City", name: "Bengaluru" },
+          { "@type": "Place", name: locationName },
+          ...(locationArea ? [{ "@type": "Place", name: locationArea }] : []),
+        ]
+      : [
+          { "@type": "City", name: "Bengaluru" },
+          { "@type": "Country", name: "India" },
+        ],
+    parentOrganization: {
+      "@id": `${BASE_SITE_URL}/#organization`,
+    },
+  };
+}
+
+/**
+ * Location-specific SEO intro paragraph for /shop/[category]/[location] pages.
+ * Uses 4 rotating sentence structures keyed by zoneType to avoid identical doorway-page copy.
+ */
+export function generateLocationIntro(opts: {
+  categoryName: string;
+  locationName: string;
+  locationArea: string;
+  zoneType: "residential" | "commercial" | "tech_hub" | "industrial";
+  context: string;
+}): string {
+  const { categoryName, locationName, locationArea, zoneType, context } = opts;
+
+  const templates: Record<string, string> = {
+    residential: `${context} For homeowners and renovation contractors working across ${locationName}, Intrihub delivers ${categoryName} directly to your site \u2014 no warehouse trips, no middlemen. Browse our complete ${categoryName} catalog and get same-day dispatch to ${locationName} and the surrounding ${locationArea} area on all in-stock orders placed before 2\u202fPM.`,
+    commercial: `${locationName} hosts a dense mix of commercial construction and interior fit-out projects that demand quality ${categoryName} at competitive trade pricing. ${context} Intrihub serves ${locationName}-based contractors, architects, and interior firms with a verified ${categoryName} catalog, B2B GST invoicing, and reliable site delivery \u2014 so your project timeline stays intact.`,
+    tech_hub: `${context} As ${locationName}\u2019s residential footprint grows alongside its tech corridor, demand for quality ${categoryName} at transparent wholesale prices has grown sharply. Intrihub\u2019s direct-dispatch model eliminates the local dealer markup \u2014 bringing factory-verified ${categoryName} to your ${locationName} site with same-day delivery on in-stock items.`,
+    industrial: `${context} Intrihub\u2019s ${categoryName} catalog serves ${locationName}-area projects with verified technical specifications, volume pricing for bulk orders, and direct site logistics. Contractors and procurement managers operating in ${locationName} and ${locationArea} can order online and receive scheduled deliveries with consolidated GST B2B invoicing for every purchase.`,
+  };
+
+  return templates[zoneType] ?? templates.residential;
 }

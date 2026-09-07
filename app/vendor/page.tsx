@@ -29,6 +29,9 @@ import {
 import { toast } from "sonner";
 import { formatPrice } from "@/lib/formatters";
 import VendorKycBanner from "@/components/vendor/VendorKycBanner";
+import VendorOnboardingChecklist from "@/components/vendor/VendorOnboardingChecklist";
+import { getVendorOnboardingProgress } from "@/lib/actions/vendor-onboarding";
+import type { OnboardingProgress } from "@/lib/actions/vendor-onboarding";
 
 export default function VendorDashboardPage() {
   const { vendor } = useVendorAuth();
@@ -44,16 +47,26 @@ export default function VendorDashboardPage() {
   });
   const [recentProducts, setRecentProducts] = useState<Product[]>([]);
   const [loading, setLoading] = useState(true);
+  const [onboardingProgress, setOnboardingProgress] =
+    useState<OnboardingProgress>({
+      hasProfile: false,
+      hasBankDetails: false,
+      hasFirstProduct: false,
+      hasApprovedProduct: false,
+      hasFirstOrder: false,
+    });
 
   const loadData = async () => {
     if (!vendor?.id) return;
     try {
-      const [s, prods] = await Promise.all([
+      const [s, prods, onboarding] = await Promise.all([
         getVendorDashboardStats(vendor.id),
         getVendorProducts(vendor.id),
+        getVendorOnboardingProgress(vendor.id),
       ]);
       setStats(s);
       setRecentProducts(prods.slice(0, 5));
+      setOnboardingProgress(onboarding);
     } catch (e) {
       console.error("Error loading vendor dashboard:", e);
     } finally {
@@ -93,6 +106,9 @@ export default function VendorDashboardPage() {
     <div className="space-y-6">
       {/* Mandatory KYC Warning Banner */}
       <VendorKycBanner vendor={vendor} />
+
+      {/* Vendor Onboarding Checklist — shown until all 5 steps complete */}
+      <VendorOnboardingChecklist progress={onboardingProgress} />
 
       {/* Welcome Banner */}
       <div className="bg-linear-to-r from-[#052a51] via-[#07386d] to-[#0a488a] rounded-3xl p-6 md:p-8 text-white shadow-xl flex flex-col md:flex-row items-start md:items-center justify-between gap-6">

@@ -94,7 +94,7 @@ export default function Footer() {
               {/* Socials */}
               <div className="flex gap-2.5">
                 <a
-                  href="https://www.instagram.com/intrihub/"
+                  href="https://www.instagram.com/intrihub_/"
                   target="_blank"
                   rel="noopener noreferrer"
                   className="w-9 h-9 rounded-full bg-white/10 flex items-center justify-center hover:bg-[#F26522] text-white transition-all hover:scale-110"

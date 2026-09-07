@@ -4,6 +4,7 @@ import { BASE_SITE_URL } from "@/lib/seo";
 import { BUYING_GUIDES } from "@/lib/guides-data";
 import { products as defaultProducts } from "@/lib/data/products";
 import { categories as defaultCategories } from "@/lib/data/categories";
+import { SEO_LOCATIONS } from "@/lib/data/seo-locations";
 
 export const revalidate = 3600; // Revalidate every 1 hour
 
@@ -105,6 +106,12 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
       changeFrequency: "monthly",
       priority: 0.5,
     },
+    {
+      url: `${BASE_SITE_URL}/bulk-orders`,
+      lastModified: new Date(),
+      changeFrequency: "weekly",
+      priority: 0.8,
+    },
   ];
 
   // Buying Guide Routes
@@ -160,8 +167,21 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
         priority: 0.8,
       }));
 
+    // Location sub-page routes: category × location matrix
+    const locationRoutes: MetadataRoute.Sitemap = resolvedCategories
+      .filter((cat) => Boolean(cat.slug))
+      .flatMap((cat) =>
+        SEO_LOCATIONS.map((loc) => ({
+          url: `${BASE_SITE_URL}/shop/${encodeURIComponent(cat.slug)}/${loc.slug}`,
+          lastModified: new Date(),
+          changeFrequency: "weekly" as const,
+          priority: 0.75,
+        }))
+      );
+
     // Deduplicate entries by canonical URL
-    const allRoutes = [...staticRoutes, ...guideRoutes, ...categoryRoutes, ...productRoutes];
+    const allRoutes = [...staticRoutes, ...guideRoutes, ...categoryRoutes, ...locationRoutes, ...productRoutes];
+
     const uniqueMap = new Map<string, MetadataRoute.Sitemap[number]>();
     for (const route of allRoutes) {
       if (!uniqueMap.has(route.url)) {

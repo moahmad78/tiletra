@@ -11,8 +11,11 @@ import {
   generateBreadcrumbSchema,
   generateItemListSchema,
   generateFAQSchema,
+  generateLocalBusinessCategorySchema,
 } from "@/lib/seo";
 import JsonLd from "@/components/JsonLd";
+import CategorySeoBlock from "@/components/seo/CategorySeoBlock";
+import { getCategorySeo } from "@/lib/data/category-seo";
 
 export const revalidate = 60;
 
@@ -31,36 +34,39 @@ export async function generateMetadata({
     };
   }
 
+  const seo = getCategorySeo(categorySlug);
   const canonicalUrl = getCanonicalUrl(`/shop/${category.slug}`);
-  const title = `${category.name} Online | Buy ${category.name} at Best Prices | Intrihub`;
-  const description =
-    category.description ||
-    `Explore premium ${category.name} products on Intrihub. Compare specifications, wholesale prices, and shop interior & construction materials with doorstep delivery.`;
 
   return {
-    title,
-    description,
+    title: seo.metaTitle,
+    description: seo.metaDescription,
     alternates: {
       canonical: canonicalUrl,
     },
     openGraph: {
-      title,
-      description,
+      title: seo.metaTitle,
+      description: seo.metaDescription,
       url: canonicalUrl,
       type: "website",
       siteName: "Intrihub",
       images: [
         {
-          url: category.image || "/logo/intri-web-logo.png",
+          url: category.image && !category.image.includes("placeholder")
+            ? category.image
+            : "https://intrihub.com/og-image.png",
           alt: `${category.name} on Intrihub`,
         },
       ],
     },
     twitter: {
       card: "summary_large_image",
-      title,
-      description,
-      images: [category.image || "/logo/intri-web-logo.png"],
+      title: seo.metaTitle,
+      description: seo.metaDescription,
+      images: [
+        category.image && !category.image.includes("placeholder")
+          ? category.image
+          : "https://intrihub.com/og-image.png",
+      ],
     },
   };
 }
@@ -81,6 +87,8 @@ export default async function CategoryPage({
     notFound();
   }
 
+  const seo = getCategorySeo(categorySlug);
+
   const breadcrumbsSchema = generateBreadcrumbSchema([
     { name: "Home", url: "/" },
     { name: "Shop", url: "/shop" },
@@ -96,10 +104,17 @@ export default async function CategoryPage({
     }))
   );
 
-  const categoryFaqs = [
+  const localBusinessSchema = generateLocalBusinessCategorySchema({
+    categoryName: category.name,
+    categorySlug: category.slug,
+  });
+
+  // Combine category-specific FAQs with 2 generic delivery FAQs
+  const allFaqs = [
+    ...seo.faqs,
     {
-      question: `What is the standard delivery timeline for ${category.name}?`,
-      answer: `Most ${category.name} orders are delivered directly to your site within 60 minutes across Bangalore via our rapid dispatch quick-commerce fleet.`,
+      question: `What is the delivery timeline for ${category.name} in Bangalore?`,
+      answer: `Most ${category.name} orders are delivered directly to your site within 60 minutes across Bangalore via our rapid dispatch quick-commerce fleet for in-stock items.`,
     },
     {
       question: `Can I get bulk contractor discounts on ${category.name}?`,
@@ -107,12 +122,13 @@ export default async function CategoryPage({
     },
   ];
 
-  const faqSchema = generateFAQSchema(categoryFaqs);
+  const faqSchema = generateFAQSchema(allFaqs);
 
   return (
     <>
       <JsonLd data={breadcrumbsSchema} id="category-breadcrumbs-schema" />
       <JsonLd data={itemListSchema} id="category-itemlist-schema" />
+      <JsonLd data={localBusinessSchema} id="category-localbusiness-schema" />
       <JsonLd data={faqSchema} id="category-faq-schema" />
       <main className="min-h-screen flex flex-col bg-[#F3F4F5] pt-[56px] md:pt-[175px] lg:pt-[180px]">
         <Header />
@@ -122,6 +138,12 @@ export default async function CategoryPage({
           <div className="w-full max-w-[1400px] mx-auto px-3 sm:px-4 md:px-6 lg:px-8">
             <CategoryCatalogClient
               products={categoryProducts}
+              categoryName={category.name}
+            />
+
+            {/* SEO block — placed below product grid, never above fold */}
+            <CategorySeoBlock
+              categorySlug={categorySlug}
               categoryName={category.name}
             />
           </div>
