@@ -43,7 +43,7 @@ const personSchema = {
   },
   sameAs: [
     "https://www.instagram.com/sahil_sheikh78/",
-    "https://www.instagram.com/sahil_sheikh78",
+    "https://www.linkedin.com/company/intrihub",
   ],
   url: canonicalUrl,
 };
