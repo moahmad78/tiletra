@@ -397,14 +397,14 @@ export function generateProductSchema(product: {
           handlingTime: {
             "@type": "QuantitativeValue",
             minValue: 0,
-            maxValue: 0,
-            unitCode: "HUR",
+            maxValue: 1,
+            unitCode: "DAY",
           },
           transitTime: {
             "@type": "QuantitativeValue",
-            minValue: 1,
+            minValue: 0,
             maxValue: 1,
-            unitCode: "HUR",
+            unitCode: "DAY",
           },
         },
       },
