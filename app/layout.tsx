@@ -11,6 +11,7 @@ import GoogleAnalyticsTracker from "@/components/analytics/GoogleAnalyticsTracke
 import AddToCartToast from "@/components/cart/AddToCartToast";
 import PwaInstallPrompt from "@/components/pwa/PwaInstallPrompt";
 import { Toaster } from "sonner";
+import { ScrollingTitle } from "@/components/ScrollingTitle";
 
 import Script from "next/script";
 
@@ -180,6 +181,7 @@ export default function RootLayout({
           <Suspense fallback={null}>
             <GoogleSessionHydrator />
             <GoogleAnalyticsTracker measurementId={gaMeasurementId} />
+            <ScrollingTitle />
           </Suspense>
         </QuoteModalProvider>
       </body>
