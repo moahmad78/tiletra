@@ -103,7 +103,7 @@ export default function DesktopCategoryRow({ categories }: DesktopCategoryRowPro
               Explore By Category
             </span>
             <h2 className="text-xl lg:text-2xl font-black text-[#052a51] tracking-tight">
-              Everything for Every Space
+              Build Better, We Deliver Faster
             </h2>
           </div>
           <div className="flex items-center gap-2">

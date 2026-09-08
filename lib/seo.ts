@@ -143,7 +143,7 @@ export function generateOrganizationSchema() {
       "Intrihub Store",
     ],
     legalName: "IntriHub QuickCommerce",
-    slogan: "Everything for Every Space — Instant Building & Interior Materials Marketplace",
+    slogan: "Build Better, We Deliver Faster — Instant Building & Interior Materials Marketplace",
     url: BASE_SITE_URL,
     logo: `${BASE_SITE_URL}/logo/intri-web-logo.png`,
     image: `${BASE_SITE_URL}/og-image.png`,

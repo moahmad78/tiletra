@@ -286,7 +286,7 @@ export const BUYING_GUIDES: BuyingGuide[] = [
     image: "https://images.unsplash.com/photo-1503387762-592deb58ef4e?w=1200",
     author: "Sahil Sheikh (Founder & Lead Architect, IntriHub)",
     summary:
-      "IntriHub was founded with a single mission: Everything for Every Space. We connect manufacturers directly with homeowners, architects, and builders with honest pricing and instant doorstep site delivery.",
+      "IntriHub was founded with a single mission: Build Better, We Deliver Faster. We connect manufacturers directly with homeowners, architects, and builders with honest pricing and instant doorstep site delivery.",
     sections: [
       {
         heading: "1. The Broken Reality of Traditional Material Sourcing",

@@ -24,7 +24,7 @@ export default function WhyChooseUs() {
         <SectionHeader
           label="WHY CHOOSE US"
           heading={<>Why Choose <span className="text-[#F26522]">Intrihub</span></>}
-          caption="Everything for every space — verified materials, direct site delivery, and transparent pricing."
+          caption="Build better, we deliver faster — verified materials, direct site delivery, and transparent pricing."
         />
 
         {/* BOTTOM SECTION: Image & Grid */}

@@ -218,7 +218,7 @@ export async function sendEmailOtp(
     <div style="font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif;max-width:520px;margin:0 auto;padding:36px 24px;background:#f8fafc;border-radius:16px;">
       <div style="text-align:center;margin-bottom:28px;">
         <h1 style="font-size:30px;font-weight:900;color:#052a51;margin:0;letter-spacing:-0.5px;">Intrihub</h1>
-        <p style="color:#64748b;font-size:13px;margin:6px 0 0;font-weight:500;">Everything for Every Space</p>
+        <p style="color:#64748b;font-size:13px;margin:6px 0 0;font-weight:500;">Build Better, We Deliver Faster</p>
       </div>
 
       <div style="background:#ffffff;border-radius:14px;padding:32px 24px;text-align:center;border:1px solid #e2e8f0;box-shadow:0 1px 3px rgba(0,0,0,0.05);">

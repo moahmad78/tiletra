@@ -74,7 +74,7 @@ export async function GET() {
   <channel>
     <title>Intrihub Product Feed</title>
     <link>${BASE_SITE_URL}</link>
-    <description>Intrihub - Everything for Every Space. Interior and Construction Supplies Marketplace</description>
+    <description>Intrihub - Build Better, We Deliver Faster. Interior and Construction Supplies Marketplace</description>
     ${itemsXml}
   </channel>
 </rss>`;

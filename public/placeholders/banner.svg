@@ -15,5 +15,5 @@
   <circle cx="200" cy="450" r="250" fill="#ffffff" opacity="0.03"/>
   
   <text x="800" y="280" text-anchor="middle" fill="#ffffff" font-family="system-ui, -apple-system, sans-serif" font-size="52" font-weight="900" letter-spacing="3">INTRIHUB</text>
-  <text x="800" y="340" text-anchor="middle" fill="#CBD5E1" font-family="system-ui, -apple-system, sans-serif" font-size="24" font-weight="600">Everything for Every Space • India's Premier Interior & Building Supply Hub</text>
+  <text x="800" y="340" text-anchor="middle" fill="#CBD5E1" font-family="system-ui, -apple-system, sans-serif" font-size="24" font-weight="600">Build Better, We Deliver Faster • India's Premier Interior & Building Supply Hub</text>
 </svg>

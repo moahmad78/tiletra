@@ -16,7 +16,7 @@ export const metadata: Metadata = {
     canonical: getCanonicalUrl("/about"),
   },
   openGraph: {
-    title: "About IntriHub | Everything for Every Space",
+    title: "About IntriHub | Build Better, We Deliver Faster",
     description:
       "India's instant building & interior materials quick commerce marketplace. Factory-direct sourcing with 60-minute site delivery in Bengaluru.",
     url: getCanonicalUrl("/about"),

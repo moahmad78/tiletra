@@ -548,7 +548,7 @@ export default function AnimatedSplashScreen({
           <View style={styles.dividerPill} />
         </Animated.View>
 
-        {/* Tagline: "Everything for Every Space" */}
+        {/* Tagline: "Build Better, We Deliver Faster" */}
         <Animated.View
           style={[
             styles.taglineWrapper,
@@ -559,8 +559,8 @@ export default function AnimatedSplashScreen({
           ]}
         >
           <Text style={styles.taglineText}>
-            <Text style={styles.taglineNavy}>Everything for </Text>
-            <Text style={styles.taglineOrange}>Every Space</Text>
+            <Text style={styles.taglineNavy}>Build Better, </Text>
+            <Text style={styles.taglineOrange}>We Deliver Faster</Text>
           </Text>
         </Animated.View>
 

@@ -79,7 +79,7 @@ export default function Header() {
               <div className="flex items-center gap-4">
                 <span className="text-[#F26522] font-bold inline-flex items-center gap-1.5">
                   <Sparkles size={13} className="text-[#F26522]" />
-                  <span>Everything for Every Space</span>
+                  <span>Build Better, We Deliver Faster</span>
                 </span>
                 <span className="text-white/30">|</span>
                 <RotatingHeaderContact />
