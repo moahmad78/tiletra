@@ -45,6 +45,33 @@ export function middleware(request: NextRequest) {
     });
   }
 
+  // 3. Catch-all: Redirect literal search_term_string templates (e.g. from historical Googlebot crawl) to canonical /shop
+  const rawSearch = request.nextUrl.search;
+  const rawPathname = request.nextUrl.pathname;
+  if (
+    rawSearch.includes("search_term_string") ||
+    rawPathname.includes("search_term_string") ||
+    rawSearch.includes("%7Bsearch_term_string%7D") ||
+    rawPathname.includes("%7Bsearch_term_string%7D")
+  ) {
+    return NextResponse.redirect("https://www.intrihub.com/shop", {
+      status: 301,
+      headers: {
+        "Cache-Control": "public, max-age=31536000, immutable",
+      },
+    });
+  }
+
+  // 4. Redirect favicon.ico with query parameters to clean canonical /favicon.ico
+  if (rawPathname === "/favicon.ico" && rawSearch) {
+    return NextResponse.redirect("https://www.intrihub.com/favicon.ico", {
+      status: 301,
+      headers: {
+        "Cache-Control": "public, max-age=31536000, immutable",
+      },
+    });
+  }
+
   return NextResponse.next();
 }
 
@@ -54,8 +81,8 @@ export const config = {
      * Match all request paths except:
      * - _next/static (static files)
      * - _next/image (image optimization files)
-     * - favicon.ico, sitemap.xml, robots.txt
+     * - sitemap.xml, robots.txt
      */
-    "/((?!_next/static|_next/image|favicon.ico|sitemap.xml|robots.txt).*)",
+    "/((?!_next/static|_next/image|sitemap.xml|robots.txt).*)",
   ],
 };
