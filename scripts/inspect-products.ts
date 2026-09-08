@@ -1,64 +1,77 @@
-import { prisma } from "../lib/prisma";
+import { PrismaClient } from "@prisma/client";
 
-async function cleanupTestProducts() {
-  console.log("==========================================");
-  console.log("TASK 1: PERMANENT DEMO/TEST PRODUCT CLEANUP");
-  console.log("==========================================");
+const prisma = new PrismaClient();
 
-  const beforeProducts = await prisma.product.findMany({
-    select: { id: true, name: true, slug: true, vendorId: true },
-  });
-  console.log(`Total Products Before Cleanup: ${beforeProducts.length}`);
-
-  // Test products to delete
-  const testSlugs = [
-    "test-marble-tile-1786797496480",
-  ];
-
-  // Also any test products matching "test" or created during test suite
-  const testProducts = await prisma.product.findMany({
-    where: {
-      OR: [
-        { slug: { in: testSlugs } },
-        { name: { contains: "Automated Test" } },
-        { slug: { startsWith: "schneider-switch-pack-" } },
-        { slug: { startsWith: "brass-door-handles-lock-" } },
-      ],
+async function inspect() {
+  console.log("=== INSPECTING ALL PRODUCTS IN DATABASE ===");
+  const products = await prisma.product.findMany({
+    include: {
+      vendor: {
+        select: {
+          id: true,
+          businessName: true,
+          contactEmail: true,
+          status: true,
+        },
+      },
+      _count: {
+        select: {
+          orderItems: true,
+          reviews: true,
+          wishlistItems: true,
+        },
+      },
+      variants: {
+        select: {
+          id: true,
+          sku: true,
+          size: true,
+          pricePerBox: true,
+          _count: {
+            select: {
+              cartItems: true,
+            },
+          },
+        },
+      },
     },
-    include: { variants: true, attributes: true, orderItems: true },
-  });
-
-  console.log(`Found ${testProducts.length} test product(s) to remove:`);
-  for (const p of testProducts) {
-    console.log(`- "${p.name}" (ID: ${p.id}, Slug: ${p.slug})`);
-  }
-
-  const testProductIds = testProducts.map((p) => p.id);
-
-  if (testProductIds.length > 0) {
-    // Delete linked order items, variants, attributes, and products
-    await prisma.cartItem.deleteMany({ where: { productId: { in: testProductIds } } });
-    await prisma.orderItem.deleteMany({ where: { productId: { in: testProductIds } } });
-    await prisma.productAttribute.deleteMany({ where: { productId: { in: testProductIds } } });
-    await prisma.productVariant.deleteMany({ where: { productId: { in: testProductIds } } });
-    const res = await prisma.product.deleteMany({ where: { id: { in: testProductIds } } });
-    console.log(`\n✓ Deleted ${res.count} test product row(s) and their linked records.`);
-  }
-
-  // Verify remaining real products
-  const remaining = await prisma.product.findMany({
-    include: { vendor: true },
     orderBy: { createdAt: "asc" },
   });
 
-  console.log("\n==========================================");
-  console.log(`REMAINING REAL CATALOG PRODUCTS (${remaining.length} ITEMS):`);
-  console.log("==========================================");
-  remaining.forEach((p, idx) => {
-    console.log(`${idx + 1}. "${p.name}" (Category: ${p.categoryName || p.categorySlug}, Price: ₹${p.pricePerSqft})`);
+  console.log(`Total Products in DB: ${products.length}\n`);
+
+  const vendors = await prisma.vendor.findMany({
+    select: { id: true, businessName: true, contactEmail: true, status: true, _count: { select: { products: true } } }
   });
+  console.log("Vendors in DB:", JSON.stringify(vendors, null, 2));
+
+  for (const p of products) {
+    const totalCartItems = p.variants.reduce((acc, v) => acc + v._count.cartItems, 0);
+    console.log(JSON.stringify({
+      id: p.id,
+      name: p.name,
+      slug: p.slug,
+      brand: p.brand,
+      sku: p.sku,
+      categorySlug: p.categorySlug,
+      status: p.status,
+      approvalStatus: p.approvalStatus,
+      pricePerSqft: p.pricePerSqft,
+      vendor: p.vendor ? `${p.vendor.businessName} (${p.vendor.id})` : "NO VENDOR (ORPHAN)",
+      createdAt: p.createdAt.toISOString(),
+      updatedAt: p.updatedAt.toISOString(),
+      orderCount: p._count.orderItems,
+      reviewCount: p._count.reviews,
+      cartCount: totalCartItems,
+      variantCount: p.variants.length,
+    }));
+  }
 }
 
-cleanupTestProducts()
-  .catch(console.error)
-  .finally(() => prisma.$disconnect());
+inspect()
+  .catch((e) => {
+    console.error("Error inspecting products:", e);
+  })
+  .finally(async () => {
+    await prisma.$disconnect();
+  });
