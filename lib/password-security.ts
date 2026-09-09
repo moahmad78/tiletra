@@ -1,19 +1,35 @@
 import crypto from "crypto";
 
 /**
- * Hash password securely using Node.js native crypto.scrypt
+ * Maximum allowed password length to prevent Long Password Denial of Service (DoS)
+ * against cryptographic hashing algorithms (scrypt/bcrypt/argon2).
+ */
+export const MAX_PASSWORD_LENGTH = 128;
+
+/**
+ * Hash password securely using Node.js native crypto.scrypt.
+ * Guards against unbounded input length.
  */
 export function hashPassword(password: string): string {
+  if (!password || typeof password !== "string") {
+    throw new Error("Password must be a non-empty string");
+  }
+  if (password.length > MAX_PASSWORD_LENGTH) {
+    throw new Error(`Password exceeds maximum allowed length of ${MAX_PASSWORD_LENGTH} characters`);
+  }
+
   const salt = crypto.randomBytes(16).toString("hex");
   const derivedKey = crypto.scryptSync(password, salt, 64);
   return `scrypt:${salt}:${derivedKey.toString("hex")}`;
 }
 
 /**
- * Verify password against stored hash (supports modern scrypt and legacy sha256)
+ * Verify password against stored hash (supports modern scrypt and legacy sha256).
+ * Rejects oversized passwords in O(1) time without performing expensive scrypt key derivation.
  */
 export function verifyPassword(password: string, storedHash: string): boolean {
-  if (!password || !storedHash) return false;
+  if (!password || !storedHash || typeof password !== "string") return false;
+  if (password.length > MAX_PASSWORD_LENGTH) return false;
 
   // Format 1: Modern scrypt:salt:derivedKey
   if (storedHash.startsWith("scrypt:")) {
@@ -39,11 +55,15 @@ export function verifyPassword(password: string, storedHash: string): boolean {
 }
 
 /**
- * Enforce minimum password strength for vendors and admin users
+ * Enforce minimum and maximum password strength for vendors and admin users
  */
 export function validatePasswordStrength(password: string): { valid: boolean; error?: string } {
-  if (!password || password.length < 8) {
+  if (!password || typeof password !== "string" || password.length < 8) {
     return { valid: false, error: "Password must be at least 8 characters long" };
+  }
+
+  if (password.length > MAX_PASSWORD_LENGTH) {
+    return { valid: false, error: `Password cannot exceed ${MAX_PASSWORD_LENGTH} characters` };
   }
 
   const hasLetter = /[a-zA-Z]/.test(password);

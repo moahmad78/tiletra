@@ -115,7 +115,8 @@ export async function sendEmailOtp(
   const cleanEmail = (email || "").trim().toLowerCase();
   console.log(`[OTP_REQUEST_STARTED] email=${maskEmail(cleanEmail)} purpose=${purpose}`);
 
-  if (!cleanEmail || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(cleanEmail)) {
+  const { validateEmail } = await import("@/lib/validators");
+  if (!validateEmail(cleanEmail)) {
     return { success: false, message: "Please enter a valid email address." };
   }
 

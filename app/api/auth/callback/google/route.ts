@@ -209,13 +209,36 @@ export async function GET(request: NextRequest) {
         })
       );
 
-      const baseRedirect = stateRedirectTo || "intrihub://oauth";
+      // Validate and sanitize baseRedirect to prevent open redirect or script injection
+      let baseRedirect = "intrihub://oauth";
+      if (stateRedirectTo) {
+        const trimmed = stateRedirectTo.trim();
+        // Allow approved custom app schemes or relative paths (must not start with //)
+        if (
+          trimmed.startsWith("intrihub://") ||
+          trimmed.startsWith("exp://") ||
+          (trimmed.startsWith("/") && !trimmed.startsWith("//") && !trimmed.startsWith("/\\"))
+        ) {
+          baseRedirect = trimmed;
+        } else {
+          console.warn("[Google OAuth Callback] Blocked untrusted redirect scheme:", trimmed);
+        }
+      }
+
       const separator = baseRedirect.includes("?") ? "&" : "?";
       const deepLink = `${baseRedirect}${separator}accessToken=${encodeURIComponent(
         mobileTokens.accessToken
       )}&refreshToken=${encodeURIComponent(
         mobileTokens.refreshToken
       )}&user=${mobileUserJson}`;
+
+      const safeHref = deepLink
+        .replace(/&/g, "&amp;")
+        .replace(/"/g, "&quot;")
+        .replace(/'/g, "&#39;")
+        .replace(/</g, "&lt;")
+        .replace(/>/g, "&gt;");
+      const safeScriptTarget = JSON.stringify(deepLink);
 
       const html = `<!DOCTYPE html>
 <html>
@@ -269,12 +292,13 @@ export async function GET(request: NextRequest) {
   <div class="spinner"></div>
   <h2>Signing into IntriHub...</h2>
   <p>Returning to your app. If not redirected automatically:</p>
-  <a id="deepLinkBtn" class="btn" href="${deepLink}">Open IntriHub App</a>
+  <a id="deepLinkBtn" class="btn" href="${safeHref}">Open IntriHub App</a>
   <script>
+    var targetUrl = ${safeScriptTarget};
     try {
-      window.location.replace("${deepLink}");
+      window.location.replace(targetUrl);
     } catch(e) {
-      window.location.href = "${deepLink}";
+      window.location.href = targetUrl;
     }
     setTimeout(function() {
       var btn = document.getElementById("deepLinkBtn");

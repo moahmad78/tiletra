@@ -53,6 +53,13 @@ export async function POST(req: NextRequest) {
       );
     }
 
+    if (typeof password !== "string" || password.length > 128) {
+      return mobileApiResponse(
+        { success: false, error: "Password cannot exceed 128 characters" },
+        400
+      );
+    }
+
     const allowedAdminEmail = (process.env.ADMIN_ALLOWED_EMAIL || "admin@intrihub.com").toLowerCase().trim();
     const isAdmin = cleanEmail === allowedAdminEmail;
 

@@ -38,7 +38,7 @@ export async function registerVendor(input: VendorApplicationInput) {
     const baseSlug = input.businessName
       .toLowerCase()
       .replace(/[^a-z0-9]+/g, "-")
-      .replace(/(^-|-$)+/g, "");
+      .replace(/^-+|-+$/g, "");
     const slug = `${baseSlug}-${cleanPhone.slice(-4)}`;
 
     // Check if phone or email is already registered as vendor

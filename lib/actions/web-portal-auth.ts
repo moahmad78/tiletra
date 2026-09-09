@@ -609,6 +609,10 @@ export async function loginVendorWithPassword(
     return { success: false, message: "Please enter both email address and password." };
   }
 
+  if (password.length > 128) {
+    return { success: false, message: "Password cannot exceed 128 characters." };
+  }
+
   // 2. Fetch vendor record
   const vendor = await prisma.vendor.findFirst({
     where: {

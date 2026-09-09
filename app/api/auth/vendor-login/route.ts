@@ -27,6 +27,10 @@ export async function POST(req: Request) {
     const body = await req.json();
     const { username, password } = body;
 
+    if (password && (typeof password !== "string" || password.length > 128)) {
+      return NextResponse.json({ error: "Password exceeds maximum allowed length of 128 characters." }, { status: 400 });
+    }
+
     const query = (username || "").toLowerCase().trim();
     if (!query) {
       return NextResponse.json({ error: "Please enter your email or phone number" }, { status: 400 });

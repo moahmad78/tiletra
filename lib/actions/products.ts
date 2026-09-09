@@ -414,10 +414,11 @@ export async function searchProducts(query: string): Promise<Product[]> {
 
 export async function createProduct(input: CreateProductInput) {
   try {
-    const slug = input.name
-      .toLowerCase()
-      .replace(/[^a-z0-9]+/g, "-")
-      .replace(/(^-|-$)+/g, "") + `-${Date.now().toString().slice(-4)}`;
+    const slug =
+      input.name
+        .toLowerCase()
+        .replace(/[^a-z0-9]+/g, "-")
+        .replace(/^-+|-+$/g, "") + `-${Date.now().toString().slice(-4)}`;
 
     const primaryVariant: any = (input.variants && input.variants.length > 0 ? input.variants[0] : null) || {
       size: "Standard",
@@ -580,7 +581,7 @@ export async function createProductsBulk(inputs: CreateProductInput[]) {
         const baseSlug = (input.slug || input.name)
           .toLowerCase()
           .replace(/[^a-z0-9]+/g, "-")
-          .replace(/(^-|-$)+/g, "");
+          .replace(/^-+|-+$/g, "");
 
         // Generate unique slug
         let finalSlug = baseSlug;

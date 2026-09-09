@@ -89,4 +89,33 @@ app.prepare().then(() => {
   httpServer.listen(port, () => {
     console.log(`> Intrihub ready on http://${hostname}:${port} (Socket.IO attached)`);
   });
+
+  // Global Process Error Resilience
+  process.on("unhandledRejection", (reason: unknown, promise: Promise<unknown>) => {
+    console.error("[Process Guard] Unhandled Rejection at:", promise, "reason:", reason);
+  });
+
+  process.on("uncaughtException", (error: Error) => {
+    console.error("[Process Guard] Uncaught Exception:", error);
+  });
+
+  const gracefulShutdown = (signal: string) => {
+    console.log(`[Process Guard] ${signal} received. Closing server gracefully...`);
+    if (globalThis.io) {
+      globalThis.io.close();
+    }
+    const forceTimer = setTimeout(() => {
+      console.error("[Process Guard] Forced shutdown due to timeout.");
+      process.exit(1);
+    }, 5000);
+    forceTimer.unref();
+
+    httpServer.close(() => {
+      console.log("[Process Guard] HTTP server closed cleanly.");
+      process.exit(0);
+    });
+  };
+
+  process.on("SIGTERM", () => gracefulShutdown("SIGTERM"));
+  process.on("SIGINT", () => gracefulShutdown("SIGINT"));
 });

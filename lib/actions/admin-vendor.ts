@@ -429,7 +429,7 @@ export async function createVendorManually(data: {
     const baseSlug = data.businessName
       .toLowerCase()
       .replace(/[^a-z0-9]+/g, "-")
-      .replace(/(^-|-$)+/g, "");
+      .replace(/^-+|-+$/g, "");
     const slug = `${baseSlug}-${cleanPhone.slice(-4)}`;
 
     const words = ["Intri", "Vendor", "Hub", "Shop", "Seller"];

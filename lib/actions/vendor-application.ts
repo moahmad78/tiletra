@@ -36,8 +36,9 @@ export async function submitVendorApplication(data: VendorApplicationData) {
       return { success: false, error: "Please enter a valid 10-digit mobile number." };
     }
 
-    const email = data.email.toLowerCase().trim();
-    if (!email || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+    const email = (data.email || "").toLowerCase().trim();
+    const { validateEmail } = await import("@/lib/validators");
+    if (!validateEmail(email)) {
       return { success: false, error: "Please enter a valid email address." };
     }
 
@@ -204,7 +205,7 @@ export async function createVendorFromApplication(
     const baseSlug = app.businessName
       .toLowerCase()
       .replace(/[^a-z0-9]+/g, "-")
-      .replace(/(^-|-$)+/g, "");
+      .replace(/^-+|-+$/g, "");
     const slug = `${baseSlug}-${cleanPhone.slice(-4)}`;
 
     // 1. Upsert or find User account

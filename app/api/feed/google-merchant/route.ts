@@ -52,18 +52,20 @@ export async function GET() {
           .slice(0, 5000)
           .replace(/[\x00-\x08\x0B\x0C\x0E-\x1F]/g, "");
 
+        const safeCdata = (str: string) => str.replace(/\]\]>/g, "]]&gt;");
+
         return `
     <item>
       <g:id>${escapeXml(p.id)}</g:id>
-      <g:title><![CDATA[${p.name}]]></g:title>
-      <g:description><![CDATA[${cleanDescription}]]></g:description>
+      <g:title><![CDATA[${safeCdata(p.name)}]]></g:title>
+      <g:description><![CDATA[${safeCdata(cleanDescription)}]]></g:description>
       <g:link>${escapeXml(productUrl)}</g:link>
       <g:image_link>${escapeXml(primaryImage)}</g:image_link>
       <g:availability>${availability}</g:availability>
       <g:price>${minPrice.toFixed(2)} INR</g:price>
       <g:condition>new</g:condition>
-      <g:brand><![CDATA[${brand}]]></g:brand>
-      <g:product_type><![CDATA[${categoryName}]]></g:product_type>
+      <g:brand><![CDATA[${safeCdata(brand)}]]></g:brand>
+      <g:product_type><![CDATA[${safeCdata(categoryName)}]]></g:product_type>
       <g:identifier_exists>no</g:identifier_exists>
     </item>`;
       })
