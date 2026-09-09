@@ -305,7 +305,14 @@ export async function verifyEmailOtp(
     const attempt = recordFailedAttempt(`otp-fail:${cleanEmail}`, 5, 15 * 60 * 1000);
     console.warn(`[OTP_VERIFICATION_FAILED] email=${maskEmail(cleanEmail)} remainingAttempts=${attempt.remainingAttempts}`);
 
+    const { securityLogger } = await import("@/lib/security-logger");
     if (attempt.locked) {
+      await securityLogger.logAuthAttempt({
+        type: "otp",
+        status: "lockout",
+        identifier: cleanEmail,
+        reason: "Excessive failed OTP attempts (15-minute security lockout active)",
+      });
       // Invalidate all tokens for this email on excessive failed attempts
       await prisma.emailOtpToken.updateMany({
         where: { email: cleanEmail, used: false },
@@ -317,6 +324,13 @@ export async function verifyEmailOtp(
       };
     }
 
+    await securityLogger.logAuthAttempt({
+      type: "otp",
+      status: "failure",
+      identifier: cleanEmail,
+      reason: `Incorrect OTP. ${attempt.remainingAttempts} attempt(s) remaining.`,
+    });
+
     return {
       success: false,
       message: `Incorrect or expired OTP. ${attempt.remainingAttempts} attempt(s) remaining.`,
@@ -325,6 +339,16 @@ export async function verifyEmailOtp(
 
   // Reset failed attempt counter on success
   resetFailedAttempts(`otp-fail:${cleanEmail}`);
+
+  try {
+    const { securityLogger } = await import("@/lib/security-logger");
+    await securityLogger.logAuthAttempt({
+      type: "otp",
+      status: "success",
+      identifier: cleanEmail,
+      role: purpose,
+    });
+  } catch {}
 
   // Invalidate token immediately to prevent replay attacks
   await prisma.emailOtpToken.updateMany({

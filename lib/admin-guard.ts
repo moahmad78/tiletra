@@ -1,11 +1,12 @@
 import { checkIsAdmin, getAdminSession } from "@/lib/server-auth";
+import { securityLogger } from "@/lib/security-logger";
 
 /**
  * Reusable server-side admin authorization guard for Server Actions.
  * Throws or returns an unauthorized error if the caller does not hold
  * a valid, cryptographically signed admin session token.
  */
-export async function requireAdminAction(): Promise<{
+export async function requireAdminAction(actionName?: string): Promise<{
   authorized: boolean;
   adminId?: string;
   email?: string;
@@ -19,6 +20,10 @@ export async function requireAdminAction(): Promise<{
   try {
     const isAdmin = await checkIsAdmin();
     if (!isAdmin) {
+      securityLogger.logUnauthorizedAccess({
+        path: actionName || "admin_server_action",
+        reason: "Unauthorized: Administrator privileges required.",
+      });
       return {
         authorized: false,
         error: "Unauthorized: Administrator privileges required.",
@@ -32,6 +37,10 @@ export async function requireAdminAction(): Promise<{
       email: session?.email || "admin@intrihub.com",
     };
   } catch (err: any) {
+    securityLogger.logUnauthorizedAccess({
+      path: actionName || "admin_server_action",
+      reason: "Unauthorized: Session check failed.",
+    });
     return {
       authorized: false,
       error: "Unauthorized: Session check failed.",

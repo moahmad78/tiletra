@@ -13,6 +13,7 @@ import {
 } from "@/lib/rate-limit";
 import { verifyPassword } from "@/lib/password-security";
 import { generateAdminSessionToken, generateVendorSessionToken } from "@/lib/server-auth";
+import { securityLogger } from "@/lib/security-logger";
 
 async function getClientIp(): Promise<string> {
   try {
@@ -59,6 +60,14 @@ export async function sendAdminWebOtp(email: string): Promise<{
   // 2. Strict single email check
   if (!cleanEmail || cleanEmail !== allowedAdminEmail) {
     const failCheck = recordAdminLoginFailure(clientIp);
+    await securityLogger.logAuthAttempt({
+      type: "login",
+      status: failCheck.locked ? "lockout" : "failure",
+      identifier: cleanEmail || "unknown",
+      ip: clientIp,
+      role: "admin",
+      reason: failCheck.locked ? "Too many failed attempts. Admin login locked 15m." : "Invalid admin email.",
+    });
     if (failCheck.locked) {
       return {
         success: false,
@@ -160,6 +169,14 @@ export async function verifyAdminWebOtp(email: string, otp: string): Promise<{
 
   // 3. Reset failed attempts on successful login
   resetAdminLoginLockout(clientIp);
+  await securityLogger.logAuthAttempt({
+    type: "login",
+    status: "success",
+    identifier: cleanEmail,
+    ip: clientIp,
+    role: "admin",
+    userId: res.userId,
+  });
 
   // 4. Set secure HTTP-only admin session cookie & signed HMAC token
   try {
@@ -511,6 +528,13 @@ export async function verifyVendorWebOtp(email: string, otp: string): Promise<{
 
   // 3. Reset failed attempts on successful login
   resetVendorLoginLockout(clientIp);
+  await securityLogger.logAuthAttempt({
+    type: "login",
+    status: "success",
+    identifier: cleanEmail,
+    ip: clientIp,
+    role: "vendor",
+  });
 
   // 4. Fetch full vendor profile for session
   let vendorRecord = await prisma.vendor.findFirst({
