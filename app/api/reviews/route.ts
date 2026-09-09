@@ -3,6 +3,7 @@ import { getAuthenticatedUser } from "@/lib/auth-helpers";
 import { prisma } from "@/lib/prisma";
 import { syncProductRatingAggregate, revalidateReviewPaths } from "@/lib/reviews-server";
 import { handleMobileCorsOptions } from "@/lib/mobile-auth";
+import { reviewInputSchema } from "@/lib/validations/schemas";
 
 export async function OPTIONS() {
   return handleMobileCorsOptions();
@@ -18,24 +19,25 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    const body = await req.json();
-    const { productId, orderId, rating, title, body: reviewBody } = body;
-
-    // Validate inputs
-    if (!productId || !orderId) {
+    const rawBody = await req.json().catch(() => null);
+    if (!rawBody) {
       return NextResponse.json(
-        { success: false, error: "Product ID and Order ID are required." },
+        { success: false, error: "Invalid JSON payload" },
         { status: 400 }
       );
     }
 
-    const numericRating = Number(rating);
-    if (isNaN(numericRating) || numericRating < 1 || numericRating > 5) {
+    // Strict schema validation and XSS sanitization
+    const validationResult = reviewInputSchema.safeParse(rawBody);
+    if (!validationResult.success) {
+      const firstError = validationResult.error.issues[0]?.message || "Invalid review data";
       return NextResponse.json(
-        { success: false, error: "Rating must be an integer between 1 and 5." },
+        { success: false, error: firstError, details: validationResult.error.issues },
         { status: 400 }
       );
     }
+
+    const { productId, orderId, rating, title, body: reviewBody } = validationResult.data;
 
     // 1. Check Product exists
     const product = await prisma.product.findFirst({
@@ -119,15 +121,15 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    // 4. Create Review (Auto-published immediately)
+    // 4. Create Review (Auto-published immediately with sanitized content)
     const review = await prisma.review.create({
       data: {
         productId: product.id,
         userId: user.id,
         orderId: order.id,
-        rating: Math.round(numericRating),
-        title: title ? String(title).trim() : null,
-        body: reviewBody ? String(reviewBody).trim() : null,
+        rating,
+        title: title || null,
+        body: reviewBody || null,
         status: "PUBLISHED",
       },
       include: {
@@ -149,7 +151,7 @@ export async function POST(req: NextRequest) {
 
     res.headers.set("Access-Control-Allow-Origin", "*");
     res.headers.set("Access-Control-Allow-Methods", "POST, OPTIONS");
-    res.headers.set("Access-Control-Allow-Headers", "Content-Type, Authorization, X-User-Id, X-User-Phone");
+    res.headers.set("Access-Control-Allow-Headers", "Content-Type, Authorization, X-User-Id");
     return res;
   } catch (error: any) {
     console.error("[POST /api/reviews Error]", error);

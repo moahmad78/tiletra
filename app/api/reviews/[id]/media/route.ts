@@ -4,6 +4,13 @@ import { prisma } from "@/lib/prisma";
 import { put } from "@vercel/blob";
 import crypto from "crypto";
 import { handleMobileCorsOptions } from "@/lib/mobile-auth";
+import {
+  ALLOWED_IMAGE_MIMES,
+  ALLOWED_VIDEO_MIMES,
+  ALLOWED_EXTENSIONS,
+  verifyFileMagicBytes,
+} from "@/lib/validations/schemas";
+import path from "path";
 
 export async function OPTIONS() {
   return handleMobileCorsOptions();
@@ -88,15 +95,39 @@ export async function POST(
     const createdMedia: Array<any> = [];
 
     for (const file of allFiles) {
-      const mime = file.type.toLowerCase();
-      const isImage = mime.startsWith("image/");
-      const isVideo = mime.startsWith("video/");
+      const mime = (file.type || "").toLowerCase().trim();
+      const ext = path.extname(file.name || "").toLowerCase();
+
+      // Explicitly reject SVG, XML, HTML, and executable scripts to eliminate Stored XSS
+      if (
+        mime.includes("svg") ||
+        mime.includes("xml") ||
+        mime.includes("html") ||
+        ext === ".svg" ||
+        ext === ".xml" ||
+        ext === ".html" ||
+        ext === ".htm" ||
+        ext === ".js" ||
+        ext === ".php" ||
+        !ALLOWED_EXTENSIONS.has(ext)
+      ) {
+        return NextResponse.json(
+          {
+            success: false,
+            error: "Security validation failed: Only standard raster image formats (JPEG, PNG, WebP) and videos (MP4, MOV) are allowed. SVG and script formats are strictly prohibited.",
+          },
+          { status: 400 }
+        );
+      }
+
+      const isImage = ALLOWED_IMAGE_MIMES.has(mime);
+      const isVideo = ALLOWED_VIDEO_MIMES.has(mime);
 
       if (!isImage && !isVideo) {
         return NextResponse.json(
           {
             success: false,
-            error: `Unsupported file type: ${mime}. Only JPG, PNG, WEBP, MP4, and MOV files are allowed.`,
+            error: `Unsupported MIME type: ${mime}. Only JPEG, PNG, WEBP, and MP4/MOV files are authorized.`,
           },
           { status: 400 }
         );
@@ -107,7 +138,7 @@ export async function POST(
         return NextResponse.json(
           {
             success: false,
-            error: `Image ${file.name} exceeds 8MB size limit.`,
+            error: `Image ${file.name} exceeds maximum 8MB size limit.`,
           },
           { status: 400 }
         );
@@ -117,22 +148,31 @@ export async function POST(
         return NextResponse.json(
           {
             success: false,
-            error: `Video ${file.name} exceeds 50MB size limit.`,
+            error: `Video ${file.name} exceeds maximum 50MB size limit.`,
           },
           { status: 400 }
         );
       }
 
-      // Extract file extension
-      const originalExt = file.name.split(".").pop()?.toLowerCase() || (isImage ? "jpg" : "mp4");
-      const cleanExt = ["jpg", "jpeg", "png", "webp", "mp4", "mov"].includes(originalExt)
-        ? originalExt
-        : isImage
-        ? "jpg"
-        : "mp4";
+      // Deep inspection: Binary Magic Bytes Verification
+      const bytes = await file.arrayBuffer();
+      const buffer = Buffer.from(bytes);
+      const magicCheck = verifyFileMagicBytes(buffer);
 
+      if (!magicCheck.valid) {
+        return NextResponse.json(
+          {
+            success: false,
+            error: "Security validation failed: File binary header does not match declared format signature.",
+          },
+          { status: 400 }
+        );
+      }
+
+      // Safe clean extension from detected signature
+      const cleanExt = magicCheck.detectedExt || (isImage ? ".jpg" : ".mp4");
       const uniqueId = crypto.randomUUID();
-      const blobPathname = `reviews/${reviewId}/${uniqueId}.${cleanExt}`;
+      const blobPathname = `reviews/${reviewId}/${uniqueId}${cleanExt}`;
 
       let mediaUrl = "";
 
@@ -145,9 +185,8 @@ export async function POST(
         });
         mediaUrl = blobResult.url;
       } else {
-        // Fallback for local testing if blob token is not configured
-        const bytes = await file.arrayBuffer();
-        const base64 = Buffer.from(bytes).toString("base64");
+        // Fallback for local development / testing
+        const base64 = buffer.toString("base64");
         mediaUrl = `data:${mime};base64,${base64}`;
       }
 

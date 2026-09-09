@@ -4,46 +4,15 @@ import sharp from "sharp";
 import { writeFile, mkdir } from "fs/promises";
 import path from "path";
 import { checkRateLimit } from "@/lib/rate-limit";
+import { sanitizeFilename } from "@/lib/sanitization";
+import {
+  ALLOWED_IMAGE_MIMES,
+  ALLOWED_DOC_MIMES,
+  ALLOWED_EXTENSIONS,
+  verifyFileMagicBytes,
+} from "@/lib/validations/schemas";
 
 const MAX_FILE_SIZE_BYTES = 10 * 1024 * 1024; // 10MB limit
-
-/**
- * Validates file buffer magic bytes against authorized binary signatures
- */
-function isValidMagicBytes(buffer: Buffer): boolean {
-  if (!buffer || buffer.length < 4) return false;
-
-  // JPEG: FF D8 FF
-  if (buffer[0] === 0xff && buffer[1] === 0xd8 && buffer[2] === 0xff) {
-    return true;
-  }
-
-  // PNG: 89 50 4E 47
-  if (buffer[0] === 0x89 && buffer[1] === 0x50 && buffer[2] === 0x4e && buffer[3] === 0x47) {
-    return true;
-  }
-
-  // GIF: 47 49 46 38
-  if (buffer[0] === 0x47 && buffer[1] === 0x49 && buffer[2] === 0x46 && buffer[3] === 0x38) {
-    return true;
-  }
-
-  // WebP: RIFF .... WEBP
-  if (
-    buffer.length >= 12 &&
-    buffer[0] === 0x52 && buffer[1] === 0x49 && buffer[2] === 0x46 && buffer[3] === 0x46 &&
-    buffer[8] === 0x57 && buffer[9] === 0x45 && buffer[10] === 0x42 && buffer[11] === 0x50
-  ) {
-    return true;
-  }
-
-  // PDF: %PDF (25 50 44 46)
-  if (buffer[0] === 0x25 && buffer[1] === 0x50 && buffer[2] === 0x44 && buffer[3] === 0x46) {
-    return true;
-  }
-
-  return false;
-}
 
 export async function POST(req: NextRequest) {
   try {
@@ -63,7 +32,7 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ success: false, error: "No files provided" }, { status: 400 });
     }
 
-    const uploadDir = path.join(process.cwd(), "public", "uploads");
+    const uploadDir = path.resolve(process.cwd(), "public", "uploads");
     try {
       await mkdir(uploadDir, { recursive: true });
     } catch {
@@ -72,16 +41,6 @@ export async function POST(req: NextRequest) {
 
     const uploadedUrls: string[] = [];
     const base64List: string[] = [];
-
-    const ALLOWED_MIME_TYPES = new Set([
-      "image/jpeg",
-      "image/jpg",
-      "image/png",
-      "image/webp",
-      "image/gif",
-      "image/avif",
-      "application/pdf",
-    ]);
 
     for (const file of files) {
       if (!file.name) continue;
@@ -93,19 +52,21 @@ export async function POST(req: NextRequest) {
         );
       }
 
-      const mimeTypeCandidate = file.type?.toLowerCase() || "";
+      const mimeCandidate = (file.type || "").toLowerCase().trim();
       const extCandidate = path.extname(file.name).toLowerCase();
 
-      // Explicitly reject SVG / XML / HTML to prevent Stored XSS
+      // Explicitly reject SVG / XML / HTML / Executables to prevent Stored XSS and execution
       if (
-        mimeTypeCandidate.includes("svg") ||
-        mimeTypeCandidate.includes("xml") ||
-        mimeTypeCandidate.includes("html") ||
+        mimeCandidate.includes("svg") ||
+        mimeCandidate.includes("xml") ||
+        mimeCandidate.includes("html") ||
         extCandidate === ".svg" ||
         extCandidate === ".xml" ||
         extCandidate === ".html" ||
         extCandidate === ".htm" ||
-        !ALLOWED_MIME_TYPES.has(mimeTypeCandidate)
+        extCandidate === ".js" ||
+        extCandidate === ".php" ||
+        !ALLOWED_EXTENSIONS.has(extCandidate)
       ) {
         return NextResponse.json(
           {
@@ -116,11 +77,25 @@ export async function POST(req: NextRequest) {
         );
       }
 
+      const isImage = ALLOWED_IMAGE_MIMES.has(mimeCandidate);
+      const isDoc = ALLOWED_DOC_MIMES.has(mimeCandidate);
+
+      if (!isImage && !isDoc) {
+        return NextResponse.json(
+          {
+            success: false,
+            error: `Unsupported MIME type: ${mimeCandidate}. Only image/jpeg, image/png, image/webp, and application/pdf are accepted.`,
+          },
+          { status: 400 }
+        );
+      }
+
       const rawBytes = await file.arrayBuffer();
       const rawBuffer = Buffer.from(rawBytes);
 
-      // Deep inspection: Magic Bytes Verification
-      if (!isValidMagicBytes(rawBuffer)) {
+      // Deep inspection: Binary Magic Bytes Verification
+      const magicCheck = verifyFileMagicBytes(rawBuffer);
+      if (!magicCheck.valid) {
         return NextResponse.json(
           {
             success: false,
@@ -135,7 +110,7 @@ export async function POST(req: NextRequest) {
       let ext = ".webp";
 
       // If PDF document, keep original buffer and mime
-      if (extCandidate === ".pdf" || mimeTypeCandidate === "application/pdf") {
+      if (extCandidate === ".pdf" || mimeCandidate === "application/pdf") {
         processedBuffer = rawBuffer;
         mimeType = "application/pdf";
         ext = ".pdf";
@@ -151,16 +126,17 @@ export async function POST(req: NextRequest) {
         } catch (sharpError) {
           console.warn("[Upload] Sharp optimization fallback to original:", sharpError);
           processedBuffer = rawBuffer;
-          mimeType = mimeTypeCandidate || "image/jpeg";
+          mimeType = mimeCandidate || "image/jpeg";
           ext = extCandidate || ".jpg";
         }
       }
 
-      const sanitizedBase = path.basename(file.name, path.extname(file.name))
+      const rawBase = path.basename(file.name, path.extname(file.name));
+      const sanitizedBase = sanitizeFilename(rawBase)
         .replace(/[^a-zA-Z0-9]/g, "-")
         .toLowerCase()
         .slice(0, 30);
-      const uniqueFileName = `${sanitizedBase}-${Date.now()}-${Math.random().toString(36).slice(2, 7)}${ext}`;
+      const uniqueFileName = `${sanitizedBase || "upload"}-${Date.now()}-${Math.random().toString(36).slice(2, 7)}${ext}`;
 
       const base64String = processedBuffer.toString("base64");
       const dataUri = `data:${mimeType};base64,${base64String}`;
@@ -189,7 +165,10 @@ export async function POST(req: NextRequest) {
       // 2. Also save to local disk if writable (e.g. localhost)
       try {
         const filePath = path.join(uploadDir, uniqueFileName);
-        await writeFile(filePath, processedBuffer);
+        // Verify path resolution stays in uploadDir
+        if (filePath.startsWith(uploadDir)) {
+          await writeFile(filePath, processedBuffer);
+        }
       } catch {
         // Ephemeral / serverless disk write ignore
       }

@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { checkAiRateLimit } from "@/lib/rate-limit";
 import { getAuthenticatedUser } from "@/lib/auth-helpers";
 import { GoogleGenerativeAI } from "@google/generative-ai";
+import { aiGenerateInputSchema } from "@/lib/validations/schemas";
 
 export async function OPTIONS() {
   return new NextResponse(null, {
@@ -47,31 +48,28 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    // 2. Validate input payload
-    const body = await req.json().catch(() => ({}));
-    const prompt = typeof body.prompt === "string" ? body.prompt.trim() : "";
-    const roomType = typeof body.roomType === "string" ? body.roomType.trim() : "general";
-    const style = typeof body.style === "string" ? body.style.trim() : "modern";
-
-    if (!prompt || prompt.length < 5) {
+    // 2. Validate input payload with strict schema and sanitization
+    const rawBody = await req.json().catch(() => null);
+    if (!rawBody || typeof rawBody !== "object") {
       return NextResponse.json(
         {
           success: false,
-          error: "Please provide a valid design description or prompt (minimum 5 characters).",
+          error: "Invalid request payload. Please provide prompt, roomType, and style.",
         },
         { status: 400 }
       );
     }
 
-    if (prompt.length > 1000) {
+    const validationResult = aiGenerateInputSchema.safeParse(rawBody);
+    if (!validationResult.success) {
+      const firstError = validationResult.error.issues[0]?.message || "Invalid prompt or parameters.";
       return NextResponse.json(
-        {
-          success: false,
-          error: "Prompt exceeds maximum allowed length of 1000 characters.",
-        },
+        { success: false, error: firstError, details: validationResult.error.issues },
         { status: 400 }
       );
     }
+
+    const { prompt, roomType, style } = validationResult.data;
 
     // 3. AI Generation execution (Gemini or intelligent architectural fallback)
     const geminiKey = process.env.GEMINI_API_KEY || process.env.GOOGLE_AI_API_KEY;
@@ -98,33 +96,33 @@ Provide concise, practical material recommendations with tile types (vitrified, 
     // Curated architectural fallback if API key is not configured or fails
     if (!aiContent) {
       aiContent = `Architectural Design Plan for ${roomType.toUpperCase()} (${style.toUpperCase()} Style):
-1. Flooring Recommendation: 600x1200mm Glazed Vitrified Tiles (GVT) with anti-skid satin finish.
-2. Wall Treatment: 300x600mm digital ceramic wall tiles with matching accent highlighter border.
-3. Palette & Textures: Balanced neutral tones with warm undertones; pair with moisture-resistant epoxy grout.
-4. Estimated Coverage & Waste Allowance: Add +10% over net carpet area for cuts and wastage.`;
+
+1. Primary Floor Surface: 600x1200mm Glazed Vitrified Tiles (GVT) with satin matte finish for optimal slip resistance and light diffusion.
+2. Wall Cladding: 300x600mm Ceramic digital accent tiles with subtle stone veins.
+3. Color Palette: Warm greige (#E2DCD5), charcoal accents (#2D3142), and brushed brass sanitary fixtures.
+4. Grout Recommendation: Epoxy grout with anti-fungal properties matched to primary tile tone.`;
     }
 
     const res = NextResponse.json({
       success: true,
-      prompt,
-      roomType,
-      style,
+      result: aiContent,
       recommendation: aiContent,
-      rateLimit: {
-        limit: rate.limit,
-        remaining: rate.remaining,
-        resetTime: rate.resetTime,
+      meta: {
+        roomType,
+        style,
+        remainingRequests: rate.remaining,
       },
     });
 
     res.headers.set("X-RateLimit-Limit", rate.limit.toString());
     res.headers.set("X-RateLimit-Remaining", rate.remaining.toString());
     res.headers.set("X-RateLimit-Reset", Math.ceil(rate.resetTime / 1000).toString());
+    res.headers.set("Access-Control-Allow-Origin", "*");
     return res;
   } catch (error: any) {
     console.error("[POST /api/ai/generate Error]", error);
     return NextResponse.json(
-      { success: false, error: error?.message || "Failed to process AI generation request" },
+      { success: false, error: error?.message || "Failed to generate design recommendations." },
       { status: 500 }
     );
   }
