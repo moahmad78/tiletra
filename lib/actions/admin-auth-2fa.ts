@@ -91,8 +91,12 @@ export async function validateAdminCredentialsAndSendOtp(formData: {
         html: `
           <div style="font-family: Arial, sans-serif; max-width: 500px; margin: 0 auto; padding: 32px 24px; background: #052a51; color: #ffffff; border-radius: 20px;">
             <div style="text-align: center; margin-bottom: 24px;">
-              <h2 style="color: #ffffff; margin: 0; font-size: 22px; font-weight: 800;">Intrihub Admin Portal</h2>
-              <p style="color: #94a3b8; font-size: 13px; margin: 6px 0 0 0;">Two-Factor Authentication (2FA)</p>
+              <div style="display: inline-block; background: #ffffff; padding: 10px 22px; border-radius: 12px; margin-bottom: 12px; box-shadow: 0 4px 12px rgba(0,0,0,0.15);">
+                <a href="https://www.intrihub.com" target="_blank" style="text-decoration: none; display: block;">
+                  <img src="https://www.intrihub.com/logo/intri-web-logo.png" alt="Intrihub" width="150" height="38" style="display: block; margin: 0 auto; height: 38px; width: auto; max-width: 160px; border: 0; outline: none; text-decoration: none;" />
+                </a>
+              </div>
+              <p style="color: #94a3b8; font-size: 13px; margin: 0; font-weight: 600; letter-spacing: 0.5px;">Admin Security Portal (2FA)</p>
             </div>
             
             <div style="background: #ffffff; color: #052a51; border-radius: 16px; padding: 28px; text-align: center; box-shadow: 0 4px 20px rgba(0,0,0,0.15);">
