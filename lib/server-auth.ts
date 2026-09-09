@@ -1,17 +1,37 @@
 ﻿import { cookies } from "next/headers";
 import crypto from "crypto";
 
-const ADMIN_SECRET =
-  process.env.ADMIN_SESSION_SECRET ||
-  process.env.JWT_SECRET ||
-  process.env.NEXTAUTH_SECRET ||
-  "intrihub-admin-secure-key-2026";
+function getAdminSecret(): string {
+  const secret =
+    process.env.ADMIN_SESSION_SECRET ||
+    process.env.JWT_SECRET ||
+    process.env.NEXTAUTH_SECRET;
+  if (!secret) {
+    if (process.env.NODE_ENV === "production") {
+      throw new Error(
+        "CRITICAL SECURITY ERROR: ADMIN_SESSION_SECRET must be configured in production environment variables."
+      );
+    }
+    return "intrihub-dev-admin-secure-key";
+  }
+  return secret;
+}
 
-const VENDOR_SECRET =
-  process.env.VENDOR_SESSION_SECRET ||
-  process.env.JWT_SECRET ||
-  process.env.NEXTAUTH_SECRET ||
-  "intrihub-vendor-secure-key-2026";
+function getVendorSecret(): string {
+  const secret =
+    process.env.VENDOR_SESSION_SECRET ||
+    process.env.JWT_SECRET ||
+    process.env.NEXTAUTH_SECRET;
+  if (!secret) {
+    if (process.env.NODE_ENV === "production") {
+      throw new Error(
+        "CRITICAL SECURITY ERROR: VENDOR_SESSION_SECRET must be configured in production environment variables."
+      );
+    }
+    return "intrihub-dev-vendor-secure-key";
+  }
+  return secret;
+}
 
 const SESSION_TTL_MS = 7 * 24 * 60 * 60 * 1000; // 7 days
 
@@ -27,7 +47,7 @@ export function generateAdminSessionToken(adminId: string, email: string): strin
   });
   const base64Payload = Buffer.from(payload).toString("base64url");
   const signature = crypto
-    .createHmac("sha256", ADMIN_SECRET)
+    .createHmac("sha256", getAdminSecret())
     .update(base64Payload)
     .digest("base64url");
   return `${base64Payload}.${signature}`;
@@ -49,7 +69,7 @@ export function verifyAdminSessionToken(token: string): {
   if (!base64Payload || !signature) return { valid: false };
 
   const expectedSignature = crypto
-    .createHmac("sha256", ADMIN_SECRET)
+    .createHmac("sha256", getAdminSecret())
     .update(base64Payload)
     .digest("base64url");
 
@@ -88,7 +108,7 @@ export function generateVendorSessionToken(
   });
   const base64Payload = Buffer.from(payload).toString("base64url");
   const signature = crypto
-    .createHmac("sha256", VENDOR_SECRET)
+    .createHmac("sha256", getVendorSecret())
     .update(base64Payload)
     .digest("base64url");
   return `${base64Payload}.${signature}`;
@@ -111,7 +131,7 @@ export function verifyVendorSessionToken(token: string): {
   if (!base64Payload || !signature) return { valid: false };
 
   const expectedSignature = crypto
-    .createHmac("sha256", VENDOR_SECRET)
+    .createHmac("sha256", getVendorSecret())
     .update(base64Payload)
     .digest("base64url");
 

@@ -129,8 +129,13 @@ export default function CheckoutScreen() {
         if (res.success && res.razorpayOrder) {
           const razorpayKey =
             res.razorpayOrder.key_id ||
-            process.env.EXPO_PUBLIC_RAZORPAY_KEY_ID ||
-            "rzp_test_51NVb089Lsz50d";
+            process.env.EXPO_PUBLIC_RAZORPAY_KEY_ID;
+
+          if (!razorpayKey) {
+            Alert.alert("Error", "Payment configuration missing. Please try again.");
+            setLoading(false);
+            return;
+          }
 
           const options = {
             description: `Order Payment for ${orderPayloadItems.length} item(s)`,

@@ -73,9 +73,18 @@ export function getAuthBaseUrl(request: NextRequest): string {
 }
 
 export function getOAuthSecret(): string {
-  return (
+  const secret =
+    process.env.JWT_SECRET ||
     process.env.NEXTAUTH_SECRET ||
-    process.env.GOOGLE_CLIENT_SECRET ||
-    "intrihub-super-secure-oauth-secret-key-2026"
-  );
+    process.env.GOOGLE_CLIENT_SECRET;
+
+  if (!secret) {
+    if (process.env.NODE_ENV === "production") {
+      throw new Error(
+        "CRITICAL SECURITY ERROR: JWT_SECRET or NEXTAUTH_SECRET must be configured in production environment variables."
+      );
+    }
+    return "intrihub-dev-jwt-secret-key-do-not-use-in-production";
+  }
+  return secret;
 }

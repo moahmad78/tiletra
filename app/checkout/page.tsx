@@ -336,8 +336,14 @@ export default function CheckoutPage() {
 
       const razorpayKey =
         orderData.key_id ||
-        process.env.NEXT_PUBLIC_RAZORPAY_KEY_ID ||
-        "rzp_live_TU11DGRRHXy1CH";
+        process.env.NEXT_PUBLIC_RAZORPAY_KEY_ID;
+
+      if (!razorpayKey) {
+        toast.error("Payment gateway configuration missing. Please contact support.");
+        isPayingRef.current = false;
+        setIsProcessingPayment(false);
+        return;
+      }
 
       const options: any = {
         key: razorpayKey,
