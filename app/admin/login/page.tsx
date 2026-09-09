@@ -351,7 +351,7 @@ export default function AdminLoginPage() {
                   value={email}
                   disabled={isLockedOut}
                   onChange={(e) => setEmail(e.target.value)}
-                  placeholder="admin@intrihub.com"
+                  placeholder="Enter your authorized admin email"
                   className="w-full pl-10 pr-4 py-3 bg-gray-50 border border-gray-200 rounded-xl text-sm font-semibold text-[#052a51] focus:outline-none focus:border-[#F26522] focus:bg-white transition-all shadow-2xs disabled:bg-gray-100 disabled:text-gray-400"
                 />
               </div>

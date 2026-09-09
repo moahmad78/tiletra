@@ -36,7 +36,7 @@ const FAQS = [
   },
   {
     q: "Who can log in to the Super Admin Portal?",
-    a: "The Super Admin portal is strictly restricted to authorized Intrihub personnel (admin@intrihub.com). Unauthorized login attempts are automatically blocked.",
+    a: "The Super Admin portal is strictly restricted to authorized Intrihub personnel. Unauthorized login attempts are automatically blocked.",
   },
   {
     q: "What should I do if my account is locked?",

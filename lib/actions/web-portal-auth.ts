@@ -97,7 +97,7 @@ export async function sendAdminWebOtp(email: string): Promise<{
 
   return {
     success: true,
-    message: `6-digit security code sent to ${cleanEmail}.`,
+    message: "6-digit security code sent to your registered admin email.",
   };
 }
 

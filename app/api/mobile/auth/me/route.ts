@@ -70,9 +70,9 @@ export async function PATCH(req: NextRequest) {
     let emailToUpdate: string | undefined = undefined;
     if (email !== undefined && email !== null) {
       const cleanEmail = String(email).trim().toLowerCase();
-      if (user.role === "admin" && cleanEmail !== "admin@intrihub.com") {
+      if (user.role === "admin" && cleanEmail !== user.email) {
         return mobileApiResponse(
-          { success: false, error: "Super Admin email cannot be changed. admin@intrihub.com is strictly protected." },
+          { success: false, error: "Super Admin email cannot be changed. This account is strictly protected." },
           403
         );
       }
