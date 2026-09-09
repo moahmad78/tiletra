@@ -616,7 +616,7 @@ export default function AdminVendorsPage() {
                   <input
                     type="text"
                     required
-                    placeholder="e.g. Royal Pipes & Sanitary"
+                    placeholder="Enter business or firm name"
                     value={newVendorForm.businessName}
                     onChange={(e) => setNewVendorForm({ ...newVendorForm, businessName: e.target.value })}
                     className="w-full px-3.5 py-2.5 bg-gray-50 border border-gray-200 rounded-xl text-sm font-medium focus:bg-white outline-none"
@@ -629,7 +629,7 @@ export default function AdminVendorsPage() {
                   </label>
                   <input
                     type="text"
-                    placeholder="e.g. Anand Poddar"
+                    placeholder="Enter contact person name"
                     value={newVendorForm.ownerName}
                     onChange={(e) => setNewVendorForm({ ...newVendorForm, ownerName: e.target.value })}
                     className="w-full px-3.5 py-2.5 bg-gray-50 border border-gray-200 rounded-xl text-sm font-medium focus:bg-white outline-none"
@@ -660,7 +660,7 @@ export default function AdminVendorsPage() {
                   <input
                     type="email"
                     required
-                    placeholder="e.g. vendor@intrihub.com"
+                    placeholder="Enter registered vendor email"
                     value={newVendorForm.contactEmail}
                     onChange={(e) => setNewVendorForm({ ...newVendorForm, contactEmail: e.target.value })}
                     className="w-full px-3.5 py-2.5 bg-gray-50 border border-gray-200 rounded-xl text-sm font-medium focus:bg-white outline-none"
@@ -708,7 +708,7 @@ export default function AdminVendorsPage() {
                 </label>
                 <input
                   type="text"
-                  placeholder="Auto-generated e.g. Vendor#9142"
+                  placeholder="Auto-generated vendor ID"
                   value={newVendorForm.customPassword}
                   onChange={(e) => setNewVendorForm({ ...newVendorForm, customPassword: e.target.value })}
                   className="w-full px-3.5 py-2.5 bg-gray-50 border border-gray-200 rounded-xl text-sm font-medium focus:bg-white outline-none"
@@ -721,7 +721,7 @@ export default function AdminVendorsPage() {
                 </label>
                 <textarea
                   rows={2}
-                  placeholder="Street address, landmark, Bangalore"
+                  placeholder="Enter street address, locality and city"
                   value={newVendorForm.businessAddress}
                   onChange={(e) => setNewVendorForm({ ...newVendorForm, businessAddress: e.target.value })}
                   className="w-full px-3.5 py-2.5 bg-gray-50 border border-gray-200 rounded-xl text-xs font-medium focus:bg-white outline-none resize-none"
@@ -955,7 +955,7 @@ export default function AdminVendorsPage() {
                     type="text"
                     value={rejectionReason}
                     onChange={(e) => setRejectionReason(e.target.value)}
-                    placeholder="e.g. Incomplete business address or invalid contact info"
+                    placeholder="Enter reason for rejecting vendor..."
                     className="w-full bg-gray-50 border border-gray-200 rounded-xl px-3 py-2 text-xs font-medium text-gray-800 focus:bg-white focus:border-rose-500 focus:outline-hidden"
                   />
                 </div>

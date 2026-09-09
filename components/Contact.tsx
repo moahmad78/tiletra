@@ -238,7 +238,7 @@ export default function Contact() {
                       type="text"
                       value={name}
                       onChange={(e) => setName(e.target.value)}
-                      placeholder="e.g. Rahul Sharma"
+                      placeholder="Enter full name"
                       required
                       className="w-full h-11 px-3.5 bg-white/5 border border-white/15 rounded-xl text-sm font-medium text-white placeholder:text-neutral-500 focus:bg-white/10 focus:outline-none focus:border-[#F26522]"
                     />
@@ -269,7 +269,7 @@ export default function Contact() {
                       type="email"
                       value={email}
                       onChange={(e) => setEmail(e.target.value)}
-                      placeholder="name@example.com"
+                      placeholder="Enter your email address"
                       className="w-full h-11 px-3.5 bg-white/5 border border-white/15 rounded-xl text-sm font-medium text-white placeholder:text-neutral-500 focus:bg-white/10 focus:outline-none focus:border-[#F26522]"
                     />
                   </div>
@@ -282,7 +282,7 @@ export default function Contact() {
                       type="text"
                       value={orderId}
                       onChange={(e) => setOrderId(e.target.value)}
-                      placeholder="e.g. ORD-84729"
+                      placeholder="Enter your order ID"
                       className="w-full h-11 px-3.5 bg-white/5 border border-white/15 rounded-xl text-sm font-medium text-white placeholder:text-neutral-500 focus:bg-white/10 focus:outline-none focus:border-[#F26522]"
                     />
                   </div>

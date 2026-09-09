@@ -74,7 +74,7 @@ export default function SpecsEditor({ specs, onChange }: SpecsEditorProps) {
               value={specs[key] || ""}
               onChange={(e) => handleChange(key, e.target.value)}
               className="w-full px-2.5 py-1.5 bg-white border border-gray-200 rounded-lg text-xs font-bold text-[#052a51] focus:outline-none focus:border-[#F26522]"
-              placeholder="e.g. < 0.5%"
+              placeholder="Enter specification value"
             />
           </div>
         ))}
@@ -115,14 +115,14 @@ export default function SpecsEditor({ specs, onChange }: SpecsEditorProps) {
           type="text"
           value={customKey}
           onChange={(e) => setCustomKey(e.target.value)}
-          placeholder="Property (e.g. PEI Rating)"
+          placeholder="Enter property name"
           className="flex-1 px-3 py-1.5 text-xs border border-gray-300 rounded-xl focus:outline-none focus:border-[#F26522]"
         />
         <input
           type="text"
           value={customValue}
           onChange={(e) => setCustomValue(e.target.value)}
-          placeholder="Value (e.g. Class 4)"
+          placeholder="Enter property value"
           className="flex-1 px-3 py-1.5 text-xs border border-gray-300 rounded-xl focus:outline-none focus:border-[#F26522]"
         />
         <button

@@ -270,7 +270,7 @@ export default function AdminCouponsPage() {
                   required
                   value={code}
                   onChange={(e) => setCode(e.target.value.toUpperCase())}
-                  placeholder="e.g. INTRIHUB15"
+                  placeholder="Enter coupon code"
                   className="w-full px-3.5 py-2.5 bg-gray-50 border border-gray-200 rounded-xl text-sm font-mono font-black text-[#052a51] uppercase focus:outline-none focus:border-[#F26522]"
                 />
               </div>

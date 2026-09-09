@@ -491,7 +491,7 @@ export default function AdminDeliveriesPage() {
                   type="text"
                   value={courierName}
                   onChange={(e) => setCourierName(e.target.value)}
-                  placeholder="e.g. Intrihub Truck #4 / Ramesh (9876543210)"
+                  placeholder="Enter vehicle number and driver contact"
                   className="w-full bg-gray-50 border border-gray-200 rounded-xl px-3.5 py-2.5 text-xs text-gray-800 focus:bg-white focus:outline-hidden"
                 />
               </div>
@@ -504,7 +504,7 @@ export default function AdminDeliveriesPage() {
                   type="text"
                   value={trackingNumber}
                   onChange={(e) => setTrackingNumber(e.target.value)}
-                  placeholder="e.g. IHB-LOG-90234"
+                  placeholder="Enter delivery consignment number"
                   className="w-full bg-gray-50 border border-gray-200 rounded-xl px-3.5 py-2.5 text-xs text-gray-800 focus:bg-white focus:outline-hidden font-mono"
                 />
               </div>

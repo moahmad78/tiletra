@@ -649,17 +649,7 @@ export default function DynamicProductUploadForm({
             <input
               type="text"
               required
-              placeholder={`e.g. ${
-                selectedCategoryKey === "electrical"
-                  ? "Havells Oro 6-Module Polycarbonate Switchboard Plate"
-                  : selectedCategoryKey === "electrical-wires"
-                  ? "Polycab 2.5 sq.mm Flame Retardant Red House Wire (90m)"
-                  : selectedCategoryKey === "paints"
-                  ? "Asian Paints Apex Ultima Weatherproof Exterior Emulsion (4L)"
-                  : selectedCategoryKey === "plywood"
-                  ? "CenturyPly Club Prime 19mm Boiling Water Proof Hardwood Sheet"
-                  : "Kajaria 600x600mm Statuario Polished Vitrified Floor Tiles"
-              }`}
+              placeholder="Enter complete product title and specifications"
               value={productName}
               onChange={(e) => setProductName(e.target.value)}
               className="w-full px-4 py-3 bg-gray-50/70 border border-gray-200 rounded-2xl text-sm font-semibold text-gray-900 focus:bg-white focus:outline-none focus:border-[#F26522]"
@@ -673,7 +663,7 @@ export default function DynamicProductUploadForm({
             </label>
             <input
               type="text"
-              placeholder="e.g. Commercial Grade Fire-Resistant Switchboard · 10-Year Warranty"
+              placeholder="Enter short product highlights"
               value={captionTagline}
               onChange={(e) => setCaptionTagline(e.target.value)}
               className="w-full px-4 py-3 bg-gray-50/70 border border-gray-200 rounded-2xl text-xs font-medium text-gray-800 focus:bg-white focus:outline-none focus:border-[#F26522]"
@@ -738,7 +728,7 @@ export default function DynamicProductUploadForm({
             {isCustomMaterial ? (
               <input
                 type="text"
-                placeholder="Enter custom material (e.g. Glazed Vitrified GVT, SS 304)..."
+                placeholder="Enter custom material name..."
                 value={material}
                 onChange={(e) => setMaterial(e.target.value)}
                 className="w-full px-4 py-3 bg-gray-50/70 border border-gray-200 rounded-2xl text-xs font-semibold text-gray-800 focus:bg-white focus:outline-none focus:border-[#F26522]"
@@ -829,7 +819,7 @@ export default function DynamicProductUploadForm({
             {isCustomFinish ? (
               <input
                 type="text"
-                placeholder="Enter custom finish (e.g. Flamed, Bush Hammered)..."
+                placeholder="Enter custom surface finish..."
                 value={finish}
                 onChange={(e) => setFinish(e.target.value)}
                 className="w-full px-4 py-3 bg-gray-50/70 border border-gray-200 rounded-2xl text-xs font-semibold text-gray-800 focus:bg-white focus:outline-none focus:border-[#F26522]"
@@ -1063,7 +1053,7 @@ export default function DynamicProductUploadForm({
               <input
                 type="number"
                 min={0}
-                placeholder="e.g. 1500 (leave blank if no discount)"
+                placeholder="Enter MRP price (leave blank if no discount)"
                 value={mrpPrice}
                 onChange={(e) => setMrpPrice(e.target.value)}
                 className="w-full pl-8 pr-4 py-3 bg-gray-50/70 border border-gray-200 rounded-2xl text-sm font-black text-gray-900 focus:bg-white focus:outline-none focus:border-[#F26522]"
@@ -1085,7 +1075,7 @@ export default function DynamicProductUploadForm({
                 type="number"
                 required
                 min={1}
-                placeholder="e.g. 1199"
+                placeholder="Enter selling price"
                 value={sellingPrice}
                 onChange={(e) => setSellingPrice(e.target.value)}
                 className="w-full pl-8 pr-4 py-3 bg-gray-50/70 border border-gray-200 rounded-2xl text-sm font-black text-[#F26522] focus:bg-white focus:outline-none focus:border-[#F26522]"
@@ -1103,7 +1093,7 @@ export default function DynamicProductUploadForm({
               type="number"
               required
               min={0}
-              placeholder="e.g. 100"
+              placeholder="Enter available stock quantity"
               value={stockQty}
               onChange={(e) => setStockQty(e.target.value)}
               className="w-full px-4 py-3 bg-gray-50/70 border border-gray-200 rounded-2xl text-sm font-black text-gray-900 focus:bg-white focus:outline-none focus:border-[#F26522]"
@@ -1200,7 +1190,7 @@ export default function DynamicProductUploadForm({
                 type="number"
                 step="1"
                 min={1}
-                placeholder="e.g. 4 or 6"
+                placeholder="Enter pieces per box"
                 value={piecesPerBox}
                 onChange={(e) => setPiecesPerBox(e.target.value)}
                 className="w-full px-4 py-3 bg-gray-50/70 border border-gray-200 rounded-2xl text-xs font-bold text-gray-800 focus:bg-white focus:outline-none focus:border-[#F26522]"
@@ -1362,7 +1352,7 @@ export default function DynamicProductUploadForm({
                   type="text"
                   value={block.heading}
                   onChange={(e) => handleUpdateDescriptionBlock(index, "heading", e.target.value)}
-                  placeholder="Section Heading (e.g. Overview / Warranty / Usage)"
+                  placeholder="Enter section heading"
                   className="font-bold text-xs text-[#052a51] bg-white border border-gray-200 px-3 py-1.5 rounded-xl w-full max-w-sm focus:outline-none focus:border-[#F26522]"
                 />
                 {descriptionBlocks.length > 1 && (

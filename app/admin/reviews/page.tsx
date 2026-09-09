@@ -390,7 +390,7 @@ export default function AdminReviewsPage() {
                   required
                   value={hideReason}
                   onChange={(e) => setHideReason(e.target.value)}
-                  placeholder="e.g. Inappropriate language, spam, or contains personally identifiable information..."
+                  placeholder="Enter reason for rejecting review..."
                   className="w-full p-3 bg-gray-50 border border-gray-200 rounded-xl text-xs text-gray-700 focus:outline-none focus:border-[#F26522]"
                 />
                 <p className="text-[10px] text-gray-400 mt-1">

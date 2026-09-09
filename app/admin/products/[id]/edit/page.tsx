@@ -416,7 +416,7 @@ export default function EditProductPage({
                 min={1}
                 value={piecesPerBox}
                 onChange={(e) => setPiecesPerBox(e.target.value)}
-                placeholder="e.g. 4 or 6"
+                placeholder="Enter pieces per box"
                 className="w-full px-4 py-2.5 bg-gray-50 border border-gray-200 rounded-xl text-xs font-bold text-gray-800 focus:bg-white focus:outline-none focus:border-[#F26522]"
               />
               <p className="text-[10px] text-gray-400 mt-1">
@@ -490,7 +490,7 @@ export default function EditProductPage({
               max="5.0"
               value={manualRating}
               onChange={(e) => setManualRating(e.target.value)}
-              placeholder="e.g. 4.8 (Leave blank to hide badge)"
+              placeholder="Enter manual rating (leave blank to hide)"
               className="w-full px-3.5 py-2.5 bg-gray-50 border border-gray-200 rounded-xl text-xs font-semibold text-[#052a51] focus:outline-none focus:border-[#F26522]"
             />
             <p className="text-[10px] text-gray-400 mt-1">Controls the star rating badge shown on storefront & cards.</p>
@@ -506,7 +506,7 @@ export default function EditProductPage({
               min="0"
               value={manualReviewCount}
               onChange={(e) => setManualReviewCount(e.target.value)}
-              placeholder="e.g. 18 (Leave blank to hide count)"
+              placeholder="Enter manual review count (leave blank to hide)"
               className="w-full px-3.5 py-2.5 bg-gray-50 border border-gray-200 rounded-xl text-xs font-semibold text-[#052a51] focus:outline-none focus:border-[#F26522]"
             />
             <p className="text-[10px] text-gray-400 mt-1">Controls the count displayed next to star rating badge.</p>

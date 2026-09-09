@@ -314,7 +314,7 @@ export default function AddressStep({
                   <input
                     type="text"
                     required
-                    placeholder="e.g. Sahil Sheikh"
+                    placeholder="Enter full name"
                     value={name}
                     onChange={(e) => setName(e.target.value)}
                     className="w-full h-11 pl-9 pr-3.5 rounded-xl border border-gray-300 focus:border-[#F26522] focus:ring-1 focus:ring-[#F26522] outline-none text-xs font-medium text-gray-900 bg-white"
@@ -334,7 +334,7 @@ export default function AddressStep({
                     type="tel"
                     required
                     maxLength={10}
-                    placeholder="9876543210"
+                    placeholder="Enter 10-digit mobile number"
                     value={phone}
                     onChange={(e) => setPhone(e.target.value.replace(/\D/g, "").slice(0, 10))}
                     className="w-full h-11 pl-12 pr-3.5 rounded-xl border border-gray-300 focus:border-[#F26522] focus:ring-1 focus:ring-[#F26522] outline-none text-xs font-medium text-gray-900 bg-white"
@@ -351,7 +351,7 @@ export default function AddressStep({
                 </label>
                 <input
                   type="text"
-                  placeholder="e.g. Flat 402 / Shop 12"
+                  placeholder="Enter house, flat or shop number"
                   value={houseNumber}
                   onChange={(e) => setHouseNumber(e.target.value)}
                   className="w-full h-11 px-3.5 rounded-xl border border-gray-300 focus:border-[#F26522] focus:ring-1 focus:ring-[#F26522] outline-none text-xs font-medium text-gray-900 bg-white"
@@ -365,7 +365,7 @@ export default function AddressStep({
                 <input
                   type="text"
                   required
-                  placeholder="e.g. Kumari Elite, 24th Main Road"
+                  placeholder="Enter building name and street address"
                   value={line1}
                   onChange={(e) => setLine1(e.target.value)}
                   className="w-full h-11 px-3.5 rounded-xl border border-gray-300 focus:border-[#F26522] focus:ring-1 focus:ring-[#F26522] outline-none text-xs font-medium text-gray-900 bg-white"
@@ -381,7 +381,7 @@ export default function AddressStep({
                 </label>
                 <input
                   type="text"
-                  placeholder="e.g. HSR Layout, Sector 2"
+                  placeholder="Enter area, sector or locality"
                   value={line2}
                   onChange={(e) => setLine2(e.target.value)}
                   className="w-full h-11 px-3.5 rounded-xl border border-gray-300 focus:border-[#F26522] focus:ring-1 focus:ring-[#F26522] outline-none text-xs font-medium text-gray-900 bg-white"
@@ -394,7 +394,7 @@ export default function AddressStep({
                 </label>
                 <input
                   type="text"
-                  placeholder="e.g. Opp. BDA Complex / Near Shell Pump"
+                  placeholder="Enter nearby landmark"
                   value={landmark}
                   onChange={(e) => setLandmark(e.target.value)}
                   className="w-full h-11 px-3.5 rounded-xl border border-gray-300 focus:border-[#F26522] focus:ring-1 focus:ring-[#F26522] outline-none text-xs font-medium text-gray-900 bg-white"
@@ -411,7 +411,7 @@ export default function AddressStep({
                 <input
                   type="text"
                   required
-                  placeholder="e.g. Bengaluru"
+                  placeholder="Enter city name"
                   value={city}
                   onChange={(e) => setCity(e.target.value)}
                   className="w-full h-11 px-3.5 rounded-xl border border-gray-300 focus:border-[#F26522] focus:ring-1 focus:ring-[#F26522] outline-none text-xs font-medium text-gray-900 bg-white"
@@ -425,7 +425,7 @@ export default function AddressStep({
                 <input
                   type="text"
                   required
-                  placeholder="e.g. Karnataka"
+                  placeholder="Enter state name"
                   value={state}
                   onChange={(e) => setState(e.target.value)}
                   className="w-full h-11 px-3.5 rounded-xl border border-gray-300 focus:border-[#F26522] focus:ring-1 focus:ring-[#F26522] outline-none text-xs font-medium text-gray-900 bg-white"
@@ -440,7 +440,7 @@ export default function AddressStep({
                   type="text"
                   required
                   maxLength={6}
-                  placeholder="e.g. 560102"
+                  placeholder="Enter 6-digit postal pincode"
                   value={pincode}
                   onChange={(e) => setPincode(e.target.value.replace(/\D/g, "").slice(0, 6))}
                   className="w-full h-11 px-3.5 rounded-xl border border-gray-300 focus:border-[#F26522] focus:ring-1 focus:ring-[#F26522] outline-none text-xs font-medium text-gray-900 bg-white"
@@ -455,7 +455,7 @@ export default function AddressStep({
               </label>
               <textarea
                 rows={2}
-                placeholder="e.g. Call before entering gate, heavy tiles unloading site, use lift"
+                placeholder="Enter special delivery instructions"
                 value={deliveryInstructions}
                 onChange={(e) => setDeliveryInstructions(e.target.value)}
                 className="w-full p-3 rounded-xl border border-gray-300 focus:border-[#F26522] focus:ring-1 focus:ring-[#F26522] outline-none text-xs font-medium text-gray-900 bg-white resize-none"

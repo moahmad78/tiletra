@@ -295,7 +295,7 @@ export default function VariantEditor({
                       value={v.attributeValue || v.size}
                       onChange={(e) => handleUpdateVariant(i, "attributeValue", e.target.value)}
                       className="w-36 px-2.5 py-1.5 bg-gray-50 border border-gray-200 rounded-lg text-xs font-bold text-[#052a51] focus:outline-none focus:border-[#F26522]"
-                      placeholder="e.g. 4L, 19mm, 600x600mm"
+                      placeholder="Enter variant dimensions or pack size"
                     />
                   </td>
 
@@ -380,7 +380,7 @@ export default function VariantEditor({
                         )
                       }
                       className="w-20 px-2.5 py-1.5 bg-gray-50 border border-gray-200 rounded-lg text-xs font-bold text-[#052a51] focus:outline-none focus:border-[#F26522]"
-                      placeholder="e.g. 2.5"
+                      placeholder="Enter variant quantity or multiplier"
                       step="0.1"
                       min={0}
                     />

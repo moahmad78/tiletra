@@ -473,7 +473,7 @@ export default function AdminVendorApplicationsPage() {
                   <Lock className="absolute left-3 top-2.5 text-gray-400" size={15} />
                   <input
                     type="text"
-                    placeholder="Auto-generated e.g. Intri#8492"
+                    placeholder="Auto-generated application ID"
                     value={customPassword}
                     onChange={(e) => setCustomPassword(e.target.value)}
                     className="w-full pl-9 pr-4 py-2.5 bg-gray-50 border border-gray-200 rounded-xl text-sm font-medium focus:bg-white outline-none"
@@ -488,7 +488,7 @@ export default function AdminVendorApplicationsPage() {
                 </label>
                 <input
                   type="text"
-                  placeholder="e.g. 29AAAAA0000A1Z5"
+                  placeholder="Enter 15-character GSTIN"
                   value={gstNumber}
                   onChange={(e) => setGstNumber(e.target.value)}
                   className="w-full px-3.5 py-2.5 bg-gray-50 border border-gray-200 rounded-xl text-sm font-medium focus:bg-white outline-none"
@@ -602,7 +602,7 @@ export default function AdminVendorApplicationsPage() {
                 </label>
                 <textarea
                   rows={3}
-                  placeholder="e.g. Incomplete documents or shop premise could not be verified."
+                  placeholder="Enter reason for rejecting application..."
                   value={rejectionReason}
                   onChange={(e) => setRejectionReason(e.target.value)}
                   className="w-full px-3 py-2 bg-gray-50 border border-gray-200 rounded-xl text-xs font-medium focus:bg-white outline-none resize-none"

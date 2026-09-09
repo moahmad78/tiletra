@@ -430,7 +430,7 @@ export default function VendorLoginPage() {
                     value={email}
                     disabled={isLockedOut}
                     onChange={(e) => setEmail(e.target.value)}
-                    placeholder="e.g. vendor@intrihub.com"
+                    placeholder="Enter registered vendor email"
                     className="w-full pl-10 pr-4 py-3 bg-gray-50 border border-gray-200 rounded-xl text-sm font-semibold text-gray-800 placeholder-gray-400 focus:bg-white focus:border-[#052a51] focus:outline-none transition-all disabled:bg-gray-100 disabled:text-gray-400"
                     required
                   />

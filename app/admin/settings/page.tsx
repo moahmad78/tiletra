@@ -191,7 +191,7 @@ export default function AdminSettingsPage() {
                 type="text"
                 value={gstNumber}
                 onChange={(e) => setGstNumber(e.target.value)}
-                placeholder="e.g. 29AABCT1234F1Z8"
+                placeholder="Enter 15-character GSTIN"
                 className="w-full px-3.5 py-2.5 bg-gray-50 border border-gray-200 rounded-xl text-xs font-black text-[#052a51] uppercase tracking-wider focus:outline-none focus:border-[#F26522]"
               />
               <p className="text-[10px] text-gray-400 mt-1">Printed on official customer bills & tax invoices.</p>
@@ -491,7 +491,7 @@ export default function AdminSettingsPage() {
                 type="text"
                 value={codBlockedPincodes}
                 onChange={(e) => setCodBlockedPincodes(e.target.value)}
-                placeholder="e.g. 560099, 560088"
+                placeholder="Enter serviceable pincodes separated by comma"
                 className="w-full px-3.5 py-2.5 bg-gray-50 border border-gray-200 rounded-xl text-xs font-semibold text-[#052a51] focus:outline-none focus:border-[#F26522]"
               />
               <p className="text-[10px] text-gray-400 mt-1">

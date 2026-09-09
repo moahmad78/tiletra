@@ -261,7 +261,7 @@ export default function WriteReviewModal({
               type="text"
               value={title}
               onChange={(e) => setTitle(e.target.value)}
-              placeholder="e.g. Excellent tile finish & quick delivery!"
+              placeholder="Enter your review summary"
               className="w-full px-3.5 py-2.5 bg-gray-50 border border-gray-200 rounded-xl text-xs font-bold text-[#052a51] focus:outline-none focus:border-[#F26522]"
             />
           </div>

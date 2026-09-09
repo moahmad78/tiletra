@@ -302,7 +302,7 @@ export default function VendorApplyPage() {
                       <input
                         type="text"
                         required
-                        placeholder="e.g. IntriHub Store"
+                        placeholder="Enter store name"
                         value={formData.businessName}
                         onChange={(e) => setFormData({ ...formData, businessName: e.target.value })}
                         className="w-full px-3.5 py-2.5 bg-gray-50 border border-gray-200 rounded-xl text-sm font-medium focus:bg-white focus:border-[#052a51] focus:ring-2 focus:ring-[#052a51]/20 outline-none transition-all"
@@ -316,7 +316,7 @@ export default function VendorApplyPage() {
                       <input
                         type="text"
                         required
-                        placeholder="e.g. IntriHub Partner"
+                        placeholder="Enter partner name"
                         value={formData.ownerName}
                         onChange={(e) => setFormData({ ...formData, ownerName: e.target.value })}
                         className="w-full px-3.5 py-2.5 bg-gray-50 border border-gray-200 rounded-xl text-sm font-medium focus:bg-white focus:border-[#052a51] focus:ring-2 focus:ring-[#052a51]/20 outline-none transition-all"
@@ -335,7 +335,7 @@ export default function VendorApplyPage() {
                           type="tel"
                           required
                           maxLength={10}
-                          placeholder="9876543210"
+                          placeholder="Enter 10-digit mobile number"
                           value={formData.phone}
                           onChange={(e) => setFormData({ ...formData, phone: e.target.value.replace(/\D/g, "") })}
                           className="w-full pl-12 pr-3.5 py-2.5 bg-gray-50 border border-gray-200 rounded-xl text-sm font-medium focus:bg-white focus:border-[#052a51] focus:ring-2 focus:ring-[#052a51]/20 outline-none transition-all"
@@ -350,7 +350,7 @@ export default function VendorApplyPage() {
                       <input
                         type="email"
                         required
-                        placeholder="e.g. shop@gmail.com"
+                        placeholder="Enter business email address"
                         value={formData.email}
                         onChange={(e) => setFormData({ ...formData, email: e.target.value })}
                         className="w-full px-3.5 py-2.5 bg-gray-50 border border-gray-200 rounded-xl text-sm font-medium focus:bg-white focus:border-[#052a51] focus:ring-2 focus:ring-[#052a51]/20 outline-none transition-all"
@@ -382,7 +382,7 @@ export default function VendorApplyPage() {
                     <textarea
                       rows={2}
                       required
-                      placeholder="e.g. #42, BTM 2nd Stage, Outer Ring Road, Bangalore - 560076"
+                      placeholder="Enter complete address with pincode"
                       value={formData.address}
                       onChange={(e) => setFormData({ ...formData, address: e.target.value })}
                       className="w-full px-3.5 py-2.5 bg-gray-50 border border-gray-200 rounded-xl text-sm font-medium focus:bg-white focus:border-[#052a51] focus:ring-2 focus:ring-[#052a51]/20 outline-none transition-all resize-none"
@@ -395,7 +395,7 @@ export default function VendorApplyPage() {
                     </label>
                     <textarea
                       rows={2}
-                      placeholder="e.g. Authorized dealer for Havells, Polycab, Finolex wires, switches, MCBs and architectural LED lights."
+                      placeholder="Enter detailed description of products and authorized brands..."
                       value={formData.description}
                       onChange={(e) => setFormData({ ...formData, description: e.target.value })}
                       className="w-full px-3.5 py-2.5 bg-gray-50 border border-gray-200 rounded-xl text-sm font-medium focus:bg-white focus:border-[#052a51] focus:ring-2 focus:ring-[#052a51]/20 outline-none transition-all resize-none"

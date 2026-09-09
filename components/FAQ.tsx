@@ -65,7 +65,7 @@ export default function FAQ() {
             type="text"
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
-            placeholder="Search questions (e.g., 60 minutes delivery, GST invoice, tile breakage, samples)..."
+            placeholder="Search help articles, delivery info, policies..."
             className="w-full h-12 pl-11 pr-4 bg-neutral-50 border border-neutral-200 rounded-2xl text-xs sm:text-sm font-medium text-neutral-900 placeholder:text-neutral-400 focus:bg-white focus:outline-none focus:border-[#F26522] focus:ring-2 focus:ring-[#F26522]/20 transition-all"
           />
           {searchQuery && (

@@ -450,7 +450,7 @@ export default function OrderDetailPage({
               type="text"
               value={courier}
               onChange={(e) => setCourier(e.target.value)}
-              placeholder="e.g. Delhivery Freight, SafeXpress"
+              placeholder="Enter courier or logistics partner name"
               className="w-full px-3 py-2 bg-gray-50 border border-gray-200 rounded-xl text-xs font-semibold text-[#052a51] focus:outline-none focus:border-[#F26522]"
             />
           </div>
@@ -463,7 +463,7 @@ export default function OrderDetailPage({
               type="text"
               value={tracking}
               onChange={(e) => setTracking(e.target.value)}
-              placeholder="e.g. DEL-984729104"
+              placeholder="Enter tracking number or docket ID"
               className="w-full px-3 py-2 bg-gray-50 border border-gray-200 rounded-xl text-xs font-mono font-semibold text-[#052a51] focus:outline-none focus:border-[#F26522]"
             />
           </div>

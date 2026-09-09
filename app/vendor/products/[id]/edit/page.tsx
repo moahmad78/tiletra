@@ -290,7 +290,7 @@ export default function VendorEditProductPage() {
               type="text"
               value={name}
               onChange={(e) => setName(e.target.value)}
-              placeholder="e.g. Anchor Roma 10A Modular Switch 1M"
+              placeholder="Enter complete product title"
               className="w-full bg-gray-50 border border-gray-200 rounded-xl px-4 py-3 text-sm font-medium text-gray-800 focus:bg-white focus:border-emerald-500 focus:outline-hidden transition-all"
               required
             />
@@ -322,7 +322,7 @@ export default function VendorEditProductPage() {
                 type="text"
                 value={material}
                 onChange={(e) => setMaterial(e.target.value)}
-                placeholder="e.g. Polycarbonate, Vitrified, Brass"
+                placeholder="Enter material types"
                 className="w-full bg-gray-50 border border-gray-200 rounded-xl px-4 py-3 text-sm font-medium text-gray-800 focus:bg-white focus:border-emerald-500 focus:outline-hidden transition-all"
                 required
               />
@@ -404,14 +404,14 @@ export default function VendorEditProductPage() {
               <div key={idx} className="flex items-center gap-2 bg-gray-50 p-2.5 rounded-2xl border border-gray-200/60">
                 <input
                   type="text"
-                  placeholder="Attribute (e.g. Brand)"
+                  placeholder="Enter attribute name"
                   value={attr.key}
                   onChange={(e) => handleAttributeChange(idx, "key", e.target.value)}
                   className="w-1/2 bg-white border border-gray-200 rounded-xl px-3 py-2 text-xs font-bold text-gray-800"
                 />
                 <input
                   type="text"
-                  placeholder="Value (e.g. Havells / 16A)"
+                  placeholder="Enter attribute value"
                   value={attr.value}
                   onChange={(e) => handleAttributeChange(idx, "value", e.target.value)}
                   className="w-1/2 bg-white border border-gray-200 rounded-xl px-3 py-2 text-xs font-medium text-gray-800"
@@ -506,7 +506,7 @@ export default function VendorEditProductPage() {
                   min={1}
                   value={piecesPerBox}
                   onChange={(e) => setPiecesPerBox(e.target.value)}
-                  placeholder="e.g. 4 or 6"
+                  placeholder="Enter pieces per box"
                   className="w-full px-4 py-2.5 bg-gray-50 border border-gray-200 rounded-xl text-xs font-bold text-gray-800 focus:bg-white focus:outline-none focus:border-emerald-600"
                 />
                 <p className="text-[10px] text-gray-400 mt-1">

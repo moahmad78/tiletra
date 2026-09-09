@@ -339,7 +339,7 @@ export default function LoginModal() {
                     inputMode="email"
                     value={email}
                     onChange={(e) => setEmail(e.target.value)}
-                    placeholder="you@example.com"
+                    placeholder="Enter your email address"
                     autoFocus
                     className="w-full px-4 py-3.5 rounded-2xl border-2 border-gray-200 focus:border-[#F26522] bg-gray-50 focus:bg-white text-base font-bold text-[#052a51] placeholder-gray-400 focus:outline-none transition-colors"
                   />

@@ -189,7 +189,7 @@ ${fullName}`;
                         <label className="block text-sm font-semibold text-gray-900 mb-2">Location *</label>
                         <div className="relative">
                           <MapPin className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-gray-400" />
-                          <input name="location" required type="text" placeholder="Area in Bangalore" className="w-full h-12 pl-10 pr-4 rounded-xl border border-gray-200 focus:border-[#F26522] focus:ring-1 focus:ring-[#F26522] outline-none transition-colors" />
+                          <input name="location" required type="text" placeholder="Enter your area or locality" className="w-full h-12 pl-10 pr-4 rounded-xl border border-gray-200 focus:border-[#F26522] focus:ring-1 focus:ring-[#F26522] outline-none transition-colors" />
                         </div>
                       </div>
                     </div>

@@ -389,7 +389,7 @@ export default function ColorPalettePickerModal({
                       type="text"
                       value={customName}
                       onChange={(e) => setCustomName(e.target.value)}
-                      placeholder="e.g. Royal Emerald Green, Terracotta Bronze"
+                      placeholder="Enter color palette name"
                       className="w-full px-3 py-1.5 bg-white border border-gray-200 rounded-lg text-xs font-bold text-[#052a51] focus:outline-none focus:border-[#F26522]"
                     />
                   </div>

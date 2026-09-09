@@ -573,7 +573,7 @@ export default function VendorSettingsPage() {
                 rows={2}
                 value={shopData.businessAddress}
                 onChange={(e) => setShopData({ ...shopData, businessAddress: e.target.value })}
-                placeholder="Shop No., Street, Area, City, Pincode"
+                placeholder="Enter shop number, street, area, city and pincode"
                 className="w-full bg-gray-50 border border-gray-200 rounded-xl px-4 py-2.5 text-sm font-medium text-gray-800 focus:bg-white focus:border-emerald-500 focus:outline-hidden"
               />
             </div>
@@ -753,7 +753,7 @@ export default function VendorSettingsPage() {
                 type="number"
                 min={0}
                 step="any"
-                placeholder="e.g. 499 (or leave blank to use platform default ₹999)"
+                placeholder="Enter delivery charge (leave blank for platform default)"
                 value={shippingData.customDeliveryFee}
                 onChange={(e) => setShippingData((p) => ({ ...p, customDeliveryFee: e.target.value }))}
                 className="w-full bg-gray-50 border border-gray-200 rounded-xl px-4 py-3 text-sm font-semibold text-gray-800 focus:bg-white focus:border-emerald-500 focus:outline-hidden"
@@ -771,7 +771,7 @@ export default function VendorSettingsPage() {
                 type="number"
                 min={0}
                 step="any"
-                placeholder="e.g. 10000 (or leave blank to use platform default ₹15,000)"
+                placeholder="Enter free delivery threshold (leave blank for platform default)"
                 value={shippingData.freeDeliveryThreshold}
                 onChange={(e) => setShippingData((p) => ({ ...p, freeDeliveryThreshold: e.target.value }))}
                 className="w-full bg-gray-50 border border-gray-200 rounded-xl px-4 py-3 text-sm font-semibold text-gray-800 focus:bg-white focus:border-emerald-500 focus:outline-hidden"
@@ -850,7 +850,7 @@ export default function VendorSettingsPage() {
                 <input
                   type="text"
                   maxLength={10}
-                  placeholder="e.g. ABCDE1234F"
+                  placeholder="Enter 10-character PAN number"
                   value={kycData.panNumber}
                   onChange={(e) => setKycData({ ...kycData, panNumber: e.target.value.toUpperCase() })}
                   className="w-full bg-white border border-gray-200 rounded-xl px-4 py-2.5 text-xs font-mono font-bold text-gray-800 uppercase focus:border-emerald-500 focus:outline-hidden"
@@ -919,7 +919,7 @@ export default function VendorSettingsPage() {
                 <input
                   type="text"
                   maxLength={14}
-                  placeholder="e.g. 5432 1098 7654"
+                  placeholder="Enter 12-digit Aadhaar number"
                   value={kycData.aadharNumber}
                   onChange={(e) => setKycData({ ...kycData, aadharNumber: e.target.value })}
                   className="w-full bg-white border border-gray-200 rounded-xl px-4 py-2.5 text-xs font-mono font-bold text-gray-800 focus:border-emerald-500 focus:outline-hidden"
@@ -980,7 +980,7 @@ export default function VendorSettingsPage() {
               <input
                 type="text"
                 maxLength={15}
-                placeholder="e.g. 29ABCDE1234F1Z5"
+                placeholder="Enter 15-character GSTIN"
                 value={kycData.gstNumber}
                 onChange={(e) => setKycData({ ...kycData, gstNumber: e.target.value.toUpperCase() })}
                 className="w-full bg-white border border-gray-200 rounded-xl px-4 py-2.5 text-xs font-mono font-bold text-gray-800 uppercase focus:border-emerald-500 focus:outline-hidden"
@@ -1111,7 +1111,7 @@ export default function VendorSettingsPage() {
               </label>
               <input
                 type="text"
-                placeholder="e.g. IntriHub Store or Authorized Partner"
+                placeholder="Enter registered business name"
                 value={bankData.bankAccountHolder}
                 onChange={(e) => setBankData({ ...bankData, bankAccountHolder: e.target.value })}
                 className="w-full bg-gray-50 border border-gray-200 rounded-xl px-4 py-3 text-sm font-semibold text-gray-800 focus:bg-white focus:border-emerald-500 focus:outline-hidden"
@@ -1124,7 +1124,7 @@ export default function VendorSettingsPage() {
               </label>
               <input
                 type="text"
-                placeholder="e.g. HDFC Bank / State Bank of India"
+                placeholder="Enter bank name"
                 value={bankData.bankName}
                 onChange={(e) => setBankData({ ...bankData, bankName: e.target.value })}
                 className="w-full bg-gray-50 border border-gray-200 rounded-xl px-4 py-3 text-sm font-semibold text-gray-800 focus:bg-white focus:border-emerald-500 focus:outline-hidden"
@@ -1137,7 +1137,7 @@ export default function VendorSettingsPage() {
               </label>
               <input
                 type="text"
-                placeholder="e.g. 50100234567890"
+                placeholder="Enter bank account number"
                 value={bankData.bankAccountNumber}
                 onChange={(e) => setBankData({ ...bankData, bankAccountNumber: e.target.value })}
                 className="w-full bg-gray-50 border border-gray-200 rounded-xl px-4 py-3 text-sm font-mono font-bold text-gray-800 focus:bg-white focus:border-emerald-500 focus:outline-hidden"
@@ -1150,7 +1150,7 @@ export default function VendorSettingsPage() {
               </label>
               <input
                 type="text"
-                placeholder="e.g. HDFC0001234"
+                placeholder="Enter 11-character IFSC code"
                 maxLength={11}
                 value={bankData.bankIfscCode}
                 onChange={(e) => setBankData({ ...bankData, bankIfscCode: e.target.value.toUpperCase() })}
@@ -1164,7 +1164,7 @@ export default function VendorSettingsPage() {
               </label>
               <input
                 type="text"
-                placeholder="e.g. yourshop@okaxis or yourphone@upi"
+                placeholder="Enter your UPI ID or VPA"
                 value={bankData.bankUpiId}
                 onChange={(e) => setBankData({ ...bankData, bankUpiId: e.target.value })}
                 className="w-full bg-gray-50 border border-gray-200 rounded-xl px-4 py-3 text-sm font-mono text-gray-800 focus:bg-white focus:border-emerald-500 focus:outline-hidden"

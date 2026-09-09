@@ -895,7 +895,7 @@ export default function VendorDetailDashboardPage() {
             </label>
             <input
               type="text"
-              placeholder="e.g. Aadhaar photo is blurry, please re-upload front and back scan."
+              placeholder="Enter document rejection reason..."
               value={kycNoteInput}
               onChange={(e) => setKycNoteInput(e.target.value)}
               className="w-full bg-white border border-gray-300 rounded-xl px-3 py-2 text-xs text-gray-800 focus:outline-none focus:border-emerald-500"

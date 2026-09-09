@@ -231,7 +231,7 @@ export default function ImageUploadManager({
               type="url"
               value={urlInput}
               onChange={(e) => setUrlInput(e.target.value)}
-              placeholder="https://example.com/tile-photo.jpg"
+              placeholder="Enter valid image web URL"
               className="flex-1 px-3.5 py-2 text-xs border border-gray-300 rounded-xl focus:outline-hidden focus:border-[#F26522] font-medium bg-white"
               autoFocus
             />

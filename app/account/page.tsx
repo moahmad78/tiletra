@@ -445,7 +445,7 @@ function AccountPageContent() {
                   type="email"
                   value={editEmail}
                   onChange={(e) => setEditEmail(e.target.value)}
-                  placeholder="name@example.com"
+                  placeholder="Enter your email address"
                   className="w-full h-11 px-3.5 bg-gray-50 border border-gray-200 rounded-xl text-sm font-bold text-[#052a51] focus:bg-white focus:outline-none focus:border-[#F26522]"
                 />
               </div>
@@ -859,7 +859,7 @@ function AccountPageContent() {
                             type="email"
                             value={editEmail}
                             onChange={(e) => setEditEmail(e.target.value)}
-                            placeholder="name@example.com"
+                            placeholder="Enter your email address"
                             className="w-full h-11 px-3.5 bg-gray-50 border border-gray-200 rounded-xl text-sm font-bold text-[#052a51] focus:bg-white focus:outline-none focus:border-[#F26522]"
                           />
                         </div>
@@ -1069,7 +1069,7 @@ function AccountPageContent() {
                           maxLength={6}
                           value={addrPincode}
                           onChange={(e) => setAddrPincode(e.target.value)}
-                          placeholder="560034"
+                          placeholder="Enter 6-digit postal pincode"
                           className="w-full h-10 px-3 bg-white border border-gray-200 rounded-xl text-xs font-bold text-[#052a51] focus:outline-none focus:border-[#F26522]"
                         />
                       </div>
@@ -1104,7 +1104,7 @@ function AccountPageContent() {
                         required
                         value={addrLine1}
                         onChange={(e) => setAddrLine1(e.target.value)}
-                        placeholder="e.g. #42, 3rd Cross, Koramangala 4th Block"
+                        placeholder="Enter complete street address"
                         className="w-full h-10 px-3 bg-white border border-gray-200 rounded-xl text-xs font-bold text-[#052a51] focus:outline-none focus:border-[#F26522]"
                       />
                     </div>
@@ -1118,7 +1118,7 @@ function AccountPageContent() {
                           type="text"
                           value={addrLandmark}
                           onChange={(e) => setAddrLandmark(e.target.value)}
-                          placeholder="e.g. Near Sony World Signal"
+                          placeholder="Enter nearby landmark"
                           className="w-full h-10 px-3 bg-white border border-gray-200 rounded-xl text-xs font-bold text-[#052a51] focus:outline-none focus:border-[#F26522]"
                         />
                       </div>
@@ -1257,7 +1257,7 @@ function AccountPageContent() {
                       type="text"
                       value={businessName}
                       onChange={(e) => setBusinessName(e.target.value)}
-                      placeholder="e.g. Sheikh Construction & Interiors Pvt Ltd"
+                      placeholder="Enter company or firm name"
                       className="w-full h-11 px-3.5 bg-gray-50 border border-gray-200 rounded-xl text-sm font-bold text-[#052a51] focus:bg-white focus:outline-none focus:border-[#F26522]"
                     />
                   </div>
@@ -1271,7 +1271,7 @@ function AccountPageContent() {
                       maxLength={15}
                       value={gstNumber}
                       onChange={(e) => setGstNumber(e.target.value.toUpperCase())}
-                      placeholder="29AAAAA0000A1Z5"
+                      placeholder="Enter 15-character GSTIN"
                       className="w-full h-11 px-3.5 bg-gray-50 border border-gray-200 rounded-xl text-sm font-bold text-[#052a51] uppercase focus:bg-white focus:outline-none focus:border-[#F26522]"
                     />
                   </div>

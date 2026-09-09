@@ -593,7 +593,7 @@ export default function VendorOrdersPage() {
                   type="text"
                   value={courierName}
                   onChange={(e) => setCourierName(e.target.value)}
-                  placeholder="e.g. Intrihub Logistics / Self Delivery"
+                  placeholder="Enter shipping method or carrier"
                   className="w-full bg-gray-50 border border-gray-200 rounded-xl px-3.5 py-2.5 text-xs text-gray-800 focus:bg-white focus:outline-hidden"
                 />
               </div>
@@ -606,7 +606,7 @@ export default function VendorOrdersPage() {
                   type="text"
                   value={trackingNumber}
                   onChange={(e) => setTrackingNumber(e.target.value)}
-                  placeholder="e.g. TRK-892348 or Driver Contact"
+                  placeholder="Enter tracking number or driver contact"
                   className="w-full bg-gray-50 border border-gray-200 rounded-xl px-3.5 py-2.5 text-xs text-gray-800 focus:bg-white focus:outline-hidden font-mono"
                 />
               </div>

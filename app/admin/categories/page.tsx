@@ -344,7 +344,7 @@ export default function AdminCategoriesPage() {
                         );
                       }
                     }}
-                    placeholder="e.g. Wires & Cables"
+                    placeholder="Enter category name"
                     className="w-full px-4 py-2.5 bg-gray-50 border border-gray-200 rounded-xl text-sm font-semibold text-[#052a51] focus:bg-white focus:outline-none focus:border-[#F26522]"
                   />
                 </div>
@@ -357,7 +357,7 @@ export default function AdminCategoriesPage() {
                     type="text"
                     value={slug}
                     onChange={(e) => setSlug(e.target.value)}
-                    placeholder="e.g. wires-cables"
+                    placeholder="Enter category URL slug"
                     className="w-full px-4 py-2.5 bg-gray-50 border border-gray-200 rounded-xl text-sm font-mono text-gray-700 focus:bg-white focus:outline-none focus:border-[#F26522]"
                   />
                 </div>

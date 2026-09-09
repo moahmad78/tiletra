@@ -465,7 +465,7 @@ export default function AdminProductApprovalsPage() {
                 value={rejectionReason}
                 onChange={(e) => setRejectionReason(e.target.value)}
                 rows={3}
-                placeholder="e.g. Image quality too low, price mismatch with MRP, or incorrect product specifications..."
+                placeholder="Enter reason for rejecting product approval..."
                 className="w-full bg-gray-50 border border-gray-200 rounded-xl p-3 text-xs font-medium focus:bg-white focus:border-red-500 focus:outline-hidden resize-none"
                 required
               />

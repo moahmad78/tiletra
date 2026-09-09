@@ -63,7 +63,7 @@ export default function UpiCollectForm({
                 onVpaChange(e.target.value.trim().toLowerCase());
                 setIsVerified(false);
               }}
-              placeholder="e.g. mobile@okhdfcbank / success@razorpay"
+              placeholder="Enter your registered UPI ID"
               className="w-full h-11 pl-3.5 pr-14 bg-white border border-gray-200 rounded-xl text-xs sm:text-sm font-bold text-[#052a51] focus:outline-none focus:border-[#F26522]"
             />
             <span className="absolute right-3 top-1/2 -translate-y-1/2 text-[10px] font-black uppercase text-[#2F7A4F] bg-green-50 px-1.5 py-0.5 rounded border border-green-200">
