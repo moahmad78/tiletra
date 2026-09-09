@@ -64,6 +64,23 @@ export async function upsertCustomerUser(data: {
         include: { addresses: true },
       });
     } else {
+      // Rate limit new user account creation to prevent bulk bot registrations
+      const { checkAccountCreationRateLimit } = await import("@/lib/rate-limit");
+      const { headers } = await import("next/headers");
+      let clientIp = "127.0.0.1";
+      try {
+        const hList = await headers();
+        clientIp = hList.get("x-forwarded-for")?.split(",")[0]?.trim() || hList.get("x-real-ip") || "127.0.0.1";
+      } catch {}
+
+      const rate = checkAccountCreationRateLimit(clientIp);
+      if (!rate.allowed) {
+        return {
+          success: false,
+          error: "Too many accounts registered from this network. Please try again later.",
+        };
+      }
+
       // New user
       user = await prisma.user.create({
         data: {

@@ -324,3 +324,98 @@ export function resetMobileAuthLockout(ip: string): void {
   const key = `mobile_auth_ip:${ip || "unknown"}`;
   resetFailedAttempts(key);
 }
+
+// -----------------------------------------------------------------------------
+// ABUSE PROTECTION & MULTI-TIER RATE LIMITING
+// -----------------------------------------------------------------------------
+
+export type ApiRateLimitTier = "standard" | "sensitive" | "strict";
+
+const API_TIER_CONFIGS: Record<ApiRateLimitTier, { limit: number; windowMs: number }> = {
+  standard: { limit: 100, windowMs: 60 * 1000 },  // 100 req / min
+  sensitive: { limit: 20, windowMs: 60 * 1000 },   // 20 req / min (checkout, orders, search)
+  strict: { limit: 5, windowMs: 60 * 1000 },       // 5 req / min (auth mutations, pass reset)
+};
+
+/**
+ * Global & endpoint-specific API rate limiter
+ */
+export function checkApiRateLimit(
+  ip: string,
+  tier: ApiRateLimitTier = "standard"
+): { allowed: boolean; remaining: number; resetTime: number; limit: number } {
+  const config = API_TIER_CONFIGS[tier] || API_TIER_CONFIGS.standard;
+  const key = `api_rate_${tier}:${ip || "127.0.0.1"}`;
+  const result = checkRateLimit(key, config.limit, config.windowMs);
+  return {
+    ...result,
+    limit: config.limit,
+  };
+}
+
+/**
+ * Dedicated rate limiter for AI generation requests
+ * Guests: 5 requests / 10 minutes
+ * Authenticated users: 20 requests / 10 minutes
+ */
+export function checkAiRateLimit(
+  identifier: string,
+  isAuth: boolean = false
+): { allowed: boolean; remaining: number; resetTime: number; limit: number } {
+  const limit = isAuth ? 20 : 5;
+  const windowMs = 10 * 60 * 1000; // 10 minutes
+  const key = `ai_rate_${isAuth ? "auth" : "guest"}:${identifier || "unknown"}`;
+  const result = checkRateLimit(key, limit, windowMs);
+  return {
+    ...result,
+    limit,
+  };
+}
+
+/**
+ * Account creation rate limiter (prevents automated bulk registrations)
+ * Max 5 new accounts per hour per IP
+ */
+export function checkAccountCreationRateLimit(
+  ip: string
+): { allowed: boolean; remaining: number; resetTime: number; limit: number } {
+  const limit = 5;
+  const windowMs = 60 * 60 * 1000; // 1 hour
+  const key = `account_create_ip:${ip || "127.0.0.1"}`;
+  const result = checkRateLimit(key, limit, windowMs);
+  return {
+    ...result,
+    limit,
+  };
+}
+
+/**
+ * Account-level lockout protection against distributed credential stuffing
+ */
+export function checkAccountBruteForce(identifier: string): {
+  locked: boolean;
+  lockoutUntil?: number;
+  retryAfterSeconds?: number;
+  remainingAttempts?: number;
+} {
+  const clean = identifier.toLowerCase().trim();
+  const key = `account_lockout:${clean}`;
+  return isLockedOut(key);
+}
+
+export function recordAccountLoginFailure(identifier: string): {
+  locked: boolean;
+  remainingAttempts: number;
+  lockoutUntil?: number;
+  retryAfterSeconds?: number;
+} {
+  const clean = identifier.toLowerCase().trim();
+  const key = `account_lockout:${clean}`;
+  return recordFailedAttempt(key, 5, 15 * 60 * 1000);
+}
+
+export function resetAccountLoginLockout(identifier: string): void {
+  const clean = identifier.toLowerCase().trim();
+  const key = `account_lockout:${clean}`;
+  resetFailedAttempts(key);
+}

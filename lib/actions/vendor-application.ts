@@ -44,8 +44,23 @@ export async function submitVendorApplication(data: VendorApplicationData) {
       return { success: false, error: "Please enter a valid email address." };
     }
 
-    // Rate Limiting: Max 3 applications per email/phone per hour
-    const { checkRateLimit } = await import("@/lib/rate-limit");
+    // Rate Limiting: Max 3 applications per email/phone per hour & IP rate limiting
+    const { checkRateLimit, checkAccountCreationRateLimit } = await import("@/lib/rate-limit");
+    const { headers } = await import("next/headers");
+    let clientIp = "127.0.0.1";
+    try {
+      const hList = await headers();
+      clientIp = hList.get("x-forwarded-for")?.split(",")[0]?.trim() || hList.get("x-real-ip") || "127.0.0.1";
+    } catch {}
+
+    const ipRate = checkAccountCreationRateLimit(clientIp);
+    if (!ipRate.allowed) {
+      return {
+        success: false,
+        error: "Too many applications submitted from this network. Please try again later.",
+      };
+    }
+
     const rateCheck = checkRateLimit(`vendor-apply:${cleanPhone}`, 3, 60 * 60 * 1000);
     if (!rateCheck.allowed) {
       return {
