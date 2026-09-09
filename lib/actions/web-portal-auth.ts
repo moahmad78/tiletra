@@ -12,6 +12,7 @@ import {
   resetVendorLoginLockout,
 } from "@/lib/rate-limit";
 import { verifyPassword } from "@/lib/password-security";
+import { generateAdminSessionToken, generateVendorSessionToken } from "@/lib/server-auth";
 
 async function getClientIp(): Promise<string> {
   try {
@@ -160,9 +161,17 @@ export async function verifyAdminWebOtp(email: string, otp: string): Promise<{
   // 3. Reset failed attempts on successful login
   resetAdminLoginLockout(clientIp);
 
-  // 4. Set secure HTTP-only admin session cookie
+  // 4. Set secure HTTP-only admin session cookie & signed HMAC token
   try {
     const cookieStore = await cookies();
+    const adminToken = generateAdminSessionToken(res.userId || "admin-root", cleanEmail);
+    cookieStore.set("intrihub_admin_token", adminToken, {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === "production",
+      sameSite: "lax",
+      path: "/",
+      maxAge: 60 * 60 * 24 * 7, // 7 days
+    });
     cookieStore.set(
       "intrihub_admin_session",
       JSON.stringify({
@@ -531,9 +540,21 @@ export async function verifyVendorWebOtp(email: string, otp: string): Promise<{
     };
   }
 
-  // 5. Set secure HTTP-only vendor session cookie
+  // 5. Set secure HTTP-only vendor session cookie & signed HMAC token
   try {
     const cookieStore = await cookies();
+    const vendorToken = generateVendorSessionToken(
+      vendorRecord.id,
+      vendorRecord.ownerId,
+      vendorRecord.contactEmail || cleanEmail
+    );
+    cookieStore.set("intrihub_vendor_token", vendorToken, {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === "production",
+      sameSite: "lax",
+      path: "/",
+      maxAge: 60 * 60 * 24 * 7,
+    });
     cookieStore.set(
       "intrihub_vendor_session",
       JSON.stringify({
@@ -681,9 +702,21 @@ export async function loginVendorWithPassword(
   // 5. Reset lockout on success
   resetVendorLoginLockout(clientIp);
 
-  // 6. Set secure HTTP-only vendor session cookie
+  // 6. Set secure HTTP-only vendor session cookie & signed HMAC token
   try {
     const cookieStore = await cookies();
+    const vendorToken = generateVendorSessionToken(
+      vendor.id,
+      vendor.ownerId,
+      vendor.contactEmail || cleanEmail
+    );
+    cookieStore.set("intrihub_vendor_token", vendorToken, {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === "production",
+      sameSite: "lax",
+      path: "/",
+      maxAge: 60 * 60 * 24 * 7,
+    });
     cookieStore.set(
       "intrihub_vendor_session",
       JSON.stringify({
@@ -722,5 +755,118 @@ export async function loginVendorWithPassword(
       mustChangePassword: false,
       loginMethod: vendor.loginMethod,
     },
+  };
+}
+
+
+/**
+ * Request an expiring, single-use password reset verification code
+ */
+export async function requestPasswordReset(email: string): Promise<{
+  success: boolean;
+  message: string;
+  locked?: boolean;
+  retryAfterSeconds?: number;
+}> {
+  const clientIp = await getClientIp();
+  const lockout = checkVendorLoginLockout(clientIp);
+  if (lockout.locked) {
+    return {
+      success: false,
+      locked: true,
+      retryAfterSeconds: lockout.retryAfterSeconds,
+      message: "Too many attempts. Security lockout active.",
+    };
+  }
+
+  const cleanEmail = (email || "").trim().toLowerCase();
+  if (!cleanEmail) {
+    return { success: false, message: "Please enter a valid email address." };
+  }
+
+  const { checkRateLimit } = await import("@/lib/rate-limit");
+  const cooldown = checkRateLimit(`pwd-reset-cooldown:${cleanEmail}`, 1, 60 * 1000);
+  if (!cooldown.allowed) {
+    return {
+      success: false,
+      message: "Please wait at least 1 minute before requesting another password reset code.",
+    };
+  }
+
+  const res = await sendEmailOtp(cleanEmail, "vendor");
+  return {
+    success: res.success,
+    message: res.message,
+  };
+}
+
+/**
+ * Reset account password using verified OTP token
+ */
+export async function resetPasswordWithToken(
+  email: string,
+  otp: string,
+  newPassword: string
+): Promise<{
+  success: boolean;
+  message: string;
+}> {
+  const cleanEmail = (email || "").trim().toLowerCase();
+  if (!cleanEmail || !otp || !newPassword) {
+    return { success: false, message: "All fields are required." };
+  }
+
+  const { validatePasswordStrength, hashPassword, MAX_PASSWORD_LENGTH } = await import(
+    "@/lib/password-security"
+  );
+  if (newPassword.length > MAX_PASSWORD_LENGTH) {
+    return { success: false, message: `Password cannot exceed ${MAX_PASSWORD_LENGTH} characters.` };
+  }
+
+  const strength = validatePasswordStrength(newPassword);
+  if (!strength.valid) {
+    return { success: false, message: strength.error || "Password does not meet security requirements." };
+  }
+
+  // Verify and consume OTP token immediately
+  const otpRes = await verifyEmailOtp(cleanEmail, otp, "vendor");
+  if (!otpRes.success) {
+    return { success: false, message: otpRes.message || "Invalid or expired verification code." };
+  }
+
+  const passwordHash = hashPassword(newPassword.trim());
+
+  const user = await prisma.user.findFirst({
+    where: { email: { equals: cleanEmail, mode: "insensitive" } },
+  });
+
+  if (!user) {
+    return { success: false, message: "User account not found." };
+  }
+
+  await prisma.user.update({
+    where: { id: user.id },
+    data: {
+      passwordHash,
+      mustChangePassword: false,
+      emailVerified: true,
+    },
+  });
+
+  await prisma.vendor.updateMany({
+    where: {
+      OR: [
+        { ownerId: user.id },
+        { contactEmail: { equals: cleanEmail, mode: "insensitive" } },
+      ],
+    },
+    data: {
+      passwordHash,
+    },
+  });
+
+  return {
+    success: true,
+    message: "Password reset successfully! You can now log in with your new password.",
   };
 }

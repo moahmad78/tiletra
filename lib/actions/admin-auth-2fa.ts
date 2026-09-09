@@ -192,8 +192,17 @@ export async function verifyAdmin2FaOtp(data: {
     },
   });
 
-  // 5. Set secure HTTP-only session cookie
+  // 5. Set secure HTTP-only signed session cookie & session info
+  const { generateAdminSessionToken } = await import("@/lib/server-auth");
   const cookieStore = await cookies();
+  const adminToken = generateAdminSessionToken(adminUser.id, cleanEmail);
+  cookieStore.set("intrihub_admin_token", adminToken, {
+    httpOnly: true,
+    secure: process.env.NODE_ENV === "production",
+    sameSite: "lax",
+    path: "/",
+    maxAge: 60 * 60 * 24 * 7, // 7 days
+  });
   cookieStore.set("intrihub_admin_session", JSON.stringify({
     userId: adminUser.id,
     email: adminUser.email,

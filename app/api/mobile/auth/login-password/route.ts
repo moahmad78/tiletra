@@ -106,7 +106,17 @@ export async function POST(req: NextRequest) {
       return mobileApiResponse({
         success: true,
         message: "Admin authenticated successfully",
-        user: adminUser,
+        user: {
+          id: adminUser.id,
+          name: adminUser.name,
+          email: adminUser.email,
+          phone: adminUser.phone,
+          role: adminUser.role,
+          avatar: adminUser.avatar,
+          emailVerified: adminUser.emailVerified,
+          phoneVerified: adminUser.phoneVerified,
+          createdAt: adminUser.createdAt,
+        },
         tokens,
       });
     }

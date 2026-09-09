@@ -384,12 +384,27 @@ export async function verifyEmailOtp(
     }
 
     console.log(`[OTP_VERIFY_SUCCESS] role=vendor vendorId=${vendorRecord.id}`);
+    const sanitizedVendor = {
+      id: vendorRecord.id,
+      businessName: vendorRecord.businessName,
+      slug: vendorRecord.slug,
+      contactEmail: vendorRecord.contactEmail,
+      contactPhone: vendorRecord.contactPhone,
+      category: vendorRecord.category,
+      status: vendorRecord.status,
+      commissionRate: vendorRecord.commissionRate,
+      ownerName: vendorRecord.owner?.name || vendorRecord.businessName,
+      ownerId: vendorRecord.ownerId,
+      rejectionReason: vendorRecord.rejectionReason,
+      mustChangePassword: vendorRecord.owner?.mustChangePassword ?? false,
+    };
+
     return {
       success: true,
       message: "Vendor authenticated successfully!",
       userId: vendorRecord.ownerId,
       role: "vendor",
-      user: vendorRecord,
+      user: sanitizedVendor,
     };
   }
 

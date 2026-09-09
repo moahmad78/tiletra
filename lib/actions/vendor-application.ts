@@ -3,6 +3,7 @@
 import { prisma } from "@/lib/prisma";
 import { safeRevalidate } from "@/lib/formatters";
 import crypto from "crypto";
+import { hashPassword } from "@/lib/password-security";
 
 export type VendorApplicationData = {
   businessName: string;
@@ -198,7 +199,7 @@ export async function createVendorFromApplication(
     const cleanPhone = app.phone.replace(/\D/g, "");
     const email = app.email.toLowerCase().trim();
     const plainPassword = options?.customPassword?.trim() || generateSecurePassword();
-    const passwordHash = crypto.createHash("sha256").update(plainPassword).digest("hex");
+    const passwordHash = hashPassword(plainPassword);
     const commissionRate = options?.commissionRate !== undefined ? Number(options.commissionRate) : 15.0;
 
     // Base slug

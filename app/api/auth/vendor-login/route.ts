@@ -66,45 +66,60 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: "Invalid credentials. Please check your email or password." }, { status: 401 });
     }
 
-    // 3. Strict Password Verification
+    // 3. Strict Password Verification (No bypass if passwordHash is missing)
     const ownerPasswordHash = vendor.owner?.passwordHash;
 
-    if (ownerPasswordHash) {
-      if (!password || !password.trim()) {
-        recordFailedAttempt(`vendor-auth:${query}`, 5, 15 * 60 * 1000);
-        return NextResponse.json({ error: "Password is required to access vendor portal." }, { status: 401 });
-      }
+    if (!ownerPasswordHash) {
+      return NextResponse.json(
+        {
+          error: "Password authentication is not configured for this vendor account. Please sign in with Email OTP.",
+        },
+        { status: 400 }
+      );
+    }
 
-      const isValidPassword = verifyPassword(password.trim(), ownerPasswordHash);
+    if (!password || !password.trim()) {
+      recordFailedAttempt(`vendor-auth:${query}`, 5, 15 * 60 * 1000);
+      return NextResponse.json({ error: "Password is required to access vendor portal." }, { status: 401 });
+    }
 
-      if (!isValidPassword) {
-        const attemptResult = recordFailedAttempt(`vendor-auth:${query}`, 5, 15 * 60 * 1000);
-        if (attemptResult.locked) {
-          return NextResponse.json(
-            { error: "Too many failed attempts. Account locked for 15 minutes." },
-            { status: 423 }
-          );
-        }
+    const isValidPassword = verifyPassword(password.trim(), ownerPasswordHash);
+
+    if (!isValidPassword) {
+      const attemptResult = recordFailedAttempt(`vendor-auth:${query}`, 5, 15 * 60 * 1000);
+      if (attemptResult.locked) {
         return NextResponse.json(
-          { error: "Invalid credentials. Please check your email or password." },
-          { status: 401 }
+          { error: "Too many failed attempts. Account locked for 15 minutes." },
+          { status: 423 }
         );
       }
+      return NextResponse.json(
+        { error: "Invalid credentials. Please check your email or password." },
+        { status: 401 }
+      );
+    }
 
-      // Upgrade legacy SHA256 to modern salted scrypt in background
-      if (!ownerPasswordHash.startsWith("scrypt:") && vendor.ownerId) {
-        const upgradedHash = hashPassword(password.trim());
-        await prisma.user.update({
-          where: { id: vendor.ownerId },
-          data: { passwordHash: upgradedHash },
-        }).catch((err) => console.warn("Failed to upgrade password hash:", err));
-      }
+    // Upgrade legacy SHA256 to modern salted scrypt in background
+    if (!ownerPasswordHash.startsWith("scrypt:") && vendor.ownerId) {
+      const upgradedHash = hashPassword(password.trim());
+      await prisma.user.update({
+        where: { id: vendor.ownerId },
+        data: { passwordHash: upgradedHash },
+      }).catch((err) => console.warn("Failed to upgrade password hash:", err));
     }
 
     // 4. Successful login: reset failed attempt counter
     resetFailedAttempts(`vendor-auth:${query}`);
 
-    return NextResponse.json({
+    // 5. Issue secure signed HTTP-only vendor session token
+    const { generateVendorSessionToken } = await import("@/lib/server-auth");
+    const vendorToken = generateVendorSessionToken(
+      vendor.id,
+      vendor.ownerId,
+      vendor.contactEmail || vendor.owner?.email || query
+    );
+
+    const res = NextResponse.json({
       success: true,
       vendor: {
         id: vendor.id,
@@ -118,9 +133,19 @@ export async function POST(req: Request) {
         rejectionReason: vendor.rejectionReason,
         ownerName: vendor.owner?.name || vendor.businessName,
         ownerId: vendor.ownerId,
-        mustChangePassword: vendor.owner?.mustChangePassword ?? (ownerPasswordHash ? false : true),
+        mustChangePassword: vendor.owner?.mustChangePassword ?? false,
       },
     });
+
+    res.cookies.set("intrihub_vendor_token", vendorToken, {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === "production",
+      sameSite: "lax",
+      path: "/",
+      maxAge: 60 * 60 * 24 * 7,
+    });
+
+    return res;
   } catch (error: any) {
     console.error("Vendor login POST error:", error);
     return NextResponse.json({ error: error?.message || "Internal server error" }, { status: 500 });

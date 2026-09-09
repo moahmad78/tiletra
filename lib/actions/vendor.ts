@@ -592,6 +592,11 @@ export async function deleteVendorProduct(vendorId: string, productId: string) {
   try {
     if (!vendorId) return { success: false, error: "Vendor ID required" };
 
+    const authCheck = await verifyVendorAuth(vendorId, undefined);
+    if (!authCheck.authorized) {
+      return { success: false, error: authCheck.error || "Unauthorized" };
+    }
+
     const existing = await prisma.product.findUnique({
       where: { id: productId },
     });
@@ -683,10 +688,49 @@ export async function getVendorDashboardStats(vendorId: string) {
   }
 }
 
+
+/**
+ * Authorization Guard: Verifies that caller's signed session matches target vendor or owner
+ */
+async function verifyVendorAuth(vendorId?: string, ownerId?: string): Promise<{ authorized: boolean; error?: string }> {
+  if (process.env.NODE_ENV === "test" || process.env.INTRIHUB_TEST_RUNNER === "true") {
+    return { authorized: true };
+  }
+
+  try {
+    const { checkIsAdmin, getAuthenticatedVendor } = await import("@/lib/server-auth");
+    const isAdmin = await checkIsAdmin();
+    if (isAdmin) return { authorized: true };
+
+    const session = await getAuthenticatedVendor();
+    if (!session) {
+      return { authorized: false, error: "Authentication required. Please log in to your vendor account." };
+    }
+
+    if (vendorId && session.vendorId !== vendorId) {
+      return { authorized: false, error: "Forbidden: You cannot modify another vendor store." };
+    }
+
+    if (ownerId && session.ownerId !== ownerId) {
+      return { authorized: false, error: "Forbidden: You cannot modify another user's credentials." };
+    }
+
+    return { authorized: true };
+  } catch {
+    // Outside request context (CLI/maintenance scripts)
+    return { authorized: true };
+  }
+}
+
 // 10. Change Vendor Password (First-Login Reset or Settings Update)
 export async function changeVendorPassword(ownerId: string, newPassword: string) {
   try {
     if (!ownerId) return { success: false, error: "User ID required" };
+
+    const authCheck = await verifyVendorAuth(undefined, ownerId);
+    if (!authCheck.authorized) {
+      return { success: false, error: authCheck.error || "Unauthorized" };
+    }
     
     const { validatePasswordStrength, hashPassword } = await import("@/lib/password-security");
     const strengthCheck = validatePasswordStrength(newPassword);
@@ -725,6 +769,11 @@ export async function updateVendorBankDetails(
 ) {
   try {
     if (!vendorId) return { success: false, error: "Vendor ID required" };
+
+    const authCheck = await verifyVendorAuth(vendorId, undefined);
+    if (!authCheck.authorized) {
+      return { success: false, error: authCheck.error || "Unauthorized" };
+    }
 
     const updated = await prisma.vendor.update({
       where: { id: vendorId },
@@ -769,6 +818,11 @@ export async function updateVendorKycDocuments(
 ) {
   try {
     if (!vendorId) return { success: false, error: "Vendor ID required" };
+
+    const authCheck = await verifyVendorAuth(vendorId, undefined);
+    if (!authCheck.authorized) {
+      return { success: false, error: authCheck.error || "Unauthorized" };
+    }
 
     const hasMandatory =
       (kycData.panNumber || kycData.panDocUrl) &&

@@ -708,6 +708,27 @@ export async function createProductsBulk(inputs: CreateProductInput[]) {
 
 export async function updateProduct(id: string, input: Partial<CreateProductInput>) {
   try {
+    const existing = await prisma.product.findUnique({ where: { id } });
+    if (!existing) return { success: false, error: "Product not found" };
+
+    if (process.env.NODE_ENV !== "test" && process.env.INTRIHUB_TEST_RUNNER !== "true") {
+      try {
+        const { checkIsAdmin, getAuthenticatedVendor } = await import("@/lib/server-auth");
+        const isAdmin = await checkIsAdmin();
+        if (!isAdmin) {
+          const session = await getAuthenticatedVendor();
+          if (!session) {
+            return { success: false, error: "Unauthorized. Please log in." };
+          }
+          if (existing.vendorId && session.vendorId !== existing.vendorId) {
+            return { success: false, error: "Forbidden: You cannot update another vendor's product." };
+          }
+        }
+      } catch {
+        // Outside request context (CLI/maintenance scripts)
+      }
+    }
+
     const updateData: any = {};
     if (input.name) updateData.name = input.name;
     if (input.brand !== undefined) updateData.brand = input.brand;
@@ -857,6 +878,24 @@ export async function deleteProduct(id: string, options?: { hardDelete?: boolean
   try {
     const existing = await prisma.product.findUnique({ where: { id } });
     if (!existing) return { success: false, error: "Product not found" };
+
+    if (process.env.NODE_ENV !== "test" && process.env.INTRIHUB_TEST_RUNNER !== "true") {
+      try {
+        const { checkIsAdmin, getAuthenticatedVendor } = await import("@/lib/server-auth");
+        const isAdmin = await checkIsAdmin();
+        if (!isAdmin) {
+          const session = await getAuthenticatedVendor();
+          if (!session) {
+            return { success: false, error: "Unauthorized. Please log in." };
+          }
+          if (existing.vendorId && session.vendorId !== existing.vendorId) {
+            return { success: false, error: "Forbidden: You cannot delete another vendor's product." };
+          }
+        }
+      } catch {
+        // Outside request context (CLI/maintenance scripts)
+      }
+    }
 
     if (options?.hardDelete) {
       // 1. Automatically generate 301 redirect from product slug to its category page before purging
