@@ -34,7 +34,7 @@ export default function AdminLoginPage() {
   const [step, setStep] = useState<"email" | "otp">("email");
 
   // Step 1 state
-  const [email, setEmail] = useState("admin@intrihub.com");
+  const [email, setEmail] = useState("");
   const [loading, setLoading] = useState(false);
   const [errorMessage, setErrorMessage] = useState("");
   const [isLockedOut, setIsLockedOut] = useState(false);
@@ -134,13 +134,18 @@ export default function AdminLoginPage() {
     if (value.length > 1) {
       const pasted = value.replace(/\D/g, "").slice(0, 6);
       if (pasted.length > 0) {
-        const nextDigits = [...otpDigits];
+        const nextDigits = ["", "", "", "", "", ""];
         for (let i = 0; i < 6; i++) {
           nextDigits[i] = pasted[i] || "";
         }
         setOtpDigits(nextDigits);
-        const focusIndex = Math.min(pasted.length, 5);
-        inputRefs.current[focusIndex]?.focus();
+        if (pasted.length === 6) {
+          inputRefs.current[5]?.focus();
+          handleOtpSubmit(undefined, pasted);
+        } else {
+          const focusIndex = Math.min(pasted.length, 5);
+          inputRefs.current[focusIndex]?.focus();
+        }
         return;
       }
     }
@@ -152,6 +157,12 @@ export default function AdminLoginPage() {
 
     if (clean && index < 5) {
       inputRefs.current[index + 1]?.focus();
+    } else if (clean && index === 5) {
+      // Automatically submit when the 6th digit is entered
+      const fullCode = nextDigits.join("");
+      if (fullCode.length === 6) {
+        handleOtpSubmit(undefined, fullCode);
+      }
     }
   };
 
@@ -165,22 +176,28 @@ export default function AdminLoginPage() {
     e.preventDefault();
     const pasted = e.clipboardData.getData("text").replace(/\D/g, "").slice(0, 6);
     if (pasted) {
-      const nextDigits = [...otpDigits];
+      const nextDigits = ["", "", "", "", "", ""];
       for (let i = 0; i < 6; i++) {
         nextDigits[i] = pasted[i] || "";
       }
       setOtpDigits(nextDigits);
-      const focusIndex = Math.min(pasted.length, 5);
-      inputRefs.current[focusIndex]?.focus();
+      if (pasted.length === 6) {
+        inputRefs.current[5]?.focus();
+        handleOtpSubmit(undefined, pasted);
+      } else {
+        const focusIndex = Math.min(pasted.length, 5);
+        inputRefs.current[focusIndex]?.focus();
+      }
     }
   };
 
   // ── Step 2: Submit OTP ───────────────────────────────────────────────────
-  const handleOtpSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
+  const handleOtpSubmit = async (e?: React.FormEvent, overrideCode?: string) => {
+    if (e) e.preventDefault();
+    if (otpLoading || isLockedOut) return;
     setErrorMessage("");
 
-    const fullOtp = otpDigits.join("");
+    const fullOtp = overrideCode || otpDigits.join("");
     if (fullOtp.length !== 6) {
       setErrorMessage("Please enter all 6 digits of the verification code.");
       toast.error("Please enter the complete 6-digit OTP.");
@@ -190,12 +207,14 @@ export default function AdminLoginPage() {
     setOtpLoading(true);
 
     try {
-      const res = await verifyAdminWebOtp(email.trim().toLowerCase(), fullOtp);
+      const cleanEmail = email.trim().toLowerCase();
+      const res = await verifyAdminWebOtp(cleanEmail, fullOtp);
 
       if (res.success && res.user) {
         toast.success("Admin identity verified! Welcome to Super Admin Console.");
         setSession(res.user);
-        router.push("/admin");
+        // Direct location redirect guarantees fresh HTTP cookies & prevents client hydration race conditions
+        window.location.href = "/admin";
       } else {
         if (res.locked) {
           setIsLockedOut(true);
@@ -415,7 +434,7 @@ export default function AdminLoginPage() {
 
             <button
               type="submit"
-              disabled={otpLoading || otpDigits.some((d) => !d) || isLockedOut}
+              disabled={otpLoading || isLockedOut}
               className="w-full py-3.5 px-4 bg-[#052a51] hover:bg-[#031d38] disabled:bg-gray-300 text-white text-sm font-black rounded-xl shadow-md transition-all flex items-center justify-center gap-2 cursor-pointer disabled:cursor-not-allowed mt-2"
             >
               {otpLoading ? (

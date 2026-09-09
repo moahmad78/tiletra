@@ -21,7 +21,19 @@ export default function AdminLayout({
 
   useEffect(() => {
     setMounted(true);
-    if (!isAuthenticated && pathname !== "/admin/login") {
+    if (pathname === "/admin/login") return;
+
+    // Check both Zustand state and sessionStorage to prevent premature redirect during initial hydration
+    let isStoredAuth = false;
+    try {
+      const stored = sessionStorage.getItem("intrihub-admin-auth-session");
+      if (stored) {
+        const parsed = JSON.parse(stored);
+        isStoredAuth = Boolean(parsed?.state?.isAuthenticated);
+      }
+    } catch {}
+
+    if (!isAuthenticated && !isStoredAuth) {
       router.push("/admin/login");
     }
   }, [isAuthenticated, pathname, router]);
