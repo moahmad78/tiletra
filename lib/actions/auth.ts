@@ -120,16 +120,30 @@ export async function updateUserProfile(
     const cleanEmail = data.email?.trim().toLowerCase() || undefined;
     let userToUpdate = null;
 
-    // 1. Try finding by database ID if it's a real DB ID
+    // 1. Find user by database ID (strict ID verification to prevent IDOR)
     if (userId && !userId.startsWith("usr-")) {
       userToUpdate = await prisma.user.findUnique({ where: { id: userId } });
-    }
-
-    // 2. Fallback: find by email if ID lookup missed
-    if (!userToUpdate && cleanEmail) {
+      if (!userToUpdate) {
+        return { success: false, error: "User record not found" };
+      }
+    } else if (cleanEmail) {
+      // Fallback only allowed for guest sessions initializing their email record
       userToUpdate = await prisma.user.findUnique({
         where: { email: cleanEmail },
       });
+    }
+
+    // Verify email uniqueness before applying changes
+    if (cleanEmail && userToUpdate) {
+      const emailConflict = await prisma.user.findFirst({
+        where: {
+          email: cleanEmail,
+          NOT: { id: userToUpdate.id },
+        },
+      });
+      if (emailConflict) {
+        return { success: false, error: "Email is already linked to another account" };
+      }
     }
 
     const cleanName = data.name !== undefined ? (data.name?.trim() || null) : undefined;
@@ -145,7 +159,7 @@ export async function updateUserProfile(
         },
       });
     } else if (cleanEmail) {
-      // 3. Upsert if record not in DB yet
+      // Upsert only if record does not exist in DB yet
       const syntheticPhone = `email_${cleanEmail.replace(/[^a-z0-9]/gi, "_")}`;
       updated = await prisma.user.upsert({
         where: { email: cleanEmail },

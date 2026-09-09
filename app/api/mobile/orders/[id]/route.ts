@@ -48,9 +48,22 @@ export async function GET(req: NextRequest, { params }: { params: Promise<{ id: 
       },
     });
 
-    // Security check: if user is logged in, ensure order belongs to them
-    if (user && order.userId && order.userId !== user.id && order.customerPhone !== user.phone) {
-      return mobileApiResponse({ success: false, error: "Unauthorized access to order" }, 403);
+    // Strict IDOR Security Check: Must be authenticated and either own the order or be admin
+    if (!user) {
+      return mobileApiResponse({ success: false, error: "Authentication required to view order details" }, 401);
+    }
+
+    const cleanUserPhone = (user.phone || "").replace(/\D/g, "").slice(-10);
+    const cleanOrderPhone = (order.customerPhone || order.deliveryPhone || "").replace(/\D/g, "").slice(-10);
+    const isOwner =
+      order.userId === user.id ||
+      (cleanUserPhone && cleanOrderPhone && cleanUserPhone === cleanOrderPhone) ||
+      Boolean(user.email && order.customerEmail && user.email.toLowerCase().trim() === order.customerEmail.toLowerCase().trim());
+
+    const isAdmin = user.role === "admin" || user.role === "superadmin";
+
+    if (!isOwner && !isAdmin) {
+      return mobileApiResponse({ success: false, error: "Forbidden: You do not have access to this order" }, 403);
     }
 
     return mobileApiResponse({

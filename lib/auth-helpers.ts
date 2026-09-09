@@ -1,5 +1,6 @@
 import { NextRequest } from "next/server";
 import { getAuthenticatedMobileUser } from "@/lib/mobile-auth";
+import { verifyAdminSessionToken, verifyVendorSessionToken } from "@/lib/server-auth";
 import { prisma } from "@/lib/prisma";
 
 export interface AuthenticatedUserContext {
@@ -12,16 +13,19 @@ export interface AuthenticatedUserContext {
 
 /**
  * Extracts and verifies the authenticated user from a Request/NextRequest.
- * Supports:
- * 1. Mobile / Bearer JWT in Authorization header
- * 2. x-user-id header (passed from client with verified session)
- * 3. User cookie if available
+ * Strictly verifies cryptographic signatures:
+ * 1. Mobile Bearer JWT in Authorization header
+ * 2. Signed Admin session cookie (intrihub_admin_token)
+ * 3. Signed Vendor session cookie (intrihub_vendor_token)
+ *
+ * NOTE: Blindly trusting unverified client headers (e.g. x-user-id, x-user-phone)
+ * is eliminated to prevent authentication spoofing and IDOR attacks.
  */
 export async function getAuthenticatedUser(
   req: Request | NextRequest
 ): Promise<AuthenticatedUserContext | null> {
   try {
-    // 1. Try mobile Bearer token first
+    // 1. Mobile / Bearer JWT in Authorization header
     const mobileUser = await getAuthenticatedMobileUser(req);
     if (mobileUser) {
       return {
@@ -33,40 +37,39 @@ export async function getAuthenticatedUser(
       };
     }
 
-    // 2. Try x-user-id header
-    const userIdHeader = req.headers.get("x-user-id") || req.headers.get("X-User-Id");
-    if (userIdHeader) {
-      const user = await prisma.user.findUnique({
-        where: { id: userIdHeader },
-        select: {
-          id: true,
-          name: true,
-          email: true,
-          phone: true,
-          role: true,
-        },
+    // 2. Check cookies if available on request
+    const cookieHeader = req.headers.get("cookie") || "";
+    if (cookieHeader) {
+      const cookiesMap = new Map<string, string>();
+      cookieHeader.split(";").forEach((pair) => {
+        const [k, v] = pair.trim().split("=");
+        if (k && v) cookiesMap.set(k.trim(), decodeURIComponent(v.trim()));
       });
-      if (user) {
-        return user;
-      }
-    }
 
-    // 3. Try phone or email header
-    const phoneHeader = req.headers.get("x-user-phone");
-    if (phoneHeader) {
-      const cleanPhone = phoneHeader.replace(/\D/g, "").slice(-10);
-      if (cleanPhone) {
-        const user = await prisma.user.findFirst({
-          where: { phone: { contains: cleanPhone } },
-          select: {
-            id: true,
-            name: true,
-            email: true,
-            phone: true,
-            role: true,
-          },
-        });
-        if (user) return user;
+      // 2a. Admin signed session token
+      const adminToken = cookiesMap.get("intrihub_admin_token");
+      if (adminToken) {
+        const verified = verifyAdminSessionToken(adminToken);
+        if (verified.valid && verified.adminId) {
+          const adminUser = await prisma.user.findUnique({
+            where: { id: verified.adminId },
+            select: { id: true, name: true, email: true, phone: true, role: true },
+          });
+          if (adminUser) return adminUser;
+        }
+      }
+
+      // 2b. Vendor signed session token
+      const vendorToken = cookiesMap.get("intrihub_vendor_token");
+      if (vendorToken) {
+        const verified = verifyVendorSessionToken(vendorToken);
+        if (verified.valid && verified.ownerId) {
+          const vendorOwner = await prisma.user.findUnique({
+            where: { id: verified.ownerId },
+            select: { id: true, name: true, email: true, phone: true, role: true },
+          });
+          if (vendorOwner) return vendorOwner;
+        }
       }
     }
 

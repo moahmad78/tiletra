@@ -2,6 +2,7 @@
 
 import { prisma } from "@/lib/prisma";
 import { safeRevalidate } from "@/lib/formatters";
+import { requireAdminAction } from "@/lib/admin-guard";
 
 export async function getCoupons() {
   try {
@@ -83,6 +84,8 @@ export async function createCoupon(data: {
   validTill?: string;
 }) {
   try {
+    const auth = await requireAdminAction();
+    if (!auth.authorized) return { success: false, error: auth.error || "Unauthorized" };
     const coupon = await prisma.coupon.create({
       data: {
         code: data.code.toUpperCase().trim(),
@@ -108,6 +111,8 @@ export async function createCoupon(data: {
 
 export async function updateCoupon(id: string, data: any) {
   try {
+    const auth = await requireAdminAction();
+    if (!auth.authorized) return { success: false, error: auth.error || "Unauthorized" };
     const coupon = await prisma.coupon.update({
       where: { id },
       data,
@@ -125,6 +130,8 @@ export async function updateCoupon(id: string, data: any) {
 
 export async function deleteCoupon(id: string) {
   try {
+    const auth = await requireAdminAction();
+    if (!auth.authorized) return { success: false, error: auth.error || "Unauthorized" };
     await prisma.coupon.delete({ where: { id } });
 
     safeRevalidate("/admin/coupons");

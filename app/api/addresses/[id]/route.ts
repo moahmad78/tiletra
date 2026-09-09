@@ -1,22 +1,34 @@
 import { NextRequest, NextResponse } from "next/server";
 import { saveAddress, deleteAddress, setDefaultAddress } from "@/lib/actions/addresses";
+import { getAuthenticatedUser } from "@/lib/auth-helpers";
+import { handleMobileCorsOptions } from "@/lib/mobile-auth";
+
+export async function OPTIONS() {
+  return handleMobileCorsOptions();
+}
 
 export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   try {
-    const { id } = await params;
-    const body = await req.json();
-    const { userId, action, ...updates } = body;
-
-    if (!userId) {
-      return NextResponse.json({ success: false, error: "userId is required" }, { status: 400 });
+    const user = await getAuthenticatedUser(req);
+    if (!user) {
+      return NextResponse.json(
+        { success: false, error: "Authentication required" },
+        { status: 401 }
+      );
     }
 
+    const { id } = await params;
+    const body = await req.json();
+    const { userId: bodyUserId, action, ...updates } = body;
+
+    const effectiveUserId = user.role === "admin" && bodyUserId ? bodyUserId : user.id;
+
     if (action === "set_default") {
-      const defResult = await setDefaultAddress(userId, id);
+      const defResult = await setDefaultAddress(effectiveUserId, id);
       return NextResponse.json(defResult);
     }
 
-    const result = await saveAddress(userId, { ...updates, id });
+    const result = await saveAddress(effectiveUserId, { ...updates, id });
     if (!result.success) {
       return NextResponse.json({ success: false, error: result.error }, { status: 400 });
     }
@@ -30,15 +42,25 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
 
 export async function DELETE(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   try {
-    const { id } = await params;
-    const { searchParams } = new URL(req.url);
-    const userId = searchParams.get("userId");
-
-    if (!userId) {
-      return NextResponse.json({ success: false, error: "userId parameter is required" }, { status: 400 });
+    const user = await getAuthenticatedUser(req);
+    if (!user) {
+      return NextResponse.json(
+        { success: false, error: "Authentication required" },
+        { status: 401 }
+      );
     }
 
-    const result = await deleteAddress(userId, id);
+    const { id } = await params;
+    const { searchParams } = new URL(req.url);
+    const queryUserId = searchParams.get("userId");
+
+    const effectiveUserId = user.role === "admin" && queryUserId ? queryUserId : user.id;
+
+    const result = await deleteAddress(effectiveUserId, id);
+    if (!result.success) {
+      return NextResponse.json({ success: false, error: result.error }, { status: 400 });
+    }
+
     return NextResponse.json(result);
   } catch (error: any) {
     console.error("DELETE /api/addresses/[id] error:", error);

@@ -2,6 +2,7 @@
 
 import { prisma } from "@/lib/prisma";
 import { safeRevalidate } from "@/lib/formatters";
+import { requireAdminAction } from "@/lib/admin-guard";
 import crypto from "crypto";
 import { hashPassword } from "@/lib/password-security";
 

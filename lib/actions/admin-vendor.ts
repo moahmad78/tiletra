@@ -1,5 +1,7 @@
 "use server";
 
+import { requireAdminAction } from "@/lib/admin-guard";
+
 import { prisma } from "@/lib/prisma";
 import { formatProduct, safeRevalidate } from "@/lib/formatters";
 import type { Product } from "@/lib/data/products";
@@ -59,6 +61,8 @@ export async function getAdminVendors(options?: {
 // 2. Approve Vendor Account
 export async function approveVendor(vendorId: string, commissionRate?: number) {
   try {
+    const auth = await requireAdminAction();
+    if (!auth.authorized) return { success: false, error: auth.error || "Unauthorized" };
     if (!vendorId) return { success: false, error: "Vendor ID required" };
 
     const updated = await prisma.vendor.update({
@@ -87,6 +91,8 @@ export async function approveVendor(vendorId: string, commissionRate?: number) {
 // 3. Reject Vendor Application
 export async function rejectVendor(vendorId: string, reason: string) {
   try {
+    const auth = await requireAdminAction();
+    if (!auth.authorized) return { success: false, error: auth.error || "Unauthorized" };
     if (!vendorId) return { success: false, error: "Vendor ID required" };
     if (!reason || reason.trim().length === 0) {
       return { success: false, error: "Rejection reason is required" };
@@ -117,6 +123,8 @@ export async function rejectVendor(vendorId: string, reason: string) {
 // 4. Suspend Vendor Account
 export async function suspendVendor(vendorId: string, reason?: string) {
   try {
+    const auth = await requireAdminAction();
+    if (!auth.authorized) return { success: false, error: auth.error || "Unauthorized" };
     if (!vendorId) return { success: false, error: "Vendor ID required" };
 
     const updated = await prisma.vendor.update({
@@ -253,6 +261,8 @@ export async function getAdminPendingProducts(options?: {
 // 8. Super Admin Approve Product
 export async function approveProduct(productId: string) {
   try {
+    const auth = await requireAdminAction();
+    if (!auth.authorized) return { success: false, error: auth.error || "Unauthorized" };
     if (!productId) return { success: false, error: "Product ID required" };
 
     const existing = await prisma.product.findUnique({
@@ -304,6 +314,8 @@ export async function approveProduct(productId: string) {
 // 9. Super Admin Reject Product (with actionable reason)
 export async function rejectProduct(productId: string, reason: string) {
   try {
+    const auth = await requireAdminAction();
+    if (!auth.authorized) return { success: false, error: auth.error || "Unauthorized" };
     if (!productId) return { success: false, error: "Product ID required" };
     if (!reason || reason.trim().length === 0) {
       return { success: false, error: "Rejection reason is required" };
@@ -735,6 +747,8 @@ export async function getTopVendorsReport() {
 // 14. Super Admin: Delete Vendor (Cascades Vendor, Products, Splits, and User account)
 export async function deleteVendor(vendorId: string) {
   try {
+    const auth = await requireAdminAction();
+    if (!auth.authorized) return { success: false, error: auth.error || "Unauthorized" };
     const vendor = await prisma.vendor.findUnique({
       where: { id: vendorId },
       include: { products: true },

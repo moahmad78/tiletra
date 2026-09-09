@@ -2,6 +2,7 @@
 
 import { prisma } from "@/lib/prisma";
 import { safeRevalidate } from "@/lib/formatters";
+import { requireAdminAction } from "@/lib/admin-guard";
 import Razorpay from "razorpay";
 import crypto from "crypto";
 
@@ -731,6 +732,8 @@ export async function getOrdersByPhone(phone: string) {
 
 export async function updateOrderStatus(id: string, orderStatus: string) {
   try {
+    const auth = await requireAdminAction();
+    if (!auth.authorized) return { success: false, error: auth.error || "Unauthorized" };
     const order = await prisma.order.update({
       where: { id },
       data: { orderStatus },
@@ -824,6 +827,8 @@ export async function updateOrderStatus(id: string, orderStatus: string) {
 
 export async function updateOrderStatusBulk(ids: string[], newStatus: string) {
   try {
+    const auth = await requireAdminAction();
+    if (!auth.authorized) return { success: false, error: auth.error || "Unauthorized" };
     if (!ids || ids.length === 0) {
       return { success: false, error: "No order IDs provided for bulk status update" };
     }
@@ -872,6 +877,8 @@ export async function updateOrderTracking(
   data: { courierName: string; trackingNumber: string }
 ) {
   try {
+    const auth = await requireAdminAction();
+    if (!auth.authorized) return { success: false, error: auth.error || "Unauthorized" };
     const order = await prisma.order.update({
       where: { id },
       data: {
@@ -920,6 +927,8 @@ export async function updateOrderTracking(
 
 export async function updateOrderNotes(id: string, internalNotes: string) {
   try {
+    const auth = await requireAdminAction();
+    if (!auth.authorized) return { success: false, error: auth.error || "Unauthorized" };
     const order = await prisma.order.update({
       where: { id },
       data: { internalNotes },
@@ -935,6 +944,8 @@ export async function updateOrderNotes(id: string, internalNotes: string) {
 
 export async function updatePaymentCollected(id: string, paymentCollected: boolean) {
   try {
+    const auth = await requireAdminAction();
+    if (!auth.authorized) return { success: false, error: auth.error || "Unauthorized" };
     const order = await prisma.order.update({
       where: { id },
       data: {
@@ -955,6 +966,8 @@ export async function updatePaymentCollected(id: string, paymentCollected: boole
 
 export async function deleteOrder(id: string) {
   try {
+    const auth = await requireAdminAction();
+    if (!auth.authorized) return { success: false, error: auth.error || "Unauthorized" };
     // 1. Delete associated VendorOrderSplit records
     await prisma.vendorOrderSplit.deleteMany({
       where: { orderId: id },
@@ -985,6 +998,8 @@ export async function deleteOrder(id: string) {
 
 export async function deleteOrdersBulk(ids: string[]) {
   try {
+    const auth = await requireAdminAction();
+    if (!auth.authorized) return { success: false, error: auth.error || "Unauthorized" };
     if (!ids || ids.length === 0) {
       return { success: false, error: "No order IDs provided for bulk deletion" };
     }

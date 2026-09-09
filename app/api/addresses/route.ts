@@ -1,16 +1,34 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getUserAddresses, saveAddress } from "@/lib/actions/addresses";
+import { getAuthenticatedUser } from "@/lib/auth-helpers";
+import { handleMobileCorsOptions } from "@/lib/mobile-auth";
+
+export async function OPTIONS() {
+  return handleMobileCorsOptions();
+}
 
 export async function GET(req: NextRequest) {
   try {
-    const { searchParams } = new URL(req.url);
-    const userId = searchParams.get("userId");
-
-    if (!userId) {
-      return NextResponse.json({ success: false, error: "userId parameter is required" }, { status: 400 });
+    const user = await getAuthenticatedUser(req);
+    if (!user) {
+      return NextResponse.json(
+        { success: false, error: "Authentication required to view addresses" },
+        { status: 401 }
+      );
     }
 
-    const addresses = await getUserAddresses(userId);
+    const { searchParams } = new URL(req.url);
+    const targetUserId = searchParams.get("userId") || user.id;
+
+    // IDOR check: Users can only query their own addresses unless they are super admin
+    if (targetUserId !== user.id && user.role !== "admin" && user.role !== "superadmin") {
+      return NextResponse.json(
+        { success: false, error: "Forbidden: You cannot access addresses of other users" },
+        { status: 403 }
+      );
+    }
+
+    const addresses = await getUserAddresses(targetUserId);
     return NextResponse.json({ success: true, addresses });
   } catch (error: any) {
     console.error("GET /api/addresses error:", error);
@@ -20,14 +38,21 @@ export async function GET(req: NextRequest) {
 
 export async function POST(req: NextRequest) {
   try {
-    const body = await req.json();
-    const { userId, ...addressInput } = body;
-
-    if (!userId) {
-      return NextResponse.json({ success: false, error: "userId is required" }, { status: 400 });
+    const user = await getAuthenticatedUser(req);
+    if (!user) {
+      return NextResponse.json(
+        { success: false, error: "Authentication required to save address" },
+        { status: 401 }
+      );
     }
 
-    const result = await saveAddress(userId, addressInput);
+    const body = await req.json();
+    const { userId: bodyUserId, ...addressInput } = body;
+
+    // Strict IDOR enforcement: Always bind address creation to the authenticated user's ID
+    const effectiveUserId = user.role === "admin" && bodyUserId ? bodyUserId : user.id;
+
+    const result = await saveAddress(effectiveUserId, addressInput);
     if (!result.success) {
       return NextResponse.json({ success: false, error: result.error }, { status: 400 });
     }

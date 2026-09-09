@@ -2,6 +2,7 @@
 
 import { prisma } from "@/lib/prisma";
 import { safeRevalidate } from "@/lib/formatters";
+import { requireAdminAction } from "@/lib/admin-guard";
 
 export async function getStoreSettings() {
   try {
@@ -167,6 +168,8 @@ export async function updateOfferBanner(id: string, data: any) {
 
 export async function deleteOfferBanner(id: string) {
   try {
+    const auth = await requireAdminAction();
+    if (!auth.authorized) return { success: false, error: auth.error || "Unauthorized" };
     await prisma.offerBanner.delete({ where: { id } });
 
     safeRevalidate("/admin/content");

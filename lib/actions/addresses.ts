@@ -59,7 +59,14 @@ export async function saveAddress(userId: string, input: AddressInput) {
     }
 
     if (input.id) {
-      // Update existing
+      // Update existing with strict ownership verification
+      const existing = await prisma.address.findFirst({
+        where: { id: input.id, userId },
+      });
+      if (!existing) {
+        return { success: false, error: "Address not found or unauthorized" };
+      }
+
       const updated = await prisma.address.update({
         where: { id: input.id },
         data: {
@@ -145,6 +152,13 @@ export async function deleteAddress(userId: string, addressId: string) {
 
 export async function setDefaultAddress(userId: string, addressId: string) {
   try {
+    const existing = await prisma.address.findFirst({
+      where: { id: addressId, userId },
+    });
+    if (!existing) {
+      return { success: false, error: "Address not found or unauthorized" };
+    }
+
     await prisma.$transaction([
       prisma.address.updateMany({
         where: { userId },
