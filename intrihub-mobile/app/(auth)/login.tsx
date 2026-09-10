@@ -17,9 +17,9 @@ import * as WebBrowser from "expo-web-browser";
 import * as AuthSession from "expo-auth-session";
 import * as Google from "expo-auth-session/providers/google";
 import Svg, { Path } from "react-native-svg";
-import { ArrowLeft, ShieldCheck, Mail, ArrowRight, RotateCw, Lock, ChevronLeft } from "lucide-react-native";
+import { ArrowLeft, ShieldCheck, Mail, ArrowRight, RotateCw, Lock, ChevronLeft, Eye, EyeOff, KeyRound } from "lucide-react-native";
 import { COLORS, SPACING, RADIUS, SHADOWS } from "../../src/constants/theme";
-import { sendOtp, verifyOtp, loginWithGoogle } from "../../src/api/auth";
+import { sendOtp, verifyOtp, loginWithGoogle, checkAuthMethod, loginWithPassword } from "../../src/api/auth";
 import { setStoredTokens } from "../../src/api/client";
 import { useAuthStore } from "../../src/store/authStore";
 
@@ -72,9 +72,11 @@ export default function LoginScreen() {
   const router = useRouter();
   const { setUser } = useAuthStore();
 
-  const [step, setStep] = useState<"input" | "otp">("input");
+  const [step, setStep] = useState<"input" | "otp" | "password">("input");
   const [email, setEmail] = useState("");
   const [name, setName] = useState("");
+  const [password, setPassword] = useState("");
+  const [showPassword, setShowPassword] = useState(false);
   const [otp, setOtp] = useState("");
   const [loading, setLoading] = useState(false);
   const [googleLoading, setGoogleLoading] = useState(false);
@@ -195,6 +197,15 @@ export default function LoginScreen() {
 
     setLoading(true);
     try {
+      // 1. Check if user account authenticates via password (e.g. Google Play Reviewer)
+      const checkRes = await checkAuthMethod(cleanEmail, "customer");
+      if (checkRes.success && checkRes.loginMethod === "password") {
+        setStep("password");
+        setLoading(false);
+        return;
+      }
+
+      // 2. Normal customer flow: dynamic Email OTP
       const res = await sendOtp(cleanEmail);
       if (res.success) {
         setStep("otp");
@@ -205,6 +216,29 @@ export default function LoginScreen() {
       }
     } catch (err: any) {
       setError(err?.response?.data?.error || err.message || "Network error. Please try again.");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handlePasswordSubmit = async () => {
+    setError("");
+    if (!password) {
+      setError("Please enter your account password");
+      return;
+    }
+
+    setLoading(true);
+    try {
+      const res = await loginWithPassword(email.trim().toLowerCase(), password, "customer");
+      if (res.success && res.user) {
+        setUser(res.user);
+        router.replace("/(tabs)/home" as any);
+      } else {
+        setError(res.error || "Invalid password. Please check your credentials.");
+      }
+    } catch (err: any) {
+      setError(err?.response?.data?.error || err?.response?.data?.message || err.message || "Failed to sign in. Please try again.");
     } finally {
       setLoading(false);
     }
@@ -327,16 +361,17 @@ export default function LoginScreen() {
           <TouchableOpacity
             style={styles.backButton}
             onPress={() => {
-              if (step === "otp") {
+              if (step === "otp" || step === "password") {
                 setStep("input");
                 setOtp("");
+                setPassword("");
                 setError("");
               } else {
                 router.back();
               }
             }}
           >
-            {step === "otp" ? (
+            {step === "otp" || step === "password" ? (
               <ChevronLeft size={20} color={COLORS.text} />
             ) : (
               <ArrowLeft size={20} color={COLORS.text} />
@@ -362,11 +397,17 @@ export default function LoginScreen() {
             />
           </View>
           <Text style={styles.brandTitle}>
-            {step === "input" ? "Welcome to Intrihub" : "Verify Your Email"}
+            {step === "input"
+              ? "Welcome to Intrihub"
+              : step === "password"
+              ? "Account Sign In"
+              : "Verify Your Email"}
           </Text>
           <Text style={styles.brandSubtitle}>
             {step === "input"
               ? "India's interior & construction supply marketplace"
+              : step === "password"
+              ? `Enter your account password for ${email}`
               : `We've sent a 6-digit verification code to ${email}`}
           </Text>
         </View>
@@ -446,6 +487,66 @@ export default function LoginScreen() {
                   <ArrowRight size={16} color={COLORS.textWhite} style={{ marginLeft: 8 }} />
                 </View>
               )}
+            </TouchableOpacity>
+          </View>
+        ) : step === "password" ? (
+          /* Password Verification Step (Dedicated Reviewer / Password-enabled customer) */
+          <View style={[styles.formCard, SHADOWS.sm]}>
+            <View style={styles.otpHeaderIcon}>
+              <KeyRound size={26} color={COLORS.primary} />
+            </View>
+            <Text style={styles.formHeading}>Enter Password</Text>
+            <Text style={styles.formSub}>
+              Account password for <Text style={styles.highlight}>{email}</Text>
+            </Text>
+
+            <View style={styles.passwordContainer}>
+              <TextInput
+                style={styles.passwordInput}
+                placeholder="Enter account password"
+                placeholderTextColor={COLORS.textTertiary}
+                value={password}
+                onChangeText={setPassword}
+                secureTextEntry={!showPassword}
+                autoCapitalize="none"
+                autoFocus
+              />
+              <TouchableOpacity
+                style={styles.eyeBtn}
+                onPress={() => setShowPassword(!showPassword)}
+                hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+              >
+                {showPassword ? (
+                  <EyeOff size={20} color={COLORS.textTertiary} />
+                ) : (
+                  <Eye size={20} color={COLORS.textTertiary} />
+                )}
+              </TouchableOpacity>
+            </View>
+
+            <TouchableOpacity
+              style={styles.primaryButton}
+              onPress={handlePasswordSubmit}
+              disabled={loading}
+              activeOpacity={0.85}
+            >
+              {loading ? (
+                <ActivityIndicator color={COLORS.textWhite} size="small" />
+              ) : (
+                <Text style={styles.primaryButtonText}>Sign In</Text>
+              )}
+            </TouchableOpacity>
+
+            <TouchableOpacity
+              style={styles.changeBtn}
+              onPress={() => {
+                setStep("input");
+                setPassword("");
+                setError("");
+              }}
+              disabled={loading}
+            >
+              <Text style={styles.changeBtnText}>Back to Email Entry</Text>
             </TouchableOpacity>
           </View>
         ) : (
@@ -800,6 +901,25 @@ const styles = StyleSheet.create({
     color: COLORS.primary,
     fontSize: 12,
     fontWeight: "700",
+  },
+  passwordContainer: {
+    flexDirection: "row",
+    alignItems: "center",
+    backgroundColor: COLORS.surfaceSecondary,
+    borderRadius: RADIUS.md,
+    borderWidth: 1,
+    borderColor: COLORS.border,
+    paddingHorizontal: 14,
+    marginBottom: 16,
+  },
+  passwordInput: {
+    flex: 1,
+    paddingVertical: 12,
+    fontSize: 14,
+    color: COLORS.text,
+  },
+  eyeBtn: {
+    padding: 6,
   },
   termsText: {
     fontSize: 11,

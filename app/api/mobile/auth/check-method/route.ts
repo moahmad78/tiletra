@@ -26,7 +26,34 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    // 1. Strict IP Lockout Check (3 attempts -> 15 min lockout)
+    const cleanEmail = email ? email.trim().toLowerCase() : "";
+    const cleanPhone = phone ? phone.replace(/\D/g, "") : "";
+
+    // Customer flow (IntriHub User App)
+    if (purpose === "customer") {
+      if (cleanEmail) {
+        const customer = await prisma.user.findFirst({
+          where: {
+            email: { equals: cleanEmail, mode: "insensitive" },
+            role: "customer",
+          },
+        });
+        if (customer && customer.passwordHash) {
+          return mobileApiResponse({
+            success: true,
+            loginMethod: "password",
+            name: customer.name || "Customer",
+          });
+        }
+      }
+      // Standard customers default to Email OTP
+      return mobileApiResponse({
+        success: true,
+        loginMethod: "otp",
+      });
+    }
+
+    // 1. Strict IP Lockout Check (for vendor/business portal)
     const lockoutCheck = checkVendorLoginLockout(clientIp);
     if (lockoutCheck.locked) {
       const mins = Math.floor((lockoutCheck.retryAfterSeconds || 0) / 60);
@@ -46,9 +73,6 @@ export async function POST(req: NextRequest) {
         429
       );
     }
-
-    const cleanEmail = email ? email.trim().toLowerCase() : "";
-    const cleanPhone = phone ? phone.replace(/\D/g, "") : "";
 
     // 2. Check Admin account
     const allowedAdminEmail = (process.env.ADMIN_ALLOWED_EMAIL || "admin@intrihub.com").toLowerCase().trim();

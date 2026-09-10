@@ -10,7 +10,7 @@ This document serves as the master backup and reference for publishing, maintain
 - **Application Name**: Intrihub
 - **Package Name**: `com.intrihub.app`
 - **Current Version**: `1.0.0`
-- **Release Version Code**: `2`
+- **Release Version Code**: `3`
 - **Target Android SDK**: API 35 (Android 15) *(Play Store requires min API 34)*
 - **Deep Link Scheme**: `intrihub://`
 - **EAS Project ID**: `7c786f97-0217-4a68-b51f-14499a3311a2`
@@ -112,9 +112,33 @@ When filling out the Google Play Console forms, use the exact answers below:
 - **READ_MEDIA_IMAGES**: Used for modern granular photo selection (avatar uploads).
 
 ### App Access / Credentials for Google Review Team
-If Google Play Review Team asks for a test login account to review the app:
-- **Test Phone / Email**: Provide a dedicated test user account from the admin dashboard with OTP bypass or active test session.
-- **Demo Mode**: Normal OTP flows function on production `https://www.intrihub.com`.
+When setting up **App access** in Google Play Console (Policy > App content > App access):
+- **Access Status**: Select **"All or some functionality is restricted"**
+- Click **+ Add instructions** with the following exact details:
+
+#### Instruction Form Fields:
+- **Title / Name**: `Play Reviewer Customer Account`
+- **Username / Email**: `playreview@intrihub.com`
+- **Password**: `IntriReview#2026`
+- **Any other instructions (for reviewer)**:
+  ```text
+  1. Open the IntriHub app. If prompted, you may continue as Guest or Sign In.
+  2. Tap "Sign In" or visit Profile/Cart to prompt login.
+  3. Enter email: playreview@intrihub.com and tap "Continue with Email OTP".
+  4. The app will immediately present the dedicated reviewer Password screen (bypassing OTP).
+  5. Enter password: IntriReview#2026 and tap "Sign In".
+  6. The reviewer account has a pre-configured delivery address in Koramangala, Bengaluru and sample past orders.
+  7. Browse the catalog, add products to cart, and proceed to the Checkout screen.
+  8. Account is permanent, reusable, and never expires.
+  ```
+
+#### Account Attributes & Verification:
+- **Email**: `playreview@intrihub.com`
+- **Password**: `IntriReview#2026`
+- **User ID**: `cmtvlmsdj00001p2c584jheqm`
+- **Role**: `customer` (Standard customer only - strictly no admin/vendor permissions)
+- **Pre-configured Address**: Flat 402, Royal Palms, 5th Block, Koramangala, Bengaluru, Karnataka - 560034
+- **Security**: Permanent scrypt hash stored in database. OTP requirement bypassed ONLY for this specific dedicated reviewer account. All regular customer accounts continue to use standard Email OTP verification.
 
 ---
 

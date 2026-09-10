@@ -13,6 +13,35 @@ export interface AuthResponse {
   };
 }
 
+export async function checkAuthMethod(
+  emailOrPhone: string,
+  purpose = "customer"
+): Promise<{ success: boolean; loginMethod: "otp" | "password" | "not_found"; name?: string; error?: string }> {
+  const isEmail = emailOrPhone.includes("@");
+  const payload = {
+    purpose,
+    ...(isEmail ? { email: emailOrPhone } : { phone: emailOrPhone }),
+  };
+  const res = await apiClient.post("/api/mobile/auth/check-method", payload);
+  return res.data;
+}
+
+export async function loginWithPassword(
+  email: string,
+  password: string,
+  purpose = "customer"
+): Promise<AuthResponse> {
+  const res = await apiClient.post<AuthResponse>("/api/mobile/auth/login-password", {
+    email,
+    password,
+    purpose,
+  });
+  if (res.data.success && res.data.tokens) {
+    await setStoredTokens(res.data.tokens.accessToken, res.data.tokens.refreshToken);
+  }
+  return res.data;
+}
+
 export async function sendOtp(emailOrPhone: string): Promise<{ success: boolean; message?: string; error?: string }> {
   const isEmail = emailOrPhone.includes("@");
   const payload = isEmail ? { email: emailOrPhone } : { phone: emailOrPhone };

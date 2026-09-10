@@ -60,6 +60,55 @@ export async function POST(req: NextRequest) {
       );
     }
 
+    // Customer flow (Google Play Reviewer / Customer password login)
+    if (purpose === "customer") {
+      const customerUser = await prisma.user.findFirst({
+        where: {
+          email: { equals: cleanEmail, mode: "insensitive" },
+          role: "customer",
+        },
+        include: {
+          addresses: {
+            orderBy: [{ isDefault: "desc" }, { createdAt: "desc" }],
+          },
+        },
+      });
+
+      if (!customerUser || !customerUser.passwordHash) {
+        return mobileApiResponse(
+          { success: false, error: "Password login is not enabled for this account. Please use Email OTP." },
+          400
+        );
+      }
+
+      const isValid = verifyPassword(password, customerUser.passwordHash);
+      if (!isValid) {
+        return mobileApiResponse(
+          { success: false, error: "Invalid password. Please check your credentials." },
+          401
+        );
+      }
+
+      const tokens = await generateMobileTokens(customerUser);
+      return mobileApiResponse({
+        success: true,
+        message: "Customer authenticated successfully",
+        user: {
+          id: customerUser.id,
+          name: customerUser.name,
+          email: customerUser.email,
+          phone: customerUser.phone,
+          role: "customer",
+          avatar: customerUser.avatar,
+          emailVerified: customerUser.emailVerified,
+          phoneVerified: customerUser.phoneVerified,
+          addresses: customerUser.addresses,
+          createdAt: customerUser.createdAt,
+        },
+        tokens,
+      });
+    }
+
     const allowedAdminEmail = (process.env.ADMIN_ALLOWED_EMAIL || "admin@intrihub.com").toLowerCase().trim();
     const isAdmin = cleanEmail === allowedAdminEmail;
 
