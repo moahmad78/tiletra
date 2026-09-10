@@ -34,7 +34,7 @@ function maskEmail(email: string): string {
 
 // ─── Universal Multi-Transport Email Sender ───────────────────────────────────
 
-async function deliverEmail({
+export async function deliverEmail({
   to,
   subject,
   html,

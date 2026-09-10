@@ -2,18 +2,43 @@
 
 import React, { useState } from "react";
 import Link from "next/link";
-import { Trash2, AlertTriangle, CheckCircle2, ShieldAlert, ArrowLeft, Mail, Phone } from "lucide-react";
+import { Trash2, AlertTriangle, CheckCircle2, ShieldAlert, ArrowLeft, Mail, Phone, Loader2, AlertCircle } from "lucide-react";
 
 export default function DeleteAccountPage() {
   const [emailOrPhone, setEmailOrPhone] = useState("");
   const [accountType, setAccountType] = useState<"user" | "business">("user");
   const [reason, setReason] = useState("");
+  const [loading, setLoading] = useState(false);
+  const [ticketId, setTicketId] = useState("");
+  const [errorMessage, setErrorMessage] = useState("");
   const [submitted, setSubmitted] = useState(false);
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!emailOrPhone) return;
-    setSubmitted(true);
+    if (!emailOrPhone.trim()) return;
+
+    setLoading(true);
+    setErrorMessage("");
+
+    try {
+      const res = await fetch("/api/delete-account", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ emailOrPhone, accountType, reason }),
+      });
+
+      const data = await res.json();
+      if (!res.ok || !data.success) {
+        throw new Error(data.error || "Failed to submit deletion request. Please try again.");
+      }
+
+      setTicketId(data.ticketId || "");
+      setSubmitted(true);
+    } catch (err: any) {
+      setErrorMessage(err.message || "An unexpected error occurred. Please try again.");
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
@@ -56,20 +81,41 @@ export default function DeleteAccountPage() {
 
           {submitted ? (
             <div className="p-6 bg-emerald-50 border border-emerald-200 rounded-2xl text-center space-y-3">
-              <CheckCircle2 className="mx-auto text-emerald-600" size={40} />
+              <CheckCircle2 className="mx-auto text-emerald-600" size={44} />
               <h3 className="text-lg font-bold text-emerald-900">Request Successfully Received</h3>
               <p className="text-sm text-emerald-800 max-w-md mx-auto">
-                We have registered your deletion request for <strong>{emailOrPhone}</strong>. Our security team will verify the request and complete the account purge within 48 to 72 hours.
+                We have registered your deletion request for <strong>{emailOrPhone}</strong>. Our data security team will verify the request and complete the account purge within 48 to 72 hours.
               </p>
-              <button
-                onClick={() => setSubmitted(false)}
-                className="mt-4 text-xs font-semibold text-emerald-700 underline hover:text-emerald-900"
-              >
-                Submit another request
-              </button>
+              {ticketId && (
+                <div className="pt-2">
+                  <span className="text-xs uppercase font-bold text-emerald-700 block mb-1">Your Tracking Reference Ticket:</span>
+                  <code className="text-sm font-mono font-bold bg-white text-emerald-950 py-1.5 px-4 rounded-xl border border-emerald-300 inline-block shadow-sm">
+                    {ticketId}
+                  </code>
+                </div>
+              )}
+              <div className="pt-4">
+                <button
+                  onClick={() => {
+                    setSubmitted(false);
+                    setEmailOrPhone("");
+                    setReason("");
+                    setTicketId("");
+                  }}
+                  className="text-xs font-semibold text-emerald-700 underline hover:text-emerald-900"
+                >
+                  Submit another request
+                </button>
+              </div>
             </div>
           ) : (
             <form onSubmit={handleSubmit} className="space-y-5">
+              {errorMessage && (
+                <div className="p-4 bg-red-50 border border-red-200 rounded-xl flex items-center gap-3 text-red-700 text-sm">
+                  <AlertCircle size={18} className="shrink-0 text-red-600" />
+                  <span>{errorMessage}</span>
+                </div>
+              )}
               <div>
                 <label className="block text-xs font-bold text-neutral-700 uppercase tracking-wider mb-2">
                   Account Type
@@ -129,10 +175,20 @@ export default function DeleteAccountPage() {
 
               <button
                 type="submit"
-                className="w-full py-3.5 px-6 rounded-xl bg-red-600 hover:bg-red-700 text-white font-bold text-sm shadow-md hover:shadow-lg transition-all flex items-center justify-center gap-2"
+                disabled={loading}
+                className="w-full py-3.5 px-6 rounded-xl bg-red-600 hover:bg-red-700 disabled:bg-red-400 text-white font-bold text-sm shadow-md hover:shadow-lg transition-all flex items-center justify-center gap-2 cursor-pointer disabled:cursor-not-allowed"
               >
-                <ShieldAlert size={18} />
-                Submit Account & Data Deletion Request
+                {loading ? (
+                  <>
+                    <Loader2 size={18} className="animate-spin" />
+                    Registering Deletion Request...
+                  </>
+                ) : (
+                  <>
+                    <ShieldAlert size={18} />
+                    Submit Account & Data Deletion Request
+                  </>
+                )}
               </button>
             </form>
           )}
