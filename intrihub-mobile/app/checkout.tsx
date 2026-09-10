@@ -133,7 +133,7 @@ export default function CheckoutScreen() {
 
           if (!razorpayKey) {
             Alert.alert("Error", "Payment configuration missing. Please try again.");
-            setLoading(false);
+            setIsProcessing(false);
             return;
           }
 

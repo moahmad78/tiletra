@@ -32,6 +32,7 @@ import {
   Camera,
   X,
   Check,
+  Trash2,
 } from "lucide-react-native";
 import { useAuthStore } from "../../src/store/authStore";
 import { getProfile, updateProfile, uploadAvatarImage } from "../../src/api/auth";
@@ -166,6 +167,23 @@ export default function ProfileScreen() {
     router.push("/privacy" as any);
   };
 
+  const handleDeleteAccount = () => {
+    Alert.alert(
+      "Delete Account & Data",
+      "Are you sure you want to delete your account? All your personal information, saved addresses, and active sessions will be permanently purged in accordance with data privacy regulations.\n\nYou can proceed via our verified web deletion portal.",
+      [
+        { text: "Cancel", style: "cancel" },
+        {
+          text: "Request Deletion",
+          style: "destructive",
+          onPress: () => {
+            Linking.openURL("https://www.intrihub.com/delete-account");
+          },
+        },
+      ]
+    );
+  };
+
   return (
     <View style={styles.container}>
       {/* Header */}
@@ -293,6 +311,17 @@ export default function ProfileScreen() {
             <View style={styles.menuLeft}>
               <ShieldCheck size={20} color={COLORS.primary} />
               <Text style={styles.menuLabel}>Privacy Policy & Terms</Text>
+            </View>
+            <ChevronRight size={18} color={COLORS.textMuted} />
+          </TouchableOpacity>
+
+          <TouchableOpacity style={styles.menuItem} onPress={handleDeleteAccount} activeOpacity={0.75}>
+            <View style={styles.menuLeft}>
+              <Trash2 size={20} color={COLORS.error} />
+              <View style={{ marginLeft: 12 }}>
+                <Text style={[styles.menuLabel, { color: COLORS.error, marginLeft: 0 }]}>Delete Account & Data</Text>
+                <Text style={styles.supportSubText}>Request permanent account removal</Text>
+              </View>
             </View>
             <ChevronRight size={18} color={COLORS.textMuted} />
           </TouchableOpacity>

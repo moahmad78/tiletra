@@ -23,6 +23,7 @@ import {
 import { Address } from "../types";
 import { COLORS, SPACING, RADIUS, SHADOWS } from "../constants/theme";
 import { useAuthStore } from "../store/authStore";
+import { updateProfile } from "../api/auth";
 
 interface AddressModalProps {
   visible: boolean;
@@ -130,8 +131,15 @@ export const AddressModal: React.FC<AddressModalProps> = ({ visible, onClose, on
 
       // Update auth store addresses
       const updatedAddresses = [...addresses, newAddressPayload];
-      const { updateUserProfile } = useAuthStore.getState();
-      await updateUserProfile({ addresses: updatedAddresses });
+      const currentUser = useAuthStore.getState().user;
+      if (currentUser) {
+        useAuthStore.getState().setUser({ ...currentUser, addresses: updatedAddresses });
+      }
+      try {
+        await updateProfile({ addresses: updatedAddresses } as any);
+      } catch (syncErr) {
+        console.warn("Could not sync address to backend:", syncErr);
+      }
 
       // Automatically select newly saved address
       handleSelect(newAddressPayload);
@@ -456,7 +464,7 @@ const styles = StyleSheet.create({
   headerTitle: {
     fontSize: 17,
     fontWeight: "800",
-    color: COLORS.textPrimary,
+    color: COLORS.text,
   },
   headerSubtitle: {
     fontSize: 12,
@@ -544,7 +552,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: SPACING.md,
     height: 44,
     fontSize: 13,
-    color: COLORS.textPrimary,
+    color: COLORS.text,
   },
   textArea: {
     height: 60,
@@ -612,7 +620,7 @@ const styles = StyleSheet.create({
   emptyTitle: {
     fontSize: 15,
     fontWeight: "800",
-    color: COLORS.textPrimary,
+    color: COLORS.text,
     marginTop: SPACING.sm,
   },
   emptySub: {
@@ -645,7 +653,7 @@ const styles = StyleSheet.create({
     backgroundColor: COLORS.surface,
     paddingHorizontal: 8,
     paddingVertical: 2,
-    borderRadius: RADIUS.xs,
+    borderRadius: RADIUS.sm,
     borderWidth: 1,
     borderColor: COLORS.border,
   },
@@ -666,7 +674,7 @@ const styles = StyleSheet.create({
   addressName: {
     fontSize: 14,
     fontWeight: "700",
-    color: COLORS.textPrimary,
+    color: COLORS.text,
   },
   addressDetails: {
     fontSize: 12,

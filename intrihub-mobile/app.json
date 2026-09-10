@@ -20,6 +20,7 @@
     },
     "android": {
       "package": "com.intrihub.app",
+      "versionCode": 2,
       "googleServicesFile": "./google-services.json",
       "adaptiveIcon": {
         "foregroundImage": "./assets/adaptive-icon.png",
@@ -28,7 +29,8 @@
       "permissions": [
         "RECEIVE_BOOT_COMPLETED",
         "VIBRATE",
-        "INTERNET"
+        "INTERNET",
+        "POST_NOTIFICATIONS"
       ]
     },
     "web": {

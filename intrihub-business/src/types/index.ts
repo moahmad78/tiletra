@@ -117,6 +117,9 @@ export interface VendorDashboardData {
     businessAddress?: string;
     deliveryMethod?: string;
     autoPublishEnabled?: boolean;
+    latitude?: number | null;
+    longitude?: number | null;
+    autoAcceptOrders?: boolean;
   };
   stats: {
     totalRevenue: number;

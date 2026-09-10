@@ -36,6 +36,8 @@ export interface Address {
   source?: "GPS" | "MAP_PIN" | "SEARCH" | "MANUAL" | string;
   deliveryInstructions?: string | null;
   formattedAddress?: string;
+  addressLine1?: string | null;
+  addressLine2?: string | null;
   isDefault?: boolean;
 }
 
