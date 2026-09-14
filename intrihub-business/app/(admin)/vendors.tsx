@@ -419,7 +419,7 @@ export default function AdminVendorsHubScreen() {
           <Text
             style={{
               fontSize: 10,
-              fontFamily: "Outfit-Bold",
+              fontFamily: "PlusJakartaSans_700Bold",
               color: item.autoPublishEnabled ? "#15803D" : "#B45309",
             }}
           >
@@ -447,7 +447,7 @@ export default function AdminVendorsHubScreen() {
           <Text
             style={{
               fontSize: 10,
-              fontFamily: "Outfit-Bold",
+              fontFamily: "PlusJakartaSans_700Bold",
               color: item.deliveryMethod === "platform" ? "#1E40AF" : "#C2410C",
             }}
           >

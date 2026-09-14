@@ -247,7 +247,7 @@ export default function AdminVendorDetailScreen() {
     return (
       <View style={styles.centerContainer}>
         <ActivityIndicator size="large" color={COLORS.accentBlue} />
-        <Text style={{ marginTop: 12, fontSize: 13, color: COLORS.textSecondary, fontFamily: "Outfit-Medium" }}>
+        <Text style={{ marginTop: 12, fontSize: 13, color: COLORS.textSecondary, fontFamily: "PlusJakartaSans_500Medium" }}>
           Loading vendor details...
         </Text>
       </View>
@@ -257,14 +257,14 @@ export default function AdminVendorDetailScreen() {
   if (isError || !vendor) {
     return (
       <View style={styles.centerContainer}>
-        <Text style={{ fontSize: 14, color: COLORS.textSecondary, fontFamily: "Outfit-Medium", marginBottom: 14 }}>
+        <Text style={{ fontSize: 14, color: COLORS.textSecondary, fontFamily: "PlusJakartaSans_500Medium", marginBottom: 14 }}>
           Vendor not found or could not load details.
         </Text>
         <TouchableOpacity
           style={{ backgroundColor: "#052A51", paddingHorizontal: 20, paddingVertical: 10, borderRadius: 10 }}
           onPress={() => refetch()}
         >
-          <Text style={{ color: "#FFFFFF", fontSize: 13, fontFamily: "Outfit-Bold" }}>Retry</Text>
+          <Text style={{ color: "#FFFFFF", fontSize: 13, fontFamily: "PlusJakartaSans_700Bold" }}>Retry</Text>
         </TouchableOpacity>
       </View>
     );
@@ -322,7 +322,7 @@ export default function AdminVendorDetailScreen() {
                   <Text
                     style={{
                       fontSize: 10,
-                      fontFamily: "Outfit-Bold",
+                      fontFamily: "PlusJakartaSans_700Bold",
                       color:
                         status === "approved" ? "#15803D" : status === "pending" ? "#B45309" : "#DC2626",
                     }}
@@ -368,7 +368,7 @@ export default function AdminVendorDetailScreen() {
                 activeOpacity={0.85}
               >
                 <CheckCircle2 size={16} color="#FFFFFF" />
-                <Text style={{ color: "#FFFFFF", fontSize: 13, fontFamily: "Outfit-Bold" }}>
+                <Text style={{ color: "#FFFFFF", fontSize: 13, fontFamily: "PlusJakartaSans_700Bold" }}>
                   Approve & Activate Vendor Store
                 </Text>
               </TouchableOpacity>
@@ -401,7 +401,7 @@ export default function AdminVendorDetailScreen() {
                   activeOpacity={0.85}
                 >
                   <AlertTriangle size={14} color="#DC2626" />
-                  <Text style={{ color: "#DC2626", fontSize: 12, fontFamily: "Outfit-Bold" }}>
+                  <Text style={{ color: "#DC2626", fontSize: 12, fontFamily: "PlusJakartaSans_700Bold" }}>
                     Suspend Store
                   </Text>
                 </TouchableOpacity>
@@ -423,7 +423,7 @@ export default function AdminVendorDetailScreen() {
                   activeOpacity={0.85}
                 >
                   <Edit2 size={14} color="#166534" />
-                  <Text style={{ color: "#166534", fontSize: 12, fontFamily: "Outfit-Bold" }}>
+                  <Text style={{ color: "#166534", fontSize: 12, fontFamily: "PlusJakartaSans_700Bold" }}>
                     Edit Store
                   </Text>
                 </TouchableOpacity>

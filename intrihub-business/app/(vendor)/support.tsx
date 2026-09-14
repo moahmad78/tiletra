@@ -352,7 +352,7 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontWeight: "900",
     color: "#FFFFFF",
-    fontFamily: "Outfit-Bold",
+    fontFamily: "PlusJakartaSans_700Bold",
   },
   headerSub: {
     fontSize: 11,

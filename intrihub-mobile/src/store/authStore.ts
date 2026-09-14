@@ -18,6 +18,7 @@ interface AuthState {
 }
 
 const SELECTED_ADDRESS_KEY = "intrihub_selected_address";
+const CACHED_USER_KEY = "intrihub_user";
 
 export const useAuthStore = create<AuthState>((set, get) => ({
   user: null,
@@ -34,29 +35,49 @@ export const useAuthStore = create<AuthState>((set, get) => ({
         return;
       }
 
-      const res = await getProfile();
-      if (res.success && res.user) {
-        let savedAddress: Address | null = null;
-        try {
-          const storedAddrStr = await AsyncStorage.getItem(SELECTED_ADDRESS_KEY);
-          if (storedAddrStr) savedAddress = JSON.parse(storedAddrStr);
-        } catch {}
+      let cachedUser: User | null = null;
+      try {
+        const storedUserStr = await AsyncStorage.getItem(CACHED_USER_KEY);
+        if (storedUserStr) cachedUser = JSON.parse(storedUserStr);
+      } catch {}
 
-        if (!savedAddress && res.user.addresses && res.user.addresses.length > 0) {
-          savedAddress = res.user.addresses[0];
+      let savedAddress: Address | null = null;
+      try {
+        const storedAddrStr = await AsyncStorage.getItem(SELECTED_ADDRESS_KEY);
+        if (storedAddrStr) savedAddress = JSON.parse(storedAddrStr);
+      } catch {}
+
+      if (cachedUser) {
+        if (!savedAddress && cachedUser.addresses && cachedUser.addresses.length > 0) {
+          savedAddress = cachedUser.addresses.find((a) => a.isDefault) || cachedUser.addresses[0];
         }
+        set({
+          user: cachedUser,
+          isAuthenticated: true,
+          selectedAddress: savedAddress,
+          isLoading: false,
+        });
+      }
 
+      const res = await getProfile().catch(() => null);
+      if (res?.success && res.user) {
+        if (!savedAddress && res.user.addresses && res.user.addresses.length > 0) {
+          savedAddress = res.user.addresses.find((a) => a.isDefault) || res.user.addresses[0];
+        }
+        await AsyncStorage.setItem(CACHED_USER_KEY, JSON.stringify(res.user)).catch(() => {});
         set({
           user: res.user,
           isAuthenticated: true,
           selectedAddress: savedAddress,
           isLoading: false,
         });
-      } else {
+      } else if (!cachedUser) {
         set({ user: null, isAuthenticated: false, isLoading: false });
+      } else {
+        set({ isLoading: false });
       }
     } catch {
-      set({ user: null, isAuthenticated: false, isLoading: false });
+      set({ isLoading: false });
     }
   },
 
@@ -70,6 +91,11 @@ export const useAuthStore = create<AuthState>((set, get) => ({
       isAuthenticated: Boolean(user),
       selectedAddress: defaultAddress || get().selectedAddress,
     });
+    if (user) {
+      AsyncStorage.setItem(CACHED_USER_KEY, JSON.stringify(user)).catch(() => {});
+    } else {
+      AsyncStorage.removeItem(CACHED_USER_KEY).catch(() => {});
+    }
   },
 
   setSelectedAddress: (address: Address | null) => {
@@ -84,6 +110,7 @@ export const useAuthStore = create<AuthState>((set, get) => ({
   logout: async () => {
     await apiLogout();
     await AsyncStorage.removeItem(SELECTED_ADDRESS_KEY).catch(() => {});
+    await AsyncStorage.removeItem(CACHED_USER_KEY).catch(() => {});
     set({ user: null, isAuthenticated: false, selectedAddress: null });
   },
 }));

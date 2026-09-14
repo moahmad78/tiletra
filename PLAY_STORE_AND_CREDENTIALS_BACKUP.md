@@ -54,8 +54,8 @@ This document serves as the master backup and reference for publishing, maintain
 ### Identity & Configuration
 - **Application Name**: Intrihub Business
 - **Package Name**: `com.intrihub.business`
-- **Current Version**: `1.0.0`
-- **Release Version Code**: `1`
+- **Current Version**: `1.0.2`
+- **Release Version Code**: `3`
 - **Deep Link Scheme**: `intrihub-biz://`
 - **Owner**: `sahil_sheikh78`
 
@@ -140,40 +140,57 @@ When setting up **App access** in Google Play Console (Policy > App content > Ap
 - **Pre-configured Address**: Flat 402, Royal Palms, 5th Block, Koramangala, Bengaluru, Karnataka - 560034
 - **Security**: Permanent scrypt hash stored in database. OTP requirement bypassed ONLY for this specific dedicated reviewer account. All regular customer accounts continue to use standard Email OTP verification.
 
+### Business App Access / Credentials for Google Review Team (`com.intrihub.business`)
+When setting up **App access** in Google Play Console for Intrihub Business:
+- **Title / Name**: `Play Reviewer Vendor Account`
+- **Username / Email**: `bizreview@intrihub.com`
+- **Password**: `IntriBizReview#2026`
+- **Any other instructions (for reviewer)**:
+  ```text
+  1. Open the Intrihub Business app.
+  2. Enter business email: bizreview@intrihub.com and tap "Continue to Login".
+  3. The app detects the pre-configured password authentication method.
+  4. Enter password: IntriBizReview#2026 and tap "Sign In with Password".
+  5. The reviewer is directed to the Vendor Operations Dashboard.
+  6. Reviewer can view products, stock levels, orders, and earnings.
+  ```
+
 ---
 
 ## 4. How to Generate a Fresh .aab File
 
-To build a fresh release bundle directly from the terminal:
-
+### Customer Mobile App (`com.intrihub.app`):
 ```powershell
-# Navigate to the mobile android directory
 cd d:\Intrihub\intrihub-mobile\android
-
-# Clean and bundle the signed release AAB
 .\gradlew.bat bundleRelease
 ```
+Bundle path:
+`d:\Intrihub\intrihub-mobile\android\app\build\outputs\bundle\release\app-release.aab`
 
-The generated `.aab` file will be located at:
-```text
-d:\Intrihub\intrihub-mobile\android\app\build\outputs\bundle\release\app-release.aab
+### Business / Vendor App (`com.intrihub.business`):
+```powershell
+cd d:\Intrihub\intrihub-business\android
+.\gradlew.bat bundleRelease
 ```
+Bundle path:
+`d:\Intrihub\intrihub-business\android\app\build\outputs\bundle\release\app-release.aab`
 
 ---
 
 ## 5. How to Upload `.aab` to Google Play Console
 
 1. Go to [Google Play Console](https://play.google.com/console).
-2. Select **IntriHub** application (or click **Create app** if creating for the first time).
+2. Select **IntriHub** or **IntriHub Business** application.
 3. In the left navigation, go to **Release** > **Production** (or **Testing** > **Internal testing** first).
 4. Click **Create new release**.
 5. Upload the bundle:
-   Drag and drop `app-release.aab` from `intrihub-mobile/android/app/build/outputs/bundle/release/app-release.aab`.
-6. Enter Release Name (e.g. `1.0.0 (2)`).
+   - For Customer App: drag and drop from `intrihub-mobile/android/app/build/outputs/bundle/release/app-release.aab`.
+   - For Business App: drag and drop from `intrihub-business/android/app/build/outputs/bundle/release/app-release.aab`.
+6. Enter Release Name (e.g. `1.0.2 (3)`).
 7. Enter Release Notes in English / Hindi:
    ```text
-   - Welcome to the official IntriHub mobile application!
-   - Shop premium architectural, interior, tiles, and sanitaryware products.
-   - Real-time order tracking, secure payments, and fast delivery.
+   - Welcome to IntriHub Business!
+   - Manage inventory, catalog, incoming orders, and fulfillment.
+   - Enhanced stability, modern Android 15 splash transition, and crash resilience.
    ```
 8. Review release details and click **Save** > **Review release** > **Start rollout**.

@@ -1,4 +1,5 @@
 import axios, { AxiosRequestConfig } from "axios";
+import { Platform } from "react-native";
 import * as SecureStore from "expo-secure-store";
 import { API_BASE_URL } from "../constants/config";
 
@@ -7,6 +8,9 @@ const REFRESH_TOKEN_KEY = "intrihub_refresh_token";
 
 export async function getStoredAccessToken(): Promise<string | null> {
   try {
+    if (Platform.OS === "web" && typeof window !== "undefined" && window.localStorage) {
+      return window.localStorage.getItem(ACCESS_TOKEN_KEY);
+    }
     return await SecureStore.getItemAsync(ACCESS_TOKEN_KEY);
   } catch {
     return null;
@@ -15,6 +19,9 @@ export async function getStoredAccessToken(): Promise<string | null> {
 
 export async function getStoredRefreshToken(): Promise<string | null> {
   try {
+    if (Platform.OS === "web" && typeof window !== "undefined" && window.localStorage) {
+      return window.localStorage.getItem(REFRESH_TOKEN_KEY);
+    }
     return await SecureStore.getItemAsync(REFRESH_TOKEN_KEY);
   } catch {
     return null;
@@ -23,6 +30,11 @@ export async function getStoredRefreshToken(): Promise<string | null> {
 
 export async function setStoredTokens(accessToken: string, refreshToken: string): Promise<void> {
   try {
+    if (Platform.OS === "web" && typeof window !== "undefined" && window.localStorage) {
+      window.localStorage.setItem(ACCESS_TOKEN_KEY, accessToken);
+      window.localStorage.setItem(REFRESH_TOKEN_KEY, refreshToken);
+      return;
+    }
     await SecureStore.setItemAsync(ACCESS_TOKEN_KEY, accessToken);
     await SecureStore.setItemAsync(REFRESH_TOKEN_KEY, refreshToken);
   } catch (err) {
@@ -32,6 +44,11 @@ export async function setStoredTokens(accessToken: string, refreshToken: string)
 
 export async function clearStoredTokens(): Promise<void> {
   try {
+    if (Platform.OS === "web" && typeof window !== "undefined" && window.localStorage) {
+      window.localStorage.removeItem(ACCESS_TOKEN_KEY);
+      window.localStorage.removeItem(REFRESH_TOKEN_KEY);
+      return;
+    }
     await SecureStore.deleteItemAsync(ACCESS_TOKEN_KEY);
     await SecureStore.deleteItemAsync(REFRESH_TOKEN_KEY);
   } catch (err) {
