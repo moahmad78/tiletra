@@ -29,7 +29,18 @@ export function middleware(request: NextRequest) {
     "127.0.0.1";
   const userAgent = request.headers.get("user-agent") || "";
 
-  // 1. Detect & block malicious vulnerability scanners probing sensitive files
+  // 1. Edge-Level Admin Route Guard
+  // Unauthorized requests to /admin/* are intercepted at the edge before any page bundle or HTML renders
+  if (pathname.startsWith("/admin") && pathname !== "/admin/login") {
+    const adminToken = request.cookies.get("intrihub_admin_token")?.value;
+    if (!adminToken || !adminToken.includes(".")) {
+      const loginUrl = new URL("/admin/login", request.url);
+      loginUrl.searchParams.set("callbackUrl", pathname);
+      return NextResponse.redirect(loginUrl, { status: 307 });
+    }
+  }
+
+  // 2. Detect & block malicious vulnerability scanners probing sensitive files
   if (SUSPICIOUS_PROBE_REGEX.test(pathname)) {
     console.warn(
       `[SEC-ALERT] [SCANNER_BLOCKED] Malicious probe path="${pathname}" ip=${clientIp} host=${host}`

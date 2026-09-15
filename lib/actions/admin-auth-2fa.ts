@@ -9,8 +9,16 @@ const resend = new Resend(process.env.RESEND_API_KEY);
 const FROM_EMAIL = process.env.EMAIL_FROM || "Intrihub Security <noreply@intrihub.com>";
 const OTP_EXPIRY_MINUTES = 10;
 
-// Default admin password fallback if not set in environment variable
-const ADMIN_PASSWORD = process.env.ADMIN_PASSWORD || "Admin@Intrihub#92";
+function getAdminPassword(): string {
+  const pwd = process.env.ADMIN_PASSWORD;
+  if (!pwd) {
+    if (process.env.NODE_ENV === "production") {
+      throw new Error("CRITICAL SECURITY ERROR: ADMIN_PASSWORD must be configured in production environment variables.");
+    }
+    return "Admin@Intrihub#92";
+  }
+  return pwd;
+}
 
 function generateOtp(): string {
   return Math.floor(100000 + Math.random() * 900000).toString();
@@ -35,7 +43,8 @@ export async function validateAdminCredentialsAndSendOtp(formData: {
   }
 
   // 2. Strict Password Verification
-  if (!cleanPassword || cleanPassword !== ADMIN_PASSWORD) {
+  const adminPassword = getAdminPassword();
+  if (!cleanPassword || cleanPassword !== adminPassword) {
     return {
       success: false,
       message: "Access denied.",
