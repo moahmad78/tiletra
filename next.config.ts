@@ -50,6 +50,8 @@ const nextConfig: NextConfig = {
 };
 
 export default withSentryConfig(nextConfig, {
+  org: "intrihub",
+  project: "javascript-nextjs",
   silent: !process.env.CI,
   sourcemaps: {
     deleteSourcemapsAfterUpload: true,
