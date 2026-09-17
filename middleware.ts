@@ -182,6 +182,26 @@ export function middleware(request: NextRequest) {
     });
   }
 
+  // 8. Legacy SEO 301 redirects for discontinued/aliased paths
+  const cleanPath = pathname.toLowerCase().replace(/\/+$/, "");
+  if (cleanPath === "/inspiration" || cleanPath === "/designs") {
+    return NextResponse.redirect("https://www.intrihub.com/shop", {
+      status: 301,
+      headers: {
+        "Cache-Control": "public, max-age=31536000, immutable",
+      },
+    });
+  }
+
+  if (cleanPath === "/shop/outdoor-tiles") {
+    return NextResponse.redirect("https://www.intrihub.com/shop/tiles-stone", {
+      status: 301,
+      headers: {
+        "Cache-Control": "public, max-age=31536000, immutable",
+      },
+    });
+  }
+
   return NextResponse.next();
 }
 

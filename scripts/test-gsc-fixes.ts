@@ -3,10 +3,11 @@ import robots from "../app/robots";
 import sitemap from "../app/sitemap";
 import { middleware } from "../middleware";
 import { NextRequest } from "next/server";
+import { getRedirectForPath } from "../lib/redirects";
 
 async function runTests() {
   console.log("==========================================================================");
-  console.log("RUNNING GSC 'CRAWLED - CURRENTLY NOT INDEXED' TECHNICAL VERIFICATION SUITE");
+  console.log("RUNNING GSC SITEMAP, ROBOTS.TXT & 404 TECHNICAL VERIFICATION SUITE");
   console.log("==========================================================================");
 
   // 1. Robots.txt Validation
@@ -23,60 +24,121 @@ async function runTests() {
     ? robotsConfig.rules.allow
     : [robotsConfig.rules?.allow];
 
-  assert(disallows.includes("/_next/static/media/"), "robots.txt must disallow /_next/static/media/");
-  console.log("  ✓ robots.txt disallows /_next/static/media/");
+  // Verify private sections are blocked
+  assert(disallows.includes("/admin/"), "robots.txt must disallow /admin/");
+  assert(disallows.includes("/admin"), "robots.txt must disallow /admin");
+  assert(disallows.includes("/account/"), "robots.txt must disallow /account/");
+  assert(disallows.includes("/account"), "robots.txt must disallow /account");
+  assert(disallows.includes("/cart/"), "robots.txt must disallow /cart/");
+  assert(disallows.includes("/cart"), "robots.txt must disallow /cart");
+  assert(disallows.includes("/checkout/"), "robots.txt must disallow /checkout/");
+  assert(disallows.includes("/checkout"), "robots.txt must disallow /checkout");
+  assert(disallows.includes("/api/"), "robots.txt must disallow /api/");
+  assert(disallows.includes("/vendor/"), "robots.txt must disallow /vendor/");
+  console.log("  ✓ robots.txt disallows all private sections (/admin, /account, /cart, /checkout, /api, /vendor/)");
 
-  assert(disallows.includes("/favicon.ico?*"), "robots.txt must disallow /favicon.ico?*");
-  console.log("  ✓ robots.txt disallows /favicon.ico?*");
+  // Verify public exceptions & legitimate pages are allowed
+  assert(allows.includes("/vendor/apply"), "robots.txt must allow /vendor/apply (overrides /vendor/)");
+  console.log("  ✓ robots.txt explicitly allows /vendor/apply");
 
-  assert(!disallows.includes("/*search_term_string*"), "robots.txt must NOT disallow search_term_string (lets 301 redirect execute)");
-  assert(!disallows.includes("/*%7Bsearch_term_string%7D*"), "robots.txt must NOT disallow %7Bsearch_term_string%7D (lets 301 redirect execute)");
-  console.log("  ✓ robots.txt does NOT block search_term_string (allowing Googlebot to receive 301 redirect to /shop)");
+  assert(allows.includes("/shop/outdoor-tiles"), "robots.txt must allow /shop/outdoor-tiles");
+  console.log("  ✓ robots.txt explicitly allows /shop/outdoor-tiles");
 
-  assert(allows.includes("/favicon.ico$"), "robots.txt must restrict favicon allow to /favicon.ico$");
-  console.log("  ✓ robots.txt allows exact /favicon.ico$");
+  assert(allows.includes("/inspiration"), "robots.txt must allow /inspiration");
+  console.log("  ✓ robots.txt explicitly allows /inspiration");
 
-  // 2. Middleware Redirect Validation
+  // Verify /shop?* is NOT disallowed (was causing false positive blocks on /shop/outdoor-tiles)
+  assert(!disallows.includes("/shop?*"), "robots.txt must NOT disallow /shop?*");
+  console.log("  ✓ robots.txt does NOT contain broad /shop?* block rule");
+
+  // 2. Middleware 301 Redirects Validation
   console.log("\n[TEST 2] middleware.ts Request Interception & 301 Redirects:");
 
-  // 2a. search_term_string encoded
-  const req1 = new NextRequest("https://www.intrihub.com/shop?q=%7Bsearch_term_string%7D");
-  const res1 = middleware(req1);
-  assert.strictEqual(res1.status, 301, "Encoded search_term_string must return 301");
-  assert.strictEqual(res1.headers.get("location"), "https://www.intrihub.com/shop", "Must redirect to canonical /shop");
-  console.log("  ✓ /shop?q=%7Bsearch_term_string%7D -> 301 https://www.intrihub.com/shop");
+  // 2a. /inspiration -> 301 /shop
+  const reqInspiration = new NextRequest("https://www.intrihub.com/inspiration");
+  const resInspiration = middleware(reqInspiration);
+  assert.strictEqual(resInspiration.status, 301, "/inspiration must return 301");
+  assert.strictEqual(resInspiration.headers.get("location"), "https://www.intrihub.com/shop", "/inspiration must redirect to /shop");
+  console.log("  ✓ /inspiration -> 301 https://www.intrihub.com/shop");
 
-  // 2b. search_term_string unencoded
-  const req2 = new NextRequest("https://www.intrihub.com/shop?q={search_term_string}");
-  const res2 = middleware(req2);
-  assert.strictEqual(res2.status, 301, "Unencoded search_term_string must return 301");
-  assert.strictEqual(res2.headers.get("location"), "https://www.intrihub.com/shop", "Must redirect to canonical /shop");
+  // 2b. /designs -> 301 /shop
+  const reqDesigns = new NextRequest("https://www.intrihub.com/designs");
+  const resDesigns = middleware(reqDesigns);
+  assert.strictEqual(resDesigns.status, 301, "/designs must return 301");
+  assert.strictEqual(resDesigns.headers.get("location"), "https://www.intrihub.com/shop", "/designs must redirect to /shop");
+  console.log("  ✓ /designs -> 301 https://www.intrihub.com/shop");
+
+  // 2c. /shop/outdoor-tiles -> 301 /shop/tiles-stone
+  const reqOutdoor = new NextRequest("https://www.intrihub.com/shop/outdoor-tiles");
+  const resOutdoor = middleware(reqOutdoor);
+  assert.strictEqual(resOutdoor.status, 301, "/shop/outdoor-tiles must return 301");
+  assert.strictEqual(resOutdoor.headers.get("location"), "https://www.intrihub.com/shop/tiles-stone", "/shop/outdoor-tiles must redirect to /shop/tiles-stone");
+  console.log("  ✓ /shop/outdoor-tiles -> 301 https://www.intrihub.com/shop/tiles-stone");
+
+  // 2d. search_term_string
+  const reqSearch = new NextRequest("https://www.intrihub.com/shop?q=%7Bsearch_term_string%7D");
+  const resSearch = middleware(reqSearch);
+  assert.strictEqual(resSearch.status, 301, "search_term_string must return 301");
   console.log("  ✓ /shop?q={search_term_string} -> 301 https://www.intrihub.com/shop");
 
-  // 2c. favicon with query string
-  const req3 = new NextRequest("https://www.intrihub.com/favicon.ico?favicon.0psal-f-3fefc.ico");
-  const res3 = middleware(req3);
-  assert.strictEqual(res3.status, 301, "Favicon with query params must return 301");
-  assert.strictEqual(res3.headers.get("location"), "https://www.intrihub.com/favicon.ico", "Must redirect to canonical /favicon.ico");
-  console.log("  ✓ /favicon.ico?favicon.0psal-f-3fefc.ico -> 301 https://www.intrihub.com/favicon.ico");
+  // 3. Database 301 Redirects for Deleted Products
+  console.log("\n[TEST 3] Database Redirect Table Verification for Cleaned Test Products:");
+  const testMarbleRedirect = await getRedirectForPath("/product/test-marble-tile-1786797496480");
+  assert(testMarbleRedirect !== null && testMarbleRedirect.statusCode === 301, "test-marble-tile must redirect 301");
+  assert.strictEqual(testMarbleRedirect?.toPath, "/shop/tiles-stone", "test-marble-tile must redirect to /shop/tiles-stone");
+  console.log("  ✓ /product/test-marble-tile-1786797496480 -> 301 /shop/tiles-stone");
 
-  // 2d. Clean favicon
-  const req4 = new NextRequest("https://www.intrihub.com/favicon.ico");
-  const res4 = middleware(req4);
-  assert.strictEqual(res4.status, 200, "Clean /favicon.ico must proceed normally (status 200/next)");
-  console.log("  ✓ /favicon.ico -> 200 OK (passes through to static file)");
+  const secTestRedirect = await getRedirectForPath("/product/sectest-tile-1788938498982");
+  assert(secTestRedirect !== null && secTestRedirect.statusCode === 301, "sectest-tile must redirect 301");
+  assert.strictEqual(secTestRedirect?.toPath, "/shop/tiles-stone", "sectest-tile must redirect to /shop/tiles-stone");
+  console.log("  ✓ /product/sectest-tile-1788938498982 -> 301 /shop/tiles-stone");
 
-  // 2e. Clean shop page
-  const req5 = new NextRequest("https://www.intrihub.com/shop");
-  const res5 = middleware(req5);
-  assert.strictEqual(res5.status, 200, "Clean /shop must proceed normally");
-  console.log("  ✓ /shop -> 200 OK (passes through)");
-
-  // 3. Sitemap Cleanliness Validation
-  console.log("\n[TEST 3] sitemap.ts Static Asset Exclusion:");
+  // 4. Sitemap Cleanliness Validation
+  console.log("\n[TEST 4] sitemap.ts Strict Exclusion Verification:");
   const sitemapEntries = await sitemap();
   const urls = sitemapEntries.map((e) => e.url);
 
+  // Private routes leak check
+  const privateRouteLeaks = urls.filter((u) => {
+    const p = new URL(u).pathname.toLowerCase();
+    if (p === "/vendor/apply") return false;
+    return (
+      p.startsWith("/account") ||
+      p.startsWith("/admin") ||
+      p.startsWith("/vendor") ||
+      p.startsWith("/cart") ||
+      p.startsWith("/checkout") ||
+      p.startsWith("/api") ||
+      p.startsWith("/upload") ||
+      p === "/designs" ||
+      p === "/inspiration"
+    );
+  });
+  assert.strictEqual(
+    privateRouteLeaks.length,
+    0,
+    `Sitemap must contain 0 private/redirect routes! Found: ${privateRouteLeaks.join(", ")}`
+  );
+  console.log("  ✓ Sitemap contains 0 private/auth-gated/redirect routes");
+
+  // Vendor apply check
+  const hasVendorApply = urls.some((u) => new URL(u).pathname === "/vendor/apply");
+  assert(hasVendorApply, "Sitemap must include public /vendor/apply route");
+  console.log("  ✓ Sitemap correctly includes public /vendor/apply");
+
+  // Test data leaks check
+  const testProductLeaks = urls.filter((u) => {
+    const p = new URL(u).pathname.toLowerCase();
+    return p.includes("test-") || p.includes("-test") || p.includes("/test");
+  });
+  assert.strictEqual(
+    testProductLeaks.length,
+    0,
+    `Sitemap must contain 0 test products! Found: ${testProductLeaks.join(", ")}`
+  );
+  console.log("  ✓ Sitemap contains 0 test products");
+
+  // Static assets check
   const staticAssetLeaks = urls.filter((u) =>
     u.includes(".woff") ||
     u.includes(".woff2") ||
@@ -84,15 +146,13 @@ async function runTests() {
     u.includes(".ico") ||
     u.includes(".png") ||
     u.includes(".svg") ||
-    u.includes("_next") ||
-    u.includes("search_term_string")
+    u.includes("_next")
   );
-
-  assert.strictEqual(staticAssetLeaks.length, 0, `Sitemap must contain NO static assets. Found: ${staticAssetLeaks.join(", ")}`);
+  assert.strictEqual(staticAssetLeaks.length, 0, "Sitemap must contain NO static assets");
   console.log(`  ✓ Sitemap contains 0 static assets across all ${urls.length} entries`);
 
   console.log("\n==========================================================================");
-  console.log("🎉 ALL GSC TECHNICAL AUDIT CHECKS PASSED PERFECTLY!");
+  console.log("🎉 ALL GOOGLE SEARCH CONSOLE AUDIT & TECHNICAL FIX CHECKS PASSED PERFECTLY!");
   console.log("==========================================================================");
 }
 

@@ -43,7 +43,7 @@ const DEFAULT_DESKTOP_SLIDES: BannerSlide[] = [
     headline: "Outdoor Balcony & Patio Pavers",
     subtext: "R11 anti-slip textured porcelain pavers designed for heavy Bangalore rains and garden terraces.",
     ctaText: "Browse Outdoor Tiles",
-    ctaHref: "/shop/outdoor-tiles",
+    ctaHref: "/shop/tiles-stone",
     image: "/placeholders/banner.svg",
     accentColor: "#2F7A4F",
   },

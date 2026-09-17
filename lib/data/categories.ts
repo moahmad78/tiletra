@@ -265,7 +265,7 @@ export const categories: Category[] = [
 
 export function getCategoryBySlug(slug: string): Category | undefined {
   // Alias support for legacy links
-  if (slug === "floor-tiles" || slug === "granite") return categories.find((c) => c.slug === "tiles-stone");
+  if (slug === "floor-tiles" || slug === "granite" || slug === "outdoor-tiles") return categories.find((c) => c.slug === "tiles-stone");
   if (slug === "plumbing") return categories.find((c) => c.slug === "plumbing-sanitary");
   if (slug === "hardware") return categories.find((c) => c.slug === "hardware-fittings");
   if (slug === "ceiling-pop") return categories.find((c) => c.slug === "false-ceiling");

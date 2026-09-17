@@ -8,6 +8,41 @@ import { SEO_LOCATIONS } from "@/lib/data/seo-locations";
 
 export const revalidate = 3600; // Revalidate every 1 hour
 
+// Strict regex patterns for paths that MUST NEVER appear in public sitemap
+const EXCLUDED_SITEMAP_PATTERNS = [
+  /^\/account(\/.*)?$/i,
+  /^\/admin(\/.*)?$/i,
+  /^\/vendor(?!\/apply$).*$/i, // excludes /vendor/* except /vendor/apply
+  /^\/cart(\/.*)?$/i,
+  /^\/checkout(\/.*)?$/i,
+  /^\/checkout-v2(\/.*)?$/i,
+  /^\/api(\/.*)?$/i,
+  /^\/upload(\/.*)?$/i,
+  /^\/designs(\/.*)?$/i, // Redirects to /shop
+  /^\/inspiration(\/.*)?$/i, // Redirects to /shop
+];
+
+function isPublicIndexableUrl(urlStr: string): boolean {
+  try {
+    const parsed = new URL(urlStr);
+    const path = parsed.pathname.toLowerCase();
+
+    // Must not match any excluded private/auth pattern
+    if (EXCLUDED_SITEMAP_PATTERNS.some((pattern) => pattern.test(path))) {
+      return false;
+    }
+
+    // Must not contain obvious test product slugs
+    if (path.includes("test-") || path.includes("-test") || path.includes("/test")) {
+      return false;
+    }
+
+    return true;
+  } catch {
+    return false;
+  }
+}
+
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   const staticRoutes: MetadataRoute.Sitemap = [
     {
@@ -71,9 +106,9 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
       priority: 0.6,
     },
     {
-      url: `${BASE_SITE_URL}/designs`,
+      url: `${BASE_SITE_URL}/vendor/apply`,
       lastModified: new Date(),
-      changeFrequency: "weekly",
+      changeFrequency: "monthly",
       priority: 0.7,
     },
     {
@@ -131,6 +166,12 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
         where: {
           approvalStatus: "approved",
           status: "active",
+          NOT: {
+            OR: [
+              { slug: { contains: "test", mode: "insensitive" } },
+              { name: { contains: "test", mode: "insensitive" } },
+            ],
+          },
         },
         select: { slug: true, updatedAt: true },
         take: 5000,
@@ -146,11 +187,11 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
       products.length > 0
         ? products
         : defaultProducts
-            .filter((p) => (p.status || "active") === "active")
+            .filter((p) => (p.status || "active") === "active" && !p.slug.toLowerCase().includes("test"))
             .map((p) => ({ slug: p.slug, updatedAt: new Date() }));
 
     const categoryRoutes: MetadataRoute.Sitemap = resolvedCategories
-      .filter((cat) => Boolean(cat.slug))
+      .filter((cat) => Boolean(cat.slug) && !cat.slug.toLowerCase().includes("test"))
       .map((cat) => ({
         url: `${BASE_SITE_URL}/shop/${encodeURIComponent(cat.slug)}`,
         lastModified: cat.updatedAt instanceof Date ? cat.updatedAt : new Date(),
@@ -159,7 +200,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
       }));
 
     const productRoutes: MetadataRoute.Sitemap = resolvedProducts
-      .filter((prod) => Boolean(prod.slug))
+      .filter((prod) => Boolean(prod.slug) && !prod.slug.toLowerCase().includes("test"))
       .map((prod) => ({
         url: `${BASE_SITE_URL}/product/${encodeURIComponent(prod.slug)}`,
         lastModified: prod.updatedAt instanceof Date ? prod.updatedAt : new Date(),
@@ -169,7 +210,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
 
     // Location sub-page routes: category × location matrix
     const locationRoutes: MetadataRoute.Sitemap = resolvedCategories
-      .filter((cat) => Boolean(cat.slug))
+      .filter((cat) => Boolean(cat.slug) && !cat.slug.toLowerCase().includes("test"))
       .flatMap((cat) =>
         SEO_LOCATIONS.map((loc) => ({
           url: `${BASE_SITE_URL}/shop/${encodeURIComponent(cat.slug)}/${loc.slug}`,
@@ -179,12 +220,18 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
         }))
       );
 
-    // Deduplicate entries by canonical URL
-    const allRoutes = [...staticRoutes, ...guideRoutes, ...categoryRoutes, ...locationRoutes, ...productRoutes];
+    // Deduplicate entries by canonical URL and filter out non-public/private/test URLs
+    const allRoutes = [
+      ...staticRoutes,
+      ...guideRoutes,
+      ...categoryRoutes,
+      ...locationRoutes,
+      ...productRoutes,
+    ];
 
     const uniqueMap = new Map<string, MetadataRoute.Sitemap[number]>();
     for (const route of allRoutes) {
-      if (!uniqueMap.has(route.url)) {
+      if (!uniqueMap.has(route.url) && isPublicIndexableUrl(route.url)) {
         uniqueMap.set(route.url, route);
       }
     }
@@ -194,7 +241,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     console.error("Error generating dynamic sitemap from DB, falling back to static catalog:", error);
 
     const fallbackCategoryRoutes: MetadataRoute.Sitemap = defaultCategories
-      .filter((cat) => Boolean(cat.slug))
+      .filter((cat) => Boolean(cat.slug) && !cat.slug.toLowerCase().includes("test"))
       .map((cat) => ({
         url: `${BASE_SITE_URL}/shop/${encodeURIComponent(cat.slug)}`,
         lastModified: new Date(),
@@ -203,7 +250,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
       }));
 
     const fallbackProductRoutes: MetadataRoute.Sitemap = defaultProducts
-      .filter((p) => Boolean(p.slug) && (p.status || "active") === "active")
+      .filter((p) => Boolean(p.slug) && (p.status || "active") === "active" && !p.slug.toLowerCase().includes("test"))
       .map((prod) => ({
         url: `${BASE_SITE_URL}/product/${encodeURIComponent(prod.slug)}`,
         lastModified: new Date(),
@@ -220,7 +267,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
 
     const uniqueMap = new Map<string, MetadataRoute.Sitemap[number]>();
     for (const route of allFallback) {
-      if (!uniqueMap.has(route.url)) {
+      if (!uniqueMap.has(route.url) && isPublicIndexableUrl(route.url)) {
         uniqueMap.set(route.url, route);
       }
     }
