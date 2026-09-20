@@ -11,9 +11,9 @@ export default function Hero() {
   const [currentSlide, setCurrentSlide] = useState(0);
 
   const images = [
-    "/placeholders/banner.svg",
-    "/placeholders/banner.svg",
-    "/placeholders/banner.svg",
+    "https://images.unsplash.com/photo-1616486338812-3dadae4b4ace?w=1600&q=85",
+    "https://images.unsplash.com/photo-1507652313519-d4e9174996dd?w=1600&q=85",
+    "https://images.unsplash.com/photo-1552321554-5fefe8c9ef14?w=1600&q=85",
   ];
 
   useEffect(() => {

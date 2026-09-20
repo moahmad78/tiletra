@@ -39,10 +39,10 @@ export default function WhyChooseUs() {
           >
             {/* eslint-disable-next-line @next/next/no-img-element */}
             <img 
-              src="/placeholders/product.svg" 
+              src="/about/quality-inspection.jpg" 
               alt="Premium tile installation craftsmanship"
               className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-105"
-              onError={(e) => { e.currentTarget.src = "/placeholders/product.svg"; }}
+              onError={(e) => { e.currentTarget.src = "/about/quality-inspection.jpg"; }}
             />
             {/* Subtle Gradient Overlay */}
             <div className="absolute inset-0 bg-gradient-to-t from-black/30 to-transparent pointer-events-none" />

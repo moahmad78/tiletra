@@ -8,35 +8,35 @@ import { useQuoteModal } from "@/components/QuoteModalProvider";
 const services = [
   {
     title: "Floor Tile Installation",
-    image: "/placeholders/product.svg",
+    image: "https://images.orientbell.com/media/catalog/product//g/o/golden_drift_endless_gloss_600x1200_mm.jpg",
   },
   {
     title: "Wall Tile Installation",
-    image: "/placeholders/product.svg",
+    image: "https://images.unsplash.com/photo-1584622650111-993a426fbf0a?w=800&q=80",
   },
   {
     title: "Bathroom Tile Installation",
-    image: "/placeholders/product.svg",
+    image: "https://images.unsplash.com/photo-1552321554-5fefe8c9ef14?w=800&q=80",
   },
   {
     title: "Kitchen Tile Installation",
-    image: "/placeholders/product.svg",
+    image: "https://images.unsplash.com/photo-1507652313519-d4e9174996dd?w=800&q=80",
   },
   {
     title: "Marble Flooring",
-    image: "/placeholders/product.svg",
+    image: "https://images.unsplash.com/photo-1600585154340-be6161a56a0c?w=800&q=80",
   },
   {
     title: "Granite Installation",
-    image: "/placeholders/product.svg",
+    image: "/api/uploads/1000055839-1787431945616-8hd9g.webp",
   },
   {
     title: "Commercial Tile Work",
-    image: "/placeholders/product.svg",
+    image: "https://images.unsplash.com/photo-1616486338812-3dadae4b4ace?w=800&q=80",
   },
   {
     title: "Tile Repair & Replacement",
-    image: "/placeholders/product.svg",
+    image: "/api/uploads/1000055745-1787426118116-lov83.webp",
   }
 ];
 

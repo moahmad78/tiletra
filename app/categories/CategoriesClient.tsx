@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useMemo } from "react";
+import { useState, useEffect, useMemo } from "react";
 import Link from "next/link";
 import Image from "next/image";
 import {
@@ -59,6 +59,12 @@ function SafeCategoryBox({
   onClick: () => void;
 }) {
   const [imgSrc, setImgSrc] = useState(category.image || "/placeholders/category.svg");
+
+  useEffect(() => {
+    if (category.image) {
+      setImgSrc(category.image);
+    }
+  }, [category.image]);
 
   return (
     <button

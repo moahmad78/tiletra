@@ -8,37 +8,37 @@ const projects = [
     id: 1,
     title: "Luxury Marble Flooring Bangalore",
     category: "Residential Flooring",
-    image: "/placeholders/product.svg",
+    image: "https://images.unsplash.com/photo-1600585154340-be6161a56a0c?w=800&q=80",
   },
   {
     id: 2,
     title: "Premium Bathroom Tiles Installation",
     category: "Bathroom Renovation",
-    image: "/placeholders/product.svg",
+    image: "https://images.unsplash.com/photo-1552321554-5fefe8c9ef14?w=800&q=80",
   },
   {
     id: 3,
     title: "Commercial Granite Lobby",
     category: "Commercial Tile Contractor",
-    image: "/placeholders/product.svg",
+    image: "/api/uploads/1000055839-1787431945616-8hd9g.webp",
   },
   {
     id: 4,
     title: "Outdoor Patio Stonework",
     category: "Exterior Tiling",
-    image: "/placeholders/product.svg",
+    image: "https://m.media-amazon.com/images/I/71AUq34dfvL._AC_UF1000,1000_QL80_.jpg",
   },
   {
     id: 5,
     title: "Restaurant Feature Wall Tiles",
     category: "Wall Tile Installation",
-    image: "/placeholders/product.svg",
+    image: "https://images.unsplash.com/photo-1584622650111-993a426fbf0a?w=800&q=80",
   },
   {
     id: 6,
     title: "Walk-in Shower Enclosure",
     category: "Waterproof Tiling",
-    image: "/placeholders/product.svg",
+    image: "https://images.orientbell.com/media/catalog/product//g/o/golden_drift_endless_gloss_600x1200_mm.jpg",
   },
 ];
 
