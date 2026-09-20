@@ -72,7 +72,7 @@ export async function generateMetadata({
     },
     twitter: {
       card: "summary_large_image",
-      title,
+      title: `${cleanTitle} | IntriHub`,
       description,
       images: ["https://intrihub.com/og-image.png"],
     },

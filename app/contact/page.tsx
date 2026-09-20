@@ -8,14 +8,14 @@ import { BASE_SITE_URL, getCanonicalUrl, generateBreadcrumbSchema } from "@/lib/
 import JsonLd from "@/components/JsonLd";
 
 export const metadata: Metadata = {
-  title: "Contact IntriHub | Building & Interior Materials Marketplace Bengaluru",
+  title: "Contact Us — Trade & Site Support",
   description:
     "Contact IntriHub for direct-from-factory building supplies, contractor bulk trade pricing, and 60-minute site delivery in Bengaluru. Registered Office: Begur, Bengaluru.",
   alternates: {
     canonical: getCanonicalUrl("/contact"),
   },
   openGraph: {
-    title: "Contact IntriHub | Building & Interior Materials Marketplace",
+    title: "Contact Us — Trade & Site Support | IntriHub",
     description:
       "Get in touch with IntriHub for building materials, bulk material quotations, and 60-minute site delivery in Bengaluru.",
     url: getCanonicalUrl("/contact"),
