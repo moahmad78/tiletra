@@ -1,5 +1,5 @@
 import { useState, useRef, useEffect } from "react";
-import { View, Text, StyleSheet, Dimensions, FlatList, TouchableOpacity } from "react-native";
+import { View, Text, StyleSheet, useWindowDimensions, FlatList, TouchableOpacity } from "react-native";
 import { Image } from "expo-image";
 import { LinearGradient } from "expo-linear-gradient";
 import { useRouter } from "expo-router";
@@ -7,9 +7,7 @@ import { OfferBanner } from "../types";
 import { COLORS, SPACING, RADIUS } from "../constants/theme";
 import { getImageUrl } from "../constants/config";
 
-const { width } = Dimensions.get("window");
-const BANNER_WIDTH = width - SPACING.lg * 2;
-const BANNER_HEIGHT = 160;
+const DEFAULT_BANNER_HEIGHT = 160;
 
 interface BannerCarouselProps {
   banners: OfferBanner[];
@@ -36,6 +34,9 @@ const CATEGORY_ALIAS_MAP: Record<string, string> = {
 
 export const BannerCarousel: React.FC<BannerCarouselProps> = ({ banners }) => {
   const router = useRouter();
+  const { width: windowWidth } = useWindowDimensions();
+  const bannerWidth = Math.min(windowWidth - SPACING.lg * 2, 720);
+  const bannerHeight = windowWidth >= 768 ? 210 : windowWidth >= 600 ? 185 : DEFAULT_BANNER_HEIGHT;
   const flatListRef = useRef<FlatList>(null);
   const [activeIndex, setActiveIndex] = useState(0);
   const activeIndexRef = useRef(0);
@@ -163,11 +164,11 @@ export const BannerCarousel: React.FC<BannerCarouselProps> = ({ banners }) => {
         horizontal
         pagingEnabled
         showsHorizontalScrollIndicator={false}
-        snapToInterval={BANNER_WIDTH + SPACING.md}
+        snapToInterval={bannerWidth + SPACING.md}
         decelerationRate="fast"
         getItemLayout={(_, index) => ({
-          length: BANNER_WIDTH + SPACING.md,
-          offset: (BANNER_WIDTH + SPACING.md) * index,
+          length: bannerWidth + SPACING.md,
+          offset: (bannerWidth + SPACING.md) * index,
           index,
         })}
         onTouchStart={() => {
@@ -184,14 +185,14 @@ export const BannerCarousel: React.FC<BannerCarouselProps> = ({ banners }) => {
         }}
         onMomentumScrollEnd={(e) => {
           isInteracting.current = false;
-          const slide = Math.round(e.nativeEvent.contentOffset.x / (BANNER_WIDTH + SPACING.md));
+          const slide = Math.round(e.nativeEvent.contentOffset.x / (bannerWidth + SPACING.md));
           const safeSlide = Math.max(0, Math.min(slide, data.length - 1));
           activeIndexRef.current = safeSlide;
           setActiveIndex(safeSlide);
         }}
         renderItem={({ item }) => (
           <TouchableOpacity
-            style={styles.bannerCard}
+            style={[styles.bannerCard, { width: bannerWidth, height: bannerHeight }]}
             activeOpacity={0.88}
             onPress={() => handleBannerPress(item)}
           >
@@ -242,8 +243,6 @@ const styles = StyleSheet.create({
     marginVertical: SPACING.md,
   },
   bannerCard: {
-    width: BANNER_WIDTH,
-    height: BANNER_HEIGHT,
     borderRadius: RADIUS.lg,
     overflow: "hidden",
     marginHorizontal: SPACING.sm,

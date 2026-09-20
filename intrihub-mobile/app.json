@@ -3,7 +3,7 @@
     "name": "Intrihub",
     "slug": "intrihub",
     "owner": "sahil_sheikh78",
-    "version": "1.0.0",
+    "version": "1.1.3",
     "orientation": "portrait",
     "icon": "./assets/icon.png",
     "scheme": "intrihub",
@@ -15,12 +15,28 @@
       "backgroundColor": "#FFFFFF"
     },
     "ios": {
-      "supportsTablet": true,
-      "bundleIdentifier": "com.intrihub.app"
+      "supportsTablet": false,
+      "bundleIdentifier": "com.intrihub.app",
+      "buildNumber": "1",
+      "config": {
+        "usesNonExemptEncryption": false
+      },
+      "infoPlist": {
+        "ITSAppUsesNonExemptEncryption": false,
+        "NSCameraUsageDescription": "Intrihub requires access to your camera to take and upload photos for profile verification and support requests.",
+        "NSPhotoLibraryUsageDescription": "Intrihub requires access to your photo library to select and upload images for products, profiles, and order assistance.",
+        "NSLocationWhenInUseUsageDescription": "Intrihub requires your location while using the app to accurately calculate delivery times and dispatch materials to your construction site or address.",
+        "UIBackgroundModes": [
+          "remote-notification"
+        ]
+      },
+      "entitlements": {
+        "aps-environment": "production"
+      }
     },
     "android": {
       "package": "com.intrihub.app",
-      "versionCode": 3,
+      "versionCode": 6,
       "googleServicesFile": "./google-services.json",
       "adaptiveIcon": {
         "foregroundImage": "./assets/adaptive-icon.png",

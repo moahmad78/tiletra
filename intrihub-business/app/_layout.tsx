@@ -4,6 +4,7 @@ import { Stack } from "expo-router";
 import { StatusBar } from "expo-status-bar";
 import * as SplashScreen from "expo-splash-screen";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
+import { SafeAreaProvider } from "react-native-safe-area-context";
 import {
   useFonts,
   PlusJakartaSans_400Regular,
@@ -15,6 +16,8 @@ import {
 import { useAuthStore } from "../src/store/authStore";
 import { socketService } from "../src/store/socketStore";
 import { usePushNotifications } from "../src/hooks/usePushNotifications";
+import AnimatedSplashScreen from "../src/components/AnimatedSplashScreen";
+import AppUpdateModal from "../src/components/AppUpdateModal";
 import { COLORS } from "../src/constants/theme";
 
 // Keep native splash screen visible while app JS bundle loads
@@ -92,18 +95,25 @@ export default function RootLayout() {
   });
 
   const { user, initAuth } = useAuthStore();
+  const [isAppReady, setIsAppReady] = React.useState(false);
+  const [splashMounted, setSplashMounted] = React.useState(true);
   usePushNotifications();
+
+  React.useLayoutEffect(() => {
+    SplashScreen.hideAsync().catch(() => {});
+  }, []);
 
   useEffect(() => {
     async function prepare() {
       try {
-        await initAuth();
+        await Promise.all([
+          initAuth(),
+          new Promise((resolve) => setTimeout(resolve, 2200)),
+        ]);
       } catch (err) {
         console.warn("Auth init error:", err);
       } finally {
-        if (fontsLoaded || fontError) {
-          await SplashScreen.hideAsync().catch(() => {});
-        }
+        setIsAppReady(true);
       }
     }
 
@@ -121,35 +131,39 @@ export default function RootLayout() {
     };
   }, [user?.id]);
 
-  if (!fontsLoaded && !fontError) {
-    return (
-      <View style={styles.loadingContainer}>
-        <StatusBar style="light" backgroundColor={COLORS.primary} />
-        <ActivityIndicator size="large" color={COLORS.accentOrange} />
-      </View>
-    );
-  }
-
   return (
     <RootErrorBoundary>
-      <QueryClientProvider client={queryClient}>
-        <StatusBar style="light" backgroundColor={COLORS.primary} />
-        <Stack
-          screenOptions={{
-            headerShown: false,
-            contentStyle: { backgroundColor: COLORS.background },
-            animation: "slide_from_right",
-          }}
-        >
-          <Stack.Screen name="index" options={{ headerShown: false }} />
-          <Stack.Screen name="(auth)/login" options={{ headerShown: false }} />
-          <Stack.Screen name="(auth)/apply-vendor" options={{ headerShown: false }} />
-          <Stack.Screen name="(auth)/support" options={{ headerShown: false }} />
-          <Stack.Screen name="(auth)/blocked" options={{ headerShown: false }} />
-          <Stack.Screen name="(vendor)" options={{ headerShown: false }} />
-          <Stack.Screen name="(admin)" options={{ headerShown: false }} />
-        </Stack>
-      </QueryClientProvider>
+      <SafeAreaProvider>
+        <QueryClientProvider client={queryClient}>
+          <StatusBar style="light" backgroundColor={COLORS.primary} />
+          <Stack
+            screenOptions={{
+              headerShown: false,
+              contentStyle: { backgroundColor: COLORS.background },
+              animation: "slide_from_right",
+            }}
+          >
+            <Stack.Screen name="index" options={{ headerShown: false }} />
+            <Stack.Screen name="(auth)/login" options={{ headerShown: false }} />
+            <Stack.Screen name="(auth)/apply-vendor" options={{ headerShown: false }} />
+            <Stack.Screen name="(auth)/support" options={{ headerShown: false }} />
+            <Stack.Screen name="(auth)/blocked" options={{ headerShown: false }} />
+            <Stack.Screen name="(vendor)" options={{ headerShown: false }} />
+            <Stack.Screen name="(admin)" options={{ headerShown: false }} />
+          </Stack>
+
+          {/* In-App Update Popup & Notification Dispatcher */}
+          <AppUpdateModal />
+
+          {/* Animated Quick-Commerce Splash Screen Layer (Option B) */}
+          {splashMounted && (
+            <AnimatedSplashScreen
+              isAppReady={isAppReady}
+              onAnimationFinish={() => setSplashMounted(false)}
+            />
+          )}
+        </QueryClientProvider>
+      </SafeAreaProvider>
     </RootErrorBoundary>
   );
 }

@@ -171,7 +171,7 @@ export const categories: Category[] = [
     image: "/placeholders/product.svg",
     productCount: 0,
     featured: true,
-    icon: "Sparkles",
+    icon: "Palette",
   },
   // ── 15. CURTAINS & BLINDS ──────────────────────────
   {

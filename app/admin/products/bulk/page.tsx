@@ -21,7 +21,6 @@ import {
   Check,
   AlertTriangle,
   RefreshCw,
-  Sparkles,
   Info,
 } from "lucide-react";
 import { createProductsBulk } from "@/lib/actions/products";
@@ -801,7 +800,7 @@ export default function BulkProductImportPage() {
               </>
             ) : (
               <>
-                <Sparkles size={16} />
+                <Zap size={16} />
                 <span>1-Click Import All ({parsedProducts.length} Products)</span>
               </>
             )}

@@ -30,7 +30,7 @@ import {
   Bell,
   LogOut,
   ChevronRight,
-  Sparkles,
+  LayoutGrid,
   Edit2,
   CheckCircle2,
   X,
@@ -755,7 +755,7 @@ export default function AdminAccountMasterHubScreen() {
         activeOpacity={0.85}
       >
         <View style={[styles.iconBox, { backgroundColor: "#DBEAFE" }]}>
-          <Sparkles size={20} color="#1D4ED8" />
+          <LayoutGrid size={20} color="#1D4ED8" />
         </View>
         <View style={{ flex: 1 }}>
           <View style={{ flexDirection: "row", alignItems: "center", gap: 6 }}>

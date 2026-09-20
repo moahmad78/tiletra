@@ -29,7 +29,7 @@ import {
   Layers,
   FileSpreadsheet,
   CheckSquare,
-  Sparkles,
+  PackageOpen,
   X,
   Upload,
   ChevronRight,
@@ -1260,7 +1260,7 @@ export default function AdminProductsHubScreen() {
                   <ActivityIndicator size="small" color="#FFFFFF" />
                 ) : (
                   <>
-                    <Sparkles size={18} color="#FFFFFF" />
+                    <PackageOpen size={18} color="#FFFFFF" />
                     <Text style={styles.commitBtnText}>Commit & Publish to Marketplace</Text>
                   </>
                 )}
@@ -1363,7 +1363,7 @@ export default function AdminProductsHubScreen() {
                 activeOpacity={0.85}
               >
                 <View style={{ flexDirection: "row", alignItems: "center", gap: 8, flex: 1 }}>
-                  <Sparkles size={16} color="#052A51" />
+                  <Palette size={16} color="#052A51" />
                   <Text style={styles.dropdownSelectText}>{finish || "Select Finish / Look"}</Text>
                 </View>
                 <ChevronDown size={18} color="#64748B" />

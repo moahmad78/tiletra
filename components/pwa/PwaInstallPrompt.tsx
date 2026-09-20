@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from "react";
 import Image from "next/image";
-import { Download, X, Smartphone, Sparkles, Share, PlusSquare, CheckCircle2 } from "lucide-react";
+import { Download, X, Smartphone, Share, PlusSquare, CheckCircle2 } from "lucide-react";
 
 export default function PwaInstallPrompt() {
   const [deferredPrompt, setDeferredPrompt] = useState<any>(null);

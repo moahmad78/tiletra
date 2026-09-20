@@ -59,6 +59,15 @@ export function usePushNotifications() {
       (response) => {
         console.log("Push notification tapped by user:", response);
         const data = response.notification.request.content.data;
+        if (data?.storeUrl || data?.type === "app_update") {
+          const targetUrl = data.storeUrl || data.webUrl || "market://details?id=com.intrihub.business";
+          require("react-native").Linking.openURL(targetUrl).catch(() => {
+            if (data?.webUrl) {
+              require("react-native").Linking.openURL(data.webUrl).catch(() => {});
+            }
+          });
+          return;
+        }
         if (data && data.screen) {
           try {
             if (data.id) {

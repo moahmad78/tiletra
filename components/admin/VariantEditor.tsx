@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { Plus, Trash2, Copy, Sparkles, Palette, Check, Layers, Image as ImageIcon } from "lucide-react";
+import { Plus, Trash2, Copy, Palette, Check, Layers, Image as ImageIcon } from "lucide-react";
 import type { ProductVariant } from "@/lib/data/products";
 import {
   CATALOG_FINISHES,
@@ -212,7 +212,7 @@ export default function VariantEditor({
       {/* Quick 1-Click Presets */}
       <div className="flex items-center gap-1.5 flex-wrap p-2.5 bg-gray-50 rounded-xl border border-gray-200/80">
         <span className="text-[10px] font-black uppercase text-gray-500 tracking-wider flex items-center gap-1">
-          <Sparkles size={11} className="text-[#F26522]" /> Presets:
+          <Layers size={11} className="text-[#F26522]" /> Presets:
         </span>
         <button
           type="button"

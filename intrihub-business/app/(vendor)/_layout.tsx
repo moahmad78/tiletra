@@ -1,8 +1,12 @@
 import { Tabs } from "expo-router";
 import { LayoutDashboard, Package, ShoppingCart, IndianRupee, User } from "lucide-react-native";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { COLORS } from "../../src/constants/theme";
 
 export default function VendorTabsLayout() {
+  const insets = useSafeAreaInsets();
+  const bottomInset = Math.max(insets.bottom, 12);
+
   return (
     <Tabs
       screenOptions={{
@@ -12,8 +16,8 @@ export default function VendorTabsLayout() {
         tabBarStyle: {
           backgroundColor: COLORS.surface,
           borderTopColor: COLORS.border,
-          height: 68,
-          paddingBottom: 16,
+          height: 56 + bottomInset,
+          paddingBottom: bottomInset,
           paddingTop: 6,
         },
         tabBarLabelStyle: {

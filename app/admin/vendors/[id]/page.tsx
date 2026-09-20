@@ -41,7 +41,6 @@ import {
   KeyRound,
   Eye,
   EyeOff,
-  Sparkles,
 } from "lucide-react";
 import { toast } from "sonner";
 import {
@@ -609,7 +608,7 @@ export default function VendorDetailDashboardPage() {
                     onClick={generateRandomPassword}
                     className="inline-flex items-center gap-1 px-2.5 py-1 bg-white border border-amber-300 hover:bg-amber-100 text-amber-900 text-[11px] font-bold rounded-lg transition-colors cursor-pointer shadow-2xs"
                   >
-                    <Sparkles size={12} className="text-[#F26522]" />
+                    <KeyRound size={12} className="text-[#F26522]" />
                     <span>Generate Strong Password</span>
                   </button>
                 </div>

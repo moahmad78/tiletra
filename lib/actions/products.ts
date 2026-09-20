@@ -356,30 +356,55 @@ export async function getProductById(id: string, options?: { includeAllStatuses?
   }
 }
 
+const productSectionCache = new Map<string, { data: Product[]; timestamp: number }>();
+const PRODUCT_SECTION_CACHE_TTL = 1000 * 60 * 3; // 3 minutes
+
+export async function invalidateHomepageProductsCache(): Promise<void> {
+  productSectionCache.clear();
+}
+
 export async function getTrendingProducts(limit = 8): Promise<Product[]> {
-  const products = await getProducts({ isTrending: true, limit });
-  if (products.length === 0) {
-    return getProducts({ limit });
+  const cacheKey = `trending-${limit}`;
+  const cached = productSectionCache.get(cacheKey);
+  const now = Date.now();
+  if (cached && now - cached.timestamp < PRODUCT_SECTION_CACHE_TTL) {
+    return cached.data;
   }
-  return products;
+
+  const products = await getProducts({ isTrending: true, limit });
+  const result = products.length === 0 ? await getProducts({ limit }) : products;
+  productSectionCache.set(cacheKey, { data: result, timestamp: now });
+  return result;
 }
 
 export async function getBestsellers(limit = 8): Promise<Product[]> {
-  const products = await getProducts({ isBestseller: true, limit });
-  if (products.length === 0) {
-    return getProducts({ limit });
+  const cacheKey = `bestsellers-${limit}`;
+  const cached = productSectionCache.get(cacheKey);
+  const now = Date.now();
+  if (cached && now - cached.timestamp < PRODUCT_SECTION_CACHE_TTL) {
+    return cached.data;
   }
-  return products;
+
+  const products = await getProducts({ isBestseller: true, limit });
+  const result = products.length === 0 ? await getProducts({ limit }) : products;
+  productSectionCache.set(cacheKey, { data: result, timestamp: now });
+  return result;
 }
 
 export const getBestsellerProducts = getBestsellers;
 
 export async function getNewArrivals(limit = 8): Promise<Product[]> {
-  const products = await getProducts({ isNewArrival: true, limit });
-  if (products.length === 0) {
-    return getProducts({ limit });
+  const cacheKey = `newarrivals-${limit}`;
+  const cached = productSectionCache.get(cacheKey);
+  const now = Date.now();
+  if (cached && now - cached.timestamp < PRODUCT_SECTION_CACHE_TTL) {
+    return cached.data;
   }
-  return products;
+
+  const products = await getProducts({ isNewArrival: true, limit });
+  const result = products.length === 0 ? await getProducts({ limit }) : products;
+  productSectionCache.set(cacheKey, { data: result, timestamp: now });
+  return result;
 }
 
 export const getNewArrivalProducts = getNewArrivals;
@@ -552,6 +577,7 @@ export async function createProduct(input: CreateProductInput) {
       },
     });
 
+    await invalidateHomepageProductsCache();
     safeRevalidate("/shop");
     safeRevalidate(`/shop/${input.categorySlug}`);
     safeRevalidate("/admin/products");
@@ -859,6 +885,7 @@ export async function updateProduct(id: string, input: Partial<CreateProductInpu
       },
     });
 
+    await invalidateHomepageProductsCache();
     safeRevalidate("/shop");
     safeRevalidate(`/shop/${updated.categorySlug}`);
     safeRevalidate(`/product/${updated.slug}`);
@@ -914,6 +941,7 @@ export async function deleteProduct(id: string, options?: { hardDelete?: boolean
       });
     }
 
+    await invalidateHomepageProductsCache();
     safeRevalidate("/shop");
     safeRevalidate(`/shop/${existing.categorySlug}`);
     safeRevalidate(`/product/${existing.slug}`);

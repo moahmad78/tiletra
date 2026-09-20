@@ -38,7 +38,6 @@ import {
   Copy,
   Check,
   MessageCircle,
-  Sparkles,
   ChevronRight,
   Building,
   Trash2,
@@ -741,7 +740,7 @@ export default function AdminVendorsPage() {
                   disabled={actionLoading}
                   className="px-6 py-2.5 bg-[#052a51] hover:bg-[#0a3e74] text-white rounded-xl text-xs font-black shadow-md flex items-center gap-1.5"
                 >
-                  {actionLoading ? <Loader2 size={16} className="animate-spin" /> : <Sparkles size={16} className="text-[#F26522]" />}
+                  {actionLoading ? <Loader2 size={16} className="animate-spin" /> : <Store size={16} className="text-[#F26522]" />}
                   <span>Create Vendor & Generate Login</span>
                 </button>
               </div>

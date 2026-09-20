@@ -28,7 +28,6 @@ import {
   Package,
   RotateCcw,
   Send,
-  Sparkles,
   HelpCircle,
   FileText,
   MapPin,
@@ -161,7 +160,7 @@ export default function VendorPartnerSupportScreen() {
         {/* Support Hero Banner */}
         <View style={styles.heroBanner}>
           <View style={styles.badge247}>
-            <Sparkles size={12} color="#f97316" />
+            <Headphones size={12} color="#f97316" />
             <Text style={styles.badge247Text}>PRIORITY PARTNER DESK</Text>
           </View>
           <Text style={styles.heroHeading}>How can our Operations Team assist you?</Text>

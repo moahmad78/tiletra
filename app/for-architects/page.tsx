@@ -9,7 +9,6 @@ import {
   Shield,
   PhoneCall,
   Layers,
-  Sparkles,
   Award,
   Truck,
   Building2,

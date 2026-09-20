@@ -3,7 +3,7 @@
 import { useState, useEffect } from "react";
 import Image from "next/image";
 import Link from "next/link";
-import { ChevronLeft, ChevronRight, Sparkles, ArrowRight, Truck } from "lucide-react";
+import { ChevronLeft, ChevronRight, Tag, ArrowRight, Truck } from "lucide-react";
 
 export interface BannerSlide {
   id: string;
@@ -59,6 +59,77 @@ const DEFAULT_DESKTOP_SLIDES: BannerSlide[] = [
   },
 ];
 
+function BannerSlideItem({
+  slide,
+  index,
+  isActive,
+}: {
+  slide: BannerSlide;
+  index: number;
+  isActive: boolean;
+}) {
+  const [imgSrc, setImgSrc] = useState(slide.image || "/placeholders/banner.svg");
+  const accent = slide.accentColor || "#F26522";
+
+  return (
+    <div
+      className={`absolute inset-0 transition-opacity duration-700 ease-in-out ${
+        isActive ? "opacity-100 z-10" : "opacity-0 z-0 pointer-events-none"
+      }`}
+    >
+      {/* Background Photo */}
+      <Image
+        src={imgSrc}
+        alt={slide.headline}
+        fill
+        priority={index === 0}
+        fetchPriority={index === 0 ? "high" : "auto"}
+        loading={index === 0 ? "eager" : "lazy"}
+        decoding="async"
+        onError={() => setImgSrc("/placeholders/banner.svg")}
+        className="object-cover"
+        sizes="(max-width: 1400px) 100vw, 1400px"
+      />
+
+      {/* Gradient Scrim for Readability */}
+      <div className="absolute inset-0 bg-gradient-to-r from-[#052a51]/95 via-[#052a51]/75 to-transparent w-full md:w-[65%]" />
+
+      {/* Slide Content */}
+      <div className="relative z-20 h-full flex flex-col justify-center max-w-xl pl-8 lg:pl-12 pr-6 text-white">
+        <span
+          className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-black uppercase tracking-wider mb-3 w-fit shadow-xs"
+          style={{ backgroundColor: `${accent}33`, color: "#FFF", border: `1px solid ${accent}88` }}
+        >
+          <Tag size={13} className="text-[#F26522]" />
+          {slide.badge || "Special Offer"}
+        </span>
+
+        <h2 className="text-2xl lg:text-3xl xl:text-4xl font-black leading-tight tracking-tight text-white drop-shadow-sm">
+          {slide.headline}
+        </h2>
+
+        <p className="text-xs lg:text-sm text-gray-200 mt-2.5 leading-relaxed max-w-md font-medium">
+          {slide.subtext}
+        </p>
+
+        <div className="flex items-center gap-4 mt-6">
+          <Link
+            href={slide.ctaHref || "/shop"}
+            className="inline-flex items-center gap-2 px-6 py-3 bg-[#F26522] hover:bg-[#d95a1e] text-white text-xs font-black rounded-xl shadow-md transition-all hover:scale-105 active:scale-95"
+          >
+            <span>{slide.ctaText || "Shop Now"}</span>
+            <ArrowRight size={15} />
+          </Link>
+          <div className="hidden sm:flex items-center gap-2 text-xs font-bold text-gray-200 bg-white/10 px-3.5 py-2 rounded-xl backdrop-blur-xs">
+            <Truck size={14} className="text-[#F26522]" />
+            <span>Fast Site Delivery</span>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 export default function DesktopBannerCarousel({ slides }: { slides?: BannerSlide[] }) {
   const bannerSlides = slides && slides.length > 0 ? slides : DEFAULT_DESKTOP_SLIDES;
   const [current, setCurrent] = useState(0);
@@ -88,67 +159,14 @@ export default function DesktopBannerCarousel({ slides }: { slides?: BannerSlide
     >
       <div className="relative h-[320px] lg:h-[350px] rounded-3xl overflow-hidden shadow-sm border border-gray-100 bg-[#052a51]">
         {/* Slides Track */}
-        {bannerSlides.map((slide, index) => {
-          const isActive = index === current;
-          const accent = slide.accentColor || "#F26522";
-          return (
-            <div
-              key={slide.id}
-              className={`absolute inset-0 transition-opacity duration-700 ease-in-out ${
-                isActive ? "opacity-100 z-10" : "opacity-0 z-0 pointer-events-none"
-              }`}
-            >
-              {/* Background Photo */}
-              <Image
-                src={slide.image || "/placeholders/banner.svg"}
-                alt={slide.headline}
-                fill
-                priority={index === 0}
-                fetchPriority={index === 0 ? "high" : "auto"}
-                loading={index === 0 ? "eager" : "lazy"}
-                className="object-cover"
-                sizes="(max-width: 1400px) 100vw, 1400px"
-              />
-
-              {/* Gradient Scrim for Readability */}
-              <div className="absolute inset-0 bg-gradient-to-r from-[#052a51]/95 via-[#052a51]/75 to-transparent w-full md:w-[65%]" />
-
-              {/* Slide Content */}
-              <div className="relative z-20 h-full flex flex-col justify-center max-w-xl pl-8 lg:pl-12 pr-6 text-white">
-                <span
-                  className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-black uppercase tracking-wider mb-3 w-fit shadow-xs"
-                  style={{ backgroundColor: `${accent}33`, color: "#FFF", border: `1px solid ${accent}88` }}
-                >
-                  <Sparkles size={13} className="text-[#F26522]" />
-                  {slide.badge || "Special Offer"}
-                </span>
-
-                <h2 className="text-2xl lg:text-3xl xl:text-4xl font-black leading-tight tracking-tight text-white drop-shadow-sm">
-                  {slide.headline}
-                </h2>
-
-                <p className="text-xs lg:text-sm text-gray-200 mt-2.5 leading-relaxed max-w-md font-medium">
-                  {slide.subtext}
-                </p>
-
-                <div className="flex items-center gap-4 mt-6">
-                  <Link
-                    href={slide.ctaHref || "/shop"}
-                    className="inline-flex items-center gap-2 px-6 py-3 bg-[#F26522] hover:bg-[#d95a1e] text-white text-xs font-black rounded-xl shadow-md transition-all hover:scale-105 active:scale-95"
-                  >
-                    <span>{slide.ctaText || "Shop Now"}</span>
-                    <ArrowRight size={15} />
-                  </Link>
-
-                  <div className="hidden sm:flex items-center gap-1.5 text-xs text-white/80 font-bold">
-                    <Truck size={14} className="text-[#F26522]" />
-                    <span>Doorstep Delivery</span>
-                  </div>
-                </div>
-              </div>
-            </div>
-          );
-        })}
+        {bannerSlides.map((slide, index) => (
+          <BannerSlideItem
+            key={slide.id}
+            slide={slide}
+            index={index}
+            isActive={index === current}
+          />
+        ))}
 
         {/* Left Arrow Button */}
         <button

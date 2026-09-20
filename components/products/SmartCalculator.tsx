@@ -7,7 +7,7 @@ import {
   Zap,
   Layers,
   Check,
-  Sparkles,
+  Boxes,
   ArrowRight,
 } from "lucide-react";
 import type { Product, ProductVariant } from "@/lib/data/products";
@@ -381,7 +381,7 @@ export default function SmartCalculator({
           {suggestedPackCombination && (
             <div className="bg-orange-50/70 p-2.5 rounded-lg border border-orange-200/60 space-y-1">
               <span className="text-[10px] font-black text-[#052a51] uppercase tracking-wider flex items-center gap-1">
-                <Sparkles size={11} className="text-[#F26522]" />
+                <Boxes size={11} className="text-[#F26522]" />
                 <span>Recommended Pack Combination:</span>
               </span>
               <div className="flex flex-wrap gap-2 pt-0.5">

@@ -121,7 +121,7 @@ const NEW_20_TAXONOMY: NewCategoryDef[] = [
     order: 14,
     description: "Wall art, metal planters, decorative vases, table accents, rugs & ambient interior styling.",
     image: "/placeholders/product.svg",
-    icon: "Sparkles",
+    icon: "Palette",
   },
   {
     name: "Curtains & Blinds",

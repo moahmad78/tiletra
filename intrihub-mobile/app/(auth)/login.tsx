@@ -106,6 +106,14 @@ export default function LoginScreen() {
     console.log("[Google OAuth] Configured Redirect URI:", redirectUri);
   }, [redirectUri]);
 
+  const navigateAfterLogin = () => {
+    if (router.canGoBack()) {
+      router.back();
+    } else {
+      router.replace("/(tabs)/home" as any);
+    }
+  };
+
   // Countdown timer for OTP
   useEffect(() => {
     if (step !== "otp") return;
@@ -132,7 +140,7 @@ export default function LoginScreen() {
             const res = await loginWithGoogle({ accessToken, idToken });
             if (res.success && res.user) {
               setUser(res.user);
-              router.replace("/(tabs)/home" as any);
+              navigateAfterLogin();
             } else {
               setError(res.error || "Google login failed. Please try again.");
             }
@@ -168,7 +176,7 @@ export default function LoginScreen() {
               const userObj = JSON.parse(decodeURIComponent(userRaw));
               await setStoredTokens(accessToken, refreshToken);
               setUser(userObj);
-              router.replace("/(tabs)/home" as any);
+              navigateAfterLogin();
             } catch (e) {
               console.error("Deep link parse error:", e);
             }
@@ -233,7 +241,7 @@ export default function LoginScreen() {
       const res = await loginWithPassword(email.trim().toLowerCase(), password, "customer");
       if (res.success && res.user) {
         setUser(res.user);
-        router.replace("/(tabs)/home" as any);
+        navigateAfterLogin();
       } else {
         setError(res.error || "Invalid password. Please check your credentials.");
       }
@@ -262,7 +270,7 @@ export default function LoginScreen() {
 
       if (res.success && res.user) {
         setUser(res.user);
-        router.replace("/(tabs)/home" as any);
+        navigateAfterLogin();
       } else {
         setError(res.error || "Invalid verification code. Please try again.");
       }
@@ -329,7 +337,7 @@ export default function LoginScreen() {
             const userObj = JSON.parse(decodeURIComponent(userRaw));
             await setStoredTokens(accessToken, refreshToken);
             setUser(userObj);
-            router.replace("/(tabs)/home" as any);
+            navigateAfterLogin();
             return;
           }
         }

@@ -25,7 +25,7 @@ import {
   SlidersHorizontal,
   Check,
   ChevronRight,
-  Sparkles,
+  LayoutGrid,
 } from "lucide-react-native";
 import { ProductCard } from "../../src/components/ProductCard";
 import { AnimatedSearchPlaceholder } from "../../src/components/AnimatedSearchPlaceholder";
@@ -284,7 +284,7 @@ export default function CategoriesScreen() {
                       onPress={() => handleSelectCategorySuggestion(cat)}
                       activeOpacity={0.7}
                     >
-                      <Sparkles size={11} color={COLORS.accentOrange} style={{ marginRight: 4 }} />
+                      <LayoutGrid size={11} color={COLORS.accentOrange} style={{ marginRight: 4 }} />
                       <Text style={styles.matchingCatChipText}>{cat.name}</Text>
                     </TouchableOpacity>
                   ))}

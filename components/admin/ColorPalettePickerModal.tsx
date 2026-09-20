@@ -4,7 +4,6 @@ import React, { useState, useEffect } from "react";
 import {
   X,
   Palette,
-  Sparkles,
   Grid,
   Search,
   Check,
@@ -135,7 +134,7 @@ export default function ColorPalettePickerModal({
                 : "text-gray-600 hover:text-[#052a51]"
             }`}
           >
-            <Sparkles size={14} />
+            <Layers size={14} />
             <span>Dual Gradient</span>
           </button>
 

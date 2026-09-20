@@ -30,6 +30,10 @@
   --background: #ffffff;
   --foreground: #0f172a;
   --header-desktop-offset: 168px;
+  --safe-top: env(safe-area-inset-top, 0px);
+  --safe-bottom: env(safe-area-inset-bottom, 0px);
+  --safe-left: env(safe-area-inset-left, 0px);
+  --safe-right: env(safe-area-inset-right, 0px);
 }
 
 html {
@@ -74,4 +78,33 @@ body {
 .animate-border-flow {
   animation: borderFlow 3.5s linear infinite;
 }
+
+/* ==========================================================================
+   Apple iOS & Mobile Safari Optimizations
+   ========================================================================== */
+
+/* Prevent iOS Safari from auto-zooming when inputs are focused */
+@supports (-webkit-touch-callout: none) {
+  input,
+  select,
+  textarea {
+    font-size: 16px !important;
+  }
+}
+
+/* Apple Touch Target Standard (Minimum 44x44px for primary interactions) */
+.touch-target {
+  min-height: 44px;
+  min-width: 44px;
+}
+
+/* Safe area padding utilities */
+.pb-safe {
+  padding-bottom: max(env(safe-area-inset-bottom, 0px), 12px);
+}
+
+.pt-safe {
+  padding-top: max(env(safe-area-inset-top, 0px), 12px);
+}
+
 

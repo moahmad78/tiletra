@@ -1,7 +1,7 @@
 "use client";
 
 import { motion } from "framer-motion";
-import { ShieldCheck, Gem, IndianRupee, Clock, Sparkles, Target, Droplets, Smile } from "lucide-react";
+import { ShieldCheck, Gem, IndianRupee, Clock, CheckCircle2, Target, Droplets, Smile } from "lucide-react";
 import SectionHeader from "./SectionHeader";
 
 export default function WhyChooseUs() {
@@ -10,7 +10,7 @@ export default function WhyChooseUs() {
     { title: "Premium Quality", icon: Gem },
     { title: "Transparent Pricing", icon: IndianRupee },
     { title: "On-Time Delivery", icon: Clock },
-    { title: "Clean Workmanship", icon: Sparkles },
+    { title: "Clean Workmanship", icon: CheckCircle2 },
     { title: "Attention to Detail", icon: Target },
     { title: "Expert Tile Laying", icon: Droplets },
     { title: "100% Satisfaction", icon: Smile }

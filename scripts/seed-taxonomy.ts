@@ -55,7 +55,7 @@ const TAXONOMY_CATEGORIES = [
     description: "Polished South Indian granite slabs, Italian marble, step treads & kitchen countertops.",
     image: "/placeholders/product.svg",
     order: 7,
-    icon: "Sparkles",
+    icon: "Layers",
   },
   {
     name: "Ceiling & POP",

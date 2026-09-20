@@ -89,12 +89,25 @@ export async function updateStoreSettings(data: {
   }
 }
 
+let cachedBanners: { data: any[]; timestamp: number } | null = null;
+const BANNERS_CACHE_TTL = 1000 * 60 * 5; // 5 minutes in-memory cache
+
+export async function invalidateOfferBannersCache(): Promise<void> {
+  cachedBanners = null;
+}
+
 export async function getOfferBanners() {
+  const now = Date.now();
+  if (cachedBanners && now - cachedBanners.timestamp < BANNERS_CACHE_TTL) {
+    return cachedBanners.data;
+  }
+
   try {
     const banners = await prisma.offerBanner.findMany({
       where: { isActive: true },
       orderBy: { order: "asc" },
     });
+    cachedBanners = { data: banners, timestamp: now };
     return banners;
   } catch (error) {
     console.error("Error fetching banners:", error);
@@ -139,6 +152,7 @@ export async function createOfferBanner(data: {
       },
     });
 
+    await invalidateOfferBannersCache();
     safeRevalidate("/admin/content");
     safeRevalidate("/");
     safeRevalidate("/shop");
@@ -156,6 +170,7 @@ export async function updateOfferBanner(id: string, data: any) {
       data,
     });
 
+    await invalidateOfferBannersCache();
     safeRevalidate("/admin/content");
     safeRevalidate("/");
     safeRevalidate("/shop");
@@ -172,6 +187,7 @@ export async function deleteOfferBanner(id: string) {
     if (!auth.authorized) return { success: false, error: auth.error || "Unauthorized" };
     await prisma.offerBanner.delete({ where: { id } });
 
+    await invalidateOfferBannersCache();
     safeRevalidate("/admin/content");
     safeRevalidate("/");
     safeRevalidate("/shop");

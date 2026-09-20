@@ -4,7 +4,7 @@ import { useState, useMemo, useEffect, useRef } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import Link from "next/link";
 import { useSearchParams, useRouter } from "next/navigation";
-import { SlidersHorizontal, X, ChevronDown, Check, Loader2, Sparkles } from "lucide-react";
+import { SlidersHorizontal, X, ChevronDown, Check, Loader2, CheckCircle2 } from "lucide-react";
 import type { Product } from "@/lib/data/products";
 import type { Category } from "@/lib/data/categories";
 import { getLowestPrice } from "@/lib/data/products";
@@ -465,7 +465,7 @@ export default function ShopCatalogClient({
                 {!hasMore && filtered.length > 0 && (
                   <div className="mt-10 py-6 text-center border-t border-gray-200/60">
                     <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-white text-gray-500 text-xs font-bold border border-gray-200 shadow-xs">
-                      <Sparkles size={13} className="text-[#F26522]" />
+                      <CheckCircle2 size={13} className="text-[#F26522]" />
                       <span>You've seen all {filtered.length} tile designs</span>
                     </div>
                   </div>

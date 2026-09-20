@@ -13,7 +13,6 @@ import {
   X,
   Upload,
   Image as ImageIcon,
-  Sparkles,
   CheckCircle2,
   AlertTriangle,
 } from "lucide-react";

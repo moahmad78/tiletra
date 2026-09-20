@@ -20,7 +20,6 @@ import {
   Store,
   ExternalLink,
   Layers,
-  Sparkles,
   AlertCircle,
   Tag,
   Loader2,

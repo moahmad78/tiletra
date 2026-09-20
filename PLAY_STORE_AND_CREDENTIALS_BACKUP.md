@@ -9,8 +9,8 @@ This document serves as the master backup and reference for publishing, maintain
 ### Identity & Configuration
 - **Application Name**: Intrihub
 - **Package Name**: `com.intrihub.app`
-- **Current Version**: `1.0.0`
-- **Release Version Code**: `3`
+- **Current Version**: `1.1.2`
+- **Release Version Code**: `5`
 - **Target Android SDK**: API 35 (Android 15) *(Play Store requires min API 34)*
 - **Deep Link Scheme**: `intrihub://`
 - **EAS Project ID**: `7c786f97-0217-4a68-b51f-14499a3311a2`
@@ -54,8 +54,8 @@ This document serves as the master backup and reference for publishing, maintain
 ### Identity & Configuration
 - **Application Name**: Intrihub Business
 - **Package Name**: `com.intrihub.business`
-- **Current Version**: `1.0.2`
-- **Release Version Code**: `3`
+- **Current Version**: `1.0.4`
+- **Release Version Code**: `5`
 - **Deep Link Scheme**: `intrihub-biz://`
 - **Owner**: `sahil_sheikh78`
 

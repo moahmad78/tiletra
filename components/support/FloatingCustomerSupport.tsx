@@ -19,7 +19,6 @@ import {
   Store,
   FileQuestion,
   Users,
-  Sparkles,
   ShieldCheck,
 } from "lucide-react";
 import Link from "next/link";

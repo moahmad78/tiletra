@@ -73,7 +73,7 @@ export default function HomeClient({
     subtext: b.subtitle || "Premium Vitrified & Ceramic Collection",
     ctaText: b.cta || "Shop Now",
     ctaHref: b.href || "/shop",
-    image: b.image || "/placeholders/product.svg",
+    image: b.image || "/placeholders/banner.svg",
     accentColor: "#F26522",
   }));
 
@@ -85,7 +85,7 @@ export default function HomeClient({
     cta: b.cta || "Shop Now",
     href: b.href || "/shop",
     bgGradient: b.bgGradient || "from-[#052a51]/95 via-[#052a51]/80 to-transparent",
-    image: b.image || "/placeholders/product.svg",
+    image: b.image || "/placeholders/banner.svg",
   }));
 
   return (

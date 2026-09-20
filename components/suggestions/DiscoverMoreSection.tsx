@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useMemo, useRef } from "react";
 import Link from "next/link";
-import { ArrowRight, Sparkles } from "lucide-react";
+import { ArrowRight } from "lucide-react";
 import CompactProductCard from "@/components/CompactProductCard";
 import { products as defaultProducts, type Product } from "@/lib/data/products";
 

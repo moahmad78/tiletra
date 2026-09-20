@@ -11,7 +11,7 @@ import {
 import {
   X,
   Palette,
-  Sparkles,
+  Layers,
   Grid,
   Search,
   Check,
@@ -105,7 +105,7 @@ export default function ColorPalettePickerModal({
               onPress={() => setActiveTab("gradient")}
               activeOpacity={0.8}
             >
-              <Sparkles size={13} color={activeTab === "gradient" ? "#EA580C" : "#64748B"} />
+              <Layers size={13} color={activeTab === "gradient" ? "#EA580C" : "#64748B"} />
               <Text
                 style={[styles.tabBtnText, activeTab === "gradient" && styles.tabBtnTextActive]}
                 numberOfLines={1}

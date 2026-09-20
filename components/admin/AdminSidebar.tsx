@@ -18,7 +18,6 @@ import {
   ExternalLink,
   ChevronLeft,
   ChevronRight,
-  Sparkles,
   Clock,
   LogOut,
   Truck,

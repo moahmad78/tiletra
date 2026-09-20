@@ -10,7 +10,6 @@ import {
   ShieldCheck,
   ArrowRight,
   ArrowLeft,
-  Sparkles,
 } from "lucide-react";
 import { useCartStore } from "@/lib/cart-store";
 
@@ -66,7 +65,7 @@ export default function DeliveryStep({
           <div className="flex items-center gap-3">
             <div className="p-2.5 sm:p-3 bg-[#052a51] text-white rounded-xl sm:rounded-2xl shrink-0 shadow-2xs">
               {isFreeDelivery ? (
-                <Sparkles size={20} className="text-amber-300" />
+                <PackageCheck size={20} className="text-amber-300" />
               ) : isBikeDelivery ? (
                 <Bike size={20} className="text-orange-300" />
               ) : (

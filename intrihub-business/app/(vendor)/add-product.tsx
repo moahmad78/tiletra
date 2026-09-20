@@ -26,7 +26,6 @@ import {
   Plus,
   Trash2,
   Boxes,
-  Sparkles,
   ChevronDown,
   Scale,
   Ruler,
@@ -453,7 +452,7 @@ export default function AddProductScreen() {
             activeOpacity={0.85}
           >
             <View style={{ flexDirection: "row", alignItems: "center", gap: 8, flex: 1 }}>
-              <Sparkles size={16} color="#052A51" />
+              <Layers size={16} color="#052A51" />
               <Text style={styles.dropdownSelectText}>{finish || "Select Finish / Look"}</Text>
             </View>
             <ChevronDown size={18} color="#64748B" />

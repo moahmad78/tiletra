@@ -20,7 +20,6 @@ import {
   Star,
   Bell,
   LogOut,
-  Sparkles,
   LogIn,
   Camera,
   Edit2,

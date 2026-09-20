@@ -30,7 +30,6 @@ import {
   Edit2,
   Trash2,
   X,
-  Sparkles,
   ChevronRight,
   TrendingUp,
   AlertTriangle,

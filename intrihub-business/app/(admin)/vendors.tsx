@@ -25,7 +25,6 @@ import {
   Phone,
   Mail,
   Clock,
-  Sparkles,
   Plus,
   X,
   Lock,
@@ -943,7 +942,7 @@ export default function AdminVendorsHubScreen() {
                 <ActivityIndicator size="small" color="#FFFFFF" />
               ) : (
                 <>
-                  <Sparkles size={18} color="#FFFFFF" />
+                  <Store size={18} color="#FFFFFF" />
                   <Text style={styles.submitCreateBtnText}>Create & Onboard Vendor</Text>
                 </>
               )}

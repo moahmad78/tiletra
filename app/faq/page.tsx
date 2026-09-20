@@ -1,6 +1,6 @@
 import { Metadata } from "next";
 import Link from "next/link";
-import { Sparkles, ChevronRight } from "lucide-react";
+import { HelpCircle, ChevronRight } from "lucide-react";
 import Header from "@/components/Header";
 import Footer from "@/components/Footer";
 import FAQ from "@/components/FAQ";
@@ -65,7 +65,7 @@ export default function FAQPage() {
             </nav>
 
             <div className="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-full bg-white/10 text-[#F26522] text-xs font-black uppercase tracking-wider mb-4 border border-white/15">
-              <Sparkles size={13} />
+              <HelpCircle size={13} />
               <span>IntriHub Knowledge Center</span>
             </div>
 

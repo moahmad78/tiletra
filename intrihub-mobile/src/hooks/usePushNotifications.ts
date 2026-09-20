@@ -82,7 +82,14 @@ export function usePushNotifications() {
 
     responseListener.current = Notifications.addNotificationResponseReceivedListener((response) => {
       const data = response.notification.request.content.data;
-      if (data?.orderId) {
+      if (data?.storeUrl || data?.type === "app_update") {
+        const targetUrl = data.storeUrl || data.webUrl || "market://details?id=com.intrihub.app";
+        require("react-native").Linking.openURL(targetUrl).catch(() => {
+          if (data?.webUrl) {
+            require("react-native").Linking.openURL(data.webUrl).catch(() => {});
+          }
+        });
+      } else if (data?.orderId) {
         router.push(`/order/${data.orderId}` as any);
       } else if (data?.screen) {
         router.push(data.screen as any);

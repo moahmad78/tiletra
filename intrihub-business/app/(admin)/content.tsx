@@ -27,7 +27,6 @@ import {
   ArrowDown,
   Layout,
   Megaphone,
-  Sparkles,
   ExternalLink,
   ShieldCheck,
   Upload,

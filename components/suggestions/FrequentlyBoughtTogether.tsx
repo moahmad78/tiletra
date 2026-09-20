@@ -3,7 +3,7 @@
 import { useState } from "react";
 import Image from "next/image";
 import Link from "next/link";
-import { Plus, Check, ShoppingBag, Sparkles } from "lucide-react";
+import { Plus, Check, ShoppingBag, Tag } from "lucide-react";
 import { useCartStore } from "@/lib/cart-store";
 import type { Product } from "@/lib/data/products";
 import { getFrequentlyBoughtTogether, type FrequentPair } from "@/lib/recommendations";
@@ -75,7 +75,7 @@ export default function FrequentlyBoughtTogether({ product }: { product: Product
 
         {includeMain && includePaired && (
           <span className="hidden sm:inline-flex items-center gap-1 text-xs font-black text-emerald-700 bg-emerald-50 border border-emerald-200 px-3 py-1 rounded-full">
-            <Sparkles size={13} /> Save {pair.bundleDiscountPercent}% on Bundle
+            <Tag size={13} /> Save {pair.bundleDiscountPercent}% on Bundle
           </span>
         )}
       </div>

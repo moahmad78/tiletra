@@ -23,7 +23,6 @@ import {
   FileText,
   ShieldCheck,
   Palette,
-  Sparkles,
 } from "lucide-react";
 import ImageUploadManager from "@/components/admin/ImageUploadManager";
 import VariantEditor from "@/components/admin/VariantEditor";

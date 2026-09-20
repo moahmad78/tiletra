@@ -13,7 +13,7 @@ import {
   HelpCircle,
   MessageCircle,
   PhoneCall,
-  Sparkles,
+  Headphones,
   ArrowRight,
   ShieldCheck,
 } from "lucide-react";
@@ -188,7 +188,7 @@ export default function FAQ() {
         <div className="w-full lg:w-80 shrink-0 lg:sticky lg:top-28 space-y-4">
           <div className="bg-gradient-to-br from-[#052a51] to-[#0a3e74] text-white rounded-3xl p-6 shadow-sm space-y-4">
             <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-white/10 text-[#F26522] text-[11px] font-black uppercase tracking-wider border border-white/10">
-              <Sparkles size={12} />
+              <Headphones size={12} />
               <span>Direct Support</span>
             </div>
 

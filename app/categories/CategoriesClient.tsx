@@ -7,7 +7,7 @@ import {
   Search,
   ArrowLeft,
   ChevronRight,
-  Sparkles,
+  LayoutGrid,
   SlidersHorizontal,
   Package,
   Layers,
@@ -43,6 +43,65 @@ function getCategoryShortName(name: string): string {
     "Tools & Consumables": "Tools",
   };
   return map[name] || name;
+}
+
+function SafeCategoryBox({
+  category,
+  shortName,
+  isSelected,
+  priority,
+  onClick,
+}: {
+  category: Category;
+  shortName: string;
+  isSelected: boolean;
+  priority: boolean;
+  onClick: () => void;
+}) {
+  const [imgSrc, setImgSrc] = useState(category.image || "/placeholders/category.svg");
+
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      className={`flex flex-col items-center shrink-0 w-[64px] sm:w-[72px] group cursor-pointer transition-all active:scale-95 ${
+        isSelected ? "scale-105" : "opacity-85 hover:opacity-100"
+      }`}
+    >
+      <div
+        className={`w-[56px] h-[56px] sm:w-[62px] sm:h-[62px] rounded-2xl overflow-hidden relative p-0.5 border-2 transition-all ${
+          isSelected
+            ? "border-[#F26522] bg-orange-50 shadow-sm ring-2 ring-[#F26522]/20"
+            : "border-gray-200 bg-white group-hover:border-gray-300"
+        }`}
+      >
+        <div className="w-full h-full rounded-[12px] overflow-hidden relative bg-gray-100">
+          <Image
+            src={imgSrc}
+            alt={category.name}
+            fill
+            loading={priority ? "eager" : "lazy"}
+            decoding="async"
+            onError={() => setImgSrc("/placeholders/category.svg")}
+            className="object-cover group-hover:scale-110 transition-transform duration-300"
+            sizes="64px"
+          />
+          <div
+            className={`absolute inset-0 transition-colors ${
+              isSelected ? "bg-orange-500/10" : "bg-black/10 group-hover:bg-black/0"
+            }`}
+          />
+        </div>
+      </div>
+      <span
+        className={`text-[11px] font-bold mt-1.5 text-center leading-tight truncate max-w-full ${
+          isSelected ? "text-[#F26522] font-black" : "text-[#052a51] group-hover:text-[#F26522]"
+        }`}
+      >
+        {shortName}
+      </span>
+    </button>
+  );
 }
 
 export default function CategoriesClient({
@@ -206,7 +265,7 @@ export default function CategoriesClient({
                   }`}
                 >
                   <div className="w-full h-full rounded-[14px] bg-gradient-to-br from-[#052a51] to-[#0a427d] flex flex-col items-center justify-center text-white">
-                    <Sparkles size={20} className="text-[#F26522]" />
+                    <LayoutGrid size={20} className="text-[#F26522]" />
                     <span className="text-[9px] font-black uppercase tracking-wider mt-0.5">All</span>
                   </div>
                 </div>
@@ -220,50 +279,19 @@ export default function CategoriesClient({
               </button>
 
               {/* 20 Department Category Boxes */}
-              {topCategories.map((cat) => {
+              {topCategories.map((cat, idx) => {
                 const isSelected = selectedCategorySlug === cat.slug;
                 const shortName = getCategoryShortName(cat.name);
 
                 return (
-                  <button
+                  <SafeCategoryBox
                     key={cat.id}
-                    type="button"
+                    category={cat}
+                    shortName={shortName}
+                    isSelected={isSelected}
+                    priority={idx < 8}
                     onClick={() => setSelectedCategorySlug(cat.slug)}
-                    className={`flex flex-col items-center shrink-0 w-[64px] sm:w-[72px] group cursor-pointer transition-all active:scale-95 ${
-                      isSelected ? "scale-105" : "opacity-85 hover:opacity-100"
-                    }`}
-                  >
-                    <div
-                      className={`w-[56px] h-[56px] sm:w-[62px] sm:h-[62px] rounded-2xl overflow-hidden relative p-0.5 border-2 transition-all ${
-                        isSelected
-                          ? "border-[#F26522] bg-orange-50 shadow-sm ring-2 ring-[#F26522]/20"
-                          : "border-gray-200 bg-white group-hover:border-gray-300"
-                      }`}
-                    >
-                      <div className="w-full h-full rounded-[12px] overflow-hidden relative bg-gray-100">
-                        <Image
-                          src={cat.image || "/placeholders/category.svg"}
-                          alt={cat.name}
-                          fill
-                          loading="eager"
-                          className="object-cover group-hover:scale-110 transition-transform duration-300"
-                          sizes="64px"
-                        />
-                        <div
-                          className={`absolute inset-0 transition-colors ${
-                            isSelected ? "bg-orange-500/10" : "bg-black/10 group-hover:bg-black/0"
-                          }`}
-                        />
-                      </div>
-                    </div>
-                    <span
-                      className={`text-[11px] font-bold mt-1.5 text-center leading-tight truncate max-w-full ${
-                        isSelected ? "text-[#F26522] font-black" : "text-[#052a51] group-hover:text-[#F26522]"
-                      }`}
-                    >
-                      {shortName}
-                    </span>
-                  </button>
+                  />
                 );
               })}
             </div>

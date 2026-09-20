@@ -20,7 +20,6 @@ import {
   CheckCircle2,
   Clock,
   Layers,
-  Sparkles,
   Info,
   Loader2,
   Zap,

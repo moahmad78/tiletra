@@ -24,7 +24,7 @@ import {
   FileText,
   ArrowLeft,
   CheckCircle2,
-  Sparkles,
+  Store,
   MessageCircle,
   HelpCircle,
 } from "lucide-react-native";
@@ -174,7 +174,7 @@ export default function ApplyVendorScreen() {
         ) : (
           <View style={styles.formCard}>
             <View style={styles.heroBadge}>
-              <Sparkles size={16} color={COLORS.accentOrange} />
+              <Store size={16} color={COLORS.accentOrange} />
               <Text style={styles.heroBadgeText}>JOIN INTRIHUB QUICKCOMMERCE</Text>
             </View>
 

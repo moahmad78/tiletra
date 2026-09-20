@@ -14,7 +14,6 @@ import {
   Phone,
   Mail,
   MessageCircle,
-  Sparkles,
   List,
 } from "lucide-react";
 import Header from "@/components/Header";
@@ -153,7 +152,7 @@ export default function PolicyLayout({
           <div className="flex flex-col md:flex-row md:items-end justify-between gap-4">
             <div>
               <span className="inline-flex items-center gap-1.5 text-[11px] font-extrabold uppercase tracking-widest text-[#F26522] bg-[#F26522]/15 border border-[#F26522]/30 px-3 py-1 rounded-full mb-2.5">
-                <Sparkles size={12} />
+                <ShieldCheck size={12} />
                 <span>{categoryTag}</span>
               </span>
               <h1 className="text-2xl sm:text-3xl md:text-4xl lg:text-5xl font-black tracking-tight text-white">

@@ -1,7 +1,7 @@
 import { Metadata } from "next";
 import Link from "next/link";
 import Image from "next/image";
-import { ShieldCheck, Truck, Sparkles, ArrowRight, HeartHandshake, Mail, Award, MapPin } from "lucide-react";
+import { ShieldCheck, Truck, Palette, ArrowRight, HeartHandshake, Mail, Award, MapPin } from "lucide-react";
 import Header from "@/components/Header";
 import Footer from "@/components/Footer";
 import { LEADERSHIP_TEAM } from "@/lib/data/contacts";
@@ -231,7 +231,7 @@ export default function AboutPage() {
                   desc: "Specialized heavy goods packaging ensuring zero breakage in transit.",
                 },
                 {
-                  icon: Sparkles,
+                  icon: Palette,
                   title: "Curated Aesthetics",
                   desc: "Modern textures, Moroccan encaustic, Italian marble looks, and rustic stone.",
                 },

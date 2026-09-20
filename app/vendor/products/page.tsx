@@ -32,7 +32,6 @@ import {
   Package,
   Layers,
   X,
-  Sparkles,
   Upload,
 } from "lucide-react";
 import { toast } from "sonner";

@@ -20,7 +20,19 @@ function inferCalculatorType(slug: string, dbType?: string | null): string {
   return "none";
 }
 
+let cachedCategories: { data: Category[]; timestamp: number } | null = null;
+const CATEGORIES_CACHE_TTL = 1000 * 60 * 5; // 5 minutes in-memory cache
+
+export async function invalidateCategoriesCache(): Promise<void> {
+  cachedCategories = null;
+}
+
 export async function getCategories(): Promise<Category[]> {
+  const now = Date.now();
+  if (cachedCategories && now - cachedCategories.timestamp < CATEGORIES_CACHE_TTL) {
+    return cachedCategories.data;
+  }
+
   try {
     const dbCategories = await prisma.category.findMany({
       include: {
@@ -32,7 +44,7 @@ export async function getCategories(): Promise<Category[]> {
     });
 
     if (dbCategories.length > 0) {
-      return dbCategories.map((c: any) => ({
+      const formatted: Category[] = dbCategories.map((c: any) => ({
         id: c.id,
         name: c.name,
         slug: c.slug,
@@ -45,6 +57,9 @@ export async function getCategories(): Promise<Category[]> {
         calculatorType: inferCalculatorType(c.slug, c.calculatorType),
         calculatorInputType: c.calculatorInputType || "area",
       }));
+
+      cachedCategories = { data: formatted, timestamp: now };
+      return formatted;
     }
   } catch (error) {
     console.error("Error fetching categories from DB, falling back to static catalog:", error);
@@ -116,6 +131,7 @@ export async function createCategory(data: {
       },
     });
 
+    await invalidateCategoriesCache();
     safeRevalidate("/admin/categories");
     safeRevalidate("/shop");
     safeRevalidate("/");
@@ -143,6 +159,7 @@ export async function updateCategory(id: string, data: {
       data,
     });
 
+    await invalidateCategoriesCache();
     safeRevalidate("/admin/categories");
     safeRevalidate("/shop");
     safeRevalidate(`/shop/${category.slug}`);
@@ -161,6 +178,7 @@ export async function deleteCategory(id: string) {
     if (!auth.authorized) return { success: false, error: auth.error || "Unauthorized" };
     await prisma.category.delete({ where: { id } });
 
+    await invalidateCategoriesCache();
     safeRevalidate("/admin/categories");
     safeRevalidate("/shop");
     safeRevalidate("/");

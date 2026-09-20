@@ -3,7 +3,7 @@
 import { useState, useEffect, useRef } from "react";
 import Link from "next/link";
 import Image from "next/image";
-import { Sparkles, ArrowRight, Truck, Package } from "lucide-react";
+import { Tag, ArrowRight, Truck, Package } from "lucide-react";
 
 export interface MobileBannerSlide {
   id: string;
@@ -59,6 +59,66 @@ const DEFAULT_SLIDES: MobileBannerSlide[] = [
   },
 ];
 
+function MobileBannerSlideItem({
+  slide,
+  index,
+  isActive,
+}: {
+  slide: MobileBannerSlide;
+  index: number;
+  isActive: boolean;
+}) {
+  const [imgSrc, setImgSrc] = useState(slide.image || "/placeholders/banner.svg");
+
+  return (
+    <div
+      className={`absolute inset-0 transition-opacity duration-500 ease-in-out ${
+        isActive ? "opacity-100 pointer-events-auto z-10" : "opacity-0 pointer-events-none z-0"
+      }`}
+    >
+      <Link href={slide.href || "/shop"} className="block w-full h-full relative">
+        {/* Background Image */}
+        <Image
+          src={imgSrc}
+          alt={slide.title}
+          fill
+          className="object-cover"
+          sizes="(max-width: 768px) 100vw, 50vw"
+          priority={index === 0}
+          fetchPriority={index === 0 ? "high" : "auto"}
+          loading={index === 0 ? "eager" : "lazy"}
+          decoding="async"
+          onError={() => setImgSrc("/placeholders/banner.svg")}
+        />
+
+        {/* Gradient overlay */}
+        <div className={`absolute inset-0 bg-gradient-to-r ${slide.bgGradient || "from-[#052a51]/95 via-[#052a51]/80 to-transparent"}`} />
+
+        {/* Content */}
+        <div className="relative z-10 h-full flex flex-col justify-center px-4 max-w-[75%]">
+          <div className="inline-flex items-center gap-1 px-2 py-0.5 bg-[#F26522] text-white text-[9px] font-extrabold rounded-full w-fit mb-1 shadow-xs">
+            <Tag size={10} />
+            <span>{slide.badge || "Special Offer"}</span>
+          </div>
+
+          <h3 className="text-[15px] font-black text-white leading-tight tracking-tight drop-shadow-xs">
+            {slide.title}
+          </h3>
+
+          <p className="text-[11px] text-white/80 mt-0.5 line-clamp-1">
+            {slide.subtitle}
+          </p>
+
+          <div className="mt-2 inline-flex items-center gap-1 text-[11px] font-extrabold text-[#F26522] bg-white/95 px-2.5 py-1 rounded-lg w-fit shadow-xs active:scale-95 transition-transform">
+            <span>{slide.cta || "Shop Now"}</span>
+            <ArrowRight size={11} />
+          </div>
+        </div>
+      </Link>
+    </div>
+  );
+}
+
 export default function OfferBanner({ slides }: { slides?: MobileBannerSlide[] }) {
   const bannerSlides = slides && slides.length > 0 ? slides : DEFAULT_SLIDES;
   const [current, setCurrent] = useState(0);
@@ -108,56 +168,14 @@ export default function OfferBanner({ slides }: { slides?: MobileBannerSlide[] }
         onTouchMove={handleTouchMove}
         onTouchEnd={handleTouchEnd}
       >
-        {bannerSlides.map((slide, index) => {
-          const isActive = index === current;
-
-          return (
-            <div
-              key={slide.id}
-              className={`absolute inset-0 transition-opacity duration-500 ease-in-out ${
-                isActive ? "opacity-100 pointer-events-auto z-10" : "opacity-0 pointer-events-none z-0"
-              }`}
-            >
-              <Link href={slide.href || "/shop"} className="block w-full h-full relative">
-                {/* Background Image */}
-                <Image
-                  src={slide.image || "/placeholders/banner.svg"}
-                  alt={slide.title}
-                  fill
-                  className="object-cover"
-                  sizes="(max-width: 768px) 100vw, 50vw"
-                  priority={index === 0}
-                  fetchPriority={index === 0 ? "high" : "auto"}
-                  loading={index === 0 ? "eager" : "lazy"}
-                />
-
-                {/* Gradient overlay */}
-                <div className={`absolute inset-0 bg-gradient-to-r ${slide.bgGradient || "from-[#052a51]/95 via-[#052a51]/80 to-transparent"}`} />
-
-                {/* Content */}
-                <div className="relative z-10 h-full flex flex-col justify-center px-4 max-w-[75%]">
-                  <div className="inline-flex items-center gap-1 px-2 py-0.5 bg-[#F26522] text-white text-[9px] font-extrabold rounded-full w-fit mb-1 shadow-xs">
-                    <Sparkles size={10} />
-                    <span>{slide.badge || "Special Offer"}</span>
-                  </div>
-
-                  <h3 className="text-[15px] font-black text-white leading-tight tracking-tight drop-shadow-xs">
-                    {slide.title}
-                  </h3>
-
-                  <p className="text-[11px] text-white/80 mt-0.5 line-clamp-1">
-                    {slide.subtitle}
-                  </p>
-
-                  <div className="mt-2 inline-flex items-center gap-1 text-[11px] font-extrabold text-[#F26522] bg-white/95 px-2.5 py-1 rounded-lg w-fit shadow-xs active:scale-95 transition-transform">
-                    <span>{slide.cta || "Shop Now"}</span>
-                    <ArrowRight size={11} />
-                  </div>
-                </div>
-              </Link>
-            </div>
-          );
-        })}
+        {bannerSlides.map((slide, index) => (
+          <MobileBannerSlideItem
+            key={slide.id}
+            slide={slide}
+            index={index}
+            isActive={index === current}
+          />
+        ))}
 
         {/* Dot Indicators (with accessible touch target) */}
         <div className="absolute bottom-2 right-3 z-20 flex items-center gap-1 bg-black/30 backdrop-blur-xs px-1.5 py-0.5 rounded-full">

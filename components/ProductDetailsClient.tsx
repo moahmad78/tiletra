@@ -22,7 +22,6 @@ import {
   Heart,
   Zap,
   MessageSquare,
-  Sparkles,
   MessageCircle,
 } from "lucide-react";
 import type { Product, ProductVariant } from "@/lib/data/products";
@@ -594,7 +593,7 @@ export default function ProductDetailsClient({
             className="w-full flex items-center justify-between group cursor-pointer"
           >
             <h2 className="text-xl font-black text-[#052a51] flex items-center gap-2">
-              <Sparkles size={18} className="text-[#F26522]" />
+              <Package size={18} className="text-[#F26522]" />
               <span>Product Specifications & Details</span>
             </h2>
             <div className="w-8 h-8 rounded-full bg-gray-100 flex items-center justify-center text-[#052a51]">

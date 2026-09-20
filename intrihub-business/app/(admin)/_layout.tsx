@@ -7,9 +7,13 @@ import {
   ShoppingCart,
   User,
 } from "lucide-react-native";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { COLORS } from "../../src/constants/theme";
 
 export default function AdminTabsLayout() {
+  const insets = useSafeAreaInsets();
+  const bottomInset = Math.max(insets.bottom, 12);
+
   return (
     <Tabs
       screenOptions={{
@@ -19,8 +23,8 @@ export default function AdminTabsLayout() {
         tabBarStyle: {
           backgroundColor: "#FFFFFF",
           borderTopColor: "#E2E8F0",
-          height: 68,
-          paddingBottom: 16,
+          height: 56 + bottomInset,
+          paddingBottom: bottomInset,
           paddingTop: 6,
           elevation: 8,
           shadowColor: "#000",

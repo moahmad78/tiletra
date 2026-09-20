@@ -24,7 +24,6 @@ import {
   AlertCircle,
   Package,
   Layers,
-  Sparkles,
   RefreshCw,
   Tag,
   Check,
@@ -305,7 +304,7 @@ export default function AdminProductsBulkScreen() {
             </View>
 
             <TouchableOpacity style={styles.sampleBtn} onPress={handleLoadSample}>
-              <Sparkles size={16} color={COLORS.accentOrange} />
+              <FileSpreadsheet size={16} color={COLORS.accentOrange} />
               <Text style={styles.sampleBtnText}>Load Sample 5-Product Batch</Text>
             </TouchableOpacity>
           </View>

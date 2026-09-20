@@ -1,6 +1,6 @@
 import { Tabs } from "expo-router";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
-import { Home, Grid, ShoppingBag, User } from "lucide-react-native";
+import { Home, Grid, ShoppingBag, User, Package } from "lucide-react-native";
 import { COLORS } from "../../src/constants/theme";
 import { useCartStore } from "../../src/store/cartStore";
 
@@ -41,6 +41,13 @@ export default function TabLayout() {
         options={{
           title: "Shop",
           tabBarIcon: ({ color, size }: { color: string; size?: number }) => <Grid size={size || 22} color={color} />,
+        }}
+      />
+      <Tabs.Screen
+        name="orders"
+        options={{
+          title: "Orders",
+          tabBarIcon: ({ color, size }: { color: string; size?: number }) => <Package size={size || 22} color={color} />,
         }}
       />
       <Tabs.Screen

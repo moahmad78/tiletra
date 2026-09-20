@@ -8,7 +8,6 @@ import {
   Package,
   Heart,
   ChevronRight,
-  Sparkles,
   Camera,
   LogOut,
   LogIn,
@@ -228,7 +227,7 @@ export default function AccountSidebar() {
         {/* MY STUFF */}
         <div className="p-3 space-y-1">
           <div className="flex items-center gap-2.5 px-2.5 py-1.5 text-[11px] font-black text-gray-400 uppercase tracking-wider">
-            <Sparkles size={14} className="text-[#F26522]" />
+            <Package size={14} className="text-[#F26522]" />
             <span>My Stuff</span>
           </div>
 

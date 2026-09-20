@@ -2,7 +2,7 @@
 
 import Image from "next/image";
 import Link from "next/link";
-import { Plus, Check, ShoppingBag, Sparkles } from "lucide-react";
+import { Plus, Check, ShoppingBag } from "lucide-react";
 import { useCartStore } from "@/lib/cart-store";
 import { getCartAddons } from "@/lib/recommendations";
 import { getLowestPrice, getLowestBoxPrice } from "@/lib/data/products";

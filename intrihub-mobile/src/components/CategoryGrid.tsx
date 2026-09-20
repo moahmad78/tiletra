@@ -9,13 +9,14 @@ import {
   LayoutAnimation,
   Platform,
   UIManager,
+  useWindowDimensions,
 } from "react-native";
 import { Image } from "expo-image";
 import { useRouter } from "expo-router";
 import {
   Grid,
   Layers,
-  Sparkles,
+  Zap,
   Home,
   Shield,
   Hammer,
@@ -45,7 +46,7 @@ const CATEGORY_ICON_MAP: Record<string, any> = {
   "bath-fittings": Droplet,
   "tile-adhesives": Hammer,
   "granite-marble": Maximize,
-  "electricals": Sparkles,
+  "electricals": Zap,
   "paints": Flame,
   "hardware": Shield,
   "kitchen-sinks": Box,
@@ -53,6 +54,9 @@ const CATEGORY_ICON_MAP: Record<string, any> = {
 
 export const CategoryGrid: React.FC<CategoryGridProps> = ({ categories, mode = "grid" }) => {
   const router = useRouter();
+  const { width: windowWidth } = useWindowDimensions();
+  const columns = windowWidth >= 900 ? 8 : windowWidth >= 600 ? 6 : 4;
+  const itemWidthPercent = columns === 8 ? "11.5%" : columns === 6 ? "15.5%" : "23%";
   const [isExpanded, setIsExpanded] = useState(true);
   const bounceAnim = useRef(new Animated.Value(0)).current;
 
@@ -127,7 +131,7 @@ export const CategoryGrid: React.FC<CategoryGridProps> = ({ categories, mode = "
         {displayedCategories.map((cat) => (
           <TouchableOpacity
             key={cat.id || cat.slug}
-            style={styles.gridItem}
+            style={[styles.gridItem, { width: itemWidthPercent as any }]}
             onPress={() => handleCategoryPress(cat.slug)}
             activeOpacity={0.7}
           >

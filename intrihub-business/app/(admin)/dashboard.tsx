@@ -9,6 +9,7 @@ import {
   ActivityIndicator,
   Alert,
   Modal,
+  useWindowDimensions,
 } from "react-native";
 import { useRouter } from "expo-router";
 import { useQuery } from "@tanstack/react-query";
@@ -37,7 +38,6 @@ import {
   IndianRupee,
   Calendar,
   X,
-  Sparkles,
   DollarSign,
   Percent,
   MapPin,
@@ -129,6 +129,8 @@ const getFormattedAddress = (order: any) => {
 
   export default function AdminDashboardScreen() {
   const router = useRouter();
+  const { width: windowWidth } = useWindowDimensions();
+  const isWide = windowWidth >= 768;
   const [notifyingVendorId, setNotifyingVendorId] = useState<string | null>(null);
 
   // Revenue Analytics Modal State
@@ -259,7 +261,7 @@ const getFormattedAddress = (order: any) => {
         {/* Operational 4-Grid */}
         <View style={styles.statsGrid}>
           <TouchableOpacity
-            style={styles.statBox}
+            style={[styles.statBox, isWide && { minWidth: "22%" }]}
             onPress={() => router.push("/(admin)/vendors" as any)}
             activeOpacity={0.85}
           >
@@ -271,7 +273,7 @@ const getFormattedAddress = (order: any) => {
           </TouchableOpacity>
 
           <TouchableOpacity
-            style={styles.statBox}
+            style={[styles.statBox, isWide && { minWidth: "22%" }]}
             onPress={() => router.push("/(admin)/products" as any)}
             activeOpacity={0.85}
           >
@@ -283,7 +285,7 @@ const getFormattedAddress = (order: any) => {
           </TouchableOpacity>
 
           <TouchableOpacity
-            style={styles.statBox}
+            style={[styles.statBox, isWide && { minWidth: "22%" }]}
             onPress={() => router.push("/(admin)/orders" as any)}
             activeOpacity={0.85}
           >
@@ -295,7 +297,7 @@ const getFormattedAddress = (order: any) => {
           </TouchableOpacity>
 
           <TouchableOpacity
-            style={styles.statBox}
+            style={[styles.statBox, isWide && { minWidth: "22%" }]}
             onPress={() => router.push("/(admin)/users" as any)}
             activeOpacity={0.85}
           >

@@ -26,7 +26,7 @@ import {
   Calculator,
   ShoppingBag,
   Check,
-  Sparkles,
+  LayoutGrid,
   ChevronLeft,
   ChevronRight,
   MessageSquare,
@@ -778,7 +778,7 @@ export default function ProductDetailScreen() {
       {/* TASK 2: Explore More Products Header */}
       <View style={styles.exploreCatalogHeader}>
         <View style={styles.exploreCatalogTitleRow}>
-          <Sparkles size={16} color={COLORS.accentOrange} style={{ marginRight: 6 }} />
+          <LayoutGrid size={16} color={COLORS.accentOrange} style={{ marginRight: 6 }} />
           <Text style={styles.exploreCatalogTitle}>You May Also Like</Text>
         </View>
         <Text style={styles.exploreCatalogSubtitle}>

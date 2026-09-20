@@ -1,4 +1,4 @@
-import type { Metadata } from "next";
+import type { Metadata, Viewport } from "next";
 import { Plus_Jakarta_Sans } from "next/font/google";
 import { Suspense } from "react";
 import "./globals.css";
@@ -28,14 +28,26 @@ const jakarta = Plus_Jakarta_Sans({
   fallback: ["system-ui", "-apple-system", "BlinkMacSystemFont", "Segoe UI", "sans-serif"],
 });
 
+export const viewport: Viewport = {
+  width: "device-width",
+  initialScale: 1,
+  maximumScale: 5,
+  userScalable: true,
+  viewportFit: "cover",
+  themeColor: [
+    { media: "(prefers-color-scheme: light)", color: "#052a51" },
+    { media: "(prefers-color-scheme: dark)", color: "#052a51" },
+  ],
+};
+
 export const metadata: Metadata = {
   metadataBase: new URL(BASE_SITE_URL),
   title: {
-    default: "IntriHub - Construction & Interior Materials Bangalore",
+    default: "IntriHub — Build Better, We Deliver Faster",
     template: "%s | IntriHub",
   },
   description:
-    "Buy tiles, electrical, plumbing, plywood, hardware & furniture online at best prices. Fast delivery across Bengaluru & Pan-India with IntriHub.",
+    "Buy tiles, electrical, plumbing, plywood, hardware & interior supplies online at best prices. Build Better, We Deliver Faster across Bengaluru & Pan-India with IntriHub.",
   keywords: [
     "Intrihub",
     "IntriHub",
@@ -87,9 +99,9 @@ export const metadata: Metadata = {
   },
   manifest: "/site.webmanifest",
   openGraph: {
-    title: "IntriHub - Construction & Interior Materials Bangalore",
+    title: "IntriHub — Build Better, We Deliver Faster",
     description:
-      "Buy tiles, electrical, plumbing, plywood, hardware & furniture online at best prices. Delivery across Bengaluru.",
+      "Buy tiles, electrical, plumbing, plywood, hardware & interior supplies online at best prices. Delivery across Bengaluru.",
     type: "website",
     url: "https://www.intrihub.com/",
     siteName: "IntriHub",
@@ -99,15 +111,15 @@ export const metadata: Metadata = {
         url: `${BASE_SITE_URL}/og-image.png?v=2`,
         width: 1200,
         height: 630,
-        alt: "IntriHub QuickCommerce — Build Better. We Deliver Faster. Delivery in 60 Minutes — Shop Now at www.intrihub.com",
+        alt: "IntriHub — Build Better, We Deliver Faster — Instant Building & Interior Materials Delivery",
       },
     ],
   },
   twitter: {
     card: "summary_large_image",
-    title: "IntriHub - Construction & Interior Materials Bangalore",
+    title: "IntriHub — Build Better, We Deliver Faster",
     description:
-      "Buy tiles, electrical, plumbing, plywood, hardware & furniture online at best prices. Delivery across Bengaluru.",
+      "Buy tiles, electrical, plumbing, plywood, hardware & interior supplies online at best prices. Delivery across Bengaluru.",
     images: [`${BASE_SITE_URL}/og-image.png?v=2`],
   },
 };

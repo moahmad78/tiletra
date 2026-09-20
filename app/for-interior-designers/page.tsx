@@ -1,6 +1,6 @@
 import { Metadata } from "next";
 import Link from "next/link";
-import { Sparkles, Palette, Layers, Truck, ArrowRight, ShieldCheck } from "lucide-react";
+import { Palette, Layers, Truck, ArrowRight, ShieldCheck } from "lucide-react";
 import Header from "@/components/Header";
 import Footer from "@/components/Footer";
 import { getCanonicalUrl, generateBreadcrumbSchema, generateArchitectServiceSchema } from "@/lib/seo";
@@ -74,7 +74,7 @@ export default function ForInteriorDesignersPage() {
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-12">
             <div className="bg-white p-8 rounded-2xl border border-slate-200 shadow-sm">
               <div className="w-12 h-12 rounded-xl bg-purple-50 text-purple-600 flex items-center justify-center mb-5">
-                <Sparkles size={24} />
+                <Palette size={24} />
               </div>
               <h2 className="text-lg font-bold text-slate-900 mb-2">Trend-Forward Aesthetics</h2>
               <p className="text-slate-600 text-sm leading-relaxed">

@@ -7,10 +7,11 @@ import {
   FlatList,
   TouchableOpacity,
   ActivityIndicator,
+  useWindowDimensions,
 } from "react-native";
 import { useQuery, useInfiniteQuery } from "@tanstack/react-query";
 import { useRouter } from "expo-router";
-import { Sparkles, ArrowRight, TrendingUp, Award, Shield, CheckCircle2 } from "lucide-react-native";
+import { ArrowRight, TrendingUp, Award, Shield, CheckCircle2 } from "lucide-react-native";
 import { Header } from "../../src/components/Header";
 import { BannerCarousel } from "../../src/components/BannerCarousel";
 import { CategoryGrid } from "../../src/components/CategoryGrid";
@@ -22,6 +23,8 @@ import { Product } from "../../src/types";
 
 export default function HomeScreen() {
   const router = useRouter();
+  const { width: windowWidth } = useWindowDimensions();
+  const numColumns = windowWidth >= 900 ? 4 : windowWidth >= 600 ? 3 : 2;
   const [addressModalVisible, setAddressModalVisible] = useState(false);
 
   // 1. Fetch Categories & Banners
@@ -189,11 +192,12 @@ export default function HomeScreen() {
       />
 
       <FlatList
+        key={`home-products-grid-${numColumns}`}
         data={allProducts}
         keyExtractor={(item: Product) => item.id}
-        numColumns={2}
+        numColumns={numColumns}
         renderItem={({ item }: { item: Product }) => (
-          <View style={styles.gridCardWrapper}>
+          <View style={[styles.gridCardWrapper, { width: `${100 / numColumns}%` }]}>
             <ProductCard product={item} />
           </View>
         )}

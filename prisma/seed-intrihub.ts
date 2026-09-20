@@ -57,7 +57,7 @@ export async function seedIntrihub() {
       description: "Polished South Indian granite slabs, Italian marble, step treads & kitchen counters.",
       image: "/placeholders/product.svg",
       order: 6,
-      icon: "Sparkles",
+      icon: "Layers",
     },
     {
       id: "cat-7",

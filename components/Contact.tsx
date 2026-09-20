@@ -17,7 +17,6 @@ import {
   ShieldCheck,
   CheckCircle2,
   AlertCircle,
-  Sparkles,
   Send,
   Loader2,
   FileText,

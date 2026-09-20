@@ -28,7 +28,6 @@ import {
   Package,
   X,
   CheckCircle2,
-  Sparkles,
   Camera,
 } from "lucide-react-native";
 import {

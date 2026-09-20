@@ -4,6 +4,7 @@ import { Stack } from "expo-router";
 import { StatusBar } from "expo-status-bar";
 import * as SplashScreen from "expo-splash-screen";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
+import { SafeAreaProvider } from "react-native-safe-area-context";
 import {
   useFonts,
   PlusJakartaSans_400Regular,
@@ -18,6 +19,7 @@ import { useNotificationStore } from "../src/store/notificationStore";
 import { socketService } from "../src/store/socketStore";
 import { usePushNotifications } from "../src/hooks/usePushNotifications";
 import AnimatedSplashScreen from "../src/components/AnimatedSplashScreen";
+import AppUpdateModal from "../src/components/AppUpdateModal";
 import { COLORS } from "../src/constants/theme";
 
 // Keep native splash screen visible while app JS bundle loads
@@ -102,37 +104,44 @@ export default function RootLayout() {
   }, [user?.id]);
 
   return (
-    <QueryClientProvider client={queryClient}>
-      <View style={styles.rootContainer}>
-        <StatusBar style="dark" backgroundColor="transparent" translucent />
-        <Stack
-          screenOptions={{
-            headerShown: false,
-            contentStyle: { backgroundColor: COLORS.background },
-            animation: "slide_from_right",
-          }}
-        >
-          <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
-          <Stack.Screen name="(auth)/login" options={{ headerShown: false, presentation: "modal" }} />
-          <Stack.Screen name="notifications" options={{ headerShown: false }} />
-          <Stack.Screen name="wishlist" options={{ headerShown: false }} />
-          <Stack.Screen name="support" options={{ headerShown: false }} />
-          <Stack.Screen name="privacy" options={{ headerShown: false }} />
-          <Stack.Screen name="product/[id]" options={{ headerShown: false }} />
-          <Stack.Screen name="category/[slug]" options={{ headerShown: false }} />
-          <Stack.Screen name="checkout" options={{ headerShown: false }} />
-          <Stack.Screen name="order/[id]" options={{ headerShown: false }} />
-        </Stack>
+    <SafeAreaProvider>
+      <QueryClientProvider client={queryClient}>
+        <View style={styles.rootContainer}>
+          <StatusBar style="dark" backgroundColor="transparent" translucent />
+          <Stack
+            screenOptions={{
+              headerShown: false,
+              contentStyle: { backgroundColor: COLORS.background },
+              animation: "slide_from_right",
+            }}
+          >
+            <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
+            <Stack.Screen name="(auth)/login" options={{ headerShown: false, presentation: "modal" }} />
+            <Stack.Screen name="oauth" options={{ headerShown: false, animation: "none" }} />
+            <Stack.Screen name="+not-found" options={{ headerShown: false, animation: "none" }} />
+            <Stack.Screen name="notifications" options={{ headerShown: false }} />
+            <Stack.Screen name="wishlist" options={{ headerShown: false }} />
+            <Stack.Screen name="support" options={{ headerShown: false }} />
+            <Stack.Screen name="privacy" options={{ headerShown: false }} />
+            <Stack.Screen name="product/[id]" options={{ headerShown: false }} />
+            <Stack.Screen name="category/[slug]" options={{ headerShown: false }} />
+            <Stack.Screen name="checkout" options={{ headerShown: false }} />
+            <Stack.Screen name="order/[id]" options={{ headerShown: false }} />
+          </Stack>
 
-        {/* Animated Quick-Commerce Splash Screen Layer */}
-        {splashMounted && (
-          <AnimatedSplashScreen
-            isAppReady={isAppReady}
-            onAnimationFinish={() => setSplashMounted(false)}
-          />
-        )}
-      </View>
-    </QueryClientProvider>
+          {/* In-App Update Popup & Notification Dispatcher */}
+          <AppUpdateModal />
+
+          {/* Animated Quick-Commerce Splash Screen Layer */}
+          {splashMounted && (
+            <AnimatedSplashScreen
+              isAppReady={isAppReady}
+              onAnimationFinish={() => setSplashMounted(false)}
+            />
+          )}
+        </View>
+      </QueryClientProvider>
+    </SafeAreaProvider>
   );
 }
 

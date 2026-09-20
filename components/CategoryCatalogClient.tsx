@@ -3,7 +3,7 @@
 import { useState, useMemo, useEffect, useRef } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import Link from "next/link";
-import { ArrowRight, Loader2, Sparkles } from "lucide-react";
+import { ArrowRight, Loader2, Package, CheckCircle2 } from "lucide-react";
 import type { Product } from "@/lib/data/products";
 import CompactProductCard from "@/components/CompactProductCard";
 
@@ -59,7 +59,7 @@ export default function CategoryCatalogClient({
     return (
       <div className="bg-white rounded-3xl p-8 sm:p-14 text-center border border-gray-100 shadow-sm max-w-md mx-auto my-8 space-y-3">
         <div className="w-14 h-14 mx-auto rounded-2xl bg-[#F26522]/10 border border-[#F26522]/20 flex items-center justify-center text-[#F26522] mb-2">
-          <Sparkles size={24} />
+          <Package size={24} />
         </div>
         <h2 className="text-lg sm:text-xl font-black text-[#052a51]">No products in {categoryName} yet</h2>
         <p className="text-xs sm:text-sm text-gray-500 max-w-xs mx-auto leading-relaxed">
@@ -154,7 +154,7 @@ export default function CategoryCatalogClient({
       {!hasMore && products.length > 0 && (
         <div className="mt-12 py-6 text-center border-t border-gray-200/60">
           <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-white text-gray-500 text-xs font-bold border border-gray-200 shadow-xs">
-            <Sparkles size={13} className="text-[#F26522]" />
+            <CheckCircle2 size={13} className="text-[#F26522]" />
             <span>You've seen all {products.length} {products.length === 1 ? "item" : "items"} in {categoryName}</span>
           </div>
         </div>

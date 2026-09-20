@@ -13,7 +13,6 @@ import {
   ExternalLink,
   ChevronLeft,
   ChevronRight,
-  Sparkles,
   ShieldCheck,
   AlertTriangle,
   Clock,

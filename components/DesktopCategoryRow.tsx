@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef, useCallback } from "react";
+import { useState, useEffect, useRef, useCallback } from "react";
 import Link from "next/link";
 import Image from "next/image";
 import { ChevronLeft, ChevronRight, ArrowRight } from "lucide-react";
@@ -8,6 +8,53 @@ import type { Category } from "@/lib/data/categories";
 
 interface DesktopCategoryRowProps {
   categories: Category[];
+}
+
+function SafeDesktopCategoryCard({
+  cat,
+  isPriority = false,
+  isCloned = false,
+}: {
+  cat: Category;
+  isPriority?: boolean;
+  isCloned?: boolean;
+}) {
+  const [imgSrc, setImgSrc] = useState(cat.image || "/placeholders/category.svg");
+
+  return (
+    <Link
+      key={`${isCloned ? "d-clone-" : "d-orig-"}${cat.slug}`}
+      href={`/shop/${cat.slug}`}
+      tabIndex={isCloned ? -1 : 0}
+      className="shrink-0 w-[155px] sm:w-[165px] lg:w-[175px] group"
+    >
+      <div className="bg-white rounded-2xl p-2 border border-gray-200/90 shadow-2xs hover:shadow-md hover:border-[#F26522] transition-all text-center flex flex-col h-full active:scale-98">
+        <div className="relative w-full h-[115px] sm:h-[120px] rounded-xl overflow-hidden bg-gray-100 shrink-0">
+          <Image
+            src={imgSrc}
+            alt={cat.name}
+            fill
+            loading={isPriority ? "eager" : "lazy"}
+            decoding="async"
+            onError={() => setImgSrc("/placeholders/category.svg")}
+            className="object-cover group-hover:scale-108 transition-transform duration-300"
+            sizes="175px"
+          />
+          <div className="absolute inset-0 bg-gradient-to-t from-black/20 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
+        </div>
+
+        <div className="px-1 pt-2 pb-1 flex flex-col items-center justify-between flex-1">
+          <p className="text-xs sm:text-sm font-bold text-[#052a51] group-hover:text-[#F26522] transition-colors leading-tight line-clamp-1">
+            {cat.name}
+          </p>
+          <span className="text-[11px] text-gray-500 font-semibold mt-1 inline-flex items-center gap-0.5 group-hover:text-[#F26522] transition-colors">
+            {cat.productCount > 0 ? `${cat.productCount} Items` : "Explore"}
+            <ArrowRight size={10} className="opacity-0 group-hover:opacity-100 transition-opacity" />
+          </span>
+        </div>
+      </div>
+    </Link>
+  );
 }
 
 export default function DesktopCategoryRow({ categories }: DesktopCategoryRowProps) {
@@ -140,110 +187,39 @@ export default function DesktopCategoryRow({ categories }: DesktopCategoryRowPro
             className="flex items-center will-change-transform transform-gpu"
             style={{ transform: "translate3d(0, 0, 0)" }}
           >
-            {/* Set 1: Measured set */}
+            {/* Set 1: Measured set - only first 8 are eager */}
             <div ref={singleSetRef} className="flex items-center gap-3.5 pr-3.5 shrink-0">
-              {topCategories.map((cat) => (
-                <Link
+              {topCategories.map((cat, idx) => (
+                <SafeDesktopCategoryCard
                   key={`d1-${cat.slug}`}
-                  href={`/shop/${cat.slug}`}
-                  className="shrink-0 w-[155px] sm:w-[165px] lg:w-[175px] group"
-                >
-                  <div className="bg-white rounded-2xl p-2 border border-gray-200/90 shadow-2xs hover:shadow-md hover:border-[#F26522] transition-all text-center flex flex-col h-full active:scale-98">
-                    <div className="relative w-full h-[115px] sm:h-[120px] rounded-xl overflow-hidden bg-gray-100 shrink-0">
-                      <Image
-                        src={cat.image || "/placeholders/category.svg"}
-                        alt={cat.name}
-                        fill
-                        loading="eager"
-                        className="object-cover group-hover:scale-108 transition-transform duration-300"
-                        sizes="175px"
-                      />
-                      <div className="absolute inset-0 bg-gradient-to-t from-black/20 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
-                    </div>
-
-                    <div className="px-1 pt-2 pb-1 flex flex-col items-center justify-between flex-1">
-                      <p className="text-xs sm:text-sm font-bold text-[#052a51] group-hover:text-[#F26522] transition-colors leading-tight line-clamp-1">
-                        {cat.name}
-                      </p>
-                      <span className="text-[11px] text-gray-500 font-semibold mt-1 inline-flex items-center gap-0.5 group-hover:text-[#F26522] transition-colors">
-                        {cat.productCount > 0 ? `${cat.productCount} Items` : "Explore"}
-                        <ArrowRight size={10} className="opacity-0 group-hover:opacity-100 transition-opacity" />
-                      </span>
-                    </div>
-                  </div>
-                </Link>
+                  cat={cat}
+                  isPriority={idx < 8}
+                  isCloned={false}
+                />
               ))}
             </div>
 
-            {/* Set 2: Seamless duplicated set */}
+            {/* Set 2: Seamless duplicated set - all lazy */}
             <div className="flex items-center gap-3.5 pr-3.5 shrink-0" aria-hidden="true">
               {topCategories.map((cat) => (
-                <Link
+                <SafeDesktopCategoryCard
                   key={`d2-${cat.slug}`}
-                  href={`/shop/${cat.slug}`}
-                  tabIndex={-1}
-                  className="shrink-0 w-[155px] sm:w-[165px] lg:w-[175px] group"
-                >
-                  <div className="bg-white rounded-2xl p-2 border border-gray-200/90 shadow-2xs hover:shadow-md hover:border-[#F26522] transition-all text-center flex flex-col h-full active:scale-98">
-                    <div className="relative w-full h-[115px] sm:h-[120px] rounded-xl overflow-hidden bg-gray-100 shrink-0">
-                      <Image
-                        src={cat.image || "/placeholders/category.svg"}
-                        alt={cat.name}
-                        fill
-                        loading="eager"
-                        className="object-cover group-hover:scale-108 transition-transform duration-300"
-                        sizes="175px"
-                      />
-                      <div className="absolute inset-0 bg-gradient-to-t from-black/20 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
-                    </div>
-
-                    <div className="px-1 pt-2 pb-1 flex flex-col items-center justify-between flex-1">
-                      <p className="text-xs sm:text-sm font-bold text-[#052a51] group-hover:text-[#F26522] transition-colors leading-tight line-clamp-1">
-                        {cat.name}
-                      </p>
-                      <span className="text-[11px] text-gray-500 font-semibold mt-1 inline-flex items-center gap-0.5 group-hover:text-[#F26522] transition-colors">
-                        {cat.productCount > 0 ? `${cat.productCount} Items` : "Explore"}
-                        <ArrowRight size={10} className="opacity-0 group-hover:opacity-100 transition-opacity" />
-                      </span>
-                    </div>
-                  </div>
-                </Link>
+                  cat={cat}
+                  isPriority={false}
+                  isCloned={true}
+                />
               ))}
             </div>
 
-            {/* Set 3: Buffer set */}
+            {/* Set 3: Buffer set - all lazy */}
             <div className="flex items-center gap-3.5 pr-3.5 shrink-0" aria-hidden="true">
               {topCategories.map((cat) => (
-                <Link
+                <SafeDesktopCategoryCard
                   key={`d3-${cat.slug}`}
-                  href={`/shop/${cat.slug}`}
-                  tabIndex={-1}
-                  className="shrink-0 w-[155px] sm:w-[165px] lg:w-[175px] group"
-                >
-                  <div className="bg-white rounded-2xl p-2 border border-gray-200/90 shadow-2xs hover:shadow-md hover:border-[#F26522] transition-all text-center flex flex-col h-full active:scale-98">
-                    <div className="relative w-full h-[115px] sm:h-[120px] rounded-xl overflow-hidden bg-gray-100 shrink-0">
-                      <Image
-                        src={cat.image || "/placeholders/category.svg"}
-                        alt={cat.name}
-                        fill
-                        loading="eager"
-                        className="object-cover group-hover:scale-108 transition-transform duration-300"
-                        sizes="175px"
-                      />
-                      <div className="absolute inset-0 bg-gradient-to-t from-black/20 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
-                    </div>
-
-                    <div className="px-1 pt-2 pb-1 flex flex-col items-center justify-between flex-1">
-                      <p className="text-xs sm:text-sm font-bold text-[#052a51] group-hover:text-[#F26522] transition-colors leading-tight line-clamp-1">
-                        {cat.name}
-                      </p>
-                      <span className="text-[11px] text-gray-500 font-semibold mt-1 inline-flex items-center gap-0.5 group-hover:text-[#F26522] transition-colors">
-                        {cat.productCount > 0 ? `${cat.productCount} Items` : "Explore"}
-                        <ArrowRight size={10} className="opacity-0 group-hover:opacity-100 transition-opacity" />
-                      </span>
-                    </div>
-                  </div>
-                </Link>
+                  cat={cat}
+                  isPriority={false}
+                  isCloned={true}
+                />
               ))}
             </div>
           </div>

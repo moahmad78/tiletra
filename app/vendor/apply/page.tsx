@@ -12,7 +12,6 @@ import {
   UploadCloud,
   X,
   FileCheck,
-  Sparkles,
   Zap,
   TrendingUp,
   CreditCard,
@@ -133,7 +132,7 @@ export default function VendorApplyPage() {
               <CheckCircle2 size={44} />
             </div>
             <span className="inline-flex items-center gap-1.5 px-3.5 py-1.5 bg-emerald-100/80 text-emerald-800 text-xs font-bold rounded-full mb-3">
-              <Sparkles size={14} /> Inquiry Received
+              <CheckCircle2 size={14} /> Inquiry Received
             </span>
             <h1 className="text-2xl sm:text-3xl font-black text-[#052a51] tracking-tight">
               Thanks! Our team will contact you soon.

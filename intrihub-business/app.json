@@ -3,7 +3,7 @@
     "name": "Intrihub Business",
     "slug": "intrihub-business",
     "owner": "sahil_sheikh78",
-    "version": "1.0.2",
+    "version": "1.0.4",
     "orientation": "portrait",
     "icon": "./assets/icon.png",
     "scheme": "intrihub-biz",
@@ -15,12 +15,28 @@
       "backgroundColor": "#052A51"
     },
     "ios": {
-      "supportsTablet": true,
-      "bundleIdentifier": "com.intrihub.business"
+      "supportsTablet": false,
+      "bundleIdentifier": "com.intrihub.business",
+      "buildNumber": "1",
+      "config": {
+        "usesNonExemptEncryption": false
+      },
+      "infoPlist": {
+        "ITSAppUsesNonExemptEncryption": false,
+        "NSCameraUsageDescription": "Intrihub Business requires camera access to scan barcode manifests and capture vendor verification documents.",
+        "NSPhotoLibraryUsageDescription": "Intrihub Business requires access to your photos to upload catalog products, store banners, and invoice proofs.",
+        "NSLocationWhenInUseUsageDescription": "Intrihub Business uses your location to verify warehouse dispatch points and calculate pickup routes.",
+        "UIBackgroundModes": [
+          "remote-notification"
+        ]
+      },
+      "entitlements": {
+        "aps-environment": "production"
+      }
     },
     "android": {
       "package": "com.intrihub.business",
-      "versionCode": 3,
+      "versionCode": 5,
       "googleServicesFile": "./google-services.json",
       "adaptiveIcon": {
         "foregroundImage": "./assets/adaptive-icon.png",

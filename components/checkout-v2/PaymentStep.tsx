@@ -5,7 +5,6 @@ import {
   ShieldCheck,
   Lock,
   ArrowLeft,
-  Sparkles,
   Truck,
   Check,
   Compass,
@@ -98,7 +97,7 @@ export default function PaymentStep({
           {/* Recommended Tag */}
           <div className="absolute top-0 right-0">
             <span className="inline-flex items-center gap-1 bg-gradient-to-r from-[#052a51] to-[#0A3D6B] text-white text-[10px] font-extrabold px-2.5 py-0.5 rounded-bl-xl shadow-2xs">
-              <Sparkles size={10} className="text-amber-300" /> Recommended
+              <ShieldCheck size={11} className="text-emerald-400" /> Recommended
             </span>
           </div>
 
