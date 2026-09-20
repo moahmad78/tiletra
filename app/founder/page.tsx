@@ -5,13 +5,13 @@ import JsonLd from "@/components/JsonLd";
 const canonicalUrl = getCanonicalUrl("/founder");
 
 export const metadata: Metadata = {
-  title: "Sahil Sheikh — Founder, CEO & CTO of Intrihub Quickcommerce",
+  title: "Sahil Sheikh — Founder, CEO & CTO",
   description:
     "Sahil Sheikh is the Founder, CEO and CTO of Intrihub Quickcommerce, a multi-vendor marketplace platform. Software engineer from Maharajganj, Uttar Pradesh, and alumnus of Jamia Hamdard University.",
   robots: { index: true, follow: true },
   alternates: { canonical: canonicalUrl },
   openGraph: {
-    title: "Sahil Sheikh — Founder, CEO & CTO of Intrihub Quickcommerce",
+    title: "Sahil Sheikh — Founder, CEO & CTO | IntriHub",
     description:
       "Founder story of Sahil Sheikh, who built Intrihub Quickcommerce from Bangalore, alone, against established competitors.",
     url: canonicalUrl,

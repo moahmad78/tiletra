@@ -1,7 +1,7 @@
 import { Metadata } from "next";
 
 export const metadata: Metadata = {
-  title: "Shopping Cart | Intrihub",
+  title: "Shopping Cart",
   description: "View and manage items in your Intrihub shopping cart.",
   robots: {
     index: false,

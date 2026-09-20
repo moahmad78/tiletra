@@ -1,7 +1,7 @@
 import { Metadata } from "next";
 
 export const metadata: Metadata = {
-  title: "My Wishlist | Intrihub",
+  title: "My Wishlist",
   description: "Saved interior and construction materials.",
   robots: {
     index: false,

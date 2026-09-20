@@ -5,7 +5,7 @@ import { Suspense } from "react";
 import { Metadata } from "next";
 
 export const metadata: Metadata = {
-  title: "My Account | IntriHub",
+  title: "My Account",
   description: "Manage your profile, delivery addresses, GST credentials, and track live building materials freight orders.",
   robots: {
     index: false,

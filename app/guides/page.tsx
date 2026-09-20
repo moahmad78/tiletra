@@ -8,19 +8,19 @@ import { BUYING_GUIDES } from "@/lib/guides-data";
 import { BASE_SITE_URL, getCanonicalUrl, generateBreadcrumbSchema, safeJsonLd } from "@/lib/seo";
 
 export const metadata: Metadata = {
-  title: "Interior Material Buying Guides & Calculation Tips | Intrihub",
+  title: "Interior Material Buying Guides & Tips",
   description:
     "Expert technical buying guides for tiles, granite, electricals, plumbing, and construction materials. Step-by-step quantity calculation formulas and checklists for architects and contractors.",
   alternates: {
     canonical: getCanonicalUrl("/guides"),
   },
   openGraph: {
-    title: "Interior Material Buying Guides & Calculation Tips | Intrihub",
+    title: "Interior Material Buying Guides & Tips | IntriHub",
     description:
       "Expert technical buying guides for tiles, granite, electricals, plumbing, and construction materials. Step-by-step quantity calculation formulas and checklists.",
     url: getCanonicalUrl("/guides"),
     type: "website",
-    siteName: "Intrihub",
+    siteName: "IntriHub",
     images: [
       {
         url: "/logo/intri-web-logo.png",

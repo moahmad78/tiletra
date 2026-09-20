@@ -9,7 +9,7 @@ import JsonLd from "@/components/JsonLd";
 import { getCanonicalUrl, generateBreadcrumbSchema, generateFAQSchema } from "@/lib/seo";
 
 export const metadata: Metadata = {
-  title: "Frequently Asked Questions (FAQ) | IntriHub Building Materials",
+  title: "Frequently Asked Questions (FAQ)",
   description:
     "Find answers to frequently asked questions about purchasing tiles, granite, electrical wires, sanitaryware, 60-minute site delivery in Bengaluru, returns, and factory-direct pricing on IntriHub.",
   alternates: {

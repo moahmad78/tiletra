@@ -26,24 +26,24 @@ import {
 } from "@/lib/seo";
 
 export const metadata: Metadata = {
-  title: "Bulk Construction Material Orders for Contractors | Intrihub Bangalore",
+  title: "Bulk Orders for Contractors & Projects",
   description:
     "Order bulk tiles, electrical, plumbing, plywood & hardware for construction projects in Bangalore. Factory-direct pricing, GST invoices, phased site delivery. Intrihub.",
   alternates: {
     canonical: getCanonicalUrl("/bulk-orders"),
   },
   openGraph: {
-    title: "Bulk Construction Material Orders for Contractors | Intrihub Bangalore",
+    title: "Bulk Orders for Contractors & Projects | IntriHub",
     description:
       "Bulk construction materials for contractors in Bangalore — tiles, electrical, plumbing, plywood, hardware. GST invoices & site delivery.",
     url: getCanonicalUrl("/bulk-orders"),
     type: "website",
-    siteName: "Intrihub",
-    images: [{ url: "https://intrihub.com/og-image.png", alt: "Bulk Orders — Intrihub" }],
+    siteName: "IntriHub",
+    images: [{ url: "https://intrihub.com/og-image.png", alt: "Bulk Orders — IntriHub" }],
   },
   twitter: {
     card: "summary_large_image",
-    title: "Bulk Construction Material Orders for Contractors | Intrihub Bangalore",
+    title: "Bulk Orders for Contractors & Projects | IntriHub",
     description:
       "Bulk construction materials for contractors in Bangalore — tiles, electrical, plumbing, plywood, hardware.",
     images: ["https://intrihub.com/og-image.png"],
