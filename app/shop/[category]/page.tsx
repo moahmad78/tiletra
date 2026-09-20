@@ -1,12 +1,11 @@
 import { Metadata } from "next";
-import { getCategoryBySlug, getCategories } from "@/lib/actions/categories";
+import { getCategoryBySlug } from "@/lib/actions/categories";
 import { getProducts } from "@/lib/actions/products";
 import Header from "@/components/Header";
 import Footer from "@/components/Footer";
 import CategoryCatalogClient from "@/components/CategoryCatalogClient";
 import { notFound } from "next/navigation";
 import {
-  BASE_SITE_URL,
   getCanonicalUrl,
   generateBreadcrumbSchema,
   generateItemListSchema,
@@ -29,26 +28,27 @@ export async function generateMetadata({
 
   if (!category) {
     return {
-      title: "Category Not Found | Intrihub",
+      title: "Category Not Found",
       description: "Explore interior and construction products across top categories on Intrihub.",
     };
   }
 
   const seo = getCategorySeo(categorySlug);
+  const cleanMetaTitle = `${category.name} Online in Bangalore`;
   const canonicalUrl = getCanonicalUrl(`/shop/${category.slug}`);
 
   return {
-    title: seo.metaTitle,
+    title: cleanMetaTitle,
     description: seo.metaDescription,
     alternates: {
       canonical: canonicalUrl,
     },
     openGraph: {
-      title: seo.metaTitle,
+      title: `${cleanMetaTitle} | IntriHub`,
       description: seo.metaDescription,
       url: canonicalUrl,
       type: "website",
-      siteName: "Intrihub",
+      siteName: "IntriHub",
       images: [
         {
           url: category.image && !category.image.includes("placeholder")
@@ -60,7 +60,7 @@ export async function generateMetadata({
     },
     twitter: {
       card: "summary_large_image",
-      title: seo.metaTitle,
+      title: `${cleanMetaTitle} | IntriHub`,
       description: seo.metaDescription,
       images: [
         category.image && !category.image.includes("placeholder")
@@ -77,9 +77,8 @@ export default async function CategoryPage({
   params: Promise<{ category: string }>;
 }) {
   const { category: categorySlug } = await params;
-  const [category, categories, categoryProducts] = await Promise.all([
+  const [category, categoryProducts] = await Promise.all([
     getCategoryBySlug(categorySlug),
-    getCategories(),
     getProducts({ categorySlug }),
   ]);
 

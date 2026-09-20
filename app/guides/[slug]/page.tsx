@@ -2,12 +2,11 @@ import { Metadata } from "next";
 import Link from "next/link";
 import Image from "next/image";
 import { notFound } from "next/navigation";
-import { ArrowLeft, Clock, Calendar, ShieldCheck, ChevronRight, HelpCircle, ArrowRight } from "lucide-react";
+import { Clock, Calendar, ChevronRight, HelpCircle, ArrowRight } from "lucide-react";
 import Header from "@/components/Header";
 import Footer from "@/components/Footer";
 import { BUYING_GUIDES, getBuyingGuideBySlug } from "@/lib/guides-data";
 import {
-  BASE_SITE_URL,
   getCanonicalUrl,
   generateArticleSchema,
   generateBreadcrumbSchema,
@@ -31,7 +30,7 @@ export async function generateMetadata({
 
   if (!guide) {
     return {
-      title: "Guide Not Found | Intrihub",
+      title: "Guide Not Found",
       description: "Explore interior & construction material guides on Intrihub.",
     };
   }
@@ -39,20 +38,20 @@ export async function generateMetadata({
   const canonicalUrl = getCanonicalUrl(`/guides/${guide.slug}`);
 
   return {
-    title: `${guide.title} | Intrihub Guide`,
+    title: guide.title,
     description: guide.shortDescription,
     alternates: {
       canonical: canonicalUrl,
     },
     openGraph: {
-      title: guide.title,
+      title: `${guide.title} | IntriHub`,
       description: guide.shortDescription,
       url: canonicalUrl,
       type: "article",
       publishedTime: guide.publishedAt,
       modifiedTime: guide.updatedAt,
       authors: [guide.author],
-      siteName: "Intrihub",
+      siteName: "IntriHub",
       images: [
         {
           url: guide.image,

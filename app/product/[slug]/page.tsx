@@ -3,7 +3,7 @@ import { getProductBySlug, getProducts } from "@/lib/actions/products";
 import { prisma } from "@/lib/prisma";
 import ProductDetailsClient from "@/components/ProductDetailsClient";
 import { notFound, redirect } from "next/navigation";
-import { BASE_SITE_URL, getCanonicalUrl, generateProductSchema, generateBreadcrumbSchema, safeJsonLd } from "@/lib/seo";
+import { BASE_SITE_URL, getCanonicalUrl, generateProductSchema, generateBreadcrumbSchema } from "@/lib/seo";
 import JsonLd from "@/components/JsonLd";
 import { getRedirectForPath } from "@/lib/redirects";
 
@@ -19,7 +19,7 @@ export async function generateMetadata({
 
   if (!product) {
     return {
-      title: "Product Not Found | IntriHub",
+      title: "Product Not Found",
       description: "The requested interior and construction product could not be found on IntriHub.",
       robots: {
         index: false,
@@ -31,8 +31,8 @@ export async function generateMetadata({
   const isDiscontinued = product.status === "discontinued";
   const canonicalUrl = getCanonicalUrl(`/product/${product.slug}`);
   const title = isDiscontinued
-    ? `${product.name} (Discontinued) | IntriHub`
-    : `${product.name} | IntriHub`;
+    ? `${product.name} (Discontinued)`
+    : product.name;
   const description =
     product.description?.slice(0, 160) ||
     `Buy ${product.name} online at IntriHub. Direct-from-factory building & interior materials with rapid delivery across Bangalore & Pan-India.`;
@@ -137,19 +137,18 @@ export default async function ProductPage({
     ? Math.min(...product.variants.map((v) => v.pricePerBox || v.pricePerSqft || 0))
     : 0;
 
+  const productExtra = product as Record<string, unknown>;
+  const rawReviewCount = typeof productExtra.reviewCount === "number" ? productExtra.reviewCount : 0;
   const realReviewCount =
     publishedReviews.length > 0
       ? publishedReviews.length
-      : (product as any).reviewCount && (product as any).reviewCount > 0
-      ? Number((product as any).reviewCount)
-      : 0;
+      : rawReviewCount;
 
+  const rawAvgRating = typeof productExtra.avgRating === "number" ? productExtra.avgRating : null;
   const realAvgRating =
     publishedReviews.length > 0
       ? Number((publishedReviews.reduce((sum, r) => sum + r.rating, 0) / publishedReviews.length).toFixed(1))
-      : (product as any).avgRating && (product as any).avgRating > 0
-      ? Number((product as any).avgRating)
-      : null;
+      : rawAvgRating;
 
   const productSchema = generateProductSchema({
     id: product.id,
@@ -160,7 +159,7 @@ export default async function ProductPage({
     price: minPrice,
     inStock: product.variants?.some((v) => v.stockBoxes > 0) ?? true,
     categoryName: product.categoryName || product.categorySlug,
-    brand: (product as any).brand || "IntriHub",
+    brand: typeof productExtra.brand === "string" ? productExtra.brand : "IntriHub",
     material: product.material,
     avgRating: realAvgRating,
     reviewCount: realReviewCount,

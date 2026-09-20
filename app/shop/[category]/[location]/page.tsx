@@ -48,26 +48,26 @@ export async function generateMetadata({
   ];
 
   if (!category || !location) {
-    return { title: "Not Found | Intrihub" };
+    return { title: "Location Not Found" };
   }
 
   const canonicalUrl = getCanonicalUrl(`/shop/${category.slug}/${location.slug}`);
-  const title = `${category.name} in ${location.name}, Bangalore | Factory-Direct Prices | Intrihub`;
+  const cleanTitle = `${category.name} in ${location.name}, Bangalore`;
   const description = `Buy ${category.name} in ${location.name}, ${location.area}. Intrihub delivers ${category.name} directly to your ${location.name} site — same-day dispatch, factory-direct prices.`;
 
   return {
-    title,
+    title: cleanTitle,
     description,
     alternates: {
       // Canonical always points to this location page (it's a real indexed URL)
       canonical: canonicalUrl,
     },
     openGraph: {
-      title,
+      title: `${cleanTitle} | IntriHub`,
       description,
       url: canonicalUrl,
       type: "website",
-      siteName: "Intrihub",
+      siteName: "IntriHub",
       images: [{ url: "https://intrihub.com/og-image.png", alt: `${category.name} in ${location.name}` }],
     },
     twitter: {
