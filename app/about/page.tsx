@@ -28,7 +28,7 @@ import { BASE_SITE_URL, getCanonicalUrl, generateBreadcrumbSchema } from "@/lib/
 import JsonLd from "@/components/JsonLd";
 
 export const metadata: Metadata = {
-  title: "About IntriHub | Building & Interior Materials Marketplace Bengaluru",
+  title: "About Our 60-Minute Materials Marketplace",
   description:
     "Learn about IntriHub — India's instant building materials quick-commerce network. Founded in 2026 by Sahil Sheikh in Begur, Bengaluru to deliver factory-direct supplies in 60 minutes.",
   alternates: {

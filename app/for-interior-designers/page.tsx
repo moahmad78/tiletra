@@ -1,25 +1,25 @@
 import { Metadata } from "next";
 import Link from "next/link";
-import { Palette, Layers, Truck, ArrowRight, ShieldCheck } from "lucide-react";
+import { Palette, Layers, Truck, ArrowRight } from "lucide-react";
 import Header from "@/components/Header";
 import Footer from "@/components/Footer";
 import { getCanonicalUrl, generateBreadcrumbSchema, generateArchitectServiceSchema } from "@/lib/seo";
 import JsonLd from "@/components/JsonLd";
 
 export const metadata: Metadata = {
-  title: "Material Sourcing for Interior Designers & Studios | Intrihub",
+  title: "Interior Designers & Studios Material Sourcing",
   description:
     "Curated interior material sourcing for design studios: luxury vitrified tiles, designer bath fittings, lighting, textures, and bespoke stone surfaces with trade discounts.",
   alternates: {
     canonical: getCanonicalUrl("/for-interior-designers"),
   },
   openGraph: {
-    title: "Material Sourcing for Interior Designers & Studios | Intrihub",
+    title: "Interior Designers & Studios Material Sourcing | IntriHub",
     description:
       "Curated interior material sourcing for design studios with trade discounts, sample deliveries, and fast site procurement.",
     url: getCanonicalUrl("/for-interior-designers"),
     type: "website",
-    siteName: "Intrihub",
+    siteName: "IntriHub",
   },
 };
 

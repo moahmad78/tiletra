@@ -2,16 +2,11 @@ import { Metadata } from "next";
 import Link from "next/link";
 import {
   Compass,
-  CheckCircle2,
   FileText,
   Package,
   ArrowRight,
   Shield,
   PhoneCall,
-  Layers,
-  Award,
-  Truck,
-  Building2,
   Check,
   HelpCircle,
 } from "lucide-react";
@@ -27,14 +22,14 @@ import {
 import JsonLd from "@/components/JsonLd";
 
 export const metadata: Metadata = {
-  title: "Material Sourcing for Architects & Specifiers | Intrihub Trade",
+  title: "Architects & Specifiers Material Sourcing",
   description:
     "Factory-direct material procurement for architectural firms and specifiers. Access technical compliance data, certified sample swatch boxes, R9-R11 slip ratings, single-batch manufacturing runs, and express site delivery in Bengaluru.",
   alternates: {
     canonical: getCanonicalUrl("/for-architects"),
   },
   openGraph: {
-    title: "Material Sourcing for Architects & Specifiers | Intrihub Trade",
+    title: "Architects & Specifiers Material Sourcing | IntriHub",
     description:
       "End-to-end interior and construction material procurement for architectural firms with sampling support, BIM/CAD specs, single-batch allocations, and direct site delivery.",
     url: getCanonicalUrl("/for-architects"),
@@ -51,7 +46,7 @@ export const metadata: Metadata = {
   },
   twitter: {
     card: "summary_large_image",
-    title: "Material Sourcing for Architects & Specifiers | Intrihub Trade",
+    title: "Architects & Specifiers Material Sourcing | IntriHub",
     description:
       "End-to-end interior & construction material procurement for architectural firms with sampling support, CAD/BIM data, and direct site delivery.",
     images: [`${BASE_SITE_URL}/og-image.png`],

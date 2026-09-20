@@ -13,14 +13,14 @@ import {
 export const revalidate = 60;
 
 export const metadata: Metadata = {
-  title: "Shop All Interior & Construction Materials Online | Intrihub",
+  title: "Shop All Interior & Construction Materials",
   description:
     "Browse India's largest catalog of interior and construction supplies: electrical, lighting, tiles, sanitaryware, plywood, hardware, and furniture. Fast site delivery across Bangalore.",
   alternates: {
     canonical: getCanonicalUrl("/shop"),
   },
   openGraph: {
-    title: "Shop Interior & Construction Supplies | Intrihub",
+    title: "Shop Interior & Construction Supplies | IntriHub",
     description:
       "Buy factory-direct interior & construction materials online with doorstep delivery.",
     url: getCanonicalUrl("/shop"),

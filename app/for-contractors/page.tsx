@@ -1,25 +1,25 @@
 import { Metadata } from "next";
 import Link from "next/link";
-import { HardHat, Truck, FileCheck, Percent, ArrowRight, ShieldCheck } from "lucide-react";
+import { HardHat, Truck, FileCheck, Percent, ArrowRight } from "lucide-react";
 import Header from "@/components/Header";
 import Footer from "@/components/Footer";
 import { getCanonicalUrl, generateBreadcrumbSchema, generateArchitectServiceSchema } from "@/lib/seo";
 import JsonLd from "@/components/JsonLd";
 
 export const metadata: Metadata = {
-  title: "Bulk Material Sourcing for Civil & Interior Contractors | Intrihub",
+  title: "Civil & Interior Contractors Bulk Sourcing",
   description:
     "Bulk interior & construction materials for contractors: vitrified tiles, CPVC pipes, FRLS cables, tile adhesives, and sanitaryware with direct site delivery and GST billing.",
   alternates: {
     canonical: getCanonicalUrl("/for-contractors"),
   },
   openGraph: {
-    title: "Bulk Material Sourcing for Civil & Interior Contractors | Intrihub",
+    title: "Civil & Interior Contractors Bulk Sourcing | IntriHub",
     description:
       "Direct interior & construction materials for contractors with GST invoices, phased site deliveries, and factory pricing.",
     url: getCanonicalUrl("/for-contractors"),
     type: "website",
-    siteName: "Intrihub",
+    siteName: "IntriHub",
   },
 };
 

@@ -7,7 +7,7 @@ import { getCanonicalUrl } from "@/lib/seo";
 export const revalidate = 60;
 
 export const metadata: Metadata = {
-  title: "All Categories — Explore 20+ Construction & Interior Supplies | Intrihub",
+  title: "Explore 20+ Construction & Interior Categories",
   description:
     "Browse all 20 categories of construction, hardware, electrical, plumbing, sanitaryware, tiles, paint, and interior supplies at Intrihub Bangalore.",
   alternates: {
