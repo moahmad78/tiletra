@@ -24,7 +24,7 @@ const DEFAULT_DESKTOP_SLIDES: BannerSlide[] = [
     subtext: "Mirror-polished seamless 800x800mm vitrified tiles starting at ₹72/sq.ft. Safe doorstep crate delivery.",
     ctaText: "Explore Floor Tiles",
     ctaHref: "/shop/floor-tiles",
-    image: "/placeholders/banner.svg",
+    image: "https://images.unsplash.com/photo-1616486338812-3dadae4b4ace?w=1600&q=85",
     accentColor: "#F26522",
   },
   {
@@ -34,7 +34,7 @@ const DEFAULT_DESKTOP_SLIDES: BannerSlide[] = [
     subtext: "Beveled glossy subway tiles and textured ceramic walls. Wipe-clean and heat resistant.",
     ctaText: "Shop Kitchen Tiles",
     ctaHref: "/shop/kitchen-tiles",
-    image: "/placeholders/banner.svg",
+    image: "https://images.unsplash.com/photo-1507652313519-d4e9174996dd?w=1600&q=85",
     accentColor: "#052a51",
   },
   {
@@ -44,7 +44,7 @@ const DEFAULT_DESKTOP_SLIDES: BannerSlide[] = [
     subtext: "R11 anti-slip textured porcelain pavers designed for heavy Bangalore rains and garden terraces.",
     ctaText: "Browse Outdoor Tiles",
     ctaHref: "/shop/tiles-stone",
-    image: "/placeholders/banner.svg",
+    image: "https://images.unsplash.com/photo-1552321554-5fefe8c9ef14?w=1600&q=85",
     accentColor: "#2F7A4F",
   },
   {
@@ -54,7 +54,7 @@ const DEFAULT_DESKTOP_SLIDES: BannerSlide[] = [
     subtext: "Free specialized freight delivery on all orders above ₹15,000 with 100% breakage protection.",
     ctaText: "Explore Catalog",
     ctaHref: "/shop",
-    image: "/placeholders/banner.svg",
+    image: "https://images.unsplash.com/photo-1600585154340-be6161a56a0c?w=1600&q=85",
     accentColor: "#F26522",
   },
 ];
@@ -69,6 +69,13 @@ function BannerSlideItem({
   isActive: boolean;
 }) {
   const [imgSrc, setImgSrc] = useState(slide.image || "/placeholders/banner.svg");
+
+  useEffect(() => {
+    if (slide.image) {
+      setImgSrc(slide.image);
+    }
+  }, [slide.image]);
+
   const accent = slide.accentColor || "#F26522";
 
   return (
@@ -84,7 +91,7 @@ function BannerSlideItem({
         fill
         priority={index === 0}
         fetchPriority={index === 0 ? "high" : "auto"}
-        loading={index === 0 ? "eager" : "lazy"}
+        loading="eager"
         decoding="async"
         onError={() => setImgSrc("/placeholders/banner.svg")}
         className="object-cover"

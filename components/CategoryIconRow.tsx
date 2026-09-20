@@ -43,6 +43,13 @@ function SafeCategoryIcon({
   onDragPrevent?: (e: React.MouseEvent) => void;
 }) {
   const [imgSrc, setImgSrc] = useState(cat.image || "/placeholders/category.svg");
+
+  useEffect(() => {
+    if (cat.image) {
+      setImgSrc(cat.image);
+    }
+  }, [cat.image]);
+
   const shortName = getCategoryShortName(cat.name);
 
   return (
@@ -59,7 +66,7 @@ function SafeCategoryIcon({
             src={imgSrc}
             alt={cat.name}
             fill
-            loading={isPriority ? "eager" : "lazy"}
+            loading="eager"
             decoding="async"
             onError={() => setImgSrc("/placeholders/category.svg")}
             className="object-cover group-hover:scale-110 transition-transform duration-300"

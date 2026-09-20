@@ -25,7 +25,7 @@ const DEFAULT_SLIDES: MobileBannerSlide[] = [
     cta: "Shop Now",
     href: "/shop/floor-tiles",
     bgGradient: "from-[#052a51]/95 via-[#052a51]/80 to-transparent",
-    image: "/placeholders/banner.svg",
+    image: "https://images.unsplash.com/photo-1616486338812-3dadae4b4ace?w=800&q=80",
   },
   {
     id: "slide-2",
@@ -35,7 +35,7 @@ const DEFAULT_SLIDES: MobileBannerSlide[] = [
     cta: "Explore Catalog",
     href: "/shop",
     bgGradient: "from-[#0c3966]/95 via-[#052a51]/85 to-transparent",
-    image: "/placeholders/banner.svg",
+    image: "https://images.unsplash.com/photo-1507652313519-d4e9174996dd?w=800&q=80",
   },
   {
     id: "slide-3",
@@ -45,7 +45,7 @@ const DEFAULT_SLIDES: MobileBannerSlide[] = [
     cta: "Get Samples",
     href: "/shop",
     bgGradient: "from-[#1a1c29]/95 via-[#052a51]/85 to-transparent",
-    image: "/placeholders/banner.svg",
+    image: "https://images.unsplash.com/photo-1552321554-5fefe8c9ef14?w=800&q=80",
   },
   {
     id: "slide-vendor",
@@ -55,7 +55,7 @@ const DEFAULT_SLIDES: MobileBannerSlide[] = [
     cta: "Apply as Seller",
     href: "/vendor/apply",
     bgGradient: "from-[#031d38]/95 via-[#052a51]/85 to-transparent",
-    image: "/placeholders/banner.svg",
+    image: "https://images.unsplash.com/photo-1600585154340-be6161a56a0c?w=800&q=80",
   },
 ];
 
@@ -69,6 +69,12 @@ function MobileBannerSlideItem({
   isActive: boolean;
 }) {
   const [imgSrc, setImgSrc] = useState(slide.image || "/placeholders/banner.svg");
+
+  useEffect(() => {
+    if (slide.image) {
+      setImgSrc(slide.image);
+    }
+  }, [slide.image]);
 
   return (
     <div
@@ -86,7 +92,7 @@ function MobileBannerSlideItem({
           sizes="(max-width: 768px) 100vw, 50vw"
           priority={index === 0}
           fetchPriority={index === 0 ? "high" : "auto"}
-          loading={index === 0 ? "eager" : "lazy"}
+          loading="eager"
           decoding="async"
           onError={() => setImgSrc("/placeholders/banner.svg")}
         />

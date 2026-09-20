@@ -21,6 +21,12 @@ function SafeDesktopCategoryCard({
 }) {
   const [imgSrc, setImgSrc] = useState(cat.image || "/placeholders/category.svg");
 
+  useEffect(() => {
+    if (cat.image) {
+      setImgSrc(cat.image);
+    }
+  }, [cat.image]);
+
   return (
     <Link
       key={`${isCloned ? "d-clone-" : "d-orig-"}${cat.slug}`}
@@ -34,7 +40,7 @@ function SafeDesktopCategoryCard({
             src={imgSrc}
             alt={cat.name}
             fill
-            loading={isPriority ? "eager" : "lazy"}
+            loading="eager"
             decoding="async"
             onError={() => setImgSrc("/placeholders/category.svg")}
             className="object-cover group-hover:scale-108 transition-transform duration-300"
