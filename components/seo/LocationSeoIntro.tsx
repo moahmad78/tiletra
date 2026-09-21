@@ -1,4 +1,5 @@
-import { generateLocationIntro } from "@/lib/seo";
+import Link from "next/link";
+import { Truck, MapPin, Clock, ShieldCheck, CheckCircle2, Zap } from "lucide-react";
 import type { SeoLocation } from "@/lib/data/seo-locations";
 
 interface LocationSeoIntroProps {
@@ -7,44 +8,88 @@ interface LocationSeoIntroProps {
 }
 
 /**
- * Short 100-150 word SEO intro shown above the product grid on
- * /shop/[category]/[location] pages. Uses rotating templates per zone type
- * to avoid identical doorway-page content across locations.
+ * Rich, structured Local Logistics & SEO intro block for /shop/[category]/[location] pages.
+ * Displays real transit time, nearby landmarks, and genuine local context.
  */
 export default function LocationSeoIntro({ categoryName, location }: LocationSeoIntroProps) {
-  const intro = generateLocationIntro({
-    categoryName,
-    locationName: location.name,
-    locationArea: location.area,
-    zoneType: location.zoneType,
-    context: location.context,
-  });
+  const subAreas = location.serviceableSubAreas || [];
+  const popularItems = location.popularCategories || [];
 
   return (
-    <div className="bg-[#052a51]/5 border border-[#052a51]/10 rounded-2xl px-5 py-4 mb-6">
-      <div className="flex items-start gap-3">
-        {/* Location pin accent */}
-        <div className="w-8 h-8 rounded-xl bg-[#052a51] flex items-center justify-center shrink-0 mt-0.5">
-          <svg
-            width="14"
-            height="14"
-            viewBox="0 0 24 24"
-            fill="none"
-            stroke="white"
-            strokeWidth="2.5"
-            strokeLinecap="round"
-            strokeLinejoin="round"
-          >
-            <path d="M20 10c0 6-8 12-8 12s-8-6-8-12a8 8 0 0 1 16 0Z" />
-            <circle cx="12" cy="10" r="3" />
-          </svg>
-        </div>
-        <div>
-          <p className="text-[13px] font-black text-[#052a51] mb-1">
-            Delivering {categoryName} to {location.name}, {location.area}
-          </p>
-          <p className="text-[13px] text-gray-600 leading-relaxed">{intro}</p>
-        </div>
+    <div className="bg-white border border-gray-200/90 rounded-3xl p-5 sm:p-7 mb-8 shadow-xs space-y-5">
+      {/* ── Top Status Badges ── */}
+      <div className="flex flex-wrap items-center gap-2.5 sm:gap-3 text-xs">
+        <span className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-emerald-50 border border-emerald-200 text-emerald-800 font-bold">
+          <Clock size={13} className="text-emerald-600" />
+          <span>{location.dispatchWindow} — {location.name}</span>
+        </span>
+        <span className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-blue-50 border border-blue-200 text-[#052a51] font-bold">
+          <Truck size={13} className="text-[#F26522]" />
+          <span>Direct Site Unloading</span>
+        </span>
+        <span className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-amber-50 border border-amber-200 text-amber-900 font-bold">
+          <ShieldCheck size={13} className="text-amber-600" />
+          <span>GST ITC Tax Invoicing</span>
+        </span>
+      </div>
+
+      {/* ── Main Narrative & Local Context ── */}
+      <div className="space-y-3">
+        <h2 className="text-lg sm:text-xl font-black text-[#052a51] leading-tight">
+          Direct {categoryName} Supply Across {location.name}, {location.city}
+        </h2>
+        <p className="text-sm text-gray-700 leading-relaxed">
+          {location.uniqueIntro}
+        </p>
+      </div>
+
+      {/* ── Two-Column Details Grid ── */}
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4 pt-3 border-t border-gray-100 text-xs">
+        {/* Sub-areas */}
+        {subAreas.length > 0 && (
+          <div className="p-3.5 bg-gray-50/80 rounded-2xl border border-gray-100">
+            <div className="flex items-center gap-1.5 font-bold text-[#052a51] mb-2">
+              <MapPin size={14} className="text-[#F26522]" />
+              <span>Serviceable Pockets in {location.name}</span>
+            </div>
+            <div className="flex flex-wrap gap-1.5">
+              {subAreas.map((sub, i) => (
+                <span
+                  key={i}
+                  className="bg-white border border-gray-200 px-2.5 py-1 rounded-lg text-gray-700 font-medium"
+                >
+                  {sub}
+                </span>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {/* Popular Category Demands */}
+        {popularItems.length > 0 && (
+          <div className="p-3.5 bg-gray-50/80 rounded-2xl border border-gray-100">
+            <div className="flex items-center gap-1.5 font-bold text-[#052a51] mb-2">
+              <Zap size={14} className="text-[#F26522]" />
+              <span>Fast-Moving Items in this Zone</span>
+            </div>
+            <div className="flex flex-wrap gap-1.5">
+              {popularItems.map((item, i) => (
+                <span
+                  key={i}
+                  className="bg-white border border-gray-200 px-2.5 py-1 rounded-lg text-gray-700 font-medium"
+                >
+                  {item}
+                </span>
+              ))}
+            </div>
+          </div>
+        )}
+      </div>
+
+      {/* ── Policy Note ── */}
+      <div className="flex items-center gap-2 pt-1 text-xs text-gray-500">
+        <CheckCircle2 size={14} className="text-emerald-600 shrink-0" />
+        <span>{location.deliveryPolicyNote}</span>
       </div>
     </div>
   );

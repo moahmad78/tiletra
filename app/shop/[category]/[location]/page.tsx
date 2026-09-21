@@ -1,4 +1,5 @@
 import { Metadata } from "next";
+import Link from "next/link";
 import { notFound } from "next/navigation";
 import { getCategoryBySlug } from "@/lib/actions/categories";
 import { getProducts } from "@/lib/actions/products";
@@ -18,13 +19,11 @@ import { categories as allCategories } from "@/lib/data/categories";
 import LocationSeoIntro from "@/components/seo/LocationSeoIntro";
 import CategorySeoBlock from "@/components/seo/CategorySeoBlock";
 import { getCategorySeo } from "@/lib/data/category-seo";
+import { ChevronRight, Home } from "lucide-react";
 
-export const revalidate = 3600; // Location pages are stable — revalidate hourly
+// Cache generated location pages at the edge for 24 hours (ISR) to ensure sub-800ms TTFB under concurrency
+export const revalidate = 86400;
 
-/**
- * Pre-generate all valid [category] × [location] combinations at build time.
- * This avoids server-rendering on every cold request for these SEO-only sub-pages.
- */
 export async function generateStaticParams() {
   const params: { category: string; location: string }[] = [];
   for (const cat of allCategories) {
@@ -48,22 +47,22 @@ export async function generateMetadata({
   ];
 
   if (!category || !location) {
-    return { title: "Location Not Found" };
+    return { title: "Location Not Found | IntriHub" };
   }
 
   const canonicalUrl = getCanonicalUrl(`/shop/${category.slug}/${location.slug}`);
-  const cleanTitle = `${category.name} in ${location.name}, Bangalore`;
-  const description = `Buy ${category.name} in ${location.name}, ${location.area}. Intrihub delivers ${category.name} directly to your ${location.name} site — same-day dispatch, factory-direct prices.`;
+  const cleanTitle = `${category.name} Provider in ${location.name}, ${location.city} | IntriHub`;
+  const subAreasText = location.serviceableSubAreas?.slice(0, 3).join(", ") || location.area;
+  const description = `Buy ${category.name} in ${location.name}, ${location.city}. Direct site delivery with ${location.dispatchWindow.toLowerCase()} across ${subAreasText}. Factory rates & verified GST invoice.`;
 
   return {
     title: cleanTitle,
     description,
     alternates: {
-      // Canonical always points to this location page (it's a real indexed URL)
       canonical: canonicalUrl,
     },
     openGraph: {
-      title: `${cleanTitle} | IntriHub`,
+      title: `${cleanTitle}`,
       description,
       url: canonicalUrl,
       type: "website",
@@ -72,7 +71,7 @@ export async function generateMetadata({
     },
     twitter: {
       card: "summary_large_image",
-      title: `${cleanTitle} | IntriHub`,
+      title: `${cleanTitle}`,
       description,
       images: ["https://intrihub.com/og-image.png"],
     },
@@ -98,14 +97,18 @@ export default async function CategoryLocationPage({
   }
 
   const seo = getCategorySeo(categorySlug);
+  const naturalH1 = `${category.name} Provider in ${location.name}, ${location.city}`;
 
-  // Schema: 3-level breadcrumb
-  const breadcrumbsSchema = generateBreadcrumbSchema([
+  // 1. Breadcrumbs Schema & UI Data
+  const breadcrumbItems = [
     { name: "Home", url: "/" },
+    { name: "Shop", url: "/shop" },
     { name: category.name, url: `/shop/${category.slug}` },
     { name: location.name, url: `/shop/${category.slug}/${location.slug}` },
-  ]);
+  ];
+  const breadcrumbsSchema = generateBreadcrumbSchema(breadcrumbItems);
 
+  // 2. Product Catalog Schema
   const itemListSchema = generateItemListSchema(
     products.map((p, idx) => ({
       name: p.name,
@@ -115,7 +118,7 @@ export default async function CategoryLocationPage({
     }))
   );
 
-  // LocalBusiness schema scoped to the specific location
+  // 3. LocalBusiness Schema
   const localBusinessSchema = generateLocalBusinessCategorySchema({
     categoryName: category.name,
     categorySlug: category.slug,
@@ -124,17 +127,16 @@ export default async function CategoryLocationPage({
     pincodes: location.pincodes,
   });
 
-  const faqSchema = generateFAQSchema([
+  // 4. Combined Location-Specific FAQs
+  const combinedFaqs = [
+    ...(location.localFaqs || []),
     ...seo.faqs,
     {
-      question: `How quickly can Intrihub deliver ${category.name} to ${location.name}?`,
-      answer: `Intrihub delivers ${category.name} to ${location.name} within 60 minutes for in-stock orders placed before 2 PM. Our dispatch network covers ${location.name} and the wider ${location.area} area. Track your delivery in real time via our platform after order placement.`,
+      question: `How does IntriHub handle bulk contractor orders for ${category.name} in ${location.name}?`,
+      answer: `We provide dedicated trade managers, customized GST tax invoices, and scheduled multi-drop site deliveries for builders and interior studios operating across ${location.name} and ${location.area}.`,
     },
-    {
-      question: `Do you deliver ${category.name} to all areas within ${location.name}?`,
-      answer: `Yes. Intrihub's delivery coverage includes all residential societies, commercial buildings, and construction sites across ${location.name} and surrounding ${location.area} localities. Enter your exact pincode at checkout to confirm delivery availability and estimated time.`,
-    },
-  ]);
+  ];
+  const faqSchema = generateFAQSchema(combinedFaqs);
 
   return (
     <>
@@ -142,20 +144,81 @@ export default async function CategoryLocationPage({
       <JsonLd data={itemListSchema} id="location-itemlist-schema" />
       <JsonLd data={localBusinessSchema} id="location-localbusiness-schema" />
       <JsonLd data={faqSchema} id="location-faq-schema" />
+
       <main className="min-h-screen flex flex-col bg-[#F3F4F5] pt-[56px] md:pt-[175px] lg:pt-[180px]">
         <Header />
 
         <section className="py-6 sm:py-8 md:py-10 flex-1">
           <div className="w-full max-w-[1400px] mx-auto px-3 sm:px-4 md:px-6 lg:px-8">
-            {/* Location-specific intro — above grid but compact (not pushing products off-screen) */}
+            {/* Visual Breadcrumb Navigation Bar */}
+            <nav
+              aria-label="Breadcrumb"
+              className="flex items-center gap-1.5 text-xs text-gray-500 font-medium mb-4 overflow-x-auto whitespace-nowrap py-1"
+            >
+              <Link href="/" className="hover:text-[#F26522] flex items-center gap-1 transition-colors">
+                <Home size={13} />
+                <span>Home</span>
+              </Link>
+              <ChevronRight size={13} className="text-gray-400 shrink-0" />
+              <Link href="/shop" className="hover:text-[#F26522] transition-colors">
+                Shop
+              </Link>
+              <ChevronRight size={13} className="text-gray-400 shrink-0" />
+              <Link href={`/shop/${category.slug}`} className="hover:text-[#F26522] transition-colors">
+                {category.name}
+              </Link>
+              <ChevronRight size={13} className="text-gray-400 shrink-0" />
+              <span className="text-[#052a51] font-bold">{location.name}</span>
+            </nav>
+
+            {/* Natural, Semantic H1 */}
+            <div className="mb-5">
+              <h1 className="text-2xl sm:text-3xl font-black text-[#052a51] tracking-tight">
+                {naturalH1}
+              </h1>
+              <p className="text-xs sm:text-sm text-gray-500 mt-1">
+                Verified building &amp; interior materials with rapid dispatch to {location.name} ({location.pincodes.join(", ")})
+              </p>
+            </div>
+
+            {/* Rich Location Logistics Block */}
             <LocationSeoIntro categoryName={category.name} location={location} />
 
+            {/* Product Catalog Display */}
             <CategoryCatalogClient
               products={products}
               categoryName={`${category.name} — ${location.name}`}
             />
 
-            {/* Full SEO block below the grid */}
+            {/* Localized FAQ Accordion */}
+            {combinedFaqs.length > 0 && (
+              <div className="mt-12 bg-white rounded-3xl p-6 sm:p-8 border border-gray-200/90 shadow-xs max-w-4xl">
+                <h3 className="text-lg sm:text-xl font-black text-[#052a51] mb-5">
+                  Frequently Asked Questions — {category.name} in {location.name}
+                </h3>
+                <div className="space-y-3">
+                  {combinedFaqs.map((faq, i) => (
+                    <details
+                      key={i}
+                      className="group rounded-2xl border border-gray-200 bg-gray-50/50 overflow-hidden"
+                    >
+                      <summary className="flex items-center justify-between gap-4 px-5 py-4 cursor-pointer list-none font-bold text-sm text-gray-800 select-none hover:bg-gray-100/60 transition-colors">
+                        <span>{faq.question}</span>
+                        <ChevronRight
+                          size={16}
+                          className="text-gray-400 shrink-0 transition-transform group-open:rotate-90"
+                        />
+                      </summary>
+                      <div className="px-5 pb-4 text-xs sm:text-sm text-gray-600 leading-relaxed border-t border-gray-200/60 pt-3 bg-white">
+                        {faq.answer}
+                      </div>
+                    </details>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {/* Full Category SEO block & cross-links below grid */}
             <CategorySeoBlock
               categorySlug={categorySlug}
               categoryName={category.name}

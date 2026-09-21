@@ -61,7 +61,7 @@ export default function CategoryCatalogClient({
         <div className="w-14 h-14 mx-auto rounded-2xl bg-[#F26522]/10 border border-[#F26522]/20 flex items-center justify-center text-[#F26522] mb-2">
           <Package size={24} />
         </div>
-        <h2 className="text-lg sm:text-xl font-black text-[#052a51]">No products in {categoryName} yet</h2>
+        <h1 className="text-lg sm:text-xl font-black text-[#052a51]">No products in {categoryName} yet</h1>
         <p className="text-xs sm:text-sm text-gray-500 max-w-xs mx-auto leading-relaxed">
           We are curating high-grade {categoryName} supplies. Explore our full catalog for other available materials.
         </p>

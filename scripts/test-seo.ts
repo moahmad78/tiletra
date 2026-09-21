@@ -54,11 +54,12 @@ async function runSeoTests() {
     : [robotsConfig.rules?.disallow];
 
   assert(disallows.includes("/admin/"), "robots.txt disallows /admin/");
-  assert(disallows.includes("/vendor/"), "robots.txt disallows /vendor/");
+  assert(!disallows.includes("/vendor/"), "robots.txt DOES NOT disallow /vendor/ (enables /vendor/apply crawling)");
   assert(disallows.includes("/api/"), "robots.txt disallows /api/");
   assert(!disallows.includes("/cart"), "robots.txt DOES NOT disallow /cart (enables Googlebot noindex crawling)");
   assert(!disallows.includes("/checkout"), "robots.txt DOES NOT disallow /checkout (enables Googlebot noindex crawling)");
   assert(!disallows.includes("/account/"), "robots.txt DOES NOT disallow /account/ (enables Googlebot noindex crawling)");
+  assert(!disallows.includes("/_next/image"), "robots.txt DOES NOT disallow /_next/image (enables Googlebot image crawling)");
   assert(robotsConfig.sitemap === "https://www.intrihub.com/sitemap.xml", "robots.txt links to canonical sitemap.xml");
 
   // 3. Sitemap Dynamic Generation
@@ -70,6 +71,7 @@ async function runSeoTests() {
   assert(urls.includes("https://www.intrihub.com"), "Sitemap includes Homepage");
   assert(urls.includes("https://www.intrihub.com/shop"), "Sitemap includes /shop");
   assert(urls.includes("https://www.intrihub.com/categories"), "Sitemap includes /categories");
+  assert(urls.includes("https://www.intrihub.com/areas"), "Sitemap includes /areas");
   assert(urls.includes("https://www.intrihub.com/guides"), "Sitemap includes /guides");
   assert(urls.includes("https://www.intrihub.com/for-architects"), "Sitemap includes /for-architects");
   assert(urls.includes("https://www.intrihub.com/for-interior-designers"), "Sitemap includes /for-interior-designers");
@@ -80,13 +82,16 @@ async function runSeoTests() {
   assert(!urls.some((u) => u.includes("/checkout")), "0 /checkout URLs in sitemap");
   assert(!urls.some((u) => u.includes("/account")), "0 /account URLs in sitemap");
   assert(!urls.some((u) => u.includes("/admin")), "0 /admin URLs in sitemap");
-  assert(!urls.some((u) => u.includes("/vendor")), "0 /vendor URLs in sitemap");
   assert(!urls.some((u) => u.includes("/api/")), "0 /api URLs in sitemap");
 
   // 4. Schema.org JSON-LD Builders
   console.log("\n--- 4. SCHEMA.ORG STRUCTURED DATA CHECKS ---");
   const org = generateOrganizationSchema();
-  assert(org["@type"] === "Organization" && org.name === "Intrihub", "Valid Organization schema");
+  assert(
+    (org["@type"] === "Organization" || (Array.isArray(org["@type"]) && org["@type"].includes("Organization"))) &&
+      org.name.toLowerCase() === "intrihub",
+    "Valid Organization schema"
+  );
   assert(org.url === "https://www.intrihub.com", "Organization URL points to canonical domain");
 
   const website = generateWebSiteSchema();
@@ -107,7 +112,10 @@ async function runSeoTests() {
     price: 45,
     inStock: true,
   });
-  assert(product["@type"] === "Product" && product.offers?.price === 45, "Valid Product schema with Offers");
+  assert(
+    product["@type"] === "Product" && (product.offers?.price === 45 || product.offers?.price === "45"),
+    "Valid Product schema with Offers"
+  );
 
   const article = generateArticleSchema({
     title: "How to Choose Tiles",

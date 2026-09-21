@@ -40,7 +40,7 @@ export default function CategorySeoBlock({ categorySlug, categoryName }: Categor
         <div className="flex items-center gap-2 mb-4">
           <MapPin size={18} className="text-[#F26522]" />
           <h3 className="text-lg font-black text-[#052a51]">
-            Shop {categoryName} by Area — Bangalore
+            Shop {categoryName} by Delivery Area — Bengaluru &amp; Karnataka Hubs
           </h3>
         </div>
         <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-3">

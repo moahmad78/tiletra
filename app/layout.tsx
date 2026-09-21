@@ -43,7 +43,7 @@ export const viewport: Viewport = {
 export const metadata: Metadata = {
   metadataBase: new URL(BASE_SITE_URL),
   title: {
-    default: "IntriHub — Build Better, We Deliver Faster",
+    default: "Build Better, We Deliver Faster | IntriHub",
     template: "%s | IntriHub",
   },
   description:
@@ -71,9 +71,30 @@ export const metadata: Metadata = {
     "instant building materials delivery",
     "tiles and sanitaryware online",
     "electrical supplies direct bangalore",
+    "interior supplies marketplace",
+    "interior materials bangalore",
+    "tile delivery bangalore",
+    "building materials online",
+    "electrical supplies bangalore",
+    "plumbing supplies bangalore",
+    "plywood supplier bangalore",
+    "orientbell tiles bangalore",
+    "quick delivery building materials",
+    "b2b construction supplies",
   ],
+  authors: [{ name: "IntriHub", url: BASE_SITE_URL }],
+  creator: "IntriHub QuickCommerce",
+  publisher: "IntriHub",
+  formatDetection: {
+    telephone: true,
+    date: false,
+    address: true,
+    email: true,
+    url: true,
+  },
+  category: "Building & Construction Materials",
   alternates: {
-    canonical: BASE_SITE_URL,
+    canonical: "https://www.intrihub.com/",
   },
   robots: {
     index: true,
@@ -89,8 +110,8 @@ export const metadata: Metadata = {
   icons: {
     icon: [
       { url: "/favicon.ico", sizes: "any" },
-      { url: "/favicon-32x32.png", sizes: "32x32", type: "image/png" },
       { url: "/favicon-16x16.png", sizes: "16x16", type: "image/png" },
+      { url: "/favicon-32x32.png", sizes: "32x32", type: "image/png" },
     ],
     apple: [
       { url: "/apple-touch-icon.png", sizes: "180x180", type: "image/png" },
@@ -99,7 +120,7 @@ export const metadata: Metadata = {
   },
   manifest: "/site.webmanifest",
   openGraph: {
-    title: "IntriHub — Build Better, We Deliver Faster",
+    title: "Build Better, We Deliver Faster | IntriHub",
     description:
       "Buy tiles, electrical, plumbing, plywood, hardware & interior supplies online at best prices. Delivery across Bengaluru.",
     type: "website",
@@ -111,13 +132,13 @@ export const metadata: Metadata = {
         url: `${BASE_SITE_URL}/og-image.png?v=2`,
         width: 1200,
         height: 630,
-        alt: "IntriHub — Build Better, We Deliver Faster — Instant Building & Interior Materials Delivery",
+        alt: "Build Better, We Deliver Faster | IntriHub — Instant Building & Interior Materials Delivery",
       },
     ],
   },
   twitter: {
     card: "summary_large_image",
-    title: "IntriHub — Build Better, We Deliver Faster",
+    title: "Build Better, We Deliver Faster | IntriHub",
     description:
       "Buy tiles, electrical, plumbing, plywood, hardware & interior supplies online at best prices. Delivery across Bengaluru.",
     images: [`${BASE_SITE_URL}/og-image.png?v=2`],

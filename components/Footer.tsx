@@ -73,6 +73,19 @@ const localLandingLinks = [
   { label: "Interior Supplier Bangalore", href: "/interior-material-supplier-bangalore" },
 ];
 
+const popularAreaPages = [
+  { label: "Whitefield Electrical", href: "/shop/electrical/whitefield" },
+  { label: "Koramangala Tiles", href: "/shop/tiles-stone/koramangala" },
+  { label: "Begur Central Supplies", href: "/shop/tiles-stone/begur" },
+  { label: "HSR Layout Plywood", href: "/shop/plywood/hsr-layout" },
+  { label: "Indiranagar Paint & Finishes", href: "/shop/paint-finishes/indiranagar" },
+  { label: "Electronic City Tech Park", href: "/shop/electrical/electronic-city" },
+  { label: "Sarjapur Road Materials", href: "/shop/tiles-stone/sarjapur-road" },
+  { label: "Hebbal Airport Corridor", href: "/shop/tiles-stone/hebbal" },
+  { label: "JP Nagar Construction", href: "/shop/tiles-stone/jp-nagar" },
+  { label: "All Karnataka Areas & Hubs →", href: "/areas" },
+];
+
 export default function Footer() {
   const pathname = usePathname();
 
@@ -249,8 +262,8 @@ export default function Footer() {
             </div>
           </div>
 
-          {/* SEO Landing Discovery: Browse by Material & Browse by Area */}
-          <div className="py-8 border-b border-white/10 grid grid-cols-1 md:grid-cols-2 gap-6 text-xs text-white/70">
+          {/* SEO Landing Discovery: Browse by Material, Browse by Area & Popular Delivery Zones */}
+          <div className="py-8 border-b border-white/10 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 text-xs text-white/70">
             <div>
               <h4 className="text-white font-bold text-xs uppercase tracking-wider mb-3">Browse by Material Category</h4>
               <div className="flex flex-wrap gap-x-4 gap-y-2">
@@ -262,10 +275,28 @@ export default function Footer() {
               </div>
             </div>
             <div>
-              <h4 className="text-white font-bold text-xs uppercase tracking-wider mb-3">Browse by Delivery Area</h4>
+              <h4 className="text-white font-bold text-xs uppercase tracking-wider mb-3">Regional Keyword Hubs</h4>
               <div className="flex flex-wrap gap-x-4 gap-y-2">
                 {localLandingLinks.map(({ label, href }) => (
                   <Link key={href} href={href} className="hover:text-[#F26522] transition-colors">
+                    {label}
+                  </Link>
+                ))}
+              </div>
+            </div>
+            <div>
+              <h4 className="text-white font-bold text-xs uppercase tracking-wider mb-3">Popular Delivery Areas</h4>
+              <div className="flex flex-wrap gap-x-3 gap-y-2">
+                {popularAreaPages.map(({ label, href }) => (
+                  <Link
+                    key={href}
+                    href={href}
+                    className={
+                      href === "/areas"
+                        ? "text-[#F26522] font-bold hover:underline"
+                        : "hover:text-[#F26522] transition-colors"
+                    }
+                  >
                     {label}
                   </Link>
                 ))}

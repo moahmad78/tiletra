@@ -78,41 +78,44 @@ export function middleware(request: NextRequest) {
     }
 
     // 3. Multi-Tier Global API Rate Limiting
-    let tier: ApiRateLimitTier = "standard";
-    if (
-      pathname.startsWith("/api/checkout") ||
-      pathname.startsWith("/api/create-order") ||
-      pathname.startsWith("/api/ai")
-    ) {
-      tier = "sensitive";
-    } else if (
-      pathname.startsWith("/api/admin/auth") ||
-      pathname.startsWith("/api/auth") ||
-      pathname.startsWith("/api/mobile/auth")
-    ) {
-      tier = "strict";
-    }
+    const isSearchEngineBot = /(googlebot|bingbot|yandexbot|duckduckbot|baiduspider)/i.test(userAgent);
+    if (!isSearchEngineBot) {
+      let tier: ApiRateLimitTier = "standard";
+      if (
+        pathname.startsWith("/api/checkout") ||
+        pathname.startsWith("/api/create-order") ||
+        pathname.startsWith("/api/ai")
+      ) {
+        tier = "sensitive";
+      } else if (
+        pathname.startsWith("/api/admin/auth") ||
+        pathname.startsWith("/api/auth") ||
+        pathname.startsWith("/api/mobile/auth")
+      ) {
+        tier = "strict";
+      }
 
-    const rate = checkApiRateLimit(clientIp, tier);
-    if (!rate.allowed) {
-      const retryAfter = Math.max(1, Math.ceil((rate.resetTime - Date.now()) / 1000));
-      return new NextResponse(
-        JSON.stringify({
-          success: false,
-          error: `Too many requests. Rate limit exceeded for ${tier} API. Please retry in ${retryAfter} second(s).`,
-          retryAfter,
-        }),
-        {
-          status: 429,
-          headers: {
-            "Content-Type": "application/json",
-            "Retry-After": retryAfter.toString(),
-            "X-RateLimit-Limit": rate.limit.toString(),
-            "X-RateLimit-Remaining": "0",
-            "X-RateLimit-Reset": Math.ceil(rate.resetTime / 1000).toString(),
-          },
-        }
-      );
+      const rate = checkApiRateLimit(clientIp, tier);
+      if (!rate.allowed) {
+        const retryAfter = Math.max(1, Math.ceil((rate.resetTime - Date.now()) / 1000));
+        return new NextResponse(
+          JSON.stringify({
+            success: false,
+            error: `Too many requests. Rate limit exceeded for ${tier} API. Please retry in ${retryAfter} second(s).`,
+            retryAfter,
+          }),
+          {
+            status: 429,
+            headers: {
+              "Content-Type": "application/json",
+              "Retry-After": retryAfter.toString(),
+              "X-RateLimit-Limit": rate.limit.toString(),
+              "X-RateLimit-Remaining": "0",
+              "X-RateLimit-Reset": Math.ceil(rate.resetTime / 1000).toString(),
+            },
+          }
+        );
+      }
     }
   }
 
@@ -185,9 +188,11 @@ export function middleware(request: NextRequest) {
   // 8. Legacy SEO 301 redirects for discontinued/aliased paths (GSC validation & link health)
   const cleanPath = pathname.toLowerCase().replace(/\/+$/, "");
   const LEGACY_301_REDIRECTS: Record<string, string> = {
+    "/locations": "https://www.intrihub.com/areas",
     "/inspiration": "https://www.intrihub.com/shop",
     "/designs": "https://www.intrihub.com/shop",
     "/shop/sahil": "https://www.intrihub.com/shop",
+    "/shop/paints-finishes": "https://www.intrihub.com/shop/paint-finishes",
     "/shop/outdoor-tiles": "https://www.intrihub.com/shop/tiles-stone",
     "/shop/bathroom-tiles": "https://www.intrihub.com/shop/tiles-stone",
     "/shop/kitchen-tiles": "https://www.intrihub.com/shop/tiles-stone",
@@ -199,6 +204,17 @@ export function middleware(request: NextRequest) {
 
   if (LEGACY_301_REDIRECTS[cleanPath]) {
     return NextResponse.redirect(LEGACY_301_REDIRECTS[cleanPath], {
+      status: 301,
+      headers: {
+        "Cache-Control": "public, max-age=31536000, immutable",
+      },
+    });
+  }
+
+  // Wildcard sub-path redirect for paints-finishes location sub-pages
+  if (cleanPath.startsWith("/shop/paints-finishes/")) {
+    const sub = cleanPath.replace("/shop/paints-finishes/", "");
+    return NextResponse.redirect(`https://www.intrihub.com/shop/paint-finishes/${sub}`, {
       status: 301,
       headers: {
         "Cache-Control": "public, max-age=31536000, immutable",

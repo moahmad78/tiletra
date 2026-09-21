@@ -5,8 +5,8 @@ import { BUYING_GUIDES } from "@/lib/guides-data";
 import { products as defaultProducts } from "@/lib/data/products";
 import { categories as defaultCategories } from "@/lib/data/categories";
 import { SEO_LOCATIONS } from "@/lib/data/seo-locations";
-
 import { SEO_PAGES_SEED_DATA } from "@/prisma/seed-seo-pages";
+import { getApprovedSitemapLocationRoutes } from "@/lib/seo-quality-gate";
 
 export const revalidate = 3600; // Revalidate every 1 hour
 
@@ -64,6 +64,12 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
       lastModified: new Date(),
       changeFrequency: "daily",
       priority: 0.9,
+    },
+    {
+      url: `${BASE_SITE_URL}/areas`,
+      lastModified: new Date(),
+      changeFrequency: "weekly",
+      priority: 0.85,
     },
     {
       url: `${BASE_SITE_URL}/guides`,
@@ -162,7 +168,12 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   try {
     const [categories, products, seoPages] = await Promise.all([
       prisma.category.findMany({
-        select: { slug: true, updatedAt: true },
+        select: {
+          slug: true,
+          name: true,
+          updatedAt: true,
+          _count: { select: { products: true } },
+        },
       }),
       prisma.product.findMany({
         where: {
@@ -186,8 +197,18 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
 
     const resolvedCategories =
       categories.length > 0
-        ? categories
-        : defaultCategories.map((c) => ({ slug: c.slug, updatedAt: new Date() }));
+        ? categories.map((c) => ({
+            slug: c.slug,
+            name: c.name,
+            updatedAt: c.updatedAt,
+            productCount: c._count.products,
+          }))
+        : defaultCategories.map((c) => ({
+            slug: c.slug,
+            name: c.name,
+            updatedAt: new Date(),
+            productCount: c.productCount,
+          }));
 
     const resolvedProducts =
       products.length > 0
@@ -214,17 +235,22 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
         priority: 0.8,
       }));
 
-    // Location sub-page routes: category × location matrix
-    const locationRoutes: MetadataRoute.Sitemap = resolvedCategories
-      .filter((cat) => Boolean(cat.slug) && !cat.slug.toLowerCase().includes("test"))
-      .flatMap((cat) =>
-        SEO_LOCATIONS.map((loc) => ({
-          url: `${BASE_SITE_URL}/shop/${encodeURIComponent(cat.slug)}/${loc.slug}`,
-          lastModified: new Date(),
-          changeFrequency: "weekly" as const,
-          priority: 0.75,
-        }))
-      );
+    // Quality-Gated Programmatic Location Routes (Strict spam & doorway prevention)
+    // Evaluates word count, uniqueness (>70% unique), active products, and local data completeness
+    const approvedLocationEntries = getApprovedSitemapLocationRoutes(
+      resolvedCategories.map((c) => ({
+        slug: c.slug,
+        name: c.name,
+        productCount: c.productCount,
+      }))
+    );
+
+    const locationRoutes: MetadataRoute.Sitemap = approvedLocationEntries.map((entry) => ({
+      url: `${BASE_SITE_URL}${entry.urlPath}`,
+      lastModified: new Date(),
+      changeFrequency: "weekly" as const,
+      priority: entry.priority,
+    }));
 
     // Dynamic SEO Keyword Landing Page routes (Strictly primary slugs, zero aliases)
     const seoLandingRoutes: MetadataRoute.Sitemap = seoPages
@@ -275,6 +301,19 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
         priority: 0.8,
       }));
 
+    const fallbackLocationRoutes: MetadataRoute.Sitemap = getApprovedSitemapLocationRoutes(
+      defaultCategories.map((c) => ({
+        slug: c.slug,
+        name: c.name,
+        productCount: c.productCount,
+      }))
+    ).map((entry) => ({
+      url: `${BASE_SITE_URL}${entry.urlPath}`,
+      lastModified: new Date(),
+      changeFrequency: "weekly" as const,
+      priority: entry.priority,
+    }));
+
     const fallbackSeoRoutes: MetadataRoute.Sitemap = SEO_PAGES_SEED_DATA.map((page) => ({
       url: `${BASE_SITE_URL}/${page.slug}`,
       lastModified: new Date(),
@@ -286,6 +325,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
       ...staticRoutes,
       ...guideRoutes,
       ...fallbackCategoryRoutes,
+      ...fallbackLocationRoutes,
       ...fallbackProductRoutes,
       ...fallbackSeoRoutes,
     ];

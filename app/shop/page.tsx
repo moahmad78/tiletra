@@ -51,6 +51,9 @@ export default async function ShopPage() {
     <>
       <JsonLd data={breadcrumbsSchema} id="shop-breadcrumbs-schema" />
       <JsonLd data={itemListSchema} id="shop-itemlist-schema" />
+      <h1 className="sr-only">
+        Shop All Interior &amp; Construction Materials Online — IntriHub
+      </h1>
       <Suspense fallback={<div className="min-h-screen bg-[#F3F4F5]" />}>
         <ShopCatalogClient
           initialProducts={initialProducts}

@@ -26,6 +26,9 @@ export default async function HomePage() {
   return (
     <>
       <JsonLd data={faqSchema} id="homepage-faq-schema" />
+      <h1 className="sr-only">
+        IntriHub — Interior &amp; Construction Materials, Delivered Across Karnataka &amp; Pan-India
+      </h1>
       <HomeClient
         categories={categories}
         trending={trending}
