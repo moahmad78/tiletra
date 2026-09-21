@@ -12,7 +12,7 @@ export async function POST(req: NextRequest) {
     // STRICT CHECK: Only info@intrihub.com is allowed
     if (cleanEmail !== ALLOWED_SUPPORT_EMAIL) {
       return NextResponse.json(
-        { success: false, error: "Access Denied: Only info@intrihub.com is authorized." },
+        { success: false, error: "Access Denied: This email is not authorized to access the Customer Support Desk." },
         { status: 403 }
       );
     }

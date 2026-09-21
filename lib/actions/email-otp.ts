@@ -9,7 +9,7 @@ const resend = process.env.RESEND_API_KEY ? new Resend(process.env.RESEND_API_KE
 
 function getFormattedFromEmail(): string {
   const envFrom = (process.env.EMAIL_FROM || "").replace(/['"]/g, "").trim();
-  if (!envFrom) return "Intrihub <noreply@intrihub.com>";
+  if (!envFrom || envFrom.includes("onboarding@resend.dev")) return "Intrihub <noreply@intrihub.com>";
   if (envFrom.includes("<") && envFrom.includes(">")) return envFrom;
   return `Intrihub <${envFrom}>`;
 }
@@ -73,11 +73,13 @@ export async function deliverEmail({
   }
 
   // Transport 2: Resend API
-  if (resend && process.env.RESEND_API_KEY) {
+  const resendApiKey = process.env.RESEND_API_KEY;
+  if (resendApiKey) {
     try {
+      const activeResend = new Resend(resendApiKey);
       const fromAddress = getFormattedFromEmail();
       console.log(`[EMAIL_SEND_STARTED] transport=Resend to=${maskEmail(to)} from=${fromAddress}`);
-      const { data, error } = await resend.emails.send({
+      const { data, error } = await activeResend.emails.send({
         from: fromAddress,
         to,
         subject,
