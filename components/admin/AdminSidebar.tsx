@@ -30,7 +30,7 @@ import { useLiveSync } from "@/lib/live-sync";
 
 const navItems = [
   { name: "Dashboard", href: "/admin", icon: LayoutDashboard, exact: true },
-  { name: "IntriHub Connect", href: "/help", icon: Headphones, badgeKey: "urgentConnect" },
+  { name: "Help Desk (Connect)", href: "/admin/connect", icon: Headphones, badgeKey: "urgentConnect" },
   { name: "Vendor Inquiries", href: "/admin/vendor-applications", icon: Clock, badgeKey: "inquiriesCount" },
   { name: "Vendors & Shops", href: "/admin/vendors", icon: Store, badgeKey: "pendingVendors" },
   { name: "Product Approvals", href: "/admin/product-approvals", icon: CheckSquare, badgeKey: "pendingProducts" },
