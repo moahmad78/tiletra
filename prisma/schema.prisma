@@ -975,6 +975,40 @@ model Redirect {
   @@index([fromPath])
 }
 
+// ----------------------------------------------------
+// 16. SEO Landing Pages & Keyword System
+// ----------------------------------------------------
+model SeoPage {
+  id              String      @id @default(cuid())
+  slug            String      @unique          // e.g. "tiles", "tiles/vitrified-tiles", "tiles-shop-in-bangalore"
+  aliases         String[]    @default([])     // alternate slugs that 301-redirect to this page
+  pageType        SeoPageType
+  category        String?                      // e.g. "tiles", "plywood" — used for internal linking
+  locality        String?                      // e.g. "bengaluru", "begur" — null for non-local pages
+  targetKeyword   String                       // primary keyword this page is built for
+  title           String                       // <title> tag
+  metaDescription String
+  h1              String
+  introContent    String      @db.Text         // 300+ word unique intro, supports markdown
+  faqItems        Json?                        // [{question, answer}, ...] for FAQ schema
+  productFilter   Json?                        // filter config to pull real products from catalog for this page
+  isPublished     Boolean     @default(true)
+  createdAt       DateTime    @default(now())
+  updatedAt       DateTime    @updatedAt
+
+  @@index([pageType])
+  @@index([category])
+  @@index([locality])
+}
+
+enum SeoPageType {
+  CATEGORY
+  SUBCATEGORY
+  LOCAL
+  PRICE_INTENT
+  TREND
+}
+
 
 
 

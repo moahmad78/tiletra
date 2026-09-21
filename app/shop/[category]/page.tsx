@@ -4,7 +4,8 @@ import { getProducts } from "@/lib/actions/products";
 import Header from "@/components/Header";
 import Footer from "@/components/Footer";
 import CategoryCatalogClient from "@/components/CategoryCatalogClient";
-import { notFound } from "next/navigation";
+import { notFound, redirect } from "next/navigation";
+import { getRedirectForPath } from "@/lib/redirects";
 import {
   getCanonicalUrl,
   generateBreadcrumbSchema,
@@ -27,9 +28,28 @@ export async function generateMetadata({
   const category = await getCategoryBySlug(categorySlug);
 
   if (!category) {
+    const redirectRecord = await getRedirectForPath(`/shop/${categorySlug}`);
+    if (redirectRecord) {
+      return {
+        title: "Redirecting...",
+        alternates: {
+          canonical: getCanonicalUrl(redirectRecord.toPath),
+        },
+      };
+    }
+
     return {
-      title: "Category Not Found",
+      title: "Category Not Found | IntriHub",
       description: "Explore interior and construction products across top categories on Intrihub.",
+      robots: {
+        index: false,
+        follow: false,
+        nocache: true,
+        googleBot: {
+          index: false,
+          follow: false,
+        },
+      },
     };
   }
 
@@ -83,6 +103,10 @@ export default async function CategoryPage({
   ]);
 
   if (!category) {
+    const redirectRecord = await getRedirectForPath(`/shop/${categorySlug}`);
+    if (redirectRecord) {
+      redirect(redirectRecord.toPath);
+    }
     notFound();
   }
 

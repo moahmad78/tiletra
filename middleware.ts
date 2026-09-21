@@ -182,19 +182,23 @@ export function middleware(request: NextRequest) {
     });
   }
 
-  // 8. Legacy SEO 301 redirects for discontinued/aliased paths
+  // 8. Legacy SEO 301 redirects for discontinued/aliased paths (GSC validation & link health)
   const cleanPath = pathname.toLowerCase().replace(/\/+$/, "");
-  if (cleanPath === "/inspiration" || cleanPath === "/designs") {
-    return NextResponse.redirect("https://www.intrihub.com/shop", {
-      status: 301,
-      headers: {
-        "Cache-Control": "public, max-age=31536000, immutable",
-      },
-    });
-  }
+  const LEGACY_301_REDIRECTS: Record<string, string> = {
+    "/inspiration": "https://www.intrihub.com/shop",
+    "/designs": "https://www.intrihub.com/shop",
+    "/shop/sahil": "https://www.intrihub.com/shop",
+    "/shop/outdoor-tiles": "https://www.intrihub.com/shop/tiles-stone",
+    "/shop/bathroom-tiles": "https://www.intrihub.com/shop/tiles-stone",
+    "/shop/kitchen-tiles": "https://www.intrihub.com/shop/tiles-stone",
+    "/shop/wall-tiles": "https://www.intrihub.com/shop/tiles-stone",
+    "/shop/sanitaryware": "https://www.intrihub.com/shop/plumbing-sanitary",
+    "/shop/granite-marble": "https://www.intrihub.com/shop/tiles-stone",
+    "/shop/tile-adhesives": "https://www.intrihub.com/shop/adhesives-sealants-waterproofing",
+  };
 
-  if (cleanPath === "/shop/outdoor-tiles") {
-    return NextResponse.redirect("https://www.intrihub.com/shop/tiles-stone", {
+  if (LEGACY_301_REDIRECTS[cleanPath]) {
+    return NextResponse.redirect(LEGACY_301_REDIRECTS[cleanPath], {
       status: 301,
       headers: {
         "Cache-Control": "public, max-age=31536000, immutable",

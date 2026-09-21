@@ -68,15 +68,9 @@ function BannerSlideItem({
   index: number;
   isActive: boolean;
 }) {
-  const [imgSrc, setImgSrc] = useState(slide.image || "/placeholders/banner.svg");
-
-  useEffect(() => {
-    if (slide.image) {
-      setImgSrc(slide.image);
-    }
-  }, [slide.image]);
-
   const accent = slide.accentColor || "#F26522";
+  const defaultImage = DEFAULT_DESKTOP_SLIDES[index % DEFAULT_DESKTOP_SLIDES.length]?.image || "/placeholders/banner.svg";
+  const imageSrc = slide.image && slide.image.trim() ? slide.image : defaultImage;
 
   return (
     <div
@@ -86,14 +80,11 @@ function BannerSlideItem({
     >
       {/* Background Photo */}
       <Image
-        src={imgSrc}
+        src={imageSrc}
         alt={slide.headline}
         fill
         priority={index === 0}
-        fetchPriority={index === 0 ? "high" : "auto"}
-        loading="eager"
-        decoding="async"
-        onError={() => setImgSrc("/placeholders/banner.svg")}
+        loading={index === 0 ? "eager" : "lazy"}
         className="object-cover"
         sizes="(max-width: 1400px) 100vw, 1400px"
       />

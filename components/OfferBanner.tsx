@@ -68,13 +68,8 @@ function MobileBannerSlideItem({
   index: number;
   isActive: boolean;
 }) {
-  const [imgSrc, setImgSrc] = useState(slide.image || "/placeholders/banner.svg");
-
-  useEffect(() => {
-    if (slide.image) {
-      setImgSrc(slide.image);
-    }
-  }, [slide.image]);
+  const defaultImage = DEFAULT_SLIDES[index % DEFAULT_SLIDES.length]?.image || "/placeholders/banner.svg";
+  const imageSrc = slide.image && slide.image.trim() ? slide.image : defaultImage;
 
   return (
     <div
@@ -85,16 +80,13 @@ function MobileBannerSlideItem({
       <Link href={slide.href || "/shop"} className="block w-full h-full relative">
         {/* Background Image */}
         <Image
-          src={imgSrc}
+          src={imageSrc}
           alt={slide.title}
           fill
           className="object-cover"
           sizes="(max-width: 768px) 100vw, 50vw"
           priority={index === 0}
-          fetchPriority={index === 0 ? "high" : "auto"}
-          loading="eager"
-          decoding="async"
-          onError={() => setImgSrc("/placeholders/banner.svg")}
+          loading={index === 0 ? "eager" : "lazy"}
         />
 
         {/* Gradient overlay */}

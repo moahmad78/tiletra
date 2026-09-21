@@ -81,19 +81,19 @@ export function generateRootGraphSchema() {
         ],
       },
       {
-        "@type": "LocalBusiness",
+        "@type": ["LocalBusiness", "Store"],
         "@id": `${BASE_SITE_URL}/#localbusiness`,
         name: "IntriHub",
+        description: "Building Materials Store and Interior Materials Supplier in Begur, Bengaluru",
         image: `${BASE_SITE_URL}/og-image.png`,
         url: BASE_SITE_URL,
-        telephone: "+91-70901-20211",
+        telephone: "+91 92649 20211",
         priceRange: "₹₹",
         address: {
           "@type": "PostalAddress",
-          streetAddress: "41, 10th A Cross Rd, Janapriya Layout, Begur",
+          streetAddress: "Begur",
           addressLocality: "Bengaluru",
           addressRegion: "Karnataka",
-          postalCode: "560114",
           addressCountry: "IN",
         },
         areaServed: [
@@ -708,4 +708,108 @@ export function generateLocationIntro(opts: {
   };
 
   return templates[zoneType] ?? templates.residential;
+}
+
+/**
+ * SEO Keyword Landing Page Schemas (Strict NAP & Zero-Wholesaler Compliance)
+ */
+export function generateSeoKeywordPageSchemas(opts: {
+  slug: string;
+  title: string;
+  targetKeyword: string;
+  categoryName?: string;
+  localityName?: string;
+  faqItems?: Array<{ question: string; answer: string }> | null;
+  products?: Array<{ name: string; slug: string; price: number; image?: string }>;
+}) {
+  const { slug, title, targetKeyword, categoryName, localityName, faqItems, products } = opts;
+  const canonicalUrl = `${BASE_SITE_URL}/${slug}`;
+
+  // 1. Breadcrumbs Schema
+  const breadcrumbItems = [
+    { name: "Home", url: "/" },
+    ...(categoryName ? [{ name: categoryName, url: `/${categoryName.toLowerCase().replace(/\s+/g, "-")}` }] : []),
+    { name: targetKeyword, url: `/${slug}` },
+  ];
+  const breadcrumbSchema = generateBreadcrumbSchema(breadcrumbItems);
+
+  // 2. Strict NAP LocalBusiness Schema (Building Materials Store — Never Wholesaler)
+  const localBusinessSchema = {
+    "@context": "https://schema.org",
+    "@type": ["LocalBusiness", "Store"],
+    "@id": `${BASE_SITE_URL}/#store`,
+    name: "IntriHub",
+    description: "Building Materials Store and Interior Materials Supplier in Begur, Bengaluru",
+    url: "https://intrihub.com",
+    telephone: "+91 92649 20211",
+    priceRange: "₹₹",
+    image: `${BASE_SITE_URL}/og-image.png`,
+    address: {
+      "@type": "PostalAddress",
+      streetAddress: "Begur",
+      addressLocality: "Bengaluru",
+      addressRegion: "Karnataka",
+      addressCountry: "IN",
+    },
+    areaServed: localityName
+      ? [
+          { "@type": "Place", name: localityName },
+          { "@type": "City", name: "Bengaluru" },
+          { "@type": "Country", name: "India" },
+        ]
+      : [
+          { "@type": "City", name: "Bengaluru" },
+          { "@type": "Country", name: "India" },
+        ],
+  };
+
+  // 3. FAQ Schema
+  const faqSchema =
+    faqItems && faqItems.length > 0
+      ? {
+          "@context": "https://schema.org",
+          "@type": "FAQPage",
+          mainEntity: faqItems.map((item) => ({
+            "@type": "Question",
+            name: item.question,
+            acceptedAnswer: {
+              "@type": "Answer",
+              text: item.answer,
+            },
+          })),
+        }
+      : null;
+
+  // 4. Products ItemList Schema
+  const itemListSchema =
+    products && products.length > 0
+      ? {
+          "@context": "https://schema.org",
+          "@type": "ItemList",
+          name: title,
+          itemListElement: products.slice(0, 12).map((p, idx) => ({
+            "@type": "ListItem",
+            position: idx + 1,
+            item: {
+              "@type": "Product",
+              name: p.name,
+              url: `${BASE_SITE_URL}/product/${p.slug}`,
+              image: p.image || `${BASE_SITE_URL}/placeholders/product.svg`,
+              offers: {
+                "@type": "Offer",
+                price: p.price,
+                priceCurrency: "INR",
+                availability: "https://schema.org/InStock",
+              },
+            },
+          })),
+        }
+      : null;
+
+  return {
+    breadcrumbSchema,
+    localBusinessSchema,
+    faqSchema,
+    itemListSchema,
+  };
 }

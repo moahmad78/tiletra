@@ -47,6 +47,32 @@ const helpLinks = [
   { label: "Frequently Asked Questions", href: "/faq" },
 ];
 
+const categoryLandingLinks = [
+  { label: "Tiles", href: "/tiles" },
+  { label: "Plywood", href: "/plywood" },
+  { label: "Electrical Supplies", href: "/electrical" },
+  { label: "Plumbing Materials", href: "/plumbing" },
+  { label: "Architectural Hardware", href: "/hardware" },
+  { label: "Sanitaryware", href: "/sanitaryware" },
+  { label: "Paints & Coatings", href: "/paints" },
+  { label: "Furniture Materials", href: "/furniture" },
+  { label: "Cement & Concrete", href: "/cement-and-concrete" },
+  { label: "Doors & Windows", href: "/doors-and-windows" },
+];
+
+const localLandingLinks = [
+  { label: "Begur", href: "/construction-material-in-begur" },
+  { label: "Bommanahalli", href: "/building-material-in-bommanahalli" },
+  { label: "HSR Layout", href: "/interior-material-in-hsr-layout" },
+  { label: "Electronic City", href: "/tiles-in-electronic-city" },
+  { label: "Koramangala", href: "/construction-material-in-koramangala" },
+  { label: "Bangalore Tiles", href: "/tiles-shop-in-bangalore" },
+  { label: "Bangalore Plywood", href: "/plywood-dealer-in-bangalore" },
+  { label: "Bangalore Electrical", href: "/electrical-shop-in-bangalore" },
+  { label: "Building Delivery Bangalore", href: "/building-material-delivery-bangalore" },
+  { label: "Interior Supplier Bangalore", href: "/interior-material-supplier-bangalore" },
+];
+
 export default function Footer() {
   const pathname = usePathname();
 
@@ -223,6 +249,30 @@ export default function Footer() {
             </div>
           </div>
 
+          {/* SEO Landing Discovery: Browse by Material & Browse by Area */}
+          <div className="py-8 border-b border-white/10 grid grid-cols-1 md:grid-cols-2 gap-6 text-xs text-white/70">
+            <div>
+              <h4 className="text-white font-bold text-xs uppercase tracking-wider mb-3">Browse by Material Category</h4>
+              <div className="flex flex-wrap gap-x-4 gap-y-2">
+                {categoryLandingLinks.map(({ label, href }) => (
+                  <Link key={href} href={href} className="hover:text-[#F26522] transition-colors">
+                    {label}
+                  </Link>
+                ))}
+              </div>
+            </div>
+            <div>
+              <h4 className="text-white font-bold text-xs uppercase tracking-wider mb-3">Browse by Delivery Area</h4>
+              <div className="flex flex-wrap gap-x-4 gap-y-2">
+                {localLandingLinks.map(({ label, href }) => (
+                  <Link key={href} href={href} className="hover:text-[#F26522] transition-colors">
+                    {label}
+                  </Link>
+                ))}
+              </div>
+            </div>
+          </div>
+
           {/* Bottom bar */}
           <div className="border-t border-white/10 pt-6 flex flex-col md:flex-row justify-between items-center gap-4 text-xs text-white/50">
             <p>© {new Date().getFullYear()} IntriHub. All Rights Reserved.</p>
@@ -287,6 +337,22 @@ export default function Footer() {
           <div className="text-[11px] text-white/60 space-y-1">
             <p className="font-bold text-white/90">Intrihub Registered Office</p>
             <p>41, 10th A Cross Rd, Janapriya Layout, Begur, Bengaluru, Karnataka 560114</p>
+          </div>
+
+          {/* Mobile SEO Landing Discovery */}
+          <div className="text-[11px] text-white/60 space-y-2 pt-2 border-t border-white/10">
+            <p className="font-bold text-white/80">Browse by Category</p>
+            <div className="flex flex-wrap justify-center gap-x-2.5 gap-y-1">
+              {categoryLandingLinks.map(({ label, href }) => (
+                <Link key={href} href={href} className="hover:text-white">{label}</Link>
+              ))}
+            </div>
+            <p className="font-bold text-white/80 pt-1">Delivery Areas</p>
+            <div className="flex flex-wrap justify-center gap-x-2.5 gap-y-1">
+              {localLandingLinks.map(({ label, href }) => (
+                <Link key={href} href={href} className="hover:text-white">{label}</Link>
+              ))}
+            </div>
           </div>
 
           <div className="flex flex-wrap justify-center gap-x-3 gap-y-1.5 text-[11px] text-white/50 pt-2 border-t border-white/10">

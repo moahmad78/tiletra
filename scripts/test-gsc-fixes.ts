@@ -75,7 +75,32 @@ async function runTests() {
   assert.strictEqual(resOutdoor.headers.get("location"), "https://www.intrihub.com/shop/tiles-stone", "/shop/outdoor-tiles must redirect to /shop/tiles-stone");
   console.log("  ✓ /shop/outdoor-tiles -> 301 https://www.intrihub.com/shop/tiles-stone");
 
-  // 2d. search_term_string
+  // 2d. /shop/sahil -> 301 /shop (Resolves GSC Validation Failure)
+  const reqSahil = new NextRequest("https://www.intrihub.com/shop/sahil");
+  const resSahil = middleware(reqSahil);
+  assert.strictEqual(resSahil.status, 301, "/shop/sahil must return 301");
+  assert.strictEqual(resSahil.headers.get("location"), "https://www.intrihub.com/shop", "/shop/sahil must redirect to /shop");
+  console.log("  ✓ /shop/sahil -> 301 https://www.intrihub.com/shop (GSC Validation Pass)");
+
+  // 2e. Legacy/aliased shop categories -> 301
+  const legacyAliases = [
+    { from: "https://www.intrihub.com/shop/bathroom-tiles", to: "https://www.intrihub.com/shop/tiles-stone" },
+    { from: "https://www.intrihub.com/shop/kitchen-tiles", to: "https://www.intrihub.com/shop/tiles-stone" },
+    { from: "https://www.intrihub.com/shop/wall-tiles", to: "https://www.intrihub.com/shop/tiles-stone" },
+    { from: "https://www.intrihub.com/shop/sanitaryware", to: "https://www.intrihub.com/shop/plumbing-sanitary" },
+    { from: "https://www.intrihub.com/shop/granite-marble", to: "https://www.intrihub.com/shop/tiles-stone" },
+    { from: "https://www.intrihub.com/shop/tile-adhesives", to: "https://www.intrihub.com/shop/adhesives-sealants-waterproofing" },
+  ];
+
+  for (const item of legacyAliases) {
+    const reqAlias = new NextRequest(item.from);
+    const resAlias = middleware(reqAlias);
+    assert.strictEqual(resAlias.status, 301, `${item.from} must return 301`);
+    assert.strictEqual(resAlias.headers.get("location"), item.to, `${item.from} must redirect to ${item.to}`);
+    console.log(`  ✓ ${item.from.replace("https://www.intrihub.com", "")} -> 301 ${item.to}`);
+  }
+
+  // 2f. search_term_string
   const reqSearch = new NextRequest("https://www.intrihub.com/shop?q=%7Bsearch_term_string%7D");
   const resSearch = middleware(reqSearch);
   assert.strictEqual(resSearch.status, 301, "search_term_string must return 301");
@@ -92,6 +117,11 @@ async function runTests() {
   assert(secTestRedirect !== null && secTestRedirect.statusCode === 301, "sectest-tile must redirect 301");
   assert.strictEqual(secTestRedirect?.toPath, "/shop/tiles-stone", "sectest-tile must redirect to /shop/tiles-stone");
   console.log("  ✓ /product/sectest-tile-1788938498982 -> 301 /shop/tiles-stone");
+
+  const sahilRedirect = await getRedirectForPath("/shop/sahil");
+  assert(sahilRedirect !== null && sahilRedirect.statusCode === 301, "/shop/sahil must exist in redirect table");
+  assert.strictEqual(sahilRedirect?.toPath, "/shop", "/shop/sahil must redirect to /shop in redirect table");
+  console.log("  ✓ /shop/sahil -> 301 /shop in DB Redirect table");
 
   // 4. Sitemap Cleanliness Validation
   console.log("\n[TEST 4] sitemap.ts Strict Exclusion Verification:");

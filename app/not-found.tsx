@@ -43,11 +43,11 @@ export default function NotFound() {
           </h2>
           <div className="flex flex-wrap justify-center gap-3">
             {[
-              { name: "Floor Tiles", href: "/shop/floor-tiles" },
-              { name: "Wall Tiles", href: "/shop/wall-tiles" },
-              { name: "Sanitaryware", href: "/shop/sanitaryware" },
-              { name: "Granite & Marble", href: "/shop/granite-marble" },
-              { name: "Tile Adhesives", href: "/shop/tile-adhesives" },
+              { name: "Tiles & Stone", href: "/shop/tiles-stone" },
+              { name: "Electrical & Wires", href: "/shop/electrical" },
+              { name: "Lighting Solutions", href: "/shop/lighting" },
+              { name: "Plumbing & Sanitary", href: "/shop/plumbing-sanitary" },
+              { name: "Paints & Waterproofing", href: "/shop/paint-finishes" },
               { name: "Buying Guides", href: "/guides" },
             ].map((cat, i) => (
               <Link

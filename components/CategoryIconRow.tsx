@@ -42,14 +42,7 @@ function SafeCategoryIcon({
   isCloned?: boolean;
   onDragPrevent?: (e: React.MouseEvent) => void;
 }) {
-  const [imgSrc, setImgSrc] = useState(cat.image || "/placeholders/category.svg");
-
-  useEffect(() => {
-    if (cat.image) {
-      setImgSrc(cat.image);
-    }
-  }, [cat.image]);
-
+  const imageSrc = cat.image && cat.image.trim() ? cat.image : "/placeholders/category.svg";
   const shortName = getCategoryShortName(cat.name);
 
   return (
@@ -63,12 +56,11 @@ function SafeCategoryIcon({
       <div className="w-[56px] h-[56px] rounded-2xl overflow-hidden relative p-0.5 bg-gradient-to-tr from-[#052a51]/10 to-[#F26522]/20 border border-gray-100 shadow-2xs group-hover:border-[#F26522]/40 transition-colors">
         <div className="w-full h-full rounded-[14px] overflow-hidden relative bg-gray-100">
           <Image
-            src={imgSrc}
+            src={imageSrc}
             alt={cat.name}
             fill
-            loading="eager"
-            decoding="async"
-            onError={() => setImgSrc("/placeholders/category.svg")}
+            priority={isPriority && !isCloned}
+            loading={isPriority && !isCloned ? "eager" : "lazy"}
             className="object-cover group-hover:scale-110 transition-transform duration-300"
             sizes="56px"
           />

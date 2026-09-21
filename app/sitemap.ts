@@ -6,6 +6,8 @@ import { products as defaultProducts } from "@/lib/data/products";
 import { categories as defaultCategories } from "@/lib/data/categories";
 import { SEO_LOCATIONS } from "@/lib/data/seo-locations";
 
+import { SEO_PAGES_SEED_DATA } from "@/prisma/seed-seo-pages";
+
 export const revalidate = 3600; // Revalidate every 1 hour
 
 // Strict regex patterns for paths that MUST NEVER appear in public sitemap
@@ -158,7 +160,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   }));
 
   try {
-    const [categories, products] = await Promise.all([
+    const [categories, products, seoPages] = await Promise.all([
       prisma.category.findMany({
         select: { slug: true, updatedAt: true },
       }),
@@ -175,6 +177,10 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
         },
         select: { slug: true, updatedAt: true },
         take: 5000,
+      }),
+      prisma.seoPage.findMany({
+        where: { isPublished: true },
+        select: { slug: true, pageType: true, updatedAt: true },
       }),
     ]);
 
@@ -220,6 +226,16 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
         }))
       );
 
+    // Dynamic SEO Keyword Landing Page routes (Strictly primary slugs, zero aliases)
+    const seoLandingRoutes: MetadataRoute.Sitemap = seoPages
+      .filter((page) => Boolean(page.slug) && !page.slug.toLowerCase().includes("test"))
+      .map((page) => ({
+        url: `${BASE_SITE_URL}/${page.slug}`,
+        lastModified: page.updatedAt instanceof Date ? page.updatedAt : new Date(),
+        changeFrequency: page.pageType === "PRICE_INTENT" ? ("weekly" as const) : ("monthly" as const),
+        priority: page.pageType === "CATEGORY" ? 0.8 : 0.6,
+      }));
+
     // Deduplicate entries by canonical URL and filter out non-public/private/test URLs
     const allRoutes = [
       ...staticRoutes,
@@ -227,6 +243,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
       ...categoryRoutes,
       ...locationRoutes,
       ...productRoutes,
+      ...seoLandingRoutes,
     ];
 
     const uniqueMap = new Map<string, MetadataRoute.Sitemap[number]>();
@@ -258,11 +275,19 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
         priority: 0.8,
       }));
 
+    const fallbackSeoRoutes: MetadataRoute.Sitemap = SEO_PAGES_SEED_DATA.map((page) => ({
+      url: `${BASE_SITE_URL}/${page.slug}`,
+      lastModified: new Date(),
+      changeFrequency: page.pageType === "PRICE_INTENT" ? ("weekly" as const) : ("monthly" as const),
+      priority: page.pageType === "CATEGORY" ? 0.8 : 0.6,
+    }));
+
     const allFallback = [
       ...staticRoutes,
       ...guideRoutes,
       ...fallbackCategoryRoutes,
       ...fallbackProductRoutes,
+      ...fallbackSeoRoutes,
     ];
 
     const uniqueMap = new Map<string, MetadataRoute.Sitemap[number]>();

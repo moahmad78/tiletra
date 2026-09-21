@@ -81,7 +81,7 @@ export const BUYING_GUIDES: BuyingGuide[] = [
           "For straight laying patterns, add 10% extra buffer for cutting and breakage. For diagonal or herringbone layouts, allocate 15% wastage buffer.",
       },
     ],
-    relatedCategorySlugs: ["floor-tiles", "wall-tiles", "tile-adhesives"],
+    relatedCategorySlugs: ["tiles-stone", "adhesives-sealants-waterproofing", "flooring"],
   },
   {
     slug: "granite-vs-tiles-comparison",
@@ -125,7 +125,7 @@ export const BUYING_GUIDES: BuyingGuide[] = [
           "Yes, using polymer-modified tile-on-tile adhesives (such as Type 2 C2TE adhesives) allows direct bonding over clean, roughened stone without dismantling the subfloor.",
       },
     ],
-    relatedCategorySlugs: ["granite-marble", "floor-tiles", "tile-adhesives"],
+    relatedCategorySlugs: ["tiles-stone", "granite", "adhesives-sealants-waterproofing"],
   },
   {
     slug: "tile-quantity-calculation-guide",
@@ -136,36 +136,36 @@ export const BUYING_GUIDES: BuyingGuide[] = [
     readTime: "5 min read",
     publishedAt: "2026-02-20T00:00:00.000Z",
     updatedAt: "2026-08-25T00:00:00.000Z",
-    image: "https://images.unsplash.com/photo-1504307651254-35680f356dfd?w=1200",
-    author: "Intrihub Project Estimation Team",
+    image: "https://images.unsplash.com/photo-1581094794329-c8112a89af12?w=1200",
+    author: "Intrihub Materials Engineering Team",
     summary:
-      "Never run short on material midway through installation. Learn the standard industry formula: (Length × Width) + 10% Wastage ÷ Coverage per Box = Total Boxes Needed.",
+      "Avoid under-ordering delays or excess dead-stock costs by using the standard industry tile formula: (Room Length × Width) + 10% cutting buffer divided by box coverage.",
     sections: [
       {
-        heading: "1. The Standard Area Formula",
+        heading: "1. The Standard Tile Quantity Formula",
         content: [
-          "Measure the room length and width in feet. Multiply Length × Width to get the net Floor Area in square feet (sq.ft).",
-          "For L-shaped or irregular rooms, divide the layout into smaller rectangles, calculate each area, and sum them together.",
+          "Total Area (sq.ft) = Room Length (ft) × Room Width (ft)",
+          "Net Tile Required = Total Area × 1.10 (Adding 10% cutting and corner wastage buffer)",
+          "Total Boxes Required = Net Tile Area ÷ Coverage per Box (sq.ft)",
         ],
         bulletPoints: [
-          "Net Area = Length (ft) × Width (ft)",
-          "Total Area with Wastage = Net Area × 1.10 (for straight lay) or × 1.15 (for herringbone/diagonal)",
-          "Total Boxes = Total Area with Wastage ÷ Sq.Ft per Box",
+          "Always round UP to the nearest full box — tiles cannot be bought in loose partial boxes.",
+          "Keep 1 spare box preserved in your utility area for future pipe repairs or renovation patchups.",
         ],
       },
       {
-        heading: "2. Don't Forget Skirting Tiles",
+        heading: "2. Estimating Adhesive and Grout",
         content: [
-          "Skirting runs along the bottom perimeter of the walls (usually 4 to 6 inches high).",
-          "Add the room's total perimeter in running feet minus door openings, and multiply by the skirting height to include in your tile order.",
+          "For standard 600x600mm vitrified tiles, plan for approximately 1 bag (20kg) of polymer-modified adhesive per 40-50 sq.ft of floor area.",
+          "Epoxy grouts require 1kg per 70-100 sq.ft depending on joint width (2mm to 4mm spacer).",
         ],
       },
     ],
     faqs: [
       {
-        question: "How many square feet are in a standard box of 600x600mm tiles?",
+        question: "How many square feet are in a standard 600x600mm tile box?",
         answer:
-          "A standard box of 600x600mm (2x2 ft) tiles usually contains 4 pieces, which covers approximately 15.5 to 16.0 square feet (1.44 sq. meters).",
+          "Most manufacturers pack four 600x600mm tiles per box, delivering approximately 15.5 to 15.6 sq.ft of floor coverage per box.",
       },
       {
         question: "Why is a 10% wastage allowance necessary?",
@@ -173,7 +173,7 @@ export const BUYING_GUIDES: BuyingGuide[] = [
           "Tiling requires cuts around corners, pillars, plumbing pipes, and doorways. Furthermore, tiles from different batch production runs may have slight shade variations, so purchasing adequate quantity upfront guarantees batch consistency.",
       },
     ],
-    relatedCategorySlugs: ["floor-tiles", "wall-tiles", "tile-adhesives"],
+    relatedCategorySlugs: ["tiles-stone", "adhesives-sealants-waterproofing", "flooring"],
   },
   {
     slug: "interior-material-checklist-contractors",
@@ -224,7 +224,7 @@ export const BUYING_GUIDES: BuyingGuide[] = [
           "Yes. We coordinate phased site deliveries directly to your project location in Bangalore and across major Indian cities.",
       },
     ],
-    relatedCategorySlugs: ["electricals", "sanitaryware", "tile-adhesives", "hardware"],
+    relatedCategorySlugs: ["electrical", "plumbing-sanitary", "adhesives-sealants-waterproofing", "hardware-fittings"],
   },
   {
     slug: "how-intrihub-delivers-materials-in-60-minutes",
@@ -272,7 +272,7 @@ export const BUYING_GUIDES: BuyingGuide[] = [
           "Yes. Our rapid dispatch fleet includes high-payload flatbed and hydraulic-tail vehicles capable of transporting up to 2.5 tons of construction supplies in a single fast-track dispatch.",
       },
     ],
-    relatedCategorySlugs: ["floor-tiles", "electricals", "plumbing-sanitary", "hardware"],
+    relatedCategorySlugs: ["tiles-stone", "electrical", "plumbing-sanitary", "hardware-fittings"],
   },
   {
     slug: "founders-note-why-we-started-intrihub",
@@ -319,7 +319,7 @@ export const BUYING_GUIDES: BuyingGuide[] = [
           "Suppliers and verified manufacturers can register directly via our Vendor Portal (intrihub.com/vendor/login) or reach our onboarding team at vendor@intrihub.com.",
       },
     ],
-    relatedCategorySlugs: ["floor-tiles", "lighting", "paint-finishes", "furniture"],
+    relatedCategorySlugs: ["tiles-stone", "lighting", "paint-finishes", "furniture"],
   },
 ];
 

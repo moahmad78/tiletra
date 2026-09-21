@@ -31,8 +31,8 @@ const CATEGORY_SUBCATS: Record<string, { name: string; slug: string; desc: strin
   "tiles-stone": [
     { name: "Living Room Floor Tiles", slug: "tiles-stone", desc: "Vitrified large format 800x800mm & GVT" },
     { name: "Granite & Marble Slabs", slug: "tiles-stone", desc: "South Indian granite & Italian marble" },
-    { name: "Bathroom Wall & Floor", slug: "bathroom-tiles", desc: "Waterproof anti-skid ceramic tiles" },
-    { name: "Kitchen Subway & Splashbacks", slug: "kitchen-tiles", desc: "Glossy subway & decorative mosaics" },
+    { name: "Bathroom Wall & Floor", slug: "tiles-stone", desc: "Waterproof anti-skid ceramic tiles" },
+    { name: "Kitchen Subway & Splashbacks", slug: "tiles-stone", desc: "Glossy subway & decorative mosaics" },
   ],
   "paint-finishes": [
     { name: "Interior Luxury Emulsions", slug: "paint-finishes", desc: "Washable velvet sheen & matte wall paints" },
