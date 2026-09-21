@@ -1009,6 +1009,211 @@ enum SeoPageType {
   TREND
 }
 
+// ----------------------------------------------------
+// 17. IntriHub Connect (Unified Communication & AI Support)
+// ----------------------------------------------------
+model ConnectCustomer {
+  id            String   @id @default(cuid())
+  name          String
+  phone         String?  @unique
+  email         String?  @unique
+  company       String?
+  city          String?  @default("Bangalore")
+  state         String?  @default("Karnataka")
+  pincode       String?
+  tags          String[] @default([]) // e.g. "VIP", "Contractor", "Interior Designer", "High Value"
+  notes         String?  @db.Text
+  totalOrders   Int      @default(0)
+  totalSpend    Float    @default(0)
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  conversations ConnectConversation[]
+  tickets       ConnectTicket[]
+
+  @@index([phone])
+  @@index([email])
+}
+
+model ConnectConversation {
+  id            String   @id @default(cuid())
+  customerId    String
+  channel       String   // "WHATSAPP" | "EMAIL"
+  accountEmail  String?  // e.g. "support@intrihub.com" or "sales@intrihub.com"
+  subject       String?
+  status        String   @default("OPEN") // "OPEN" | "PENDING" | "WAITING_CUSTOMER" | "RESOLVED"
+  priority      String   @default("NORMAL") // "LOW" | "NORMAL" | "HIGH" | "URGENT"
+  assignedTo    String?  // Agent Name / ID
+  isStarred     Boolean  @default(false)
+  lastMessageAt DateTime @default(now())
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  customer      ConnectCustomer      @relation(fields: [customerId], references: [id], onDelete: Cascade)
+  messages      ConnectMessage[]
+  tickets       ConnectTicket[]
+  aiRuns        ConnectAiRun[]
+
+  @@index([customerId])
+  @@index([channel])
+  @@index([status])
+  @@index([assignedTo])
+  @@index([lastMessageAt])
+}
+
+model ConnectMessage {
+  id                 String   @id @default(cuid())
+  conversationId     String
+  channel            String   // "WHATSAPP" | "EMAIL"
+  sender             String   // Customer name or Agent name
+  recipient          String?
+  direction          String   // "INBOUND" | "OUTBOUND"
+  body               String   @db.Text
+  originalBody       String?  @db.Text
+  translatedBody     String?  @db.Text
+  detectedLanguage   String?  @default("English")
+  sentiment          String?  @default("Neutral")
+  messageType        String   @default("TEXT") // "TEXT" | "IMAGE" | "DOCUMENT" | "AUDIO"
+  attachments        Json?    // [{ url, name, size, type }]
+  status             String   @default("DELIVERED") // "SENDING" | "SENT" | "DELIVERED" | "READ" | "FAILED"
+  externalMessageId  String?
+  createdAt          DateTime @default(now())
+
+  conversation       ConnectConversation @relation(fields: [conversationId], references: [id], onDelete: Cascade)
+
+  @@index([conversationId])
+  @@index([createdAt])
+  @@index([direction])
+}
+
+model ConnectTicket {
+  id                      String    @id @default(cuid())
+  ticketNumber            String    @unique // e.g. "TICK-10291"
+  conversationId          String?
+  customerId              String
+  subject                 String
+  description             String?   @db.Text
+  priority                String    @default("NORMAL") // "LOW" | "NORMAL" | "HIGH" | "URGENT"
+  category                String    @default("General") // "Product" | "Delivery" | "Payment" | "Vendor" | "General"
+  status                  String    @default("OPEN") // "OPEN" | "IN_PROGRESS" | "WAITING_CUSTOMER" | "RESOLVED" | "CLOSED"
+  assignedAgent           String?
+  slaFirstResponseMinutes Int       @default(15)
+  slaResolutionHours      Int       @default(24)
+  dueAt                   DateTime?
+  resolvedAt              DateTime?
+  createdAt               DateTime  @default(now())
+  updatedAt               DateTime  @updatedAt
+
+  customer                ConnectCustomer      @relation(fields: [customerId], references: [id], onDelete: Cascade)
+  conversation            ConnectConversation? @relation(fields: [conversationId], references: [id], onDelete: SetNull)
+
+  @@index([customerId])
+  @@index([status])
+  @@index([priority])
+  @@index([assignedAgent])
+}
+
+model ConnectKnowledgeSource {
+  id          String                  @id @default(cuid())
+  title       String
+  category    String                  // "POLICIES" | "FAQS" | "PRODUCTS" | "SERVICES" | "SOP"
+  sourceUrl   String?
+  version     String                  @default("1.0")
+  status      String                  @default("APPROVED") // "DRAFT" | "APPROVED" | "ARCHIVED"
+  approvedBy  String?                 @default("System Admin")
+  approvedAt  DateTime?               @default(now())
+  content     String                  @db.Text
+  createdAt   DateTime                @default(now())
+  updatedAt   DateTime                @updatedAt
+
+  chunks      ConnectKnowledgeChunk[]
+
+  @@index([category])
+  @@index([status])
+}
+
+model ConnectKnowledgeChunk {
+  id        String                 @id @default(cuid())
+  sourceId  String
+  title     String
+  content   String                 @db.Text
+  tags      String[]               @default([])
+  createdAt DateTime               @default(now())
+
+  source    ConnectKnowledgeSource @relation(fields: [sourceId], references: [id], onDelete: Cascade)
+
+  @@index([sourceId])
+}
+
+model ConnectAiRun {
+  id               String   @id @default(cuid())
+  conversationId   String
+  messageId        String?
+  model            String   @default("gemini-1.5-pro")
+  intent           String   // e.g. "Product Availability", "Delivery ETA"
+  detectedLanguage String   @default("English")
+  confidence       Int      @default(90) // Percentage 0-100
+  suggestedReply   String   @db.Text
+  sourcesUsed      Json?    // [{ source: "Delivery Policy v3.2", ref: "..." }]
+  status           String   @default("ACCEPTED") // "PENDING" | "ACCEPTED" | "EDITED" | "REJECTED"
+  agentActionNote  String?
+  createdAt        DateTime @default(now())
+
+  conversation     ConnectConversation @relation(fields: [conversationId], references: [id], onDelete: Cascade)
+
+  @@index([conversationId])
+  @@index([status])
+  @@index([createdAt])
+}
+
+model ConnectTemplate {
+  id          String   @id @default(cuid())
+  name        String
+  category    String   // "Customer Support" | "Order confirmation" | "Delivery update" | "Sales" | "Vendor"
+  channel     String   @default("ALL") // "WHATSAPP" | "EMAIL" | "ALL"
+  subject     String?
+  htmlContent String?  @db.Text
+  textContent String   @db.Text
+  variables   String[] @default([]) // e.g. ["customer_name", "order_id"]
+  language    String   @default("English")
+  status      String   @default("APPROVED") // "DRAFT" | "APPROVED"
+  createdBy   String?  @default("Admin")
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@index([category])
+  @@index([channel])
+}
+
+model ConnectSavedReply {
+  id        String   @id @default(cuid())
+  title     String
+  shortcut  String?  // e.g. "/delivery"
+  content   String   @db.Text
+  variables String[] @default([])
+  category  String   @default("General")
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([category])
+}
+
+model ConnectAuditLog {
+  id         String   @id @default(cuid())
+  agentName  String
+  agentEmail String?
+  action     String   // "SENT_MESSAGE" | "EDITED_AI_SUGGESTION" | "CREATED_TICKET" | "UPDATED_KNOWLEDGE"
+  details    String   @db.Text
+  entityType String?  // "Conversation" | "Ticket" | "Knowledge"
+  entityId   String?
+  createdAt  DateTime @default(now())
+
+  @@index([agentName])
+  @@index([action])
+  @@index([createdAt])
+}
+
+
 
 
 
