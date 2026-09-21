@@ -16,8 +16,8 @@ export default function BottomTabBar() {
     setMounted(true);
   }, []);
 
-  // Hide completely on all admin and vendor routes
-  if (pathname?.startsWith("/admin") || pathname?.startsWith("/vendor")) {
+  // Hide completely on all admin, vendor, and help routes
+  if (pathname?.startsWith("/admin") || pathname?.startsWith("/vendor") || pathname?.startsWith("/help")) {
     return null;
   }
 
