@@ -1,0 +1,14 @@
+# ==============================================================================
+# IntriHub Authorized Digital Sellers (ads.txt)
+# Website: https://www.intrihub.com
+# Specification: IAB Tech Lab Ads.txt v1.1
+# ==============================================================================
+#
+# IntriHub is a direct-to-consumer & B2B quick-commerce marketplace for
+# interior, tile, electrical, sanitaryware, and construction supplies.
+#
+# Direct Authorized Network:
+# (Update with your Google AdSense / Ad Manager Publisher ID if running ads)
+# google.com, pub-0000000000000000, DIRECT, f08c47fec0942fa0
+#
+# Contact: support@intrihub.com
