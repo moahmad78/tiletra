@@ -162,7 +162,7 @@ export default function OfferBanner({ slides }: { slides?: MobileBannerSlide[] }
   return (
     <div className="w-full px-3 py-2.5">
       <div
-        className="relative h-[135px] sm:h-[145px] w-full rounded-2xl overflow-hidden shadow-xs border border-gray-100"
+        className="relative aspect-[16/6] min-h-[135px] max-h-[160px] w-full rounded-2xl overflow-hidden shadow-xs border border-gray-100"
         onTouchStart={handleTouchStart}
         onTouchMove={handleTouchMove}
         onTouchEnd={handleTouchEnd}

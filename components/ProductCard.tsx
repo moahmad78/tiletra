@@ -49,7 +49,7 @@ export default function ProductCard({ product }: { product: Product }) {
     >
       <div className="relative">
         <Link href={`/product/${product.slug}`} aria-label={`View ${product.name} details`} className="block">
-          <div className="relative h-56 overflow-hidden bg-gray-100">
+          <div className="relative aspect-square w-full overflow-hidden bg-gray-100">
             <Image
               src={imgSrc}
               alt={product.name}

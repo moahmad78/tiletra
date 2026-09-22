@@ -30,7 +30,7 @@ function SafeDesktopCategoryCard({
         className="shrink-0 w-[155px] sm:w-[165px] lg:w-[175px] group select-none cursor-pointer"
       >
         <div className="bg-white rounded-2xl p-2 border border-gray-200/90 shadow-2xs group-hover:border-[#F26522] transition-all text-center flex flex-col h-full">
-          <div className="relative w-full h-[115px] sm:h-[120px] rounded-xl overflow-hidden bg-gray-100 shrink-0">
+          <div className="relative w-full aspect-[4/3] rounded-xl overflow-hidden bg-gray-100 shrink-0">
             <Image
               src={imgSrc}
               alt=""
@@ -64,7 +64,7 @@ function SafeDesktopCategoryCard({
       className="shrink-0 w-[155px] sm:w-[165px] lg:w-[175px] group"
     >
       <div className="bg-white rounded-2xl p-2 border border-gray-200/90 shadow-2xs hover:shadow-md hover:border-[#F26522] transition-all text-center flex flex-col h-full active:scale-98">
-        <div className="relative w-full h-[115px] sm:h-[120px] rounded-xl overflow-hidden bg-gray-100 shrink-0">
+        <div className="relative w-full aspect-[4/3] rounded-xl overflow-hidden bg-gray-100 shrink-0">
           <Image
             src={imgSrc}
             alt={cat.name}

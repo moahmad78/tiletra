@@ -156,7 +156,7 @@ export default function DesktopBannerCarousel({ slides }: { slides?: BannerSlide
       onMouseEnter={() => setIsPaused(true)}
       onMouseLeave={() => setIsPaused(false)}
     >
-      <div className="relative h-[320px] lg:h-[350px] rounded-3xl overflow-hidden shadow-sm border border-gray-100 bg-[#052a51]">
+      <div className="relative aspect-[21/6] min-h-[280px] max-h-[360px] rounded-3xl overflow-hidden shadow-sm border border-gray-100 bg-[#052a51]">
         {/* Slides Track */}
         {bannerSlides.map((slide, index) => (
           <BannerSlideItem
