@@ -27,9 +27,9 @@ export default function ProductSlider({
       {/* Section Header */}
       <div className="flex items-center justify-between px-4 mb-2">
         <div className="flex items-center gap-2">
-          <h2 className="text-[16px] font-black text-[#052a51] tracking-tight">
+          <h3 className="text-[16px] font-black text-[#052a51] tracking-tight">
             {title}
-          </h2>
+          </h3>
           {tag && (
             <span className="px-2 py-0.5 bg-[#F26522]/10 text-[#F26522] text-[10px] font-bold rounded-full">
               {tag}

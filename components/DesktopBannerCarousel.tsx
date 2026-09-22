@@ -103,9 +103,9 @@ function BannerSlideItem({
           {slide.badge || "Special Offer"}
         </span>
 
-        <h2 className="text-2xl lg:text-3xl xl:text-4xl font-black leading-tight tracking-tight text-white drop-shadow-sm">
+        <h3 className="text-2xl lg:text-3xl xl:text-4xl font-black leading-tight tracking-tight text-white drop-shadow-sm">
           {slide.headline}
-        </h2>
+        </h3>
 
         <p className="text-xs lg:text-sm text-gray-200 mt-2.5 leading-relaxed max-w-md font-medium">
           {slide.subtext}
