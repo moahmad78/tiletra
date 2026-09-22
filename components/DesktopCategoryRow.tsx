@@ -19,7 +19,8 @@ function SafeDesktopCategoryCard({
   isPriority?: boolean;
   isCloned?: boolean;
 }) {
-  const imageSrc = cat.image && cat.image.trim() ? cat.image : "/placeholders/category.svg";
+  const initialImage = cat.image && cat.image.trim() ? cat.image : "/placeholders/category.svg";
+  const [imgSrc, setImgSrc] = useState(initialImage);
 
   if (isCloned) {
     return (
@@ -31,10 +32,10 @@ function SafeDesktopCategoryCard({
         <div className="bg-white rounded-2xl p-2 border border-gray-200/90 shadow-2xs group-hover:border-[#F26522] transition-all text-center flex flex-col h-full">
           <div className="relative w-full h-[115px] sm:h-[120px] rounded-xl overflow-hidden bg-gray-100 shrink-0">
             <Image
-              src={imageSrc}
+              src={imgSrc}
               alt=""
               fill
-              loading="lazy"
+              onError={() => setImgSrc("/placeholders/category.svg")}
               className="object-cover group-hover:scale-108 transition-transform duration-300"
               sizes="175px"
             />
@@ -65,11 +66,11 @@ function SafeDesktopCategoryCard({
       <div className="bg-white rounded-2xl p-2 border border-gray-200/90 shadow-2xs hover:shadow-md hover:border-[#F26522] transition-all text-center flex flex-col h-full active:scale-98">
         <div className="relative w-full h-[115px] sm:h-[120px] rounded-xl overflow-hidden bg-gray-100 shrink-0">
           <Image
-            src={imageSrc}
+            src={imgSrc}
             alt={cat.name}
             fill
             priority={isPriority}
-            loading={isPriority ? "eager" : "lazy"}
+            onError={() => setImgSrc("/placeholders/category.svg")}
             className="object-cover group-hover:scale-108 transition-transform duration-300"
             sizes="175px"
           />

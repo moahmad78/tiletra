@@ -25,6 +25,8 @@ export default function CompactProductCard({
   const { isWishlisted, toggleWishlist } = useWishlistStore();
   const defaultVariant = product.variants[0];
   const wishlisted = isWishlisted(product.id);
+  const initialImage = product.images?.[0] || "/placeholders/product.svg";
+  const [imgSrc, setImgSrc] = useState(initialImage);
 
   useEffect(() => {
     setMounted(true);
@@ -56,9 +58,10 @@ export default function CompactProductCard({
       <div className="relative">
         <Link href={`/product/${product.slug}`} aria-label={`View ${product.name} details`} className="block relative aspect-square w-full bg-gray-50 overflow-hidden">
           <Image
-            src={product.images[0]}
+            src={imgSrc}
             alt={product.name}
             fill
+            onError={() => setImgSrc("/placeholders/product.svg")}
             className="object-cover transition-transform duration-300 hover:scale-105"
             sizes="155px"
           />

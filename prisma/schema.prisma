@@ -206,6 +206,11 @@ model Product {
   @@index([vendorId])
   @@index([status])
   @@index([approvalStatus])
+  @@index([status, approvalStatus, createdAt])
+  @@index([status, approvalStatus, isTrending])
+  @@index([status, approvalStatus, isBestseller])
+  @@index([status, approvalStatus, isNewArrival])
+  @@index([status, approvalStatus, categorySlug])
 }
 
 model ProductAttribute {

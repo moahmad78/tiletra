@@ -324,7 +324,10 @@ export default function HomeClient({
       {/* ========================================================================= */}
       {/* UNIFIED SITE-WIDE CATALOG & SEO FOUNDATION (Rendered Once)                */}
       {/* ========================================================================= */}
-      <InfiniteProductCatalog categories={categories} />
+      <InfiniteProductCatalog
+        categories={categories}
+        initialProducts={[...trending, ...displayBestsellers, ...displayNewArrivals].slice(0, 12)}
+      />
       <IntrihubBrandSEOSection />
       <Footer />
     </main>

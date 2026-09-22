@@ -21,6 +21,8 @@ export default function ProductCard({ product }: { product: Product }) {
   const { isWishlisted, toggleWishlist } = useWishlistStore();
   const defaultVariant = product.variants[0];
   const wishlisted = isWishlisted(product.id);
+  const initialImage = product.images && product.images[0] ? product.images[0] : "/placeholders/product.svg";
+  const [imgSrc, setImgSrc] = useState(initialImage);
 
   useEffect(() => {
     setMounted(true);
@@ -49,9 +51,10 @@ export default function ProductCard({ product }: { product: Product }) {
         <Link href={`/product/${product.slug}`} aria-label={`View ${product.name} details`} className="block">
           <div className="relative h-56 overflow-hidden bg-gray-100">
             <Image
-              src={product.images && product.images[0] ? product.images[0] : "/placeholders/product.svg"}
+              src={imgSrc}
               alt={product.name}
               fill
+              onError={() => setImgSrc("/placeholders/product.svg")}
               className="object-cover transition-transform duration-500 group-hover:scale-110"
               sizes="(max-width: 640px) 280px, (max-width: 1024px) 240px, 300px"
             />

@@ -69,7 +69,8 @@ function MobileBannerSlideItem({
   isActive: boolean;
 }) {
   const defaultImage = DEFAULT_SLIDES[index % DEFAULT_SLIDES.length]?.image || "/placeholders/banner.svg";
-  const imageSrc = slide.image && slide.image.trim() ? slide.image : defaultImage;
+  const initialImage = slide.image && slide.image.trim() ? slide.image : defaultImage;
+  const [imgSrc, setImgSrc] = useState(initialImage);
 
   return (
     <div
@@ -80,13 +81,13 @@ function MobileBannerSlideItem({
       <Link href={slide.href || "/shop"} className="block w-full h-full relative">
         {/* Background Image */}
         <Image
-          src={imageSrc}
+          src={imgSrc}
           alt={slide.title}
           fill
           className="object-cover"
           sizes="(max-width: 768px) 100vw, 50vw"
           priority={index === 0}
-          loading={index === 0 ? "eager" : "lazy"}
+          onError={() => setImgSrc("/placeholders/banner.svg")}
         />
 
         {/* Gradient overlay */}

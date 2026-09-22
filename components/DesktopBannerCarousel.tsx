@@ -70,7 +70,8 @@ function BannerSlideItem({
 }) {
   const accent = slide.accentColor || "#F26522";
   const defaultImage = DEFAULT_DESKTOP_SLIDES[index % DEFAULT_DESKTOP_SLIDES.length]?.image || "/placeholders/banner.svg";
-  const imageSrc = slide.image && slide.image.trim() ? slide.image : defaultImage;
+  const initialImage = slide.image && slide.image.trim() ? slide.image : defaultImage;
+  const [imgSrc, setImgSrc] = useState(initialImage);
 
   return (
     <div
@@ -80,11 +81,11 @@ function BannerSlideItem({
     >
       {/* Background Photo */}
       <Image
-        src={imageSrc}
+        src={imgSrc}
         alt={slide.headline}
         fill
         priority={index === 0}
-        loading={index === 0 ? "eager" : "lazy"}
+        onError={() => setImgSrc("/placeholders/banner.svg")}
         className="object-cover"
         sizes="(max-width: 1400px) 100vw, 1400px"
       />
