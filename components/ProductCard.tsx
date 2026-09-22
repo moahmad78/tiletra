@@ -46,7 +46,7 @@ export default function ProductCard({ product }: { product: Product }) {
       className="group bg-white rounded-2xl overflow-hidden border border-gray-100 shadow-sm hover:shadow-xl transition-all duration-300 flex flex-col justify-between"
     >
       <div className="relative">
-        <Link href={`/product/${product.slug}`} className="block">
+        <Link href={`/product/${product.slug}`} aria-label={`View ${product.name} details`} className="block">
           <div className="relative h-56 overflow-hidden bg-gray-100">
             <Image
               src={product.images && product.images[0] ? product.images[0] : "/placeholders/product.svg"}

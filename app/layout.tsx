@@ -47,7 +47,7 @@ export const metadata: Metadata = {
     template: "%s | IntriHub",
   },
   description:
-    "Buy tiles, electrical, plumbing, plywood, hardware & interior supplies online at best prices. Build Better, We Deliver Faster across Bengaluru & Pan-India with IntriHub.",
+    "Buy tiles, electrical, plumbing & hardware supplies online at best prices. Build Better, We Deliver Faster across Bengaluru & Pan-India with IntriHub.",
   keywords: [
     "Intrihub",
     "IntriHub",

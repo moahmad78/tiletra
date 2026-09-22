@@ -27,27 +27,23 @@ const ORIGINAL_SEO_PAGES: SeedSeoPageItem[] = [
     aliases: ["tiles-catalog", "buy-tiles-online"],
     pageType: SeoPageType.CATEGORY,
     category: "tiles",
-    targetKeyword: "tiles online India",
-    title: "Tiles Online India — Vitrified, Ceramic & Granite | IntriHub",
-    metaDescription: "Buy premium tiles online in India at direct factory rates. Extensive catalog of vitrified, ceramic, porcelain, and stone tiles with express site delivery.",
-    h1: "Buy Tiles Online in India — Factory-Direct Surface Materials",
-    introContent: `Tiles serve as the foundational aesthetic and structural anchor for residential living rooms, modern commercial offices, and demanding bathroom wet zones across India. When sourcing tiles online, architects and homeowners require verifiable material integrity, calibrated sizing, low water absorption rates, and consistent batch coloring. At IntriHub, our curated surface catalog bridges the gap between premier manufacturing clusters in Morbi, Rajasthan, and Gujarat directly to your construction site.
+    targetKeyword: "vitrified tiles online India",
+    title: "Vitrified Tiles & Flooring Materials Online | Best Price | IntriHub",
+    metaDescription: "Explore vitrified tiles online India at the floor tiles best price online. Buy anti-skid bathroom tiles, kitchen wall tiles & digital vitrified tiles 600x600.",
+    h1: "Vitrified Tiles & Flooring Materials Online",
+    introContent: `Choosing the right tile is one of the most impactful decisions in any interior or construction project. At IntriHub, explore vitrified tiles online India at the floor tiles best price online. Our expansive surface catalog connects you directly to premier ISO-certified manufacturing plants in Morbi, Rajasthan, and Gujarat, eliminating unnecessary middlemen markups.
 
-Whether you are laying double-charge vitrified slabs for heavy-footprint retail corridors or exploring glazed porcelain surfaces with anti-skid textures for shower stalls, our platform provides comprehensive technical datasheets. Each box specification details the exact breaking strength, scratch resistance rating, porcelain vitrification percentage (under 0.5% for true GVT/PGVT), and square footage coverage per carton so procurement leads never struggle with material shortages.
+Discover our curated premium collection including anti skid bathroom tiles, competitive kitchen wall tiles price, and precision-cut digital vitrified tiles 600x600. For areas demanding resilient durability, we stock polished porcelain tiles online, partner with certified ceramic wall tiles suppliers, and deliver heavy duty parking tiles engineered for vehicular loads.
 
-Our heavy-materials logistics network delivers across Bengaluru within 60 to 90 minutes from regional distribution hubs, alongside scheduled multi-drop site deliveries across pan-India metros. We eliminate multi-layered intermediary distributor markups, ensuring transparent pricing, B2B tax invoicing with valid GST HSN documentation, and intact delivery handling with reinforced edge corner packaging. Explore over 500 contemporary designs including book-matched Italian marble prints, organic matte concrete textures, and rustic wooden strip planks.
-
-When planning tile installation, site preparation is critical to ensure zero lippage, hollow sounds, or hairline joint fractures. We provide specialized polymer-modified tile adhesives (Type 1 and Type 2), epoxy grouts, leveling spacers, and diamond-edge cutting blades alongside tile boxes. By sourcing both surface slabs and setting chemistry simultaneously from IntriHub, contractors avoid mismatched adhesive-to-tile ratios and ensure maximum tensile adhesion strength on concrete screeds and plastered masonry walls. Our technical support desk assists estimators with box quantity take-offs, freight consolidation, and safe offloading coordination across urban multi-story projects.
-
-To place your tile order on IntriHub, simply select your desired surface finish, specify your room dimensions or carton requirement, and choose your preferred site delivery slot. Our team conducts batch color verification prior to dispatch to prevent shade variation between boxes. For commercial developers and architects handling high-volume projects, we provide dedicated account managers who coordinate staged deliveries, custom palletizing, and on-site material inspections.`,
+Elevate your interiors with glossy finish living room tiles, weather-resistant outdoor elevation tiles online, and warm rustic wooden look tiles price. For commercial developments and large projects, IntriHub provides grand slab tiles for commercial interior, affordable flooring materials online, marble look tiles wholesale, and exclusive mosaic and designer tiles India with 60-minute site delivery in Bengaluru.`,
     faqItems: [
       {
-        question: "What types of tiles can I buy online from IntriHub?",
-        answer: "IntriHub supplies double charge vitrified tiles, glazed vitrified tiles (GVT/PGVT), anti-skid ceramic bathroom floor tiles, designer subway wall tiles, natural granite slabs, and exterior parking pavers.",
+        question: "What tile sizes and finishes are available for delivery in Bangalore?",
+        answer: "IntriHub supplies digital vitrified tiles 600x600, polished porcelain tiles online, anti skid bathroom tiles, and heavy duty parking tiles with fast site delivery across Bengaluru.",
       },
       {
         question: "How do I calculate the exact number of tile boxes required for my room?",
-        answer: "Multiply the room length by the width in feet to get the net square footage, add a 10% allowance for cuts, corners, and breakage, and divide by the box coverage (typically 15.5 to 16 sq.ft for standard 600x600mm tiles).",
+        answer: "Multiply room length by width in feet to get net square footage, add a 10% cutting buffer, and divide by box coverage (typically 15.5 to 16 sq.ft for standard 600x600mm tiles).",
       },
       {
         question: "What is the delivery timeline for tile orders in Bengaluru?",
@@ -62,26 +58,22 @@ To place your tile order on IntriHub, simply select your desired surface finish,
   },
   {
     slug: "plywood",
-    aliases: ["plywood-online", "buy-plywood-online"],
+    aliases: ["plywood-online", "buy-plywood-online", "plywood-hardware"],
     pageType: SeoPageType.CATEGORY,
     category: "plywood",
-    targetKeyword: "plywood online India",
-    title: "Plywood Online India — BWP, Marine & Commercial Ply | IntriHub",
-    metaDescription: "Order certified BWP 710 marine plywood, BWR, and commercial ply online in India. Direct mill rates, zero-core gap assurance, and swift site delivery.",
-    h1: "Buy Certified Plywood Online in India — Calibrated & Marine Grade",
-    introContent: `Engineered wood panels form the silent skeleton of every custom modular kitchen, bespoke wardrobe unit, TV console, and office acoustic partition. Sourcing reliable plywood online requires rigorous attention to core veneer uniformity, bonding resin chemistry, and boiling water proof certifications. IntriHub supplies builders, carpenters, and interior designers across India with ISI-certified IS:710 Marine and IS:303 Moisture Resistant (MR) grade plywood boards direct from audited mills.
+    targetKeyword: "waterproof plywood 710 grade price",
+    title: "Plywood, Architectural Hardware & Interior Finishes | IntriHub",
+    metaDescription: "Check waterproof plywood 710 grade price, commercial plywood online store, blockboard and flush doors India & decorative laminate sheets price.",
+    h1: "Plywood, Architectural Hardware & Interior Finishes",
+    introContent: `Engineered wood panels and architectural hardware form the structural core of bespoke cabinetry, wardrobes, and modern interiors. At IntriHub, check waterproof plywood 710 grade price, commercial plywood online store, blockboard and flush doors India, decorative laminate sheets price, MDF and particle board online, and termite proof plywood sheets.
 
-Every sheet listed across our digital warehouse features calibrated thickness tolerance, preservative dipping treatments against subterranean termites and wood-boring insects, and zero overlapping core gap guarantees. For high-humidity zones like modular kitchen under-sink cabinets and bathroom vanity framing, our 100% hardwood BWP Marine ply boards withstand continuous 72-hour boiling tests without delamination.
+Pair your wood panels with premium architectural hardware fittings, door locks and handles online, heavy duty drawer channels, hydraulic hinges for kitchen cabinets, tower bolts and door stoppers, glass fittings and patch locks, and modular kitchen hardware online from Hettich, Godrej, and Dorset.
 
-We coordinate palletized panel transit across Bengaluru and southern India using dedicated flatbed and closed container vehicles, preventing surface scratching and edge dings. Alongside core plywood, procurement managers can consolidate high-density fiberboards (HDF), HDHMR panels, flexible ply for curved architectural features, and premium face veneers in a single procurement schedule. Benefit from direct mill-level trade quotes, reliable inventory verification, and rapid delivery right to your carpentry workshop or active job site.
-
-Proper panel acclimation and edge-sealing techniques maximize the working lifespan of interior joinery. Before cutting, boards should rest flat in the site environment for 48 hours to balance core moisture with ambient humidity. IntriHub equips modular furniture workshops with edge banding tapes, polyurethane adhesives, and matching balancing laminates to seal exposed core plies against capillary water infiltration. Whether constructing commercial workstation islands, acoustic wall paneling, or moisture-resilient bathroom vanities, our technical specialists ensure every sheet complies with density, screw holding, and modulus of rupture standards required by premier interior architects.
-
-Ordering plywood through IntriHub is streamlined for joinery contractors and project managers alike. Browse certified sheets by core wood species, thickness, and resin bonding specifications. Each delivery arrives bundled securely to prevent transport warping and moisture absorption. We also provide full technical certificates, warranty documentation, and responsive customer assistance for custom dimension requirements or recurring factory panel supplies.`,
+Ensure lasting durability with multi-purpose construction adhesives, structural silicone sealant online, PU foam and waterproofing chemicals, drywall screws and fasteners, and edge banding tape for plywood. Complete modern aesthetics with safety locks for main doors, furniture fittings wholesale India, charcoal panels for interior wall, acoustic panels online price, synthetic wood louvers online, and primer and wall putty supplies.`,
     faqItems: [
       {
         question: "What is the difference between IS:710 and IS:303 plywood?",
-        answer: "IS:710 denotes Boiling Water Proof (BWP) marine grade plywood bonded with unextended phenol-formaldehyde resin for water-prone zones, while IS:303 covers commercial Moisture Resistant (MR) plywood bonded with melamine urea-formaldehyde for dry interior furniture.",
+        answer: "IS:710 denotes waterproof plywood 710 grade price and boiling water proof marine ply, while IS:303 covers commercial plywood online store boards for dry interior joinery.",
       },
       {
         question: "What thicknesses of plywood sheets are available on IntriHub?",
@@ -103,19 +95,15 @@ Ordering plywood through IntriHub is streamlined for joinery contractors and pro
     aliases: ["electrical-materials-store", "buy-electrical-supplies"],
     pageType: SeoPageType.CATEGORY,
     category: "electrical",
-    targetKeyword: "electrical materials online",
-    title: "Electrical Materials Online — ISI Wires, Switches & MCBs | IntriHub",
-    metaDescription: "Buy certified electrical supplies online in India. FRLS copper wires, modular switch plates, MCBs, distribution boards & conduit pipes with fast delivery.",
-    h1: "Electrical Materials Online — Certified Wires, Modular Switches & Switchgear",
-    introContent: `A structure's electrical infrastructure must balance aesthetic refinement with zero-compromise electrical safety, thermal load handling, and flame-retardant performance. IntriHub offers a comprehensive electrical materials catalog designed specifically for licensed electricians, turnkey MEP contractors, and modern homeowners. We stock only ISI-marked, BEE energy-rated, and RoHS-compliant components from trusted tier-one manufacturers.
+    targetKeyword: "electrical wiring materials online",
+    title: "Commercial & Residential Electrical Supplies Online | IntriHub",
+    metaDescription: "Shop certified electrical wiring materials online, best modular switches and plates price & genuine copper electrical wires online at IntriHub.",
+    h1: "Commercial & Residential Electrical Supplies Online",
+    introContent: `Electrical infrastructure forms the vital backbone of every residential and commercial development. At IntriHub, shop certified electrical wiring materials online, best modular switches and plates price, and genuine copper electrical wires online from top ISI-certified brands including Havells, Polycab, Finolex, and Schneider Electric.
 
-Our wire and cable inventory centers on 100% electrolytic oxygen-free copper conductors insulated with high-grade Flame Retardant Low Smoke (FRLS) compounds. Ranging from 0.75 sq.mm up to 16 sq.mm, these cables resist high-surge temperature spikes while emitting minimal toxic gases in emergency scenarios. Complete your concealed conduits with our high-impact rigid PVC pipes, flexible conduits, metal back boxes, and modular surface distribution enclosures.
+Our electrical catalog spans commercial lighting fixtures wholesale, circuit breakers MCB distribution box units, electrical conduits and fittings, and heavy-duty industrial electrical supplies India. Equip your buildings with energy-efficient LED panel lights online store, heavy duty electrical cables, smart switches for home interior automation, and electrical safety devices online.
 
-For visible architectural touchpoints, explore curated modular switches, USB-C integrated wall plates, glass finish switch panels, and smart automation modules. Switchgear offerings encompass thermal-magnetic Miniature Circuit Breakers (MCBs), Residual Current Circuit Breakers (RCCBs) for ground-fault shock prevention, and industrial-grade isolators. IntriHub maintains live warehouse stock in Begur, delivering essential electrical supplies to Bengaluru job sites in under 90 minutes.
-
-Modern electrical projects require complete end-to-end circuit safety coordination from the service entrance down to individual branch circuits. IntriHub works directly with certified electrical consultants to supply matched fault-level coordination equipment, including Type-C curve MCBs, surge protection devices (SPDs), and high-conductivity copper earthing electrodes with chemical compound backfill. We ensure all cable drums and coils arrive with factory inspection certificates, authentic hologram tags, and batch testing reports. Our lightning-fast site delivery guarantees zero downtime for electrical teams pulling wiring through concealed conduit runs during tight finishing schedules.
-
-IntriHub simplifies electrical material procurement for residential rewiring and large-scale MEP projects. Review comprehensive technical specifications, amp ratings, and conductor dimensions directly in our catalog. Orders are prepared from our central Begur inventory, ensuring rapid delivery of genuine, factory-fresh coils and switch units. Our technical advisors are available to verify circuit requirements, assisting you in selecting the ideal components for zero-defect electrical infrastructure.`,
+Contractors and electricians can source multi-strand copper wire price, waterproof outdoor lights online, modular switchboards wholesale, and flexible pipe electrical accessories with instant site dispatch and B2B GST invoicing across Karnataka.`,
     faqItems: [
       {
         question: "What gauge wires are needed for household room wiring?",
@@ -141,19 +129,15 @@ IntriHub simplifies electrical material procurement for residential rewiring and
     aliases: ["plumbing-materials-online", "plumbing-supplies-store"],
     pageType: SeoPageType.CATEGORY,
     category: "plumbing",
-    targetKeyword: "plumbing materials online",
-    title: "Plumbing Materials Online — CPVC, UPVC Pipes & Fittings | IntriHub",
-    metaDescription: "Shop certified plumbing supplies online in India. Lead-free CPVC hot/cold pipes, UPVC drainage lines, brass valves & concealed cisterns delivered to site.",
-    h1: "Buy Plumbing Materials Online — Pipes, Valves & Sanitary Fittings",
-    introContent: `Concealed plumbing is one of the most critical elements of interior construction because subterranean leaks can compromise reinforced concrete, ruin costly false ceilings, and foster toxic mold growth. Sourcing certified plumbing materials online gives construction managers direct access to NSF-certified, lead-free CPVC, UPVC, and SWR piping networks engineered for zero-defect hydrostatic performance over multiple decades.
+    targetKeyword: "plumbing materials wholesale price",
+    title: "Heavy-Duty Plumbing Systems & Sanitaryware Online | IntriHub",
+    metaDescription: "Get plumbing materials wholesale price, reliable PVC pipes and fittings online, CPVC pipes for hot water supply & UPVC plumbing systems price.",
+    h1: "Heavy-Duty Plumbing Systems & Sanitaryware Online",
+    introContent: `A leak-free, long-lasting water management system requires specification-grade pipes and precision-engineered fixtures. At IntriHub, get plumbing materials wholesale price, reliable PVC pipes and fittings online, CPVC pipes for hot water supply, and competitive UPVC plumbing systems price from Astral, Supreme, and Finolex.
 
-At IntriHub, we stock SDR 11 and SDR 13.5 CPVC pipes formulated for pressurized potable hot and cold water distribution up to 93°C, alongside UV-stabilized UPVC pipes for ambient water transmission. Each pipe line includes matching solvent cements, heavy-duty brass threaded transition fittings, union couplings, and brass ball valves to prevent galvanic corrosion and threaded joint weepage.
+For luxury and residential bathrooms, we connect you with certified bathroom sanitaryware suppliers, wall mixer and faucet online, one piece commode and washbasin configurations, and concealed cistern flush tank units from Kohler, Jaquar, Hindware, and Cera.
 
-For waste drainage and rainwater management, our soil, waste, and rainwater (SWR) ring-fit pipes ensure water-tight jointing with elastomeric rubber rings that accommodate structural expansion and contraction. We also supply concealed flush valves, diverter bodies, multi-floor floor traps with water seals, and overhead water storage tank accessories. Order online for swift site drop-offs across Bengaluru and pan-India project destinations with complete HSN-coded GST billing.
-
-Hydrostatic pressure testing is indispensable prior to closing plumbing wall chases, ensuring every solvent-welded joint and threaded union remains completely leak-free under operating pressures up to 15 kg/cm². IntriHub supports MEP plumbing contractors with factory-spec step-by-step jointing protocols, heavy-duty chamfering tools, pipe cutters, and certified low-VOC solvent cements. By combining supply lines, acoustic drainage pipes, and pressure reducing valves into unified site delivery schedules, we help prevent construction delays and protect high-value ceiling and flooring investments from moisture contamination.
-
-When ordering plumbing supplies from IntriHub, contractors can consolidate complete pipe schedules, brass valves, and jointing compounds in a single order. Every consignment is inspected for wall thickness consistency and thread integrity before site dispatch. We offer scheduled multi-stage deliveries to match your civil plumbing milestones, backed by dedicated technical support and transparent per-meter pricing. Furthermore, our plumbing inventory includes pressure gauges, deburring tools, and certified pipe lubricants to assist your technicians during assembly. We ensure complete batch tracking and quality assurance across every pipe length and brass component.`,
+Equip kitchens and utility areas with kitchen sink stainless steel online, drainage and sewage pipes price, water storage tanks online India, and bath fittings and accessories store. We also supply critical infrastructure hardware like pressure relief valves plumbing, premium shower heads online, and heavy duty brass fittings for high-pressure installations.`,
     faqItems: [
       {
         question: "What is the difference between CPVC and UPVC pipes?",
@@ -179,19 +163,13 @@ When ordering plumbing supplies from IntriHub, contractors can consolidate compl
     aliases: ["hardware-store-online", "architectural-hardware-online"],
     pageType: SeoPageType.CATEGORY,
     category: "hardware",
-    targetKeyword: "hardware store online",
-    title: "Hardware Store Online — Door Handles, Hinges & Channels | IntriHub",
-    metaDescription: "India's online architectural hardware store. Stainless steel hinges, hydraulic drawer channels, mortise door handles, locks & fasteners delivered fast.",
-    h1: "Online Architectural Hardware Store — Precision Fittings & Door Hardware",
-    introContent: `Architectural hardware dictates the tactile feel and ergonomic longevity of every door, drawer, window, and cabinet in a building. Flimsy drawer runners or low-grade zinc alloy hinges quickly sag, creak, and misalign under everyday usage. IntriHub operates an online architectural hardware supply center catering directly to modular cabinet makers, interior contractors, and commercial fit-out specialists who demand SS 304 grade precision fittings.
+    targetKeyword: "architectural hardware fittings",
+    title: "Architectural Hardware Fittings & Door Locks Online | IntriHub",
+    metaDescription: "Buy architectural hardware fittings, door locks and handles online, heavy duty drawer channels & hydraulic hinges for kitchen cabinets at trade prices.",
+    h1: "Architectural Hardware Fittings & Door Locks Online",
+    introContent: `Hardware and architectural fittings are the essential moving parts that define the daily comfort, safety, and longevity of your interiors. At IntriHub, browse premium architectural hardware fittings, door locks and handles online, heavy duty drawer channels, hydraulic hinges for kitchen cabinets, tower bolts and door stoppers, glass fittings and patch locks, and modular kitchen hardware online.
 
-Our comprehensive catalog features soft-close hydraulic concealed hinges tested for over 100,000 opening cycles, heavy-duty undermount drawer slides, telescopic ball-bearing channels, and slim tandem box systems. For door security and architectural statements, we offer solid brass and stainless steel mortise handles, high-security euro-profile lock cylinders, magnetic door catchers, and heavy-duty floor springs for frameless glass doors.
-
-In addition to decorative joinery fittings, we stock essential structural fasteners including drywall screws, self-tapping chipboard screws, concrete anchor bolts, and specialized wood adhesives. IntriHub's streamlined supply chain enables architects and project supervisors to order exact finishes — from matte black PVD to brushed rose gold and antique brass — with unified batch consistency and prompt site delivery in Bengaluru and across India.
-
-Longevity in modular cabinetry and architectural doors depends on proper cycle ratings, corrosion resistance, and load-bearing hinge placement. IntriHub offers hardware specification guidance to ensure drawer runner weight capacities match deep pot-and-pan pull-outs, tall pantry units, and heavy solid wood wardrobe doors. Our architectural fittings catalog spans sleek concealed door closers, magnetic profile handles, drop-down acoustic weather strips, and premium keyed cylinders. Every batch undergoes salt spray resistance testing to guarantee pristine surface finishes in both air-conditioned interiors and humid coastal environments.
-
-Explore our architectural hardware catalog by finish, load capacity, and cycle rating to find the perfect match for your joinery and fenestration designs. IntriHub maintains consistent finish matching across hinges, handles, and locks, eliminating the frustration of mixed metal tones on site. Enjoy hassle-free ordering, B2B tax invoicing, and rapid doorstep delivery directly to your modular manufacturing unit or active residence.`,
+We stock industrial-grade multi-purpose construction adhesives, structural silicone sealant online, PU foam and waterproofing chemicals, drywall screws and fasteners, edge banding tape for plywood, safety locks for main doors, and furniture fittings wholesale India with fast site dispatch across Bengaluru.`,
     faqItems: [
       {
         question: "What stainless steel grade is recommended for hinges in coastal or humid areas?",

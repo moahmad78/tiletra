@@ -21,58 +21,50 @@ export type CategorySeoData = {
 
 export const CATEGORY_SEO: Record<string, CategorySeoData> = {
   "tiles-stone": {
-    metaTitle: "Tiles & Stone Online in Bangalore | Factory-Direct Prices | Intrihub",
+    metaTitle: "Vitrified Tiles & Flooring Materials Online | Best Prices | IntriHub",
     metaDescription:
-      "Buy vitrified tiles, granite slabs & stone cladding online in Bangalore. Factory-direct prices, 60-min delivery. Explore 500+ designs on Intrihub.",
-    seoHeading: "Buy Tiles & Stone Online in Bangalore — Factory-Direct Prices",
-    seoContent: `Choosing the right tile is one of the most impactful decisions in any interior or construction project — it defines the character of every floor, wall, and outdoor surface in the space. At Intrihub, we bring the factory floor directly to your project site: our Tiles & Stone catalog spans vitrified floor tiles, ceramic wall tiles, natural granite slabs, Italian marble, rough-cut stone cladding, and high-gloss porcelain — all sourced from ISO-certified manufacturing hubs in Rajasthan, Morbi, and Karnataka.
+      "Explore vitrified tiles online India at the floor tiles best price online. Buy anti-skid bathroom tiles, kitchen wall tiles & digital vitrified tiles 600x600.",
+    seoHeading: "Vitrified Tiles & Flooring Materials Online — Factory Direct",
+    seoContent: `Choosing the right tile is one of the most impactful decisions in any interior or construction project. At IntriHub, explore vitrified tiles online India at the floor tiles best price online. Our expansive surface catalog connects you directly to premier ISO-certified manufacturing plants, eliminating unnecessary middlemen markups.
 
-Every tile listing on Intrihub includes verified technical specs: slip resistance class, water absorption percentage, PEI wear rating, and coverage per box. Our built-in smart calculator on each product page takes your room's square footage and instantly computes the exact number of boxes you need — including a standard 10% cutting wastage buffer — so you never over-order or run short mid-project.
+Discover our curated premium collection including anti skid bathroom tiles, competitive kitchen wall tiles price, and precision-cut digital vitrified tiles 600x600. For areas demanding resilient durability, we stock polished porcelain tiles online, partner with certified ceramic wall tiles suppliers, and deliver heavy duty parking tiles engineered for vehicular loads.
 
-For contractors and builders handling multiple floors or large commercial spaces, Intrihub offers tiered contractor pricing on pallet quantities. For homeowners and interior designers choosing between 10–20 boxes for a bedroom or bathroom makeover, our per-box pricing already beats most local dealers by 15–30% because we've removed the distributor and retailer markup from the chain.
-
-Delivery for tiles is handled by our specialized heavy-goods fleet — not a generic courier. Our logistics team coordinates lift access, floor-level delivery, and unboxing at your site, minimizing breakage risk that's common with standard parcel services. Orders placed before 2 PM for in-stock designs typically dispatch the same day to addresses across Bangalore.
-
-Whether you're laying 600×600mm vitrified tiles for a modern living room, 300×600mm bathroom wall tiles, or sourcing natural granite for kitchen countertops and staircase treads, Intrihub's Tiles & Stone section covers every application. Filter by size, finish, shade, or usage, and browse with full confidence — every product carries a clear return policy and quality assurance guarantee.`,
+Elevate your interiors with glossy finish living room tiles, weather-resistant outdoor elevation tiles online, and warm rustic wooden look tiles price. For commercial developments and large projects, IntriHub provides grand slab tiles for commercial interior, affordable flooring materials online, marble look tiles wholesale, and exclusive mosaic and designer tiles India with 60-minute site delivery in Bengaluru.`,
     faqs: [
       {
-        question: "What tile sizes are available for delivery in Bangalore?",
+        question: "What tile sizes and finishes are available for delivery in Bangalore?",
         answer:
-          "Intrihub stocks tiles in standard sizes including 300×300mm, 300×600mm, 600×600mm, 600×1200mm, 800×1600mm, and custom slab formats. All sizes are available for same-day or next-day delivery across Bangalore depending on stock availability at the nearest dispatch hub.",
+          "IntriHub stocks digital vitrified tiles 600x600, 600x1200mm, 800x1600mm, polished porcelain tiles online, anti-skid bathroom tiles, and heavy duty parking tiles with same-day dispatch across Bengaluru.",
       },
       {
         question: "How do I calculate how many tile boxes I need?",
         answer:
-          "Use Intrihub's built-in smart calculator on each tile product page. Enter your room area in square feet, and the calculator will compute the exact number of boxes required including a 10% wastage buffer for cuts. You can also speak to our project support team on WhatsApp for complex layouts.",
+          "Use IntriHub's built-in smart calculator on each tile product page. Enter your room square footage, and the calculator computes the exact box count with a 10% cutting wastage buffer.",
       },
     ],
     crossLinks: ["electrical", "plumbing-sanitary", "adhesives-sealants-waterproofing"],
   },
 
   electrical: {
-    metaTitle: "Electrical Materials Online in Bangalore | Factory-Direct Prices | Intrihub",
+    metaTitle: "Commercial & Residential Electrical Supplies Online | IntriHub",
     metaDescription:
-      "Buy wires, switches, MCBs & conduits online in Bangalore. ISI-certified electrical materials at factory-direct prices. Fast site delivery — Intrihub.",
-    seoHeading: "Buy Electrical Materials Online in Bangalore — ISI-Certified, Direct Factory Rates",
-    seoContent: `Electrical work is the invisible backbone of every building — done right, it lasts decades; done wrong, it creates hazards that no renovation can easily undo. Intrihub's Electrical category is curated specifically for the construction and renovation market: every product listed has passed ISI, BEE, or FRLS certification, and we display the certification details on each product page so you can verify before ordering.
+      "Shop certified electrical wiring materials online, best modular switches and plates price & genuine copper electrical wires online at IntriHub.",
+    seoHeading: "Commercial & Residential Electrical Supplies Online — ISI-Certified",
+    seoContent: `Electrical infrastructure forms the vital backbone of every residential and commercial development. At IntriHub, shop certified electrical wiring materials online, best modular switches and plates price, and genuine copper electrical wires online from top ISI-certified brands including Havells, Polycab, Finolex, and Schneider Electric.
 
-Our catalog covers the full electrical supply chain from bare conductor to finished fitting. FRLS (Flame Retardant Low Smoke) wires from Havells, Polycab, Finolex, and RR Kabel are available in 1.5 sq.mm, 2.5 sq.mm, 4 sq.mm, 6 sq.mm, and 10 sq.mm sizes — the most common gauges for residential and light commercial wiring. For higher amperage circuits, we stock armored cables (AYFY/AYWY) and industrial-grade flexible cables for machinery and HVAC applications.
+Our electrical catalog spans commercial lighting fixtures wholesale, circuit breakers MCB distribution box units, electrical conduits and fittings, and heavy-duty industrial electrical supplies India. Equip your buildings with energy-efficient LED panel lights online store, heavy duty electrical cables, smart switches for home interior automation, and electrical safety devices online.
 
-Modular switches and sockets from Legrand, GM, Simon, Anchor, and Wipro are organized by series — from economy residential to premium glass-finish architectural series — with complete compatibility charts so you can mix frames and modules confidently. MCBs, RCCBs, and Distribution Boards (DB boxes) from Schneider Electric, Havells, and Legrand complete the panel-room supply list.
-
-Intrihub stocks PVC conduit pipes, flexible conduit, junction boxes, and cable trays for complete installation sets — so your electrician doesn't have to make multiple trips to the hardware store. All conduit and trunking products include dimensional specs and load ratings.
-
-For large residential projects or commercial fit-outs requiring multi-phase cabling, our contractor desk provides project-level quotes with phased delivery scheduling aligned to your construction timeline. GST B2B invoices with valid HSN codes are issued for every order.`,
+Contractors and electricians can source multi-strand copper wire price, waterproof outdoor lights online, modular switchboards wholesale, and flexible pipe electrical accessories with instant site dispatch and B2B GST invoicing across Karnataka.`,
     faqs: [
       {
-        question: "What wire sizes are available for home wiring in Bangalore?",
+        question: "What wire gauges and cables are available on IntriHub?",
         answer:
-          "Intrihub stocks FRLS copper wires in 1.5 sq.mm (for lighting), 2.5 sq.mm (for power points), 4 sq.mm and 6 sq.mm (for AC/heavy appliances), and 10 sq.mm (for main supply). All wires are ISI-certified from brands including Havells, Polycab, and Finolex.",
+          "We stock genuine copper electrical wires online in 1.5 sq.mm, 2.5 sq.mm, 4 sq.mm, 6 sq.mm, and 10 sq.mm sizes, along with armored heavy duty electrical cables and flexible pipe electrical accessories.",
       },
       {
-        question: "Do you supply MCBs and distribution boards for commercial projects?",
+        question: "Do you supply modular switches and distribution boards in bulk?",
         answer:
-          "Yes. Intrihub carries MCBs (6A–63A), RCCBs, ELCBs, and complete distribution board enclosures from Schneider Electric, Havells, and Legrand. For large commercial projects requiring bulk DB panels, contact our contractor desk for custom project quotes and phased delivery.",
+          "Yes. IntriHub offers modular switchboards wholesale, circuit breakers MCB distribution box panels, and smart switches for home interior projects at trade wholesale pricing.",
       },
     ],
     crossLinks: ["lighting", "smart-home", "safety-fire"],
@@ -87,110 +79,90 @@ For large residential projects or commercial fit-outs requiring multi-phase cabl
 
 Our LED category includes recessed COB downlights (3W to 25W), surface-mount panel lights, linear LED strips in single-color and CCT-tunable variants, track lighting systems for retail and gallery applications, and waterproof IP65 rated fittings for bathrooms, kitchens, and outdoor use. All LED products list actual lumen output, color rendering index (CRI), beam angle, and energy consumption so you can design to specification rather than guessing.
 
-Decorative lighting — pendant lights, designer chandeliers, wall sconces, and table lamps — is selected for both aesthetic impact and practical wiring compatibility. Each decorative fitting specifies the canopy size, wire length, and bulb type required, reducing the back-and-forth with your electrician.
-
-For false ceiling or cove lighting applications, Intrihub carries LED strip profiles (aluminum channels with diffusers), smart dimmable LED strips, and DALI-compatible drivers for integration with building automation systems. Our profile channel range includes surface, recessed, and corner variants.
-
-Intrihub also offers architectural exterior lighting — bollard lights, step lights, facade uplighters, and underwater pond lights — for landscape and outdoor design projects across Bangalore villas and commercial properties.`,
+Decorative lighting — pendant lights, designer chandeliers, wall sconces, and table lamps — is selected for both aesthetic impact and practical wiring compatibility. Each decorative fitting specifies the canopy size, wire length, and bulb type required, reducing the back-and-forth with your electrician.`,
     faqs: [
       {
         question: "What LED downlight sizes are available for false ceilings?",
         answer:
-          "Intrihub stocks recessed LED downlights in 2-inch (50mm), 3-inch (75mm), 4-inch (100mm), and 6-inch (150mm) cutout diameters, covering 3W to 25W wattage ranges. Both warm white (3000K) and cool white (6500K) CCT options are available.",
+          "Intrihub stocks recessed LED downlights in 2-inch (50mm), 3-inch (75mm), 4-inch (100mm), and 6-inch (150mm) cutout diameters, covering 3W to 25W wattage ranges.",
       },
       {
         question: "Do you supply LED strip lights for cove lighting?",
         answer:
-          "Yes. Intrihub carries single-color, dual-white, and RGB LED strip lights in 12V and 24V variants with IP20 (indoor dry) and IP65 (moisture-resistant) ratings. We also stock aluminum channel profiles with diffusers for a premium finished look in cove and cabinet lighting applications.",
+          "Yes. Intrihub carries single-color, dual-white, and RGB LED strip lights in 12V and 24V variants with IP20 (indoor dry) and IP65 (moisture-resistant) ratings.",
       },
     ],
     crossLinks: ["electrical", "smart-home", "false-ceiling"],
   },
 
   "plumbing-sanitary": {
-    metaTitle: "Plumbing & Sanitaryware Online in Bangalore | Factory-Direct Prices | Intrihub",
+    metaTitle: "Heavy-Duty Plumbing Systems & Sanitaryware Online | IntriHub",
     metaDescription:
-      "Buy CPVC pipes, faucets, washbasins & water closets online in Bangalore. Quality plumbing materials, site delivery. Shop Intrihub.",
-    seoHeading: "Buy Plumbing & Sanitaryware Online in Bangalore — Direct Factory Prices",
-    seoContent: `Plumbing is the circulatory system of every building, and the quality of materials used determines whether you're dealing with zero maintenance or chronic leaks for the next 20 years. Intrihub's Plumbing & Sanitary category covers the entire water supply and drainage ecosystem: from CPVC/UPVC pipes at the input to designer faucets, washbasins, EWCs, and shower panels at the output.
+      "Get plumbing materials wholesale price, reliable PVC pipes and fittings online, CPVC pipes for hot water supply & UPVC plumbing systems price.",
+    seoHeading: "Heavy-Duty Plumbing Systems & Sanitaryware Online — Direct Rates",
+    seoContent: `A leak-free, long-lasting water management system requires specification-grade pipes and precision-engineered fixtures. At IntriHub, get plumbing materials wholesale price, reliable PVC pipes and fittings online, CPVC pipes for hot water supply, and competitive UPVC plumbing systems price from Astral, Supreme, and Finolex.
 
-CPVC pressure pipes from Astral, Supreme, and Finolex are stocked in 15mm to 50mm diameters with full fitting ranges — elbows, tees, couplings, reducers, ball valves, and stop cocks — so your plumber can complete a bathroom set from a single order. For drainage, we carry SWR PVC pipes and push-fit drainage fittings compliant with IS:13592 standards.
+For luxury and residential bathrooms, we connect you with certified bathroom sanitaryware suppliers, wall mixer and faucet online, one piece commode and washbasin configurations, and concealed cistern flush tank units from Kohler, Jaquar, Hindware, and Cera.
 
-Our sanitaryware selection partners with Kohler, Jaquar, Parryware, Hindware, Cera, and Somany — covering the spectrum from economy builder-grade to premium designer bathrooms. Wall-hung EWCs with concealed cisterns, floor-mounted pedestal wash basins, under-counter vanity basins, and RIMLESS flushing technology models are all listed with installation dimension drawings so your tile setter and plumber can coordinate accurately.
-
-Bathroom faucets and shower systems are organized by finish (chrome, brushed gold, matte black, gunmetal) and by collection — so you can match a basin mixer, overhead shower, hand shower, and wall spout from a coordinated range rather than mixing incompatible designs. Every faucet listing specifies spout reach, handle type, and cartridge brand for ease of servicing.
-
-For site managers handling multiple bathroom units across a residential project, Intrihub's bulk order desk provides package pricing for complete bathroom sets — EWC + basin + mixer + shower set — with scheduled floor-by-floor delivery.`,
+Equip kitchens and utility areas with kitchen sink stainless steel online, drainage and sewage pipes price, water storage tanks online India, and bath fittings and accessories store. We also supply critical infrastructure hardware like pressure relief valves plumbing, premium shower heads online, and heavy duty brass fittings for high-pressure installations.`,
     faqs: [
       {
-        question: "What CPVC pipe brands are available for hot and cold water lines?",
+        question: "What pipe grades are available for plumbing installations?",
         answer:
-          "Intrihub stocks CPVC pipes and fittings from Astral, Supreme, and Finolex in 15mm, 20mm, 25mm, 32mm, and 50mm diameters. CPVC is suitable for both hot and cold water supply lines and is the standard specification for residential plumbing across Bangalore.",
+          "IntriHub provides CPVC pipes for hot water supply, UPVC plumbing systems price, and durable PVC pipes and fittings online with complete elbow, tee, union, and valve fittings.",
       },
       {
-        question: "Do you sell wall-hung EWCs with concealed cisterns in Bangalore?",
+        question: "Do you supply sanitaryware and concealed cisterns across Bangalore?",
         answer:
-          "Yes. Intrihub carries wall-hung EWCs with concealed flush cisterns from Kohler, Jaquar, Hindware, and Cera. Each listing includes installation depth requirements and compatible flush plate options. Our team can also help with complete bathroom set pricing for multi-unit projects.",
+          "Yes, we deliver one piece commode and washbasin units, wall-hung toilets, and concealed cistern flush tank assemblies with 60-minute site dispatch in Bengaluru.",
       },
     ],
     crossLinks: ["tiles-stone", "hardware-fittings", "adhesives-sealants-waterproofing"],
   },
 
   plywood: {
-    metaTitle: "Plywood & Laminates Online in Bangalore | Factory-Direct Prices | Intrihub",
+    metaTitle: "Plywood, Architectural Hardware & Interior Finishes | IntriHub",
     metaDescription:
-      "Buy BWP marine ply, commercial MR plywood, MDF & laminates online in Bangalore. Direct factory rates, bulk supply. Intrihub.",
-    seoHeading: "Buy Plywood & Laminates Online in Bangalore — BWP, MR Grade, MDF",
-    seoContent: `Plywood is the structural foundation of every wardrobe, kitchen cabinet, false ceiling frame, and wooden furniture piece — choosing the wrong grade compromises everything built on top of it. Intrihub's Plywood & Laminates category is engineered for the construction trade: clear grade labeling, verified ISI marks, and consistent thickness tolerance across every sheet.
+      "Check waterproof plywood 710 grade price, commercial plywood online store, blockboard and flush doors India & decorative laminate sheets price.",
+    seoHeading: "Plywood, Architectural Hardware & Interior Finishes — Mill Direct",
+    seoContent: `Engineered wood panels and architectural hardware form the structural core of bespoke cabinetry, wardrobes, and modern interiors. At IntriHub, check waterproof plywood 710 grade price, commercial plywood online store, blockboard and flush doors India, decorative laminate sheets price, MDF and particle board online, and termite proof plywood sheets.
 
-BWP (Boiling Water Proof) marine-grade plywood is our highest-specification offering — suitable for kitchens, bathrooms, and any humid environment where MR plywood would delaminate over time. We carry 6mm, 9mm, 12mm, 18mm, and 25mm thicknesses in standard 8×4 feet sheets from Century, Greenply, Kitply, and Action TESA.
+Pair your wood panels with premium architectural hardware fittings, door locks and handles online, heavy duty drawer channels, hydraulic hinges for kitchen cabinets, tower bolts and door stoppers, glass fittings and patch locks, and modular kitchen hardware online from Hettich, Godrej, and Dorset.
 
-MR (Moisture Resistant) commercial plywood serves interior carpentry where direct moisture exposure isn't a concern — TV units, bedroom wardrobes, study tables, and wall paneling. At a lower price point than BWP, MR plywood covers the bulk of interior joinery requirements.
-
-MDF (Medium Density Fibreboard) and HDHMR boards provide a smooth, stable substrate for paint, lacquer, and PU finishes on flat-panel doors and cabinets. Intrihub stocks standard and moisture-resistant MDF in 6mm to 25mm thickness, along with matching edge banding tapes and pre-laminated boards that save finishing time.
-
-Decorative laminates from Merino, Century, Greenlam, and Virgo are organized by finish — solid colors, woodgrain textures, stone textures, and abstract patterns — with matching edgeband availability noted on each listing. For site managers, Intrihub offers full-project plywood + laminate package quotes with floor-by-floor delivery scheduling.`,
+Ensure lasting durability with multi-purpose construction adhesives, structural silicone sealant online, PU foam and waterproofing chemicals, drywall screws and fasteners, and edge banding tape for plywood. Complete modern aesthetics with safety locks for main doors, furniture fittings wholesale India, charcoal panels for interior wall, acoustic panels online price, synthetic wood louvers online, and primer and wall putty supplies.`,
     faqs: [
       {
-        question: "What is the difference between BWP and MR grade plywood?",
+        question: "What plywood grades and thicknesses are available?",
         answer:
-          "BWP (Boiling Water Proof) plywood uses phenol formaldehyde adhesive and can withstand prolonged water exposure — making it ideal for kitchens, bathrooms, and wet areas. MR (Moisture Resistant) plywood uses urea formaldehyde adhesive and resists humidity but should not be used in direct water contact areas. For most interior carpentry, MR grade suffices; for kitchen and bathroom shutters, BWP is recommended.",
+          "We supply waterproof plywood 710 grade price, commercial plywood online store, and termite proof plywood sheets in 6mm, 9mm, 12mm, 16mm, 18mm, and 25mm thicknesses.",
       },
       {
-        question: "Do you supply plywood and laminates for full apartment fit-outs in Bangalore?",
+        question: "Do you supply architectural hardware and laminates for full project fit-outs?",
         answer:
-          "Yes. Intrihub offers project-level bulk pricing for full apartment fit-outs including BWP plywood, MR plywood, MDF, laminates, and edgebanding. Contact our contractor desk via WhatsApp for a project quote and delivery schedule aligned to your carpenter's timeline.",
+          "Yes. IntriHub delivers decorative laminate sheets price, hydraulic hinges for kitchen cabinets, heavy duty drawer channels, and multi-purpose construction adhesives in bulk across Bengaluru.",
       },
     ],
     crossLinks: ["hardware-fittings", "furniture", "kitchen-wardrobe"],
   },
 
   "hardware-fittings": {
-    metaTitle: "Hardware & Fittings Online in Bangalore | Factory-Direct Prices | Intrihub",
+    metaTitle: "Architectural Hardware Fittings & Door Locks Online | IntriHub",
     metaDescription:
-      "Buy hinges, locks, screws, drawer slides & handles online in Bangalore. Direct hardware prices, fast delivery. Intrihub.",
-    seoHeading: "Buy Hardware & Fittings Online in Bangalore — Trade Prices on Hinges, Locks & More",
-    seoContent: `Hardware and architectural fittings are the functional detail that determines how a finished interior actually performs in daily use — a kitchen cabinet that doesn't close silently, a bathroom door that drags, or a wardrobe whose drawer slides fail within a year are all hardware failures, not joinery failures. Intrihub's Hardware & Fittings category carries the full range of architectural and furniture hardware required for professional interior fit-outs.
+      "Buy architectural hardware fittings, door locks and handles online, heavy duty drawer channels & hydraulic hinges for kitchen cabinets at trade prices.",
+    seoHeading: "Architectural Hardware Fittings & Fasteners — Trade Prices",
+    seoContent: `Hardware and architectural fittings are the essential moving parts that define the daily comfort, safety, and longevity of your interiors. At IntriHub, browse premium architectural hardware fittings, door locks and handles online, heavy duty drawer channels, hydraulic hinges for kitchen cabinets, tower bolts and door stoppers, glass fittings and patch locks, and modular kitchen hardware online.
 
-Concealed hydraulic hinges (30° and 170° opening) from Hettich, Blum, and Dorset are organized by door weight capacity — 10kg, 20kg, and 40kg — with damper specifications. Soft-close mechanisms are specified by damping speed and release angle so your carpenter can select the right component for door thickness and weight.
-
-Drawer slides from Hettich, Sugatsune, and Ebco are listed with load capacity (20kg, 40kg, 60kg), extension type (partial, full, over-travel), and mounting width — critical for accurate wardrobe and kitchen module specification. Ball-bearing under-mount and side-mount variants are stocked in lengths from 250mm to 600mm.
-
-Mortise locks, cylindrical locks, and digital smart locks from Godrej, Yale, Dorset, and Europa cover residential doors and commercial office applications. Lock body dimensions, strike plate type, and key cylinder specifications are listed for each model to eliminate compatibility issues on site.
-
-Handles and knobs — from stainless steel 304 bar pulls to zinc alloy heritage knobs to aluminum profile handles — are organized by material, finish, and hole-center dimension. Full-range matching collections are grouped together so designers can specify a consistent handle aesthetic across kitchens, wardrobes, and drawers.
-
-Stainless steel screws, bolts, rawl plugs, and construction fasteners round out the catalog — available in trade packs for site-level consumption.`,
+We stock industrial-grade multi-purpose construction adhesives, structural silicone sealant online, PU foam and waterproofing chemicals, drywall screws and fasteners, edge banding tape for plywood, safety locks for main doors, and furniture fittings wholesale India with fast site dispatch across Bengaluru.`,
     faqs: [
       {
-        question: "What hinge brands are available for modular kitchen shutters?",
+        question: "What hardware brands are available on IntriHub?",
         answer:
-          "Intrihub stocks hydraulic soft-close hinges from Hettich, Blum, and Dorset — the three most specified brands in Bangalore modular kitchens. Hinges are available in 35mm cup diameter for standard doors, with opening angles of 110°, 165°, and 170° to suit frameless and face-frame cabinet constructions.",
+          "IntriHub carries genuine architectural hardware from Hettich, Godrej, Yale, Dorset, and Ebco with full manufacturer warranty and instant site delivery.",
       },
       {
-        question: "Do you sell full-extension drawer slides for modular wardrobes?",
+        question: "Can I get soft-close hydraulic hinges and drawer channels?",
         answer:
-          "Yes. Intrihub carries full-extension ball-bearing drawer slides from Hettich, Sugatsune, and Ebco in 250mm to 600mm lengths, rated for 20kg to 60kg loads. Undermount and side-mount options are both available, with soft-close dampening variants for premium applications.",
+          "Yes, we provide hydraulic hinges for kitchen cabinets, heavy duty drawer channels, and soft-close sliders in all standard depth profiles.",
       },
     ],
     crossLinks: ["plywood", "doors-windows", "furniture"],

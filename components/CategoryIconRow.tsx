@@ -45,12 +45,40 @@ function SafeCategoryIcon({
   const imageSrc = cat.image && cat.image.trim() ? cat.image : "/placeholders/category.svg";
   const shortName = getCategoryShortName(cat.name);
 
+  if (isCloned) {
+    return (
+      <div
+        key={`clone-${cat.slug}`}
+        aria-hidden="true"
+        onClick={onDragPrevent}
+        className="flex flex-col items-center shrink-0 w-[66px] group active:scale-95 transition-transform select-none"
+      >
+        <div className="w-[56px] h-[56px] rounded-2xl overflow-hidden relative p-0.5 bg-gradient-to-tr from-[#052a51]/10 to-[#F26522]/20 border border-gray-100 shadow-2xs group-hover:border-[#F26522]/40 transition-colors">
+          <div className="w-full h-full rounded-[14px] overflow-hidden relative bg-gray-100">
+            <Image
+              src={imageSrc}
+              alt=""
+              fill
+              loading="lazy"
+              className="object-cover group-hover:scale-110 transition-transform duration-300"
+              sizes="56px"
+            />
+            <div className="absolute inset-0 bg-black/10 group-hover:bg-black/0 transition-colors" />
+          </div>
+        </div>
+        <span className="text-[11px] font-bold text-[#052a51] group-hover:text-[#F26522] transition-colors mt-1.5 text-center leading-tight truncate max-w-full">
+          {shortName}
+        </span>
+      </div>
+    );
+  }
+
   return (
     <Link
-      key={`${isCloned ? "clone-" : "orig-"}${cat.slug}`}
+      key={`orig-${cat.slug}`}
       href={`/shop/${cat.slug}`}
-      tabIndex={isCloned ? -1 : 0}
       onClick={onDragPrevent}
+      aria-label={`Browse ${cat.name}`}
       className="flex flex-col items-center shrink-0 w-[66px] group active:scale-95 transition-transform"
     >
       <div className="w-[56px] h-[56px] rounded-2xl overflow-hidden relative p-0.5 bg-gradient-to-tr from-[#052a51]/10 to-[#F26522]/20 border border-gray-100 shadow-2xs group-hover:border-[#F26522]/40 transition-colors">
@@ -59,8 +87,8 @@ function SafeCategoryIcon({
             src={imageSrc}
             alt={cat.name}
             fill
-            priority={isPriority && !isCloned}
-            loading={isPriority && !isCloned ? "eager" : "lazy"}
+            priority={isPriority}
+            loading={isPriority ? "eager" : "lazy"}
             className="object-cover group-hover:scale-110 transition-transform duration-300"
             sizes="56px"
           />

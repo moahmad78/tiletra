@@ -54,7 +54,7 @@ export default function CompactProductCard({
     >
       {/* Top Image Container */}
       <div className="relative">
-        <Link href={`/product/${product.slug}`} className="block relative aspect-square w-full bg-gray-50 overflow-hidden">
+        <Link href={`/product/${product.slug}`} aria-label={`View ${product.name} details`} className="block relative aspect-square w-full bg-gray-50 overflow-hidden">
           <Image
             src={product.images[0]}
             alt={product.name}

@@ -30,37 +30,55 @@ const BRAND_FAQS = [
 export default function IntrihubBrandSEOSection() {
   return (
     <>
-      {/* ── Semantic Crawlable HTML for Search Engines (Visually Hidden via sr-only) ── */}
-      <section className="sr-only" aria-hidden="false" aria-label="About IntriHub Building Materials">
-        <h2>Why Builders, Designers & Homeowners Trust IntriHub</h2>
+      {/* ── Semantic Crawlable HTML Structure for Search Engines (Visually Hidden via sr-only) ── */}
+      <section className="sr-only" aria-hidden="false" aria-label="About IntriHub Building Materials Ecosystem">
+        <h2>India&apos;s Instant Building &amp; Interior Marketplace</h2>
         <p>
-          India&apos;s Building & Interior Marketplace. A comprehensive quick-commerce ecosystem
-          for interior finishes and construction supplies. From foundation to final fixtures, we
-          deliver factory-direct vitrified tiles, granite, electrical wires, sanitaryware, and
-          hardware directly to your site within 60 minutes across Bengaluru and Pan-India.
+          Welcome to IntriHub, India&apos;s trusted building materials online India platform and premier construction material marketplace. We are transforming construction with instant building materials delivery and specialized quick-commerce construction supplies. By offering factory direct building materials and bulk construction materials online, we ensure your projects never halt. Whether you need raw materials for construction India, heavy construction supplies online, or a reliable commercial interior supplies store, we bridge the gap as wholesale building material suppliers and your go-to home building materials online shopping app.
         </p>
 
-        <h3>Key Brand Pillars & Services</h3>
-        <ul>
-          <li>
-            <strong>Factory-Direct Pricing:</strong> Bypass multi-tier distributor markups to access
-            verified direct rates on 20,000+ certified products.
-          </li>
-          <li>
-            <strong>60-Minute Site Dispatch:</strong> Never halt on-site work. Real-time GPS tracked
-            delivery fleet dispatches critical materials straight to your project.
-          </li>
-          <li>
-            <strong>Smart Quantity Calculator:</strong> Automatically calculate exact box counts, tile
-            pieces, and wire lengths with a standard +10% cutting buffer.
-          </li>
-          <li>
-            <strong>100% Genuine Guarantee:</strong> Every item is quality-inspected, backed by standard
-            manufacturer warranties, and transit-packed for zero breakage.
-          </li>
-        </ul>
+        <h2>Why Contractors &amp; Builders Choose IntriHub Across Bengaluru</h2>
+        <p>
+          As a leading contractor material supply platform and digital construction marketplace for structural building materials online, IntriHub operates a robust supply chain. If you are searching for a trusted building materials supplier Bengaluru, fast construction material delivery Bangalore, or interior materials wholesale Bangalore, our micro-dark store network delivers within 60 minutes. From hardware stores online Bengaluru and tile suppliers in Bangalore to a local plumbing materials shop near me Bangalore, electrical goods wholesale Karnataka, and plywood shop online Bengaluru, we provide rapid dispatch, civil construction items online Bangalore, bulk hardware supplier Bengaluru, architectural supplies Bangalore delivery, and a trusted material marketplace Karnataka.
+        </p>
 
-        <h3>Frequently Asked Questions</h3>
+        <div>
+          <h3>Transparent Factory-Direct Pricing</h3>
+          <p>Get direct-from-manufacturer wholesale rates with zero hidden middleman commissions.</p>
+        </div>
+        <div>
+          <h3>60-Minute Rapid Site Dispatch</h3>
+          <p>Instant dispatch hubs across Bengaluru ensuring construction work never halts on site.</p>
+        </div>
+        <div>
+          <h3>Smart Quantity &amp; Box Calculators</h3>
+          <p>Accurately estimate tile box counts, plumbing joints, and plywood sheets in seconds.</p>
+        </div>
+
+        <h2>Explore Our Certified Product Categories</h2>
+        <div>
+          <h3>Vitrified Tiles &amp; Flooring Supplies</h3>
+          <p>Glazed vitrified tiles, polished granite slabs, parking tiles, and specialized epoxy grouts.</p>
+        </div>
+        <div>
+          <h3>Premium Electrical &amp; Wiring Essentials</h3>
+          <p>FR/FRLS copper house wires, modular switch plates, MCB distribution boards, and LED lighting.</p>
+        </div>
+        <div>
+          <h3>Heavy-Duty Plumbing &amp; Piping Materials</h3>
+          <p>CPVC, UPVC pipes, brass fittings, concealed cisterns, and luxury sanitaryware.</p>
+        </div>
+        <div>
+          <h3>Plywood, Hardware &amp; Interior Finishes</h3>
+          <p>Boiling waterproof (BWP) plywood, designer laminates, architectural hardware, and premium wall paints.</p>
+        </div>
+
+        <h2>How Our Quick-Commerce Network Works</h2>
+        <p>
+          We operate localized micro-fulfillment dark stores across Bengaluru connected with tier-1 factories for instant order routing, automated site dispatch, and damage-free transit.
+        </p>
+
+        <h2>Frequently Asked Questions About Ordering</h2>
         <dl>
           {BRAND_FAQS.map((faq, idx) => (
             <React.Fragment key={idx}>
@@ -71,8 +89,8 @@ export default function IntrihubBrandSEOSection() {
         </dl>
 
         <div>
-          <a href="/shop">Explore Catalog</a>
-          <a href="https://wa.me/917090120211">Talk to Material Expert</a>
+          <a href="/shop" aria-label="Browse Complete Construction Supplies Catalog">Browse Construction Supplies Catalog</a>
+          <a href="https://wa.me/917090120211" aria-label="Connect with IntriHub Project Material Specialist">Connect with Material Specialist</a>
         </div>
       </section>
     </>

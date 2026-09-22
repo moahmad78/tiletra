@@ -167,15 +167,6 @@ export default function HomeClient({
         <div className="px-2 my-1">
           <RecentlyViewedSlider />
         </div>
-
-        {/* Continuous Loading Infinite Catalog Section on Mobile */}
-        <InfiniteProductCatalog categories={categories} />
-
-        {/* Brand Narrative Section for Mobile */}
-        <IntrihubBrandSEOSection />
-
-        {/* Mobile Footer */}
-        <Footer />
       </div>
 
       {/* ========================================================================= */}
@@ -191,7 +182,7 @@ export default function HomeClient({
         {/* 3. Trending Products Row */}
         {hasTrending && (
           <DesktopProductRow
-            title="Trending Products"
+            title="Trending Products Collection"
             badge="High Demand"
             subtitle="Top picked supplies, materials, and designer finishes for modern renovations"
             products={trending}
@@ -221,6 +212,7 @@ export default function HomeClient({
 
             <Link
               href="/shop"
+              aria-label="Explore Full Building Materials Catalog"
               className="px-6 py-3 bg-[#F26522] hover:bg-[#d95a1e] text-white text-xs font-black rounded-xl shadow-md transition-all shrink-0 hover:scale-105 active:scale-95 flex items-center gap-1.5"
             >
               <span>Explore Catalog</span>
@@ -232,7 +224,7 @@ export default function HomeClient({
         {/* 5. Bestselling Products Row */}
         {hasBestsellers && (
           <DesktopProductRow
-            title="Bestselling Products"
+            title="Top Rated Bestsellers"
             badge="Most Popular"
             subtitle="Consistently 5-star rated by verified builders & homeowners"
             products={displayBestsellers}
@@ -243,7 +235,7 @@ export default function HomeClient({
         {/* 6. New Arrivals Product Row */}
         {hasNewArrivals && (
           <DesktopProductRow
-            title="New Arrivals"
+            title="Fresh Stock Arrivals"
             badge="Fresh Stock"
             subtitle="Freshly added electricals, sanitaryware, hardware, and designer surfaces"
             products={displayNewArrivals}
@@ -251,13 +243,7 @@ export default function HomeClient({
           />
         )}
 
-        {/* Continuous Loading Infinite Catalog Section on Desktop */}
-        <InfiniteProductCatalog categories={categories} />
-
-        {/* Brand Narrative Section for Desktop */}
-        <IntrihubBrandSEOSection />
-
-        {/* ── QUICK COMMERCE DISPATCH & SITE DELIVERY BANNER (Desktop Only, Above Footer) ──────────────── */}
+        {/* ── QUICK COMMERCE DISPATCH & SITE DELIVERY BANNER (Desktop Only) ──────────────── */}
         <section className="relative overflow-hidden py-12 md:py-16 bg-gradient-to-r from-[#031b34] via-[#052a51] to-[#08386a] border-y border-white/10 text-white">
           {/* Subtle Ambient Glow Orbs */}
           <div className="absolute -top-24 -left-24 w-80 h-80 bg-[#F26522]/15 rounded-full blur-3xl pointer-events-none" />
@@ -310,7 +296,7 @@ export default function HomeClient({
                 viewport={{ once: true }}
                 className="flex flex-col sm:flex-row lg:flex-col gap-3 shrink-0"
               >
-                <Link href="/shop" className="w-full sm:w-auto">
+                <Link href="/shop" aria-label="Order Building Materials for Instant Dispatch" className="w-full sm:w-auto">
                   <button className="w-full sm:w-auto h-13 px-8 bg-[#F26522] hover:bg-[#d95a1e] text-white font-black text-sm md:text-base rounded-2xl shadow-lg shadow-orange-500/25 transition-all hover:-translate-y-0.5 active:scale-95 flex items-center justify-center gap-2.5 cursor-pointer whitespace-nowrap">
                     <span>Order for Instant Dispatch</span>
                     <ArrowRight size={18} />
@@ -321,6 +307,7 @@ export default function HomeClient({
                   href="https://wa.me/917090120211?text=Hi%20Intrihub,%20I%20need%20urgent%20building%20materials%20delivery%20to%20my%20site."
                   target="_blank"
                   rel="noopener noreferrer"
+                  aria-label="Contact WhatsApp Quick Order Desk"
                   className="w-full sm:w-auto"
                 >
                   <button className="w-full sm:w-auto h-12 px-6 bg-white/10 hover:bg-white/15 border border-white/20 text-white font-bold text-xs md:text-sm rounded-2xl transition-all flex items-center justify-center gap-2 cursor-pointer backdrop-blur-md">
@@ -332,9 +319,14 @@ export default function HomeClient({
             </div>
           </div>
         </section>
-
-        <Footer />
       </div>
+
+      {/* ========================================================================= */}
+      {/* UNIFIED SITE-WIDE CATALOG & SEO FOUNDATION (Rendered Once)                */}
+      {/* ========================================================================= */}
+      <InfiniteProductCatalog categories={categories} />
+      <IntrihubBrandSEOSection />
+      <Footer />
     </main>
   );
 }

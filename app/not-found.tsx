@@ -1,7 +1,17 @@
 import Link from "next/link";
+import type { Metadata } from "next";
 import { Search, Home, ShoppingBag, BookOpen, ArrowRight, HelpCircle } from "lucide-react";
 import Header from "@/components/Header";
 import Footer from "@/components/Footer";
+
+export const metadata: Metadata = {
+  title: "404 - Page Not Found | IntriHub",
+  description: "The page or resource you were looking for is unavailable or has moved.",
+  robots: {
+    index: false,
+    follow: true,
+  },
+};
 
 export default function NotFound() {
   return (

@@ -13,14 +13,14 @@ import { generateHomepageFaqSchema } from "@/lib/seo";
 export const metadata: Metadata = {
   title: "Build Better, We Deliver Faster | IntriHub",
   description:
-    "Buy tiles, electrical, plumbing, plywood, hardware & interior supplies online at best prices. Build Better, We Deliver Faster across Bengaluru & Pan-India with IntriHub.",
+    "Buy tiles, electrical, plumbing & hardware supplies online at best prices. Build Better, We Deliver Faster across Bengaluru & Pan-India with IntriHub.",
   alternates: {
     canonical: "https://www.intrihub.com/",
   },
   openGraph: {
     title: "Build Better, We Deliver Faster | IntriHub",
     description:
-      "Buy tiles, electrical, plumbing, plywood, hardware & interior supplies online at best prices. Delivery across Bengaluru.",
+      "Buy tiles, electrical, plumbing & hardware supplies online at best prices. Build Better, We Deliver Faster across Bengaluru & Pan-India with IntriHub.",
     url: "https://www.intrihub.com/",
     siteName: "IntriHub",
   },
@@ -28,7 +28,7 @@ export const metadata: Metadata = {
     card: "summary_large_image",
     title: "Build Better, We Deliver Faster | IntriHub",
     description:
-      "Buy tiles, electrical, plumbing, plywood, hardware & interior supplies online at best prices. Delivery across Bengaluru.",
+      "Buy tiles, electrical, plumbing & hardware supplies online at best prices. Build Better, We Deliver Faster across Bengaluru & Pan-India with IntriHub.",
   },
 };
 

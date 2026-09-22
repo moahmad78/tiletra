@@ -21,11 +21,45 @@ function SafeDesktopCategoryCard({
 }) {
   const imageSrc = cat.image && cat.image.trim() ? cat.image : "/placeholders/category.svg";
 
+  if (isCloned) {
+    return (
+      <div
+        key={`d-clone-${cat.slug}`}
+        aria-hidden="true"
+        className="shrink-0 w-[155px] sm:w-[165px] lg:w-[175px] group select-none cursor-pointer"
+      >
+        <div className="bg-white rounded-2xl p-2 border border-gray-200/90 shadow-2xs group-hover:border-[#F26522] transition-all text-center flex flex-col h-full">
+          <div className="relative w-full h-[115px] sm:h-[120px] rounded-xl overflow-hidden bg-gray-100 shrink-0">
+            <Image
+              src={imageSrc}
+              alt=""
+              fill
+              loading="lazy"
+              className="object-cover group-hover:scale-108 transition-transform duration-300"
+              sizes="175px"
+            />
+            <div className="absolute inset-0 bg-gradient-to-t from-black/20 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
+          </div>
+
+          <div className="px-1 pt-2 pb-1 flex flex-col items-center justify-between flex-1">
+            <p className="text-xs sm:text-sm font-bold text-[#052a51] group-hover:text-[#F26522] transition-colors leading-tight line-clamp-1">
+              {cat.name}
+            </p>
+            <span className="text-[11px] text-gray-500 font-semibold mt-1 inline-flex items-center gap-0.5 group-hover:text-[#F26522] transition-colors">
+              {cat.productCount > 0 ? `${cat.productCount} Items` : "Explore"}
+              <ArrowRight size={10} className="opacity-0 group-hover:opacity-100 transition-opacity" />
+            </span>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <Link
-      key={`${isCloned ? "d-clone-" : "d-orig-"}${cat.slug}`}
+      key={`d-orig-${cat.slug}`}
       href={`/shop/${cat.slug}`}
-      tabIndex={isCloned ? -1 : 0}
+      aria-label={`Explore ${cat.name}`}
       className="shrink-0 w-[155px] sm:w-[165px] lg:w-[175px] group"
     >
       <div className="bg-white rounded-2xl p-2 border border-gray-200/90 shadow-2xs hover:shadow-md hover:border-[#F26522] transition-all text-center flex flex-col h-full active:scale-98">
@@ -34,8 +68,8 @@ function SafeDesktopCategoryCard({
             src={imageSrc}
             alt={cat.name}
             fill
-            priority={isPriority && !isCloned}
-            loading={isPriority && !isCloned ? "eager" : "lazy"}
+            priority={isPriority}
+            loading={isPriority ? "eager" : "lazy"}
             className="object-cover group-hover:scale-108 transition-transform duration-300"
             sizes="175px"
           />

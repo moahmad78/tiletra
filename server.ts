@@ -19,6 +19,7 @@ declare global {
 app.prepare().then(() => {
   const httpServer = createServer(async (req, res) => {
     try {
+      res.removeHeader("X-Powered-By");
       const parsedUrl = parse(req.url!, true);
       await handle(req, res, parsedUrl);
     } catch (err) {
