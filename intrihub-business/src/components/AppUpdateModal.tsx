@@ -11,11 +11,18 @@ import {
   AppStateStatus,
   ScrollView,
 } from "react-native";
-import * as Notifications from "expo-notifications";
+import { isRunningInExpoGo } from "expo";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { DownloadCloud, ArrowUpCircle, CheckCircle2, X } from "lucide-react-native";
 import { apiClient } from "../api/client";
 import { COLORS } from "../constants/theme";
+
+let Notifications: typeof import("expo-notifications") | null = null;
+if (!(Platform.OS === "android" && isRunningInExpoGo()) && Platform.OS !== "web") {
+  try {
+    Notifications = require("expo-notifications");
+  } catch {}
+}
 
 const APP_VERSION = "1.0.4";
 const APP_VERSION_CODE = 5;
@@ -74,7 +81,7 @@ export default function AppUpdateModal() {
 
       // Trigger local push notification if not notified for this version code yet
       const lastNotifiedCode = await AsyncStorage.getItem(STORAGE_KEY_LAST_NOTIFIED_VERSION);
-      if (lastNotifiedCode !== String(info.latestVersionCode)) {
+      if (Notifications && lastNotifiedCode !== String(info.latestVersionCode)) {
         try {
           await Notifications.scheduleNotificationAsync({
             content: {
@@ -89,7 +96,7 @@ export default function AppUpdateModal() {
                 latestVersion: info.latestVersion,
               },
               sound: true,
-              priority: Notifications.AndroidNotificationPriority.HIGH,
+              priority: (Notifications as any).AndroidNotificationPriority?.HIGH,
             },
             trigger: null, // deliver immediately
           });

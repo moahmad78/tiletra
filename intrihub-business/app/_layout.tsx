@@ -18,7 +18,15 @@ import { socketService } from "../src/store/socketStore";
 import { usePushNotifications } from "../src/hooks/usePushNotifications";
 import AnimatedSplashScreen from "../src/components/AnimatedSplashScreen";
 import AppUpdateModal from "../src/components/AppUpdateModal";
+import * as Sentry from "@sentry/react-native";
 import { COLORS } from "../src/constants/theme";
+
+// Initialize Sentry crash reporting at the earliest point in the lifecycle
+Sentry.init({
+  dsn: "https://1cbe738f4586b8e9bb9d55840396ee51@o4512085765521408.ingest.us.sentry.io/4512085786558464",
+  tracesSampleRate: 1.0,
+  debug: false,
+});
 
 // Keep native splash screen visible while app JS bundle loads
 SplashScreen.preventAutoHideAsync().catch(() => {});
@@ -64,7 +72,7 @@ class RootErrorBoundary extends Component<ErrorBoundaryProps, ErrorBoundaryState
     if (this.state.hasError) {
       return (
         <View style={styles.errorContainer}>
-          <StatusBar style="light" backgroundColor={COLORS.primary} />
+          <StatusBar style="light" />
           <Text style={styles.errorEmoji}>⚠️</Text>
           <Text style={styles.errorTitle}>Something went wrong</Text>
           <Text style={styles.errorSubtitle}>
@@ -85,7 +93,7 @@ class RootErrorBoundary extends Component<ErrorBoundaryProps, ErrorBoundaryState
   }
 }
 
-export default function RootLayout() {
+function RootLayout() {
   const [fontsLoaded, fontError] = useFonts({
     PlusJakartaSans_400Regular,
     PlusJakartaSans_500Medium,
@@ -104,23 +112,27 @@ export default function RootLayout() {
   }, []);
 
   useEffect(() => {
+    let isMounted = true;
     async function prepare() {
       try {
         await Promise.all([
-          initAuth(),
-          new Promise((resolve) => setTimeout(resolve, 2200)),
+          initAuth().catch((err) => console.warn("Auth init error:", err)),
+          new Promise((resolve) => setTimeout(resolve, 2000)),
         ]);
       } catch (err) {
-        console.warn("Auth init error:", err);
+        console.warn("Prepare error:", err);
       } finally {
-        setIsAppReady(true);
+        if (isMounted) {
+          setIsAppReady(true);
+        }
       }
     }
 
-    if (fontsLoaded || fontError) {
-      prepare();
-    }
-  }, [fontsLoaded, fontError]);
+    prepare();
+    return () => {
+      isMounted = false;
+    };
+  }, []);
 
   useEffect(() => {
     if (user?.id) {
@@ -135,7 +147,7 @@ export default function RootLayout() {
     <RootErrorBoundary>
       <SafeAreaProvider>
         <QueryClientProvider client={queryClient}>
-          <StatusBar style="light" backgroundColor={COLORS.primary} />
+          <StatusBar style="light" />
           <Stack
             screenOptions={{
               headerShown: false,
@@ -167,6 +179,8 @@ export default function RootLayout() {
     </RootErrorBoundary>
   );
 }
+
+export default Sentry.wrap(RootLayout);
 
 const styles = StyleSheet.create({
   loadingContainer: {

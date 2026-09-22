@@ -54,8 +54,8 @@ This document serves as the master backup and reference for publishing, maintain
 ### Identity & Configuration
 - **Application Name**: Intrihub Business
 - **Package Name**: `com.intrihub.business`
-- **Current Version**: `1.0.4`
-- **Release Version Code**: `5`
+- **Current Version**: `1.0.5`
+- **Release Version Code**: `6`
 - **Deep Link Scheme**: `intrihub-biz://`
 - **Owner**: `sahil_sheikh78`
 

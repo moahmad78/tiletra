@@ -3,7 +3,7 @@
     "name": "Intrihub Business",
     "slug": "intrihub-business",
     "owner": "sahil_sheikh78",
-    "version": "1.0.4",
+    "version": "1.0.5",
     "orientation": "portrait",
     "icon": "./assets/icon.png",
     "scheme": "intrihub-biz",
@@ -36,7 +36,7 @@
     },
     "android": {
       "package": "com.intrihub.business",
-      "versionCode": 5,
+      "versionCode": 6,
       "googleServicesFile": "./google-services.json",
       "adaptiveIcon": {
         "foregroundImage": "./assets/adaptive-icon.png",
@@ -68,7 +68,14 @@
         {
           "photosPermission": "The app needs access to your photos to upload product and store images."
         }
-      ]
+      ],
+      "expo-asset",
+      "expo-image",
+      "expo-sharing",
+      "expo-splash-screen",
+      "expo-status-bar",
+      "expo-web-browser",
+      "@sentry/react-native"
     ]
   }
 }

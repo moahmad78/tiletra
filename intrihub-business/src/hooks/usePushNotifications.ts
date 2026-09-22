@@ -1,19 +1,23 @@
 import { useEffect, useRef } from "react";
 import { Platform } from "react-native";
-import * as Notifications from "expo-notifications";
 import Constants, { ExecutionEnvironment } from "expo-constants";
+import { isRunningInExpoGo } from "expo";
 import { useRouter } from "expo-router";
 import { apiClient } from "../api/client";
 import { useAuthStore } from "../store/authStore";
 
 const isExpoGo =
+  isRunningInExpoGo() ||
   Constants.appOwnership === "expo" ||
   Constants.executionEnvironment === ExecutionEnvironment.StoreClient;
 
-// Configure in-app notification presentation handler
+// expo-notifications Android push notifications were removed from Expo Go in SDK 53+.
+// Statically importing expo-notifications crashes Expo Go on Android at runtime.
+let Notifications: typeof import("expo-notifications") | null = null;
 if (!isExpoGo && Platform.OS !== "web") {
   try {
-    Notifications.setNotificationHandler({
+    Notifications = require("expo-notifications");
+    Notifications?.setNotificationHandler({
       handleNotification: async () => ({
         shouldShowAlert: true,
         shouldPlaySound: true,
@@ -30,10 +34,12 @@ if (!isExpoGo && Platform.OS !== "web") {
 export function usePushNotifications() {
   const router = useRouter();
   const { user, isAuthenticated } = useAuthStore();
-  const notificationListener = useRef<Notifications.EventSubscription | null>(null);
-  const responseListener = useRef<Notifications.EventSubscription | null>(null);
+  const notificationListener = useRef<any>(null);
+  const responseListener = useRef<any>(null);
 
   useEffect(() => {
+    // Skip entirely in Expo Go (remote push notifications require a custom dev build)
+    if (isExpoGo || !Notifications) return;
     if (!isAuthenticated || !user) return;
 
     registerForPushNotificationsAsync().then((pushToken) => {
@@ -94,13 +100,16 @@ export function usePushNotifications() {
 }
 
 async function registerForPushNotificationsAsync(): Promise<string | null> {
+  if (isExpoGo || !Notifications || Platform.OS === "web") {
+    return null;
+  }
   let pushToken: string | null = null;
 
   if (Platform.OS === "android") {
     try {
       await Notifications.setNotificationChannelAsync("default", {
         name: "default",
-        importance: Notifications.AndroidImportance.MAX,
+        importance: (Notifications as any).AndroidImportance?.MAX ?? 5,
         vibrationPattern: [0, 250, 250, 250],
         lightColor: "#F26522",
       });
@@ -109,32 +118,25 @@ async function registerForPushNotificationsAsync(): Promise<string | null> {
     }
   }
 
-  if (Platform.OS !== "web") {
-    // Expo Go (SDK 53+) removed remote push notifications for Android. Skip in Expo Go to avoid LogBox warning.
-    if (Constants.appOwnership === "expo") {
-      return null;
-    }
+  const { status: existingStatus } = await Notifications.getPermissionsAsync();
+  let finalStatus = existingStatus;
+  if (existingStatus !== "granted") {
+    const { status } = await Notifications.requestPermissionsAsync();
+    finalStatus = status;
+  }
+  if (finalStatus !== "granted") {
+    return null;
+  }
 
-    const { status: existingStatus } = await Notifications.getPermissionsAsync();
-    let finalStatus = existingStatus;
-    if (existingStatus !== "granted") {
-      const { status } = await Notifications.requestPermissionsAsync();
-      finalStatus = status;
-    }
-    if (finalStatus !== "granted") {
-      return null;
-    }
-
-    try {
-      const projectId =
-        Constants?.expoConfig?.extra?.eas?.projectId ?? Constants?.easConfig?.projectId;
-      const tokenObj = await Notifications.getExpoPushTokenAsync(
-        projectId ? { projectId } : undefined
-      );
-      pushToken = tokenObj.data;
-    } catch {
-      // In development or when offline
-    }
+  try {
+    const projectId =
+      Constants?.expoConfig?.extra?.eas?.projectId ?? Constants?.easConfig?.projectId;
+    const tokenObj = await Notifications.getExpoPushTokenAsync(
+      projectId ? { projectId } : undefined
+    );
+    pushToken = tokenObj.data;
+  } catch {
+    // In development or when offline
   }
 
   return pushToken;
