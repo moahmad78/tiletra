@@ -363,48 +363,52 @@ export async function invalidateHomepageProductsCache(): Promise<void> {
   productSectionCache.clear();
 }
 
-export async function getTrendingProducts(limit = 8): Promise<Product[]> {
-  const cacheKey = `trending-${limit}`;
+export async function getHomepageSections(): Promise<{
+  trending: Product[];
+  bestsellers: Product[];
+  newArrivals: Product[];
+}> {
+  const cacheKey = "homepage-sections-v2";
   const cached = productSectionCache.get(cacheKey);
   const now = Date.now();
   if (cached && now - cached.timestamp < PRODUCT_SECTION_CACHE_TTL) {
-    return cached.data;
+    return cached.data as any;
   }
 
-  const products = await getProducts({ isTrending: true, limit });
-  const result = products.length === 0 ? await getProducts({ limit }) : products;
-  productSectionCache.set(cacheKey, { data: result, timestamp: now });
+  // Fetch candidate products in ONE single optimized database roundtrip
+  const allCandidates = await getProducts({ limit: 30 });
+
+  const trending = allCandidates.filter((p) => p.isTrending || p.tags?.includes("Trending")).slice(0, 8);
+  const bestsellers = allCandidates.filter((p) => p.isBestseller).slice(0, 8);
+  const newArrivals = allCandidates.filter((p) => p.isNew || (p as any).isNewArrival).slice(0, 8);
+
+  const fallback = allCandidates.slice(0, 8);
+
+  const result = {
+    trending: trending.length > 0 ? trending : fallback,
+    bestsellers: bestsellers.length > 0 ? bestsellers : fallback,
+    newArrivals: newArrivals.length > 0 ? newArrivals : fallback,
+  };
+
+  productSectionCache.set(cacheKey, { data: result as any, timestamp: now });
   return result;
 }
 
-export async function getBestsellers(limit = 8): Promise<Product[]> {
-  const cacheKey = `bestsellers-${limit}`;
-  const cached = productSectionCache.get(cacheKey);
-  const now = Date.now();
-  if (cached && now - cached.timestamp < PRODUCT_SECTION_CACHE_TTL) {
-    return cached.data;
-  }
+export async function getTrendingProducts(limit = 8): Promise<Product[]> {
+  const sections = await getHomepageSections();
+  return sections.trending.slice(0, limit);
+}
 
-  const products = await getProducts({ isBestseller: true, limit });
-  const result = products.length === 0 ? await getProducts({ limit }) : products;
-  productSectionCache.set(cacheKey, { data: result, timestamp: now });
-  return result;
+export async function getBestsellers(limit = 8): Promise<Product[]> {
+  const sections = await getHomepageSections();
+  return sections.bestsellers.slice(0, limit);
 }
 
 export const getBestsellerProducts = getBestsellers;
 
 export async function getNewArrivals(limit = 8): Promise<Product[]> {
-  const cacheKey = `newarrivals-${limit}`;
-  const cached = productSectionCache.get(cacheKey);
-  const now = Date.now();
-  if (cached && now - cached.timestamp < PRODUCT_SECTION_CACHE_TTL) {
-    return cached.data;
-  }
-
-  const products = await getProducts({ isNewArrival: true, limit });
-  const result = products.length === 0 ? await getProducts({ limit }) : products;
-  productSectionCache.set(cacheKey, { data: result, timestamp: now });
-  return result;
+  const sections = await getHomepageSections();
+  return sections.newArrivals.slice(0, limit);
 }
 
 export const getNewArrivalProducts = getNewArrivals;

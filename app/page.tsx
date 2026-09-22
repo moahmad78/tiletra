@@ -1,10 +1,6 @@
 import { Metadata } from "next";
 import { getCategories } from "@/lib/actions/categories";
-import {
-  getTrendingProducts,
-  getBestsellerProducts,
-  getNewArrivalProducts,
-} from "@/lib/actions/products";
+import { getHomepageSections } from "@/lib/actions/products";
 import { getOfferBanners } from "@/lib/actions/settings";
 import HomeClient from "@/components/HomeClient";
 import JsonLd from "@/components/JsonLd";
@@ -32,18 +28,17 @@ export const metadata: Metadata = {
   },
 };
 
-// Revalidate page on demand or periodically
-export const revalidate = 60;
+// ISR: 1 hour background revalidation; purged on-demand when catalog is updated
+export const revalidate = 3600;
 
 export default async function HomePage() {
-  const [categories, trending, bestsellers, newArrivals, banners] = await Promise.all([
+  const [categories, sections, banners] = await Promise.all([
     getCategories(),
-    getTrendingProducts(8),
-    getBestsellerProducts(8),
-    getNewArrivalProducts(8),
+    getHomepageSections(),
     getOfferBanners(),
   ]);
 
+  const { trending, bestsellers, newArrivals } = sections;
   const faqSchema = generateHomepageFaqSchema();
 
   return (
