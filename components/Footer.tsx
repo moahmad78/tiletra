@@ -86,6 +86,30 @@ const popularAreaPages = [
   { label: "All Karnataka Areas & Hubs →", href: "/areas" },
 ];
 
+const highIntentKeywordLinks = [
+  { label: "Vitrified Tiles Bengaluru", href: "/vitrified-tiles-material-provider-bengaluru" },
+  { label: "Waterproofing Bengaluru", href: "/waterproofing-material-provider-bengaluru" },
+  { label: "Modular Kitchen Karnataka", href: "/modular-kitchen-material-provider-karnataka" },
+  { label: "PVC Pipes Bengaluru", href: "/pvc-pipes-plumbing-material-bengaluru" },
+  { label: "Engineered Wood Flooring", href: "/engineered-wood-flooring-material-bengaluru" },
+  { label: "Electrical Wiring & Switches", href: "/electrical-wiring-switches-provider-bengaluru" },
+  { label: "Plywood & Laminates Karnataka", href: "/plywood-laminate-material-provider-karnataka" },
+  { label: "Bathroom Fittings Bengaluru", href: "/bathroom-fittings-sanitaryware-bengaluru" },
+  { label: "Smart Home Fittings", href: "/smart-home-fittings-provider-bengaluru" },
+  { label: "Interior Hardware Bengaluru", href: "/interior-hardware-material-provider-bengaluru" },
+  { label: "Exterior Cladding Bengaluru", href: "/exterior-cladding-material-provider-bengaluru" },
+  { label: "Roofing Tiles Karnataka", href: "/roofing-tiles-material-provider-karnataka" },
+  { label: "Staircase Materials Bengaluru", href: "/staircase-material-provider-bengaluru" },
+  { label: "Cabinet & Wardrobe Fittings", href: "/cabinet-wardrobe-material-provider-bengaluru" },
+  { label: "Whitefield Materials", href: "/best-interior-material-whitefield" },
+  { label: "Electronic City Materials", href: "/best-interior-material-electronic-city" },
+  { label: "Hebbal Materials", href: "/best-interior-material-hebbal" },
+  { label: "Mysuru Materials", href: "/best-interior-material-mysuru" },
+  { label: "Mangaluru Materials", href: "/best-interior-material-mangaluru" },
+  { label: "Construction Material Near Me", href: "/construction-material-provider-near-me-bengaluru" },
+  { label: "Electrical Provider Pan-India", href: "/electrical-material-provider-india" },
+];
+
 export default function Footer() {
   const pathname = usePathname();
 
@@ -263,7 +287,7 @@ export default function Footer() {
           </div>
 
           {/* SEO Landing Discovery: Browse by Material, Browse by Area & Popular Delivery Zones */}
-          <div className="py-8 border-b border-white/10 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 text-xs text-white/70">
+          <div className="py-8 border-b border-white/10 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 text-xs text-white/70">
             <div>
               <h4 className="text-white font-bold text-xs uppercase tracking-wider mb-3">Browse by Material Category</h4>
               <div className="flex flex-wrap gap-x-4 gap-y-2">
@@ -296,6 +320,20 @@ export default function Footer() {
                         ? "text-[#F26522] font-bold hover:underline"
                         : "hover:text-[#F26522] transition-colors"
                     }
+                  >
+                    {label}
+                  </Link>
+                ))}
+              </div>
+            </div>
+            <div>
+              <h4 className="text-white font-bold text-xs uppercase tracking-wider mb-3">Materials & Sourcing Hubs</h4>
+              <div className="flex flex-wrap gap-x-3 gap-y-2">
+                {highIntentKeywordLinks.map(({ label, href }) => (
+                  <Link
+                    key={href}
+                    href={href}
+                    className="hover:text-[#F26522] transition-colors"
                   >
                     {label}
                   </Link>
@@ -381,6 +419,12 @@ export default function Footer() {
             <p className="font-bold text-white/80 pt-1">Delivery Areas</p>
             <div className="flex flex-wrap justify-center gap-x-2.5 gap-y-1">
               {localLandingLinks.map(({ label, href }) => (
+                <Link key={href} href={href} className="hover:text-white">{label}</Link>
+              ))}
+            </div>
+            <p className="font-bold text-white/80 pt-1">Materials & Sourcing</p>
+            <div className="flex flex-wrap justify-center gap-x-2.5 gap-y-1">
+              {highIntentKeywordLinks.slice(0, 10).map(({ label, href }) => (
                 <Link key={href} href={href} className="hover:text-white">{label}</Link>
               ))}
             </div>

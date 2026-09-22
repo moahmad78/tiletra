@@ -1,4 +1,5 @@
 import { PrismaClient, SeoPageType } from "@prisma/client";
+import { SEO_PAGES_BATCH2_DATA } from "./seed-seo-pages-batch2";
 
 const prisma = new PrismaClient();
 
@@ -17,7 +18,7 @@ export interface SeedSeoPageItem {
   productFilter: { categorySlug?: string; search?: string; subcategory?: string; limit?: number };
 }
 
-export const SEO_PAGES_SEED_DATA: SeedSeoPageItem[] = [
+const ORIGINAL_SEO_PAGES: SeedSeoPageItem[] = [
   // =========================================================================
   // 1. CATEGORY PAGES (10)
   // =========================================================================
@@ -1949,9 +1950,14 @@ Transform your casework with IntriHub's tactile, nature-inspired decorative lami
   },
 ];
 
+export const SEO_PAGES_SEED_DATA: SeedSeoPageItem[] = [
+  ...ORIGINAL_SEO_PAGES,
+  ...SEO_PAGES_BATCH2_DATA,
+];
+
 async function seed() {
   console.log("==========================================================================");
-  console.log("SEEDING SEO KEYWORD LANDING PAGES (50 PAGES)...");
+  console.log(`SEEDING SEO KEYWORD LANDING PAGES (${SEO_PAGES_SEED_DATA.length} PAGES)...`);
   console.log("==========================================================================");
 
   let createdCount = 0;
