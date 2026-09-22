@@ -105,7 +105,7 @@ function SafeCategoryIcon({
 
 export default function CategoryIconRow({ categories }: { categories?: Category[] }) {
   const rawList = categories && categories.length > 0 ? categories : defaultCategories;
-  const categoryList = rawList.filter((c) => !c.parentId);
+  const categoryList = rawList.filter((c) => !c.parentId).slice(0, 12);
 
   const containerRef = useRef<HTMLDivElement>(null);
   const trackRef = useRef<HTMLDivElement>(null);
@@ -204,12 +204,14 @@ export default function CategoryIconRow({ categories }: { categories?: Category[
     if (touchTimerRef.current) clearTimeout(touchTimerRef.current);
     touchTimerRef.current = setTimeout(() => {
       isInteractingRef.current = false;
-      isDraggingRef.current = false;
-    }, 2000);
+    }, 1500);
   };
 
   const handleDragPrevent = (e: React.MouseEvent) => {
-    if (isDraggingRef.current) e.preventDefault();
+    if (isDraggingRef.current) {
+      e.preventDefault();
+      e.stopPropagation();
+    }
   };
 
   return (
@@ -242,24 +244,11 @@ export default function CategoryIconRow({ categories }: { categories?: Category[
           ))}
         </div>
 
-        {/* Set 2: Seamless duplicated set for infinite loop - all lazy */}
+        {/* Set 2: Seamless duplicated set for infinite loop */}
         <div className="flex items-center gap-3 pr-3 shrink-0" aria-hidden="true">
           {categoryList.map((cat) => (
             <SafeCategoryIcon
               key={`s2-${cat.slug}`}
-              cat={cat}
-              isPriority={false}
-              isCloned={true}
-              onDragPrevent={handleDragPrevent}
-            />
-          ))}
-        </div>
-
-        {/* Set 3: Buffer set - all lazy */}
-        <div className="flex items-center gap-3 pr-3 shrink-0" aria-hidden="true">
-          {categoryList.map((cat) => (
-            <SafeCategoryIcon
-              key={`s3-${cat.slug}`}
               cat={cat}
               isPriority={false}
               isCloned={true}

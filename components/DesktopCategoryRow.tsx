@@ -92,7 +92,7 @@ function SafeDesktopCategoryCard({
 }
 
 export default function DesktopCategoryRow({ categories }: DesktopCategoryRowProps) {
-  const topCategories = categories.filter((c) => !c.parentId);
+  const topCategories = categories.filter((c) => !c.parentId).slice(0, 12);
 
   const containerRef = useRef<HTMLDivElement>(null);
   const trackRef = useRef<HTMLDivElement>(null);
@@ -221,35 +221,23 @@ export default function DesktopCategoryRow({ categories }: DesktopCategoryRowPro
             className="flex items-center will-change-transform transform-gpu"
             style={{ transform: "translate3d(0, 0, 0)" }}
           >
-            {/* Set 1: Measured set - only first 8 are eager */}
+            {/* Set 1: Measured set - only first 6 are eager */}
             <div ref={singleSetRef} className="flex items-center gap-3.5 pr-3.5 shrink-0">
               {topCategories.map((cat, idx) => (
                 <SafeDesktopCategoryCard
                   key={`d1-${cat.slug}`}
                   cat={cat}
-                  isPriority={idx < 8}
+                  isPriority={idx < 6}
                   isCloned={false}
                 />
               ))}
             </div>
 
-            {/* Set 2: Seamless duplicated set - all lazy */}
+            {/* Set 2: Seamless duplicated set for infinite wrap */}
             <div className="flex items-center gap-3.5 pr-3.5 shrink-0" aria-hidden="true">
               {topCategories.map((cat) => (
                 <SafeDesktopCategoryCard
                   key={`d2-${cat.slug}`}
-                  cat={cat}
-                  isPriority={false}
-                  isCloned={true}
-                />
-              ))}
-            </div>
-
-            {/* Set 3: Buffer set - all lazy */}
-            <div className="flex items-center gap-3.5 pr-3.5 shrink-0" aria-hidden="true">
-              {topCategories.map((cat) => (
-                <SafeDesktopCategoryCard
-                  key={`d3-${cat.slug}`}
                   cat={cat}
                   isPriority={false}
                   isCloned={true}
