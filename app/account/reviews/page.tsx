@@ -134,7 +134,7 @@ export default function MyReviewsPage() {
                       key={i}
                       className="relative w-16 h-16 rounded-xl overflow-hidden border border-gray-200 bg-gray-50 shrink-0"
                     >
-                      <Image src={img} alt="" fill className="object-cover" sizes="64px" />
+                      <Image src={img} alt="Customer review photo" fill className="object-cover" sizes="64px" />
                     </div>
                   ))}
                 </div>

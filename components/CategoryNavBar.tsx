@@ -283,6 +283,13 @@ export default function CategoryNavBar() {
 
           {/* 2. Right Side Dedicated Fixed Slot */}
           <div className="flex items-center gap-2 pl-3 border-l border-gray-200 shrink-0">
+            <Link
+              href="/inspiration"
+              className="hidden lg:flex items-center gap-1 text-xs font-bold text-[#052a51] hover:text-[#F26522] px-2.5 py-1 rounded-lg hover:bg-gray-50 transition-colors shrink-0"
+            >
+              <span>Inspiration</span>
+            </Link>
+
             {/* Explore All Supplies CTA */}
             <Link
               href="/shop"

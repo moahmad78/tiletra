@@ -21,7 +21,6 @@ const EXCLUDED_SITEMAP_PATTERNS = [
   /^\/api(\/.*)?$/i,
   /^\/upload(\/.*)?$/i,
   /^\/designs(\/.*)?$/i, // Redirects to /shop
-  /^\/inspiration(\/.*)?$/i, // Redirects to /shop
 ];
 
 function isPublicIndexableUrl(urlStr: string): boolean {
@@ -151,6 +150,12 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     },
     {
       url: `${BASE_SITE_URL}/bulk-orders`,
+      lastModified: new Date(),
+      changeFrequency: "weekly",
+      priority: 0.8,
+    },
+    {
+      url: `${BASE_SITE_URL}/inspiration`,
       lastModified: new Date(),
       changeFrequency: "weekly",
       priority: 0.8,

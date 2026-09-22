@@ -303,7 +303,7 @@ export default function WriteReviewModal({
                       <span className="text-[9px] text-gray-300 truncate w-full text-center mt-1">Video</span>
                     </div>
                   ) : (
-                    <Image src={item.preview} alt="" fill className="object-cover" sizes="80px" />
+                    <Image src={item.preview} alt="Uploaded review photo preview" fill className="object-cover" sizes="80px" />
                   )}
                   <button
                     type="button"

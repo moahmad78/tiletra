@@ -308,7 +308,7 @@ export default function AdminReviewsPage() {
                             <span className="text-[8px] mt-0.5 font-bold">Video</span>
                           </div>
                         ) : (
-                          <Image src={m.url} alt="" fill className="object-cover" sizes="64px" />
+                          <Image src={m.url} alt="Customer review photo — admin view" fill className="object-cover" sizes="64px" />
                         )}
                         <a
                           href={m.url}

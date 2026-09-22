@@ -23,7 +23,7 @@ async function runQaSuite() {
 
   // TEST 1: Database records count
   const allDbPages = await prisma.seoPage.findMany();
-  assert(allDbPages.length === 72, "All 72 SEO landing pages exist in database", `Found ${allDbPages.length}`);
+  assert(allDbPages.length === 79, "All 79 SEO landing pages exist in database", `Found ${allDbPages.length}`);
 
   // TEST 2: Word counts (>= 300 words)
   let wordCountFails = 0;
@@ -34,7 +34,7 @@ async function runQaSuite() {
       wordCountFails++;
     }
   }
-  assert(wordCountFails === 0, "All 72 pages have >= 300 words of introContent", `${wordCountFails} failed`);
+  assert(wordCountFails === 0, `All ${allDbPages.length} pages have >= 300 words of introContent`, `${wordCountFails} failed`);
 
   // TEST 3: Zero "wholesaler" in any field
   let wholesalerCount = 0;
@@ -82,7 +82,7 @@ async function runQaSuite() {
       napFails++;
     }
   }
-  assert(napFails === 0, "NAP block identical and compliant across all 72 generated schemas", `${napFails} mismatches`);
+  assert(napFails === 0, `NAP block identical and compliant across all ${allDbPages.length} generated schemas`, `${napFails} mismatches`);
 
   // TEST 5: Jaccard Similarity across all 1225 pairs (< 30%)
   function getWordSet(text: string) {
@@ -168,7 +168,7 @@ async function runQaSuite() {
       missingPrimarySlugs++;
     }
   }
-  assert(missingPrimarySlugs === 0, "Sitemap contains all 72 primary SEO landing slugs", `${missingPrimarySlugs} missing`);
+  assert(missingPrimarySlugs === 0, `Sitemap contains all ${allDbPages.length} primary SEO landing slugs`, `${missingPrimarySlugs} missing`);
 
   let leakedAliases = 0;
   for (const page of allDbPages) {
@@ -200,7 +200,7 @@ async function runQaSuite() {
       blockedLandingSlugs++;
     }
   }
-  assert(blockedLandingSlugs === 0, "Robots.txt permits crawling of all 72 SEO landing routes", `${blockedLandingSlugs} blocked`);
+  assert(blockedLandingSlugs === 0, `Robots.txt permits crawling of all ${allDbPages.length} SEO landing routes`, `${blockedLandingSlugs} blocked`);
   assert(
     robotsConfig.sitemap?.toString().includes("/sitemap.xml"),
     "Robots.txt points to canonical sitemap.xml"

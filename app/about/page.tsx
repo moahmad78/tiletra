@@ -628,6 +628,15 @@ export default function AboutPage() {
                     <p className="text-xs font-bold text-[#F26522] mt-0.5">{member.role}</p>
 
                     <p className="text-xs text-slate-600 leading-relaxed mt-4">{member.bio}</p>
+
+                    {member.isFounder && (
+                      <Link
+                        href="/founder"
+                        className="inline-flex items-center gap-1.5 text-xs font-bold text-[#F26522] hover:underline mt-3"
+                      >
+                        <span>Meet Our Founder — Sahil Sheikh &rarr;</span>
+                      </Link>
+                    )}
                   </div>
 
                   {/* Actions / Direct Contacts */}

@@ -182,6 +182,42 @@ export default async function SeoLandingPage({ params }: PageProps) {
     });
   }
 
+  // 7. Fetch Subcategory Pages (for Category pages) & Price Guide Pages (for Category & Subcategory pages)
+  let subCategoryPages: Array<{ slug: string; title: string; targetKeyword: string }> = [];
+  let priceGuidePages: Array<{ slug: string; title: string; targetKeyword: string }> = [];
+
+  if (page.category) {
+    if (page.pageType === "CATEGORY") {
+      subCategoryPages = await prisma.seoPage.findMany({
+        where: {
+          category: page.category,
+          pageType: "SUBCATEGORY",
+          isPublished: true,
+        },
+        select: {
+          slug: true,
+          title: true,
+          targetKeyword: true,
+        },
+      });
+    }
+
+    if (page.pageType === "CATEGORY" || page.pageType === "SUBCATEGORY") {
+      priceGuidePages = await prisma.seoPage.findMany({
+        where: {
+          category: page.category,
+          pageType: "PRICE_INTENT",
+          isPublished: true,
+        },
+        select: {
+          slug: true,
+          title: true,
+          targetKeyword: true,
+        },
+      });
+    }
+  }
+
   // 7. Generate Rich Structured Data Schemas
   const schemas = generateSeoKeywordPageSchemas({
     slug: page.slug,
@@ -229,6 +265,8 @@ export default async function SeoLandingPage({ params }: PageProps) {
         products={products}
         siblingPages={siblingPages}
         parentCategoryPage={parentCategoryPage}
+        subCategoryPages={subCategoryPages}
+        priceGuidePages={priceGuidePages}
       />
     </>
   );

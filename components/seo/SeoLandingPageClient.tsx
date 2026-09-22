@@ -44,6 +44,8 @@ interface SeoLandingPageClientProps {
   products: Product[];
   siblingPages: Array<{ slug: string; targetKeyword: string; pageType: string }>;
   parentCategoryPage?: { slug: string; title: string } | null;
+  subCategoryPages?: Array<{ slug: string; title: string; targetKeyword: string }>;
+  priceGuidePages?: Array<{ slug: string; title: string; targetKeyword: string }>;
 }
 
 export default function SeoLandingPageClient({
@@ -51,6 +53,8 @@ export default function SeoLandingPageClient({
   products,
   siblingPages,
   parentCategoryPage,
+  subCategoryPages = [],
+  priceGuidePages = [],
 }: SeoLandingPageClientProps) {
   const [openFaqIndex, setOpenFaqIndex] = useState<number | null>(0);
 
@@ -271,6 +275,87 @@ export default function SeoLandingPageClient({
                   )}
                 </div>
 
+                {/* Shop by Type / Subcategory Section (Task 3.4) */}
+                {pageData.pageType === "CATEGORY" && subCategoryPages.length > 0 && (
+                  <div className="bg-white rounded-2xl p-6 sm:p-8 border border-slate-200 shadow-2xs space-y-4">
+                    <div>
+                      <span className="text-[11px] font-bold text-[#F26522] uppercase tracking-wider">
+                        Specialized Classifications
+                      </span>
+                      <h2 className="text-xl sm:text-2xl font-black text-slate-900 tracking-tight mt-0.5">
+                        Shop by Type — {pageData.title.split("—")[0].trim()}
+                      </h2>
+                      <p className="text-xs sm:text-sm text-slate-500 mt-0.5">
+                        Browse dedicated sourcing guides and calibrated product specifications for every application.
+                      </p>
+                    </div>
+
+                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4 pt-2">
+                      {subCategoryPages.map((sub) => (
+                        <Link
+                          key={sub.slug}
+                          href={`/${sub.slug}`}
+                          className="p-4 rounded-xl border border-slate-200/80 hover:border-[#F26522] bg-slate-50/50 hover:bg-orange-50/20 transition-all duration-200 group flex flex-col justify-between"
+                        >
+                          <div className="flex items-start justify-between gap-2">
+                            <h3 className="font-bold text-sm text-slate-900 group-hover:text-[#F26522] transition-colors">
+                              {sub.title.split("—")[0].trim()}
+                            </h3>
+                            <ArrowRight
+                              size={14}
+                              className="text-slate-400 group-hover:text-[#F26522] group-hover:translate-x-0.5 transition-all shrink-0 mt-0.5"
+                            />
+                          </div>
+                          <p className="text-xs text-slate-500 mt-2 line-clamp-2">
+                            Explore verified {sub.targetKeyword} direct from certified manufacturers with express site dispatch.
+                          </p>
+                        </Link>
+                      ))}
+                    </div>
+                  </div>
+                )}
+
+                {/* Price Guides & Rate Estimators Widget (Task 3.5) */}
+                {priceGuidePages.length > 0 && (
+                  <div className="bg-gradient-to-br from-amber-500/10 via-amber-50/50 to-orange-500/10 rounded-2xl p-6 sm:p-8 border border-amber-200/80 space-y-4">
+                    <div>
+                      <span className="text-[11px] font-bold text-amber-800 uppercase tracking-wider flex items-center gap-1.5">
+                        <Sparkles size={12} className="text-amber-600" />
+                        Market Intelligence &amp; Cost Estimation
+                      </span>
+                      <h2 className="text-xl sm:text-2xl font-black text-slate-900 tracking-tight mt-0.5">
+                        Price Guides &amp; Rate Estimators
+                      </h2>
+                      <p className="text-xs sm:text-sm text-slate-600 mt-0.5">
+                        Real-time market rate breakdowns, per-unit costs, and bulk estimation guides for Bengaluru site projects.
+                      </p>
+                    </div>
+
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-1">
+                      {priceGuidePages.map((guide) => (
+                        <Link
+                          key={guide.slug}
+                          href={`/${guide.slug}`}
+                          className="p-4 rounded-xl bg-white border border-amber-200 shadow-2xs hover:shadow-sm hover:border-amber-400 transition-all duration-200 group flex items-center justify-between gap-3"
+                        >
+                          <div>
+                            <h3 className="font-bold text-sm text-slate-900 group-hover:text-amber-700 transition-colors">
+                              {guide.title.split("—")[0].trim()}
+                            </h3>
+                            <span className="text-xs text-slate-500 block mt-0.5">
+                              Live Bengaluru benchmark rates &amp; specs &rarr;
+                            </span>
+                          </div>
+                          <ArrowRight
+                            size={14}
+                            className="text-amber-500 group-hover:translate-x-1 transition-transform shrink-0"
+                          />
+                        </Link>
+                      ))}
+                    </div>
+                  </div>
+                )}
+
                 {/* FAQ Section */}
                 {pageData.faqItems && pageData.faqItems.length > 0 && (
                   <div className="bg-white rounded-2xl p-6 sm:p-8 border border-slate-200 shadow-2xs space-y-4">
@@ -400,6 +485,32 @@ export default function SeoLandingPageClient({
                   </div>
                 )}
 
+                {/* Price Guides Sidebar Card */}
+                {priceGuidePages.length > 0 && (
+                  <div className="bg-white rounded-2xl p-6 border border-amber-200/80 shadow-2xs space-y-3">
+                    <h3 className="text-xs font-black text-amber-800 uppercase tracking-wider flex items-center gap-1.5">
+                      <Sparkles size={12} className="text-amber-600" />
+                      Price &amp; Rate Indices
+                    </h3>
+                    <ul className="divide-y divide-slate-100 text-xs sm:text-sm">
+                      {priceGuidePages.map((guide) => (
+                        <li key={guide.slug} className="py-2.5">
+                          <Link
+                            href={`/${guide.slug}`}
+                            className="text-slate-800 hover:text-amber-700 font-semibold flex items-center justify-between group transition-colors"
+                          >
+                            <span className="line-clamp-1">{guide.targetKeyword}</span>
+                            <ArrowRight
+                              size={13}
+                              className="text-slate-300 group-hover:text-amber-600 shrink-0 ml-2 transition-colors"
+                            />
+                          </Link>
+                        </li>
+                      ))}
+                    </ul>
+                  </div>
+                )}
+
                 {/* Parent Category Link */}
                 {parentCategoryPage && (
                   <div className="p-4 rounded-2xl bg-gradient-to-br from-slate-900 to-[#052a51] text-white space-y-2">
@@ -410,7 +521,7 @@ export default function SeoLandingPageClient({
                       Explore Full {parentCategoryPage.title.split("—")[0].trim()} Collection
                     </h4>
                     <p className="text-xs text-white/70">
-                      Access all verified finishes, dimensions, and wholesale tiered quotes.
+                      Access all verified finishes, dimensions, and commercial volume tiered quotes.
                     </p>
                     <Link
                       href={`/${parentCategoryPage.slug}`}
