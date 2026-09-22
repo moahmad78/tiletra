@@ -124,7 +124,7 @@ export default function InfiniteProductCatalog({
       <div className="flex flex-col md:flex-row md:items-end justify-between gap-4 border-b border-gray-200/80 pb-3 sm:pb-4">
         <div>
           <h2 className="text-xl sm:text-2xl md:text-3xl font-black text-[#052a51] tracking-tight">
-            All Materials & Supplies
+            Explore Standard Tiles, Hardware &amp; Construction Items
           </h2>
         </div>
 

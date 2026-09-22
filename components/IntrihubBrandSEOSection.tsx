@@ -32,7 +32,7 @@ export default function IntrihubBrandSEOSection() {
     <>
       {/* ── Semantic Crawlable HTML Structure for Search Engines (Visually Hidden via sr-only) ── */}
       <section className="sr-only" aria-hidden="false" aria-label="About IntriHub Building Materials Ecosystem">
-        <h2>About IntriHub: India&apos;s Instant Building &amp; Interior Marketplace</h2>
+        <h2>About IntriHub: Explore Standard Tiles, Hardware &amp; Interior Items</h2>
         <p>
           Welcome to IntriHub, India&apos;s trusted building materials online India platform and premier construction material marketplace. We are transforming construction with instant building materials delivery and specialized quick-commerce construction supplies. By offering factory direct building materials and bulk construction materials online, we ensure your projects never halt. Whether you need raw materials for construction India, heavy construction supplies online, or a reliable commercial interior supplies store, we bridge the gap as wholesale building material suppliers and your go-to home building materials online shopping app.
         </p>

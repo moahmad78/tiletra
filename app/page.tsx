@@ -7,24 +7,24 @@ import JsonLd from "@/components/JsonLd";
 import { generateHomepageFaqSchema } from "@/lib/seo";
 
 export const metadata: Metadata = {
-  title: "Build Better, We Deliver Faster | IntriHub",
+  title: "Buy Tiles, Hardware & Standard Construction Items Online | IntriHub",
   description:
-    "Buy tiles, electrical, plumbing & hardware supplies online at best prices. Build Better, We Deliver Faster across Bengaluru & Pan-India with IntriHub.",
+    "Explore standard vitrified tiles, sanitaryware, electricals & hardware items online at best prices. Build Better, We Deliver Faster across Bengaluru & Karnataka.",
   alternates: {
     canonical: "https://www.intrihub.com/",
   },
   openGraph: {
-    title: "Build Better, We Deliver Faster | IntriHub",
+    title: "Buy Tiles, Hardware & Standard Construction Items Online | IntriHub",
     description:
-      "Buy tiles, electrical, plumbing & hardware supplies online at best prices. Build Better, We Deliver Faster across Bengaluru & Pan-India with IntriHub.",
+      "Explore standard vitrified tiles, sanitaryware, electricals & hardware items online at best prices. Build Better, We Deliver Faster across Bengaluru & Karnataka.",
     url: "https://www.intrihub.com/",
     siteName: "IntriHub",
   },
   twitter: {
     card: "summary_large_image",
-    title: "Build Better, We Deliver Faster | IntriHub",
+    title: "Buy Tiles, Hardware & Standard Construction Items Online | IntriHub",
     description:
-      "Buy tiles, electrical, plumbing & hardware supplies online at best prices. Build Better, We Deliver Faster across Bengaluru & Pan-India with IntriHub.",
+      "Explore standard vitrified tiles, sanitaryware, electricals & hardware items online at best prices. Build Better, We Deliver Faster across Bengaluru & Karnataka.",
   },
 };
 
@@ -45,7 +45,7 @@ export default async function HomePage() {
     <>
       <JsonLd data={faqSchema} id="homepage-faq-schema" />
       <h1 className="sr-only">
-        IntriHub — Interior &amp; Construction Materials, Delivered Across Karnataka &amp; Pan-India
+        IntriHub — Buy Standard Tiles, Hardware Supplies &amp; Construction Items Online
       </h1>
       <HomeClient
         categories={categories}

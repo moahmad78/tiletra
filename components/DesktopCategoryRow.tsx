@@ -181,10 +181,10 @@ export default function DesktopCategoryRow({ categories }: DesktopCategoryRowPro
         <div className="flex items-center justify-between mb-4">
           <div>
             <span className="text-[11px] font-black text-[#F26522] uppercase tracking-wider">
-              Explore By Category
+              Explore Building Supplies
             </span>
             <h2 className="text-xl lg:text-2xl font-black text-[#052a51] tracking-tight">
-              Build Better, We Deliver Faster
+              Explore Tiles, Hardware &amp; Standard Construction Materials
             </h2>
           </div>
           <div className="flex items-center gap-2">
