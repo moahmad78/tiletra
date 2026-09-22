@@ -33,7 +33,7 @@ function SafeDesktopCategoryCard({
           <div className="relative w-full aspect-[4/3] rounded-xl overflow-hidden bg-gray-100 shrink-0">
             <Image
               src={imgSrc}
-              alt=""
+              alt={`${cat.name} Category`}
               fill
               onError={() => setImgSrc("/placeholders/category.svg")}
               className="object-cover group-hover:scale-108 transition-transform duration-300"

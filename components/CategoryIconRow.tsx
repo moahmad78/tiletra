@@ -58,7 +58,7 @@ function SafeCategoryIcon({
           <div className="w-full h-full rounded-[14px] overflow-hidden relative bg-gray-100">
             <Image
               src={imgSrc}
-              alt=""
+              alt={`${cat.name} Category`}
               fill
               onError={() => setImgSrc("/placeholders/category.svg")}
               className="object-cover group-hover:scale-110 transition-transform duration-300"
