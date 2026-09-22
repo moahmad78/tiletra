@@ -107,4 +107,70 @@ body {
   padding-top: max(env(safe-area-inset-top, 0px), 12px);
 }
 
+/* ==========================================================================
+   Responsive Breakpoints & Media Query Foundations (Mobile, Tablet, Desktop)
+   ========================================================================== */
+
+/* 1. Mobile Handheld Viewports (<= 640px) */
+@media screen and (max-width: 640px) {
+  :root {
+    --header-mobile-offset: 56px;
+    --container-padding: 16px;
+  }
+
+  html {
+    scroll-padding-top: 60px;
+    font-size: 14px;
+  }
+}
+
+/* 2. Tablet & Medium Screens (641px - 1024px) */
+@media screen and (min-width: 641px) and (max-width: 1024px) {
+  :root {
+    --header-tablet-offset: 120px;
+    --container-padding: 24px;
+  }
+
+  html {
+    scroll-padding-top: 100px;
+    font-size: 15px;
+  }
+}
+
+/* 3. Desktop Large Screens (>= 1025px) */
+@media screen and (min-width: 1025px) {
+  :root {
+    --header-desktop-offset: 168px;
+    --container-padding: 32px;
+  }
+
+  html {
+    scroll-padding-top: 85px;
+    font-size: 16px;
+  }
+}
+
+/* 4. Accessibility & Reduced Motion Preferences */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}
+
+/* 5. Print Stylesheet */
+@media print {
+  header,
+  footer,
+  nav,
+  .no-print {
+    display: none !important;
+  }
+}
+
+
 
