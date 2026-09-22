@@ -165,7 +165,7 @@ export default function Footer() {
               <a
                 href="https://www.instagram.com/intrihub_/"
                 target="_blank"
-                rel="noopener noreferrer"
+                rel="noopener noreferrer nofollow"
                 className="w-9 h-9 rounded-full bg-white/10 flex items-center justify-center hover:bg-[#F26522] text-white transition-all hover:scale-110"
                 aria-label="Follow IntriHub on Instagram"
                 title="Follow IntriHub on Instagram"
@@ -180,7 +180,7 @@ export default function Footer() {
               <a
                 href="https://www.linkedin.com/company/intrihub"
                 target="_blank"
-                rel="noopener noreferrer"
+                rel="noopener noreferrer nofollow"
                 className="w-9 h-9 rounded-full bg-white/10 flex items-center justify-center hover:bg-[#0077b5] text-white transition-all hover:scale-110"
                 aria-label="Connect with IntriHub on LinkedIn"
                 title="Connect with IntriHub on LinkedIn"
@@ -193,7 +193,7 @@ export default function Footer() {
               <a
                 href="https://www.facebook.com/intrihub"
                 target="_blank"
-                rel="noopener noreferrer"
+                rel="noopener noreferrer nofollow"
                 className="w-9 h-9 rounded-full bg-white/10 flex items-center justify-center hover:bg-[#1877f2] text-white transition-all hover:scale-110"
                 aria-label="Follow IntriHub on Facebook"
                 title="Follow IntriHub on Facebook"
@@ -206,7 +206,7 @@ export default function Footer() {
               <a
                 href="https://wa.me/917090120211"
                 target="_blank"
-                rel="noopener noreferrer"
+                rel="noopener noreferrer nofollow"
                 className="w-9 h-9 rounded-full bg-white/10 flex items-center justify-center hover:bg-[#25D366] text-white transition-all hover:scale-110"
                 aria-label="Chat with IntriHub Support on WhatsApp"
                 title="Chat with IntriHub Support on WhatsApp"
@@ -371,7 +371,7 @@ export default function Footer() {
             <a
               href="https://www.instagram.com/sahil_sheikh78/"
               target="_blank"
-              rel="noopener noreferrer"
+              rel="noopener noreferrer nofollow"
               className="text-white hover:text-[#F26522] font-black transition-colors underline underline-offset-2 inline-flex items-center gap-1 bg-white/10 px-2 py-0.5 rounded-md"
               aria-label="Sahil Sheikh Instagram profile"
             >
