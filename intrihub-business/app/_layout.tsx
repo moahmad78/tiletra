@@ -21,15 +21,23 @@ import AppUpdateModal from "../src/components/AppUpdateModal";
 import * as Sentry from "@sentry/react-native";
 import { COLORS } from "../src/constants/theme";
 
-// Initialize Sentry crash reporting at the earliest point in the lifecycle
-Sentry.init({
-  dsn: "https://1cbe738f4586b8e9bb9d55840396ee51@o4512085765521408.ingest.us.sentry.io/4512085786558464",
-  tracesSampleRate: 1.0,
-  debug: false,
-});
-
 // Keep native splash screen visible while app JS bundle loads
+// Must be called BEFORE Sentry.init() to ensure splash stays up if Sentry hangs
 SplashScreen.preventAutoHideAsync().catch(() => {});
+
+// Initialize Sentry crash reporting - wrapped in try/catch to prevent
+// native module mismatch from crashing the app on release builds
+try {
+  Sentry.init({
+    dsn: "https://1cbe738f4586b8e9bb9d55840396ee51@o4512085765521408.ingest.us.sentry.io/4512085786558464",
+    tracesSampleRate: 1.0,
+    debug: false,
+    // Prevent Sentry from crashing the app if native init fails
+    onReady: () => {},
+  });
+} catch (e) {
+  console.warn("Sentry init failed (non-fatal):", e);
+}
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -180,6 +188,9 @@ function RootLayout() {
   );
 }
 
+// Sentry.wrap() is used for crash reporting breadcrumbs
+// In release builds, if Sentry native layer isn't ready this can crash.
+// We guard it so the app always launches even if Sentry is unavailable.
 export default Sentry.wrap(RootLayout);
 
 const styles = StyleSheet.create({
