@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import Image from "next/image";
 import { usePathname } from "next/navigation";
 import {
   MapPin,
@@ -141,8 +142,7 @@ export default function Footer() {
           <div className="lg:col-span-2 space-y-4 pr-0 lg:pr-8">
             <div className="flex items-center gap-3">
               <Link href="/" aria-label="Intrihub Home" className="inline-flex items-center bg-white px-4 py-2 rounded-2xl shadow-xs">
-                {/* eslint-disable-next-line @next/next/no-img-element */}
-                <img
+                <Image
                   src="/logo/intri-web-logo.png"
                   alt="Intrihub Logo"
                   width={150}

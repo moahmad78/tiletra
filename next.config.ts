@@ -25,10 +25,52 @@ const nextConfig: NextConfig = {
       {
         protocol: "https",
         hostname: "**",
+        pathname: "/**",
       },
       {
         protocol: "http",
         hostname: "**",
+        pathname: "/**",
+      },
+      {
+        protocol: "https",
+        hostname: "images.unsplash.com",
+      },
+      {
+        protocol: "https",
+        hostname: "encrypted-tbn0.gstatic.com",
+      },
+      {
+        protocol: "https",
+        hostname: "images.orientbell.com",
+      },
+      {
+        protocol: "https",
+        hostname: "5.imimg.com",
+      },
+      {
+        protocol: "https",
+        hostname: "www.jkcement.com",
+      },
+      {
+        protocol: "https",
+        hostname: "goelworld.com",
+      },
+      {
+        protocol: "https",
+        hostname: "rukmini1.flixcart.com",
+      },
+      {
+        protocol: "https",
+        hostname: "m.media-amazon.com",
+      },
+      {
+        protocol: "https",
+        hostname: "res.cloudinary.com",
+      },
+      {
+        protocol: "https",
+        hostname: "*.amazonaws.com",
       },
     ],
   },

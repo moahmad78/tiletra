@@ -116,10 +116,10 @@ export async function POST(req: NextRequest) {
         ext = ".pdf";
       } else {
         try {
-          // Optimize raster image with sharp
+          // Optimize raster image with sharp: resize to max 1600px, convert to WebP, quality 82
           processedBuffer = await sharp(rawBuffer)
             .resize({ width: 1600, height: 1600, fit: "inside", withoutEnlargement: true })
-            .webp({ quality: 85 })
+            .webp({ quality: 82, effort: 4 })
             .toBuffer();
           mimeType = "image/webp";
           ext = ".webp";

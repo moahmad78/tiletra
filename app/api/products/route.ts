@@ -10,7 +10,7 @@ export async function GET(req: NextRequest) {
 
     // Bounded and strictly validated query parameters
     const page = parseBoundedInt(searchParams.get("page"), 1, 1000, 1);
-    const limit = parseBoundedInt(searchParams.get("limit"), 1, 50, 12);
+    const limit = parseBoundedInt(searchParams.get("limit"), 1, 250, 24);
 
     const rawCategory = searchParams.get("category") || searchParams.get("categorySlug");
     const categorySlug = rawCategory ? sanitizeString(rawCategory, 80).toLowerCase() : undefined;

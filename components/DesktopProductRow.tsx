@@ -41,7 +41,7 @@ export default function DesktopProductRow({
 
   return (
     <section className="hidden md:block py-6">
-      <div className="w-full max-w-[1400px] mx-auto px-[20px] md:px-[24px] lg:px-[32px]">
+      <div className="w-full max-w-[1400px] mx-auto px-4 md:px-6 lg:px-8">
         {/* Row Header */}
         <div className="flex items-end justify-between mb-5">
           <div>

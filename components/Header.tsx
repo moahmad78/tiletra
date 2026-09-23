@@ -5,6 +5,7 @@ import { Button } from "@/components/ui/Button";
 import { cn } from "@/lib/utils";
 import { Menu, X, MapPin, Phone, Mail, ShoppingCart, Search, Heart, User as UserIcon, Store, Truck } from "lucide-react";
 import Link from "next/link";
+import Image from "next/image";
 import { useCartStore } from "@/lib/cart-store";
 import { useWishlistStore } from "@/lib/wishlist-store";
 import { useAuthStore, useAuthStatus } from "@/lib/auth-store";
@@ -64,7 +65,7 @@ export default function Header() {
             isScrolled ? "h-0 py-0 opacity-0" : "h-auto opacity-100"
           )}
         >
-          <div className="w-full max-w-[1400px] mx-auto px-[20px] md:px-[24px] lg:px-[32px]">
+          <div className="w-full max-w-[1400px] mx-auto px-4 md:px-6 lg:px-8">
             <div className="flex justify-between items-center text-xs font-medium">
               <div className="flex items-center gap-6">
                 <span className="flex items-center gap-1.5">
@@ -100,12 +101,12 @@ export default function Header() {
             {/* Logo */}
             <div className="flex-shrink-0">
               <Link href="/" className="flex items-center group">
-                {/* eslint-disable-next-line @next/next/no-img-element */}
-                <img
+                <Image
                   src="/logo/intri-web-logo.png"
                   alt="Intrihub Logo"
                   width={150}
                   height={40}
+                  priority
                   className="h-[30px] sm:h-[34px] md:h-[40px] w-auto object-contain transition-all duration-300 group-hover:scale-105"
                 />
               </Link>
@@ -192,10 +193,11 @@ export default function Header() {
                   className="hidden lg:flex items-center gap-2 px-2.5 h-[40px] rounded-xl text-xs font-bold text-[#052a51] hover:bg-gray-100 transition-colors"
                 >
                   {user.avatar ? (
-                    // eslint-disable-next-line @next/next/no-img-element
-                    <img
+                    <Image
                       src={user.avatar}
                       alt={user.name || "User"}
+                      width={28}
+                      height={28}
                       className="w-7 h-7 rounded-full object-cover border border-[#052a51]/20 shadow-2xs"
                     />
                   ) : (

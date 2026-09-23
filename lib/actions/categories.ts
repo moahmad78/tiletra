@@ -44,19 +44,27 @@ export async function getCategories(): Promise<Category[]> {
     });
 
     if (dbCategories.length > 0) {
-      const formatted: Category[] = dbCategories.map((c: any) => ({
-        id: c.id,
-        name: c.name,
-        slug: c.slug,
-        description: c.description || "",
-        image: c.image || "/placeholders/category.svg",
-        productCount: c._count.products,
-        featured: true,
-        parentId: c.parentId || null,
-        icon: c.icon || "Grid",
-        calculatorType: inferCalculatorType(c.slug, c.calculatorType),
-        calculatorInputType: c.calculatorInputType || "area",
-      }));
+      const formatted: Category[] = dbCategories.map((c: any) => {
+        const staticMatch = defaultCategories.find((dc) => dc.slug === c.slug);
+        const image =
+          c.image && c.image.trim() && c.image !== "/placeholders/category.svg"
+            ? c.image
+            : staticMatch?.image || "/placeholders/category.svg";
+
+        return {
+          id: c.id,
+          name: c.name,
+          slug: c.slug,
+          description: c.description || "",
+          image,
+          productCount: c._count.products,
+          featured: true,
+          parentId: c.parentId || null,
+          icon: c.icon || "Grid",
+          calculatorType: inferCalculatorType(c.slug, c.calculatorType),
+          calculatorInputType: c.calculatorInputType || "area",
+        };
+      });
 
       cachedCategories = { data: formatted, timestamp: now };
       return formatted;
@@ -80,12 +88,18 @@ export async function getCategoryBySlug(slug: string): Promise<Category | null> 
     });
 
     if (c) {
+      const staticMatch = defaultCategories.find((dc) => dc.slug === c.slug);
+      const image =
+        c.image && c.image.trim() && c.image !== "/placeholders/category.svg"
+          ? c.image
+          : staticMatch?.image || "/placeholders/category.svg";
+
       return {
         id: c.id,
         name: c.name,
         slug: c.slug,
         description: c.description || "",
-        image: c.image || "/placeholders/category.svg",
+        image,
         productCount: c._count.products,
         featured: true,
         parentId: c.parentId || null,

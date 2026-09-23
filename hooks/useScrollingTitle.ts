@@ -4,52 +4,78 @@ import { useEffect, useRef } from 'react';
 import { usePathname } from 'next/navigation';
 
 /**
- * Scrolls document.title as a marquee ticker using the page's existing
- * title as the base text. Does not affect the server-rendered <title>
- * used for SEO — this only runs after hydration on the client.
+ * Scrolls document.title as a smooth marquee ticker using the page's title.
+ * Operates purely on the client with zero state updates to prevent re-renders.
  */
-export function useScrollingTitle(intervalMs = 300) {
+export function useScrollingTitle(intervalMs = 220) {
   const pathname = usePathname();
   const originalTitleRef = useRef<string>('');
 
   useEffect(() => {
-    let intervalId: NodeJS.Timeout | null = null;
-    let timeoutId: NodeJS.Timeout | null = null;
+    // Ensure we run only in browser
+    if (typeof window === 'undefined' || typeof document === 'undefined') return;
 
-    // Small delay on route change so Next.js metadata/title has settled
-    timeoutId = setTimeout(() => {
-      // Capture the page's real title (already set server-side for SEO)
-      let base = document.title.trim();
+    let intervalId: ReturnType<typeof setInterval> | null = null;
+    let index = 0;
+    let text = '';
 
-      if (!base) {
-        base = 'IntriHub — Best Rates, Direct to Site';
+    const startMarquee = () => {
+      // Clear any existing active interval
+      if (intervalId) {
+        clearInterval(intervalId);
+        intervalId = null;
       }
 
-      // Safety rule: replace any occurrence of 'Wholesale' with 'Best Rates'
+      // Extract clean base title, removing any previous marquee artifacts
+      let rawTitle = document.title.trim();
+      if (rawTitle.includes('   •   ')) {
+        rawTitle = rawTitle.split('   •   ')[0].trim();
+      }
+
+      let base = rawTitle || 'IntriHub — Build Better, We Deliver Faster';
       base = base.replace(/wholesale/gi, 'Best Rates');
       originalTitleRef.current = base;
 
-      // Separator so the loop reads cleanly as it wraps around
-      const text = base + '   •   ';
-      let index = 0;
+      // Clean separator for smooth wrap-around loop
+      text = base + '   •   ';
+      index = 0;
 
-      const tick = () => {
-        document.title = text.substring(index) + text.substring(0, index);
+      // Single lightweight interval callback: only string slicing and direct title assignment
+      intervalId = setInterval(() => {
         index = (index + 1) % text.length;
-      };
+        document.title = text.slice(index) + text.slice(0, index);
+      }, intervalMs);
+    };
 
-      tick();
-      intervalId = setInterval(tick, intervalMs);
-    }, 60);
-
-    return () => {
-      if (timeoutId) clearTimeout(timeoutId);
-      if (intervalId) clearInterval(intervalId);
-      // Restore the real title on unmount (route change) so it doesn't leak
-      // a mid-scroll fragment into the next page
+    const stopMarquee = () => {
+      if (intervalId) {
+        clearInterval(intervalId);
+        intervalId = null;
+      }
       if (originalTitleRef.current) {
         document.title = originalTitleRef.current;
       }
+    };
+
+    // Small delay on route transition to let Next.js metadata settle
+    const settleTimeout = setTimeout(startMarquee, 100);
+
+    // Pause ticker when tab is backgrounded to prevent browser timer backlog jitter;
+    // Resume smoothly when user refocuses the tab.
+    const handleVisibilityChange = () => {
+      if (document.hidden) {
+        stopMarquee();
+      } else {
+        startMarquee();
+      }
+    };
+
+    document.addEventListener('visibilitychange', handleVisibilityChange);
+
+    return () => {
+      clearTimeout(settleTimeout);
+      document.removeEventListener('visibilitychange', handleVisibilityChange);
+      stopMarquee();
     };
   }, [intervalMs, pathname]);
 }

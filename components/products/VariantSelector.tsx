@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useMemo } from "react";
+import Image from "next/image";
 import { Check } from "lucide-react";
 import type { Product, ProductVariant } from "@/lib/data/products";
 import { formatPrice, formatUnitLabel } from "@/lib/formatters";
@@ -172,9 +173,9 @@ export default function VariantSelector({
                       style={{ backgroundColor: hex }}
                     >
                       {swatchTexture ? (
-                        <img src={swatchTexture} alt={col} className="w-full h-full object-cover" />
+                        <Image src={swatchTexture} alt={col} width={20} height={20} className="w-full h-full object-cover" />
                       ) : repVariant?.image ? (
-                        <img src={repVariant.image} alt={col} className="w-full h-full object-cover" />
+                        <Image src={repVariant.image} alt={col} width={20} height={20} className="w-full h-full object-cover" />
                       ) : null}
                       {isSelected && (
                         <Check size={11} className={isLight ? "text-gray-900" : "text-white"} strokeWidth={3} />
@@ -279,9 +280,9 @@ export default function VariantSelector({
                     style={{ backgroundColor: hex }}
                   >
                     {swatchTexture ? (
-                      <img src={swatchTexture} alt={v.color} className="w-full h-full object-cover" />
+                      <Image src={swatchTexture} alt={v.color} width={20} height={20} className="w-full h-full object-cover" />
                     ) : v.image ? (
-                      <img src={v.image} alt={v.color} className="w-full h-full object-cover" />
+                      <Image src={v.image} alt={v.color} width={20} height={20} className="w-full h-full object-cover" />
                     ) : null}
                     {isSelected && (
                       <Check size={11} className={isLight ? "text-gray-900" : "text-white"} strokeWidth={3} />

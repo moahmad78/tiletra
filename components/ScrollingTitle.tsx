@@ -3,6 +3,6 @@
 import { useScrollingTitle } from '@/hooks/useScrollingTitle';
 
 export function ScrollingTitle() {
-  useScrollingTitle(300);
+  useScrollingTitle(220);
   return null;
 }

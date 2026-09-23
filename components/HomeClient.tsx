@@ -1,25 +1,13 @@
 "use client";
 
-import { useState, useRef, useEffect } from "react";
-import { motion, useInView } from "framer-motion";
+import { useState, useEffect } from "react";
 import Link from "next/link";
-import Image from "next/image";
 import {
   ArrowRight,
   Truck,
-  ChevronRight,
-  Heart,
-  ShoppingCart,
-  Zap,
-  Clock,
-  CheckCircle2,
-  BadgeCheck,
-  MessageCircle,
 } from "lucide-react";
 import type { Category } from "@/lib/data/categories";
 import type { Product } from "@/lib/data/products";
-import { useCartStore } from "@/lib/cart-store";
-import { useWishlistStore } from "@/lib/wishlist-store";
 import Header from "@/components/Header";
 import Footer from "@/components/Footer";
 import CategoryIconRow from "@/components/CategoryIconRow";
@@ -191,7 +179,7 @@ export default function HomeClient({
         )}
 
         {/* 4. Mid Promo Banner Strip */}
-        <div className="w-full max-w-[1400px] mx-auto px-[20px] md:px-[24px] lg:px-[32px] py-4">
+        <div className="w-full max-w-[1400px] mx-auto px-4 md:px-6 lg:px-8 py-4">
           <div className="bg-gradient-to-r from-[#052a51] via-[#0b3b6d] to-[#052a51] rounded-3xl p-6 text-white flex items-center justify-between shadow-xs border border-white/10">
             <div className="flex items-center gap-4">
               <div className="w-12 h-12 rounded-2xl bg-[#F26522]/20 border border-[#F26522]/40 flex items-center justify-center text-[#F26522]">
@@ -242,83 +230,6 @@ export default function HomeClient({
             viewAllHref="/shop"
           />
         )}
-
-        {/* ── QUICK COMMERCE DISPATCH & SITE DELIVERY BANNER (Desktop Only) ──────────────── */}
-        <section className="relative overflow-hidden py-12 md:py-16 bg-gradient-to-r from-[#031b34] via-[#052a51] to-[#08386a] border-y border-white/10 text-white">
-          {/* Subtle Ambient Glow Orbs */}
-          <div className="absolute -top-24 -left-24 w-80 h-80 bg-[#F26522]/15 rounded-full blur-3xl pointer-events-none" />
-          <div className="absolute -bottom-24 -right-24 w-80 h-80 bg-[#1E9E6B]/20 rounded-full blur-3xl pointer-events-none" />
-
-          <div className="relative w-full max-w-[1400px] mx-auto px-[20px] md:px-[24px] lg:px-[32px]">
-            <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-8 md:gap-12">
-              <motion.div
-                initial={{ opacity: 0, y: 15 }}
-                whileInView={{ opacity: 1, y: 0 }}
-                viewport={{ once: true }}
-                className="max-w-2xl space-y-4"
-              >
-                <div className="inline-flex items-center gap-2 px-3 py-1 bg-white/10 backdrop-blur-md rounded-full border border-white/15 text-[11px] font-black uppercase tracking-wider text-amber-300">
-                  <Zap size={13} className="text-[#F26522]" />
-                  <span>Quick Commerce Express Site Delivery</span>
-                </div>
-
-                <h2 className="text-[26px] sm:text-[32px] md:text-[40px] font-black text-white leading-tight tracking-tight">
-                  Need Materials Fast? <br className="hidden sm:inline" />
-                  <span className="text-transparent bg-clip-text bg-gradient-to-r from-[#F26522] via-orange-300 to-amber-300">
-                    Get Direct Site Delivery Within 60 Minutes
-                  </span>
-                </h2>
-
-                <p className="text-sm md:text-base text-white/80 leading-relaxed max-w-xl font-medium">
-                  Order Tiles, Granite, Paints, Plywood & Hardware with real-time GPS tracking, verified direct rates, and guaranteed damage-free unloading directly at your project.
-                </p>
-
-                {/* Quick-Commerce Feature Badges */}
-                <div className="grid grid-cols-2 sm:grid-cols-3 gap-2.5 pt-2 text-xs font-bold text-white/90">
-                  <div className="flex items-center gap-2 p-2 rounded-xl bg-white/5 border border-white/10 backdrop-blur-xs">
-                    <Clock size={15} className="text-[#F26522] shrink-0" />
-                    <span>Within 60 Minutes</span>
-                  </div>
-                  <div className="flex items-center gap-2 p-2 rounded-xl bg-white/5 border border-white/10 backdrop-blur-xs">
-                    <CheckCircle2 size={15} className="text-[#1E9E6B] shrink-0" />
-                    <span>Free Above ₹15,000</span>
-                  </div>
-                  <div className="flex items-center gap-2 p-2 rounded-xl bg-white/5 border border-white/10 backdrop-blur-xs col-span-2 sm:col-span-1">
-                    <BadgeCheck size={15} className="text-amber-300 shrink-0" />
-                    <span>Factory-Direct Rates</span>
-                  </div>
-                </div>
-              </motion.div>
-
-              <motion.div
-                initial={{ opacity: 0, scale: 0.95 }}
-                whileInView={{ opacity: 1, scale: 1 }}
-                viewport={{ once: true }}
-                className="flex flex-col sm:flex-row lg:flex-col gap-3 shrink-0"
-              >
-                <Link href="/shop" aria-label="Order Building Materials for Instant Dispatch" className="w-full sm:w-auto">
-                  <button className="w-full sm:w-auto h-13 px-8 bg-[#F26522] hover:bg-[#d95a1e] text-white font-black text-sm md:text-base rounded-2xl shadow-lg shadow-orange-500/25 transition-all hover:-translate-y-0.5 active:scale-95 flex items-center justify-center gap-2.5 cursor-pointer whitespace-nowrap">
-                    <span>Order for Instant Dispatch</span>
-                    <ArrowRight size={18} />
-                  </button>
-                </Link>
-
-                <a
-                  href="https://wa.me/917090120211?text=Hi%20Intrihub,%20I%20need%20urgent%20building%20materials%20delivery%20to%20my%20site."
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  aria-label="Contact WhatsApp Quick Order Desk"
-                  className="w-full sm:w-auto"
-                >
-                  <button className="w-full sm:w-auto h-12 px-6 bg-white/10 hover:bg-white/15 border border-white/20 text-white font-bold text-xs md:text-sm rounded-2xl transition-all flex items-center justify-center gap-2 cursor-pointer backdrop-blur-md">
-                    <MessageCircle size={16} className="text-[#1E9E6B]" />
-                    <span>WhatsApp Quick Order Desk</span>
-                  </button>
-                </a>
-              </motion.div>
-            </div>
-          </div>
-        </section>
       </div>
 
       {/* ========================================================================= */}

@@ -61,7 +61,10 @@ export default function CompactProductCard({
             src={imgSrc}
             alt={product.name}
             fill
-            onError={() => setImgSrc("/placeholders/product.svg")}
+            onError={(e) => {
+              console.error(`[CompactProductCard Image Load Failed]: "${product.name}" (${product.id}) - URL: ${imgSrc}`, e);
+              setImgSrc("/placeholders/product.svg");
+            }}
             className="object-cover transition-transform duration-300 hover:scale-105"
             sizes="155px"
           />

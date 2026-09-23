@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import Image from "next/image";
 import { Plus, Trash2, Copy, Palette, Check, Layers, Image as ImageIcon } from "lucide-react";
 import type { ProductVariant } from "@/lib/data/products";
 import {
@@ -412,9 +413,15 @@ export default function VariantEditor({
                         placeholder="https://... or /img.jpg"
                       />
                       {v.image ? (
-                        <div className="w-7 h-7 rounded-md border border-gray-200 overflow-hidden shrink-0">
-                          {/* eslint-disable-next-line @next/next/no-img-element */}
-                          <img src={v.image} alt="variant" className="w-full h-full object-cover" />
+                        <div className="w-7 h-7 rounded-md border border-gray-200 overflow-hidden shrink-0 relative">
+                          <Image
+                            src={v.image}
+                            alt="variant"
+                            width={28}
+                            height={28}
+                            unoptimized={v.image.startsWith("data:") || v.image.startsWith("blob:")}
+                            className="w-full h-full object-cover"
+                          />
                         </div>
                       ) : null}
                     </div>

@@ -1,5 +1,6 @@
 "use client";
 
+import Image from "next/image";
 import { motion } from "framer-motion";
 import { ShieldCheck, Gem, IndianRupee, Clock, CheckCircle2, Target, Droplets, Smile } from "lucide-react";
 import SectionHeader from "./SectionHeader";
@@ -35,14 +36,14 @@ export default function WhyChooseUs() {
             initial={{ opacity: 0, x: -30 }}
             whileInView={{ opacity: 1, x: 0 }}
             viewport={{ once: true }}
-            className="w-full lg:w-[45%] h-[420px] lg:h-[480px] rounded-[20px] overflow-hidden relative group shadow-[0_20px_40px_rgba(0,0,0,0.1)]"
+            className="w-full lg:w-[45%] h-[420px] lg:h-[480px] rounded-[20px] overflow-hidden relative group shadow-[0_20px_40px_rgba(0,0,0,0.1)] bg-slate-100"
           >
-            {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img 
+            <Image 
               src="/about/quality-inspection.jpg" 
               alt="Premium tile installation craftsmanship"
-              className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-105"
-              onError={(e) => { e.currentTarget.src = "/about/quality-inspection.jpg"; }}
+              fill
+              className="object-cover transition-transform duration-700 group-hover:scale-105"
+              sizes="(max-width: 1024px) 100vw, 500px"
             />
             {/* Subtle Gradient Overlay */}
             <div className="absolute inset-0 bg-gradient-to-t from-black/30 to-transparent pointer-events-none" />

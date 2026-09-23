@@ -14,7 +14,6 @@ import CompactProductCard from "@/components/CompactProductCard";
 
 const FINISHES = ["Matte", "Glossy", "Textured", "Satin", "Polished"] as const;
 const MATERIALS = ["Ceramic", "Vitrified", "Porcelain", "Natural Stone", "Mosaic"] as const;
-const SIZES = ["300x300mm", "300x600mm", "600x600mm", "800x800mm"] as const;
 const SORTS = ["Popular", "Price: Low to High", "Price: High to Low", "New Arrivals"] as const;
 
 type SortOption = (typeof SORTS)[number];
@@ -38,17 +37,63 @@ export default function ShopCatalogClient({
     setSearchQuery(urlSearch);
   }, [urlSearch]);
 
+  // Compute maximum price across all products dynamically
+  const maxCatalogPrice = useMemo(() => {
+    if (!initialProducts || initialProducts.length === 0) return 5000;
+    const max = Math.max(...initialProducts.map((p) => getLowestPrice(p)), 3000);
+    return Math.ceil(max / 500) * 500;
+  }, [initialProducts]);
+
+  // Dynamically derive available finishes, materials, and sizes from the catalog
+  const availableFinishes = useMemo(() => {
+    const set = new Set<string>();
+    initialProducts.forEach((p) => {
+      p.variants?.forEach((v) => {
+        if (v.finish && typeof v.finish === "string") set.add(v.finish);
+      });
+      if (p.finish) set.add(p.finish);
+    });
+    return Array.from(set).filter(Boolean);
+  }, [initialProducts]);
+
+  const availableMaterials = useMemo(() => {
+    const set = new Set<string>();
+    initialProducts.forEach((p) => {
+      if (p.material) set.add(p.material);
+    });
+    return Array.from(set).filter(Boolean);
+  }, [initialProducts]);
+
+  const availableSizes = useMemo(() => {
+    const set = new Set<string>();
+    initialProducts.forEach((p) => {
+      p.variants?.forEach((v) => {
+        if (v.size) set.add(v.size);
+      });
+      if (p.size) set.add(p.size);
+    });
+    return Array.from(set).filter(Boolean).slice(0, 15);
+  }, [initialProducts]);
+
   const [selectedCategories, setSelectedCategories] = useState<string[]>([]);
   const [selectedFinishes, setSelectedFinishes] = useState<string[]>([]);
   const [selectedMaterials, setSelectedMaterials] = useState<string[]>([]);
   const [selectedSizes, setSelectedSizes] = useState<string[]>([]);
-  const [priceRange, setPriceRange] = useState<[number, number]>([0, 300]);
+  const [priceRange, setPriceRange] = useState<[number, number]>([0, maxCatalogPrice]);
+  const [isPriceCustomized, setIsPriceCustomized] = useState(false);
   const [sort, setSort] = useState<SortOption>("Popular");
   const [mobileFiltersOpen, setMobileFiltersOpen] = useState(false);
   const [mobileSortOpen, setMobileSortOpen] = useState(false);
 
-  // Infinite Scroll state
-  const [visibleCount, setVisibleCount] = useState(12);
+  // Sync initial price range once maxCatalogPrice is calculated
+  useEffect(() => {
+    if (!isPriceCustomized) {
+      setPriceRange([0, maxCatalogPrice]);
+    }
+  }, [maxCatalogPrice, isPriceCustomized]);
+
+  // Pagination / Visible Batch state (Starts at 24 for full immediate browse)
+  const [visibleCount, setVisibleCount] = useState(24);
   const [isLoadingMore, setIsLoadingMore] = useState(false);
   const loadMoreRef = useRef<HTMLDivElement>(null);
 
@@ -86,7 +131,8 @@ export default function ShopCatalogClient({
     }
     if (selectedFinishes.length > 0) {
       result = result.filter((p) =>
-        p.variants.some((v) => selectedFinishes.includes(v.finish))
+        p.variants?.some((v) => selectedFinishes.includes(v.finish)) ||
+        (p.finish && selectedFinishes.includes(p.finish))
       );
     }
     if (selectedMaterials.length > 0) {
@@ -94,13 +140,21 @@ export default function ShopCatalogClient({
     }
     if (selectedSizes.length > 0) {
       result = result.filter((p) =>
-        p.variants.some((v) => selectedSizes.some((s) => v.size.includes(s)))
+        p.variants?.some((v) => selectedSizes.some((s) => v.size?.includes(s))) ||
+        (p.size && selectedSizes.some((s) => p.size?.includes(s)))
       );
     }
-    result = result.filter((p) => {
-      const lowestSqft = getLowestPrice(p);
-      return lowestSqft >= priceRange[0] && lowestSqft <= priceRange[1];
-    });
+    
+    // Only apply price filter when customized or within active bounds
+    if (isPriceCustomized) {
+      result = result.filter((p) => {
+        const lowestSqft = getLowestPrice(p);
+        if (priceRange[1] >= maxCatalogPrice) {
+          return lowestSqft >= priceRange[0];
+        }
+        return lowestSqft >= priceRange[0] && lowestSqft <= priceRange[1];
+      });
+    }
 
     switch (sort) {
       case "Price: Low to High":
@@ -113,15 +167,15 @@ export default function ShopCatalogClient({
         result = result.filter((p) => p.isNew).concat(result.filter((p) => !p.isNew));
         break;
       default: // Popular
-        result.sort((a, b) => b.reviewCount - a.reviewCount);
+        result.sort((a, b) => (b.reviewCount || 0) - (a.reviewCount || 0));
     }
 
     return result;
-  }, [initialProducts, searchQuery, selectedCategories, selectedFinishes, selectedMaterials, selectedSizes, priceRange, sort]);
+  }, [initialProducts, searchQuery, selectedCategories, selectedFinishes, selectedMaterials, selectedSizes, priceRange, isPriceCustomized, maxCatalogPrice, sort]);
 
   // Reset pagination on filter, search or sort change
   useEffect(() => {
-    setVisibleCount(12);
+    setVisibleCount(24);
   }, [searchQuery, selectedCategories, selectedFinishes, selectedMaterials, selectedSizes, priceRange, sort]);
 
   const displayedProducts = useMemo(() => {
@@ -168,7 +222,8 @@ export default function ShopCatalogClient({
     setSelectedFinishes([]);
     setSelectedMaterials([]);
     setSelectedSizes([]);
-    setPriceRange([0, 300]);
+    setPriceRange([0, maxCatalogPrice]);
+    setIsPriceCustomized(false);
     if (urlSearch) {
       router.replace("/shop");
     }
@@ -179,7 +234,7 @@ export default function ShopCatalogClient({
       {/* Categories */}
       <div>
         <h3 className="font-bold text-[#052a51] text-sm mb-3">Category</h3>
-        <div className="space-y-2 max-h-[300px] overflow-y-auto pr-1">
+        <div className="space-y-2 max-h-[260px] overflow-y-auto pr-1">
           {categories.filter((c) => !c.parentId).map((cat) => (
             <label key={cat.slug} className="flex items-center gap-2 cursor-pointer group select-none">
               <input
@@ -197,88 +252,120 @@ export default function ShopCatalogClient({
         </div>
       </div>
 
-      <hr className="border-gray-100" />
+      {/* Finishes (if available in catalog) */}
+      {availableFinishes.length > 0 && (
+        <>
+          <hr className="border-gray-100" />
+          <div>
+            <h3 className="font-bold text-[#052a51] text-sm mb-3">Finish</h3>
+            <div className="flex flex-wrap gap-2 max-h-[160px] overflow-y-auto pr-1">
+              {availableFinishes.map((f) => (
+                <button
+                  key={f}
+                  type="button"
+                  onClick={() => setSelectedFinishes(toggle(selectedFinishes, f))}
+                  className={`px-3 py-1.5 text-xs font-semibold rounded-lg border transition-all active:scale-95 cursor-pointer ${
+                    selectedFinishes.includes(f)
+                      ? "bg-[#F26522] text-white border-[#F26522] shadow-sm"
+                      : "bg-white text-gray-600 border-gray-200 hover:border-[#F26522] hover:text-[#F26522]"
+                  }`}
+                >
+                  {f}
+                </button>
+              ))}
+            </div>
+          </div>
+        </>
+      )}
 
-      {/* Finish */}
-      <div>
-        <h3 className="font-bold text-[#052a51] text-sm mb-3">Finish</h3>
-        <div className="flex flex-wrap gap-2">
-          {FINISHES.map((f) => (
-            <button
-              key={f}
-              onClick={() => setSelectedFinishes(toggle(selectedFinishes, f))}
-              className={`px-3 py-1.5 text-xs font-semibold rounded-lg border transition-all active:scale-95 cursor-pointer ${
-                selectedFinishes.includes(f)
-                  ? "bg-[#F26522] text-white border-[#F26522] shadow-sm"
-                  : "bg-white text-gray-600 border-gray-200 hover:border-[#F26522] hover:text-[#F26522]"
-              }`}
-            >
-              {f}
-            </button>
-          ))}
-        </div>
-      </div>
+      {/* Materials (if available in catalog) */}
+      {availableMaterials.length > 0 && (
+        <>
+          <hr className="border-gray-100" />
+          <div>
+            <h3 className="font-bold text-[#052a51] text-sm mb-3">Material</h3>
+            <div className="space-y-2 max-h-[180px] overflow-y-auto pr-1">
+              {availableMaterials.map((m) => (
+                <label key={m} className="flex items-center gap-2 cursor-pointer group select-none">
+                  <input
+                    type="checkbox"
+                    checked={selectedMaterials.includes(m)}
+                    onChange={() => setSelectedMaterials(toggle(selectedMaterials, m))}
+                    className="w-4 h-4 accent-[#F26522] rounded cursor-pointer"
+                  />
+                  <span className="text-sm text-gray-600 group-hover:text-[#052a51] transition-colors">{m}</span>
+                </label>
+              ))}
+            </div>
+          </div>
+        </>
+      )}
 
-      <hr className="border-gray-100" />
-
-      {/* Material */}
-      <div>
-        <h3 className="font-bold text-[#052a51] text-sm mb-3">Material</h3>
-        <div className="space-y-2">
-          {MATERIALS.map((m) => (
-            <label key={m} className="flex items-center gap-2 cursor-pointer group select-none">
-              <input
-                type="checkbox"
-                checked={selectedMaterials.includes(m)}
-                onChange={() => setSelectedMaterials(toggle(selectedMaterials, m))}
-                className="w-4 h-4 accent-[#F26522] rounded cursor-pointer"
-              />
-              <span className="text-sm text-gray-600 group-hover:text-[#052a51] transition-colors">{m}</span>
-            </label>
-          ))}
-        </div>
-      </div>
-
-      <hr className="border-gray-100" />
-
-      {/* Size */}
-      <div>
-        <h3 className="font-bold text-[#052a51] text-sm mb-3">Size</h3>
-        <div className="flex flex-wrap gap-2">
-          {SIZES.map((s) => (
-            <button
-              key={s}
-              onClick={() => setSelectedSizes(toggle(selectedSizes, s))}
-              className={`px-3 py-1.5 text-xs font-semibold rounded-lg border transition-all active:scale-95 cursor-pointer ${
-                selectedSizes.includes(s)
-                  ? "bg-[#052a51] text-white border-[#052a51] shadow-sm"
-                  : "bg-white text-gray-600 border-gray-200 hover:border-[#052a51] hover:text-[#052a51]"
-              }`}
-            >
-              {s}
-            </button>
-          ))}
-        </div>
-      </div>
+      {/* Sizes (if available in catalog) */}
+      {availableSizes.length > 0 && (
+        <>
+          <hr className="border-gray-100" />
+          <div>
+            <h3 className="font-bold text-[#052a51] text-sm mb-3">Size / Spec</h3>
+            <div className="flex flex-wrap gap-2 max-h-[160px] overflow-y-auto pr-1">
+              {availableSizes.map((s) => (
+                <button
+                  key={s}
+                  type="button"
+                  onClick={() => setSelectedSizes(toggle(selectedSizes, s))}
+                  className={`px-3 py-1.5 text-xs font-semibold rounded-lg border transition-all active:scale-95 cursor-pointer ${
+                    selectedSizes.includes(s)
+                      ? "bg-[#052a51] text-white border-[#052a51] shadow-sm"
+                      : "bg-white text-gray-600 border-gray-200 hover:border-[#052a51] hover:text-[#052a51]"
+                  }`}
+                >
+                  {s}
+                </button>
+              ))}
+            </div>
+          </div>
+        </>
+      )}
 
       <hr className="border-gray-100" />
 
       {/* Price Range Filter */}
       <div>
-        <h3 className="font-bold text-[#052a51] text-sm mb-3">
-          Price Range: ₹{priceRange[0]} – ₹{priceRange[1]}
-        </h3>
+        <div className="flex items-center justify-between mb-2">
+          <h3 className="font-bold text-[#052a51] text-sm">Price Range</h3>
+          {isPriceCustomized && (
+            <button
+              type="button"
+              onClick={() => {
+                setIsPriceCustomized(false);
+                setPriceRange([0, maxCatalogPrice]);
+              }}
+              className="text-[11px] font-bold text-[#F26522] hover:underline"
+            >
+              Reset
+            </button>
+          )}
+        </div>
+        <p className="text-xs text-gray-600 font-semibold mb-2">
+          {isPriceCustomized
+            ? `Up to ₹${priceRange[1] >= maxCatalogPrice ? `${maxCatalogPrice.toLocaleString("en-IN")}+` : priceRange[1].toLocaleString("en-IN")}`
+            : `All items (₹0 – ₹${maxCatalogPrice.toLocaleString("en-IN")}+)`}
+        </p>
         <input
           type="range"
           min={0}
-          max={5000}
+          max={maxCatalogPrice}
+          step={50}
           value={priceRange[1]}
-          onChange={(e) => setPriceRange([priceRange[0], parseInt(e.target.value)])}
+          onChange={(e) => {
+            setIsPriceCustomized(true);
+            setPriceRange([priceRange[0], parseInt(e.target.value, 10)]);
+          }}
           className="w-full accent-[#F26522] cursor-pointer"
         />
-        <div className="flex justify-between text-xs text-gray-400 mt-1 font-medium">
+        <div className="flex justify-between text-[11px] text-gray-400 mt-1 font-medium">
           <span>₹0</span>
-          <span>₹5,000+</span>
+          <span>₹{maxCatalogPrice.toLocaleString("en-IN")}+</span>
         </div>
       </div>
 
@@ -451,12 +538,32 @@ export default function ShopCatalogClient({
                   )}
                 </div>
 
-                {/* Infinite Scroll Sentinel */}
+                {/* Pagination Controls / Load More / Infinite Scroll */}
                 {hasMore && (
-                  <div ref={loadMoreRef} className="py-8 flex justify-center items-center">
-                    <div className="flex items-center gap-2 text-xs font-bold text-gray-500 bg-white px-4 py-2 rounded-full border border-gray-200 shadow-xs">
-                      <Loader2 size={14} className="animate-spin text-[#F26522]" />
-                      <span>Loading more tile designs...</span>
+                  <div className="mt-8 pt-4 flex flex-col items-center gap-3">
+                    <div className="flex flex-wrap items-center justify-center gap-2.5">
+                      <button
+                        type="button"
+                        onClick={() => setVisibleCount((prev) => Math.min(prev + 24, filtered.length))}
+                        className="px-6 py-2.5 bg-white hover:bg-gray-50 text-[#052a51] text-xs font-black rounded-xl border border-gray-200 shadow-2xs transition-all active:scale-95 cursor-pointer"
+                      >
+                        Load More (+{Math.min(24, filtered.length - visibleCount)})
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => setVisibleCount(filtered.length)}
+                        className="px-4 py-2.5 bg-[#F26522]/10 hover:bg-[#F26522]/20 text-[#F26522] text-xs font-bold rounded-xl border border-[#F26522]/30 transition-all active:scale-95 cursor-pointer"
+                      >
+                        Show All ({filtered.length} items)
+                      </button>
+                    </div>
+
+                    {/* Infinite Scroll Sentinel for automatic background loading */}
+                    <div ref={loadMoreRef} className="py-2 flex justify-center items-center">
+                      <div className="flex items-center gap-2 text-[11px] font-bold text-gray-400">
+                        {isLoadingMore && <Loader2 size={13} className="animate-spin text-[#F26522]" />}
+                        <span>Showing {displayedProducts.length} of {filtered.length} items</span>
+                      </div>
                     </div>
                   </div>
                 )}
@@ -466,7 +573,7 @@ export default function ShopCatalogClient({
                   <div className="mt-10 py-6 text-center border-t border-gray-200/60">
                     <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-white text-gray-500 text-xs font-bold border border-gray-200 shadow-xs">
                       <CheckCircle2 size={13} className="text-[#F26522]" />
-                      <span>You've seen all {filtered.length} tile designs</span>
+                      <span>You've reached the end of the catalog ({filtered.length} items)</span>
                     </div>
                   </div>
                 )}

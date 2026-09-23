@@ -33,12 +33,10 @@ function getCategoryShortName(name: string): string {
 
 function SafeCategoryIcon({
   cat,
-  isPriority = false,
   isCloned = false,
   onDragPrevent,
 }: {
   cat: Category;
-  isPriority?: boolean;
   isCloned?: boolean;
   onDragPrevent?: (e: React.MouseEvent) => void;
 }) {
@@ -60,7 +58,11 @@ function SafeCategoryIcon({
               src={imgSrc}
               alt={`${cat.name} Category`}
               fill
-              onError={() => setImgSrc("/placeholders/category.svg")}
+              loading="lazy"
+              onError={(e) => {
+                console.error(`[CategoryIconRow Cloned Image Load Failed]: "${cat.name}" (${cat.slug}) - URL: ${imgSrc}`, e);
+                setImgSrc("/placeholders/category.svg");
+              }}
               className="object-cover group-hover:scale-110 transition-transform duration-300"
               sizes="56px"
             />
@@ -88,8 +90,11 @@ function SafeCategoryIcon({
             src={imgSrc}
             alt={cat.name}
             fill
-            priority={isPriority}
-            onError={() => setImgSrc("/placeholders/category.svg")}
+            loading="lazy"
+            onError={(e) => {
+              console.error(`[CategoryIconRow Orig Image Load Failed]: "${cat.name}" (${cat.slug}) - URL: ${imgSrc}`, e);
+              setImgSrc("/placeholders/category.svg");
+            }}
             className="object-cover group-hover:scale-110 transition-transform duration-300"
             sizes="56px"
           />
@@ -233,11 +238,10 @@ export default function CategoryIconRow({ categories }: { categories?: Category[
       >
         {/* Set 1: Measured set - only first 6 are eager, rest lazy */}
         <div ref={singleSetRef} className="flex items-center gap-3 pr-3 shrink-0">
-          {categoryList.map((cat, idx) => (
+          {categoryList.map((cat) => (
             <SafeCategoryIcon
               key={`s1-${cat.slug}`}
               cat={cat}
-              isPriority={idx < 6}
               isCloned={false}
               onDragPrevent={handleDragPrevent}
             />
@@ -250,7 +254,6 @@ export default function CategoryIconRow({ categories }: { categories?: Category[
             <SafeCategoryIcon
               key={`s2-${cat.slug}`}
               cat={cat}
-              isPriority={false}
               isCloned={true}
               onDragPrevent={handleDragPrevent}
             />

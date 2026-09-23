@@ -12,11 +12,9 @@ interface DesktopCategoryRowProps {
 
 function SafeDesktopCategoryCard({
   cat,
-  isPriority = false,
   isCloned = false,
 }: {
   cat: Category;
-  isPriority?: boolean;
   isCloned?: boolean;
 }) {
   const initialImage = cat.image && cat.image.trim() ? cat.image : "/placeholders/category.svg";
@@ -35,7 +33,11 @@ function SafeDesktopCategoryCard({
               src={imgSrc}
               alt={`${cat.name} Category`}
               fill
-              onError={() => setImgSrc("/placeholders/category.svg")}
+              loading="lazy"
+              onError={(e) => {
+                console.error(`[DesktopCategoryRow Cloned Image Load Failed]: "${cat.name}" (${cat.slug}) - URL: ${imgSrc}`, e);
+                setImgSrc("/placeholders/category.svg");
+              }}
               className="object-cover group-hover:scale-108 transition-transform duration-300"
               sizes="175px"
             />
@@ -69,8 +71,11 @@ function SafeDesktopCategoryCard({
             src={imgSrc}
             alt={cat.name}
             fill
-            priority={isPriority}
-            onError={() => setImgSrc("/placeholders/category.svg")}
+            loading="lazy"
+            onError={(e) => {
+              console.error(`[DesktopCategoryRow Orig Image Load Failed]: "${cat.name}" (${cat.slug}) - URL: ${imgSrc}`, e);
+              setImgSrc("/placeholders/category.svg");
+            }}
             className="object-cover group-hover:scale-108 transition-transform duration-300"
             sizes="175px"
           />
@@ -176,7 +181,7 @@ export default function DesktopCategoryRow({ categories }: DesktopCategoryRowPro
 
   return (
     <section id="categories" className="py-6 select-none relative group/row overflow-hidden">
-      <div className="w-full max-w-[1400px] mx-auto px-[20px] md:px-[24px] lg:px-[32px]">
+      <div className="w-full max-w-[1400px] mx-auto px-4 md:px-6 lg:px-8">
         {/* Section Header */}
         <div className="flex items-center justify-between mb-4">
           <div>
@@ -223,11 +228,10 @@ export default function DesktopCategoryRow({ categories }: DesktopCategoryRowPro
           >
             {/* Set 1: Measured set - only first 6 are eager */}
             <div ref={singleSetRef} className="flex items-center gap-3.5 pr-3.5 shrink-0">
-              {topCategories.map((cat, idx) => (
+              {topCategories.map((cat) => (
                 <SafeDesktopCategoryCard
                   key={`d1-${cat.slug}`}
                   cat={cat}
-                  isPriority={idx < 6}
                   isCloned={false}
                 />
               ))}
@@ -239,7 +243,6 @@ export default function DesktopCategoryRow({ categories }: DesktopCategoryRowPro
                 <SafeDesktopCategoryCard
                   key={`d2-${cat.slug}`}
                   cat={cat}
-                  isPriority={false}
                   isCloned={true}
                 />
               ))}

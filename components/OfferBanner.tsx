@@ -87,7 +87,10 @@ function MobileBannerSlideItem({
           className="object-cover"
           sizes="(max-width: 768px) 100vw, 50vw"
           priority={index === 0}
-          onError={() => setImgSrc("/placeholders/banner.svg")}
+          onError={(e) => {
+            console.error(`[OfferBanner Mobile Image Load Failed]: "${slide.title}" - URL: ${imgSrc}`, e);
+            setImgSrc("/placeholders/banner.svg");
+          }}
         />
 
         {/* Gradient overlay */}

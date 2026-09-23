@@ -16,13 +16,13 @@ export default function CategoryCatalogClient({
   products,
   categoryName,
 }: CategoryCatalogClientProps) {
-  const [visibleCount, setVisibleCount] = useState(12);
+  const [visibleCount, setVisibleCount] = useState(24);
   const [isLoadingMore, setIsLoadingMore] = useState(false);
   const loadMoreRef = useRef<HTMLDivElement>(null);
 
   // Reset if products array changes
   useEffect(() => {
-    setVisibleCount(12);
+    setVisibleCount(24);
   }, [products]);
 
   const displayedProducts = useMemo(() => {
@@ -140,12 +140,32 @@ export default function CategoryCatalogClient({
         )}
       </div>
 
-      {/* Infinite Scroll Sentinel */}
+      {/* Pagination Controls / Load More / Infinite Scroll */}
       {hasMore && (
-        <div ref={loadMoreRef} className="py-8 flex justify-center items-center">
-          <div className="flex items-center gap-2 text-xs font-bold text-gray-400 bg-white px-4 py-2 rounded-full border border-gray-100 shadow-xs">
-            <Loader2 size={14} className="animate-spin text-[#F26522]" />
-            <span>Loading more {categoryName}...</span>
+        <div className="mt-8 pt-4 flex flex-col items-center gap-3">
+          <div className="flex flex-wrap items-center justify-center gap-2.5">
+            <button
+              type="button"
+              onClick={() => setVisibleCount((prev) => Math.min(prev + 24, products.length))}
+              className="px-6 py-2.5 bg-white hover:bg-gray-50 text-[#052a51] text-xs font-black rounded-xl border border-gray-200 shadow-2xs transition-all active:scale-95 cursor-pointer"
+            >
+              Load More (+{Math.min(24, products.length - visibleCount)})
+            </button>
+            <button
+              type="button"
+              onClick={() => setVisibleCount(products.length)}
+              className="px-4 py-2.5 bg-[#F26522]/10 hover:bg-[#F26522]/20 text-[#F26522] text-xs font-bold rounded-xl border border-[#F26522]/30 transition-all active:scale-95 cursor-pointer"
+            >
+              Show All ({products.length} items)
+            </button>
+          </div>
+
+          {/* Infinite Scroll Sentinel for automatic background loading */}
+          <div ref={loadMoreRef} className="py-2 flex justify-center items-center">
+            <div className="flex items-center gap-2 text-[11px] font-bold text-gray-400">
+              {isLoadingMore && <Loader2 size={13} className="animate-spin text-[#F26522]" />}
+              <span>Showing {displayedProducts.length} of {products.length} items</span>
+            </div>
           </div>
         </div>
       )}

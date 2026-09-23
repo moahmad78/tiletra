@@ -85,7 +85,10 @@ function BannerSlideItem({
         alt={slide.headline}
         fill
         priority={index === 0}
-        onError={() => setImgSrc("/placeholders/banner.svg")}
+        onError={(e) => {
+          console.error(`[DesktopBannerCarousel Image Load Failed]: "${slide.headline}" - URL: ${imgSrc}`, e);
+          setImgSrc("/placeholders/banner.svg");
+        }}
         className="object-cover"
         sizes="(max-width: 1400px) 100vw, 1400px"
       />
@@ -152,11 +155,11 @@ export default function DesktopBannerCarousel({ slides }: { slides?: BannerSlide
 
   return (
     <div
-      className="hidden md:block w-full max-w-[1400px] mx-auto px-[20px] md:px-[24px] lg:px-[32px] pt-4 pb-2"
+      className="hidden md:block w-full max-w-[1400px] mx-auto px-4 md:px-6 lg:px-8 pt-4 pb-2"
       onMouseEnter={() => setIsPaused(true)}
       onMouseLeave={() => setIsPaused(false)}
     >
-      <div className="relative aspect-[21/6] min-h-[280px] max-h-[360px] rounded-3xl overflow-hidden shadow-sm border border-gray-100 bg-[#052a51]">
+      <div className="relative w-full h-[300px] md:h-[330px] lg:h-[360px] xl:h-[380px] rounded-3xl overflow-hidden shadow-sm border border-gray-100 bg-[#052a51]">
         {/* Slides Track */}
         {bannerSlides.map((slide, index) => (
           <BannerSlideItem

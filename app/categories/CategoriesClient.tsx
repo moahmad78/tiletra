@@ -45,33 +45,33 @@ function getCategoryShortName(name: string): string {
   return map[name] || name;
 }
 
+function getFallbackCategoryIcon(_slug: string): string | undefined {
+  return undefined;
+}
+
 function SafeCategoryBox({
   category,
   shortName,
   isSelected,
-  priority,
   onClick,
 }: {
   category: Category;
   shortName: string;
   isSelected: boolean;
-  priority: boolean;
   onClick: () => void;
 }) {
-  const [imgSrc, setImgSrc] = useState(category.image || "/placeholders/category.svg");
-
-  useEffect(() => {
-    if (category.image) {
-      setImgSrc(category.image);
-    }
-  }, [category.image]);
+  const initialSrc =
+    category.image ||
+    getFallbackCategoryIcon(category.slug) ||
+    "/placeholders/category.svg";
+  const [imgSrc, setImgSrc] = useState<string>(initialSrc);
 
   return (
     <button
       type="button"
       onClick={onClick}
       className={`flex flex-col items-center shrink-0 w-[64px] sm:w-[72px] group cursor-pointer transition-all active:scale-95 ${
-        isSelected ? "scale-105" : "opacity-85 hover:opacity-100"
+        isSelected ? "scale-105" : "opacity-80 hover:opacity-100"
       }`}
     >
       <div
@@ -86,9 +86,12 @@ function SafeCategoryBox({
             src={imgSrc}
             alt={category.name}
             fill
-            loading={priority ? "eager" : "lazy"}
+            loading="lazy"
             decoding="async"
-            onError={() => setImgSrc("/placeholders/category.svg")}
+            onError={(e) => {
+              console.error(`[CategoriesClient Image Load Failed]: "${category.name}" (${category.slug}) - URL: ${imgSrc}`, e);
+              setImgSrc("/placeholders/category.svg");
+            }}
             className="object-cover group-hover:scale-110 transition-transform duration-300"
             sizes="64px"
           />
@@ -295,7 +298,6 @@ export default function CategoriesClient({
                     category={cat}
                     shortName={shortName}
                     isSelected={isSelected}
-                    priority={idx < 8}
                     onClick={() => setSelectedCategorySlug(cat.slug)}
                   />
                 );

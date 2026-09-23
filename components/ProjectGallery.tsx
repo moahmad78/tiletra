@@ -1,5 +1,6 @@
 "use client";
 
+import Image from "next/image";
 import { motion } from "framer-motion";
 import SectionHeader from "./SectionHeader";
 
@@ -62,11 +63,12 @@ export default function ProjectGallery() {
               transition={{ delay: idx * 0.1 }}
               className="group relative overflow-hidden rounded-3xl aspect-square shadow-[0_8px_30px_rgb(0,0,0,0.04)] hover:shadow-[0_20px_50px_rgba(8,112,184,0.1)] transition-all duration-500 border border-gray-100"
             >
-              <img 
+              <Image 
                 src={project.image} 
                 alt={`${project.title} by Intrihub Bangalore`}
-                className="w-full h-full object-cover transition-transform duration-1000 group-hover:scale-110"
-                onError={(e) => { e.currentTarget.src = "/placeholders/product.svg"; }}
+                fill
+                className="object-cover transition-transform duration-1000 group-hover:scale-110"
+                sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
               />
               <div className="absolute inset-0 bg-gradient-to-t from-[#02152b]/95 via-[#02152b]/40 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500 flex flex-col justify-end p-8 lg:p-10">
                 <span className="text-white/80 font-medium text-xs mb-2 uppercase tracking-[0.15em]">{project.category}</span>

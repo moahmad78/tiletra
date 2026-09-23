@@ -1,5 +1,6 @@
 "use client";
 
+import Image from "next/image";
 import { motion } from "framer-motion";
 import { ArrowRight } from "lucide-react";
 import SectionHeader from "./SectionHeader";
@@ -65,10 +66,12 @@ export default function Services() {
               className="text-left group relative block w-full h-[220px] lg:h-[240px] rounded-[20px] overflow-hidden shadow-sm hover:shadow-[0_15px_30px_rgba(0,0,0,0.15)] hover:-translate-y-1.5 transition-all duration-300"
             >
               {/* Background Image */}
-              <img 
+              <Image 
                 src={service.image} 
                 alt={service.title} 
-                className="absolute inset-0 w-full h-full object-cover transition-transform duration-700 group-hover:scale-110"
+                fill
+                className="object-cover transition-transform duration-700 group-hover:scale-110"
+                sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 25vw"
               />
               
               {/* Dark Gradient Overlay */}

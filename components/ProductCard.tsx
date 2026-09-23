@@ -54,7 +54,10 @@ export default function ProductCard({ product }: { product: Product }) {
               src={imgSrc}
               alt={product.name}
               fill
-              onError={() => setImgSrc("/placeholders/product.svg")}
+              onError={(e) => {
+                console.error(`[ProductCard Image Load Failed]: "${product.name}" (${product.id}) - URL: ${imgSrc}`, e);
+                setImgSrc("/placeholders/product.svg");
+              }}
               className="object-cover transition-transform duration-500 group-hover:scale-110"
               sizes="(max-width: 640px) 280px, (max-width: 1024px) 240px, 300px"
             />

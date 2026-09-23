@@ -4,6 +4,7 @@ export const dynamic = "force-dynamic";
 
 import { useState, useEffect } from "react";
 import Link from "next/link";
+import Image from "next/image";
 import {
   getAdminPendingProducts,
   approveProduct,
@@ -322,12 +323,18 @@ export default function AdminProductApprovalsPage() {
                     <button
                       key={idx}
                       onClick={() => setActiveImageIdx(idx)}
-                      className={`w-14 h-14 rounded-xl overflow-hidden border-2 shrink-0 ${
+                      className={`w-14 h-14 rounded-xl overflow-hidden border-2 shrink-0 relative ${
                         activeImageIdx === idx ? "border-[#052a51]" : "border-gray-200 opacity-60"
                       }`}
                     >
-                      {/* eslint-disable-next-line @next/next/no-img-element */}
-                      <img src={img} alt="Thumb" className="w-full h-full object-cover" />
+                      <Image
+                        src={img}
+                        alt="Thumb"
+                        width={56}
+                        height={56}
+                        unoptimized={img.startsWith("data:") || img.startsWith("blob:")}
+                        className="w-full h-full object-cover"
+                      />
                     </button>
                   ))}
                 </div>

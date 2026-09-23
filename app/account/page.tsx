@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useRef } from "react";
 import Link from "next/link";
+import Image from "next/image";
 import {
   User,
   Package,
@@ -412,8 +413,14 @@ function AccountPageContent() {
               {/* Avatar */}
               <div className="flex items-center gap-3">
                 {editAvatar ? (
-                  // eslint-disable-next-line @next/next/no-img-element
-                  <img src={editAvatar} alt="Avatar" className="w-14 h-14 rounded-full object-cover border border-gray-200" />
+                  <Image
+                    src={editAvatar}
+                    alt="Avatar"
+                    width={56}
+                    height={56}
+                    unoptimized={editAvatar.startsWith("data:") || editAvatar.startsWith("blob:")}
+                    className="w-14 h-14 rounded-full object-cover border border-gray-200"
+                  />
                 ) : (
                   <div className="w-14 h-14 rounded-full bg-gray-100 text-gray-400 flex items-center justify-center font-black text-lg">
                     {user?.name?.[0]?.toUpperCase() || <User size={22} />}
