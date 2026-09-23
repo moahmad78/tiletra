@@ -107,6 +107,7 @@ export default function Header() {
                   width={150}
                   height={40}
                   priority
+                  unoptimized
                   className="h-[30px] sm:h-[34px] md:h-[40px] w-auto object-contain transition-all duration-300 group-hover:scale-105"
                 />
               </Link>

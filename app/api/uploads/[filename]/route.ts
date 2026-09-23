@@ -49,18 +49,21 @@ export async function GET(
       );
     }
 
-    // Helper function to generate safe response headers
     const getSafeMediaHeaders = (mimeType: string, isStaticPlaceholder: boolean = false) => {
       const isSafeImage = ["image/webp", "image/jpeg", "image/jpg", "image/png", "image/gif", "image/avif"].includes(mimeType);
 
-      return {
+      const headers: Record<string, string> = {
         "Content-Type": mimeType,
         "Cache-Control": isStaticPlaceholder ? "public, max-age=86400" : "public, max-age=31536000, immutable",
         "X-Content-Type-Options": "nosniff",
-        "X-Frame-Options": "DENY",
-        "Content-Security-Policy": "default-src 'none'; sandbox;",
         "Content-Disposition": isSafeImage ? "inline" : "attachment",
       };
+
+      if (!isSafeImage) {
+        headers["Content-Security-Policy"] = "default-src 'none'; sandbox;";
+      }
+
+      return headers;
     };
 
     // 1. Try local disk first (for localhost & cached container images)

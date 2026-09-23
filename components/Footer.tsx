@@ -147,6 +147,7 @@ export default function Footer() {
                   alt="Intrihub Logo"
                   width={150}
                   height={32}
+                  unoptimized
                   className="h-8 w-auto object-contain"
                 />
               </Link>
