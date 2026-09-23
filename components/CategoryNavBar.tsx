@@ -370,6 +370,7 @@ export default function CategoryNavBar() {
                     src={activeCategory.image || "/placeholders/category.svg"}
                     alt={activeCategory.name}
                     fill
+                    referrerPolicy="no-referrer"
                     className="object-cover"
                     sizes="48px"
                   />

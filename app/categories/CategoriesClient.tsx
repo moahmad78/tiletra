@@ -66,6 +66,10 @@ function SafeCategoryBox({
     "/placeholders/category.svg";
   const [imgSrc, setImgSrc] = useState<string>(initialSrc);
 
+  useEffect(() => {
+    setImgSrc(category.image || getFallbackCategoryIcon(category.slug) || "/placeholders/category.svg");
+  }, [category.image, category.slug]);
+
   return (
     <button
       type="button"
@@ -86,8 +90,7 @@ function SafeCategoryBox({
             src={imgSrc}
             alt={category.name}
             fill
-            loading="lazy"
-            decoding="async"
+            referrerPolicy="no-referrer"
             onError={(e) => {
               console.error(`[CategoriesClient Image Load Failed]: "${category.name}" (${category.slug}) - URL: ${imgSrc}`, e);
               setImgSrc("/placeholders/category.svg");

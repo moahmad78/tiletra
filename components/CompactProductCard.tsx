@@ -32,6 +32,10 @@ export default function CompactProductCard({
     setMounted(true);
   }, []);
 
+  useEffect(() => {
+    setImgSrc(product.images?.[0] || "/placeholders/product.svg");
+  }, [product.images, product.id]);
+
   const handleAddToCart = (e: React.MouseEvent) => {
     e.preventDefault();
     e.stopPropagation();
@@ -61,6 +65,7 @@ export default function CompactProductCard({
             src={imgSrc}
             alt={product.name}
             fill
+            referrerPolicy="no-referrer"
             onError={(e) => {
               console.error(`[CompactProductCard Image Load Failed]: "${product.name}" (${product.id}) - URL: ${imgSrc}`, e);
               setImgSrc("/placeholders/product.svg");

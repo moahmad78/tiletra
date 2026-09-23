@@ -62,7 +62,6 @@ function SafeCategoryIcon({
               src={imgSrc}
               alt={`${cat.name} Category`}
               fill
-              loading="lazy"
               referrerPolicy="no-referrer"
               onError={(e) => {
                 console.error(`[CategoryIconRow Cloned Image Load Failed]: "${cat.name}" (${cat.slug}) - URL: ${imgSrc}`, e);
@@ -95,7 +94,6 @@ function SafeCategoryIcon({
             src={imgSrc}
             alt={cat.name}
             fill
-            loading="lazy"
             referrerPolicy="no-referrer"
             onError={(e) => {
               console.error(`[CategoryIconRow Orig Image Load Failed]: "${cat.name}" (${cat.slug}) - URL: ${imgSrc}`, e);

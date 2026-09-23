@@ -28,6 +28,10 @@ export default function ProductCard({ product }: { product: Product }) {
     setMounted(true);
   }, []);
 
+  useEffect(() => {
+    setImgSrc(product.images && product.images[0] ? product.images[0] : "/placeholders/product.svg");
+  }, [product.images, product.id]);
+
   const handleAddToCart = (e: React.MouseEvent) => {
     e.preventDefault();
     e.stopPropagation();
@@ -54,6 +58,7 @@ export default function ProductCard({ product }: { product: Product }) {
               src={imgSrc}
               alt={product.name}
               fill
+              referrerPolicy="no-referrer"
               onError={(e) => {
                 console.error(`[ProductCard Image Load Failed]: "${product.name}" (${product.id}) - URL: ${imgSrc}`, e);
                 setImgSrc("/placeholders/product.svg");
