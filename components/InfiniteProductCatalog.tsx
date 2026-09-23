@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect, useRef, useCallback } from "react";
-import { Loader2, CheckCircle2, ArrowUp, Layers } from "lucide-react";
+import { Loader2, Layers } from "lucide-react";
 import CompactProductCard from "@/components/CompactProductCard";
 import type { Product } from "@/lib/data/products";
 import type { Category } from "@/lib/data/categories";
@@ -114,10 +114,6 @@ export default function InfiniteProductCatalog({
     return () => observer.disconnect();
   }, [hasMore, isLoading, page, selectedCategory, fetchProducts]);
 
-  const scrollToTop = () => {
-    window.scrollTo({ top: 0, behavior: "smooth" });
-  };
-
   return (
     <section className="w-full max-w-[1400px] mx-auto px-3 sm:px-4 md:px-6 lg:px-8 py-8 md:py-12 space-y-6">
       {/* ── Section Header ── */}
@@ -196,32 +192,14 @@ export default function InfiniteProductCatalog({
       </div>
 
       {/* ── Sentinel Observer Element ── */}
-      <div ref={observerTargetRef} className="h-10 w-full flex items-center justify-center">
-        {isLoading && (
-          <div className="flex items-center gap-2 text-xs font-bold text-gray-500 py-4">
-            <Loader2 size={16} className="animate-spin text-[#F26522]" />
-            <span>Loading more products...</span>
-          </div>
-        )}
-      </div>
-
-      {/* ── End of Catalog Message ── */}
-      {!hasMore && products.length > 0 && (
-        <div className="text-center py-8 border-t border-gray-200/80 space-y-3">
-          <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-emerald-50 text-emerald-800 text-xs font-bold border border-emerald-200/80">
-            <CheckCircle2 size={14} className="text-emerald-600" />
-            <span>You&apos;ve explored all {products.length} products in this catalog</span>
-          </div>
-          <div>
-            <button
-              type="button"
-              onClick={scrollToTop}
-              className="inline-flex items-center gap-1.5 text-xs font-bold text-[#052a51] hover:text-[#F26522] transition-colors cursor-pointer bg-white px-4 py-2 rounded-xl border border-gray-200 shadow-2xs hover:border-[#F26522]"
-            >
-              <ArrowUp size={14} />
-              <span>Back to Top</span>
-            </button>
-          </div>
+      {hasMore && (
+        <div ref={observerTargetRef} className="w-full flex items-center justify-center pointer-events-none">
+          {isLoading && (
+            <div className="flex items-center gap-2 text-xs font-bold text-gray-500 py-4">
+              <Loader2 size={16} className="animate-spin text-[#F26522]" />
+              <span>Loading more products...</span>
+            </div>
+          )}
         </div>
       )}
 
