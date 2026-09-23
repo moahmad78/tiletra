@@ -42,6 +42,7 @@ export const viewport: Viewport = {
 
 export const metadata: Metadata = {
   metadataBase: new URL(BASE_SITE_URL),
+  referrer: "no-referrer-when-downgrade",
   title: {
     default: "Build Better, We Deliver Faster | IntriHub",
     template: "%s | IntriHub",

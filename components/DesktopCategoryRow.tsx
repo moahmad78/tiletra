@@ -20,6 +20,10 @@ function SafeDesktopCategoryCard({
   const initialImage = cat.image && cat.image.trim() ? cat.image : "/placeholders/category.svg";
   const [imgSrc, setImgSrc] = useState(initialImage);
 
+  useEffect(() => {
+    setImgSrc(cat.image && cat.image.trim() ? cat.image : "/placeholders/category.svg");
+  }, [cat.image]);
+
   if (isCloned) {
     return (
       <div
@@ -34,6 +38,7 @@ function SafeDesktopCategoryCard({
               alt={`${cat.name} Category`}
               fill
               loading="lazy"
+              referrerPolicy="no-referrer"
               onError={(e) => {
                 console.error(`[DesktopCategoryRow Cloned Image Load Failed]: "${cat.name}" (${cat.slug}) - URL: ${imgSrc}`, e);
                 setImgSrc("/placeholders/category.svg");
@@ -72,6 +77,7 @@ function SafeDesktopCategoryCard({
             alt={cat.name}
             fill
             loading="lazy"
+            referrerPolicy="no-referrer"
             onError={(e) => {
               console.error(`[DesktopCategoryRow Orig Image Load Failed]: "${cat.name}" (${cat.slug}) - URL: ${imgSrc}`, e);
               setImgSrc("/placeholders/category.svg");

@@ -73,6 +73,10 @@ function BannerSlideItem({
   const initialImage = slide.image && slide.image.trim() ? slide.image : defaultImage;
   const [imgSrc, setImgSrc] = useState(initialImage);
 
+  useEffect(() => {
+    setImgSrc(slide.image && slide.image.trim() ? slide.image : defaultImage);
+  }, [slide.image, defaultImage]);
+
   return (
     <div
       className={`absolute inset-0 transition-opacity duration-700 ease-in-out ${
@@ -85,9 +89,10 @@ function BannerSlideItem({
         alt={slide.headline}
         fill
         priority={index === 0}
+        referrerPolicy="no-referrer"
         onError={(e) => {
           console.error(`[DesktopBannerCarousel Image Load Failed]: "${slide.headline}" - URL: ${imgSrc}`, e);
-          setImgSrc("/placeholders/banner.svg");
+          setImgSrc(defaultImage);
         }}
         className="object-cover"
         sizes="(max-width: 1400px) 100vw, 1400px"

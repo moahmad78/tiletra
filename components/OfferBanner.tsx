@@ -72,6 +72,10 @@ function MobileBannerSlideItem({
   const initialImage = slide.image && slide.image.trim() ? slide.image : defaultImage;
   const [imgSrc, setImgSrc] = useState(initialImage);
 
+  useEffect(() => {
+    setImgSrc(slide.image && slide.image.trim() ? slide.image : defaultImage);
+  }, [slide.image, defaultImage]);
+
   return (
     <div
       className={`absolute inset-0 transition-opacity duration-500 ease-in-out ${
@@ -87,9 +91,10 @@ function MobileBannerSlideItem({
           className="object-cover"
           sizes="(max-width: 768px) 100vw, 50vw"
           priority={index === 0}
+          referrerPolicy="no-referrer"
           onError={(e) => {
             console.error(`[OfferBanner Mobile Image Load Failed]: "${slide.title}" - URL: ${imgSrc}`, e);
-            setImgSrc("/placeholders/banner.svg");
+            setImgSrc(defaultImage);
           }}
         />
 
