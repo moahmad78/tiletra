@@ -57,6 +57,7 @@ import {
   CreditCard,
   Banknote,
   Check,
+  BookOpen,
 } from "lucide-react-native";
 import { useAuthStore } from "../../src/store/authStore";
 import { updateProfile as apiUpdateProfile, uploadBusinessImage } from "../../src/api/auth";
@@ -769,6 +770,29 @@ export default function AdminAccountMasterHubScreen() {
           </Text>
         </View>
         <ChevronRight size={18} color="#1D4ED8" />
+      </TouchableOpacity>
+
+      {/* Guides & Blog CMS */}
+      <TouchableOpacity
+        style={[styles.menuCard, { borderColor: "#A7F3D0", backgroundColor: "#ECFDF5" }]}
+        onPress={() => router.push("/(admin)/guides")}
+        activeOpacity={0.85}
+      >
+        <View style={[styles.iconBox, { backgroundColor: "#D1FAE5" }]}>
+          <BookOpen size={20} color="#059669" />
+        </View>
+        <View style={{ flex: 1 }}>
+          <View style={{ flexDirection: "row", alignItems: "center", gap: 6 }}>
+            <Text style={[styles.menuTitle, { color: "#065F46" }]}>Guides & Blog CMS</Text>
+            <View style={[styles.trashCountPill, { backgroundColor: "#059669" }]}>
+              <Text style={styles.trashCountPillText}>LIVE</Text>
+            </View>
+          </View>
+          <Text style={styles.menuSub}>
+            Publish & manage buying guides, articles, and SEO posts for /guides
+          </Text>
+        </View>
+        <ChevronRight size={18} color="#059669" />
       </TouchableOpacity>
 
       <Text style={[styles.sectionHeader, { marginTop: 18 }]}>OPERATIONS & AUDIT</Text>

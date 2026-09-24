@@ -1218,8 +1218,31 @@ model ConnectAuditLog {
   @@index([createdAt])
 }
 
+// ----------------------------------------------------
+// 12. Blog & Material Buying Guides (Content Management)
+// ----------------------------------------------------
+model GuidePost {
+  id               String      @id @default(cuid())
+  title            String
+  slug             String      @unique
+  featuredImage    String
+  featuredImageAlt String?     @default("")
+  excerpt          String?     @db.Text
+  content          String      @db.Text
+  metaTitle        String?
+  metaDescription  String?     @db.Text
+  category         String      @default("Trends") // "Trends" | "Buying Guide" | "How-To" | "Product Spotlight"
+  tags             String[]    @default([])
+  keywords         String[]    @default([])
+  status           String      @default("PUBLISHED") // "DRAFT" | "PUBLISHED" | "SCHEDULED"
+  publishedAt      DateTime    @default(now())
+  authorName       String      @default("IntriHub Team")
+  readTimeMinutes  Int         @default(5)
+  viewsCount       Int         @default(0)
+  createdAt        DateTime    @default(now())
+  updatedAt        DateTime    @updatedAt
 
-
-
-
-
+  @@index([slug])
+  @@index([status, publishedAt])
+  @@index([category])
+}

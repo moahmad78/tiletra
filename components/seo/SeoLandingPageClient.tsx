@@ -256,8 +256,8 @@ export default function SeoLandingPageClient({
 
                   {products.length > 0 ? (
                     <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-3 gap-3 sm:gap-4">
-                      {products.map((product) => (
-                        <ProductCard key={product.id} product={product} />
+                      {products.map((product, idx) => (
+                        <ProductCard key={product.id} product={product} priority={idx < 4} />
                       ))}
                     </div>
                   ) : (

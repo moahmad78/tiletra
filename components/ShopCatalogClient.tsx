@@ -507,7 +507,7 @@ export default function ShopCatalogClient({
                         transition={{ delay: Math.min((i % 12) * 0.02, 0.2) }}
                         className="h-full"
                       >
-                        <CompactProductCard product={product} className="w-full h-full" />
+                        <CompactProductCard product={product} className="w-full h-full" priority={i < 4} />
                       </motion.div>
                     ))}
                   </AnimatePresence>

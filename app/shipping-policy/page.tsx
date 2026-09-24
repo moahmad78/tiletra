@@ -35,9 +35,9 @@ export default function ShippingPolicyPage() {
         <div className="p-5 bg-blue-50/80 border border-blue-200/70 rounded-2xl flex items-start gap-3.5">
           <Clock className="text-[#052a51] shrink-0 mt-0.5" size={22} />
           <div>
-            <h3 className="font-extrabold text-[#052a51] text-base">Within 60 Minutes Delivery</h3>
+            <h3 className="font-extrabold text-[#052a51] text-base">60-Min Bengaluru &amp; Pan-India 3–7 Days</h3>
             <p className="text-xs sm:text-sm text-neutral-700 mt-1 leading-relaxed">
-              Express site delivery with real-time GPS tracking across Bengaluru and rapid logistics dispatch nationwide.
+              60-minute instant delivery in Bengaluru via micro-dark stores, and 3–7 business day nationwide delivery across India.
             </p>
           </div>
         </div>
@@ -76,11 +76,15 @@ export default function ShippingPolicyPage() {
       <section id="coverage" className="space-y-2.5 pt-6 border-t border-neutral-200 scroll-mt-32">
         <h2 className="text-lg sm:text-xl font-black text-[#052a51] flex items-center gap-2">
           <span className="w-6 h-6 rounded-full bg-[#052a51]/10 text-[#052a51] flex items-center justify-center text-xs font-black">4</span>
-          Serviceable Cities & Coverage
+          Serviceable Cities &amp; Coverage
         </h2>
         <p className="text-neutral-700">
-          IntriHub operates rapid dispatch centers across Bengaluru, Mysuru, Hyderabad, Chennai, and tier-1/tier-2 South India metro clusters, with pan-India heavy freight coverage for commercial projects.
+          IntriHub provides dual-tier delivery coverage across India:
         </p>
+        <ul className="list-disc list-inside space-y-1.5 text-neutral-600 pl-2">
+          <li><strong>Bengaluru Metro</strong>: 60-minute instant site delivery across all zones from local micro-dark stores.</li>
+          <li><strong>Pan-India (Nationwide)</strong>: 3 to 7 business day standard delivery across all 28 states and 8 Union Territories, transitioning to 60-minute instant delivery city-by-city as local vendor partner hubs go live.</li>
+        </ul>
       </section>
 
       {/* Action Footer Callout */}

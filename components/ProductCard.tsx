@@ -15,7 +15,13 @@ function formatPriceInternal(n: number) {
   return "₹" + n.toLocaleString("en-IN");
 }
 
-export default function ProductCard({ product }: { product: Product }) {
+export default function ProductCard({
+  product,
+  priority = false,
+}: {
+  product: Product;
+  priority?: boolean;
+}) {
   const [mounted, setMounted] = useState(false);
   const { addItem } = useCartStore();
   const { isWishlisted, toggleWishlist } = useWishlistStore();
@@ -58,13 +64,14 @@ export default function ProductCard({ product }: { product: Product }) {
               src={imgSrc}
               alt={product.name}
               fill
+              priority={priority}
               referrerPolicy="no-referrer"
               onError={(e) => {
                 console.error(`[ProductCard Image Load Failed]: "${product.name}" (${product.id}) - URL: ${imgSrc}`, e);
                 setImgSrc("/placeholders/product.svg");
               }}
               className="object-cover transition-transform duration-500 group-hover:scale-110"
-              sizes="(max-width: 640px) 280px, (max-width: 1024px) 240px, 300px"
+              sizes="(max-width: 640px) 50vw, (max-width: 1024px) 33vw, 300px"
             />
             {/* Badges */}
             <div className="absolute top-3 left-3 flex flex-col gap-1.5 z-10 pointer-events-none">

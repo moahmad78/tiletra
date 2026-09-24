@@ -34,10 +34,12 @@ function getCategoryShortName(name: string): string {
 function SafeCategoryIcon({
   cat,
   isCloned = false,
+  priority = false,
   onDragPrevent,
 }: {
   cat: Category;
   isCloned?: boolean;
+  priority?: boolean;
   onDragPrevent?: (e: React.MouseEvent) => void;
 }) {
   const initialImage = cat.image && cat.image.trim() ? cat.image : "/placeholders/category.svg";
@@ -94,6 +96,7 @@ function SafeCategoryIcon({
             src={imgSrc}
             alt={cat.name}
             fill
+            priority={priority}
             referrerPolicy="no-referrer"
             onError={(e) => {
               console.error(`[CategoryIconRow Orig Image Load Failed]: "${cat.name}" (${cat.slug}) - URL: ${imgSrc}`, e);
@@ -240,13 +243,14 @@ export default function CategoryIconRow({ categories }: { categories?: Category[
         className="flex items-center will-change-transform transform-gpu"
         style={{ transform: "translate3d(0, 0, 0)" }}
       >
-        {/* Set 1: Measured set - only first 6 are eager, rest lazy */}
+        {/* Set 1: Measured set - only first 5 are eager, rest lazy */}
         <div ref={singleSetRef} className="flex items-center gap-3 pr-3 shrink-0">
-          {categoryList.map((cat) => (
+          {categoryList.map((cat, idx) => (
             <SafeCategoryIcon
               key={`s1-${cat.slug}`}
               cat={cat}
               isCloned={false}
+              priority={idx < 5}
               onDragPrevent={handleDragPrevent}
             />
           ))}

@@ -22,6 +22,7 @@ import {
   LogOut,
   Truck,
   Headphones,
+  BookOpen,
 } from "lucide-react";
 import { useAdminStore } from "@/lib/admin-store";
 import { useState, useCallback } from "react";
@@ -41,6 +42,7 @@ const navItems = [
   { name: "Customers", href: "/admin/customers", icon: Users },
   { name: "Reviews", href: "/admin/reviews", icon: MessageSquare, badgeKey: "pendingReviews" },
   { name: "Coupons", href: "/admin/coupons", icon: Tag },
+  { name: "Guides & Blog", href: "/admin/guides", icon: BookOpen },
   { name: "Homepage CMS", href: "/admin/content", icon: Palette },
   { name: "Settings", href: "/admin/settings", icon: Settings },
 ];

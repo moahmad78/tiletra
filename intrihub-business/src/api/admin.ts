@@ -954,5 +954,54 @@ export async function executeAdminVendorPayout(data: {
   return res.data;
 }
 
+// 21. Admin Guides & Blog Posts
+export async function fetchAdminGuides(): Promise<{
+  success: boolean;
+  guides?: any[];
+  count?: number;
+  error?: string;
+}> {
+  const res = await apiClient.get("/api/mobile/admin/guides");
+  return res.data;
+}
+
+export async function fetchAdminGuideDetail(id: string): Promise<{
+  success: boolean;
+  guide?: any;
+  error?: string;
+}> {
+  const res = await apiClient.get(`/api/mobile/admin/guides/${id}`);
+  return res.data;
+}
+
+export async function createAdminGuide(data: any): Promise<{
+  success: boolean;
+  guide?: any;
+  message?: string;
+  error?: string;
+}> {
+  const res = await apiClient.post("/api/mobile/admin/guides", data);
+  return res.data;
+}
+
+export async function updateAdminGuide(id: string, data: any): Promise<{
+  success: boolean;
+  guide?: any;
+  message?: string;
+  error?: string;
+}> {
+  const res = await apiClient.put(`/api/mobile/admin/guides/${id}`, data);
+  return res.data;
+}
+
+export async function deleteAdminGuide(id: string): Promise<{
+  success: boolean;
+  message?: string;
+  error?: string;
+}> {
+  const res = await apiClient.delete(`/api/mobile/admin/guides/${id}`);
+  return res.data;
+}
+
 
 

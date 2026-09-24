@@ -15,9 +15,11 @@ import { cn } from "@/lib/utils";
 export default function CompactProductCard({
   product,
   className,
+  priority = false,
 }: {
   product: Product;
   className?: string;
+  priority?: boolean;
 }) {
   const [mounted, setMounted] = useState(false);
   const [justAdded, setJustAdded] = useState(false);
@@ -65,13 +67,14 @@ export default function CompactProductCard({
             src={imgSrc}
             alt={product.name}
             fill
+            priority={priority}
             referrerPolicy="no-referrer"
             onError={(e) => {
               console.error(`[CompactProductCard Image Load Failed]: "${product.name}" (${product.id}) - URL: ${imgSrc}`, e);
               setImgSrc("/placeholders/product.svg");
             }}
             className="object-cover transition-transform duration-300 hover:scale-105"
-            sizes="155px"
+            sizes="(max-width: 640px) 50vw, (max-width: 1024px) 33vw, 220px"
           />
           {/* Badge */}
           {product.isBestseller && (

@@ -148,7 +148,7 @@ export function generateOrganizationSchema() {
     logo: `${BASE_SITE_URL}/logo/intri-web-logo.png`,
     image: `${BASE_SITE_URL}/og-image.png`,
     description:
-      "Intrihub is India's leading instant building materials and interior supplies marketplace. Factory-direct rates for tiles, granite, electrical wires, sanitaryware, false ceilings, and hardware with 60-minute site delivery.",
+      "Intrihub is India's leading instant building materials and interior supplies marketplace. Factory-direct rates for tiles, granite, electrical wires, sanitaryware, false ceilings, and hardware with 60-minute site delivery in Bengaluru and 3-7 day delivery across India.",
     email: "support@intrihub.com",
     telephone: "+91-70901-20211",
     foundingDate: "2026",

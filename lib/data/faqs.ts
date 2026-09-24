@@ -22,7 +22,7 @@ export const INTRIHUB_FAQS: FAQItem[] = [
     id: "del-2",
     categoryId: "delivery",
     question: "What is your delivery radius and do you deliver outside Bengaluru?",
-    answer: "Our express 60-minute service covers all major zones in Bengaluru (Begur, Whitefield, HSR Layout, Indiranagar, Electronic City, Yelahanka, Kanakapura Road, etc.). For Mysuru, Hyderabad, Chennai, and other cities across India, we dispatch heavy freight consignments arriving within 24 to 72 hours.",
+    answer: "Our express 60-minute delivery covers all major zones in Bengaluru via local micro-dark stores. For the rest of India, we deliver our full catalog across all states within 3 to 7 business days, expanding to 60-minute delivery city-by-city as local vendor partners go live.",
   },
   {
     id: "del-3",

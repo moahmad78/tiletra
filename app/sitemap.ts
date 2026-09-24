@@ -21,6 +21,7 @@ const EXCLUDED_SITEMAP_PATTERNS = [
   /^\/api(\/.*)?$/i,
   /^\/upload(\/.*)?$/i,
   /^\/designs(\/.*)?$/i, // Redirects to /shop
+  /^\/inspiration(\/.*)?$/i, // Redirects to /shop
 ];
 
 function isPublicIndexableUrl(urlStr: string): boolean {
@@ -119,6 +120,12 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
       priority: 0.7,
     },
     {
+      url: `${BASE_SITE_URL}/pan-india-delivery`,
+      lastModified: new Date(),
+      changeFrequency: "weekly",
+      priority: 0.85,
+    },
+    {
       url: `${BASE_SITE_URL}/shipping-policy`,
       lastModified: new Date(),
       changeFrequency: "monthly",
@@ -154,24 +161,10 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
       changeFrequency: "weekly",
       priority: 0.8,
     },
-    {
-      url: `${BASE_SITE_URL}/inspiration`,
-      lastModified: new Date(),
-      changeFrequency: "weekly",
-      priority: 0.8,
-    },
   ];
 
-  // Buying Guide Routes
-  const guideRoutes: MetadataRoute.Sitemap = BUYING_GUIDES.map((g) => ({
-    url: `${BASE_SITE_URL}/guides/${g.slug}`,
-    lastModified: new Date(g.updatedAt || Date.now()),
-    changeFrequency: "weekly",
-    priority: 0.85,
-  }));
-
   try {
-    const [categories, products, seoPages] = await Promise.all([
+    const [categories, products, dbGuides] = await Promise.all([
       prisma.category.findMany({
         select: {
           slug: true,
@@ -184,21 +177,46 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
         where: {
           approvalStatus: "approved",
           status: "active",
-          NOT: {
-            OR: [
-              { slug: { contains: "test", mode: "insensitive" } },
-              { name: { contains: "test", mode: "insensitive" } },
-            ],
-          },
         },
-        select: { slug: true, updatedAt: true },
-        take: 5000,
+        select: {
+          slug: true,
+          updatedAt: true,
+        },
       }),
-      prisma.seoPage.findMany({
-        where: { isPublished: true },
-        select: { slug: true, pageType: true, updatedAt: true },
-      }),
+      prisma.guidePost.findMany({
+        where: {
+          status: "PUBLISHED",
+          publishedAt: { lte: new Date() },
+        },
+        select: {
+          slug: true,
+          updatedAt: true,
+        },
+      }).catch(() => []),
     ]);
+
+    const seoPages = SEO_PAGES_SEED_DATA;
+
+    // Buying Guide Routes (from database with static fallback)
+    const resolvedGuides =
+      dbGuides && dbGuides.length > 0
+        ? dbGuides.map((g: any) => ({
+            slug: g.slug,
+            updatedAt: g.updatedAt,
+          }))
+        : BUYING_GUIDES.map((g: any) => ({
+            slug: g.slug,
+            updatedAt: new Date(g.updatedAt || Date.now()),
+          }));
+
+    const guideRoutes: MetadataRoute.Sitemap = resolvedGuides
+      .filter((g) => Boolean(g.slug) && !g.slug.toLowerCase().includes("test"))
+      .map((g) => ({
+        url: `${BASE_SITE_URL}/guides/${encodeURIComponent(g.slug)}`,
+        lastModified: g.updatedAt instanceof Date ? g.updatedAt : new Date(),
+        changeFrequency: "weekly",
+        priority: 0.85,
+      }));
 
     const resolvedCategories =
       categories.length > 0
@@ -262,7 +280,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
       .filter((page) => Boolean(page.slug) && !page.slug.toLowerCase().includes("test"))
       .map((page) => ({
         url: `${BASE_SITE_URL}/${page.slug}`,
-        lastModified: page.updatedAt instanceof Date ? page.updatedAt : new Date(),
+        lastModified: new Date(),
         changeFrequency: page.pageType === "PRICE_INTENT" ? ("weekly" as const) : ("monthly" as const),
         priority: page.pageType === "CATEGORY" ? 0.8 : 0.6,
       }));
@@ -326,9 +344,16 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
       priority: page.pageType === "CATEGORY" ? 0.8 : 0.6,
     }));
 
+    const fallbackGuideRoutes: MetadataRoute.Sitemap = BUYING_GUIDES.map((g) => ({
+      url: `${BASE_SITE_URL}/guides/${g.slug}`,
+      lastModified: new Date(g.updatedAt || Date.now()),
+      changeFrequency: "weekly",
+      priority: 0.85,
+    }));
+
     const allFallback = [
       ...staticRoutes,
-      ...guideRoutes,
+      ...fallbackGuideRoutes,
       ...fallbackCategoryRoutes,
       ...fallbackLocationRoutes,
       ...fallbackProductRoutes,

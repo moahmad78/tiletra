@@ -13,9 +13,11 @@ interface DesktopCategoryRowProps {
 function SafeDesktopCategoryCard({
   cat,
   isCloned = false,
+  priority = false,
 }: {
   cat: Category;
   isCloned?: boolean;
+  priority?: boolean;
 }) {
   const initialImage = cat.image && cat.image.trim() ? cat.image : "/placeholders/category.svg";
   const [imgSrc, setImgSrc] = useState(initialImage);
@@ -75,6 +77,7 @@ function SafeDesktopCategoryCard({
             src={imgSrc}
             alt={cat.name}
             fill
+            priority={priority}
             referrerPolicy="no-referrer"
             onError={(e) => {
               console.error(`[DesktopCategoryRow Orig Image Load Failed]: "${cat.name}" (${cat.slug}) - URL: ${imgSrc}`, e);
@@ -230,13 +233,14 @@ export default function DesktopCategoryRow({ categories }: DesktopCategoryRowPro
             className="flex items-center will-change-transform transform-gpu"
             style={{ transform: "translate3d(0, 0, 0)" }}
           >
-            {/* Set 1: Measured set - only first 6 are eager */}
+            {/* Set 1: Measured set - only first 7 are eager, rest lazy */}
             <div ref={singleSetRef} className="flex items-center gap-3.5 pr-3.5 shrink-0">
-              {topCategories.map((cat) => (
+              {topCategories.map((cat, idx) => (
                 <SafeDesktopCategoryCard
                   key={`d1-${cat.slug}`}
                   cat={cat}
                   isCloned={false}
+                  priority={idx < 7}
                 />
               ))}
             </div>

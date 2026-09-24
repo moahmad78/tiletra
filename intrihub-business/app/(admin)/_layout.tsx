@@ -160,6 +160,12 @@ export default function AdminTabsLayout() {
           href: null,
         }}
       />
+      <Tabs.Screen
+        name="guides"
+        options={{
+          href: null,
+        }}
+      />
     </Tabs>
   );
 }

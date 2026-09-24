@@ -295,6 +295,13 @@ export default function Footer() {
                 <Package size={13} className="text-[#F26522] shrink-0" />
                 <span>Direct Site Dispatch &amp; Tracking</span>
               </div>
+              <div className="flex items-center gap-2 text-xs text-[#FF9900] font-semibold pt-1">
+                <Truck size={13} className="shrink-0" />
+                <Link href="/pan-india-delivery" className="hover:underline flex items-center gap-1">
+                  <span>Pan-India Delivery Available</span>
+                  <ArrowRight size={11} />
+                </Link>
+              </div>
             </div>
           </div>
         </div>
@@ -353,6 +360,25 @@ export default function Footer() {
               ))}
             </div>
           </div>
+        </div>
+
+        {/* We Deliver Across India Section */}
+        <div className="py-6 border-b border-white/10 text-xs text-white/70 bg-white/[0.02] -mx-4 sm:-mx-6 md:-mx-8 px-4 sm:px-6 md:px-8 rounded-xl my-4">
+          <h4 className="mb-2">
+            <Link
+              href="/pan-india-delivery"
+              className="text-white font-bold text-xs sm:text-sm uppercase tracking-wider hover:text-[#F26522] transition-colors inline-flex items-center gap-1.5 group"
+            >
+              <span>We Deliver Across India</span>
+              <ArrowRight size={14} className="text-[#F26522] group-hover:translate-x-1 transition-transform" />
+            </Link>
+          </h4>
+          <p className="text-white/80 leading-relaxed mb-2 text-xs sm:text-sm">
+            We deliver building &amp; interior materials across India — 3-7 day delivery nationwide, with 60-minute instant delivery in Bengaluru (expanding city by city as we onboard local vendors).
+          </p>
+          <p className="text-white/50 leading-relaxed text-[11px] sm:text-xs">
+            Andhra Pradesh, Arunachal Pradesh, Assam, Bihar, Chhattisgarh, Goa, Gujarat, Haryana, Himachal Pradesh, Jharkhand, Karnataka, Kerala, Madhya Pradesh, Maharashtra, Manipur, Meghalaya, Mizoram, Nagaland, Odisha, Punjab, Rajasthan, Sikkim, Tamil Nadu, Telangana, Tripura, Uttar Pradesh, Uttarakhand, West Bengal, Delhi (NCR), and other Union Territories.
+          </p>
         </div>
 
         {/* Bottom bar */}

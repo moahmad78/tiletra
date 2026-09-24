@@ -13,37 +13,46 @@ export default function robots(): MetadataRoute.Robots {
     "/account/",
     "/admin",
     "/admin/",
+    "/vendor/",
+    "/vendor",
     "/api/",
     "/upload/",
     "/delete-account",
     "/search?*",
   ];
 
+  const commonAllows = [
+    "/",
+    "/vendor/apply",
+    "/shop/outdoor-tiles",
+    "/inspiration",
+  ];
+
   return {
     rules: [
       {
         userAgent: "*",
-        allow: "/",
+        allow: commonAllows,
         disallow: commonDisallows,
       },
       {
         userAgent: "Google-Extended",
-        allow: "/",
+        allow: commonAllows,
         disallow: commonDisallows,
       },
       {
         userAgent: "GPTBot",
-        allow: "/",
+        allow: commonAllows,
         disallow: commonDisallows,
       },
       {
         userAgent: "PerplexityBot",
-        allow: "/",
+        allow: commonAllows,
         disallow: commonDisallows,
       },
       {
         userAgent: "ClaudeBot",
-        allow: "/",
+        allow: commonAllows,
         disallow: commonDisallows,
       },
     ],

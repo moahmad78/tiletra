@@ -63,7 +63,7 @@ export const BannerCarousel: React.FC<BannerCarouselProps> = ({ banners }) => {
     },
     {
       id: "b3",
-      badge: "60-MIN DELIVERY",
+      badge: "EXPRESS DISPATCH",
       title: "Tile Adhesives & Grouts",
       subtitle: "Heavy duty polymer modified cements",
       cta: "Order Now",
