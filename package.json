@@ -17,7 +17,6 @@
     "@sentry/nextjs": "^10.74.0",
     "@types/nodemailer": "^8.0.1",
     "@vercel/blob": "^2.8.0",
-    "cloudinary": "^2.11.0",
     "clsx": "^2.1.1",
     "date-fns": "^4.4.0",
     "framer-motion": "^12.42.2",

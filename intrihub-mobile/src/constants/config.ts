@@ -25,7 +25,7 @@ export const SUPPORT_WHATSAPP_URL = "https://wa.me/917090120211?text=Hello%20Int
 
 export function getImageUrl(
   imagePath?: string | null,
-  fallback = "https://images.unsplash.com/photo-1590381105924-c72589b9ef3f?w=600"
+  fallback = `${API_BASE_URL}/images/placeholder-product.svg`
 ): string {
   if (!imagePath) return fallback;
   if (imagePath.startsWith("http://") || imagePath.startsWith("https://")) {
