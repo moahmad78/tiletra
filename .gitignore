@@ -55,7 +55,6 @@ intrihub-business/android/
 *.keystore
 *.aab
 *.apk
-.expo/
-**/.expo/
-
-
+# backups
+backups/
+migrate-failed.json

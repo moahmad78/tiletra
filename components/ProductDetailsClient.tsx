@@ -40,6 +40,7 @@ import { showCartToast } from "@/lib/cart-toast-store";
 import VariantSelector from "@/components/products/VariantSelector";
 import SmartCalculator from "@/components/products/SmartCalculator";
 import { formatUnitLabel, formatUnitName, getProductPriceInfo } from "@/lib/formatters";
+import { SafeImage } from "@/components/ui/SafeImage";
 
 function formatPrice(n: number) {
   return "₹" + n.toLocaleString("en-IN");
@@ -244,8 +245,9 @@ export default function ProductDetailsClient({
               className="relative w-full h-[340px] sm:h-[380px] lg:h-[400px] rounded-2xl overflow-hidden bg-white border border-gray-200 shadow-2xs group select-none cursor-grab active:cursor-grabbing p-2 flex items-center justify-center"
             >
               <div className="relative w-full h-full rounded-xl overflow-hidden bg-gray-50">
-                <Image
+                <SafeImage
                   src={allGalleryImages[activeImage] || allGalleryImages[0]}
+                  variantSize={800}
                   alt={definedProduct.name}
                   fill
                   priority
@@ -327,7 +329,7 @@ export default function ProductDetailsClient({
                       }`}
                     >
                       <div className="relative w-full h-full rounded-lg overflow-hidden bg-gray-50">
-                        <Image src={img} alt={`Thumbnail ${i + 1}`} fill className="object-cover" sizes="72px" />
+                        <SafeImage src={img} variantSize={400} alt={`Thumbnail ${i + 1}`} fill className="object-cover" sizes="72px" />
                       </div>
                     </button>
                   );

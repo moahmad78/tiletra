@@ -2,15 +2,14 @@
 
 import { useState, useEffect } from "react";
 import Link from "next/link";
-import Image from "next/image";
 import { Plus, Heart, Check } from "lucide-react";
-import { getLowestPrice, getLowestBoxPrice, type Product } from "@/lib/data/products";
-import { formatPrice, formatUnitLabel, getProductPriceInfo } from "@/lib/formatters";
+import { type Product } from "@/lib/data/products";
+import { getProductPriceInfo } from "@/lib/formatters";
 import { useCartStore } from "@/lib/cart-store";
 import { useWishlistStore } from "@/lib/wishlist-store";
 import { showCartToast } from "@/lib/cart-toast-store";
 import { cn } from "@/lib/utils";
-
+import { SafeImage } from "@/components/ui/SafeImage";
 
 export default function CompactProductCard({
   product,
@@ -27,16 +26,11 @@ export default function CompactProductCard({
   const { isWishlisted, toggleWishlist } = useWishlistStore();
   const defaultVariant = product.variants[0];
   const wishlisted = isWishlisted(product.id);
-  const initialImage = product.images?.[0] || "/placeholders/product.svg";
-  const [imgSrc, setImgSrc] = useState(initialImage);
+  const productImg = product.images?.[0] || null;
 
   useEffect(() => {
     setMounted(true);
   }, []);
-
-  useEffect(() => {
-    setImgSrc(product.images?.[0] || "/placeholders/product.svg");
-  }, [product.images, product.id]);
 
   const handleAddToCart = (e: React.MouseEvent) => {
     e.preventDefault();
@@ -63,16 +57,12 @@ export default function CompactProductCard({
       {/* Top Image Container */}
       <div className="relative">
         <Link href={`/product/${product.slug}`} aria-label={`View ${product.name} details`} className="block relative aspect-square w-full bg-gray-50 overflow-hidden">
-          <Image
-            src={imgSrc}
+          <SafeImage
+            src={productImg}
+            variantSize={400}
             alt={product.name}
             fill
             priority={priority}
-            referrerPolicy="no-referrer"
-            onError={(e) => {
-              console.error(`[CompactProductCard Image Load Failed]: "${product.name}" (${product.id}) - URL: ${imgSrc}`, e);
-              setImgSrc("/placeholders/product.svg");
-            }}
             className="object-cover transition-transform duration-300 hover:scale-105"
             sizes="(max-width: 640px) 50vw, (max-width: 1024px) 33vw, 220px"
           />
@@ -93,7 +83,7 @@ export default function CompactProductCard({
         <button
           onClick={handleToggleWishlist}
           aria-label={mounted && wishlisted ? "Remove from wishlist" : "Add to wishlist"}
-          className="absolute top-1.5 right-1.5 z-10 w-6 h-6 rounded-full bg-white/90 backdrop-blur-xs shadow-xs flex items-center justify-center transition-transform active:scale-75"
+          className="absolute top-1.5 right-1.5 z-10 w-6 h-6 rounded-full bg-white/90 backdrop-blur-xs shadow-xs flex items-center justify-center transition-transform active:scale-75 cursor-pointer"
         >
           <Heart
             size={12}
@@ -115,7 +105,7 @@ export default function CompactProductCard({
             </h3>
           </Link>
           <p className="text-[10px] text-gray-400 mt-0.5 truncate">
-            {defaultVariant.size} · {defaultVariant.finish}
+            {defaultVariant?.size || "Standard"} · {defaultVariant?.finish || "Matte"}
           </p>
         </div>
 
@@ -151,7 +141,7 @@ export default function CompactProductCard({
           <button
             onClick={handleAddToCart}
             aria-label={`Add ${product.name} to cart`}
-            className={`w-7 h-7 rounded-lg flex items-center justify-center transition-all active:scale-90 shadow-xs ${
+            className={`w-7 h-7 rounded-lg flex items-center justify-center transition-all active:scale-90 shadow-xs cursor-pointer ${
               justAdded
                 ? "bg-green-600 text-white"
                 : "bg-[#F26522] text-white hover:bg-[#d95a1e]"

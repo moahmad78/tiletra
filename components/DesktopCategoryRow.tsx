@@ -1,10 +1,10 @@
 "use client";
 
-import { useState, useEffect, useRef, useCallback } from "react";
+import { useEffect, useRef, useCallback } from "react";
 import Link from "next/link";
-import Image from "next/image";
 import { ChevronLeft, ChevronRight, ArrowRight } from "lucide-react";
 import type { Category } from "@/lib/data/categories";
+import { SafeImage } from "@/components/ui/SafeImage";
 
 interface DesktopCategoryRowProps {
   categories: Category[];
@@ -19,12 +19,7 @@ function SafeDesktopCategoryCard({
   isCloned?: boolean;
   priority?: boolean;
 }) {
-  const initialImage = cat.image && cat.image.trim() ? cat.image : "/placeholders/category.svg";
-  const [imgSrc, setImgSrc] = useState(initialImage);
-
-  useEffect(() => {
-    setImgSrc(cat.image && cat.image.trim() ? cat.image : "/placeholders/category.svg");
-  }, [cat.image]);
+  const categoryImage = cat.image && cat.image.trim() ? cat.image : `/images/categories/cat-${cat.slug}.jpg`;
 
   if (isCloned) {
     return (
@@ -35,15 +30,10 @@ function SafeDesktopCategoryCard({
       >
         <div className="bg-white rounded-2xl p-2 border border-gray-200/90 shadow-2xs group-hover:border-[#F26522] transition-all text-center flex flex-col h-full">
           <div className="relative w-full aspect-[4/3] rounded-xl overflow-hidden bg-gray-100 shrink-0">
-            <Image
-              src={imgSrc}
+            <SafeImage
+              src={categoryImage}
               alt={`${cat.name} Category`}
               fill
-              referrerPolicy="no-referrer"
-              onError={(e) => {
-                console.error(`[DesktopCategoryRow Cloned Image Load Failed]: "${cat.name}" (${cat.slug}) - URL: ${imgSrc}`, e);
-                setImgSrc("/placeholders/category.svg");
-              }}
               className="object-cover group-hover:scale-108 transition-transform duration-300"
               sizes="175px"
             />
@@ -73,16 +63,11 @@ function SafeDesktopCategoryCard({
     >
       <div className="bg-white rounded-2xl p-2 border border-gray-200/90 shadow-2xs hover:shadow-md hover:border-[#F26522] transition-all text-center flex flex-col h-full active:scale-98">
         <div className="relative w-full aspect-[4/3] rounded-xl overflow-hidden bg-gray-100 shrink-0">
-          <Image
-            src={imgSrc}
+          <SafeImage
+            src={categoryImage}
             alt={cat.name}
             fill
             priority={priority}
-            referrerPolicy="no-referrer"
-            onError={(e) => {
-              console.error(`[DesktopCategoryRow Orig Image Load Failed]: "${cat.name}" (${cat.slug}) - URL: ${imgSrc}`, e);
-              setImgSrc("/placeholders/category.svg");
-            }}
             className="object-cover group-hover:scale-108 transition-transform duration-300"
             sizes="175px"
           />
@@ -104,7 +89,7 @@ function SafeDesktopCategoryCard({
 }
 
 export default function DesktopCategoryRow({ categories }: DesktopCategoryRowProps) {
-  const topCategories = categories.filter((c) => !c.parentId).slice(0, 12);
+  const topCategories = categories.filter((c) => !c.parentId);
 
   const containerRef = useRef<HTMLDivElement>(null);
   const trackRef = useRef<HTMLDivElement>(null);
@@ -133,10 +118,9 @@ export default function DesktopCategoryRow({ categories }: DesktopCategoryRowPro
     };
   }, [measureWidth]);
 
-  // Buttery-smooth GPU hardware-accelerated scroll loop with delta clamping
   useEffect(() => {
     let lastTime = performance.now();
-    const speed = 36; // 36px per second (smooth & readable)
+    const speed = 36;
 
     const step = (now: number) => {
       const rawDelta = (now - lastTime) / 1000;
@@ -233,7 +217,7 @@ export default function DesktopCategoryRow({ categories }: DesktopCategoryRowPro
             className="flex items-center will-change-transform transform-gpu"
             style={{ transform: "translate3d(0, 0, 0)" }}
           >
-            {/* Set 1: Measured set - only first 7 are eager, rest lazy */}
+            {/* Set 1: Measured set */}
             <div ref={singleSetRef} className="flex items-center gap-3.5 pr-3.5 shrink-0">
               {topCategories.map((cat, idx) => (
                 <SafeDesktopCategoryCard

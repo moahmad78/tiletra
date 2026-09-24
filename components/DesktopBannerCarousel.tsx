@@ -1,9 +1,9 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import Image from "next/image";
 import Link from "next/link";
 import { ChevronLeft, ChevronRight, Tag, ArrowRight, Truck } from "lucide-react";
+import { SafeImage } from "@/components/ui/SafeImage";
 
 export interface BannerSlide {
   id: string;
@@ -24,7 +24,7 @@ const DEFAULT_DESKTOP_SLIDES: BannerSlide[] = [
     subtext: "Mirror-polished seamless 800x800mm vitrified tiles starting at ₹72/sq.ft. Safe doorstep crate delivery.",
     ctaText: "Explore Floor Tiles",
     ctaHref: "/shop/floor-tiles",
-    image: "https://images.unsplash.com/photo-1616486338812-3dadae4b4ace?w=1600&q=85",
+    image: "/images/banners/banner-slide-1.jpg",
     accentColor: "#F26522",
   },
   {
@@ -33,8 +33,8 @@ const DEFAULT_DESKTOP_SLIDES: BannerSlide[] = [
     headline: "Nordic Subway & Artisan Splashbacks",
     subtext: "Beveled glossy subway tiles and textured ceramic walls. Wipe-clean and heat resistant.",
     ctaText: "Shop Kitchen Tiles",
-    ctaHref: "/shop/kitchen-tiles",
-    image: "https://images.unsplash.com/photo-1507652313519-d4e9174996dd?w=1600&q=85",
+    ctaHref: "/shop/kitchen-wardrobe",
+    image: "/images/banners/banner-slide-2.jpg",
     accentColor: "#052a51",
   },
   {
@@ -44,7 +44,7 @@ const DEFAULT_DESKTOP_SLIDES: BannerSlide[] = [
     subtext: "R11 anti-slip textured porcelain pavers designed for heavy Bangalore rains and garden terraces.",
     ctaText: "Browse Outdoor Tiles",
     ctaHref: "/shop/tiles-stone",
-    image: "https://images.unsplash.com/photo-1552321554-5fefe8c9ef14?w=1600&q=85",
+    image: "/images/banners/banner-slide-3.jpg",
     accentColor: "#2F7A4F",
   },
   {
@@ -54,7 +54,7 @@ const DEFAULT_DESKTOP_SLIDES: BannerSlide[] = [
     subtext: "Free specialized freight delivery on all orders above ₹15,000 with 100% breakage protection.",
     ctaText: "Explore Catalog",
     ctaHref: "/shop",
-    image: "https://images.unsplash.com/photo-1600585154340-be6161a56a0c?w=1600&q=85",
+    image: "/images/banners/banner-slide-2.jpg",
     accentColor: "#F26522",
   },
 ];
@@ -69,13 +69,7 @@ function BannerSlideItem({
   isActive: boolean;
 }) {
   const accent = slide.accentColor || "#F26522";
-  const defaultImage = DEFAULT_DESKTOP_SLIDES[index % DEFAULT_DESKTOP_SLIDES.length]?.image || "/placeholders/banner.svg";
-  const initialImage = slide.image && slide.image.trim() ? slide.image : defaultImage;
-  const [imgSrc, setImgSrc] = useState(initialImage);
-
-  useEffect(() => {
-    setImgSrc(slide.image && slide.image.trim() ? slide.image : defaultImage);
-  }, [slide.image, defaultImage]);
+  const slideImage = slide.image && slide.image.trim() ? slide.image : DEFAULT_DESKTOP_SLIDES[index % DEFAULT_DESKTOP_SLIDES.length]?.image;
 
   return (
     <div
@@ -83,17 +77,13 @@ function BannerSlideItem({
         isActive ? "opacity-100 z-10" : "opacity-0 z-0 pointer-events-none"
       }`}
     >
-      {/* Background Photo */}
-      <Image
-        src={imgSrc}
+      {/* Background Photo using first-party variant */}
+      <SafeImage
+        src={slideImage}
+        variantSize={1400}
         alt={slide.headline}
         fill
         priority={index === 0}
-        referrerPolicy="no-referrer"
-        onError={(e) => {
-          console.error(`[DesktopBannerCarousel Image Load Failed]: "${slide.headline}" - URL: ${imgSrc}`, e);
-          setImgSrc(defaultImage);
-        }}
         className="object-cover"
         sizes="(max-width: 1400px) 100vw, 1400px"
       />
@@ -193,7 +183,7 @@ export default function DesktopBannerCarousel({ slides }: { slides?: BannerSlide
           <ChevronRight size={22} />
         </button>
 
-        {/* Dot Indicators (with accessible 24px+ touch targets) */}
+        {/* Dot Indicators */}
         <div className="absolute bottom-4 left-1/2 -translate-x-1/2 z-30 flex items-center gap-1 bg-black/30 backdrop-blur-xs px-2 py-1 rounded-full">
           {bannerSlides.map((_, i) => (
             <button

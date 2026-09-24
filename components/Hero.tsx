@@ -3,7 +3,7 @@
 import { useState, useEffect } from "react";
 import { motion } from "framer-motion";
 import { Button } from "@/components/ui/Button";
-import { ShieldCheck, MapPin, Clock, Users, Star, ArrowRight, Lock, User, Phone, ClipboardList, ChevronDown } from "lucide-react";
+import { ShieldCheck, MapPin, Star, ArrowRight, Lock, User, Phone, ClipboardList, ChevronDown } from "lucide-react";
 import { useQuoteModal } from "@/components/QuoteModalProvider";
 
 export default function Hero() {
@@ -11,17 +11,15 @@ export default function Hero() {
   const [currentSlide, setCurrentSlide] = useState(0);
 
   const images = [
-    "https://images.unsplash.com/photo-1616486338812-3dadae4b4ace?w=1600&q=85",
-    "https://images.unsplash.com/photo-1507652313519-d4e9174996dd?w=1600&q=85",
-    "https://images.unsplash.com/photo-1552321554-5fefe8c9ef14?w=1600&q=85",
+    "/images/banners/banner-slide-1-1400.webp",
+    "/images/banners/banner-slide-2-1400.webp",
+    "/images/banners/banner-slide-3-1400.webp",
   ];
 
   useEffect(() => {
-    // Preload images
-    images.forEach(src => {
-      const img = new Image();
-      img.src = src;
-    });
+    // Preload first banner image
+    const img = new Image();
+    img.src = images[0];
     
     const timer = setInterval(() => {
       setCurrentSlide((prev) => (prev + 1) % images.length);
@@ -75,7 +73,7 @@ export default function Hero() {
             <button
               key={idx}
               onClick={() => setCurrentSlide(idx)}
-              className={`w-2.5 h-2.5 rounded-full transition-all duration-300 ${
+              className={`w-2.5 h-2.5 rounded-full transition-all duration-300 cursor-pointer ${
                 currentSlide === idx ? "bg-[#F26522] w-8" : "bg-white/50 hover:bg-white"
               }`}
               aria-label={`Go to slide ${idx + 1}`}
@@ -183,9 +181,8 @@ export default function Hero() {
                   </div>
                 </div>
 
-                {/* Row 3 – Location & Service (two columns) */}
+                {/* Row 3 – Location & Service */}
                 <div className="flex gap-2">
-                  {/* Location */}
                   <div className="relative flex-1">
                     <MapPin className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-gray-400" />
                     <input
@@ -194,7 +191,6 @@ export default function Hero() {
                       className="w-full h-12 pl-10 pr-3 rounded-xl border border-gray-200 focus:border-[#F26522] focus:ring-1 focus:ring-[#F26522] outline-none placeholder:text-gray-400"
                     />
                   </div>
-                  {/* Service dropdown */}
                   <div className="relative flex-1">
                     <ShieldCheck className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-gray-400" />
                     <select
@@ -221,7 +217,7 @@ export default function Hero() {
                 {/* Submit Button */}
                 <button
                   type="submit"
-                  className="w-full h-[56px] bg-[#F26522] hover:bg-[#d95a1e] text-white rounded-xl font-bold text-lg shadow-[0_8px_20px_rgba(242,101,34,0.3)] hover:-translate-y-0.5 transition-all"
+                  className="w-full h-[56px] bg-[#F26522] hover:bg-[#d95a1e] text-white rounded-xl font-bold text-lg shadow-[0_8px_20px_rgba(242,101,34,0.3)] hover:-translate-y-0.5 transition-all cursor-pointer"
                 >
                   Get Free Quote
                 </button>

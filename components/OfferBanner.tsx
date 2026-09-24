@@ -2,8 +2,8 @@
 
 import { useState, useEffect, useRef } from "react";
 import Link from "next/link";
-import Image from "next/image";
-import { Tag, ArrowRight, Truck, Package } from "lucide-react";
+import { Tag, ArrowRight } from "lucide-react";
+import { SafeImage } from "@/components/ui/SafeImage";
 
 export interface MobileBannerSlide {
   id: string;
@@ -25,7 +25,7 @@ const DEFAULT_SLIDES: MobileBannerSlide[] = [
     cta: "Shop Now",
     href: "/shop/floor-tiles",
     bgGradient: "from-[#052a51]/95 via-[#052a51]/80 to-transparent",
-    image: "https://images.unsplash.com/photo-1616486338812-3dadae4b4ace?w=800&q=80",
+    image: "/images/banners/banner-slide-1.jpg",
   },
   {
     id: "slide-2",
@@ -35,7 +35,7 @@ const DEFAULT_SLIDES: MobileBannerSlide[] = [
     cta: "Explore Catalog",
     href: "/shop",
     bgGradient: "from-[#0c3966]/95 via-[#052a51]/85 to-transparent",
-    image: "https://images.unsplash.com/photo-1507652313519-d4e9174996dd?w=800&q=80",
+    image: "/images/banners/banner-slide-2.jpg",
   },
   {
     id: "slide-3",
@@ -45,7 +45,7 @@ const DEFAULT_SLIDES: MobileBannerSlide[] = [
     cta: "Get Samples",
     href: "/shop",
     bgGradient: "from-[#1a1c29]/95 via-[#052a51]/85 to-transparent",
-    image: "https://images.unsplash.com/photo-1552321554-5fefe8c9ef14?w=800&q=80",
+    image: "/images/banners/banner-slide-3.jpg",
   },
   {
     id: "slide-vendor",
@@ -55,7 +55,7 @@ const DEFAULT_SLIDES: MobileBannerSlide[] = [
     cta: "Apply as Seller",
     href: "/vendor/apply",
     bgGradient: "from-[#031d38]/95 via-[#052a51]/85 to-transparent",
-    image: "https://images.unsplash.com/photo-1600585154340-be6161a56a0c?w=800&q=80",
+    image: "/images/banners/banner-slide-1.jpg",
   },
 ];
 
@@ -68,13 +68,7 @@ function MobileBannerSlideItem({
   index: number;
   isActive: boolean;
 }) {
-  const defaultImage = DEFAULT_SLIDES[index % DEFAULT_SLIDES.length]?.image || "/placeholders/banner.svg";
-  const initialImage = slide.image && slide.image.trim() ? slide.image : defaultImage;
-  const [imgSrc, setImgSrc] = useState(initialImage);
-
-  useEffect(() => {
-    setImgSrc(slide.image && slide.image.trim() ? slide.image : defaultImage);
-  }, [slide.image, defaultImage]);
+  const slideImage = slide.image && slide.image.trim() ? slide.image : DEFAULT_SLIDES[index % DEFAULT_SLIDES.length]?.image;
 
   return (
     <div
@@ -83,19 +77,15 @@ function MobileBannerSlideItem({
       }`}
     >
       <Link href={slide.href || "/shop"} className="block w-full h-full relative">
-        {/* Background Image */}
-        <Image
-          src={imgSrc}
+        {/* Background Image using first-party banner */}
+        <SafeImage
+          src={slideImage}
+          variantSize={750}
           alt={slide.title}
           fill
           className="object-cover"
           sizes="(max-width: 768px) 100vw, 50vw"
           priority={index === 0}
-          referrerPolicy="no-referrer"
-          onError={(e) => {
-            console.error(`[OfferBanner Mobile Image Load Failed]: "${slide.title}" - URL: ${imgSrc}`, e);
-            setImgSrc(defaultImage);
-          }}
         />
 
         {/* Gradient overlay */}
@@ -184,7 +174,7 @@ export default function OfferBanner({ slides }: { slides?: MobileBannerSlide[] }
           />
         ))}
 
-        {/* Dot Indicators (with accessible touch target) */}
+        {/* Dot Indicators */}
         <div className="absolute bottom-2 right-3 z-20 flex items-center gap-1 bg-black/30 backdrop-blur-xs px-1.5 py-0.5 rounded-full">
           {bannerSlides.map((_, i) => (
             <button
