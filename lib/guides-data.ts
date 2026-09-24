@@ -321,6 +321,146 @@ export const BUYING_GUIDES: BuyingGuide[] = [
     ],
     relatedCategorySlugs: ["tiles-stone", "lighting", "paint-finishes", "furniture"],
   },
+  {
+    slug: "building-material-list-for-house-construction-bengaluru",
+    title: "Building Material List for House Construction in Bengaluru (Stage-Wise Checklist & Sourcing Tips)",
+    shortDescription:
+      "A complete, stage-by-stage building material checklist for residential home construction in Bengaluru. Covers foundation cement, TMT steel, CPVC plumbing, vitrified tiles, electricals, and false ceiling.",
+    category: "Construction & Building Materials",
+    readTime: "8 min read",
+    publishedAt: "2026-09-24T00:00:00.000Z",
+    updatedAt: "2026-09-24T00:00:00.000Z",
+    image: "/images/categories/cat-tiles-stone.jpg",
+    author: "IntriHub Civil & Materials Engineering Team",
+    summary:
+      "Constructing a residential home in Bengaluru requires precision material scheduling across 7 distinct building phases. Learn exact grade specifications (OPC/PPC cement, Fe-550D TMT steel, CPVC pipes, vitrified tiles) and order-smart logistics strategies to prevent site downtime and budget overruns.",
+    sections: [
+      {
+        heading: "1. Stage 1: Foundation & Substructure Materials",
+        content: [
+          "The substructure bears the entire structural load of the building. In Bengaluru's red clay and rocky subsoil, choosing the right grade of cement and high-ductility steel prevents foundation settlement and dampness.",
+        ],
+        bulletPoints: [
+          "Cement: OPC 53 Grade (Ultratech / Birla Super) for structural RCC footings and columns; PPC (Portland Pozzolana Cement) for plain concrete beds and moisture resistance.",
+          "TMT Steel Bars: Fe-550D primary grade rebar (Tata Tiscon / JSW Neosteel / Jindal Panther) in 8mm, 10mm, 12mm, 16mm, and 20mm diameters.",
+          "Sand & Aggregates: Manufactured Sand (M-Sand for concrete, P-Sand for plastering) and graded blue metal granite aggregates (20mm down and 40mm).",
+          "Anti-Termite Treatment: Chlorpyrifos or Imidacloprid emulsion applied along the foundation trench and plinth backfill.",
+        ],
+      },
+      {
+        heading: "2. Stage 2: Superstructure, Masonry & Wall Construction",
+        content: [
+          "Wall construction in modern Bengaluru builds utilizes lightweight, thermally efficient blocks or traditional wire-cut red bricks to optimize dead weight and thermal insulation.",
+        ],
+        bulletPoints: [
+          "Wall Units: AAC (Autoclaved Aerated Concrete) lightweight blocks (6-inch external walls, 4-inch partition walls) or Solid Concrete Blocks.",
+          "Block Jointing Mortar: Thin-bed polymer adhesive (Roff / Saint-Gobain) to eliminate 14-day water curing and prevent shrinkage cracks.",
+          "DPC (Damp Proof Course): 50mm concrete band with integral waterproofing compound (Dr. Fixit 101 LW+) at plinth level.",
+        ],
+      },
+      {
+        heading: "3. Stage 3: Plumbing, Drainage & Water Supply Infrastructure",
+        content: [
+          "Concealed plumbing requires high-pressure, non-corrosive piping systems to withstand Bengaluru's borewell water hardness and high municipal Cauvery water pressure.",
+        ],
+        bulletPoints: [
+          "Hot & Cold Water Supply: SDR 11 CPVC pipes & brass threaded fittings (Astral / Ashirvad / Supreme) rated up to 93°C.",
+          "Cold Water Riser Lines: Class 1 / Class 2 UPVC heavy-duty solvent-weld pipes for external shafts.",
+          "Sewage & Rainwater Drainage: PVC SWR (Soil, Waste, Rainwater) ring-fit pipes (110mm and 75mm) for leak-proof vertical downspouts.",
+          "Overhead Water Storage: Triple-layer or 4-layer antimicrobial UV-stabilized rotational polyethylene tanks (Sintex / Astral).",
+        ],
+      },
+      {
+        heading: "4. Stage 4: Electrical Conduits & Concealed Wiring",
+        content: [
+          "Concealed electrical lines must be installed before wall plastering. Always specify Flame Retardant Low Smoke (FRLS) certified copper wires for residential safety.",
+        ],
+        bulletPoints: [
+          "Conduit Pipes: Heavy mechanical grade PVC conduit pipes (20mm, 25mm) with solvent-welded junction boxes embedded in brickwork.",
+          "House Wires: 100% electrolytic pure copper FRLS-H insulated multi-strand wires (Polycab / Havells / Finolex) — 1.5 sq.mm for lighting, 2.5 sq.mm for standard sockets, 4.0 sq.mm for ACs & geysers.",
+          "Concealed Metal Boxes: Galvanized steel modular back boxes (18-gauge) with earthing screws.",
+          "Grounding & Protection: 100% copper bonded earthing electrode rods with backfill chemical bentonite compound.",
+        ],
+      },
+      {
+        heading: "5. Stage 5: Plastering, Waterproofing & POP False Ceiling",
+        content: [
+          "Surface leveling and moisture protection safeguard your interior finishes against Bengaluru's monsoon dampness.",
+        ],
+        bulletPoints: [
+          "Internal Plaster: Ready-mix gypsum plaster (Saint-Gobain Elite / Gyproc) for direct paint-ready velvet wall finish, saving sand and water curing.",
+          "External Plaster: 1:4 cement-sand mortar enhanced with styrene-butadiene rubber (SBR) latex bonding agents.",
+          "Wet Area Waterproofing: 2-coat elastomeric acrylic polymer waterproofing slurry membrane (Dr. Fixit Fastflex / Fosroc Brushbond) for bathrooms and sunken slabs.",
+          "False Ceiling Framing: 0.50mm BMT Hot-dip galvanized steel (GI) perimeter channels, ceiling sections, and intermediate channels with 12.5mm moisture-resistant gypsum boards.",
+        ],
+      },
+      {
+        heading: "6. Stage 6: Flooring, Vitrified Tiles, Granite & Surface Finishes",
+        content: [
+          "Flooring represents a substantial portion of the interior budget. Vitrified tiles and natural south Indian granite provide the highest longevity and aesthetic value.",
+        ],
+        bulletPoints: [
+          "Living & Dining: Glazed Vitrified Tiles (GVT/PGVT in 800x1600mm or 600x1200mm slabs) or South Indian Natural Granite (Tan Brown, Black Pearl).",
+          "Bathrooms & Balconies: Matt anti-skid floor tiles (300x300mm or 600x600mm with R10 slip rating).",
+          "Tile Fixing: Type 2 C2TE polymer-modified tile adhesive (Roff T02 / Saint-Gobain Weber) to prevent hollow sound and debonding.",
+          "Grout: 100% solid epoxy tile grout (Roff Rainbow / Kerakoll) for waterproof, stain-proof tile joints in wet areas.",
+        ],
+      },
+      {
+        heading: "7. Stage 7: Doors, Windows, Laminates & Architectural Hardware",
+        content: [
+          "Finishing hardware and woodwork provide daily tactile quality and long-term home security.",
+        ],
+        bulletPoints: [
+          "Door Cores: Boiling Water Proof (BWP / IS:2202) solid pine wood core flush doors.",
+          "Decorative Surface: 1.0mm high-pressure interior laminates (Greenlam / Century / Merino).",
+          "Hardware & Locks: SS 304 architectural ball-bearing hinges, heavy-duty concealed door closers, and brass cylinder mortise locksets (Godrej / Yale / Dorset).",
+        ],
+      },
+      {
+        heading: "8. Order-Smart Sourcing & Logistics Tips for Bengaluru Builders",
+        content: [
+          "Bengaluru's unique traffic regulations and construction dynamics require strategic material scheduling to avoid fines and costly labor downtime.",
+        ],
+        bulletPoints: [
+          "Traffic Delivery Windows: Heavy 6-wheel delivery trucks are restricted in BBMP core zones during peak hours (8 AM - 11 AM & 5 PM - 8 PM). Schedule bulk cement and steel deliveries during afternoon or early morning slots.",
+          "Batch Wastage Buffer: Always order +10% extra on tiles, plumbing fittings, and wiring to accommodate cutting cuts and preserve production shade batch match.",
+          "Zero-Downtime Finishing Sourcing: For missing hardware, adhesives, and electricals during final staging, utilize IntriHub's 60-minute quick-commerce delivery to keep masons and carpenters working without half-day delays.",
+        ],
+      },
+    ],
+    faqs: [
+      {
+        question: "How do I calculate the total cement required for a 1,000 sq.ft house in Bengaluru?",
+        answer:
+          "For a standard 1,000 sq.ft residential G+1 building, the rule-of-thumb cement requirement is approximately 400 to 450 bags across RCC foundation, slab casting, masonry blockwork, and two coats of plastering.",
+      },
+      {
+        question: "Is CPVC or UPVC better for bathroom plumbing in Bengaluru?",
+        answer:
+          "CPVC (Chlorinated Polyvinyl Chloride) is mandatory for hot and cold internal bathroom supply lines because it withstands geyser temperatures up to 93°C. UPVC is ideal for external cold water downlines and rainwater harvesting connections.",
+      },
+      {
+        question: "Can I order building materials online in Bengaluru with same-day site delivery?",
+        answer:
+          "Yes. IntriHub offers 60-minute express site delivery across Bengaluru for finishing materials, adhesives, electricals, plumbing, and architectural hardware, alongside scheduled freight delivery for heavy materials.",
+      },
+      {
+        question: "Why should polymer tile adhesive be used instead of traditional sand-cement mortar for vitrified tiles?",
+        answer:
+          "Vitrified tiles have very low water absorption (<0.5%), meaning cement slurry cannot penetrate to form a mechanical key. Polymer-modified tile adhesives form chemical bonds with high tensile adhesion, eliminating debonding, pop-ups, and hollow sounds.",
+      },
+    ],
+    relatedCategorySlugs: [
+      "tiles-stone",
+      "plumbing",
+      "electrical",
+      "hardware",
+      "false-ceiling",
+      "granite",
+      "adhesives-sealants-waterproofing",
+    ],
+  },
 ];
 
 export function getBuyingGuideBySlug(slug: string): BuyingGuide | undefined {
