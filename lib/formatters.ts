@@ -248,7 +248,7 @@ export function formatProduct(dbProduct: any): Product {
       ? dbProduct.images.filter((img: string) => typeof img === "string" && img.trim() !== "")
       : dbProduct.variants?.[0]?.image
       ? [dbProduct.variants[0].image]
-      : ["https://images.unsplash.com/photo-1600585154340-be6161a56a0c?q=80&w=600&auto=format&fit=crop"],
+      : ["/images/placeholder-product.svg"],
     variants,
     rating: dbProduct.manualRating !== null && dbProduct.manualRating !== undefined
       ? Number(dbProduct.manualRating)

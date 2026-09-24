@@ -2,18 +2,14 @@
 
 import { useState, useEffect } from "react";
 import Link from "next/link";
-import Image from "next/image";
 import { motion } from "framer-motion";
 import { Star, Heart, ShoppingBag } from "lucide-react";
-import { getLowestPrice, getLowestBoxPrice, type Product } from "@/lib/data/products";
-import { formatPrice, formatUnitLabel, getProductPriceInfo } from "@/lib/formatters";
+import { type Product } from "@/lib/data/products";
+import { getProductPriceInfo } from "@/lib/formatters";
 import { useCartStore } from "@/lib/cart-store";
 import { useWishlistStore } from "@/lib/wishlist-store";
 import { showCartToast } from "@/lib/cart-toast-store";
-
-function formatPriceInternal(n: number) {
-  return "₹" + n.toLocaleString("en-IN");
-}
+import { SafeImage } from "@/components/ui/SafeImage";
 
 export default function ProductCard({
   product,
@@ -27,16 +23,11 @@ export default function ProductCard({
   const { isWishlisted, toggleWishlist } = useWishlistStore();
   const defaultVariant = product.variants[0];
   const wishlisted = isWishlisted(product.id);
-  const initialImage = product.images && product.images[0] ? product.images[0] : "/placeholders/product.svg";
-  const [imgSrc, setImgSrc] = useState(initialImage);
+  const productImg = product.images && product.images[0] ? product.images[0] : null;
 
   useEffect(() => {
     setMounted(true);
   }, []);
-
-  useEffect(() => {
-    setImgSrc(product.images && product.images[0] ? product.images[0] : "/placeholders/product.svg");
-  }, [product.images, product.id]);
 
   const handleAddToCart = (e: React.MouseEvent) => {
     e.preventDefault();
@@ -60,16 +51,12 @@ export default function ProductCard({
       <div className="relative">
         <Link href={`/product/${product.slug}`} aria-label={`View ${product.name} details`} className="block">
           <div className="relative aspect-square w-full overflow-hidden bg-gray-100">
-            <Image
-              src={imgSrc}
+            <SafeImage
+              src={productImg}
+              variantSize={400}
               alt={product.name}
               fill
               priority={priority}
-              referrerPolicy="no-referrer"
-              onError={(e) => {
-                console.error(`[ProductCard Image Load Failed]: "${product.name}" (${product.id}) - URL: ${imgSrc}`, e);
-                setImgSrc("/placeholders/product.svg");
-              }}
               className="object-cover transition-transform duration-500 group-hover:scale-110"
               sizes="(max-width: 640px) 50vw, (max-width: 1024px) 33vw, 300px"
             />
@@ -100,7 +87,7 @@ export default function ProductCard({
         <button
           onClick={handleToggleWishlist}
           aria-label={mounted && wishlisted ? "Remove from wishlist" : "Add to wishlist"}
-          className="absolute top-3 right-3 z-10 w-9 h-9 rounded-full bg-white/90 backdrop-blur-sm shadow-md flex items-center justify-center transition-all duration-200 hover:scale-110 active:scale-90"
+          className="absolute top-3 right-3 z-10 w-9 h-9 rounded-full bg-white/90 backdrop-blur-sm shadow-md flex items-center justify-center transition-all duration-200 hover:scale-110 active:scale-90 cursor-pointer"
         >
           <Heart
             size={18}
@@ -121,7 +108,7 @@ export default function ProductCard({
             </h3>
           </Link>
           <p className="text-xs text-gray-500 mt-1">
-            {defaultVariant.size} · {defaultVariant.finish} · {product.material}
+            {defaultVariant?.size || "Standard"} · {defaultVariant?.finish || "Matte"} · {product.material}
           </p>
 
           {/* Rating (Admin Controlled / DB) - Only show if genuine reviews exist */}
@@ -194,7 +181,7 @@ export default function ProductCard({
           })()}
           <button
             onClick={handleAddToCart}
-            className="px-3.5 py-2 bg-[#F26522] text-white text-xs font-bold rounded-xl hover:bg-[#d95a1e] active:scale-95 transition-all flex items-center gap-1.5 shadow-sm hover:shadow whitespace-nowrap shrink-0"
+            className="px-3.5 py-2 bg-[#F26522] text-white text-xs font-bold rounded-xl hover:bg-[#d95a1e] active:scale-95 transition-all flex items-center gap-1.5 shadow-sm hover:shadow whitespace-nowrap shrink-0 cursor-pointer"
           >
             <ShoppingBag size={13} className="shrink-0" />
             <span className="whitespace-nowrap">Add</span>

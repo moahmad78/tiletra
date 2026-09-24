@@ -50,7 +50,7 @@ export const BannerCarousel: React.FC<BannerCarouselProps> = ({ banners }) => {
       subtitle: "Starting at ₹38/sq.ft • Direct from Factory",
       cta: "Explore Deals",
       href: "/category/tiles-stone",
-      image: "https://images.unsplash.com/photo-1600585154340-be6161a56a0c?w=1000",
+      image: "/images/banners/banner-slide-1.jpg",
     },
     {
       id: "b2",
@@ -59,7 +59,7 @@ export const BannerCarousel: React.FC<BannerCarouselProps> = ({ banners }) => {
       subtitle: "Up to 45% OFF on Bulk Bathroom Packages",
       cta: "Shop Now",
       href: "/category/plumbing-sanitary",
-      image: "https://images.unsplash.com/photo-1584622650111-993a426fbf0a?w=1000",
+      image: "/images/banners/banner-slide-2.jpg",
     },
     {
       id: "b3",
@@ -68,7 +68,7 @@ export const BannerCarousel: React.FC<BannerCarouselProps> = ({ banners }) => {
       subtitle: "Heavy duty polymer modified cements",
       cta: "Order Now",
       href: "/category/construction-chemicals",
-      image: "https://images.unsplash.com/photo-1504307651254-35680f356dfd?w=1000",
+      image: "/images/banners/banner-slide-3.jpg",
     },
   ];
 

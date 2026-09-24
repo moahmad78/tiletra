@@ -285,7 +285,7 @@ export default function ProductDetailScreen() {
   const rawImages =
     product?.images && product.images.length > 0
       ? product.images
-      : ["https://images.unsplash.com/photo-1590381105924-c72589b9ef3f?w=800"];
+      : ["/images/placeholder-product.svg"];
   const images = rawImages.map((img) => getImageUrl(img));
 
   const handleCalculateBoxes = (text: string) => {

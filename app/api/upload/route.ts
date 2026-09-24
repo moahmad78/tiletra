@@ -33,8 +33,10 @@ export async function POST(req: NextRequest) {
     }
 
     const uploadDir = path.resolve(process.cwd(), "public", "uploads");
+    const imagesUploadDir = path.resolve(process.cwd(), "public", "images", "uploads");
     try {
       await mkdir(uploadDir, { recursive: true });
+      await mkdir(imagesUploadDir, { recursive: true });
     } catch {
       // Ignore directory creation errors on read-only serverless filesystems
     }
@@ -55,7 +57,7 @@ export async function POST(req: NextRequest) {
       const mimeCandidate = (file.type || "").toLowerCase().trim();
       const extCandidate = path.extname(file.name).toLowerCase();
 
-      // Explicitly reject SVG / XML / HTML / Executables to prevent Stored XSS and execution
+      // Explicitly reject SVG / XML / HTML / Executables to prevent Stored XSS and execution (PRD FR-9)
       if (
         mimeCandidate.includes("svg") ||
         mimeCandidate.includes("xml") ||
@@ -109,6 +111,14 @@ export async function POST(req: NextRequest) {
       let mimeType = "image/webp";
       let ext = ".webp";
 
+      const rawBase = path.basename(file.name, path.extname(file.name));
+      const sanitizedBase = sanitizeFilename(rawBase)
+        .replace(/[^a-zA-Z0-9]/g, "-")
+        .toLowerCase()
+        .slice(0, 30);
+      const fileStem = `${sanitizedBase || "upload"}-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`;
+      const uniqueFileName = `${fileStem}${ext}`;
+
       // If PDF document, keep original buffer and mime
       if (extCandidate === ".pdf" || mimeCandidate === "application/pdf") {
         processedBuffer = rawBuffer;
@@ -116,13 +126,32 @@ export async function POST(req: NextRequest) {
         ext = ".pdf";
       } else {
         try {
-          // Optimize raster image with sharp: resize to max 1600px, convert to WebP, quality 82
+          // Optimize raster image with sharp: resize to max 1600px, convert to WebP, quality 82 (PRD FR-3 & FR-9)
           processedBuffer = await sharp(rawBuffer)
             .resize({ width: 1600, height: 1600, fit: "inside", withoutEnlargement: true })
             .webp({ quality: 82, effort: 4 })
             .toBuffer();
           mimeType = "image/webp";
           ext = ".webp";
+
+          // Pre-generate 400px and 800px variants on disk if writable
+          try {
+            const buf400 = await sharp(processedBuffer)
+              .resize({ width: 400, fit: "inside", withoutEnlargement: true })
+              .webp({ quality: 80 })
+              .toBuffer();
+            await writeFile(path.join(uploadDir, `${fileStem}-400.webp`), buf400);
+            await writeFile(path.join(imagesUploadDir, `${fileStem}-400.webp`), buf400);
+
+            const buf800 = await sharp(processedBuffer)
+              .resize({ width: 800, fit: "inside", withoutEnlargement: true })
+              .webp({ quality: 80 })
+              .toBuffer();
+            await writeFile(path.join(uploadDir, `${fileStem}-800.webp`), buf800);
+            await writeFile(path.join(imagesUploadDir, `${fileStem}-800.webp`), buf800);
+          } catch {
+            // Ignore disk write errors on serverless
+          }
         } catch (sharpError) {
           console.warn("[Upload] Sharp optimization fallback to original:", sharpError);
           processedBuffer = rawBuffer;
@@ -131,31 +160,13 @@ export async function POST(req: NextRequest) {
         }
       }
 
-      const rawBase = path.basename(file.name, path.extname(file.name));
-      const sanitizedBase = sanitizeFilename(rawBase)
-        .replace(/[^a-zA-Z0-9]/g, "-")
-        .toLowerCase()
-        .slice(0, 30);
-      const uniqueFileName = `${sanitizedBase || "upload"}-${Date.now()}-${Math.random().toString(36).slice(2, 7)}${ext}`;
-
       const base64String = processedBuffer.toString("base64");
       const dataUri = `data:${mimeType};base64,${base64String}`;
       base64List.push(dataUri);
 
-      let finalFileUrl = `/api/uploads/${uniqueFileName}`;
+      const finalFileUrl = `/api/uploads/${uniqueFileName}`;
 
-      // 1. Upload directly to Cloudinary CDN for instant global delivery
-      try {
-        const { uploadToCloudinary } = await import("@/lib/cloudinary");
-        const cloudinaryRes = await uploadToCloudinary(processedBuffer, "intrihub/uploads", sanitizedBase);
-        if (cloudinaryRes?.secure_url) {
-          finalFileUrl = cloudinaryRes.secure_url;
-        }
-      } catch (cloudErr) {
-        console.warn("[Upload] Cloudinary upload fallback to DB/local:", cloudErr);
-      }
-
-      // 2. Save permanently to Neon PostgreSQL Database
+      // 1. Save permanently to Neon PostgreSQL Database (100% First-Party Storage)
       try {
         await (prisma as any).uploadedFile.upsert({
           where: { fileName: uniqueFileName },
@@ -175,17 +186,14 @@ export async function POST(req: NextRequest) {
         console.error("[Upload] Failed to persist file to Neon DB:", dbError);
       }
 
-      // 3. Also save to local disk if writable (e.g. localhost)
+      // 2. Also save to local disk if writable
       try {
-        const filePath = path.join(uploadDir, uniqueFileName);
-        if (filePath.startsWith(uploadDir)) {
-          await writeFile(filePath, processedBuffer);
-        }
+        await writeFile(path.join(uploadDir, uniqueFileName), processedBuffer);
+        await writeFile(path.join(imagesUploadDir, uniqueFileName), processedBuffer);
       } catch {
-        // Ephemeral / serverless disk write ignore
+        // Ephemeral disk write ignore
       }
 
-      // Return live route URL or Cloudinary CDN URL
       uploadedUrls.push(finalFileUrl);
     }
 

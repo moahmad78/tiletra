@@ -56,7 +56,7 @@ export async function GET(req: NextRequest) {
       },
     });
 
-    const fallbackProductImage = "https://images.unsplash.com/photo-1600585154340-be6161a56a0c?q=80&w=600&auto=format&fit=crop";
+    const fallbackProductImage = "/images/placeholder-product.svg";
 
     return mobileApiResponse({
       success: true,

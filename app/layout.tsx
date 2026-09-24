@@ -187,13 +187,17 @@ j=d.createElement(s),dl=l!='dataLayer'?'&l='+l:'';j.async=true;j.src=
           }}
         />
 
-        {/* Preconnect to High-Priority Asset & Image CDNs */}
-        <link rel="preconnect" href="https://images.unsplash.com" crossOrigin="anonymous" />
-        <link rel="preconnect" href="https://images.orientbell.com" crossOrigin="anonymous" />
-        <link rel="preconnect" href="https://rukmini1.flixcart.com" crossOrigin="anonymous" />
-        <link rel="preconnect" href="https://5.imimg.com" crossOrigin="anonymous" />
-        <link rel="preconnect" href="https://encrypted-tbn0.gstatic.com" crossOrigin="anonymous" />
+        {/* Preconnect to Required Services */}
         <link rel="preconnect" href="https://www.googletagmanager.com" crossOrigin="anonymous" />
+        {/* Preload Hero Banner Image */}
+        <link
+          rel="preload"
+          as="image"
+          href="/images/banners/banner-slide-1-1400.webp"
+          type="image/webp"
+          // @ts-ignore
+          fetchpriority="high"
+        />
 
         {/* Google Analytics 4 (gtag.js) */}
         <Script

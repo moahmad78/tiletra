@@ -113,7 +113,7 @@ export async function seedInitialGuidesIfEmpty(): Promise<void> {
         data: {
           title: "Eco-Friendly Building Materials Trending in India: A 2026 Guide for Homeowners & Builders",
           slug: seedSlug,
-          featuredImage: "https://images.unsplash.com/photo-1600585154340-be6161a56a0c?auto=format&fit=crop&q=80&w=1200",
+          featuredImage: "/images/categories/cat-tiles-stone.jpg",
           featuredImageAlt: "Eco-Friendly Building Materials Trending in India 2026 - Natural stone, timber, and sustainable finishes",
           excerpt: "Discover the top eco-friendly building materials trending in India for 2026 — from recycled stone to low-VOC paints. Shop sustainably with IntriHub.",
           content: seedBody,

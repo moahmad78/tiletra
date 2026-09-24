@@ -315,7 +315,7 @@ export default function CategoriesScreen() {
                   {mergedSuggestions.map((p) => {
                     const img = p.images?.[0]
                       ? getImageUrl(p.images[0])
-                      : "https://images.unsplash.com/photo-1590381105924-c72589b9ef3f?w=200";
+                      : "/images/placeholder-product.svg";
                     const price =
                       p.variants?.[0]?.pricePerBox ||
                       p.variants?.[0]?.pricePerSqft ||

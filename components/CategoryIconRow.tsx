@@ -1,9 +1,9 @@
 "use client";
 
-import { useState, useEffect, useRef, useCallback } from "react";
+import { useEffect, useRef, useCallback } from "react";
 import Link from "next/link";
-import Image from "next/image";
 import { categories as defaultCategories, type Category } from "@/lib/data/categories";
+import { CategoryIcon } from "@/components/ui/CategoryIcon";
 
 function getCategoryShortName(name: string): string {
   const map: Record<string, string> = {
@@ -31,24 +31,40 @@ function getCategoryShortName(name: string): string {
   return map[name] || name;
 }
 
-function SafeCategoryIcon({
+const CATEGORY_COLORS: Record<string, { bg: string; text: string; ring: string }> = {
+  electrical: { bg: "bg-amber-500/10", text: "text-amber-600", ring: "group-hover:border-amber-500/40" },
+  lighting: { bg: "bg-yellow-500/10", text: "text-yellow-600", ring: "group-hover:border-yellow-500/40" },
+  "tiles-stone": { bg: "bg-blue-500/10", text: "text-blue-600", ring: "group-hover:border-blue-500/40" },
+  "paint-finishes": { bg: "bg-rose-500/10", text: "text-rose-600", ring: "group-hover:border-rose-500/40" },
+  "false-ceiling": { bg: "bg-purple-500/10", text: "text-purple-600", ring: "group-hover:border-purple-500/40" },
+  flooring: { bg: "bg-emerald-500/10", text: "text-emerald-600", ring: "group-hover:border-emerald-500/40" },
+  "doors-windows": { bg: "bg-teal-500/10", text: "text-teal-600", ring: "group-hover:border-teal-500/40" },
+  "glass-mirror": { bg: "bg-cyan-500/10", text: "text-cyan-600", ring: "group-hover:border-cyan-500/40" },
+  "hardware-fittings": { bg: "bg-orange-500/10", text: "text-orange-600", ring: "group-hover:border-orange-500/40" },
+  furniture: { bg: "bg-indigo-500/10", text: "text-indigo-600", ring: "group-hover:border-indigo-500/40" },
+  "kitchen-wardrobe": { bg: "bg-red-500/10", text: "text-red-600", ring: "group-hover:border-red-500/40" },
+  "plumbing-sanitary": { bg: "bg-sky-500/10", text: "text-sky-600", ring: "group-hover:border-sky-500/40" },
+  "wall-surface": { bg: "bg-fuchsia-500/10", text: "text-fuchsia-600", ring: "group-hover:border-fuchsia-500/40" },
+  "decor-accessories": { bg: "bg-pink-500/10", text: "text-pink-600", ring: "group-hover:border-pink-500/40" },
+  "curtains-blinds": { bg: "bg-violet-500/10", text: "text-violet-600", ring: "group-hover:border-violet-500/40" },
+  "office-commercial": { bg: "bg-slate-500/10", text: "text-slate-600", ring: "group-hover:border-slate-500/40" },
+  "outdoor-landscape": { bg: "bg-lime-500/10", text: "text-lime-600", ring: "group-hover:border-lime-500/40" },
+  "smart-home": { bg: "bg-cyan-500/10", text: "text-cyan-600", ring: "group-hover:border-cyan-500/40" },
+  "safety-fire": { bg: "bg-rose-500/10", text: "text-rose-600", ring: "group-hover:border-rose-500/40" },
+  "tools-consumables": { bg: "bg-amber-500/10", text: "text-amber-600", ring: "group-hover:border-amber-500/40" },
+};
+
+function DistinctCategoryIconItem({
   cat,
   isCloned = false,
-  priority = false,
   onDragPrevent,
 }: {
   cat: Category;
   isCloned?: boolean;
-  priority?: boolean;
   onDragPrevent?: (e: React.MouseEvent) => void;
 }) {
-  const initialImage = cat.image && cat.image.trim() ? cat.image : "/placeholders/category.svg";
-  const [imgSrc, setImgSrc] = useState(initialImage);
   const shortName = getCategoryShortName(cat.name);
-
-  useEffect(() => {
-    setImgSrc(cat.image && cat.image.trim() ? cat.image : "/placeholders/category.svg");
-  }, [cat.image]);
+  const color = CATEGORY_COLORS[cat.slug] || { bg: "bg-[#052a51]/10", text: "text-[#052a51]", ring: "group-hover:border-[#F26522]/40" };
 
   if (isCloned) {
     return (
@@ -56,24 +72,10 @@ function SafeCategoryIcon({
         key={`clone-${cat.slug}`}
         aria-hidden="true"
         onClick={onDragPrevent}
-        className="flex flex-col items-center shrink-0 w-[66px] group active:scale-95 transition-transform select-none"
+        className="flex flex-col items-center shrink-0 w-[68px] group active:scale-95 transition-transform select-none cursor-pointer"
       >
-        <div className="w-[56px] h-[56px] rounded-2xl overflow-hidden relative p-0.5 bg-gradient-to-tr from-[#052a51]/10 to-[#F26522]/20 border border-gray-100 shadow-2xs group-hover:border-[#F26522]/40 transition-colors">
-          <div className="w-full h-full rounded-[14px] overflow-hidden relative bg-gray-100">
-            <Image
-              src={imgSrc}
-              alt={`${cat.name} Category`}
-              fill
-              referrerPolicy="no-referrer"
-              onError={(e) => {
-                console.error(`[CategoryIconRow Cloned Image Load Failed]: "${cat.name}" (${cat.slug}) - URL: ${imgSrc}`, e);
-                setImgSrc("/placeholders/category.svg");
-              }}
-              className="object-cover group-hover:scale-110 transition-transform duration-300"
-              sizes="56px"
-            />
-            <div className="absolute inset-0 bg-black/10 group-hover:bg-black/0 transition-colors" />
-          </div>
+        <div className={`w-[56px] h-[56px] rounded-2xl flex items-center justify-center border border-gray-100 shadow-2xs ${color.bg} ${color.ring} transition-all`}>
+          <CategoryIcon slugOrName={cat.slug} size={24} className={`${color.text} group-hover:scale-110 transition-transform duration-200`} />
         </div>
         <span className="text-[11px] font-bold text-[#052a51] group-hover:text-[#F26522] transition-colors mt-1.5 text-center leading-tight truncate max-w-full">
           {shortName}
@@ -88,25 +90,10 @@ function SafeCategoryIcon({
       href={`/shop/${cat.slug}`}
       onClick={onDragPrevent}
       aria-label={`Browse ${cat.name}`}
-      className="flex flex-col items-center shrink-0 w-[66px] group active:scale-95 transition-transform"
+      className="flex flex-col items-center shrink-0 w-[68px] group active:scale-95 transition-transform"
     >
-      <div className="w-[56px] h-[56px] rounded-2xl overflow-hidden relative p-0.5 bg-gradient-to-tr from-[#052a51]/10 to-[#F26522]/20 border border-gray-100 shadow-2xs group-hover:border-[#F26522]/40 transition-colors">
-        <div className="w-full h-full rounded-[14px] overflow-hidden relative bg-gray-100">
-          <Image
-            src={imgSrc}
-            alt={cat.name}
-            fill
-            priority={priority}
-            referrerPolicy="no-referrer"
-            onError={(e) => {
-              console.error(`[CategoryIconRow Orig Image Load Failed]: "${cat.name}" (${cat.slug}) - URL: ${imgSrc}`, e);
-              setImgSrc("/placeholders/category.svg");
-            }}
-            className="object-cover group-hover:scale-110 transition-transform duration-300"
-            sizes="56px"
-          />
-          <div className="absolute inset-0 bg-black/10 group-hover:bg-black/0 transition-colors" />
-        </div>
+      <div className={`w-[56px] h-[56px] rounded-2xl flex items-center justify-center border border-gray-100 shadow-2xs ${color.bg} ${color.ring} transition-all`}>
+        <CategoryIcon slugOrName={cat.slug} size={24} className={`${color.text} group-hover:scale-110 transition-transform duration-200`} />
       </div>
       <span className="text-[11px] font-bold text-[#052a51] group-hover:text-[#F26522] transition-colors mt-1.5 text-center leading-tight truncate max-w-full">
         {shortName}
@@ -117,7 +104,7 @@ function SafeCategoryIcon({
 
 export default function CategoryIconRow({ categories }: { categories?: Category[] }) {
   const rawList = categories && categories.length > 0 ? categories : defaultCategories;
-  const categoryList = rawList.filter((c) => !c.parentId).slice(0, 12);
+  const categoryList = rawList.filter((c) => !c.parentId);
 
   const containerRef = useRef<HTMLDivElement>(null);
   const trackRef = useRef<HTMLDivElement>(null);
@@ -140,7 +127,6 @@ export default function CategoryIconRow({ categories }: { categories?: Category[
 
   useEffect(() => {
     measureWidth();
-    // Re-measure after initial image decodes
     const timer = setTimeout(measureWidth, 200);
     window.addEventListener("resize", measureWidth);
     return () => {
@@ -149,13 +135,11 @@ export default function CategoryIconRow({ categories }: { categories?: Category[
     };
   }, [measureWidth]);
 
-  // Silky 60fps GPU auto-scroll loop with delta clamp to prevent initial load jitter
   useEffect(() => {
     let lastTime = performance.now();
-    const speed = 24; // Smooth ~24px per second
+    const speed = 24;
 
     const step = (now: number) => {
-      // Clamp delta to 35ms max so initial page load / hydration never causes a stutter or sudden jump
       const rawDelta = (now - lastTime) / 1000;
       const delta = Math.min(rawDelta, 0.035);
       lastTime = now;
@@ -163,7 +147,7 @@ export default function CategoryIconRow({ categories }: { categories?: Category[
       if (!isInteractingRef.current && trackRef.current) {
         posRef.current += speed * delta;
 
-        const setWidth = singleSetWidthRef.current || (categoryList.length * 78);
+        const setWidth = singleSetWidthRef.current || (categoryList.length * 80);
         if (posRef.current >= setWidth) {
           posRef.current -= setWidth;
         }
@@ -182,7 +166,6 @@ export default function CategoryIconRow({ categories }: { categories?: Category[
     };
   }, [categoryList.length]);
 
-  // Touch and drag handlers for responsive swipe without lag
   const handleTouchStart = (e: React.TouchEvent | React.MouseEvent) => {
     isInteractingRef.current = true;
     isDraggingRef.current = false;
@@ -201,7 +184,7 @@ export default function CategoryIconRow({ categories }: { categories?: Category[
       isDraggingRef.current = true;
     }
 
-    const setWidth = singleSetWidthRef.current || (categoryList.length * 78);
+    const setWidth = singleSetWidthRef.current || (categoryList.length * 80);
     let newPos = touchStartPosRef.current + diff;
     while (newPos < 0) newPos += setWidth;
     while (newPos >= setWidth) newPos -= setWidth;
@@ -243,14 +226,13 @@ export default function CategoryIconRow({ categories }: { categories?: Category[
         className="flex items-center will-change-transform transform-gpu"
         style={{ transform: "translate3d(0, 0, 0)" }}
       >
-        {/* Set 1: Measured set - only first 5 are eager, rest lazy */}
+        {/* Set 1: Measured set with inline SVG icons */}
         <div ref={singleSetRef} className="flex items-center gap-3 pr-3 shrink-0">
-          {categoryList.map((cat, idx) => (
-            <SafeCategoryIcon
+          {categoryList.map((cat) => (
+            <DistinctCategoryIconItem
               key={`s1-${cat.slug}`}
               cat={cat}
               isCloned={false}
-              priority={idx < 5}
               onDragPrevent={handleDragPrevent}
             />
           ))}
@@ -259,7 +241,7 @@ export default function CategoryIconRow({ categories }: { categories?: Category[
         {/* Set 2: Seamless duplicated set for infinite loop */}
         <div className="flex items-center gap-3 pr-3 shrink-0" aria-hidden="true">
           {categoryList.map((cat) => (
-            <SafeCategoryIcon
+            <DistinctCategoryIconItem
               key={`s2-${cat.slug}`}
               cat={cat}
               isCloned={true}

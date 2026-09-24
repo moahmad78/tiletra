@@ -1,44 +1,44 @@
 "use client";
 
-import Image from "next/image";
 import { motion } from "framer-motion";
 import { ArrowRight } from "lucide-react";
 import SectionHeader from "./SectionHeader";
 import { useQuoteModal } from "@/components/QuoteModalProvider";
+import { SafeImage } from "@/components/ui/SafeImage";
 
 const services = [
   {
     title: "Floor Tile Installation",
-    image: "https://images.orientbell.com/media/catalog/product//g/o/golden_drift_endless_gloss_600x1200_mm.jpg",
+    image: "/images/categories/cat-tiles-stone.jpg",
   },
   {
     title: "Wall Tile Installation",
-    image: "https://images.unsplash.com/photo-1584622650111-993a426fbf0a?w=800&q=80",
+    image: "/images/categories/cat-wall-surface.jpg",
   },
   {
     title: "Bathroom Tile Installation",
-    image: "https://images.unsplash.com/photo-1552321554-5fefe8c9ef14?w=800&q=80",
+    image: "/images/banners/banner-slide-2-1400.webp",
   },
   {
     title: "Kitchen Tile Installation",
-    image: "https://images.unsplash.com/photo-1507652313519-d4e9174996dd?w=800&q=80",
+    image: "/images/banners/banner-slide-1-1400.webp",
   },
   {
     title: "Marble Flooring",
-    image: "https://images.unsplash.com/photo-1600585154340-be6161a56a0c?w=800&q=80",
+    image: "/images/categories/cat-flooring.jpg",
   },
   {
     title: "Granite Installation",
-    image: "/api/uploads/1000055839-1787431945616-8hd9g.webp",
+    image: "/images/categories/cat-granite.jpg",
   },
   {
     title: "Commercial Tile Work",
-    image: "https://images.unsplash.com/photo-1616486338812-3dadae4b4ace?w=800&q=80",
+    image: "/images/categories/cat-office-commercial.jpg",
   },
   {
     title: "Tile Repair & Replacement",
-    image: "/api/uploads/1000055745-1787426118116-lov83.webp",
-  }
+    image: "/images/categories/cat-adhesives-sealants-waterproofing.jpg",
+  },
 ];
 
 export default function Services() {
@@ -63,10 +63,10 @@ export default function Services() {
               whileInView={{ opacity: 1, y: 0 }}
               viewport={{ once: true }}
               transition={{ delay: index * 0.05 }}
-              className="text-left group relative block w-full h-[220px] lg:h-[240px] rounded-[20px] overflow-hidden shadow-sm hover:shadow-[0_15px_30px_rgba(0,0,0,0.15)] hover:-translate-y-1.5 transition-all duration-300"
+              className="text-left group relative block w-full h-[220px] lg:h-[240px] rounded-[20px] overflow-hidden shadow-sm hover:shadow-[0_15px_30px_rgba(0,0,0,0.15)] hover:-translate-y-1.5 transition-all duration-300 cursor-pointer"
             >
               {/* Background Image */}
-              <Image 
+              <SafeImage 
                 src={service.image} 
                 alt={service.title} 
                 fill
@@ -102,7 +102,7 @@ export default function Services() {
         >
           <button 
             onClick={openModal}
-            className="inline-flex items-center justify-center px-10 h-[56px] bg-[#F26522] hover:bg-[#d95a1e] text-white rounded-full font-bold text-lg shadow-[0_8px_20px_rgba(242,101,34,0.3)] hover:-translate-y-1 transition-all duration-300"
+            className="inline-flex items-center justify-center px-10 h-[56px] bg-[#F26522] hover:bg-[#d95a1e] text-white rounded-full font-bold text-lg shadow-[0_8px_20px_rgba(242,101,34,0.3)] hover:-translate-y-1 transition-all duration-300 cursor-pointer"
           >
             Get Free Quote
           </button>

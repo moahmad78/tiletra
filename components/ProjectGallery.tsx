@@ -1,45 +1,45 @@
 "use client";
 
-import Image from "next/image";
 import { motion } from "framer-motion";
 import SectionHeader from "./SectionHeader";
+import { SafeImage } from "@/components/ui/SafeImage";
 
 const projects = [
   {
     id: 1,
     title: "Luxury Marble Flooring Bangalore",
     category: "Residential Flooring",
-    image: "https://images.unsplash.com/photo-1600585154340-be6161a56a0c?w=800&q=80",
+    image: "/images/banners/banner-slide-1-1400.webp",
   },
   {
     id: 2,
     title: "Premium Bathroom Tiles Installation",
     category: "Bathroom Renovation",
-    image: "https://images.unsplash.com/photo-1552321554-5fefe8c9ef14?w=800&q=80",
+    image: "/images/categories/cat-tiles-stone.jpg",
   },
   {
     id: 3,
     title: "Commercial Granite Lobby",
     category: "Commercial Tile Contractor",
-    image: "/api/uploads/1000055839-1787431945616-8hd9g.webp",
+    image: "/images/categories/cat-granite.jpg",
   },
   {
     id: 4,
     title: "Outdoor Patio Stonework",
     category: "Exterior Tiling",
-    image: "https://m.media-amazon.com/images/I/71AUq34dfvL._AC_UF1000,1000_QL80_.jpg",
+    image: "/images/categories/cat-outdoor-landscape.jpg",
   },
   {
     id: 5,
     title: "Restaurant Feature Wall Tiles",
     category: "Wall Tile Installation",
-    image: "https://images.unsplash.com/photo-1584622650111-993a426fbf0a?w=800&q=80",
+    image: "/images/categories/cat-wall-surface.jpg",
   },
   {
     id: 6,
     title: "Walk-in Shower Enclosure",
     category: "Waterproof Tiling",
-    image: "https://images.orientbell.com/media/catalog/product//g/o/golden_drift_endless_gloss_600x1200_mm.jpg",
+    image: "/images/banners/banner-slide-2-1400.webp",
   },
 ];
 
@@ -63,7 +63,7 @@ export default function ProjectGallery() {
               transition={{ delay: idx * 0.1 }}
               className="group relative overflow-hidden rounded-3xl aspect-square shadow-[0_8px_30px_rgb(0,0,0,0.04)] hover:shadow-[0_20px_50px_rgba(8,112,184,0.1)] transition-all duration-500 border border-gray-100"
             >
-              <Image 
+              <SafeImage 
                 src={project.image} 
                 alt={`${project.title} by Intrihub Bangalore`}
                 fill

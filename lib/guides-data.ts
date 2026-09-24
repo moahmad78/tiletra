@@ -31,7 +31,7 @@ export const BUYING_GUIDES: BuyingGuide[] = [
     readTime: "7 min read",
     publishedAt: "2026-02-15T00:00:00.000Z",
     updatedAt: "2026-08-20T00:00:00.000Z",
-    image: "https://images.unsplash.com/photo-1600585154340-be6161a56a0c?w=1200",
+    image: "/images/categories/cat-tiles-stone.jpg",
     author: "Intrihub Materials Engineering Team",
     summary:
       "Selecting the correct tile depends on foot traffic, slip resistance, water absorption, and aesthetics. Vitrified tiles are ideal for heavy traffic living spaces, while ceramic and porcelain tiles excel on bathroom walls.",
@@ -92,7 +92,7 @@ export const BUYING_GUIDES: BuyingGuide[] = [
     readTime: "6 min read",
     publishedAt: "2026-02-18T00:00:00.000Z",
     updatedAt: "2026-08-22T00:00:00.000Z",
-    image: "https://images.unsplash.com/photo-1590381105924-c72589b9ef3f?w=1200",
+    image: "/images/categories/cat-granite.jpg",
     author: "Intrihub Structural Sourcing Specialists",
     summary:
       "Granite offers unrivaled heat resistance and natural stone individuality for kitchen countertops and heavy-duty stair treads, whereas vitrified tiles deliver consistent patterns, lighter weight, and easier replacement for general flooring.",
@@ -136,7 +136,7 @@ export const BUYING_GUIDES: BuyingGuide[] = [
     readTime: "5 min read",
     publishedAt: "2026-02-20T00:00:00.000Z",
     updatedAt: "2026-08-25T00:00:00.000Z",
-    image: "https://images.unsplash.com/photo-1581094794329-c8112a89af12?w=1200",
+    image: "/images/categories/cat-floor-tiles.jpg",
     author: "Intrihub Materials Engineering Team",
     summary:
       "Avoid under-ordering delays or excess dead-stock costs by using the standard industry tile formula: (Room Length × Width) + 10% cutting buffer divided by box coverage.",
@@ -184,7 +184,7 @@ export const BUYING_GUIDES: BuyingGuide[] = [
     readTime: "8 min read",
     publishedAt: "2026-02-22T00:00:00.000Z",
     updatedAt: "2026-08-25T00:00:00.000Z",
-    image: "https://images.unsplash.com/photo-1584622650111-993a426fbf0a?w=1200",
+    image: "/images/categories/cat-hardware-fittings.jpg",
     author: "Intrihub B2B Trade Supply Desk",
     summary:
       "A structured 5-phase procurement timeline ensuring zero project downtime: Structural Prep, Concealed Utilities, Hard Surfaces & Tiling, Fixtures & Fittings, and Final Touchups.",
@@ -235,7 +235,7 @@ export const BUYING_GUIDES: BuyingGuide[] = [
     readTime: "6 min read",
     publishedAt: "2026-03-01T00:00:00.000Z",
     updatedAt: "2026-08-29T00:00:00.000Z",
-    image: "https://images.unsplash.com/photo-1586528116311-ad8dd3c8310d?w=1200",
+    image: "/images/banners/banner-slide-1.jpg",
     author: "Sahil Sheikh (Founder & CEO, IntriHub)",
     summary:
       "Standard construction procurement in India takes days or weeks. IntriHub operates a quick-commerce network across Bangalore, delivering essential electricals, tiles, sanitaryware, adhesives, and hardware directly to construction sites within 60 minutes.",
@@ -283,7 +283,7 @@ export const BUYING_GUIDES: BuyingGuide[] = [
     readTime: "5 min read",
     publishedAt: "2026-03-05T00:00:00.000Z",
     updatedAt: "2026-08-29T00:00:00.000Z",
-    image: "https://images.unsplash.com/photo-1503387762-592deb58ef4e?w=1200",
+    image: "/images/banners/banner-slide-2.jpg",
     author: "Sahil Sheikh (Founder & Lead Architect, IntriHub)",
     summary:
       "IntriHub was founded with a single mission: Build Better, We Deliver Faster. We connect manufacturers directly with homeowners, architects, and builders with honest pricing and instant doorstep site delivery.",
