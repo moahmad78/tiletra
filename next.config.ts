@@ -7,7 +7,7 @@ const cspHeader = `
   style-src 'self' 'unsafe-inline' https://fonts.googleapis.com;
   img-src 'self' blob: data: https:;
   font-src 'self' data: https://fonts.gstatic.com;
-  connect-src 'self' https://*.googletagmanager.com https://*.google-analytics.com https://*.analytics.google.com https://*.sentry.io https://api.razorpay.com https://lumberjack.razorpay.com https://*.intrihub.com wss://*.intrihub.com http://localhost:* ws://localhost:*;
+  connect-src 'self' https://*.googletagmanager.com https://*.google-analytics.com https://*.analytics.google.com https://*.sentry.io https://api.razorpay.com https://lumberjack.razorpay.com https://*.intrihub.com wss://*.intrihub.com https://*.vercel.app https://*.koyeb.app wss://*.koyeb.app https://*.railway.app wss://*.railway.app http://localhost:* ws://localhost:*;
   frame-src 'self' https://www.googletagmanager.com https://api.razorpay.com;
   object-src 'none';
   base-uri 'self';
