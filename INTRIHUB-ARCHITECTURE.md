@@ -67,7 +67,7 @@ graph TD
 - **Real-Time Layer**: Persistent **Socket.IO** server running alongside Next.js
 - **Email Delivery**: **Resend** transactional email API for OTP verification and invoices
 - **Push Notifications**: **Expo Server SDK** for device push dispatch
-- **Hosting**: **Render Web Service** (`intrihub.onrender.com` mapped to `intrihub.com` / `www.intrihub.com`)
+- **Hosting**: **Vercel** (Global Edge CDN + Serverless Next.js, mapped to `intrihub.com` / `www.intrihub.com`)
 
 ---
 

@@ -7,13 +7,14 @@ let socketInstance: Socket | null = null;
 
 export function getSocket(): Socket {
   if (!socketInstance) {
-    // In same-origin setup (Render & local dev), io() connects directly to the current host
-    socketInstance = io({
+    const socketUrl = process.env.NEXT_PUBLIC_SOCKET_URL || undefined;
+
+    socketInstance = io(socketUrl, {
       path: "/socket.io",
       autoConnect: true,
       reconnection: true,
-      reconnectionAttempts: 10,
-      reconnectionDelay: 2000,
+      reconnectionAttempts: 5,
+      reconnectionDelay: 3000,
       transports: ["websocket", "polling"],
       timeout: 10000,
     });
@@ -23,7 +24,10 @@ export function getSocket(): Socket {
     });
 
     socketInstance.on("connect_error", (err) => {
-      console.warn("[SOCKET CONNECT ERROR]:", err.message);
+      // Quiet warning for serverless / fallback environments
+      if (process.env.NODE_ENV === "development") {
+        console.warn("[SOCKET CONNECT NOTICE]:", err.message);
+      }
     });
 
     socketInstance.on("disconnect", (reason) => {

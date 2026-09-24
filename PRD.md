@@ -21,7 +21,7 @@
   - **Vendor App**: `intrihub-business` (`com.intrihub.business`)
 - **Backend & Database**: Node.js API routes, Prisma ORM, PostgreSQL.
 - **Authentication**: NextAuth.js / Email OTP 2FA flow / Google OAuth with secure mobile bridge.
-- **Hosting & Deployment**: Vercel, Render, GoDaddy DNS management.
+- **Hosting & Deployment**: Vercel (Next.js Edge/Serverless), GoDaddy DNS management.
 - **Payments**: Razorpay Payment Gateway integration (Live & Test mode with GST compliance).
 
 ---
@@ -49,7 +49,7 @@
 ## 5. Non-Functional Requirements
 - **Performance**: Page load time 2 seconds se kam hona chahiye. Responsive design jo mobile aur desktop dono par smooth chale.
 - **Security**: Secure password policies (8-15 chars, uppercase, lowercase, numbers, allowed special characters), email OTP verification, aur secure database queries via Prisma.
-- **Scalability**: High traffic aur multi-vendor data load ko handle karne ke liye cloud deployment (Vercel/Render).
+- **Scalability**: High traffic aur multi-vendor data load ko handle karne ke liye cloud deployment (Vercel Edge & Serverless).
 
 ---
 
