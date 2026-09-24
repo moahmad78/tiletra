@@ -87,7 +87,7 @@ app.prepare().then(() => {
     });
   });
 
-  httpServer.listen(port, () => {
+  httpServer.listen(port, hostname, () => {
     console.log(`> Intrihub ready on http://${hostname}:${port} (Socket.IO attached)`);
   });
 

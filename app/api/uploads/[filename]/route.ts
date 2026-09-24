@@ -4,9 +4,9 @@ import { readFile } from "fs/promises";
 import path from "path";
 import { isValidSafeFilename } from "@/lib/sanitization";
 
-// Fallback 1x1 transparent WebP pixel
+// 1x1 transparent WebP image buffer
 const FALLBACK_WEBP = Buffer.from(
-  "UklGRkAAAABXRUJQVlA4IDQAAADwAQCdASoBAAEAAQAcJaACdLoB+AA/v30f////9v///7/7///vf/3/73/9/+//vf/3/70A",
+  "UklGRiQAAABXRUJQVlA4IBgAAAAwAQCdASoBAAEAAQAcJaQAA3AA/v39gA==",
   "base64"
 );
 
@@ -19,8 +19,12 @@ export async function GET(
 
     if (!filename) {
       return new NextResponse(FALLBACK_WEBP, {
-        status: 404,
-        headers: { "Content-Type": "image/webp" },
+        status: 200,
+        headers: {
+          "Content-Type": "image/webp",
+          "Cache-Control": "public, max-age=86400",
+          "Content-Disposition": "inline",
+        },
       });
     }
 
@@ -110,25 +114,26 @@ export async function GET(
       });
     }
 
-    // 3. Fallback to placeholder if not found
-    try {
-      const placeholderPath = path.resolve(process.cwd(), "public", "placeholders", "product.svg");
-      const placeholderBuffer = await readFile(placeholderPath);
-      return new NextResponse(placeholderBuffer, {
-        status: 200,
-        headers: getSafeMediaHeaders("image/svg+xml", true),
-      });
-    } catch {
-      return new NextResponse(FALLBACK_WEBP, {
-        status: 200,
-        headers: { "Content-Type": "image/webp", "X-Content-Type-Options": "nosniff" },
-      });
-    }
+    // 3. Fallback to valid raster image if not found on disk/db
+    return new NextResponse(FALLBACK_WEBP, {
+      status: 200,
+      headers: {
+        "Content-Type": "image/webp",
+        "Cache-Control": "public, max-age=86400",
+        "Content-Disposition": "inline",
+        "X-Content-Type-Options": "nosniff",
+      },
+    });
   } catch (error: any) {
     console.error("[Media Route Error]:", error);
     return new NextResponse(FALLBACK_WEBP, {
       status: 200,
-      headers: { "Content-Type": "image/webp", "X-Content-Type-Options": "nosniff" },
+      headers: {
+        "Content-Type": "image/webp",
+        "Cache-Control": "public, max-age=86400",
+        "Content-Disposition": "inline",
+        "X-Content-Type-Options": "nosniff",
+      },
     });
   }
 }
