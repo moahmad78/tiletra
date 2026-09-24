@@ -7,6 +7,7 @@ import CategoryCatalogClient from "@/components/CategoryCatalogClient";
 import { notFound, redirect } from "next/navigation";
 import { getRedirectForPath } from "@/lib/redirects";
 import {
+  BASE_SITE_URL,
   getCanonicalUrl,
   generateBreadcrumbSchema,
   generateItemListSchema,
@@ -72,8 +73,8 @@ export async function generateMetadata({
       images: [
         {
           url: category.image && !category.image.includes("placeholder")
-            ? category.image
-            : "https://intrihub.com/og-image.png",
+            ? (category.image.startsWith("http") ? category.image : `${BASE_SITE_URL}${category.image.startsWith("/") ? category.image : `/${category.image}`}`)
+            : `${BASE_SITE_URL}/og-image.png`,
           alt: `${category.name} on Intrihub`,
         },
       ],
@@ -84,8 +85,8 @@ export async function generateMetadata({
       description: seo.metaDescription,
       images: [
         category.image && !category.image.includes("placeholder")
-          ? category.image
-          : "https://intrihub.com/og-image.png",
+          ? (category.image.startsWith("http") ? category.image : `${BASE_SITE_URL}${category.image.startsWith("/") ? category.image : `/${category.image}`}`)
+          : `${BASE_SITE_URL}/og-image.png`,
       ],
     },
   };

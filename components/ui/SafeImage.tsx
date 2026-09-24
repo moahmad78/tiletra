@@ -11,6 +11,8 @@ export interface SafeImageProps extends Omit<ImageProps, "src" | "onError"> {
   enableRetry?: boolean;
 }
 
+const reportedBeaconUrls = new Set<string>();
+
 export function SafeImage({
   src,
   alt,
@@ -44,30 +46,33 @@ export function SafeImage({
   }, []);
 
   const handleError = () => {
-    // If not yet retried and retries enabled, retry once with cache buster after 1.5s (PRD FR-8)
+    // If not yet retried and retries enabled, retry once with cache buster query after 1s
     if (enableRetry && !hasRetried && currentSrc !== fallbackSrc) {
       setHasRetried(true);
       retryTimeoutRef.current = setTimeout(() => {
         const separator = currentSrc.includes("?") ? "&" : "?";
-        setCurrentSrc(`${currentSrc}${separator}retry=${Date.now()}`);
-      }, 1500);
+        setCurrentSrc(`${currentSrc}${separator}retry=1`);
+      }, 1000);
       return;
     }
 
-    // Final failure: swap to local lightweight placeholder and send beacon
+    // Final failure: swap to local lightweight placeholder and send beacon once
     if (currentSrc !== fallbackSrc) {
-      // Send error beacon (PRD FR-14)
-      if (typeof window !== "undefined" && typeof navigator !== "undefined" && navigator.sendBeacon) {
-        try {
-          const payload = JSON.stringify({
-            url: currentSrc,
-            page: window.location.pathname,
-            connectionType: (navigator as any)?.connection?.effectiveType || "unknown",
-            retryCount: hasRetried ? 1 : 0,
-          });
-          navigator.sendBeacon("/api/img-error", payload);
-        } catch {
-          // Ignore beacon send errors
+      const failedUrl = currentSrc;
+      if (!reportedBeaconUrls.has(failedUrl)) {
+        reportedBeaconUrls.add(failedUrl);
+        if (typeof window !== "undefined" && typeof navigator !== "undefined" && navigator.sendBeacon) {
+          try {
+            const payload = JSON.stringify({
+              url: failedUrl,
+              page: window.location.pathname,
+              connectionType: (navigator as any)?.connection?.effectiveType || "unknown",
+              retryCount: hasRetried ? 1 : 0,
+            });
+            navigator.sendBeacon("/api/img-error", payload);
+          } catch {
+            // Ignore beacon send errors
+          }
         }
       }
 
@@ -83,7 +88,7 @@ export function SafeImage({
       onLoad={() => setIsLoaded(true)}
       priority={priority}
       sizes={sizes || "(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 33vw"}
-      className={`${className} ${!isLoaded ? "bg-slate-100 dark:bg-slate-800" : ""} transition-opacity duration-300`}
+      className={`${className} ${!isLoaded ? "animate-pulse bg-slate-100 dark:bg-slate-800/60" : ""} transition-opacity duration-300`}
       unoptimized
       {...rest}
     />

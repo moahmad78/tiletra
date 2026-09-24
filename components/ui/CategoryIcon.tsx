@@ -6,9 +6,10 @@ import {
   Lightbulb,
   LayoutGrid,
   Paintbrush,
-  Square,
+  PanelTop,
   Layers,
   DoorOpen,
+  DoorClosed,
   Sparkles,
   Wrench,
   Armchair,
@@ -16,7 +17,7 @@ import {
   Droplets,
   Wallpaper,
   Palette,
-  Sliders,
+  Blinds,
   Building2,
   Trees,
   Cpu,
@@ -24,6 +25,14 @@ import {
   Hammer,
   Boxes,
   ShieldCheck,
+  Gem,
+  Brush,
+  Nut,
+  Pipette,
+  Sun,
+  Flame,
+  Maximize,
+  Package,
   LucideProps,
 } from "lucide-react";
 
@@ -39,37 +48,58 @@ const ICON_MAP: Record<string, React.ComponentType<LucideProps>> = {
   lighting: Lightbulb,
   "tiles-stone": LayoutGrid,
   "floor-tiles": LayoutGrid,
-  granite: LayoutGrid,
+  granite: Gem,
   "paint-finishes": Paintbrush,
-  "false-ceiling": Square,
+  "false-ceiling": PanelTop,
   flooring: Layers,
   "doors-windows": DoorOpen,
+  "aluminum-doors": DoorClosed,
   "glass-mirror": Sparkles,
   "hardware-fittings": Wrench,
-  hardware: Wrench,
+  hardware: Nut,
   furniture: Armchair,
   "kitchen-wardrobe": UtensilsCrossed,
   "plumbing-sanitary": Droplets,
-  plumbing: Droplets,
-  "wall-surface": Wallpaper,
+  plumbing: Pipette,
+  "wall-surface": Brush,
   wallpaper: Wallpaper,
   "decor-accessories": Palette,
-  "curtains-blinds": Sliders,
+  "curtains-blinds": Blinds,
   "office-commercial": Building2,
   "outdoor-landscape": Trees,
   "smart-home": Cpu,
-  "safety-fire": ShieldAlert,
+  "safety-fire": Flame,
   "tools-consumables": Hammer,
   plywood: Boxes,
   "adhesives-sealants-waterproofing": ShieldCheck,
+
+  // Direct icon field names in DB
+  zap: Zap,
+  sun: Sun,
+  grid: LayoutGrid,
+  palette: Palette,
+  layers: Layers,
+  square: PanelTop,
+  dooropen: DoorOpen,
+  sparkles: Sparkles,
+  maximize: Maximize,
+  wrench: Wrench,
+  armchair: Armchair,
+  package: Package,
+  droplets: Droplets,
+  building: Building2,
+  trees: Trees,
+  cpu: Cpu,
+  shieldalert: ShieldAlert,
+  hammer: Hammer,
+  shield: ShieldCheck,
 };
 
 export function CategoryIcon({ slugOrName, size = 20, className = "", ...props }: CategoryIconProps) {
   const normalizedKey = (slugOrName || "")
     .toLowerCase()
     .trim()
-    .replace(/\s+/g, "-")
-    .replace(/&/g, "");
+    .replace(/[^a-z0-9\-]/g, "");
 
   const Component = ICON_MAP[normalizedKey] || LayoutGrid;
 

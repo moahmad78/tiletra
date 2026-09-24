@@ -17,7 +17,7 @@ async function verifyAllFirstPartyImages() {
   const categories = await prisma.category.findMany();
   for (const cat of categories) {
     totalChecked++;
-    if (cat.image.includes("res.cloudinary.com")) {
+    if (cat.image.includes("res.cloudinary.com") || cat.image.includes("cloudinary")) {
       console.error(`❌ Category [${cat.name}] still has Cloudinary URL: ${cat.image}`);
       externalUrlsFound++;
     } else if (cat.image.startsWith("/images/")) {
@@ -41,7 +41,7 @@ async function verifyAllFirstPartyImages() {
     if (Array.isArray(prod.images)) {
       for (const img of prod.images) {
         totalChecked++;
-        if (img.includes("res.cloudinary.com")) {
+        if (img.includes("res.cloudinary.com") || img.includes("cloudinary")) {
           console.error(`❌ Product [${prod.name}] has Cloudinary URL: ${img}`);
           externalUrlsFound++;
         } else if (img.startsWith("/images/")) {
@@ -58,9 +58,18 @@ async function verifyAllFirstPartyImages() {
           const v800 = `${base}-800.webp`;
           const v1200 = `${base}-1200.webp`;
 
-          if (!fs.existsSync(v400)) console.warn(`Missing 400px variant for ${img}`);
-          if (!fs.existsSync(v800)) console.warn(`Missing 800px variant for ${img}`);
-          if (!fs.existsSync(v1200)) console.warn(`Missing 1200px variant for ${img}`);
+          if (!fs.existsSync(v400)) {
+            console.warn(`Missing 400px variant for ${img}`);
+            missingFiles++;
+          }
+          if (!fs.existsSync(v800)) {
+            console.warn(`Missing 800px variant for ${img}`);
+            missingFiles++;
+          }
+          if (!fs.existsSync(v1200)) {
+            console.warn(`Missing 1200px variant for ${img}`);
+            missingFiles++;
+          }
         }
       }
     }
@@ -68,8 +77,15 @@ async function verifyAllFirstPartyImages() {
     for (const v of prod.variants) {
       if (v.image) {
         variantImagesChecked++;
-        if (v.image.includes("res.cloudinary.com")) {
+        if (v.image.includes("res.cloudinary.com") || v.image.includes("cloudinary")) {
           console.error(`❌ Variant image has Cloudinary URL: ${v.image}`);
+          externalUrlsFound++;
+        }
+      }
+      if (v.swatchImage) {
+        variantImagesChecked++;
+        if (v.swatchImage.includes("res.cloudinary.com") || v.swatchImage.includes("cloudinary")) {
+          console.error(`❌ Variant swatch has Cloudinary URL: ${v.swatchImage}`);
           externalUrlsFound++;
         }
       }
@@ -82,7 +98,7 @@ async function verifyAllFirstPartyImages() {
   const banners = await prisma.offerBanner.findMany();
   for (const b of banners) {
     totalChecked++;
-    if (b.image.includes("res.cloudinary.com")) {
+    if (b.image.includes("res.cloudinary.com") || b.image.includes("cloudinary")) {
       console.error(`❌ Banner [${b.title}] has Cloudinary URL: ${b.image}`);
       externalUrlsFound++;
     } else if (b.image.startsWith("/images/")) {
@@ -91,34 +107,53 @@ async function verifyAllFirstPartyImages() {
         console.warn(`⚠️ Banner [${b.title}] file missing on disk: ${filePath}`);
         missingFiles++;
       }
+      const ext = path.extname(filePath);
+      const base = filePath.slice(0, -ext.length);
+      if (!fs.existsSync(`${base}-750.webp`)) missingFiles++;
+      if (!fs.existsSync(`${base}-1400.webp`)) missingFiles++;
     }
   }
   console.log(`✅ Audited ${banners.length} offer banners.`);
 
-  // 4. Verify Placeholder & Brand assets
-  const placeholderSvg = path.join(publicDir, "images", "brand", "placeholder.svg");
-  const placeholderWebp = path.join(publicDir, "images", "brand", "placeholder.webp");
-  const logo = path.join(publicDir, "images", "brand", "logo.png");
+  // 4. Audit Vendors & Documents
+  console.log("\n🏢 Auditing Vendors in DB...");
+  const vendors = await prisma.vendor.findMany();
+  for (const v of vendors) {
+    for (const docField of ["logo", "shopPhotoUrl", "panDocUrl", "aadharDocUrl", "gstDocUrl"] as const) {
+      const val = v[docField];
+      if (val && (val.includes("cloudinary.com") || val.includes("res.cloudinary.com"))) {
+        console.error(`❌ Vendor [${v.businessName}] has Cloudinary in ${docField}: ${val}`);
+        externalUrlsFound++;
+      }
+    }
+  }
+  console.log(`✅ Audited ${vendors.length} vendors.`);
 
-  console.log("\n🎨 Checking Brand & Fallback Assets...");
-  console.log(` - placeholder.svg exists: ${fs.existsSync(placeholderSvg)} (${fs.statSync(placeholderSvg).size} bytes)`);
-  console.log(` - placeholder.webp exists: ${fs.existsSync(placeholderWebp)} (${fs.statSync(placeholderWebp).size} bytes)`);
-  console.log(` - logo.png exists: ${fs.existsSync(logo)} (${fs.statSync(logo).size} bytes)`);
+  // 5. Verify Placeholders
+  console.log("\n🖼️ Auditing Placeholders & Core Assets...");
+  const placeholderProductSvg = path.join(publicDir, "images", "placeholder-product.svg");
+  const placeholderCategorySvg = path.join(publicDir, "images", "placeholder-category.svg");
+  const placeholderBannerSvg = path.join(publicDir, "images", "placeholder-banner.svg");
+
+  if (!fs.existsSync(placeholderProductSvg)) console.error("❌ Missing placeholder-product.svg");
+  if (!fs.existsSync(placeholderCategorySvg)) console.error("❌ Missing placeholder-category.svg");
+  if (!fs.existsSync(placeholderBannerSvg)) console.error("❌ Missing placeholder-banner.svg");
 
   console.log("\n==================================================");
-  console.log("📊 Audit Summary Results:");
-  console.log(` - Total DB Image References Checked: ${totalChecked}`);
-  console.log(` - Cloudinary / External URLs Found: ${externalUrlsFound}`);
-  console.log(` - Missing Files On Disk: ${missingFiles}`);
+  console.log("📊 Summary Report:");
+  console.log(`   - Total DB Image Records Checked: ${totalChecked}`);
+  console.log(`   - Missing Files on Disk:           ${missingFiles}`);
+  console.log(`   - Cloudinary URLs Remaining in DB: ${externalUrlsFound}`);
   console.log("==================================================");
 
-  if (externalUrlsFound === 0 && missingFiles === 0) {
-    console.log("🎉 ALL ACCEPTANCE CRITERIA PASSED! IntriHub is 100% first-party image hosted!");
-  } else {
-    console.error("⚠️ Some items need attention.");
+  if (missingFiles > 0 || externalUrlsFound > 0) {
+    process.exit(1);
   }
 }
 
 verifyAllFirstPartyImages()
-  .catch((e) => console.error(e))
+  .catch((e) => {
+    console.error("Verification script failed:", e);
+    process.exit(1);
+  })
   .finally(() => prisma.$disconnect());

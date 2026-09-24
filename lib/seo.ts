@@ -343,7 +343,7 @@ export function generateProductSchema(product: {
       ? product.images.map((img) =>
           img.startsWith("http") ? img : `${BASE_SITE_URL}${img.startsWith("/") ? img : `/${img}`}`
         )
-      : [`${BASE_SITE_URL}/placeholders/product.svg`];
+      : [`${BASE_SITE_URL}/images/placeholder-product.svg`];
 
   const productUrl = getCanonicalUrl(`/product/${product.slug}`);
   const priceVal = String(product.price || 0);
