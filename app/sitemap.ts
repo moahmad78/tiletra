@@ -183,7 +183,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
           updatedAt: true,
         },
       }),
-      prisma.guidePost.findMany({
+      ((prisma as any).guidePost?.findMany({
         where: {
           status: "PUBLISHED",
           publishedAt: { lte: new Date() },
@@ -192,7 +192,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
           slug: true,
           updatedAt: true,
         },
-      }).catch(() => []),
+      }) ?? Promise.resolve([])).catch(() => []),
     ]);
 
     const seoPages = SEO_PAGES_SEED_DATA;
@@ -200,18 +200,18 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     // Buying Guide Routes (from database with static fallback)
     const resolvedGuides =
       dbGuides && dbGuides.length > 0
-        ? dbGuides.map((g: any) => ({
+        ? dbGuides.map((g: { slug: string; updatedAt?: Date | null }) => ({
             slug: g.slug,
             updatedAt: g.updatedAt,
           }))
-        : BUYING_GUIDES.map((g: any) => ({
+        : BUYING_GUIDES.map((g: { slug: string; updatedAt?: string | Date | null }) => ({
             slug: g.slug,
             updatedAt: new Date(g.updatedAt || Date.now()),
           }));
 
     const guideRoutes: MetadataRoute.Sitemap = resolvedGuides
-      .filter((g) => Boolean(g.slug) && !g.slug.toLowerCase().includes("test"))
-      .map((g) => ({
+      .filter((g: { slug: string }) => Boolean(g.slug) && !g.slug.toLowerCase().includes("test"))
+      .map((g: { slug: string; updatedAt?: Date | null }) => ({
         url: `${BASE_SITE_URL}/guides/${encodeURIComponent(g.slug)}`,
         lastModified: g.updatedAt instanceof Date ? g.updatedAt : new Date(),
         changeFrequency: "weekly",
@@ -220,29 +220,29 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
 
     const resolvedCategories =
       categories.length > 0
-        ? categories.map((c) => ({
+        ? categories.map((c: { slug: string; name: string; updatedAt?: Date | null; _count?: { products: number } }) => ({
             slug: c.slug,
             name: c.name,
             updatedAt: c.updatedAt,
-            productCount: c._count.products,
+            productCount: c._count?.products || 0,
           }))
-        : defaultCategories.map((c) => ({
+        : defaultCategories.map((c: { slug: string; name: string; updatedAt?: Date | null; productCount?: number }) => ({
             slug: c.slug,
             name: c.name,
             updatedAt: new Date(),
-            productCount: c.productCount,
+            productCount: c.productCount || 0,
           }));
 
     const resolvedProducts =
       products.length > 0
         ? products
         : defaultProducts
-            .filter((p) => (p.status || "active") === "active" && !p.slug.toLowerCase().includes("test"))
-            .map((p) => ({ slug: p.slug, updatedAt: new Date() }));
+            .filter((p: { status?: string; slug: string }) => (p.status || "active") === "active" && !p.slug.toLowerCase().includes("test"))
+            .map((p: { slug: string }) => ({ slug: p.slug, updatedAt: new Date() }));
 
     const categoryRoutes: MetadataRoute.Sitemap = resolvedCategories
-      .filter((cat) => Boolean(cat.slug) && !cat.slug.toLowerCase().includes("test"))
-      .map((cat) => ({
+      .filter((cat: { slug: string }) => Boolean(cat.slug) && !cat.slug.toLowerCase().includes("test"))
+      .map((cat: { slug: string; updatedAt?: Date | null }) => ({
         url: `${BASE_SITE_URL}/shop/${encodeURIComponent(cat.slug)}`,
         lastModified: cat.updatedAt instanceof Date ? cat.updatedAt : new Date(),
         changeFrequency: "daily",
@@ -250,8 +250,8 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
       }));
 
     const productRoutes: MetadataRoute.Sitemap = resolvedProducts
-      .filter((prod) => Boolean(prod.slug) && !prod.slug.toLowerCase().includes("test"))
-      .map((prod) => ({
+      .filter((prod: { slug: string }) => Boolean(prod.slug) && !prod.slug.toLowerCase().includes("test"))
+      .map((prod: { slug: string; updatedAt?: Date | null }) => ({
         url: `${BASE_SITE_URL}/product/${encodeURIComponent(prod.slug)}`,
         lastModified: prod.updatedAt instanceof Date ? prod.updatedAt : new Date(),
         changeFrequency: "weekly",
@@ -261,7 +261,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     // Quality-Gated Programmatic Location Routes (Strict spam & doorway prevention)
     // Evaluates word count, uniqueness (>70% unique), active products, and local data completeness
     const approvedLocationEntries = getApprovedSitemapLocationRoutes(
-      resolvedCategories.map((c) => ({
+      resolvedCategories.map((c: { slug: string; name: string; productCount: number }) => ({
         slug: c.slug,
         name: c.name,
         productCount: c.productCount,

@@ -1,9 +1,10 @@
-import { prisma } from "@/lib/prisma";
+import { prisma } from "../lib/prisma";
 import {
   getGuidePosts,
   getGuidePostBySlug,
   seedInitialGuidesIfEmpty,
-} from "@/lib/actions/guides";
+  GuidePostItem,
+} from "../lib/actions/guides";
 
 async function main() {
   console.log("==========================================================================");
@@ -83,7 +84,7 @@ async function main() {
   // 5. Verify /guides catalog list
   console.log("\n[TEST 5] Catalog /guides Listing Verification:");
   const listRes = await getGuidePosts();
-  const seedInList = listRes.posts.some((p) => p.slug === seedSlug);
+  const seedInList = listRes.posts.some((p: GuidePostItem) => p.slug === seedSlug);
   console.log(`  ✓ Seed post included in /guides catalog: ${seedInList ? "YES" : "NO"}`);
   console.log(`  ✓ Total published guides in catalog: ${listRes.total}`);
 
