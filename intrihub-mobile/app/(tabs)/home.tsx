@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import {
   View,
   Text,
@@ -8,6 +8,9 @@ import {
   TouchableOpacity,
   ActivityIndicator,
   useWindowDimensions,
+  BackHandler,
+  Alert,
+  Platform,
 } from "react-native";
 import { useQuery, useInfiniteQuery } from "@tanstack/react-query";
 import { useRouter } from "expo-router";
@@ -17,6 +20,7 @@ import { BannerCarousel } from "../../src/components/BannerCarousel";
 import { CategoryGrid } from "../../src/components/CategoryGrid";
 import { ProductCard } from "../../src/components/ProductCard";
 import { AddressModal } from "../../src/components/AddressModal";
+import { NewUserWalkthroughModal } from "../../src/components/NewUserWalkthroughModal";
 import { getCategories, getProducts } from "../../src/api/products";
 import { COLORS, SPACING, RADIUS } from "../../src/constants/theme";
 import { Product } from "../../src/types";
@@ -26,6 +30,30 @@ export default function HomeScreen() {
   const { width: windowWidth } = useWindowDimensions();
   const numColumns = windowWidth >= 900 ? 4 : windowWidth >= 600 ? 3 : 2;
   const [addressModalVisible, setAddressModalVisible] = useState(false);
+
+  // Hardware Back Button Exit Confirmation on Android
+  useEffect(() => {
+    if (Platform.OS !== "android") return;
+
+    const onBackPress = () => {
+      Alert.alert(
+        "Exit IntriHub?",
+        "Are you sure you want to close the IntriHub app?",
+        [
+          { text: "Stay", style: "cancel" },
+          {
+            text: "Exit",
+            style: "destructive",
+            onPress: () => BackHandler.exitApp(),
+          },
+        ]
+      );
+      return true;
+    };
+
+    const backHandler = BackHandler.addEventListener("hardwareBackPress", onBackPress);
+    return () => backHandler.remove();
+  }, []);
 
   // 1. Fetch Categories & Banners
   const {
@@ -222,6 +250,9 @@ export default function HomeScreen() {
         onClose={() => setAddressModalVisible(false)}
         onSelectAddress={() => {}}
       />
+
+      {/* New User Guided Walkthrough Onboarding Tour */}
+      <NewUserWalkthroughModal />
     </View>
   );
 }

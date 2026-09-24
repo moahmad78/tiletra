@@ -33,10 +33,12 @@ import {
   X,
   Check,
   Trash2,
+  Star,
 } from "lucide-react-native";
 import { useAuthStore } from "../../src/store/authStore";
 import { getProfile, updateProfile, uploadAvatarImage } from "../../src/api/auth";
 import { AddressModal } from "../../src/components/AddressModal";
+import { openPlayStoreRating } from "../../src/utils/inAppRating";
 import { COLORS, SPACING, RADIUS, SHADOWS } from "../../src/constants/theme";
 
 export default function ProfileScreen() {
@@ -305,6 +307,21 @@ export default function ProfileScreen() {
               <Text style={styles.badge247Text}>24*7</Text>
               <ChevronRight size={16} color={COLORS.textMuted} />
             </View>
+          </TouchableOpacity>
+
+          <TouchableOpacity
+            style={styles.menuItem}
+            onPress={openPlayStoreRating}
+            activeOpacity={0.75}
+          >
+            <View style={styles.menuLeft}>
+              <Star size={20} color="#F59E0B" fill="#F59E0B" />
+              <View style={{ marginLeft: 12 }}>
+                <Text style={styles.menuLabel}>Rate Us on Google Play</Text>
+                <Text style={styles.supportSubText}>Share your 5-star rating & feedback</Text>
+              </View>
+            </View>
+            <ChevronRight size={18} color={COLORS.textMuted} />
           </TouchableOpacity>
 
           <TouchableOpacity style={styles.menuItem} onPress={handlePrivacyPolicy}>
