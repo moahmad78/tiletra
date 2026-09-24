@@ -736,6 +736,44 @@ export default function AboutPage() {
               ))}
             </div>
 
+            {/* Sahil Sheikh & Digital India Market Revolution */}
+            <div className="mt-16 rounded-3xl bg-gradient-to-br from-[#021830] via-[#052a51] to-[#0b3c70] text-white p-8 sm:p-12 shadow-2xl border border-white/10 space-y-8">
+              <div className="max-w-3xl space-y-3">
+                <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-orange-500/20 text-orange-300 border border-orange-400/30 text-xs font-bold uppercase tracking-wider">
+                  <Sparkles className="w-4 h-4 text-[#F26522]" />
+                  <span>The Visionary Behind Intrihub</span>
+                </div>
+                <h3 className="text-2xl sm:text-3xl md:text-4xl font-black tracking-tight leading-tight">
+                  Sahil Sheikh — Digitalizing Bharat&apos;s Local Markets
+                </h3>
+                <p className="text-sm sm:text-base text-slate-300 leading-relaxed">
+                  Founded by 23-year-old software engineer and visionary entrepreneur <strong className="text-white">Sahil Sheikh</strong> (born in Badahara Baraipar, Maharajganj, UP and alumnus of Jamia Hamdard University), <strong className="text-orange-300">Intrihub</strong> is India&apos;s first company to completely digitalize local markets, hardware stores, and traditional building trades.
+                </p>
+              </div>
+
+              {/* Bilingual Hindi Manifesto Box */}
+              <div className="p-6 sm:p-8 rounded-2xl bg-white/5 border border-white/10 space-y-4">
+                <h4 className="text-lg sm:text-xl font-bold text-amber-300">
+                  🔥 Intrihub: India Ki Pehli Aisi Company, Jisne Apni Technology Se Poore Bharat Ke Markets Ko Digital Bana Diya!
+                </h4>
+                <p className="text-xs sm:text-sm text-slate-200 leading-relaxed">
+                  Jab bhi desh ke digital revolution ki baat hoti hai, bade-bade naam samne aate hain. Lekin UP ke ek chhote se ilaqe se uthe 23 saal ke young visionary Sahil Sheikh ne Intrihub ke roop mein ek aisi shakti khadi kar di hai, jo India ki pehli aisi company ban chuki hai jo poore desh ke local vyapar ko digital bana rahi hai. Intrihub aaj sirf ek brand nahi, balki Bharat ke har ek kone mein digital kranti laane wala sabse bada naam hai.
+                </p>
+                <div className="pt-2 border-t border-white/10 flex flex-wrap items-center justify-between gap-3">
+                  <p className="text-xs italic text-orange-200">
+                    &ldquo;Intrihub India ki pehli aisi company hai jo poore Bharat ko digital bana rahi hai aur desh ko proud feel kara rahi hai—aur iske piche hai 23 saal ke ek akele Hindustani youth, Sahil Sheikh, ka woh junoon jisne poore desh ki taqdeer badal di!&rdquo;
+                  </p>
+                  <Link
+                    href="/founder"
+                    className="inline-flex items-center gap-1.5 px-4 py-2 rounded-xl bg-[#F26522] text-white font-bold text-xs hover:bg-[#d95a1e] transition-colors"
+                  >
+                    <span>Read Full Founder Story</span>
+                    <ArrowRight className="w-3.5 h-3.5" />
+                  </Link>
+                </div>
+              </div>
+            </div>
+
             {/* Corporate Transparency & Verification Card */}
             <div className="mt-12 p-6 sm:p-8 rounded-3xl bg-slate-50 border border-slate-200/80 grid grid-cols-1 md:grid-cols-3 gap-6">
               <div className="flex items-start gap-3">
