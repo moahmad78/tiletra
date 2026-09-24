@@ -17,6 +17,7 @@ const cspHeader = `
 const nextConfig: NextConfig = {
   poweredByHeader: false,
   images: {
+    unoptimized: true,
     dangerouslyAllowSVG: true,
     contentDispositionType: "inline",
     contentSecurityPolicy: "default-src 'self'; script-src 'none'; sandbox;",

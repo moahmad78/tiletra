@@ -142,7 +142,20 @@ export async function POST(req: NextRequest) {
       const dataUri = `data:${mimeType};base64,${base64String}`;
       base64List.push(dataUri);
 
-      // 1. Save permanently to Neon PostgreSQL Database
+      let finalFileUrl = `/api/uploads/${uniqueFileName}`;
+
+      // 1. Upload directly to Cloudinary CDN for instant global delivery
+      try {
+        const { uploadToCloudinary } = await import("@/lib/cloudinary");
+        const cloudinaryRes = await uploadToCloudinary(processedBuffer, "intrihub/uploads", sanitizedBase);
+        if (cloudinaryRes?.secure_url) {
+          finalFileUrl = cloudinaryRes.secure_url;
+        }
+      } catch (cloudErr) {
+        console.warn("[Upload] Cloudinary upload fallback to DB/local:", cloudErr);
+      }
+
+      // 2. Save permanently to Neon PostgreSQL Database
       try {
         await (prisma as any).uploadedFile.upsert({
           where: { fileName: uniqueFileName },
@@ -162,10 +175,9 @@ export async function POST(req: NextRequest) {
         console.error("[Upload] Failed to persist file to Neon DB:", dbError);
       }
 
-      // 2. Also save to local disk if writable (e.g. localhost)
+      // 3. Also save to local disk if writable (e.g. localhost)
       try {
         const filePath = path.join(uploadDir, uniqueFileName);
-        // Verify path resolution stays in uploadDir
         if (filePath.startsWith(uploadDir)) {
           await writeFile(filePath, processedBuffer);
         }
@@ -173,8 +185,8 @@ export async function POST(req: NextRequest) {
         // Ephemeral / serverless disk write ignore
       }
 
-      // Return live route URL
-      uploadedUrls.push(`/api/uploads/${uniqueFileName}`);
+      // Return live route URL or Cloudinary CDN URL
+      uploadedUrls.push(finalFileUrl);
     }
 
     return NextResponse.json({
