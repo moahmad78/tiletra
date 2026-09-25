@@ -19,6 +19,8 @@ import Header from "@/components/Header";
 import Footer from "@/components/Footer";
 import CompactProductCard from "@/components/CompactProductCard";
 
+import { SafeImage } from "@/components/ui/SafeImage";
+
 function getCategoryShortName(name: string): string {
   const map: Record<string, string> = {
     "Electrical": "Electrical",
@@ -45,10 +47,6 @@ function getCategoryShortName(name: string): string {
   return map[name] || name;
 }
 
-function getFallbackCategoryIcon(_slug: string): string | undefined {
-  return undefined;
-}
-
 function SafeCategoryBox({
   category,
   shortName,
@@ -60,15 +58,10 @@ function SafeCategoryBox({
   isSelected: boolean;
   onClick: () => void;
 }) {
-  const initialSrc =
-    category.image ||
-    getFallbackCategoryIcon(category.slug) ||
-    "/placeholders/category.svg";
-  const [imgSrc, setImgSrc] = useState<string>(initialSrc);
-
-  useEffect(() => {
-    setImgSrc(category.image || getFallbackCategoryIcon(category.slug) || "/placeholders/category.svg");
-  }, [category.image, category.slug]);
+  const categoryImage =
+    category.image && category.image.trim()
+      ? category.image
+      : `/images/categories/cat-${category.slug}.jpg`;
 
   return (
     <button
@@ -86,15 +79,10 @@ function SafeCategoryBox({
         }`}
       >
         <div className="w-full h-full rounded-[12px] overflow-hidden relative bg-gray-100">
-          <Image
-            src={imgSrc}
+          <SafeImage
+            src={categoryImage}
             alt={category.name}
             fill
-            referrerPolicy="no-referrer"
-            onError={(e) => {
-              console.error(`[CategoriesClient Image Load Failed]: "${category.name}" (${category.slug}) - URL: ${imgSrc}`, e);
-              setImgSrc("/placeholders/category.svg");
-            }}
             className="object-cover group-hover:scale-110 transition-transform duration-300"
             sizes="64px"
           />

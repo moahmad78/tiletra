@@ -3,7 +3,7 @@
 import { useEffect, useRef, useCallback } from "react";
 import Link from "next/link";
 import { categories as defaultCategories, type Category } from "@/lib/data/categories";
-import { CategoryIcon } from "@/components/ui/CategoryIcon";
+import { SafeImage } from "@/components/ui/SafeImage";
 
 function getCategoryShortName(name: string): string {
   const map: Record<string, string> = {
@@ -31,30 +31,7 @@ function getCategoryShortName(name: string): string {
   return map[name] || name;
 }
 
-const CATEGORY_COLORS: Record<string, { bg: string; text: string; ring: string }> = {
-  electrical: { bg: "bg-amber-500/10", text: "text-amber-600", ring: "group-hover:border-amber-500/40" },
-  lighting: { bg: "bg-yellow-500/10", text: "text-yellow-600", ring: "group-hover:border-yellow-500/40" },
-  "tiles-stone": { bg: "bg-blue-500/10", text: "text-blue-600", ring: "group-hover:border-blue-500/40" },
-  "paint-finishes": { bg: "bg-rose-500/10", text: "text-rose-600", ring: "group-hover:border-rose-500/40" },
-  "false-ceiling": { bg: "bg-purple-500/10", text: "text-purple-600", ring: "group-hover:border-purple-500/40" },
-  flooring: { bg: "bg-emerald-500/10", text: "text-emerald-600", ring: "group-hover:border-emerald-500/40" },
-  "doors-windows": { bg: "bg-teal-500/10", text: "text-teal-600", ring: "group-hover:border-teal-500/40" },
-  "glass-mirror": { bg: "bg-cyan-500/10", text: "text-cyan-600", ring: "group-hover:border-cyan-500/40" },
-  "hardware-fittings": { bg: "bg-orange-500/10", text: "text-orange-600", ring: "group-hover:border-orange-500/40" },
-  furniture: { bg: "bg-indigo-500/10", text: "text-indigo-600", ring: "group-hover:border-indigo-500/40" },
-  "kitchen-wardrobe": { bg: "bg-red-500/10", text: "text-red-600", ring: "group-hover:border-red-500/40" },
-  "plumbing-sanitary": { bg: "bg-sky-500/10", text: "text-sky-600", ring: "group-hover:border-sky-500/40" },
-  "wall-surface": { bg: "bg-fuchsia-500/10", text: "text-fuchsia-600", ring: "group-hover:border-fuchsia-500/40" },
-  "decor-accessories": { bg: "bg-pink-500/10", text: "text-pink-600", ring: "group-hover:border-pink-500/40" },
-  "curtains-blinds": { bg: "bg-violet-500/10", text: "text-violet-600", ring: "group-hover:border-violet-500/40" },
-  "office-commercial": { bg: "bg-slate-500/10", text: "text-slate-600", ring: "group-hover:border-slate-500/40" },
-  "outdoor-landscape": { bg: "bg-lime-500/10", text: "text-lime-600", ring: "group-hover:border-lime-500/40" },
-  "smart-home": { bg: "bg-cyan-500/10", text: "text-cyan-600", ring: "group-hover:border-cyan-500/40" },
-  "safety-fire": { bg: "bg-rose-500/10", text: "text-rose-600", ring: "group-hover:border-rose-500/40" },
-  "tools-consumables": { bg: "bg-amber-500/10", text: "text-amber-600", ring: "group-hover:border-amber-500/40" },
-};
-
-function DistinctCategoryIconItem({
+function DistinctCategoryItem({
   cat,
   isCloned = false,
   onDragPrevent,
@@ -64,7 +41,7 @@ function DistinctCategoryIconItem({
   onDragPrevent?: (e: React.MouseEvent) => void;
 }) {
   const shortName = getCategoryShortName(cat.name);
-  const color = CATEGORY_COLORS[cat.slug] || { bg: "bg-[#052a51]/10", text: "text-[#052a51]", ring: "group-hover:border-[#F26522]/40" };
+  const categoryImage = cat.image && cat.image.trim() ? cat.image : `/images/categories/cat-${cat.slug}.jpg`;
 
   if (isCloned) {
     return (
@@ -72,12 +49,19 @@ function DistinctCategoryIconItem({
         key={`clone-${cat.slug}`}
         aria-hidden="true"
         onClick={onDragPrevent}
-        className="flex flex-col items-center shrink-0 w-[68px] group active:scale-95 transition-transform select-none cursor-pointer"
+        className="flex flex-col items-center shrink-0 w-[68px] sm:w-[74px] group active:scale-95 transition-transform select-none cursor-pointer"
       >
-        <div className={`w-[56px] h-[56px] rounded-2xl flex items-center justify-center border border-gray-100 shadow-2xs ${color.bg} ${color.ring} transition-all`}>
-          <CategoryIcon slugOrName={cat.slug} size={24} className={`${color.text} group-hover:scale-110 transition-transform duration-200`} />
+        <div className="w-[58px] h-[58px] sm:w-[64px] sm:h-[64px] rounded-2xl overflow-hidden relative border border-gray-200/90 bg-gray-100 shadow-2xs group-hover:border-[#F26522] transition-all">
+          <SafeImage
+            src={categoryImage}
+            alt={`${cat.name} Category`}
+            fill
+            className="object-cover group-hover:scale-110 transition-transform duration-300 pointer-events-none"
+            sizes="64px"
+          />
+          <div className="absolute inset-0 bg-gradient-to-t from-black/25 via-transparent to-transparent opacity-30 group-hover:opacity-10 transition-opacity pointer-events-none" />
         </div>
-        <span className="text-[11px] font-bold text-[#052a51] group-hover:text-[#F26522] transition-colors mt-1.5 text-center leading-tight truncate max-w-full">
+        <span className="text-[11px] font-bold text-[#052a51] group-hover:text-[#F26522] transition-colors mt-1.5 text-center leading-tight truncate max-w-full px-0.5">
           {shortName}
         </span>
       </div>
@@ -90,12 +74,19 @@ function DistinctCategoryIconItem({
       href={`/shop/${cat.slug}`}
       onClick={onDragPrevent}
       aria-label={`Browse ${cat.name}`}
-      className="flex flex-col items-center shrink-0 w-[68px] group active:scale-95 transition-transform"
+      className="flex flex-col items-center shrink-0 w-[68px] sm:w-[74px] group active:scale-95 transition-transform"
     >
-      <div className={`w-[56px] h-[56px] rounded-2xl flex items-center justify-center border border-gray-100 shadow-2xs ${color.bg} ${color.ring} transition-all`}>
-        <CategoryIcon slugOrName={cat.slug} size={24} className={`${color.text} group-hover:scale-110 transition-transform duration-200`} />
+      <div className="w-[58px] h-[58px] sm:w-[64px] sm:h-[64px] rounded-2xl overflow-hidden relative border border-gray-200/90 bg-gray-100 shadow-2xs group-hover:border-[#F26522] transition-all">
+        <SafeImage
+          src={categoryImage}
+          alt={cat.name}
+          fill
+          className="object-cover group-hover:scale-110 transition-transform duration-300 pointer-events-none"
+          sizes="64px"
+        />
+        <div className="absolute inset-0 bg-gradient-to-t from-black/25 via-transparent to-transparent opacity-30 group-hover:opacity-10 transition-opacity pointer-events-none" />
       </div>
-      <span className="text-[11px] font-bold text-[#052a51] group-hover:text-[#F26522] transition-colors mt-1.5 text-center leading-tight truncate max-w-full">
+      <span className="text-[11px] font-bold text-[#052a51] group-hover:text-[#F26522] transition-colors mt-1.5 text-center leading-tight truncate max-w-full px-0.5">
         {shortName}
       </span>
     </Link>
@@ -226,10 +217,10 @@ export default function CategoryIconRow({ categories }: { categories?: Category[
         className="flex items-center will-change-transform transform-gpu"
         style={{ transform: "translate3d(0, 0, 0)" }}
       >
-        {/* Set 1: Measured set with inline SVG icons */}
+        {/* Set 1: Measured set with category images */}
         <div ref={singleSetRef} className="flex items-center gap-3 pr-3 shrink-0">
           {categoryList.map((cat) => (
-            <DistinctCategoryIconItem
+            <DistinctCategoryItem
               key={`s1-${cat.slug}`}
               cat={cat}
               isCloned={false}
@@ -241,7 +232,7 @@ export default function CategoryIconRow({ categories }: { categories?: Category[
         {/* Set 2: Seamless duplicated set for infinite loop */}
         <div className="flex items-center gap-3 pr-3 shrink-0" aria-hidden="true">
           {categoryList.map((cat) => (
-            <DistinctCategoryIconItem
+            <DistinctCategoryItem
               key={`s2-${cat.slug}`}
               cat={cat}
               isCloned={true}
