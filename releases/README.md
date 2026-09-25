@@ -26,19 +26,20 @@ All previous legacy/scattered AAB files have been cleaned up. The latest, fresh 
 ---
 
 ## 2. 💼 Business / Vendor App (IntriHub Business)
-* **File Name:** `IntriHub-Business-v1.0.7(8).aab`
-* **Full Local Path:** `d:\Intrihub\releases\IntriHub-Business-v1.0.7(8).aab`
-* **Version Name:** `1.0.7`
-* **Version Code:** `8`
+* **File Name:** `IntriHub-Business-v1.0.8(9).aab`
+* **Full Local Path:** `d:\Intrihub\releases\IntriHub-Business-v1.0.8(9).aab`
+* **Version Name:** `1.0.8`
+* **Version Code:** `9`
 * **Package Name:** `com.intrihub.business`
 * **Signing Keystore:** `intrihub-business/android/app/intrihub-business-release-key.keystore`
 * **Key Alias:** `intrihub-biz-alias`
-* **Build Date:** September 22, 2026
+* **Build Date:** September 25, 2026
 
 ### Release Notes (Play Console):
 ```text
-• Resolved launch crash issue on production/internal testing builds.
-• Upgraded Sentry diagnostics and native architecture compatibility for Android 12–15.
-• Improved vendor catalog management, barcode scanner, and splash screen flow.
-• General UI responsiveness and bug fixes.
+• Integrated dynamic animated quick-commerce splash and loading screen.
+• Enhanced vendor catalog management with instant stock & price updates.
+• Real-time order dispatch notifications and QR handover verification.
+• Live revenue analytics, settlement summaries, and instant payouts.
+• Performance optimizations and native stability for Android 12, 13, 14, and 15.
 ```

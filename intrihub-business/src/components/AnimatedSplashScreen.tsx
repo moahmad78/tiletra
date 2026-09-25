@@ -875,7 +875,7 @@ const styles = StyleSheet.create({
     backgroundColor: "#FFFFFF",
   },
   ambientLayer: {
-    ...StyleSheet.absoluteFill,
+    ...StyleSheet.absoluteFillObject,
   },
   topWarmGlow: {
     position: "absolute",
