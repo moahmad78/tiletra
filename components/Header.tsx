@@ -49,7 +49,7 @@ export default function Header() {
     { name: "Home", href: "/" },
     { name: "Shop", href: "/shop" },
     { name: "Categories", href: "/categories" },
-    { name: "Top 20 USP", href: "/usp" },
+    { name: "Why IntriHub", href: "/why-intrihub" },
     { name: "Inspiration", href: "/inspiration" },
     { name: "About", href: "/about" },
     { name: "FAQ", href: "/faq" },

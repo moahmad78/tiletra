@@ -7,6 +7,7 @@ import { categories as defaultCategories } from "@/lib/data/categories";
 import { SEO_LOCATIONS } from "@/lib/data/seo-locations";
 import { SEO_PAGES_SEED_DATA } from "@/prisma/seed-seo-pages";
 import { getApprovedSitemapLocationRoutes } from "@/lib/seo-quality-gate";
+import { USP_ITEMS } from "@/lib/data/usps";
 
 export const revalidate = 3600; // Revalidate every 1 hour
 
@@ -107,6 +108,18 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
       changeFrequency: "weekly",
       priority: 0.85,
     },
+    {
+      url: `${BASE_SITE_URL}/why-intrihub`,
+      lastModified: new Date(),
+      changeFrequency: "daily",
+      priority: 0.9,
+    },
+    ...USP_ITEMS.map((usp) => ({
+      url: `${BASE_SITE_URL}/${usp.slug}`,
+      lastModified: new Date(),
+      changeFrequency: "weekly" as const,
+      priority: 0.85,
+    })),
     {
       url: `${BASE_SITE_URL}/founder`,
       lastModified: new Date(),
