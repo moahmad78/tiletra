@@ -32,14 +32,14 @@ export default function IntrihubBrandSEOSection() {
     <>
       {/* ── Semantic Crawlable HTML Structure for Search Engines (Visually Hidden via sr-only) ── */}
       <section className="sr-only" aria-hidden="false" aria-label="About IntriHub Building Materials Ecosystem">
-        <h2>About IntriHub: Explore Standard Tiles, Hardware &amp; Interior Items</h2>
+        <h2>About IntriHub: One Platform → Every Material → One Order → Direct to Site</h2>
         <p>
-          Welcome to IntriHub, India&apos;s trusted building materials online India platform and premier construction material marketplace. We are transforming construction with instant building materials delivery and specialized quick-commerce construction supplies. By offering factory direct building materials and bulk construction materials online, we ensure your projects never halt. Whether you need raw materials for construction India, heavy construction supplies online, or a reliable commercial interior supplies store, we bridge the gap as wholesale building material suppliers and your go-to home building materials online shopping app.
+          Welcome to IntriHub, India&apos;s premier digital procurement platform and multi-vendor marketplace for construction, renovation, and interiors. Our core positioning is simple: &ldquo;One Platform for Complete Construction &amp; Interior Procurement — From Material Discovery to Site Delivery.&rdquo; From one screw to a complete turnkey project, IntriHub connects verified Bengaluru suppliers and tier-1 factories to deliver factory-direct building materials straight to your active construction site in under 60 minutes.
         </p>
 
-        <h3>Why Contractors &amp; Builders Choose IntriHub Across Bengaluru</h3>
+        <h3>IntriHub Top USPs: Why Contractors, Builders &amp; Homeowners Choose IntriHub</h3>
         <p>
-          As a leading contractor material supply platform and digital construction marketplace for structural building materials online, IntriHub operates a robust supply chain. If you are searching for a trusted building materials supplier Bengaluru, fast construction material delivery Bangalore, or interior materials wholesale Bangalore, our micro-dark store network delivers within 60 minutes. From hardware stores online Bengaluru and tile suppliers in Bangalore to a local plumbing materials shop near me Bangalore, electrical goods wholesale Karnataka, and plywood shop online Bengaluru, we provide rapid dispatch, civil construction items online Bangalore, bulk hardware supplier Bengaluru, architectural supplies Bangalore delivery, and a trusted material marketplace Karnataka.
+          As India&apos;s first multi-category quick-commerce building materials ecosystem, IntriHub provides 20 distinct advantages: everything for every space, 20+ building material categories, multi-vendor marketplace in Bengaluru, single consolidated order for multiple materials, direct-to-site padded delivery, 60-minute express dispatch, location-based vendor discovery, real-time live stock visibility, transparent factory and local market pricing, contractor-tailored workflows, enterprise builder procurement, homeowner-friendly visual shopping, smart quantity &amp; box calculators, project-based shopping bundles, 1-click repeat reordering, comprehensive screw-to-structure coverage, unified vendor portal tools, digital empowerment for local dealers, automated GST billing, and a seamless phygital online-offline bridge.
         </p>
 
         <div>

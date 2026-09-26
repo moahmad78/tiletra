@@ -2,19 +2,28 @@
 
 import Image from "next/image";
 import { motion } from "framer-motion";
-import { ShieldCheck, Gem, IndianRupee, Clock, CheckCircle2, Target, Droplets, Smile } from "lucide-react";
+import {
+  Building2,
+  Store,
+  Truck,
+  Calculator,
+  ShieldCheck,
+  Zap,
+  HardHat,
+  BadgePercent,
+} from "lucide-react";
 import SectionHeader from "./SectionHeader";
 
 export default function WhyChooseUs() {
   const features = [
-    { title: "Experienced Team", icon: ShieldCheck },
-    { title: "Premium Quality", icon: Gem },
-    { title: "Transparent Pricing", icon: IndianRupee },
-    { title: "On-Time Delivery", icon: Clock },
-    { title: "Clean Workmanship", icon: CheckCircle2 },
-    { title: "Attention to Detail", icon: Target },
-    { title: "Expert Tile Laying", icon: Droplets },
-    { title: "100% Satisfaction", icon: Smile }
+    { title: "Everything for Every Space", icon: Building2 },
+    { title: "Multi-Vendor Marketplace", icon: Store },
+    { title: "Direct-to-Site 60-Min Delivery", icon: Truck },
+    { title: "Smart Quantity Box Calculator", icon: Calculator },
+    { title: "Local Market & Factory Rates", icon: BadgePercent },
+    { title: "Contractor & Builder Friendly", icon: HardHat },
+    { title: "Zero Breakage Pallet Transit", icon: ShieldCheck },
+    { title: "1-Click Instant Site Reorders", icon: Zap },
   ];
 
   return (
@@ -23,9 +32,9 @@ export default function WhyChooseUs() {
         
         {/* TOP SECTION: Heading & Paragraph */}
         <SectionHeader
-          label="WHY CHOOSE US"
-          heading={<>Why Choose <span className="text-[#F26522]">Intrihub</span></>}
-          caption="Build better, we deliver faster — verified materials, direct site delivery, and transparent pricing."
+          label="INTRIHUB PLATFORM ADVANTAGE"
+          heading={<>One Platform <span className="text-[#F26522]">→</span> Every Material <span className="text-[#F26522]">→</span> Direct to Site</>}
+          caption="From one screw to a complete project — discover, compare, and order building materials direct to your active site."
         />
 
         {/* BOTTOM SECTION: Image & Grid */}

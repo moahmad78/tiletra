@@ -332,6 +332,90 @@ export default function FounderPage() {
             </div>
           </section>
 
+          {/* SECTION: TOP 20 USP & POSITIONING ARCHITECTURE */}
+          <section className="bg-white p-6 sm:p-10 rounded-3xl border border-stone-200 shadow-sm space-y-8 mb-16">
+            <div className="text-center max-w-3xl mx-auto space-y-3">
+              <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-orange-100 text-[#F26522] border border-orange-200 text-xs font-black uppercase tracking-wider">
+                <Sparkles className="w-4 h-4" />
+                <span>The Core Competitive Edge</span>
+              </div>
+              <h2 className="text-2xl sm:text-3xl md:text-4xl font-black text-slate-900 tracking-tight">
+                One Platform <span className="text-[#F26522]">→</span> Every Material{" "}
+                <span className="text-[#F26522]">→</span> One Order{" "}
+                <span className="text-[#F26522]">→</span> Direct to Site
+              </h2>
+              <p className="text-base sm:text-lg font-bold text-[#052a51]">
+                &ldquo;One Platform for Complete Construction &amp; Interior Procurement — From Material Discovery to Site Delivery.&rdquo;
+              </p>
+              <p className="text-xs sm:text-sm text-slate-600">
+                From one screw to a complete project — source everything from IntriHub.
+              </p>
+            </div>
+
+            {/* 5 Core Pillars */}
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 pt-4">
+              <div className="p-5 rounded-2xl bg-stone-50 border border-stone-200/80 space-y-2">
+                <div className="w-9 h-9 rounded-xl bg-orange-100 text-[#F26522] flex items-center justify-center font-black text-sm">
+                  01
+                </div>
+                <h4 className="text-base font-bold text-slate-900">Complete Site Procurement</h4>
+                <p className="text-xs text-slate-600 leading-relaxed">
+                  Electrical, plumbing, tiles, paints, hardware, lighting, plywood, and sanitaryware in a single unified checkout.
+                </p>
+              </div>
+
+              <div className="p-5 rounded-2xl bg-stone-50 border border-stone-200/80 space-y-2">
+                <div className="w-9 h-9 rounded-xl bg-blue-100 text-blue-700 flex items-center justify-center font-black text-sm">
+                  02
+                </div>
+                <h4 className="text-base font-bold text-slate-900">Multi-Vendor Marketplace</h4>
+                <p className="text-xs text-slate-600 leading-relaxed">
+                  Connecting verified Bengaluru dealers with real-time stock visibility and transparent competitive rates.
+                </p>
+              </div>
+
+              <div className="p-5 rounded-2xl bg-stone-50 border border-stone-200/80 space-y-2">
+                <div className="w-9 h-9 rounded-xl bg-emerald-100 text-emerald-700 flex items-center justify-center font-black text-sm">
+                  03
+                </div>
+                <h4 className="text-base font-bold text-slate-900">Site-First 60-Min Logistics</h4>
+                <p className="text-xs text-slate-600 leading-relaxed">
+                  Cushioned pallet transport with zero transit breakages delivered directly to active construction sites.
+                </p>
+              </div>
+
+              <div className="p-5 rounded-2xl bg-stone-50 border border-stone-200/80 space-y-2">
+                <div className="w-9 h-9 rounded-xl bg-purple-100 text-purple-700 flex items-center justify-center font-black text-sm">
+                  04
+                </div>
+                <h4 className="text-base font-bold text-slate-900">Smart Quantity Calculators</h4>
+                <p className="text-xs text-slate-600 leading-relaxed">
+                  Unit-aware box, tile, and sheet calculators with +10% cutting wastage estimation to prevent excess costs.
+                </p>
+              </div>
+
+              <div className="p-5 rounded-2xl bg-stone-50 border border-stone-200/80 space-y-2">
+                <div className="w-9 h-9 rounded-xl bg-amber-100 text-amber-700 flex items-center justify-center font-black text-sm">
+                  05
+                </div>
+                <h4 className="text-base font-bold text-slate-900">Contractor + Builder Ecosystem</h4>
+                <p className="text-xs text-slate-600 leading-relaxed">
+                  Tailored recurring purchasing, 1-click repeat orders, GST tax invoicing, and credit lines for professionals.
+                </p>
+              </div>
+
+              <div className="p-5 rounded-2xl bg-stone-50 border border-stone-200/80 space-y-2">
+                <div className="w-9 h-9 rounded-xl bg-rose-100 text-rose-700 flex items-center justify-center font-black text-sm">
+                  06
+                </div>
+                <h4 className="text-base font-bold text-slate-900">Screw to Turnkey Sourcing</h4>
+                <p className="text-xs text-slate-600 leading-relaxed">
+                  From emergency replacement screws to multi-crore full building supplies — seamless digital fulfillment.
+                </p>
+              </div>
+            </div>
+          </section>
+
           {/* Direct CTA Box */}
           <div className="bg-white p-6 sm:p-8 rounded-2xl border border-stone-200 text-center space-y-4 shadow-sm">
             <h3 className="text-xl font-black text-slate-900">Join India&apos;s Digital Trade Revolution</h3>
