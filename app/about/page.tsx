@@ -28,6 +28,7 @@ import Footer from "@/components/Footer";
 import { LEADERSHIP_TEAM } from "@/lib/data/contacts";
 import { BASE_SITE_URL, getCanonicalUrl, generateBreadcrumbSchema } from "@/lib/seo";
 import JsonLd from "@/components/JsonLd";
+import USPSection from "@/components/USPSection";
 
 export const metadata: Metadata = {
   title: "About Our 60-Minute Materials Marketplace",
@@ -639,6 +640,9 @@ export default function AboutPage() {
             </div>
           </div>
         </section>
+
+        {/* IntriHub Top 20 USPs & Platform Competitive Advantage */}
+        <USPSection />
 
         {/* Leadership Team & Corporate Transparency */}
         <section className="py-16 md:py-24 bg-white border-t border-slate-100">

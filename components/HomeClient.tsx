@@ -19,7 +19,6 @@ import DesktopProductRow from "@/components/DesktopProductRow";
 import DesktopCategoryRow from "@/components/DesktopCategoryRow";
 import IntrihubBrandSEOSection from "@/components/IntrihubBrandSEOSection";
 import InfiniteProductCatalog from "@/components/InfiniteProductCatalog";
-import USPSection from "@/components/USPSection";
 
 interface HomeClientProps {
   categories: Category[];
@@ -240,7 +239,6 @@ export default function HomeClient({
         categories={categories}
         initialProducts={[...trending, ...displayBestsellers, ...displayNewArrivals].slice(0, 12)}
       />
-      <USPSection />
       <IntrihubBrandSEOSection />
       <Footer />
     </main>
