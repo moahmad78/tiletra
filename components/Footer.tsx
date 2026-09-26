@@ -39,6 +39,7 @@ const helpLinks = [
   { label: "For Architects", href: "/for-architects" },
   { label: "For Interior Designers", href: "/for-interior-designers" },
   { label: "For Contractors", href: "/for-contractors" },
+  { label: "Top 20 USPs & Platform Model", href: "/usp" },
   { label: "About Us", href: "/about" },
   { label: "Founder's Vision", href: "/founder" },
   { label: "Contact Us", href: "/contact" },

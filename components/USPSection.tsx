@@ -259,7 +259,10 @@ export default function USPSection() {
       : TOP_20_USPS.filter((item) => item.category === activeFilter);
 
   return (
-    <section className="py-12 md:py-20 bg-gradient-to-b from-white via-slate-50 to-neutral-100 border-t border-slate-200/80">
+    <section
+      id="usp"
+      className="scroll-mt-20 md:scroll-mt-28 py-12 md:py-20 bg-gradient-to-b from-white via-slate-50 to-neutral-100 border-t border-slate-200/80"
+    >
       <div className="w-full max-w-[1400px] mx-auto px-4 sm:px-6 lg:px-8">
         {/* ========================================================================= */}
         {/* 1. HERO TAGLINE BANNER — CENTRAL VALUE PROPOSITION                        */}
