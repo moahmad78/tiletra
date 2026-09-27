@@ -51,3 +51,74 @@ export async function sendWhatsAppMessage(to: string, message: string): Promise<
     return { success: false, error: error?.message || "Network error communicating with Meta WhatsApp API." };
   }
 }
+
+export async function sendWhatsAppMediaMessage(
+  to: string,
+  mediaType: "image" | "document",
+  mediaUrl: string,
+  caption?: string,
+  fileName?: string
+): Promise<{ success: boolean; error?: string; data?: any }> {
+  const token = process.env.WHATSAPP_TOKEN;
+  const phoneNumberId = process.env.PHONE_NUMBER_ID;
+
+  if (!token || !phoneNumberId) {
+    const err = "WhatsApp API configuration (WHATSAPP_TOKEN or PHONE_NUMBER_ID) is missing in environment variables.";
+    console.error(err);
+    return { success: false, error: err };
+  }
+
+  let cleanTo = to.replace(/\D/g, "");
+  if (cleanTo.length === 10) {
+    cleanTo = `91${cleanTo}`;
+  }
+
+  try {
+    const mediaPayload: Record<string, any> = {
+      messaging_product: "whatsapp",
+      recipient_type: "individual",
+      to: cleanTo,
+      type: mediaType,
+    };
+
+    if (mediaType === "document") {
+      mediaPayload.document = {
+        link: mediaUrl,
+        caption: caption || "",
+        filename: fileName || "IntriHub_Catalog.pdf",
+      };
+    } else if (mediaType === "image") {
+      mediaPayload.image = {
+        link: mediaUrl,
+        caption: caption || "",
+      };
+    }
+
+    const response = await fetch(
+      `https://graph.facebook.com/v19.0/${phoneNumberId}/messages`,
+      {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${token}`,
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify(mediaPayload),
+      }
+    );
+
+    const data = await response.json();
+
+    if (!response.ok) {
+      const errorMsg = data?.error?.message || data?.error?.error_data?.details || "Failed to send WhatsApp media message via Meta API.";
+      console.error("Meta WhatsApp Media API error response:", data);
+      return { success: false, error: errorMsg, data };
+    }
+
+    console.log(`WhatsApp media (${mediaType}) sent successfully to ${cleanTo}`);
+    return { success: true, data };
+  } catch (error: any) {
+    console.error("Error sending WhatsApp media message:", error);
+    return { success: false, error: error?.message || "Network error communicating with Meta WhatsApp API." };
+  }
+}
+

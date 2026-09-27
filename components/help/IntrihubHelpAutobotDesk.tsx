@@ -31,6 +31,9 @@ import {
   Upload,
   Download,
   Trash2,
+  Paperclip,
+  Image as ImageIcon,
+  FileUp,
 } from "lucide-react";
 import { supabase } from "@/lib/autobot/supabase";
 import { INTRIHUB_DEFAULT_PROMPT } from "@/lib/autobot/profile";
@@ -93,6 +96,13 @@ export default function IntrihubHelpAutobotDesk({ onLogout }: IntrihubHelpAutobo
   const [isSending, setIsSending] = useState(false);
   const [isLoadingChats, setIsLoadingChats] = useState(true);
   const messagesEndRef = useRef<HTMLDivElement>(null);
+
+  // Media Attachment States
+  const [selectedMediaFile, setSelectedMediaFile] = useState<File | null>(null);
+  const [mediaPreviewUrl, setMediaPreviewUrl] = useState<string | null>(null);
+  const [mediaCaption, setMediaCaption] = useState("");
+  const [isSendingMedia, setIsSendingMedia] = useState(false);
+  const mediaFileInputRef = useRef<HTMLInputElement>(null);
 
   // New Chat Modal States
   const [isNewChatOpen, setIsNewChatOpen] = useState(false);
@@ -365,6 +375,91 @@ export default function IntrihubHelpAutobotDesk({ onLogout }: IntrihubHelpAutobo
     } finally {
       setIsSending(false);
     }
+  };
+
+  const handleMediaFileSelected = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const selected = e.target.files?.[0];
+    if (!selected) return;
+
+    setSelectedMediaFile(selected);
+    if (selected.type.startsWith("image/")) {
+      setMediaPreviewUrl(URL.createObjectURL(selected));
+    } else {
+      setMediaPreviewUrl(null);
+    }
+    setMediaCaption(selected.name.replace(/\.[^/.]+$/, "").replace(/[_-]/g, " "));
+    e.target.value = "";
+  };
+
+  const handleSendMedia = async (
+    fileToSend?: File,
+    captionToSend?: string,
+    presetUrl?: string,
+    presetType?: "image" | "document",
+    presetFileName?: string
+  ) => {
+    if (!activeChat) return;
+    const targetFile = fileToSend || selectedMediaFile;
+    if (!targetFile && !presetUrl) return;
+
+    setIsSendingMedia(true);
+    const caption = captionToSend !== undefined ? captionToSend : mediaCaption;
+
+    const isImage = targetFile ? targetFile.type.startsWith("image/") : presetType === "image";
+    const tempUrl = targetFile ? URL.createObjectURL(targetFile) : presetUrl || "";
+
+    const optimisticMessage: Message = {
+      id: `temp_media_${Date.now()}`,
+      chat_id: activeChat.id,
+      sender: "human_agent",
+      message_type: isImage ? "image" : "document",
+      body: tempUrl,
+      created_at: new Date().toISOString(),
+    };
+
+    setMessages((prev) => [...prev, optimisticMessage]);
+
+    try {
+      const formData = new FormData();
+      if (targetFile) formData.append("file", targetFile);
+      if (presetUrl) formData.append("mediaUrl", presetUrl);
+      if (presetType) formData.append("mediaType", presetType);
+      if (presetFileName) formData.append("fileName", presetFileName);
+      formData.append("chatId", activeChat.id);
+      formData.append("customerPhone", activeChat.customer_phone);
+      if (caption) formData.append("caption", caption);
+
+      const res = await fetch("/api/messages/media", {
+        method: "POST",
+        body: formData,
+      });
+
+      const data = await res.json();
+      if (!res.ok) {
+        throw new Error(data.error || "Failed to send media via WhatsApp API");
+      }
+
+      setSelectedMediaFile(null);
+      setMediaPreviewUrl(null);
+      setMediaCaption("");
+      fetchMessages(activeChat.id);
+    } catch (err: any) {
+      console.error("Media send error:", err);
+      alert(`Media sending status: ${err?.message || "Failed to dispatch media."}`);
+    } finally {
+      setIsSendingMedia(false);
+    }
+  };
+
+  const handleSendOfficialCatalogPdf = () => {
+    if (!activeChat) return;
+    handleSendMedia(
+      undefined,
+      "IntriHub Official Tile, Sanitaryware & Building Materials Catalog 2026",
+      "https://www.intrihub.com/INTRIHUB_KNOWLEDGE_BASE.txt",
+      "document",
+      "IntriHub_Product_Catalog_2026.pdf"
+    );
   };
 
   const handleCreateNewChat = async (e: React.FormEvent) => {
@@ -688,6 +783,33 @@ export default function IntrihubHelpAutobotDesk({ onLogout }: IntrihubHelpAutobo
                     </div>
                   </header>
 
+                  {/* Quick Media & Catalog Dispatch Bar */}
+                  <div className="px-6 py-2 bg-slate-50 border-b border-slate-200 flex items-center justify-between gap-2 overflow-x-auto text-xs shrink-0">
+                    <span className="font-bold text-slate-500 uppercase text-[10px] tracking-wider shrink-0 flex items-center gap-1">
+                      <Zap className="w-3 h-3 text-[#F26522]" /> Quick Dispatch:
+                    </span>
+                    <div className="flex items-center gap-2">
+                      <button
+                        onClick={handleSendOfficialCatalogPdf}
+                        disabled={isSendingMedia}
+                        className="inline-flex items-center gap-1.5 px-3 py-1 bg-white hover:bg-orange-50 text-[#F26522] border border-orange-200 rounded-lg font-bold shadow-2xs transition-colors shrink-0 disabled:opacity-50"
+                        title="Send Official IntriHub Catalog to WhatsApp customer"
+                      >
+                        <FileText className="w-3.5 h-3.5 text-[#F26522]" />
+                        <span>Send Catalog PDF</span>
+                      </button>
+                      <button
+                        onClick={() => mediaFileInputRef.current?.click()}
+                        disabled={isSendingMedia}
+                        className="inline-flex items-center gap-1.5 px-3 py-1 bg-white hover:bg-slate-100 text-slate-700 border border-slate-200 rounded-lg font-bold shadow-2xs transition-colors shrink-0 disabled:opacity-50"
+                        title="Attach sample tile image or custom document"
+                      >
+                        <Paperclip className="w-3.5 h-3.5 text-slate-500" />
+                        <span>Attach PDF / Image</span>
+                      </button>
+                    </div>
+                  </div>
+
                   <div className="flex-1 overflow-y-auto p-6 space-y-4">
                     {messages.map((msg, index) => {
                       const isCustomer = msg.sender === "customer";
@@ -724,12 +846,12 @@ export default function IntrihubHelpAutobotDesk({ onLogout }: IntrihubHelpAutobo
                                 >
                                   <FileText className="w-6 h-6 text-[#F26522]" />
                                   <div className="text-xs">
-                                    <p className="font-bold">Document attached</p>
-                                    <p className="text-[#F26522] font-semibold">Click to download</p>
+                                    <p className="font-bold">Catalog / Document attached</p>
+                                    <p className="text-[#F26522] font-semibold">Click to view & download</p>
                                   </div>
                                 </a>
                               )}
-                              {msg.body && <p className="text-sm leading-relaxed whitespace-pre-wrap">{msg.body}</p>}
+                              {msg.body && !msg.body.startsWith("http") && <p className="text-sm leading-relaxed whitespace-pre-wrap">{msg.body}</p>}
                             </div>
 
                             <span className="text-[10px] text-slate-400 px-1">
@@ -743,21 +865,97 @@ export default function IntrihubHelpAutobotDesk({ onLogout }: IntrihubHelpAutobo
                     <div ref={messagesEndRef} />
                   </div>
 
-                  <div className="p-4 bg-white border-t border-slate-200 shrink-0">
+                  <div className="p-4 bg-white border-t border-slate-200 shrink-0 space-y-3">
+                    {/* Hidden Native File Input */}
+                    <input
+                      type="file"
+                      ref={mediaFileInputRef}
+                      accept="image/png,image/jpeg,image/webp,application/pdf"
+                      className="hidden"
+                      onChange={handleMediaFileSelected}
+                    />
+
+                    {/* Floating Selected Media Attachment Bar */}
+                    {selectedMediaFile && (
+                      <div className="p-3.5 bg-orange-50 border border-orange-200 rounded-2xl flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 animate-in fade-in">
+                        <div className="flex items-center gap-3 w-full sm:w-auto">
+                          {mediaPreviewUrl ? (
+                            <img src={mediaPreviewUrl} alt="Preview" className="w-12 h-12 rounded-xl object-cover border border-orange-200 shrink-0" />
+                          ) : (
+                            <div className="w-12 h-12 rounded-xl bg-white border border-orange-200 flex items-center justify-center shrink-0 text-[#F26522]">
+                              <FileText className="w-6 h-6" />
+                            </div>
+                          )}
+                          <div className="flex-1 min-w-0">
+                            <p className="text-xs font-bold text-[#052A51] truncate">{selectedMediaFile.name}</p>
+                            <p className="text-[11px] text-slate-500">{(selectedMediaFile.size / 1024).toFixed(1)} KB • Ready to send to WhatsApp</p>
+                            <input
+                              type="text"
+                              value={mediaCaption}
+                              onChange={(e) => setMediaCaption(e.target.value)}
+                              placeholder="Add optional caption..."
+                              className="w-full mt-1.5 px-2.5 py-1 bg-white border border-orange-200 rounded-lg text-xs text-slate-800 focus:outline-none focus:border-[#F26522]"
+                            />
+                          </div>
+                        </div>
+
+                        <div className="flex items-center gap-2 w-full sm:w-auto justify-end">
+                          <button
+                            type="button"
+                            onClick={() => {
+                              setSelectedMediaFile(null);
+                              setMediaPreviewUrl(null);
+                              setMediaCaption("");
+                            }}
+                            className="p-2 rounded-xl text-slate-500 hover:text-slate-800 hover:bg-orange-100 transition-colors"
+                            title="Remove attachment"
+                          >
+                            <X className="w-4 h-4" />
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => handleSendMedia()}
+                            disabled={isSendingMedia}
+                            className="inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-[#F26522] hover:bg-[#d95a1e] text-white text-xs font-bold shadow-md shadow-[#F26522]/20 transition-all disabled:opacity-50"
+                          >
+                            {isSendingMedia ? (
+                              <>
+                                <Loader2 className="w-4 h-4 animate-spin" />
+                                <span>Sending...</span>
+                              </>
+                            ) : (
+                              <>
+                                <Send className="w-4 h-4" />
+                                <span>Send to WhatsApp</span>
+                              </>
+                            )}
+                          </button>
+                        </div>
+                      </div>
+                    )}
+
                     {activeChat.chat_mode === "human" ? (
                       <div className="flex items-center gap-2 bg-slate-50 p-2 rounded-xl border border-slate-200 focus-within:border-[#F26522] focus-within:bg-white transition-colors">
+                        <button
+                          type="button"
+                          onClick={() => mediaFileInputRef.current?.click()}
+                          className="p-2 text-slate-500 hover:text-[#F26522] hover:bg-slate-100 rounded-lg transition-colors shrink-0"
+                          title="Attach PDF Catalog or Product Photo"
+                        >
+                          <Paperclip className="w-4 h-4" />
+                        </button>
                         <input
                           type="text"
                           value={inputText}
                           onChange={(e) => setInputText(e.target.value)}
                           onKeyDown={(e) => e.key === "Enter" && handleSendMessage()}
                           placeholder="Type a message to WhatsApp customer as Intrihub Support..."
-                          className="flex-1 bg-transparent text-slate-900 placeholder:text-slate-400 outline-none text-sm px-3"
+                          className="flex-1 bg-transparent text-slate-900 placeholder:text-slate-400 outline-none text-sm px-2"
                         />
                         <button
                           onClick={handleSendMessage}
                           disabled={isSending || !inputText.trim()}
-                          className="p-2.5 bg-[#F26522] hover:bg-[#d95a1e] disabled:bg-slate-200 disabled:text-slate-400 text-white rounded-lg transition-colors shadow-2xs"
+                          className="p-2.5 bg-[#F26522] hover:bg-[#d95a1e] disabled:bg-slate-200 disabled:text-slate-400 text-white rounded-lg transition-colors shadow-2xs shrink-0"
                         >
                           <Send className="w-4 h-4" />
                         </button>
