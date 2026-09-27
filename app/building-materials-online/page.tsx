@@ -219,7 +219,7 @@ export default function BuildingMaterialsOnlinePage() {
     logo: `${BASE_SITE_URL}/images/brand/logo.png`,
     image: `${BASE_SITE_URL}/images/banners/banner-slide-1-1400.webp`,
     description: PAGE_DESCRIPTION,
-    telephone: "+91-9876543210",
+    telephone: "+91-7090120211",
     address: {
       "@type": "PostalAddress",
       streetAddress: "41, 10th A Cross Rd, Janapriya Layout, Begur",
@@ -322,7 +322,7 @@ export default function BuildingMaterialsOnlinePage() {
                     <span>View Construction Checklist</span>
                   </Link>
                   <a
-                    href="https://wa.me/919876543210?text=Hi%20IntriHub,%20I%20need%20a%20quote%20for%20building%20materials%20in%20Bengaluru"
+                    href="https://wa.me/917090120211?text=Hi%20IntriHub,%20I%20need%20a%20quote%20for%20building%20materials%20in%20Bengaluru"
                     target="_blank"
                     rel="noopener noreferrer"
                     className="inline-flex items-center justify-center gap-2 px-4 py-3.5 rounded-xl bg-emerald-600 text-white font-bold text-sm shadow-sm hover:bg-emerald-700 transition-all"
@@ -660,14 +660,14 @@ export default function BuildingMaterialsOnlinePage() {
               </p>
               <div className="flex flex-wrap justify-center gap-3 pt-2">
                 <a
-                  href="tel:+919876543210"
+                  href="tel:+917090120211"
                   className="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl bg-slate-950 text-white font-bold text-xs hover:bg-amber-600 transition-colors"
                 >
                   <PhoneCall className="w-4 h-4" />
                   <span>Call Material Specialist</span>
                 </a>
                 <a
-                  href="https://wa.me/919876543210?text=Hi%20IntriHub,%20I%20have%20a%20bulk%20BOQ%20list%20for%20construction%20materials"
+                  href="https://wa.me/917090120211?text=Hi%20IntriHub,%20I%20have%20a%20bulk%20BOQ%20list%20for%20construction%20materials"
                   target="_blank"
                   rel="noopener noreferrer"
                   className="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl bg-emerald-600 text-white font-bold text-xs hover:bg-emerald-700 transition-colors"
