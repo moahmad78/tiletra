@@ -283,6 +283,7 @@ export async function fetchWhatsAppTemplates(): Promise<{
     return fallbackTemplates;
   }
 
+  try {
     let wabaId = process.env.WHATSAPP_BUSINESS_ACCOUNT_ID || process.env.WABA_ID;
 
     if (!wabaId) {
