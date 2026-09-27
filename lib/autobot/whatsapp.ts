@@ -283,28 +283,32 @@ export async function fetchWhatsAppTemplates(): Promise<{
     return fallbackTemplates;
   }
 
-  try {
-    const phoneRes = await fetch(`https://graph.facebook.com/v19.0/${phoneNumberId}?fields=whatsapp_business_account`, {
-      headers: { Authorization: `Bearer ${token}` },
-    });
-    if (phoneRes.ok) {
-      const phoneData = await phoneRes.json();
-      const wabaId = phoneData?.whatsapp_business_account?.id;
-      if (wabaId) {
-        const templatesRes = await fetch(`https://graph.facebook.com/v19.0/${wabaId}/message_templates`, {
-          headers: { Authorization: `Bearer ${token}` },
-        });
-        if (templatesRes.ok) {
-          const tData = await templatesRes.json();
-          if (tData.data && Array.isArray(tData.data) && tData.data.length > 0) {
-            return tData.data.map((t: any) => ({
-              name: t.name,
-              category: t.category,
-              language: t.language,
-              status: t.status,
-              components: t.components,
-            }));
-          }
+    let wabaId = process.env.WHATSAPP_BUSINESS_ACCOUNT_ID || process.env.WABA_ID;
+
+    if (!wabaId) {
+      const phoneRes = await fetch(`https://graph.facebook.com/v19.0/${phoneNumberId}?fields=whatsapp_business_account`, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      if (phoneRes.ok) {
+        const phoneData = await phoneRes.json();
+        wabaId = phoneData?.whatsapp_business_account?.id;
+      }
+    }
+
+    if (wabaId) {
+      const templatesRes = await fetch(`https://graph.facebook.com/v19.0/${wabaId}/message_templates`, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      if (templatesRes.ok) {
+        const tData = await templatesRes.json();
+        if (tData.data && Array.isArray(tData.data) && tData.data.length > 0) {
+          return tData.data.map((t: any) => ({
+            name: t.name,
+            category: t.category,
+            language: t.language,
+            status: t.status,
+            components: t.components,
+          }));
         }
       }
     }
