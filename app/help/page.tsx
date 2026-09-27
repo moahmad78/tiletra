@@ -14,7 +14,7 @@ import {
   Headphones,
   MessageSquare,
 } from "lucide-react";
-import ConnectDashboard from "@/components/connect/ConnectDashboard";
+import IntrihubHelpAutobotDesk from "@/components/help/IntrihubHelpAutobotDesk";
 
 export default function HelpDeskPage() {
   // Authentication State
@@ -416,15 +416,6 @@ export default function HelpDeskPage() {
     );
   }
 
-  // 3. Authenticated Customer Support Workspace
-  return (
-    <div className="min-h-screen bg-[#071321] flex flex-col">
-      <ConnectDashboard
-        portalContext="help"
-        currentAgentEmail="info@intrihub.com"
-        showLogout={true}
-        onLogout={handleLogout}
-      />
-    </div>
-  );
+  // 3. Authenticated Customer Support Autobot Workspace
+  return <IntrihubHelpAutobotDesk onLogout={handleLogout} />;
 }
