@@ -471,8 +471,18 @@ export default function IntrihubHelpAutobotDesk({ onLogout }: IntrihubHelpAutobo
       const isIosDevice = /iPad|iPhone|iPod/.test(navigator.userAgent) && !(window as any).MSStream;
       setIsIos(isIosDevice);
 
-      if (window.matchMedia("(display-mode: standalone)").matches || (window.navigator as any).standalone) {
+      const isStandalone =
+        window.matchMedia("(display-mode: standalone)").matches ||
+        window.matchMedia("(display-mode: fullscreen)").matches ||
+        (window.navigator as any).standalone === true ||
+        document.referrer.includes("android-app://") ||
+        localStorage.getItem("intrihub_app_installed") === "true" ||
+        localStorage.getItem("intrihub_helpdesk_app_installed") === "true";
+
+      if (isStandalone) {
         setIsAppInstalled(true);
+        localStorage.setItem("intrihub_app_installed", "true");
+        localStorage.setItem("intrihub_helpdesk_app_installed", "true");
       }
 
       const handleBeforeInstall = (e: any) => {
@@ -483,6 +493,8 @@ export default function IntrihubHelpAutobotDesk({ onLogout }: IntrihubHelpAutobo
       const handleAppInstalled = () => {
         setIsAppInstalled(true);
         setDeferredPrompt(null);
+        localStorage.setItem("intrihub_app_installed", "true");
+        localStorage.setItem("intrihub_helpdesk_app_installed", "true");
       };
 
       window.addEventListener("beforeinstallprompt", handleBeforeInstall);
@@ -504,6 +516,8 @@ export default function IntrihubHelpAutobotDesk({ onLogout }: IntrihubHelpAutobo
           setIsAppInstalled(true);
           setDeferredPrompt(null);
           setShowInstallModal(false);
+          localStorage.setItem("intrihub_app_installed", "true");
+          localStorage.setItem("intrihub_helpdesk_app_installed", "true");
           return;
         }
       } catch (err) {
@@ -511,6 +525,12 @@ export default function IntrihubHelpAutobotDesk({ onLogout }: IntrihubHelpAutobo
       }
     }
     setShowInstallModal(true);
+  };
+
+  const handleCloseInstallModal = () => {
+    setShowInstallModal(false);
+    localStorage.setItem("intrihub_helpdesk_app_dismissed", "true");
+    localStorage.setItem("intrihub_pwa_dismissed", "true");
   };
 
   const handleDownloadWebLauncher = () => {
@@ -1529,7 +1549,11 @@ export default function IntrihubHelpAutobotDesk({ onLogout }: IntrihubHelpAutobo
             className="inline-flex items-center gap-1.5 px-3 py-1.5 md:py-2 rounded-xl bg-emerald-50 hover:bg-emerald-100 text-[#1E9E6B] border border-emerald-200 text-xs font-extrabold shadow-2xs transition-all cursor-pointer"
             title="Download & Install HelpDesk App on Phone / PC"
           >
-            <DownloadCloud className="h-4 w-4 text-[#25D366]" />
+            {isAppInstalled ? (
+              <CheckCircle className="h-4 w-4 text-[#25D366]" />
+            ) : (
+              <DownloadCloud className="h-4 w-4 text-[#25D366]" />
+            )}
             <span className="hidden xs:inline">{isAppInstalled ? "App Installed" : "Download App"}</span>
           </button>
 
@@ -4304,16 +4328,18 @@ export default function IntrihubHelpAutobotDesk({ onLogout }: IntrihubHelpAutobo
             <span className="text-[10px] mt-0.5">Settings</span>
           </button>
 
-          <button
-            onClick={handleInstallClick}
-            className="flex flex-col items-center justify-center flex-1 py-1 text-[#F26522] hover:text-[#d95a1e] font-extrabold"
-          >
-            <div className="relative">
-              <DownloadCloud className="w-5 h-5 text-[#F26522] animate-bounce" />
-              <span className="absolute -top-1 -right-1.5 w-2 h-2 rounded-full bg-[#25D366]" />
-            </div>
-            <span className="text-[10px] mt-0.5">Install App</span>
-          </button>
+          {!isAppInstalled && (
+            <button
+              onClick={handleInstallClick}
+              className="flex flex-col items-center justify-center flex-1 py-1 text-[#F26522] hover:text-[#d95a1e] font-extrabold"
+            >
+              <div className="relative">
+                <DownloadCloud className="w-5 h-5 text-[#F26522]" />
+                <span className="absolute -top-1 -right-1.5 w-2 h-2 rounded-full bg-[#25D366]" />
+              </div>
+              <span className="text-[10px] mt-0.5">Install App</span>
+            </button>
+          )}
         </nav>
       )}
 
@@ -4326,7 +4352,7 @@ export default function IntrihubHelpAutobotDesk({ onLogout }: IntrihubHelpAutobo
             {/* Header */}
             <div className="bg-gradient-to-r from-[#052A51] via-[#0b3d75] to-[#128C7E] p-5 sm:p-6 text-white text-center relative shrink-0">
               <button
-                onClick={() => setShowInstallModal(false)}
+                onClick={handleCloseInstallModal}
                 className="absolute top-4 right-4 p-1.5 text-white/80 hover:text-white rounded-full bg-white/10 hover:bg-white/20 transition-colors cursor-pointer"
               >
                 <X className="w-5 h-5" />
@@ -4435,7 +4461,7 @@ export default function IntrihubHelpAutobotDesk({ onLogout }: IntrihubHelpAutobo
               </div>
 
               <button
-                onClick={() => setShowInstallModal(false)}
+                onClick={handleCloseInstallModal}
                 className="w-full py-2.5 bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold rounded-xl text-xs transition-colors cursor-pointer"
               >
                 Close

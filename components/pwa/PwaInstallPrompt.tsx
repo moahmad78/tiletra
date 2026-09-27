@@ -1,10 +1,12 @@
 "use client";
 
 import { useState, useEffect } from "react";
+import { usePathname } from "next/navigation";
 import Image from "next/image";
 import { Download, X, Smartphone, Share, PlusSquare, CheckCircle2 } from "lucide-react";
 
 export default function PwaInstallPrompt() {
+  const pathname = usePathname();
   const [deferredPrompt, setDeferredPrompt] = useState<any>(null);
   const [showPrompt, setShowPrompt] = useState(false);
   const [isIos, setIsIos] = useState(false);
@@ -12,66 +14,89 @@ export default function PwaInstallPrompt() {
   const [isInstalled, setIsInstalled] = useState(false);
 
   useEffect(() => {
-    // 1. Check if already installed / standalone mode
-    const isStandalone =
-      window.matchMedia("(display-mode: standalone)").matches ||
-      (window.navigator as any).standalone === true;
+    if (typeof window === "undefined") return;
 
-    if (isStandalone) {
-      setIsInstalled(true);
+    // 0. Do not run main store install prompt on Helpdesk /help
+    if (window.location.pathname.startsWith("/help")) {
       return;
     }
 
-    // 2. Register Service Worker for PWA
+    // 1. Check if already installed / standalone mode / stored install flag
+    const isStandalone =
+      window.matchMedia("(display-mode: standalone)").matches ||
+      window.matchMedia("(display-mode: fullscreen)").matches ||
+      (window.navigator as any).standalone === true ||
+      document.referrer.includes("android-app://") ||
+      localStorage.getItem("intrihub_app_installed") === "true";
+
+    if (isStandalone) {
+      setIsInstalled(true);
+      localStorage.setItem("intrihub_app_installed", "true");
+      return;
+    }
+
+    // 2. Check if user already dismissed once (NEVER show again automatically if dismissed)
+    const isDismissed =
+      localStorage.getItem("intrihub_pwa_dismissed") === "true" ||
+      localStorage.getItem("intrihub_app_download_dismissed") === "true";
+    if (isDismissed) {
+      return;
+    }
+
+    // 3. Register Service Worker for PWA
     if ("serviceWorker" in navigator && process.env.NODE_ENV === "production") {
       navigator.serviceWorker.register("/sw.js").catch(() => {});
     }
 
-    // 3. Detect iOS Safari
+    // 4. Detect iOS Safari
     const ua = window.navigator.userAgent.toLowerCase();
     const isIosDevice = /iphone|ipad|ipod/.test(ua);
     const isSafari = /safari/.test(ua) && !/chrome|crios|android/.test(ua);
     setIsIos(isIosDevice && isSafari);
 
-    // 4. Check dismissal cooldown (dismiss for 4 days)
-    const dismissedAt = localStorage.getItem("intrihub_pwa_dismissed_at");
-    if (dismissedAt) {
-      const daysSinceDismissed =
-        (Date.now() - parseInt(dismissedAt, 10)) / (1000 * 60 * 60 * 24);
-      if (daysSinceDismissed < 4) {
-        return;
-      }
-    }
-
     // 5. Capture native beforeinstallprompt event (Android, Chrome, Edge, Windows)
     const handleBeforeInstallPrompt = (e: Event) => {
       e.preventDefault();
       setDeferredPrompt(e);
-      // Reveal prompt after 3.5s for seamless user onboarding
+      // Reveal prompt after 4s for initial user onboarding if not dismissed
       setTimeout(() => {
-        setShowPrompt(true);
-      }, 3500);
+        if (
+          localStorage.getItem("intrihub_pwa_dismissed") !== "true" &&
+          localStorage.getItem("intrihub_app_installed") !== "true"
+        ) {
+          setShowPrompt(true);
+        }
+      }, 4000);
     };
 
     window.addEventListener("beforeinstallprompt", handleBeforeInstallPrompt);
 
-    // If on iOS and not dismissed, show prompt after 4s
+    // If on iOS and not dismissed, show prompt after 4.5s
     if (isIosDevice && isSafari) {
       const timer = setTimeout(() => {
-        setShowPrompt(true);
-      }, 4000);
+        if (
+          localStorage.getItem("intrihub_pwa_dismissed") !== "true" &&
+          localStorage.getItem("intrihub_app_installed") !== "true"
+        ) {
+          setShowPrompt(true);
+        }
+      }, 4500);
       return () => clearTimeout(timer);
     }
 
     // Listen for successful install
-    window.addEventListener("appinstalled", () => {
+    const handleAppInstalled = () => {
       setIsInstalled(true);
       setShowPrompt(false);
       setDeferredPrompt(null);
-    });
+      localStorage.setItem("intrihub_app_installed", "true");
+    };
+
+    window.addEventListener("appinstalled", handleAppInstalled);
 
     return () => {
       window.removeEventListener("beforeinstallprompt", handleBeforeInstallPrompt);
+      window.removeEventListener("appinstalled", handleAppInstalled);
     };
   }, []);
 
@@ -82,12 +107,12 @@ export default function PwaInstallPrompt() {
       if (outcome === "accepted") {
         setIsInstalled(true);
         setShowPrompt(false);
+        localStorage.setItem("intrihub_app_installed", "true");
       }
       setDeferredPrompt(null);
     } else if (isIos) {
       setShowIosGuide(true);
     } else {
-      // Fallback hint
       setShowIosGuide(true);
     }
   };
@@ -95,10 +120,12 @@ export default function PwaInstallPrompt() {
   const handleDismiss = () => {
     setShowPrompt(false);
     setShowIosGuide(false);
-    localStorage.setItem("intrihub_pwa_dismissed_at", Date.now().toString());
+    // Mark as permanently dismissed so it NEVER pops up again
+    localStorage.setItem("intrihub_pwa_dismissed", "true");
+    localStorage.setItem("intrihub_app_download_dismissed", "true");
   };
 
-  if (isInstalled || !showPrompt) return null;
+  if (isInstalled || !showPrompt || pathname?.startsWith("/help")) return null;
 
   return (
     <>

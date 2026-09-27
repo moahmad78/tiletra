@@ -36,6 +36,7 @@ model User {
   wishlist              WishlistItem[]
   pushTokens            MobilePushToken[]
   returnRequests        ReturnRequest[]
+  complaints            ComplaintNote[]
   auditLogs             AuditLog[]
   staffPermissions      StaffPermission[]
   vendor                Vendor?                 @relation("VendorOwner")
@@ -385,6 +386,7 @@ model Order {
   deliveryPartner        DeliveryPartner? @relation(fields: [deliveryPartnerId], references: [id], onDelete: SetNull)
   items                  OrderItem[]
   returnRequests         ReturnRequest[]
+  complaints             ComplaintNote[]
   reviews                Review[]
   locationLogs           DeliveryLocationLog[]
 
@@ -459,23 +461,60 @@ model OrderItem {
 }
 
 model ReturnRequest {
-  id          String     @id @default(cuid())
-  orderId     String
-  orderItemId String?
-  userId      String?
-  reason      String
-  status      String     @default("Pending") // Pending | Approved | Rejected | Completed
-  photos      String[]   @default([])
-  notes       String?
-  createdAt   DateTime   @default(now())
-  updatedAt   DateTime   @updatedAt
+  id              String      @id @default(cuid())
+  orderId         String
+  orderItemId     String?
+  userId          String?
+  items           Json?       // Selected items array: [{ orderItemId, productName, boxQuantity, pricePerBox, reason }]
+  type            String      @default("return") // "return" | "exchange"
+  reason          String      // damaged | wrong_item | not_needed | quality_issue | other
+  status          String      @default("Requested") // Requested | Approved | Pickup Scheduled | Received | Refunded | Rejected
+  photos          String[]    @default([])
+  photoUrls       String[]    @default([])
+  notes           String?     // Staff notes or customer comments
+  refundAmount    Float?
+  refundMethod    String?     // original_payment | wallet_credit | bank_transfer | cash
+  refundDate      DateTime?
+  refundNotes     String?
+  exchangeItemId  String?     // Product / variant selected for exchange
+  exchangeVariant String?
+  exchangeNotes   String?
+  resolvedAt      DateTime?
+  createdAt       DateTime    @default(now())
+  updatedAt       DateTime    @updatedAt
 
-  order       Order      @relation(fields: [orderId], references: [id], onDelete: Cascade)
-  orderItem   OrderItem? @relation(fields: [orderItemId], references: [id], onDelete: SetNull)
-  user        User?      @relation(fields: [userId], references: [id], onDelete: SetNull)
+  order           Order       @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  orderItem       OrderItem?  @relation(fields: [orderItemId], references: [id], onDelete: SetNull)
+  user            User?       @relation(fields: [userId], references: [id], onDelete: SetNull)
 
   @@index([orderId])
   @@index([userId])
+  @@index([status])
+  @@index([type])
+}
+
+model ComplaintNote {
+  id            String    @id @default(cuid())
+  orderId       String?
+  userId        String?
+  customerPhone String?
+  customerName  String?
+  note          String
+  status        String    @default("Open") // Open | In Progress | Resolved
+  priority      String    @default("Medium") // Low | Medium | High | Urgent
+  category      String?   @default("General") // Delivery | Product Quality | Payment | Return | Other
+  createdBy     String?   @default("Support Agent")
+  resolvedAt    DateTime?
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+
+  order         Order?    @relation(fields: [orderId], references: [id], onDelete: SetNull)
+  user          User?     @relation(fields: [userId], references: [id], onDelete: SetNull)
+
+  @@index([orderId])
+  @@index([userId])
+  @@index([customerPhone])
+  @@index([status])
 }
 
 // ----------------------------------------------------

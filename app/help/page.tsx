@@ -14,7 +14,7 @@ import {
   Headphones,
   MessageSquare,
 } from "lucide-react";
-import IntrihubHelpAutobotDesk from "@/components/help/IntrihubHelpAutobotDesk";
+import IntrihubOrderSupportDesk from "@/components/help/IntrihubOrderSupportDesk";
 
 export default function HelpDeskPage() {
   // Authentication State
@@ -416,6 +416,6 @@ export default function HelpDeskPage() {
     );
   }
 
-  // 3. Authenticated Customer Support Autobot Workspace
-  return <IntrihubHelpAutobotDesk onLogout={handleLogout} />;
+  // 3. Authenticated Customer Order & Complaint Support Desk Workspace
+  return <IntrihubOrderSupportDesk onLogout={handleLogout} />;
 }
