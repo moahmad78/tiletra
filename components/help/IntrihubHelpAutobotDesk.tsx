@@ -1508,6 +1508,93 @@ export default function IntrihubHelpAutobotDesk({ onLogout }: IntrihubHelpAutobo
               </div>
             )}
 
+            {/* Live WhatsApp Business (WABA) Connection Card */}
+            <div className="rounded-2xl border border-emerald-200 bg-emerald-50/40 p-6 shadow-2xs space-y-5">
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-emerald-200/70 pb-4">
+                <div className="flex items-center gap-3">
+                  <div className="h-10 w-10 rounded-xl bg-emerald-600 text-white flex items-center justify-center shadow-xs">
+                    <Phone className="h-5 w-5" />
+                  </div>
+                  <div>
+                    <h3 className="text-base font-bold text-[#052A51] flex items-center gap-2">
+                      Official WhatsApp Business Number (WABA) Setup
+                      <span className="text-[10px] uppercase font-bold tracking-wider px-2 py-0.5 rounded-full bg-emerald-100 text-emerald-800 border border-emerald-300">
+                        Live Cloud API
+                      </span>
+                    </h3>
+                    <p className="text-xs text-slate-600">
+                      Connect your real number (<strong className="font-mono text-[#052A51]">+91 70901 20211</strong>) so any customer message opens directly in this dashboard with instant AI responses.
+                    </p>
+                  </div>
+                </div>
+              </div>
+
+              {/* Webhook Connection Endpoints */}
+              <div className="grid gap-4 sm:grid-cols-2">
+                <div className="p-3.5 bg-white rounded-xl border border-slate-200 space-y-1.5">
+                  <div className="flex items-center justify-between">
+                    <span className="text-[11px] font-bold uppercase text-slate-400">Meta Webhook Callback URL</span>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        navigator.clipboard.writeText("https://www.intrihub.com/api/webhook");
+                        setSettingsMsg({ type: "success", text: "Webhook URL copied to clipboard!" });
+                        setTimeout(() => setSettingsMsg(null), 3000);
+                      }}
+                      className="inline-flex items-center gap-1 text-[11px] font-bold text-[#F26522] hover:underline cursor-pointer"
+                    >
+                      <Copy className="h-3 w-3" /> Copy URL
+                    </button>
+                  </div>
+                  <p className="font-mono text-xs font-bold text-[#052A51] bg-slate-50 p-2 rounded-lg border border-slate-100 truncate select-all">
+                    https://www.intrihub.com/api/webhook
+                  </p>
+                </div>
+
+                <div className="p-3.5 bg-white rounded-xl border border-slate-200 space-y-1.5">
+                  <div className="flex items-center justify-between">
+                    <span className="text-[11px] font-bold uppercase text-slate-400">Webhook Verify Token</span>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        navigator.clipboard.writeText("my_secret_agent_123");
+                        setSettingsMsg({ type: "success", text: "Verify Token copied to clipboard!" });
+                        setTimeout(() => setSettingsMsg(null), 3000);
+                      }}
+                      className="inline-flex items-center gap-1 text-[11px] font-bold text-[#F26522] hover:underline cursor-pointer"
+                    >
+                      <Copy className="h-3 w-3" /> Copy Token
+                    </button>
+                  </div>
+                  <p className="font-mono text-xs font-bold text-[#052A51] bg-slate-50 p-2 rounded-lg border border-slate-100 truncate select-all">
+                    my_secret_agent_123
+                  </p>
+                </div>
+              </div>
+
+              {/* Step-by-Step Onboarding Guide */}
+              <div className="rounded-xl border border-emerald-200 bg-white p-4 space-y-3">
+                <h4 className="text-xs font-bold uppercase tracking-wider text-[#052A51] flex items-center gap-1.5">
+                  <ShieldCheck className="h-4 w-4 text-emerald-600" />
+                  How to link +91 70901 20211 to Meta Cloud API (4 Easy Steps):
+                </h4>
+                <ol className="list-decimal list-inside text-xs space-y-2 text-slate-700 leading-relaxed font-medium">
+                  <li>
+                    <strong className="text-slate-900">Remove from phone WhatsApp app:</strong> Phone WhatsApp settings ➔ Account ➔ Delete Account (so the number frees up for Cloud API).
+                  </li>
+                  <li>
+                    <strong className="text-slate-900">Add to Meta Business Manager:</strong> Go to <a href="https://business.facebook.com" target="_blank" rel="noreferrer" className="text-[#F26522] font-bold hover:underline inline-flex items-center gap-0.5">business.facebook.com <ExternalLink className="h-3 w-3" /></a> ➔ WhatsApp Accounts ➔ WhatsApp Manager ➔ Phone Numbers ➔ <strong>"Add Phone Number"</strong>.
+                  </li>
+                  <li>
+                    <strong className="text-slate-900">Enter Number & Verify OTP:</strong> Enter <code className="bg-slate-100 px-1.5 py-0.5 rounded text-[#052A51]">+91 70901 20211</code> and enter the 6-digit OTP received via SMS.
+                  </li>
+                  <li>
+                    <strong className="text-slate-900">Get Permanent Token:</strong> In Meta Business Settings ➔ System Users ➔ Generate Token with <code className="bg-slate-100 px-1 py-0.5 rounded text-emerald-700">whatsapp_business_messaging</code> permission.
+                  </li>
+                </ol>
+              </div>
+            </div>
+
             <div className="grid gap-8 lg:grid-cols-2">
               <div className="space-y-6">
                 <div className="rounded-2xl border border-slate-200 bg-white p-6 shadow-2xs space-y-4">
