@@ -39,6 +39,8 @@
     "intrihub-business",
     "intrihub-business/**/*",
     "scripts",
-    "scripts/**/*"
+    "scripts/**/*",
+    "autobot",
+    "autobot/**/*"
   ]
 }
