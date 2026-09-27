@@ -34,9 +34,58 @@ import {
   Paperclip,
   Image as ImageIcon,
   FileUp,
+  Package,
+  ShoppingCart,
+  Truck,
+  CreditCard,
+  Calendar,
+  MapPin,
+  Copy,
+  ExternalLink,
+  ChevronRight,
+  ChevronLeft,
+  Info,
+  Check,
 } from "lucide-react";
 import { supabase } from "@/lib/autobot/supabase";
 import { INTRIHUB_DEFAULT_PROMPT } from "@/lib/autobot/profile";
+
+type OrderItemRecord = {
+  id: string;
+  productName: string;
+  categorySlug: string;
+  image: string | null;
+  variantDetails: string | null;
+  boxQuantity: number;
+  pricePerBox: number;
+  totalPrice: number;
+};
+
+type OrderRecord = {
+  id: string;
+  orderStatus: string;
+  paymentStatus: string;
+  paymentMethod: string;
+  total: number;
+  subtotal: number;
+  deliveryFee: number;
+  discount: number;
+  estimatedDelivery: string;
+  createdAt: string;
+  deliveryAddress: string;
+  customerName: string;
+  customerPhone: string;
+  customerEmail: string;
+  items: OrderItemRecord[];
+};
+
+type OrderSummary = {
+  totalOrders: number;
+  lifetimeSpend: number;
+  customerName: string | null;
+  customerPhone: string | null;
+  customerEmail: string | null;
+};
 
 type Chat = {
   id: string;
@@ -103,6 +152,14 @@ export default function IntrihubHelpAutobotDesk({ onLogout }: IntrihubHelpAutobo
   const [mediaCaption, setMediaCaption] = useState("");
   const [isSendingMedia, setIsSendingMedia] = useState(false);
   const mediaFileInputRef = useRef<HTMLInputElement>(null);
+
+  // Customer CRM & Order History States
+  const [orders, setOrders] = useState<OrderRecord[]>([]);
+  const [orderSummary, setOrderSummary] = useState<OrderSummary | null>(null);
+  const [isLoadingOrders, setIsLoadingOrders] = useState(false);
+  const [orderSearchQuery, setOrderSearchQuery] = useState("");
+  const [isOrderPanelOpen, setIsOrderPanelOpen] = useState(true);
+  const [copiedOrderId, setCopiedOrderId] = useState<string | null>(null);
 
   // New Chat Modal States
   const [isNewChatOpen, setIsNewChatOpen] = useState(false);
@@ -207,6 +264,52 @@ export default function IntrihubHelpAutobotDesk({ onLogout }: IntrihubHelpAutobo
     }
   };
 
+  const fetchCustomerOrders = async (phoneOrQuery?: string, isExplicitQuery = false) => {
+    const target = phoneOrQuery || (activeChat ? activeChat.customer_phone : "");
+    if (!target && !orderSearchQuery) {
+      setOrders([]);
+      setOrderSummary(null);
+      return;
+    }
+
+    setIsLoadingOrders(true);
+    try {
+      const url = isExplicitQuery
+        ? `/api/customer/orders?query=${encodeURIComponent(target)}`
+        : `/api/customer/orders?phone=${encodeURIComponent(target)}`;
+
+      const res = await fetch(url);
+      if (res.ok) {
+        const data = await res.json();
+        setOrders(data.orders || []);
+        setOrderSummary(data.summary || null);
+      }
+    } catch (err) {
+      console.error("Error fetching customer orders:", err);
+    } finally {
+      setIsLoadingOrders(false);
+    }
+  };
+
+  const handleInsertOrderToChat = (order: OrderRecord) => {
+    const itemsSummary = order.items
+      .map((it) => `${it.boxQuantity}x ${it.productName}${it.variantDetails ? ` (${it.variantDetails})` : ""}`)
+      .join(", ");
+
+    const text = `Hi ${order.customerName || "there"}! Regarding your IntriHub order #${order.id} (${itemsSummary} • Total ₹${order.total.toLocaleString("en-IN")}): The order status is currently "${order.orderStatus.toUpperCase()}" with payment status "${order.paymentStatus}". Delivery ETA: ${order.estimatedDelivery}. Let me know if you need any further help!`;
+
+    setInputText(text);
+    if (activeChat?.chat_mode !== "human") {
+      handleToggleMode("human");
+    }
+  };
+
+  const handleCopyOrderId = (id: string) => {
+    navigator.clipboard.writeText(id);
+    setCopiedOrderId(id);
+    setTimeout(() => setCopiedOrderId(null), 2000);
+  };
+
   useEffect(() => {
     fetchChats(true);
     fetchStats();
@@ -278,6 +381,17 @@ export default function IntrihubHelpAutobotDesk({ onLogout }: IntrihubHelpAutobo
       supabase.removeChannel(messageSubscription);
     };
   }, [activeChat?.id]);
+
+  // Auto-fetch Customer Order History when active chat changes
+  useEffect(() => {
+    if (activeChat?.customer_phone) {
+      setOrderSearchQuery("");
+      fetchCustomerOrders(activeChat.customer_phone, false);
+    } else {
+      setOrders([]);
+      setOrderSummary(null);
+    }
+  }, [activeChat?.customer_phone]);
 
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
@@ -759,27 +873,42 @@ export default function IntrihubHelpAutobotDesk({ onLogout }: IntrihubHelpAutobo
                       </div>
                     </div>
 
-                    <div className="flex items-center gap-1.5 bg-slate-100 p-1 rounded-xl border border-slate-200">
+                    <div className="flex items-center gap-2">
                       <button
-                        onClick={() => handleToggleMode("human")}
-                        className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all ${
-                          activeChat.chat_mode === "human"
-                            ? "bg-[#1E9E6B] text-white shadow-2xs"
-                            : "text-slate-600 hover:text-slate-900"
+                        onClick={() => setIsOrderPanelOpen(!isOrderPanelOpen)}
+                        className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all flex items-center gap-1.5 border cursor-pointer ${
+                          isOrderPanelOpen
+                            ? "bg-[#052A51] text-white border-[#052A51] shadow-2xs"
+                            : "bg-white text-slate-700 hover:bg-slate-50 border-slate-200"
                         }`}
+                        title="Toggle Customer Orders & Purchase History"
                       >
-                        Direct Agent
+                        <Package className="w-3.5 h-3.5 text-[#F26522]" />
+                        <span>Order History {orders.length > 0 ? `(${orders.length})` : ""}</span>
                       </button>
-                      <button
-                        onClick={() => handleToggleMode("ai")}
-                        className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all flex items-center gap-1.5 ${
-                          activeChat.chat_mode === "ai"
-                            ? "bg-[#F26522] text-white shadow-2xs"
-                            : "text-slate-600 hover:text-slate-900"
-                        }`}
-                      >
-                        <Sparkles className="w-3.5 h-3.5" /> Instant Desk
-                      </button>
+
+                      <div className="flex items-center gap-1 bg-slate-100 p-1 rounded-xl border border-slate-200">
+                        <button
+                          onClick={() => handleToggleMode("human")}
+                          className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all ${
+                            activeChat.chat_mode === "human"
+                              ? "bg-[#1E9E6B] text-white shadow-2xs"
+                              : "text-slate-600 hover:text-slate-900"
+                          }`}
+                        >
+                          Direct Agent
+                        </button>
+                        <button
+                          onClick={() => handleToggleMode("ai")}
+                          className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all flex items-center gap-1.5 ${
+                            activeChat.chat_mode === "ai"
+                              ? "bg-[#F26522] text-white shadow-2xs"
+                              : "text-slate-600 hover:text-slate-900"
+                          }`}
+                        >
+                          <Sparkles className="w-3.5 h-3.5" /> Instant Desk
+                        </button>
+                      </div>
                     </div>
                   </header>
 
@@ -999,6 +1128,195 @@ export default function IntrihubHelpAutobotDesk({ onLogout }: IntrihubHelpAutobo
                 </div>
               )}
             </div>
+
+            {/* Right Customer Orders & CRM Intelligence Panel */}
+            {isOrderPanelOpen && activeChat && (
+              <aside className="w-80 lg:w-96 border-l border-slate-200 bg-white flex flex-col shrink-0 overflow-hidden z-20">
+                {/* CRM Header */}
+                <div className="p-4 border-b border-slate-200 bg-slate-50/70 space-y-3">
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-2">
+                      <div className="p-1.5 rounded-lg bg-[#052A51] text-white">
+                        <Package className="w-4 h-4" />
+                      </div>
+                      <div>
+                        <h3 className="text-xs font-bold text-[#052A51] uppercase tracking-wider">Customer Orders & CRM</h3>
+                        <p className="text-[11px] text-slate-500 font-mono">{activeChat.customer_phone}</p>
+                      </div>
+                    </div>
+                    <button
+                      onClick={() => setIsOrderPanelOpen(false)}
+                      className="p-1 text-slate-400 hover:text-slate-800 rounded-lg hover:bg-slate-200 transition-colors cursor-pointer"
+                      title="Close Orders Panel"
+                    >
+                      <X className="w-4 h-4" />
+                    </button>
+                  </div>
+
+                  {/* Customer Lifetime Spend & KPI summary */}
+                  {orderSummary && (
+                    <div className="grid grid-cols-2 gap-2 p-2.5 bg-white rounded-xl border border-slate-200 shadow-2xs">
+                      <div>
+                        <span className="text-[10px] uppercase font-bold text-slate-400 block">Total Orders</span>
+                        <span className="text-sm font-extrabold text-[#052A51]">{orderSummary.totalOrders} Placed</span>
+                      </div>
+                      <div>
+                        <span className="text-[10px] uppercase font-bold text-slate-400 block">Lifetime Value</span>
+                        <span className="text-sm font-extrabold text-[#1E9E6B]">₹{orderSummary.lifetimeSpend.toLocaleString("en-IN")}</span>
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Live Search by Order ID or Phone Number */}
+                  <form
+                    onSubmit={(e) => {
+                      e.preventDefault();
+                      fetchCustomerOrders(orderSearchQuery.trim(), true);
+                    }}
+                    className="relative"
+                  >
+                    <Search className="w-3.5 h-3.5 absolute left-3 top-2.5 text-slate-400" />
+                    <input
+                      type="text"
+                      value={orderSearchQuery}
+                      onChange={(e) => setOrderSearchQuery(e.target.value)}
+                      placeholder="Search Order ID (#IH-...) or phone..."
+                      className="w-full bg-white border border-slate-200 rounded-xl pl-8 pr-14 py-1.5 text-xs text-slate-800 placeholder-slate-400 focus:outline-none focus:border-[#F26522] transition-colors"
+                    />
+                    <button
+                      type="submit"
+                      className="absolute right-1.5 top-1 px-2 py-0.5 bg-[#052A51] hover:bg-[#F26522] text-white text-[10px] font-bold rounded-lg transition-colors cursor-pointer"
+                    >
+                      Find
+                    </button>
+                  </form>
+                </div>
+
+                {/* Orders List Content */}
+                <div className="flex-1 overflow-y-auto p-3 space-y-3 bg-[#f8fafc]">
+                  {isLoadingOrders ? (
+                    <div className="py-12 text-center text-slate-400 space-y-2 text-xs">
+                      <Loader2 className="w-6 h-6 animate-spin mx-auto text-[#F26522]" />
+                      <p>Loading purchase history...</p>
+                    </div>
+                  ) : orders.length > 0 ? (
+                    orders.map((order) => {
+                      const isDelivered = order.orderStatus.toLowerCase() === "delivered";
+                      const isCancelled = order.orderStatus.toLowerCase() === "cancelled";
+                      const isProcessing = order.orderStatus.toLowerCase() === "processing" || order.orderStatus.toLowerCase() === "confirmed";
+
+                      return (
+                        <div
+                          key={order.id}
+                          className="bg-white rounded-2xl border border-slate-200 p-3.5 shadow-2xs hover:shadow-xs transition-shadow space-y-3"
+                        >
+                          {/* Order Top Line */}
+                          <div className="flex items-center justify-between">
+                            <div className="flex items-center gap-1.5">
+                              <span className="font-mono text-xs font-extrabold text-[#052A51]">
+                                #{order.id.slice(-8).toUpperCase()}
+                              </span>
+                              <button
+                                onClick={() => handleCopyOrderId(order.id)}
+                                className="p-1 text-slate-400 hover:text-slate-800 rounded transition-colors cursor-pointer"
+                                title="Copy Full Order ID"
+                              >
+                                {copiedOrderId === order.id ? (
+                                  <Check className="w-3 h-3 text-emerald-600" />
+                                ) : (
+                                  <Copy className="w-3 h-3" />
+                                )}
+                              </button>
+                            </div>
+                            <span
+                              className={`text-[10px] px-2 py-0.5 rounded-full font-bold uppercase tracking-wider ${
+                                isDelivered
+                                  ? "bg-emerald-100 text-[#1E9E6B] border border-emerald-200"
+                                  : isCancelled
+                                  ? "bg-red-100 text-red-700 border border-red-200"
+                                  : isProcessing
+                                  ? "bg-blue-100 text-blue-700 border border-blue-200"
+                                  : "bg-orange-100 text-[#F26522] border border-orange-200"
+                              }`}
+                            >
+                              {order.orderStatus}
+                            </span>
+                          </div>
+
+                          {/* Amount & Payment Method */}
+                          <div className="flex items-center justify-between text-xs pb-2 border-b border-slate-100">
+                            <div className="flex items-center gap-1 text-slate-500">
+                              <Calendar className="w-3 h-3 text-slate-400" />
+                              <span>{new Date(order.createdAt).toLocaleDateString("en-IN", { month: "short", day: "numeric", year: "numeric" })}</span>
+                            </div>
+                            <div className="text-right">
+                              <span className="font-extrabold text-[#052A51] text-sm">₹{order.total.toLocaleString("en-IN")}</span>
+                              <span className="text-[10px] text-slate-500 block">{order.paymentStatus} ({order.paymentMethod})</span>
+                            </div>
+                          </div>
+
+                          {/* Products in this order */}
+                          <div className="space-y-2">
+                            <span className="text-[10px] uppercase font-bold text-slate-400 tracking-wider block">
+                              Items Ordered ({order.items.length})
+                            </span>
+                            <div className="space-y-1.5 max-h-36 overflow-y-auto pr-1">
+                              {order.items.map((item) => (
+                                <div key={item.id} className="flex items-center gap-2 text-xs bg-slate-50 p-1.5 rounded-xl border border-slate-100">
+                                  {item.image ? (
+                                    <img src={item.image} alt={item.productName} className="w-8 h-8 rounded-lg object-cover border border-slate-200 shrink-0" />
+                                  ) : (
+                                    <div className="w-8 h-8 rounded-lg bg-white border border-slate-200 flex items-center justify-center text-slate-400 shrink-0">
+                                      <Package className="w-4 h-4" />
+                                    </div>
+                                  )}
+                                  <div className="flex-1 min-w-0">
+                                    <p className="font-bold text-slate-800 truncate text-[11px]">{item.productName}</p>
+                                    <p className="text-[10px] text-slate-500 truncate">
+                                      {item.boxQuantity} box(es) • ₹{item.totalPrice.toLocaleString("en-IN")}
+                                    </p>
+                                  </div>
+                                </div>
+                              ))}
+                            </div>
+                          </div>
+
+                          {/* Delivery Snapshot */}
+                          <div className="p-2 bg-slate-50 rounded-xl border border-slate-100 text-[11px] text-slate-600 space-y-1">
+                            <div className="flex items-start gap-1.5">
+                              <MapPin className="w-3 h-3 text-slate-400 shrink-0 mt-0.5" />
+                              <span className="line-clamp-2">{order.deliveryAddress}</span>
+                            </div>
+                            <div className="flex items-center gap-1.5 text-slate-500">
+                              <Truck className="w-3 h-3 text-[#F26522] shrink-0" />
+                              <span>ETA: {order.estimatedDelivery}</span>
+                            </div>
+                          </div>
+
+                          {/* Quick Action: Insert in WhatsApp Message */}
+                          <button
+                            type="button"
+                            onClick={() => handleInsertOrderToChat(order)}
+                            className="w-full py-2 px-3 rounded-xl bg-orange-50 hover:bg-[#F26522] text-[#F26522] hover:text-white font-bold text-xs transition-colors border border-orange-200 flex items-center justify-center gap-1.5 shadow-2xs cursor-pointer"
+                          >
+                            <MessageSquare className="w-3.5 h-3.5" />
+                            <span>Send Order Status in Chat</span>
+                          </button>
+                        </div>
+                      );
+                    })
+                  ) : (
+                    <div className="py-12 text-center text-slate-400 space-y-2 text-xs">
+                      <Package className="w-8 h-8 mx-auto text-slate-300" />
+                      <p className="font-bold text-slate-600">No Orders Found</p>
+                      <p className="text-[11px] text-slate-400 max-w-[200px] mx-auto">
+                        No previous orders found for this phone number. Try searching an Order ID above.
+                      </p>
+                    </div>
+                  )}
+                </div>
+              </aside>
+            )}
           </div>
         )}
 
