@@ -463,7 +463,6 @@ export default function IntrihubHelpAutobotDesk({ onLogout }: IntrihubHelpAutobo
   // PWA / App Download & Installation States
   const [deferredPrompt, setDeferredPrompt] = useState<any>(null);
   const [isAppInstalled, setIsAppInstalled] = useState(false);
-  const [showInstallBanner, setShowInstallBanner] = useState(true);
   const [showInstallModal, setShowInstallModal] = useState(false);
   const [isIos, setIsIos] = useState(false);
 
@@ -474,19 +473,16 @@ export default function IntrihubHelpAutobotDesk({ onLogout }: IntrihubHelpAutobo
 
       if (window.matchMedia("(display-mode: standalone)").matches || (window.navigator as any).standalone) {
         setIsAppInstalled(true);
-        setShowInstallBanner(false);
       }
 
       const handleBeforeInstall = (e: any) => {
         e.preventDefault();
         setDeferredPrompt(e);
-        setShowInstallBanner(true);
       };
 
       const handleAppInstalled = () => {
         setIsAppInstalled(true);
         setDeferredPrompt(null);
-        setShowInstallBanner(false);
       };
 
       window.addEventListener("beforeinstallprompt", handleBeforeInstall);
@@ -501,15 +497,59 @@ export default function IntrihubHelpAutobotDesk({ onLogout }: IntrihubHelpAutobo
 
   const handleInstallClick = async () => {
     if (deferredPrompt) {
-      deferredPrompt.prompt();
-      const { outcome } = await deferredPrompt.userChoice;
-      if (outcome === "accepted") {
-        setIsAppInstalled(true);
-        setDeferredPrompt(null);
-        setShowInstallBanner(false);
+      try {
+        deferredPrompt.prompt();
+        const { outcome } = await deferredPrompt.userChoice;
+        if (outcome === "accepted") {
+          setIsAppInstalled(true);
+          setDeferredPrompt(null);
+          setShowInstallModal(false);
+          return;
+        }
+      } catch (err) {
+        console.error("Install prompt error:", err);
       }
-    } else {
-      setShowInstallModal(true);
+    }
+    setShowInstallModal(true);
+  };
+
+  const handleDownloadWebLauncher = () => {
+    try {
+      const launcherHtml = `<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>IntriHub HelpDesk App</title>
+  <style>
+    body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; background: #052A51; color: white; display: flex; flex-direction: column; align-items: center; justify-content: center; height: 100vh; margin: 0; text-align: center; }
+    .card { background: white; color: #052A51; padding: 32px; border-radius: 24px; box-shadow: 0 20px 40px rgba(0,0,0,0.3); max-width: 400px; width: 90%; }
+    h2 { margin: 0 0 8px 0; color: #052A51; }
+    p { color: #64748b; font-size: 14px; margin: 0 0 20px 0; }
+    a.btn { display: block; background: #F26522; color: white; text-decoration: none; padding: 14px; border-radius: 12px; font-weight: bold; text-transform: uppercase; letter-spacing: 0.5px; }
+  </style>
+  <meta http-equiv="refresh" content="0; url=https://www.intrihub.com/help">
+</head>
+<body>
+  <div class="card">
+    <h2>IntriHub HelpDesk</h2>
+    <p>Connecting to WhatsApp Support Operating System...</p>
+    <a class="btn" href="https://www.intrihub.com/help">Open Live HelpDesk</a>
+  </div>
+  <script>window.location.href="https://www.intrihub.com/help";</script>
+</body>
+</html>`;
+      const blob = new Blob([launcherHtml], { type: "text/html" });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = "IntriHub-HelpDesk-App.html";
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+    } catch (err) {
+      console.error("Launcher download error:", err);
     }
   };
 
@@ -1418,7 +1458,7 @@ export default function IntrihubHelpAutobotDesk({ onLogout }: IntrihubHelpAutobo
   return (
     <div className="min-h-screen bg-[#f8fafc] flex flex-col font-sans text-slate-900">
       {/* Top Navbar */}
-      <header className="h-16 md:h-20 bg-white border-b border-slate-200 px-3 md:px-6 flex items-center justify-between shadow-2xs sticky top-0 z-30">
+      <header className={`h-16 md:h-20 bg-white border-b border-slate-200 px-3 md:px-6 items-center justify-between shadow-2xs sticky top-0 z-30 ${activeChat ? "hidden md:flex" : "flex"}`}>
         <div className="flex items-center gap-3 md:gap-6">
           <Link href="/" className="flex items-center gap-2">
             <img src="/logo/intri-web-logo.png" alt="Intrihub" className="h-7 md:h-8 w-auto object-contain" />
@@ -1490,7 +1530,7 @@ export default function IntrihubHelpAutobotDesk({ onLogout }: IntrihubHelpAutobo
             title="Download & Install HelpDesk App on Phone / PC"
           >
             <DownloadCloud className="h-4 w-4 text-[#25D366]" />
-            <span className="hidden xs:inline">{isAppInstalled ? "App Installed" : "Install App"}</span>
+            <span className="hidden xs:inline">{isAppInstalled ? "App Installed" : "Download App"}</span>
           </button>
 
           <button
@@ -1510,36 +1550,6 @@ export default function IntrihubHelpAutobotDesk({ onLogout }: IntrihubHelpAutobo
           </button>
         </div>
       </header>
-
-      {/* Dismissible Install App Banner (Mobile & Desktop) */}
-      {!isAppInstalled && showInstallBanner && (
-        <div className="bg-gradient-to-r from-[#052A51] via-[#0b3d75] to-[#128C7E] text-white px-3 md:px-6 py-2.5 flex items-center justify-between shadow-xs text-xs z-20 shrink-0">
-          <div className="flex items-center gap-2.5 min-w-0">
-            <div className="w-8 h-8 rounded-xl bg-white/10 flex items-center justify-center shrink-0 border border-white/20">
-              <Smartphone className="w-4 h-4 text-[#25D366]" />
-            </div>
-            <div className="min-w-0">
-              <p className="font-bold text-xs truncate">Install IntriHub HelpDesk App</p>
-              <p className="text-[10px] text-slate-200 truncate">Run as a full-screen WhatsApp-style mobile app with instant alerts</p>
-            </div>
-          </div>
-          <div className="flex items-center gap-2 shrink-0">
-            <button
-              onClick={handleInstallClick}
-              className="px-3 py-1 bg-[#25D366] hover:bg-[#20bd5a] text-slate-950 font-extrabold rounded-lg text-xs transition-colors shadow-2xs cursor-pointer flex items-center gap-1"
-            >
-              <DownloadCloud className="w-3.5 h-3.5" />
-              <span>Install</span>
-            </button>
-            <button
-              onClick={() => setShowInstallBanner(false)}
-              className="p-1 text-white/70 hover:text-white rounded-md cursor-pointer"
-            >
-              <X className="w-4 h-4" />
-            </button>
-          </div>
-        </div>
-      )}
 
       {/* Main Content Area */}
       <main className="flex-1 flex overflow-hidden">
@@ -2061,173 +2071,181 @@ export default function IntrihubHelpAutobotDesk({ onLogout }: IntrihubHelpAutobo
               )}
             </div>
 
-            {/* Right Customer Orders & CRM Intelligence Panel */}
+            {/* Right Customer Orders & CRM Intelligence Panel (Slide-over on < xl, inline on xl+) */}
             {isOrderPanelOpen && activeChat && (
-              <aside className="w-80 lg:w-96 border-l border-slate-200 bg-white flex flex-col shrink-0 overflow-hidden z-20">
-                <div className="p-4 border-b border-slate-200 bg-slate-50/70 space-y-3">
-                  <div className="flex items-center justify-between">
-                    <div className="flex items-center gap-2">
-                      <div className="p-1.5 rounded-lg bg-[#052A51] text-white">
-                        <Package className="w-4 h-4" />
+              <>
+                {/* Mobile / Tablet Backdrop */}
+                <div
+                  onClick={() => setIsOrderPanelOpen(false)}
+                  className="xl:hidden fixed inset-0 bg-slate-900/40 backdrop-blur-xs z-40 animate-in fade-in duration-200"
+                />
+
+                <aside className="fixed inset-y-0 right-0 z-50 w-full max-w-xs sm:max-w-sm xl:static xl:z-20 xl:w-80 2xl:w-96 border-l border-slate-200 bg-white flex flex-col shrink-0 overflow-hidden shadow-2xl xl:shadow-none animate-in slide-in-from-right duration-200">
+                  <div className="p-4 border-b border-slate-200 bg-slate-50/70 space-y-3 shrink-0">
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-2">
+                        <div className="p-1.5 rounded-lg bg-[#052A51] text-white">
+                          <Package className="w-4 h-4" />
+                        </div>
+                        <div>
+                          <h3 className="text-xs font-bold text-[#052A51] uppercase tracking-wider">Customer Orders & CRM</h3>
+                          <p className="text-[11px] text-slate-500 font-mono">{activeChat.customer_phone}</p>
+                        </div>
                       </div>
-                      <div>
-                        <h3 className="text-xs font-bold text-[#052A51] uppercase tracking-wider">Customer Orders & CRM</h3>
-                        <p className="text-[11px] text-slate-500 font-mono">{activeChat.customer_phone}</p>
-                      </div>
+                      <button
+                        onClick={() => setIsOrderPanelOpen(false)}
+                        className="p-1.5 text-slate-400 hover:text-slate-800 rounded-lg hover:bg-slate-200 transition-colors cursor-pointer"
+                        title="Close Orders Panel"
+                      >
+                        <X className="w-5 h-5" />
+                      </button>
                     </div>
-                    <button
-                      onClick={() => setIsOrderPanelOpen(false)}
-                      className="p-1 text-slate-400 hover:text-slate-800 rounded-lg hover:bg-slate-200 transition-colors cursor-pointer"
-                      title="Close Orders Panel"
+
+                    {orderSummary && (
+                      <div className="grid grid-cols-2 gap-2 p-2.5 bg-white rounded-xl border border-slate-200 shadow-2xs">
+                        <div>
+                          <span className="text-[10px] uppercase font-bold text-slate-400 block">Total Orders</span>
+                          <span className="text-sm font-extrabold text-[#052A51]">{orderSummary.totalOrders} Placed</span>
+                        </div>
+                        <div>
+                          <span className="text-[10px] uppercase font-bold text-slate-400 block">Lifetime Value</span>
+                          <span className="text-sm font-extrabold text-[#1E9E6B]">₹{orderSummary.lifetimeSpend.toLocaleString("en-IN")}</span>
+                        </div>
+                      </div>
+                    )}
+
+                    <form
+                      onSubmit={(e) => {
+                        e.preventDefault();
+                        fetchCustomerOrders(orderSearchQuery.trim(), true);
+                      }}
+                      className="relative"
                     >
-                      <X className="w-4 h-4" />
-                    </button>
+                      <Search className="w-3.5 h-3.5 absolute left-3 top-2.5 text-slate-400" />
+                      <input
+                        type="text"
+                        value={orderSearchQuery}
+                        onChange={(e) => setOrderSearchQuery(e.target.value)}
+                        placeholder="Search Order ID (#IH-...) or phone..."
+                        className="w-full bg-white border border-slate-200 rounded-xl pl-8 pr-14 py-1.5 text-xs text-slate-800 placeholder-slate-400 focus:outline-none focus:border-[#F26522] transition-colors"
+                      />
+                      <button
+                        type="submit"
+                        className="absolute right-1.5 top-1 px-2 py-0.5 bg-[#052A51] hover:bg-[#F26522] text-white text-[10px] font-bold rounded-lg transition-colors cursor-pointer"
+                      >
+                        Find
+                      </button>
+                    </form>
                   </div>
 
-                  {orderSummary && (
-                    <div className="grid grid-cols-2 gap-2 p-2.5 bg-white rounded-xl border border-slate-200 shadow-2xs">
-                      <div>
-                        <span className="text-[10px] uppercase font-bold text-slate-400 block">Total Orders</span>
-                        <span className="text-sm font-extrabold text-[#052A51]">{orderSummary.totalOrders} Placed</span>
+                  <div className="flex-1 overflow-y-auto p-3 space-y-3 bg-[#f8fafc]">
+                    {isLoadingOrders ? (
+                      <div className="py-12 text-center text-slate-400 space-y-2 text-xs">
+                        <Loader2 className="w-6 h-6 animate-spin mx-auto text-[#F26522]" />
+                        <p>Loading purchase history...</p>
                       </div>
-                      <div>
-                        <span className="text-[10px] uppercase font-bold text-slate-400 block">Lifetime Value</span>
-                        <span className="text-sm font-extrabold text-[#1E9E6B]">₹{orderSummary.lifetimeSpend.toLocaleString("en-IN")}</span>
-                      </div>
-                    </div>
-                  )}
+                    ) : orders.length > 0 ? (
+                      orders.map((order) => {
+                        const isDelivered = order.orderStatus.toLowerCase() === "delivered";
+                        const isCancelled = order.orderStatus.toLowerCase() === "cancelled";
+                        const isProcessing = order.orderStatus.toLowerCase() === "processing" || order.orderStatus.toLowerCase() === "confirmed";
 
-                  <form
-                    onSubmit={(e) => {
-                      e.preventDefault();
-                      fetchCustomerOrders(orderSearchQuery.trim(), true);
-                    }}
-                    className="relative"
-                  >
-                    <Search className="w-3.5 h-3.5 absolute left-3 top-2.5 text-slate-400" />
-                    <input
-                      type="text"
-                      value={orderSearchQuery}
-                      onChange={(e) => setOrderSearchQuery(e.target.value)}
-                      placeholder="Search Order ID (#IH-...) or phone..."
-                      className="w-full bg-white border border-slate-200 rounded-xl pl-8 pr-14 py-1.5 text-xs text-slate-800 placeholder-slate-400 focus:outline-none focus:border-[#F26522] transition-colors"
-                    />
-                    <button
-                      type="submit"
-                      className="absolute right-1.5 top-1 px-2 py-0.5 bg-[#052A51] hover:bg-[#F26522] text-white text-[10px] font-bold rounded-lg transition-colors cursor-pointer"
-                    >
-                      Find
-                    </button>
-                  </form>
-                </div>
-
-                <div className="flex-1 overflow-y-auto p-3 space-y-3 bg-[#f8fafc]">
-                  {isLoadingOrders ? (
-                    <div className="py-12 text-center text-slate-400 space-y-2 text-xs">
-                      <Loader2 className="w-6 h-6 animate-spin mx-auto text-[#F26522]" />
-                      <p>Loading purchase history...</p>
-                    </div>
-                  ) : orders.length > 0 ? (
-                    orders.map((order) => {
-                      const isDelivered = order.orderStatus.toLowerCase() === "delivered";
-                      const isCancelled = order.orderStatus.toLowerCase() === "cancelled";
-                      const isProcessing = order.orderStatus.toLowerCase() === "processing" || order.orderStatus.toLowerCase() === "confirmed";
-
-                      return (
-                        <div
-                          key={order.id}
-                          className="bg-white rounded-2xl border border-slate-200 p-3.5 shadow-2xs hover:shadow-xs transition-shadow space-y-3"
-                        >
-                          <div className="flex items-center justify-between">
-                            <div className="flex items-center gap-1.5">
-                              <span className="font-mono text-xs font-extrabold text-[#052A51]">
-                                #{order.id.slice(-8).toUpperCase()}
-                              </span>
-                              <button
-                                onClick={() => {
-                                  navigator.clipboard.writeText(order.id);
-                                  setCopiedOrderId(order.id);
-                                  setTimeout(() => setCopiedOrderId(null), 2000);
-                                }}
-                                className="p-1 text-slate-400 hover:text-slate-800 rounded transition-colors cursor-pointer"
-                                title="Copy Full Order ID"
-                              >
-                                {copiedOrderId === order.id ? (
-                                  <Check className="w-3 h-3 text-emerald-600" />
-                                ) : (
-                                  <Copy className="w-3 h-3" />
-                                )}
-                              </button>
-                            </div>
-                            <span
-                              className={`text-[10px] px-2 py-0.5 rounded-full font-bold uppercase tracking-wider ${
-                                isDelivered
-                                  ? "bg-emerald-100 text-[#1E9E6B] border border-emerald-200"
-                                  : isCancelled
-                                  ? "bg-red-100 text-red-700 border border-red-200"
-                                  : isProcessing
-                                  ? "bg-blue-100 text-blue-700 border border-blue-200"
-                                  : "bg-orange-100 text-[#F26522] border border-orange-200"
-                              }`}
-                            >
-                              {order.orderStatus}
-                            </span>
-                          </div>
-
-                          <div className="flex items-center justify-between text-xs pb-2 border-b border-slate-100">
-                            <div className="flex items-center gap-1 text-slate-500">
-                              <Calendar className="w-3 h-3 text-slate-400" />
-                              <span>{new Date(order.createdAt).toLocaleDateString("en-IN", { month: "short", day: "numeric", year: "numeric" })}</span>
-                            </div>
-                            <div className="text-right">
-                              <span className="font-extrabold text-[#052A51] text-sm">₹{order.total.toLocaleString("en-IN")}</span>
-                              <span className="text-[10px] text-slate-500 block">{order.paymentStatus} ({order.paymentMethod})</span>
-                            </div>
-                          </div>
-
-                          <div className="space-y-1.5">
-                            {order.items.map((item) => (
-                              <div key={item.id} className="flex items-center justify-between text-xs bg-slate-50 p-2 rounded-xl border border-slate-100">
-                                <div className="flex items-center gap-2 min-w-0">
-                                  {item.image ? (
-                                    <img src={item.image} alt={item.productName} className="w-7 h-7 rounded-lg object-cover border border-slate-200" />
-                                  ) : (
-                                    <div className="w-7 h-7 rounded-lg bg-orange-100 text-[#F26522] flex items-center justify-center font-bold text-[10px]">IH</div>
-                                  )}
-                                  <div className="min-w-0">
-                                    <p className="font-bold text-[#052A51] truncate text-[11px]">{item.productName}</p>
-                                    <p className="text-[10px] text-slate-400">{item.boxQuantity} Boxes • ₹{item.pricePerBox}/box</p>
-                                  </div>
-                                </div>
-                                <span className="font-extrabold text-slate-700 text-xs shrink-0">₹{item.totalPrice.toLocaleString("en-IN")}</span>
-                              </div>
-                            ))}
-                          </div>
-
-                          <button
-                            type="button"
-                            onClick={() => {
-                              const itemsSummary = order.items.map((it) => `${it.boxQuantity}x ${it.productName}`).join(", ");
-                              const text = `Hi ${order.customerName || "there"}! Regarding your IntriHub order #${order.id} (${itemsSummary} • Total ₹${order.total.toLocaleString("en-IN")}): The status is "${order.orderStatus.toUpperCase()}". Delivery ETA: ${order.estimatedDelivery}. Let me know if you need any further help!`;
-                              setInputText(text);
-                              if (activeChat?.chat_mode !== "human") handleToggleMode("human");
-                            }}
-                            className="w-full py-1.5 bg-orange-50 hover:bg-orange-100 text-[#F26522] rounded-xl text-[11px] font-bold transition-colors flex items-center justify-center gap-1.5 border border-orange-200 cursor-pointer"
+                        return (
+                          <div
+                            key={order.id}
+                            className="bg-white rounded-2xl border border-slate-200 p-3.5 shadow-2xs hover:shadow-xs transition-shadow space-y-3"
                           >
-                            <Send className="w-3 h-3" /> Insert Status into Chat
-                          </button>
-                        </div>
-                      );
-                    })
-                  ) : (
-                    <div className="py-12 text-center text-slate-400 space-y-2 text-xs">
-                      <Package className="w-8 h-8 mx-auto text-slate-300" />
-                      <p className="font-bold text-slate-600">No previous orders found</p>
-                      <p className="text-[11px] text-slate-400">This number has not placed an e-commerce order on IntriHub yet.</p>
-                    </div>
-                  )}
-                </div>
-              </aside>
+                            <div className="flex items-center justify-between">
+                              <div className="flex items-center gap-1.5">
+                                <span className="font-mono text-xs font-extrabold text-[#052A51]">
+                                  #{order.id.slice(-8).toUpperCase()}
+                                </span>
+                                <button
+                                  onClick={() => {
+                                    navigator.clipboard.writeText(order.id);
+                                    setCopiedOrderId(order.id);
+                                    setTimeout(() => setCopiedOrderId(null), 2000);
+                                  }}
+                                  className="p-1 text-slate-400 hover:text-slate-800 rounded transition-colors cursor-pointer"
+                                  title="Copy Full Order ID"
+                                >
+                                  {copiedOrderId === order.id ? (
+                                    <Check className="w-3 h-3 text-emerald-600" />
+                                  ) : (
+                                    <Copy className="w-3 h-3" />
+                                  )}
+                                </button>
+                              </div>
+                              <span
+                                className={`text-[10px] px-2 py-0.5 rounded-full font-bold uppercase tracking-wider ${
+                                  isDelivered
+                                    ? "bg-emerald-100 text-[#1E9E6B] border border-emerald-200"
+                                    : isCancelled
+                                    ? "bg-red-100 text-red-700 border border-red-200"
+                                    : isProcessing
+                                    ? "bg-blue-100 text-blue-700 border border-blue-200"
+                                    : "bg-orange-100 text-[#F26522] border border-orange-200"
+                                }`}
+                              >
+                                {order.orderStatus}
+                              </span>
+                            </div>
+
+                            <div className="flex items-center justify-between text-xs pb-2 border-b border-slate-100">
+                              <div className="flex items-center gap-1 text-slate-500">
+                                <Calendar className="w-3 h-3 text-slate-400" />
+                                <span>{new Date(order.createdAt).toLocaleDateString("en-IN", { month: "short", day: "numeric", year: "numeric" })}</span>
+                              </div>
+                              <div className="text-right">
+                                <span className="font-extrabold text-[#052A51] text-sm">₹{order.total.toLocaleString("en-IN")}</span>
+                                <span className="text-[10px] text-slate-500 block">{order.paymentStatus} ({order.paymentMethod})</span>
+                              </div>
+                            </div>
+
+                            <div className="space-y-1.5">
+                              {order.items.map((item) => (
+                                <div key={item.id} className="flex items-center justify-between text-xs bg-slate-50 p-2 rounded-xl border border-slate-100">
+                                  <div className="flex items-center gap-2 min-w-0">
+                                    {item.image ? (
+                                      <img src={item.image} alt={item.productName} className="w-7 h-7 rounded-lg object-cover border border-slate-200" />
+                                    ) : (
+                                      <div className="w-7 h-7 rounded-lg bg-orange-100 text-[#F26522] flex items-center justify-center font-bold text-[10px]">IH</div>
+                                    )}
+                                    <div className="min-w-0">
+                                      <p className="font-bold text-[#052A51] truncate text-[11px]">{item.productName}</p>
+                                      <p className="text-[10px] text-slate-400">{item.boxQuantity} Boxes • ₹{item.pricePerBox}/box</p>
+                                    </div>
+                                  </div>
+                                  <span className="font-extrabold text-slate-700 text-xs shrink-0">₹{item.totalPrice.toLocaleString("en-IN")}</span>
+                                </div>
+                              ))}
+                            </div>
+
+                            <button
+                              type="button"
+                              onClick={() => {
+                                const itemsSummary = order.items.map((it) => `${it.boxQuantity}x ${it.productName}`).join(", ");
+                                const text = `Hi ${order.customerName || "there"}! Regarding your IntriHub order #${order.id} (${itemsSummary} • Total ₹${order.total.toLocaleString("en-IN")}): The status is "${order.orderStatus.toUpperCase()}". Delivery ETA: ${order.estimatedDelivery}. Let me know if you need any further help!`;
+                                setInputText(text);
+                                if (activeChat?.chat_mode !== "human") handleToggleMode("human");
+                              }}
+                              className="w-full py-1.5 bg-orange-50 hover:bg-orange-100 text-[#F26522] rounded-xl text-[11px] font-bold transition-colors flex items-center justify-center gap-1.5 border border-orange-200 cursor-pointer"
+                            >
+                              <Send className="w-3 h-3" /> Insert Status into Chat
+                            </button>
+                          </div>
+                        );
+                      })
+                    ) : (
+                      <div className="py-12 text-center text-slate-400 space-y-2 text-xs">
+                        <Package className="w-8 h-8 mx-auto text-slate-300" />
+                        <p className="font-bold text-slate-600">No previous orders found</p>
+                        <p className="text-[11px] text-slate-400">This number has not placed an e-commerce order on IntriHub yet.</p>
+                      </div>
+                    )}
+                  </div>
+                </aside>
+              </>
             )}
           </div>
         )}
@@ -2236,7 +2254,7 @@ export default function IntrihubHelpAutobotDesk({ onLogout }: IntrihubHelpAutobo
         {/* TAB 2: BROADCAST GROUPS & CAMPAIGNS */}
         {/* ========================================================================= */}
         {activeTab === "groups" && (
-          <div className="flex-1 overflow-y-auto p-6 md:p-8 bg-[#f8fafc]">
+          <div className="flex-1 overflow-y-auto p-4 md:p-8 pb-24 md:pb-8 bg-[#f8fafc]">
             {!selectedGroup ? (
               <div className="max-w-6xl mx-auto space-y-6">
                 {/* Broadcast Header & Stats */}
@@ -2666,7 +2684,7 @@ export default function IntrihubHelpAutobotDesk({ onLogout }: IntrihubHelpAutobo
         {/* TAB 3: OVERVIEW & STATS */}
         {/* ========================================================================= */}
         {activeTab === "dashboard" && (
-          <div className="flex-1 overflow-y-auto p-6 md:p-8 space-y-8 bg-[#f8fafc]">
+          <div className="flex-1 overflow-y-auto p-4 md:p-8 pb-24 md:pb-8 space-y-8 bg-[#f8fafc]">
             <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
               <div>
                 <h2 className="text-2xl font-extrabold text-[#052A51] flex items-center gap-2">
@@ -2778,7 +2796,7 @@ export default function IntrihubHelpAutobotDesk({ onLogout }: IntrihubHelpAutobo
         {/* TAB 4: SETTINGS & LIVE WABA CONNECTION */}
         {/* ========================================================================= */}
         {activeTab === "settings" && (
-          <div className="flex-1 overflow-y-auto p-6 md:p-8 space-y-8 bg-[#f8fafc]">
+          <div className="flex-1 overflow-y-auto p-4 md:p-8 pb-24 md:pb-8 space-y-8 bg-[#f8fafc]">
             <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
               <div>
                 <h2 className="text-2xl font-extrabold text-[#052A51] flex items-center gap-2">
@@ -2802,6 +2820,47 @@ export default function IntrihubHelpAutobotDesk({ onLogout }: IntrihubHelpAutobo
                 {settingsMsg.text}
               </div>
             )}
+
+            {/* Native App Download & Standalone Launcher Card */}
+            <div className="rounded-2xl border border-emerald-200 bg-gradient-to-br from-emerald-50/70 to-teal-50/40 p-5 md:p-6 shadow-2xs space-y-4">
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                <div className="flex items-center gap-3.5">
+                  <div className="h-11 w-11 rounded-2xl bg-[#052A51] text-white flex items-center justify-center shadow-xs shrink-0">
+                    <Smartphone className="h-6 w-6 text-[#25D366]" />
+                  </div>
+                  <div>
+                    <h3 className="text-base font-extrabold text-[#052A51] flex items-center gap-2">
+                      <span>HelpDesk App Download & Installation</span>
+                      <span className="text-[10px] uppercase font-bold tracking-wider px-2 py-0.5 rounded-full bg-emerald-100 text-emerald-800 border border-emerald-300">
+                        {isAppInstalled ? "Installed" : "Ready"}
+                      </span>
+                    </h3>
+                    <p className="text-xs text-slate-600 mt-0.5">
+                      Install on phone or download the standalone desktop web launcher for fast WhatsApp customer support.
+                    </p>
+                  </div>
+                </div>
+                <div className="flex items-center gap-2.5 flex-wrap">
+                  <button
+                    type="button"
+                    onClick={handleInstallClick}
+                    className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl bg-[#25D366] hover:bg-[#20bd5a] text-slate-950 font-extrabold text-xs shadow-xs transition-colors cursor-pointer"
+                  >
+                    <DownloadCloud className="w-4 h-4" />
+                    <span>Install App on Device</span>
+                  </button>
+                  <button
+                    type="button"
+                    onClick={handleDownloadWebLauncher}
+                    className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl bg-white hover:bg-slate-50 text-[#052A51] border border-slate-300 font-extrabold text-xs shadow-2xs transition-colors cursor-pointer"
+                    title="Download 1-Click Desktop / Phone Shortcut Launcher File"
+                  >
+                    <Download className="w-4 h-4 text-[#F26522]" />
+                    <span>Download App Launcher</span>
+                  </button>
+                </div>
+              </div>
+            </div>
 
             {/* Live WhatsApp Business (WABA) Connection Card */}
             <div className="rounded-2xl border border-emerald-200 bg-emerald-50/40 p-6 shadow-2xs space-y-5">
@@ -4262,119 +4321,116 @@ export default function IntrihubHelpAutobotDesk({ onLogout }: IntrihubHelpAutobo
       {/* PWA INSTALL / APP DOWNLOAD MODAL */}
       {/* ========================================================================= */}
       {showInstallModal && (
-        <div className="fixed inset-0 bg-slate-900/70 backdrop-blur-xs flex items-center justify-center p-4 z-50 animate-in fade-in duration-200">
-          <div className="bg-white w-full max-w-md rounded-3xl shadow-2xl border border-slate-200 overflow-hidden text-slate-900">
+        <div className="fixed inset-0 bg-slate-900/70 backdrop-blur-xs flex items-center justify-center p-3 sm:p-4 z-50 animate-in fade-in duration-200">
+          <div className="bg-white w-full max-w-md rounded-3xl shadow-2xl border border-slate-200 overflow-hidden text-slate-900 max-h-[92vh] flex flex-col justify-between">
             {/* Header */}
-            <div className="bg-gradient-to-r from-[#052A51] via-[#0b3d75] to-[#128C7E] p-6 text-white text-center relative">
+            <div className="bg-gradient-to-r from-[#052A51] via-[#0b3d75] to-[#128C7E] p-5 sm:p-6 text-white text-center relative shrink-0">
               <button
                 onClick={() => setShowInstallModal(false)}
-                className="absolute top-4 right-4 p-1.5 text-white/80 hover:text-white rounded-full bg-white/10 hover:bg-white/20 transition-colors"
+                className="absolute top-4 right-4 p-1.5 text-white/80 hover:text-white rounded-full bg-white/10 hover:bg-white/20 transition-colors cursor-pointer"
               >
-                <X className="w-4 h-4" />
+                <X className="w-5 h-5" />
               </button>
-              <div className="w-16 h-16 mx-auto mb-3 rounded-2xl bg-white/10 border border-white/20 flex items-center justify-center shadow-inner">
-                <img src="/logo/intri-web-logo.png" alt="IntriHub" className="h-8 w-auto brightness-0 invert" />
+              <div className="w-14 h-14 mx-auto mb-2.5 rounded-2xl bg-white/10 border border-white/20 flex items-center justify-center shadow-inner">
+                <Smartphone className="w-7 h-7 text-[#25D366]" />
               </div>
-              <h3 className="text-lg font-black tracking-tight">Download & Install IntriHub App</h3>
-              <p className="text-xs text-slate-200 mt-1">Get the native WhatsApp experience on your Android or iPhone</p>
+              <h3 className="text-lg font-black tracking-tight">Download & Install HelpDesk App</h3>
+              <p className="text-xs text-slate-200 mt-0.5">Run as a standalone app on your Mobile Phone or PC</p>
             </div>
 
             {/* Content Body */}
-            <div className="p-6 space-y-4">
-              {deferredPrompt ? (
-                <div className="space-y-4">
-                  <div className="p-4 bg-emerald-50 border border-emerald-200 rounded-2xl text-xs text-emerald-900 space-y-1.5">
-                    <p className="font-bold flex items-center gap-1.5 text-[#1E9E6B]">
-                      <CheckCircle2 className="w-4 h-4 text-[#25D366]" />
-                      <span>Ready for 1-Click Installation</span>
-                    </p>
-                    <p className="text-slate-600">Install IntriHub HelpDesk directly to your home screen for full-screen WhatsApp workflow.</p>
-                  </div>
-
+            <div className="p-5 sm:p-6 space-y-4 overflow-y-auto flex-1">
+              {/* Primary Direct Download / Install Actions */}
+              <div className="space-y-2.5">
+                {deferredPrompt ? (
                   <button
                     onClick={async () => {
                       if (deferredPrompt) {
-                        deferredPrompt.prompt();
-                        const { outcome } = await deferredPrompt.userChoice;
-                        if (outcome === "accepted") {
-                          setIsAppInstalled(true);
-                          setShowInstallBanner(false);
-                          setShowInstallModal(false);
+                        try {
+                          deferredPrompt.prompt();
+                          const { outcome } = await deferredPrompt.userChoice;
+                          if (outcome === "accepted") {
+                            setIsAppInstalled(true);
+                            setShowInstallModal(false);
+                          }
+                        } catch (e) {
+                          console.error(e);
                         }
                       }
                     }}
-                    className="w-full py-3.5 bg-gradient-to-r from-[#25D366] to-[#128C7E] hover:from-[#20bd5a] hover:to-[#0f7a6e] text-white font-black rounded-2xl shadow-lg shadow-emerald-500/20 text-sm flex items-center justify-center gap-2 cursor-pointer transition-all"
+                    className="w-full py-3.5 bg-gradient-to-r from-[#25D366] to-[#128C7E] hover:from-[#20bd5a] hover:to-[#0f7a6e] text-slate-950 font-black rounded-2xl shadow-lg shadow-emerald-500/20 text-xs sm:text-sm flex items-center justify-center gap-2 cursor-pointer transition-all uppercase tracking-wider"
                   >
-                    <DownloadCloud className="w-5 h-5" />
-                    <span>Install App on this Device</span>
+                    <DownloadCloud className="w-5 h-5 text-slate-950" />
+                    <span>1-Click Install App on This Device</span>
                   </button>
-                </div>
-              ) : isIos ? (
-                <div className="space-y-3">
-                  <p className="text-xs font-bold text-slate-700">Follow these 3 quick steps on Safari (iPhone/iPad):</p>
-                  <div className="space-y-2.5 text-xs text-slate-700">
-                    <div className="flex items-start gap-3 p-3 bg-slate-50 border border-slate-200 rounded-xl">
-                      <div className="w-6 h-6 rounded-lg bg-blue-100 text-blue-600 flex items-center justify-center font-black shrink-0">1</div>
-                      <div>
-                        <p className="font-bold text-slate-900">Tap the Share Button</p>
-                        <p className="text-[11px] text-slate-500">Look for the share icon <Share2 className="w-3 h-3 inline text-blue-600" /> in Safari's bottom toolbar.</p>
-                      </div>
-                    </div>
-                    <div className="flex items-start gap-3 p-3 bg-slate-50 border border-slate-200 rounded-xl">
-                      <div className="w-6 h-6 rounded-lg bg-blue-100 text-blue-600 flex items-center justify-center font-black shrink-0">2</div>
-                      <div>
-                        <p className="font-bold text-slate-900">Select &quot;Add to Home Screen&quot;</p>
-                        <p className="text-[11px] text-slate-500">Scroll down in the share menu and tap <span className="font-bold text-slate-800">&quot;Add to Home Screen&quot;</span>.</p>
-                      </div>
-                    </div>
-                    <div className="flex items-start gap-3 p-3 bg-slate-50 border border-slate-200 rounded-xl">
-                      <div className="w-6 h-6 rounded-lg bg-blue-100 text-blue-600 flex items-center justify-center font-black shrink-0">3</div>
-                      <div>
-                        <p className="font-bold text-slate-900">Tap &quot;Add&quot; in Top Right</p>
-                        <p className="text-[11px] text-slate-500">Confirm the app name and tap Add. IntriHub will appear on your Home Screen.</p>
-                      </div>
-                    </div>
+                ) : (
+                  <button
+                    onClick={handleDownloadWebLauncher}
+                    className="w-full py-3.5 bg-gradient-to-r from-[#F26522] to-[#d95a1e] hover:opacity-95 text-white font-black rounded-2xl shadow-lg shadow-orange-500/20 text-xs sm:text-sm flex items-center justify-center gap-2 cursor-pointer transition-all uppercase tracking-wider"
+                  >
+                    <Download className="w-5 h-5" />
+                    <span>Download App Launcher (.html)</span>
+                  </button>
+                )}
+
+                <button
+                  type="button"
+                  onClick={handleDownloadWebLauncher}
+                  className="w-full py-2.5 bg-slate-50 hover:bg-slate-100 text-[#052A51] border border-slate-200 font-bold rounded-xl text-xs flex items-center justify-center gap-2 cursor-pointer transition-colors"
+                >
+                  <Download className="w-4 h-4 text-[#F26522]" />
+                  <span>Download Standalone Shortcut File</span>
+                </button>
+              </div>
+
+              {/* Quick Platform Guides */}
+              {isIos ? (
+                <div className="space-y-2 pt-2 border-t border-slate-100">
+                  <p className="text-xs font-bold text-slate-700">iOS Safari (iPhone / iPad) Setup:</p>
+                  <div className="space-y-1.5 text-xs text-slate-600 bg-slate-50 p-3 rounded-xl border border-slate-200">
+                    <p className="flex items-center gap-2">
+                      <span className="w-4 h-4 rounded-full bg-blue-100 text-blue-600 font-bold flex items-center justify-center text-[10px]">1</span>
+                      <span>Tap Safari Share button <Share2 className="w-3 h-3 inline text-blue-600" /> at bottom.</span>
+                    </p>
+                    <p className="flex items-center gap-2">
+                      <span className="w-4 h-4 rounded-full bg-blue-100 text-blue-600 font-bold flex items-center justify-center text-[10px]">2</span>
+                      <span>Select <strong>&quot;Add to Home Screen&quot;</strong>.</span>
+                    </p>
                   </div>
                 </div>
               ) : (
-                <div className="space-y-3">
-                  <p className="text-xs font-bold text-slate-700">Install via Chrome / Android browser menu:</p>
-                  <div className="space-y-2.5 text-xs text-slate-700">
-                    <div className="flex items-start gap-3 p-3 bg-slate-50 border border-slate-200 rounded-xl">
-                      <div className="w-6 h-6 rounded-lg bg-[#F26522]/10 text-[#F26522] flex items-center justify-center font-black shrink-0">1</div>
-                      <div>
-                        <p className="font-bold text-slate-900">Open Browser Menu (⋮)</p>
-                        <p className="text-[11px] text-slate-500">Tap the three vertical dots in the top right corner of Chrome.</p>
-                      </div>
-                    </div>
-                    <div className="flex items-start gap-3 p-3 bg-slate-50 border border-slate-200 rounded-xl">
-                      <div className="w-6 h-6 rounded-lg bg-[#F26522]/10 text-[#F26522] flex items-center justify-center font-black shrink-0">2</div>
-                      <div>
-                        <p className="font-bold text-slate-900">Tap &quot;Install app&quot; or &quot;Add to Home Screen&quot;</p>
-                        <p className="text-[11px] text-slate-500">Select Install to add the IntriHub standalone app to your device.</p>
-                      </div>
-                    </div>
+                <div className="space-y-2 pt-2 border-t border-slate-100">
+                  <p className="text-xs font-bold text-slate-700">Android & Chrome Setup:</p>
+                  <div className="space-y-1.5 text-xs text-slate-600 bg-slate-50 p-3 rounded-xl border border-slate-200">
+                    <p className="flex items-center gap-2">
+                      <span className="w-4 h-4 rounded-full bg-[#F26522]/20 text-[#F26522] font-bold flex items-center justify-center text-[10px]">1</span>
+                      <span>Tap 3 dots (⋮) in Chrome browser top right.</span>
+                    </p>
+                    <p className="flex items-center gap-2">
+                      <span className="w-4 h-4 rounded-full bg-[#F26522]/20 text-[#F26522] font-bold flex items-center justify-center text-[10px]">2</span>
+                      <span>Tap <strong>&quot;Install app&quot;</strong> or <strong>&quot;Add to Home screen&quot;</strong>.</span>
+                    </p>
                   </div>
                 </div>
               )}
 
-              {/* Feature Perks */}
+              {/* Feature Highlights */}
               <div className="pt-2 border-t border-slate-100 grid grid-cols-2 gap-2 text-[11px] text-slate-600">
                 <div className="flex items-center gap-1.5">
                   <CheckCircle2 className="w-3.5 h-3.5 text-[#25D366]" />
-                  <span>Full-screen UI</span>
+                  <span>Full-Screen UI</span>
                 </div>
                 <div className="flex items-center gap-1.5">
                   <CheckCircle2 className="w-3.5 h-3.5 text-[#25D366]" />
-                  <span>Instant Notifications</span>
+                  <span>Instant Audio Alerts</span>
                 </div>
                 <div className="flex items-center gap-1.5">
                   <CheckCircle2 className="w-3.5 h-3.5 text-[#25D366]" />
-                  <span>Fast WhatsApp Chat</span>
+                  <span>1-Click Launch</span>
                 </div>
                 <div className="flex items-center gap-1.5">
                   <CheckCircle2 className="w-3.5 h-3.5 text-[#25D366]" />
-                  <span>1-Tap Launch</span>
+                  <span>WhatsApp Fast Sync</span>
                 </div>
               </div>
 
