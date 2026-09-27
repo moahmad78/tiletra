@@ -32,6 +32,7 @@ import {
 import HelpDeskOrderDetailView from "./HelpDeskOrderDetailView";
 import HelpDeskCustomerDetailView from "./HelpDeskCustomerDetailView";
 import HelpDeskQueueOverview from "./HelpDeskQueueOverview";
+import HelpDeskCallOneScreenView from "./HelpDeskCallOneScreenView";
 import { AddComplaintModal } from "./HelpDeskActionModals";
 
 export default function IntrihubOrderSupportDesk({
@@ -44,6 +45,7 @@ export default function IntrihubOrderSupportDesk({
   const [selectedOrder, setSelectedOrder] = useState<any | null>(null);
   const [selectedCustomer, setSelectedCustomer] = useState<any | null>(null);
   const [customerOrders, setCustomerOrders] = useState<any[]>([]);
+  const [viewMode, setViewMode] = useState<"call_view" | "full_invoice">("call_view");
 
   // Search State & Autocomplete
   const [searchQuery, setSearchQuery] = useState("");
@@ -69,6 +71,21 @@ export default function IntrihubOrderSupportDesk({
 
   // Quick Action Modal
   const [showGlobalComplaintModal, setShowGlobalComplaintModal] = useState(false);
+
+  // Focus search on mount & handle keyboard shortcuts (/ or Escape)
+  useEffect(() => {
+    searchInputRef.current?.focus();
+
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if ((e.key === "/" && (e.target as HTMLElement)?.tagName !== "INPUT" && (e.target as HTMLElement)?.tagName !== "TEXTAREA") || e.key === "Escape") {
+        e.preventDefault();
+        searchInputRef.current?.focus();
+        searchInputRef.current?.select();
+      }
+    };
+    window.addEventListener("keydown", handleKeyDown);
+    return () => window.removeEventListener("keydown", handleKeyDown);
+  }, []);
 
   // Close suggestions when clicking outside
   useEffect(() => {
@@ -109,7 +126,7 @@ export default function IntrihubOrderSupportDesk({
       } finally {
         setIsSearching(false);
       }
-    }, 250);
+    }, 200);
 
     return () => clearTimeout(timer);
   }, [searchQuery]);
@@ -135,21 +152,33 @@ export default function IntrihubOrderSupportDesk({
     }
   }, [activeTab, crmCustomers.length]);
 
-  // Select Order Handler
+  // Select Order Handler (auto-fetches all other orders from this customer for call view)
   const handleSelectOrder = async (orderOrId: any) => {
     setShowSuggestions(false);
     setActiveTab("search");
-    setSelectedCustomer(null);
+    setViewMode("call_view");
 
     const orderId = typeof orderOrId === "string" ? orderOrId : orderOrId?.id;
     if (!orderId) return;
 
     try {
-      // Fetch full order details
       const res = await fetch(`/api/help/orders/${orderId}`);
       const data = await res.json();
       if (data.success && data.order) {
         setSelectedOrder(data.order);
+        // Fetch sibling orders for customer phone
+        const phone = data.order.customerPhone;
+        if (phone) {
+          const cleanPhone = phone.replace(/\D/g, "").slice(-10);
+          const sRes = await fetch(`/api/help/search?q=${cleanPhone}`);
+          const sData = await sRes.json();
+          if (sData.success) {
+            setCustomerOrders(sData.orders || [data.order]);
+            if (sData.customers && sData.customers.length > 0) {
+              setSelectedCustomer(sData.customers[0]);
+            }
+          }
+        }
       } else {
         setSelectedOrder(orderOrId);
       }
@@ -158,14 +187,13 @@ export default function IntrihubOrderSupportDesk({
     }
   };
 
-  // Select Customer Handler
+  // Select Customer Handler (auto-opens most recent order in Call View)
   const handleSelectCustomer = async (cust: any) => {
     setShowSuggestions(false);
     setActiveTab("search");
-    setSelectedOrder(null);
+    setViewMode("call_view");
     setSelectedCustomer(cust);
 
-    // Fetch all orders for this customer phone
     const phone = cust.phone;
     if (phone) {
       try {
@@ -174,6 +202,12 @@ export default function IntrihubOrderSupportDesk({
         const data = await res.json();
         if (data.success) {
           setCustomerOrders(data.orders || []);
+          if (data.orders && data.orders.length > 0) {
+            // Auto-select most recent order for instantaneous phone answer
+            handleSelectOrder(data.orders[0]);
+          } else {
+            setSelectedOrder(null);
+          }
           if (data.customers && data.customers.length > 0) {
             setSelectedCustomer(data.customers[0]);
           }
@@ -485,12 +519,62 @@ export default function IntrihubOrderSupportDesk({
         {activeTab === "search" && (
           <div>
             {selectedOrder ? (
-              /* Selected Order Detail View */
-              <HelpDeskOrderDetailView
-                order={selectedOrder}
-                onBack={() => setSelectedOrder(null)}
-                onOrderUpdated={() => handleSelectOrder(selectedOrder.id)}
-              />
+              <div className="space-y-3">
+                {/* Mode Toggle Header */}
+                <div className="flex items-center justify-between gap-2 bg-white p-2.5 rounded-2xl border border-slate-200 shadow-2xs">
+                  <button
+                    onClick={() => setSelectedOrder(null)}
+                    className="p-1.5 px-3 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 transition-colors flex items-center gap-1.5 text-xs font-bold cursor-pointer"
+                  >
+                    <ArrowLeft className="w-4 h-4" />
+                    <span>Back to Search</span>
+                  </button>
+
+                  <div className="flex items-center gap-1 bg-slate-100 p-1 rounded-xl">
+                    <button
+                      onClick={() => setViewMode("call_view")}
+                      className={`px-3 py-1 rounded-lg text-xs font-bold transition-all cursor-pointer flex items-center gap-1.5 ${
+                        viewMode === "call_view"
+                          ? "bg-white text-[#052A51] shadow-xs"
+                          : "text-slate-600 hover:text-slate-900"
+                      }`}
+                    >
+                      <Phone className="w-3.5 h-3.5 text-[#25D366]" />
+                      <span>Live Call 1-Screen View</span>
+                    </button>
+
+                    <button
+                      onClick={() => setViewMode("full_invoice")}
+                      className={`px-3 py-1 rounded-lg text-xs font-bold transition-all cursor-pointer flex items-center gap-1.5 ${
+                        viewMode === "full_invoice"
+                          ? "bg-white text-[#052A51] shadow-xs"
+                          : "text-slate-600 hover:text-slate-900"
+                      }`}
+                    >
+                      <FileText className="w-3.5 h-3.5 text-[#F26522]" />
+                      <span>Full Invoice & GST Breakdown</span>
+                    </button>
+                  </div>
+                </div>
+
+                {viewMode === "call_view" ? (
+                  /* Call-First One-Screen View */
+                  <HelpDeskCallOneScreenView
+                    order={selectedOrder}
+                    allCustomerOrders={customerOrders}
+                    customerProfile={selectedCustomer}
+                    onSelectOrder={handleSelectOrder}
+                    onOrderUpdated={() => handleSelectOrder(selectedOrder.id)}
+                  />
+                ) : (
+                  /* Full Detailed Invoice & Action View */
+                  <HelpDeskOrderDetailView
+                    order={selectedOrder}
+                    onBack={() => setViewMode("call_view")}
+                    onOrderUpdated={() => handleSelectOrder(selectedOrder.id)}
+                  />
+                )}
+              </div>
             ) : selectedCustomer ? (
               /* Selected Customer Detail View */
               <HelpDeskCustomerDetailView

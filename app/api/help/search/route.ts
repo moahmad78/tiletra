@@ -19,9 +19,13 @@ export async function GET(req: NextRequest) {
       });
     }
 
-    // Clean query: strip #, spaces, leading dashes
-    const cleanQuery = rawQuery.replace(/^[#\s]+/, "");
-    // Extract digits for phone search
+    // Clean query: strip #, IH-, ih-, ord-, order-, spaces
+    const cleanQuery = rawQuery
+      .replace(/^[#\s]+/, "")
+      .replace(/^(ih|ord|order)[-_:\s]*/i, "")
+      .trim();
+
+    // Extract digits for phone / tracking search
     const digitsOnly = rawQuery.replace(/\D/g, "");
     const last10Digits = digitsOnly.length >= 10 ? digitsOnly.slice(-10) : digitsOnly;
 
@@ -31,11 +35,16 @@ export async function GET(req: NextRequest) {
       { customerName: { contains: cleanQuery, mode: "insensitive" } },
       { customerEmail: { contains: cleanQuery, mode: "insensitive" } },
       { deliveryCity: { contains: cleanQuery, mode: "insensitive" } },
+      { trackingNumber: { contains: cleanQuery, mode: "insensitive" } },
+      { courierName: { contains: cleanQuery, mode: "insensitive" } },
     ];
 
-    if (last10Digits.length >= 4) {
+    if (digitsOnly.length >= 3) {
       orderWhereClauses.push({
-        customerPhone: { contains: last10Digits },
+        customerPhone: { contains: digitsOnly },
+      });
+      orderWhereClauses.push({
+        trackingNumber: { contains: digitsOnly },
       });
     }
 
@@ -44,6 +53,15 @@ export async function GET(req: NextRequest) {
         OR: orderWhereClauses,
       },
       include: {
+        deliveryPartner: {
+          select: {
+            id: true,
+            name: true,
+            phone: true,
+            vehicleType: true,
+            status: true,
+          },
+        },
         items: {
           include: {
             product: {
