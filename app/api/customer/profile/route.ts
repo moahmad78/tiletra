@@ -94,6 +94,19 @@ export async function GET(request: Request) {
     const assignedGroupIds = new Set(broadcastGroups.map((g) => g.groupId));
     const availableGroups = allGroups.filter((g) => !assignedGroupIds.has(g.id));
 
+    let detectedRole: "vendor" | "customer" | "team" = "customer";
+    if (customer?.notes?.includes("[ROLE:vendor]")) {
+      detectedRole = "vendor";
+    } else if (customer?.notes?.includes("[ROLE:team]")) {
+      detectedRole = "team";
+    } else if (broadcastGroups.some((g) => g.groupName.toLowerCase().includes("vendor"))) {
+      detectedRole = "vendor";
+    } else if (broadcastGroups.some((g) => g.groupName.toLowerCase().includes("team"))) {
+      detectedRole = "team";
+    }
+
+    const cleanNotes = (customer?.notes || "").replace(/\[ROLE:(vendor|customer|team)\]/g, "").trim();
+
     return NextResponse.json({
       success: true,
       profile: {
@@ -102,7 +115,8 @@ export async function GET(request: Request) {
         name: chat?.customer_name || customer?.name || "WhatsApp Customer",
         rawName: chat?.customer_name || customer?.name || null,
         city: customer?.city || "Bengaluru, Karnataka",
-        notes: customer?.notes || null,
+        notes: cleanNotes || null,
+        role: detectedRole,
         firstContactedAt: chat?.created_at || (orders[orders.length - 1]?.createdAt) || null,
         lastActiveAt: chat?.last_message_at || (orders[0]?.createdAt) || null,
         chatMode: chat?.chat_mode || "ai",
@@ -122,7 +136,7 @@ export async function GET(request: Request) {
 export async function PATCH(request: Request) {
   try {
     const body = await request.json();
-    const { phone, name, notes } = body;
+    const { phone, name, notes, role } = body;
 
     if (!phone) {
       return NextResponse.json({ error: "Phone number is required." }, { status: 400 });
@@ -146,29 +160,81 @@ export async function PATCH(request: Request) {
       },
     });
 
+    let currentNotes = existing?.notes || "";
+    let currentRole = "customer";
+    if (currentNotes.includes("[ROLE:vendor]")) currentRole = "vendor";
+    if (currentNotes.includes("[ROLE:team]")) currentRole = "team";
+
+    const targetRole = role || currentRole;
+    let newNotes = (notes !== undefined ? notes : currentNotes).replace(/\[ROLE:(vendor|customer|team)\]/g, "").trim();
+    newNotes = `[ROLE:${targetRole}] ${newNotes}`.trim();
+
     if (existing) {
       await prisma.customer.update({
         where: { id: existing.id },
         data: {
           name: name !== undefined ? name.trim() || existing.name : existing.name,
-          notes: notes !== undefined ? notes.trim() || null : existing.notes,
+          notes: newNotes,
         },
       });
-    } else if (name || notes) {
+    } else {
       await prisma.customer.create({
         data: {
           name: name?.trim() || "WhatsApp Customer",
           phone: cleanPhone,
-          notes: notes?.trim() || null,
+          notes: newNotes,
         },
       });
+    }
+
+    // If role changed, ensure enrolled in corresponding default Broadcast Group
+    if (role) {
+      const groupName = role === "vendor" ? "All Vendors" : role === "team" ? "IntriHub Team" : "All Customers";
+      const groupDesc =
+        role === "vendor"
+          ? "Verified suppliers, tile & sanitaryware manufacturers"
+          : role === "team"
+          ? "Internal operations, sales & support team"
+          : "Direct customer and buyer inquiries";
+
+      let targetGroup = await prisma.broadcastGroup.findFirst({
+        where: { name: { equals: groupName, mode: "insensitive" } },
+      });
+
+      if (!targetGroup) {
+        targetGroup = await prisma.broadcastGroup.create({
+          data: {
+            name: groupName,
+            description: groupDesc,
+            createdBy: "Auto System",
+          },
+        });
+      }
+
+      if (targetGroup) {
+        await prisma.broadcastGroupMember.upsert({
+          where: {
+            groupId_phoneNumber: {
+              groupId: targetGroup.id,
+              phoneNumber: cleanPhone,
+            },
+          },
+          update: { customerName: name?.trim() || undefined },
+          create: {
+            groupId: targetGroup.id,
+            phoneNumber: cleanPhone,
+            customerName: name?.trim() || null,
+          },
+        });
+      }
     }
 
     return NextResponse.json({
       success: true,
       message: "Customer profile updated successfully.",
       name: name?.trim() || null,
-      notes: notes?.trim() || null,
+      notes: newNotes.replace(/\[ROLE:(vendor|customer|team)\]/g, "").trim() || null,
+      role: targetRole,
     });
   } catch (error: any) {
     console.error("PATCH /api/customer/profile error:", error);

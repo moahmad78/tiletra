@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { supabaseAdmin } from "@/lib/autobot/supabase";
 import { getOrCreateDefaultProfile } from "@/lib/autobot/profile";
 import { sendWhatsAppMessage } from "@/lib/autobot/whatsapp";
+import { prisma } from "@/lib/prisma";
 
 function formatPhoneNumber(phone: string): string {
   let cleaned = phone.replace(/\D/g, "");
@@ -13,7 +14,7 @@ function formatPhoneNumber(phone: string): string {
 
 export async function POST(request: Request) {
   try {
-    const { phone, name, initialMessage, mode } = await request.json();
+    const { phone, name, initialMessage, mode, contactRole } = await request.json();
 
     if (!phone || typeof phone !== "string" || phone.trim() === "") {
       return NextResponse.json({ error: "Phone number is required." }, { status: 400 });
@@ -24,6 +25,7 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: "Invalid phone number format." }, { status: 400 });
     }
 
+    const role: "vendor" | "customer" | "team" = contactRole === "vendor" || contactRole === "team" ? contactRole : "customer";
     const profile = await getOrCreateDefaultProfile();
     const userId = profile?.id;
 
@@ -64,6 +66,73 @@ export async function POST(request: Request) {
       if (updatedChat) chat = updatedChat;
     }
 
+    // Upsert Customer in Prisma with role tag
+    const customerName = name?.trim() || "WhatsApp Contact";
+    const existingCustomer = await prisma.customer.findFirst({
+      where: { OR: [{ phone: cleanPhone }, { phone: cleanPhone.slice(-10) }] },
+    });
+
+    if (existingCustomer) {
+      let notes = existingCustomer.notes || "";
+      notes = notes.replace(/\[ROLE:(vendor|customer|team)\]/g, "").trim();
+      notes = `[ROLE:${role}] ${notes}`.trim();
+      await prisma.customer.update({
+        where: { id: existingCustomer.id },
+        data: {
+          name: name?.trim() || existingCustomer.name,
+          notes,
+        },
+      });
+    } else {
+      await prisma.customer.create({
+        data: {
+          phone: cleanPhone,
+          name: customerName,
+          notes: `[ROLE:${role}]`,
+        },
+      });
+    }
+
+    // Auto-sync into Default Broadcast Group for this Role
+    const groupName = role === "vendor" ? "All Vendors" : role === "team" ? "IntriHub Team" : "All Customers";
+    const groupDesc =
+      role === "vendor"
+        ? "Verified suppliers, tile & sanitaryware manufacturers"
+        : role === "team"
+        ? "Internal operations, sales & support team"
+        : "Direct customer and buyer inquiries";
+
+    let targetGroup = await prisma.broadcastGroup.findFirst({
+      where: { name: { equals: groupName, mode: "insensitive" } },
+    });
+
+    if (!targetGroup) {
+      targetGroup = await prisma.broadcastGroup.create({
+        data: {
+          name: groupName,
+          description: groupDesc,
+          createdBy: "Auto System",
+        },
+      });
+    }
+
+    if (targetGroup) {
+      await prisma.broadcastGroupMember.upsert({
+        where: {
+          groupId_phoneNumber: {
+            groupId: targetGroup.id,
+            phoneNumber: cleanPhone,
+          },
+        },
+        update: { customerName: name?.trim() || undefined },
+        create: {
+          groupId: targetGroup.id,
+          phoneNumber: cleanPhone,
+          customerName: name?.trim() || null,
+        },
+      });
+    }
+
     if (initialMessage && initialMessage.trim() !== "") {
       const msgText = initialMessage.trim();
       await sendWhatsAppMessage(cleanPhone, msgText);
@@ -81,7 +150,13 @@ export async function POST(request: Request) {
         .eq("id", chat.id);
     }
 
-    return NextResponse.json({ success: true, chat });
+    return NextResponse.json({
+      success: true,
+      chat: {
+        ...chat,
+        contact_role: role,
+      },
+    });
   } catch (error: any) {
     console.error("POST /api/chats/new error:", error);
     return NextResponse.json({ error: error?.message || "Internal Server Error" }, { status: 500 });

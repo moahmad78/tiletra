@@ -59,6 +59,10 @@ import {
   Filter,
   CheckCircle,
   HelpCircle,
+  Smartphone,
+  DownloadCloud,
+  Share2,
+  ArrowLeft,
 } from "lucide-react";
 import { supabase } from "@/lib/autobot/supabase";
 import { INTRIHUB_DEFAULT_PROMPT } from "@/lib/autobot/profile";
@@ -107,6 +111,7 @@ type Chat = {
   chat_mode: "human" | "ai";
   last_message_at: string;
   created_at?: string;
+  contact_role?: "vendor" | "customer" | "team";
 };
 
 type Message = {
@@ -222,6 +227,7 @@ type CustomerProfileData = {
   rawName: string | null;
   city: string;
   notes: string | null;
+  role?: "vendor" | "customer" | "team";
   firstContactedAt: string | null;
   lastActiveAt: string | null;
   chatMode: string;
@@ -368,6 +374,10 @@ export default function IntrihubHelpAutobotDesk({ onLogout }: IntrihubHelpAutobo
   const [isEditingProfileName, setIsEditingProfileName] = useState(false);
   const [profileEditName, setProfileEditName] = useState("");
   const [profileNotes, setProfileNotes] = useState("");
+  const [profileEditRole, setProfileEditRole] = useState<"customer" | "vendor" | "team">("customer");
+  const [contactRoleFilter, setContactRoleFilter] = useState<"all" | "customer" | "vendor" | "team" | "human" | "ai">("all");
+  const [newContactRole, setNewContactRole] = useState<"customer" | "vendor" | "team">("customer");
+  const [crmRoleFilter, setCrmRoleFilter] = useState<"all" | "customer" | "vendor" | "team">("all");
   const [isSavingProfile, setIsSavingProfile] = useState(false);
   const [profileSaveSuccess, setProfileSaveSuccess] = useState(false);
   const [selectedAddToGroupId, setSelectedAddToGroupId] = useState("");
@@ -449,6 +459,59 @@ export default function IntrihubHelpAutobotDesk({ onLogout }: IntrihubHelpAutobo
   const [isUploading, setIsUploading] = useState(false);
   const [isSavingSettings, setIsSavingSettings] = useState(false);
   const [settingsMsg, setSettingsMsg] = useState<{ type: "success" | "error"; text: string } | null>(null);
+
+  // PWA / App Download & Installation States
+  const [deferredPrompt, setDeferredPrompt] = useState<any>(null);
+  const [isAppInstalled, setIsAppInstalled] = useState(false);
+  const [showInstallBanner, setShowInstallBanner] = useState(true);
+  const [showInstallModal, setShowInstallModal] = useState(false);
+  const [isIos, setIsIos] = useState(false);
+
+  useEffect(() => {
+    if (typeof window !== "undefined") {
+      const isIosDevice = /iPad|iPhone|iPod/.test(navigator.userAgent) && !(window as any).MSStream;
+      setIsIos(isIosDevice);
+
+      if (window.matchMedia("(display-mode: standalone)").matches || (window.navigator as any).standalone) {
+        setIsAppInstalled(true);
+        setShowInstallBanner(false);
+      }
+
+      const handleBeforeInstall = (e: any) => {
+        e.preventDefault();
+        setDeferredPrompt(e);
+        setShowInstallBanner(true);
+      };
+
+      const handleAppInstalled = () => {
+        setIsAppInstalled(true);
+        setDeferredPrompt(null);
+        setShowInstallBanner(false);
+      };
+
+      window.addEventListener("beforeinstallprompt", handleBeforeInstall);
+      window.addEventListener("appinstalled", handleAppInstalled);
+
+      return () => {
+        window.removeEventListener("beforeinstallprompt", handleBeforeInstall);
+        window.removeEventListener("appinstalled", handleAppInstalled);
+      };
+    }
+  }, []);
+
+  const handleInstallClick = async () => {
+    if (deferredPrompt) {
+      deferredPrompt.prompt();
+      const { outcome } = await deferredPrompt.userChoice;
+      if (outcome === "accepted") {
+        setIsAppInstalled(true);
+        setDeferredPrompt(null);
+        setShowInstallBanner(false);
+      }
+    } else {
+      setShowInstallModal(true);
+    }
+  };
 
   // -------------------------------------------------------------
   // Data Fetchers
@@ -570,6 +633,7 @@ export default function IntrihubHelpAutobotDesk({ onLogout }: IntrihubHelpAutobo
           setCustomerProfile(data.profile);
           setProfileEditName(data.profile.rawName || "");
           setProfileNotes(data.profile.notes || "");
+          setProfileEditRole(data.profile.role || "customer");
         }
       }
     } catch (err) {
@@ -579,10 +643,11 @@ export default function IntrihubHelpAutobotDesk({ onLogout }: IntrihubHelpAutobo
     }
   };
 
-  const handleSaveProfile = async () => {
+  const handleSaveProfile = async (explicitRole?: "customer" | "vendor" | "team") => {
     if (!customerProfile) return;
     setIsSavingProfile(true);
     setProfileSaveSuccess(false);
+    const roleToSave = explicitRole || profileEditRole;
     try {
       const res = await fetch("/api/customer/profile", {
         method: "PATCH",
@@ -591,12 +656,14 @@ export default function IntrihubHelpAutobotDesk({ onLogout }: IntrihubHelpAutobo
           phone: customerProfile.phone,
           name: profileEditName.trim(),
           notes: profileNotes.trim(),
+          role: roleToSave,
         }),
       });
 
       if (res.ok) {
         setProfileSaveSuccess(true);
         setIsEditingProfileName(false);
+        setProfileEditRole(roleToSave);
         setCustomerProfile((prev) =>
           prev
             ? {
@@ -604,13 +671,22 @@ export default function IntrihubHelpAutobotDesk({ onLogout }: IntrihubHelpAutobo
                 name: profileEditName.trim() || prev.displayPhone,
                 rawName: profileEditName.trim() || null,
                 notes: profileNotes.trim() || null,
+                role: roleToSave,
               }
             : null
         );
-        // Refresh chats list to reflect updated name
+        // Refresh chats list to reflect updated name and role
         fetchChats(false);
         if (activeChat) {
-          setActiveChat((prev) => (prev ? { ...prev, customer_name: profileEditName.trim() || null } : null));
+          setActiveChat((prev) =>
+            prev
+              ? {
+                  ...prev,
+                  customer_name: profileEditName.trim() || null,
+                  contact_role: roleToSave,
+                }
+              : null
+          );
         }
         setTimeout(() => setProfileSaveSuccess(false), 3000);
       }
@@ -1000,15 +1076,46 @@ export default function IntrihubHelpAutobotDesk({ onLogout }: IntrihubHelpAutobo
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [messages]);
 
+  const chatRoleCounts = useMemo(() => {
+    let all = chats.length;
+    let customers = 0;
+    let vendors = 0;
+    let team = 0;
+    let ai = 0;
+    let human = 0;
+
+    for (const c of chats) {
+      const r = c.contact_role || "customer";
+      if (r === "vendor") vendors++;
+      else if (r === "team") team++;
+      else customers++;
+
+      if (c.chat_mode === "ai") ai++;
+      else human++;
+    }
+
+    return { all, customers, vendors, team, ai, human };
+  }, [chats]);
+
   const filteredChats = useMemo(() => {
-    if (!searchQuery.trim()) return chats;
-    const q = searchQuery.toLowerCase();
-    return chats.filter(
-      (c) =>
-        c.customer_phone.toLowerCase().includes(q) ||
-        (c.customer_name && c.customer_name.toLowerCase().includes(q))
-    );
-  }, [chats, searchQuery]);
+    return chats.filter((c) => {
+      if (searchQuery.trim()) {
+        const q = searchQuery.toLowerCase();
+        const matchesPhone = c.customer_phone.toLowerCase().includes(q);
+        const matchesName = c.customer_name && c.customer_name.toLowerCase().includes(q);
+        if (!matchesPhone && !matchesName) return false;
+      }
+
+      const role = c.contact_role || "customer";
+      if (contactRoleFilter === "customer" && role !== "customer") return false;
+      if (contactRoleFilter === "vendor" && role !== "vendor") return false;
+      if (contactRoleFilter === "team" && role !== "team") return false;
+      if (contactRoleFilter === "human" && c.chat_mode !== "human") return false;
+      if (contactRoleFilter === "ai" && c.chat_mode !== "ai") return false;
+
+      return true;
+    });
+  }, [chats, searchQuery, contactRoleFilter]);
 
   const filteredGroups = useMemo(() => {
     if (!groupSearchQuery.trim()) return groups;
@@ -1032,14 +1139,22 @@ export default function IntrihubHelpAutobotDesk({ onLogout }: IntrihubHelpAutobo
   }, [selectedGroup, memberSearchQuery]);
 
   const filteredCrmContacts = useMemo(() => {
-    if (!crmMemberSearch.trim()) return chats;
-    const q = crmMemberSearch.toLowerCase();
-    return chats.filter(
-      (c) =>
-        c.customer_phone.includes(q) ||
-        (c.customer_name && c.customer_name.toLowerCase().includes(q))
-    );
-  }, [chats, crmMemberSearch]);
+    return chats.filter((c) => {
+      if (crmMemberSearch.trim()) {
+        const q = crmMemberSearch.toLowerCase();
+        const matchesPhone = c.customer_phone.includes(q);
+        const matchesName = c.customer_name && c.customer_name.toLowerCase().includes(q);
+        if (!matchesPhone && !matchesName) return false;
+      }
+
+      const role = c.contact_role || "customer";
+      if (crmRoleFilter === "customer" && role !== "customer") return false;
+      if (crmRoleFilter === "vendor" && role !== "vendor") return false;
+      if (crmRoleFilter === "team" && role !== "team") return false;
+
+      return true;
+    });
+  }, [chats, crmMemberSearch, crmRoleFilter]);
 
   const handleToggleMode = async (newModeToggle: "human" | "ai") => {
     if (!activeChat) return;
@@ -1202,6 +1317,7 @@ export default function IntrihubHelpAutobotDesk({ onLogout }: IntrihubHelpAutobo
           name: newName.trim() || null,
           initialMessage: newInitialMessage.trim() || null,
           mode: newMode,
+          contactRole: newContactRole,
         }),
       });
 
@@ -1222,6 +1338,7 @@ export default function IntrihubHelpAutobotDesk({ onLogout }: IntrihubHelpAutobo
       setNewName("");
       setNewInitialMessage("");
       setNewMode("human");
+      setNewContactRole("customer");
     } catch (err: any) {
       setNewChatError(err.message || "Failed to start new WhatsApp chat.");
     } finally {
@@ -1301,10 +1418,10 @@ export default function IntrihubHelpAutobotDesk({ onLogout }: IntrihubHelpAutobo
   return (
     <div className="min-h-screen bg-[#f8fafc] flex flex-col font-sans text-slate-900">
       {/* Top Navbar */}
-      <header className="h-20 bg-white border-b border-slate-200 px-6 flex items-center justify-between shadow-2xs sticky top-0 z-30">
-        <div className="flex items-center gap-6">
+      <header className="h-16 md:h-20 bg-white border-b border-slate-200 px-3 md:px-6 flex items-center justify-between shadow-2xs sticky top-0 z-30">
+        <div className="flex items-center gap-3 md:gap-6">
           <Link href="/" className="flex items-center gap-2">
-            <img src="/logo/intri-web-logo.png" alt="Intrihub" className="h-8 w-auto object-contain" />
+            <img src="/logo/intri-web-logo.png" alt="Intrihub" className="h-7 md:h-8 w-auto object-contain" />
           </Link>
           <div className="hidden sm:flex items-center gap-2 px-3 py-1 bg-emerald-50 border border-emerald-200 rounded-full text-xs font-bold text-[#1E9E6B]">
             <span className="h-2 w-2 rounded-full bg-[#25D366] animate-pulse" />
@@ -1312,11 +1429,11 @@ export default function IntrihubHelpAutobotDesk({ onLogout }: IntrihubHelpAutobo
           </div>
         </div>
 
-        {/* Navigation Tabs */}
-        <div className="flex items-center gap-1.5 bg-slate-100 p-1 rounded-2xl border border-slate-200">
+        {/* Navigation Tabs (Desktop) */}
+        <div className="hidden md:flex items-center gap-1.5 bg-slate-100 p-1 rounded-2xl border border-slate-200">
           <button
             onClick={() => setActiveTab("inbox")}
-            className={`flex items-center gap-2 px-3.5 py-2 rounded-xl text-xs font-bold transition-all ${
+            className={`flex items-center gap-2 px-3.5 py-2 rounded-xl text-xs font-bold transition-all cursor-pointer ${
               activeTab === "inbox"
                 ? "bg-[#F26522] text-white shadow-xs"
                 : "text-slate-600 hover:text-slate-900"
@@ -1331,7 +1448,7 @@ export default function IntrihubHelpAutobotDesk({ onLogout }: IntrihubHelpAutobo
               fetchGroups();
               fetchTemplates();
             }}
-            className={`flex items-center gap-2 px-3.5 py-2 rounded-xl text-xs font-bold transition-all ${
+            className={`flex items-center gap-2 px-3.5 py-2 rounded-xl text-xs font-bold transition-all cursor-pointer ${
               activeTab === "groups"
                 ? "bg-[#052A51] text-white shadow-xs"
                 : "text-slate-600 hover:text-slate-900"
@@ -1342,7 +1459,7 @@ export default function IntrihubHelpAutobotDesk({ onLogout }: IntrihubHelpAutobo
           </button>
           <button
             onClick={() => setActiveTab("dashboard")}
-            className={`flex items-center gap-2 px-3.5 py-2 rounded-xl text-xs font-bold transition-all ${
+            className={`flex items-center gap-2 px-3.5 py-2 rounded-xl text-xs font-bold transition-all cursor-pointer ${
               activeTab === "dashboard"
                 ? "bg-[#052A51] text-white shadow-xs"
                 : "text-slate-600 hover:text-slate-900"
@@ -1353,7 +1470,7 @@ export default function IntrihubHelpAutobotDesk({ onLogout }: IntrihubHelpAutobo
           </button>
           <button
             onClick={() => setActiveTab("settings")}
-            className={`flex items-center gap-2 px-3.5 py-2 rounded-xl text-xs font-bold transition-all ${
+            className={`flex items-center gap-2 px-3.5 py-2 rounded-xl text-xs font-bold transition-all cursor-pointer ${
               activeTab === "settings"
                 ? "bg-[#052A51] text-white shadow-xs"
                 : "text-slate-600 hover:text-slate-900"
@@ -1364,18 +1481,28 @@ export default function IntrihubHelpAutobotDesk({ onLogout }: IntrihubHelpAutobo
           </button>
         </div>
 
-        {/* Actions & Logout */}
-        <div className="flex items-center gap-3">
+        {/* Actions & Install App */}
+        <div className="flex items-center gap-2 md:gap-3">
+          {/* Download / Install App Button */}
+          <button
+            onClick={handleInstallClick}
+            className="inline-flex items-center gap-1.5 px-3 py-1.5 md:py-2 rounded-xl bg-emerald-50 hover:bg-emerald-100 text-[#1E9E6B] border border-emerald-200 text-xs font-extrabold shadow-2xs transition-all cursor-pointer"
+            title="Download & Install HelpDesk App on Phone / PC"
+          >
+            <DownloadCloud className="h-4 w-4 text-[#25D366]" />
+            <span className="hidden xs:inline">{isAppInstalled ? "App Installed" : "Install App"}</span>
+          </button>
+
           <button
             onClick={() => setIsNewChatOpen(true)}
-            className="hidden md:inline-flex items-center gap-2 px-3.5 py-2 rounded-xl bg-[#F26522] hover:bg-[#d95a1e] text-white text-xs font-bold shadow-xs transition-all cursor-pointer"
+            className="inline-flex items-center gap-1.5 px-3 py-1.5 md:py-2 rounded-xl bg-[#F26522] hover:bg-[#d95a1e] text-white text-xs font-bold shadow-xs transition-all cursor-pointer"
           >
             <Plus className="h-4 w-4" />
-            <span>New Message</span>
+            <span className="hidden sm:inline">New Message</span>
           </button>
           <button
             onClick={onLogout}
-            className="flex items-center gap-1.5 px-3 py-2 rounded-xl text-xs font-bold text-slate-500 hover:text-red-600 hover:bg-red-50 transition-colors border border-transparent hover:border-red-200 cursor-pointer"
+            className="flex items-center gap-1.5 p-2 md:px-3 md:py-2 rounded-xl text-xs font-bold text-slate-500 hover:text-red-600 hover:bg-red-50 transition-colors border border-transparent hover:border-red-200 cursor-pointer"
             title="Logout from Customer Desk"
           >
             <LogOut className="h-4 w-4" />
@@ -1384,15 +1511,45 @@ export default function IntrihubHelpAutobotDesk({ onLogout }: IntrihubHelpAutobo
         </div>
       </header>
 
+      {/* Dismissible Install App Banner (Mobile & Desktop) */}
+      {!isAppInstalled && showInstallBanner && (
+        <div className="bg-gradient-to-r from-[#052A51] via-[#0b3d75] to-[#128C7E] text-white px-3 md:px-6 py-2.5 flex items-center justify-between shadow-xs text-xs z-20 shrink-0">
+          <div className="flex items-center gap-2.5 min-w-0">
+            <div className="w-8 h-8 rounded-xl bg-white/10 flex items-center justify-center shrink-0 border border-white/20">
+              <Smartphone className="w-4 h-4 text-[#25D366]" />
+            </div>
+            <div className="min-w-0">
+              <p className="font-bold text-xs truncate">Install IntriHub HelpDesk App</p>
+              <p className="text-[10px] text-slate-200 truncate">Run as a full-screen WhatsApp-style mobile app with instant alerts</p>
+            </div>
+          </div>
+          <div className="flex items-center gap-2 shrink-0">
+            <button
+              onClick={handleInstallClick}
+              className="px-3 py-1 bg-[#25D366] hover:bg-[#20bd5a] text-slate-950 font-extrabold rounded-lg text-xs transition-colors shadow-2xs cursor-pointer flex items-center gap-1"
+            >
+              <DownloadCloud className="w-3.5 h-3.5" />
+              <span>Install</span>
+            </button>
+            <button
+              onClick={() => setShowInstallBanner(false)}
+              className="p-1 text-white/70 hover:text-white rounded-md cursor-pointer"
+            >
+              <X className="w-4 h-4" />
+            </button>
+          </div>
+        </div>
+      )}
+
       {/* Main Content Area */}
       <main className="flex-1 flex overflow-hidden">
         {/* ========================================================================= */}
         {/* TAB 1: LIVE INBOX */}
         {/* ========================================================================= */}
         {activeTab === "inbox" && (
-          <div className="flex-1 flex h-[calc(100vh-5rem)] overflow-hidden">
-            {/* Left Chat List */}
-            <aside className="w-80 lg:w-96 border-r border-slate-200 bg-white flex flex-col shrink-0">
+          <div className="flex-1 flex h-[calc(100vh-4rem)] md:h-[calc(100vh-5rem)] pb-16 md:pb-0 overflow-hidden">
+            {/* Left Chat List (Mobile & Desktop) */}
+            <aside className={`w-full md:w-80 lg:w-96 border-r border-slate-200 bg-white flex flex-col shrink-0 ${activeChat ? "hidden md:flex" : "flex"}`}>
               <div className="p-4 border-b border-slate-200 space-y-3">
                 <div className="flex justify-between items-center">
                   <h2 className="font-extrabold text-base text-[#052A51] flex items-center gap-2">
@@ -1402,14 +1559,14 @@ export default function IntrihubHelpAutobotDesk({ onLogout }: IntrihubHelpAutobo
                   <div className="flex items-center gap-1">
                     <button
                       onClick={() => fetchChats(true)}
-                      className="p-2 text-slate-400 hover:text-slate-600 rounded-lg hover:bg-slate-100 transition-colors"
+                      className="p-2 text-slate-400 hover:text-slate-600 rounded-lg hover:bg-slate-100 transition-colors cursor-pointer"
                       title="Refresh conversations"
                     >
                       <RefreshCw className="w-4 h-4" />
                     </button>
                     <button
                       onClick={() => setIsNewChatOpen(true)}
-                      className="p-2 bg-orange-50 text-[#F26522] hover:bg-orange-100 rounded-lg transition-colors"
+                      className="p-2 bg-orange-50 text-[#F26522] hover:bg-orange-100 rounded-lg transition-colors cursor-pointer"
                       title="Type new phone number"
                     >
                       <Plus className="w-4 h-4" />
@@ -1427,6 +1584,75 @@ export default function IntrihubHelpAutobotDesk({ onLogout }: IntrihubHelpAutobo
                     className="w-full bg-slate-50 border border-slate-200 rounded-xl pl-9 pr-4 py-2 text-xs text-slate-800 placeholder-slate-400 focus:outline-none focus:border-[#F26522] focus:bg-white transition-colors"
                   />
                 </div>
+
+                {/* 1-Click Quick Filter Bar (Role & Mode) */}
+                <div className="flex items-center gap-1 overflow-x-auto pb-1 text-[11px] scrollbar-none">
+                  <button
+                    onClick={() => setContactRoleFilter("all")}
+                    className={`px-2.5 py-1 rounded-lg font-bold shrink-0 transition-colors cursor-pointer ${
+                      contactRoleFilter === "all"
+                        ? "bg-[#052A51] text-white"
+                        : "bg-slate-100 text-slate-600 hover:bg-slate-200"
+                    }`}
+                  >
+                    All ({chatRoleCounts.all})
+                  </button>
+                  <button
+                    onClick={() => setContactRoleFilter("customer")}
+                    className={`px-2.5 py-1 rounded-lg font-bold shrink-0 transition-colors cursor-pointer flex items-center gap-1 ${
+                      contactRoleFilter === "customer"
+                        ? "bg-[#1E9E6B] text-white"
+                        : "bg-emerald-50 text-[#1E9E6B] border border-emerald-100 hover:bg-emerald-100"
+                    }`}
+                  >
+                    <User className="w-3 h-3" />
+                    <span>Customers ({chatRoleCounts.customers})</span>
+                  </button>
+                  <button
+                    onClick={() => setContactRoleFilter("vendor")}
+                    className={`px-2.5 py-1 rounded-lg font-bold shrink-0 transition-colors cursor-pointer flex items-center gap-1 ${
+                      contactRoleFilter === "vendor"
+                        ? "bg-purple-700 text-white"
+                        : "bg-purple-50 text-purple-700 border border-purple-100 hover:bg-purple-100"
+                    }`}
+                  >
+                    <Building2 className="w-3 h-3" />
+                    <span>Vendors ({chatRoleCounts.vendors})</span>
+                  </button>
+                  <button
+                    onClick={() => setContactRoleFilter("team")}
+                    className={`px-2.5 py-1 rounded-lg font-bold shrink-0 transition-colors cursor-pointer flex items-center gap-1 ${
+                      contactRoleFilter === "team"
+                        ? "bg-blue-700 text-white"
+                        : "bg-blue-50 text-blue-700 border border-blue-100 hover:bg-blue-100"
+                    }`}
+                  >
+                    <Users className="w-3 h-3" />
+                    <span>Team ({chatRoleCounts.team})</span>
+                  </button>
+                  <button
+                    onClick={() => setContactRoleFilter("human")}
+                    className={`px-2 py-1 rounded-lg font-bold shrink-0 transition-colors cursor-pointer ${
+                      contactRoleFilter === "human"
+                        ? "bg-[#1E9E6B] text-white"
+                        : "bg-slate-100 text-slate-600 hover:bg-slate-200"
+                    }`}
+                    title="Direct Agent Assigned"
+                  >
+                    Agent ({chatRoleCounts.human})
+                  </button>
+                  <button
+                    onClick={() => setContactRoleFilter("ai")}
+                    className={`px-2 py-1 rounded-lg font-bold shrink-0 transition-colors cursor-pointer ${
+                      contactRoleFilter === "ai"
+                        ? "bg-[#F26522] text-white"
+                        : "bg-slate-100 text-slate-600 hover:bg-slate-200"
+                    }`}
+                    title="AI Auto Responder"
+                  >
+                    AI ({chatRoleCounts.ai})
+                  </button>
+                </div>
               </div>
 
               <div className="flex-1 overflow-y-auto p-2 space-y-1">
@@ -1438,96 +1664,136 @@ export default function IntrihubHelpAutobotDesk({ onLogout }: IntrihubHelpAutobo
                 ) : filteredChats.length === 0 ? (
                   <div className="py-12 text-center text-slate-400 space-y-3 text-xs p-4">
                     <MessageSquare className="w-8 h-8 mx-auto text-slate-300" />
-                    <p className="font-bold text-slate-600">No active conversations yet</p>
+                    <p className="font-bold text-slate-600">No matching conversations found</p>
                     <p className="text-[11px] text-slate-400">
-                      When a customer messages <strong className="text-slate-700 font-mono">+91 70901 20211</strong>, it will appear here automatically.
+                      Try clearing the filter or sending a new message to a number.
                     </p>
                   </div>
                 ) : (
-                  filteredChats.map((chat) => (
-                    <button
-                      key={chat.id}
-                      onClick={() => setActiveChat(chat)}
-                      className={`w-full text-left p-3 rounded-2xl transition-all duration-200 flex items-center gap-3 border ${
-                        activeChat?.id === chat.id
-                          ? "bg-orange-50/80 border-[#F26522] shadow-xs"
-                          : "hover:bg-slate-50 border-transparent bg-slate-50/40"
-                      }`}
-                    >
-                      <CustomerAvatar name={chat.customer_name} phone={chat.customer_phone} size="md" />
+                  filteredChats.map((chat) => {
+                    const role = chat.contact_role || "customer";
+                    return (
+                      <button
+                        key={chat.id}
+                        onClick={() => setActiveChat(chat)}
+                        className={`w-full text-left p-3 rounded-2xl transition-all duration-200 flex items-center gap-3 border cursor-pointer ${
+                          activeChat?.id === chat.id
+                            ? "bg-orange-50/80 border-[#F26522] shadow-xs"
+                            : "hover:bg-slate-50 border-transparent bg-slate-50/40"
+                        }`}
+                      >
+                        <CustomerAvatar name={chat.customer_name} phone={chat.customer_phone} size="md" />
 
-                      <div className="flex-1 min-w-0">
-                        <div className="flex justify-between items-center w-full">
-                          <span className="font-bold text-sm text-[#052A51] truncate">
-                            {chat.customer_name || chat.customer_phone}
-                          </span>
-                          <span className="text-[10px] text-slate-400 font-medium shrink-0">
-                            {new Date(chat.last_message_at).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}
-                          </span>
+                        <div className="flex-1 min-w-0">
+                          <div className="flex justify-between items-center w-full">
+                            <span className="font-bold text-sm text-[#052A51] truncate">
+                              {chat.customer_name || chat.customer_phone}
+                            </span>
+                            <span className="text-[10px] text-slate-400 font-medium shrink-0">
+                              {new Date(chat.last_message_at).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}
+                            </span>
+                          </div>
+                          <div className="flex justify-between items-center w-full mt-1 gap-1">
+                            <div className="flex items-center gap-1.5 min-w-0">
+                              <span className="text-xs text-slate-500 font-mono truncate">{chat.customer_phone}</span>
+                              {role === "vendor" && (
+                                <span className="text-[9px] px-1.5 py-0.2 rounded font-extrabold bg-purple-100 text-purple-800 border border-purple-200 shrink-0">
+                                  Vendor
+                                </span>
+                              )}
+                              {role === "team" && (
+                                <span className="text-[9px] px-1.5 py-0.2 rounded font-extrabold bg-blue-100 text-blue-800 border border-blue-200 shrink-0">
+                                  Team
+                                </span>
+                              )}
+                              {role === "customer" && (
+                                <span className="text-[9px] px-1.5 py-0.2 rounded font-bold bg-emerald-50 text-emerald-700 border border-emerald-200 shrink-0">
+                                  User
+                                </span>
+                              )}
+                            </div>
+                            <span
+                              className={`text-[9px] px-1.5 py-0.5 rounded-full font-bold uppercase tracking-wider shrink-0 ${
+                                chat.chat_mode === "ai"
+                                  ? "bg-orange-100 text-[#F26522] border border-orange-200"
+                                  : "bg-emerald-100 text-[#1E9E6B] border border-emerald-200"
+                              }`}
+                            >
+                              {chat.chat_mode === "ai" ? "AI" : "AGENT"}
+                            </span>
+                          </div>
                         </div>
-                        <div className="flex justify-between items-center w-full mt-0.5">
-                          <span className="text-xs text-slate-500 font-mono truncate">{chat.customer_phone}</span>
-                          <span
-                            className={`text-[9px] px-2 py-0.5 rounded-full font-bold uppercase tracking-wider shrink-0 ${
-                              chat.chat_mode === "ai"
-                                ? "bg-orange-100 text-[#F26522] border border-orange-200"
-                                : "bg-emerald-100 text-[#1E9E6B] border border-emerald-200"
-                            }`}
-                          >
-                            {chat.chat_mode === "ai" ? "INSTANT" : "DIRECT"}
-                          </span>
-                        </div>
-                      </div>
-                    </button>
-                  ))
+                      </button>
+                    );
+                  })
                 )}
               </div>
             </aside>
 
-            {/* Middle Active Chat Stream */}
-            <div className="flex-1 flex flex-col bg-[#f8fafc] overflow-hidden border-r border-slate-200">
+            {/* Middle Active Chat Stream (Full Screen on Mobile) */}
+            <div className={`flex-1 flex flex-col bg-[#efeae2]/40 md:bg-[#f8fafc] overflow-hidden border-r border-slate-200 ${!activeChat ? "hidden md:flex" : "flex"}`}>
               {activeChat ? (
                 <>
-                  {/* Chat Header */}
-                  <header className="h-16 px-6 border-b border-slate-200 bg-white flex items-center justify-between z-10 shrink-0">
-                    <button
-                      onClick={() => {
-                        fetchCustomerProfile(activeChat.customer_phone);
-                        setIsProfilePanelOpen(true);
-                      }}
-                      className="flex items-center gap-3 text-left hover:opacity-80 transition-opacity group cursor-pointer"
-                      title="Click to view full Customer WhatsApp Profile & Details"
-                    >
-                      <CustomerAvatar
-                        name={activeChat.customer_name}
-                        phone={activeChat.customer_phone}
-                        size="lg"
-                        showOnline={true}
-                      />
-                      <div>
-                        <div className="flex items-center gap-1.5">
-                          <h3 className="font-bold text-[#052A51] text-sm group-hover:text-[#F26522] transition-colors">
-                            {activeChat.customer_name || "WhatsApp Customer"}
-                          </h3>
-                          <Info className="w-3.5 h-3.5 text-slate-400 group-hover:text-[#F26522]" />
-                        </div>
-                        <p className="text-xs text-slate-500 font-mono flex items-center gap-1.5">
-                          <span>{activeChat.customer_phone}</span>
-                          <span className="text-[10px] text-emerald-600 font-bold bg-emerald-50 px-1.5 py-0.2 rounded border border-emerald-200">
-                            Verified WABA
-                          </span>
-                        </p>
-                      </div>
-                    </button>
+                  {/* Chat Header (Native WhatsApp Style) */}
+                  <header className="h-16 px-3 md:px-6 border-b border-slate-200 bg-white flex items-center justify-between z-10 shrink-0 shadow-2xs">
+                    <div className="flex items-center gap-1.5 md:gap-3 min-w-0">
+                      {/* Mobile Back Button to Chat List */}
+                      <button
+                        onClick={() => setActiveChat(null)}
+                        className="md:hidden p-1.5 -ml-1 text-slate-700 hover:text-[#052A51] hover:bg-slate-100 rounded-full transition-colors cursor-pointer"
+                        title="Back to Chats"
+                      >
+                        <ArrowLeft className="w-5 h-5" />
+                      </button>
 
-                    <div className="flex items-center gap-3">
+                      <button
+                        onClick={() => {
+                          fetchCustomerProfile(activeChat.customer_phone);
+                          setIsProfilePanelOpen(true);
+                        }}
+                        className="flex items-center gap-2.5 md:gap-3 text-left hover:opacity-80 transition-opacity group cursor-pointer min-w-0"
+                        title="Click to view full Customer WhatsApp Profile & Details"
+                      >
+                        <CustomerAvatar
+                          name={activeChat.customer_name}
+                          phone={activeChat.customer_phone}
+                          size="md"
+                          showOnline={true}
+                        />
+                        <div className="min-w-0">
+                          <div className="flex items-center gap-1.5">
+                            <h3 className="font-bold text-[#052A51] text-xs md:text-sm group-hover:text-[#F26522] transition-colors truncate">
+                              {activeChat.customer_name || "WhatsApp Customer"}
+                            </h3>
+                            <Info className="w-3.5 h-3.5 text-slate-400 group-hover:text-[#F26522] shrink-0" />
+                          </div>
+                          <p className="text-[11px] text-slate-500 font-mono flex items-center gap-1 truncate">
+                            <span>{activeChat.customer_phone}</span>
+                            <span className="text-[9px] text-emerald-600 font-bold bg-emerald-50 px-1 py-0.2 rounded border border-emerald-200">
+                              Verified
+                            </span>
+                          </p>
+                        </div>
+                      </button>
+                    </div>
+
+                    <div className="flex items-center gap-1.5 md:gap-3 shrink-0">
+                      {/* Direct Call Icon */}
+                      <a
+                        href={`tel:+${activeChat.customer_phone}`}
+                        className="p-2 text-slate-600 hover:text-[#1E9E6B] hover:bg-emerald-50 rounded-xl transition-colors"
+                        title="Call customer"
+                      >
+                        <Phone className="w-4 h-4" />
+                      </a>
+
                       {/* Customer Profile Trigger Button */}
                       <button
                         onClick={() => {
                           fetchCustomerProfile(activeChat.customer_phone);
                           setIsProfilePanelOpen(true);
                         }}
-                        className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-xl text-xs font-bold transition-colors cursor-pointer"
+                        className="hidden sm:inline-flex items-center gap-1.5 px-3 py-1.5 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-xl text-xs font-bold transition-colors cursor-pointer"
                       >
                         <User className="w-3.5 h-3.5 text-slate-500" />
                         <span>Contact Info</span>
@@ -1536,12 +1802,12 @@ export default function IntrihubHelpAutobotDesk({ onLogout }: IntrihubHelpAutobo
                       {/* Orders Panel Toggle */}
                       <button
                         onClick={() => setIsOrderPanelOpen(!isOrderPanelOpen)}
-                        className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-bold transition-colors border ${
+                        className={`inline-flex items-center gap-1 px-2.5 md:px-3 py-1.5 rounded-xl text-xs font-bold transition-colors border ${
                           isOrderPanelOpen
                             ? "bg-[#052A51] text-white border-[#052A51]"
                             : "bg-white text-slate-700 border-slate-200 hover:bg-slate-50"
                         }`}
-                        title="Toggle Orders & Purchase History CRM drawer"
+                        title="Toggle Orders CRM drawer"
                       >
                         <Package className="w-3.5 h-3.5 text-amber-400" />
                         <span className="hidden sm:inline">Orders</span>
@@ -1553,26 +1819,26 @@ export default function IntrihubHelpAutobotDesk({ onLogout }: IntrihubHelpAutobo
                       </button>
 
                       {/* Dual Mode Switcher Button */}
-                      <div className="flex items-center bg-slate-100 p-1 rounded-xl border border-slate-200">
+                      <div className="flex items-center bg-slate-100 p-0.5 md:p-1 rounded-xl border border-slate-200">
                         <button
                           onClick={() => handleToggleMode("human")}
-                          className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer ${
+                          className={`flex items-center gap-1 px-2 md:px-3 py-1 md:py-1.5 rounded-lg text-[11px] md:text-xs font-bold transition-all cursor-pointer ${
                             activeChat.chat_mode === "human"
                               ? "bg-[#1E9E6B] text-white shadow-2xs"
                               : "text-slate-600 hover:text-slate-900"
                           }`}
                         >
-                          <UserCheck className="w-3.5 h-3.5" /> Direct Agent
+                          <UserCheck className="w-3 h-3 md:w-3.5 md:h-3.5" /> <span className="hidden sm:inline">Agent</span>
                         </button>
                         <button
                           onClick={() => handleToggleMode("ai")}
-                          className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer ${
+                          className={`flex items-center gap-1 px-2 md:px-3 py-1 md:py-1.5 rounded-lg text-[11px] md:text-xs font-bold transition-all cursor-pointer ${
                             activeChat.chat_mode === "ai"
                               ? "bg-[#F26522] text-white shadow-2xs"
                               : "text-slate-600 hover:text-slate-900"
                           }`}
                         >
-                          <Sparkles className="w-3.5 h-3.5" /> Instant Desk
+                          <Sparkles className="w-3 h-3 md:w-3.5 md:h-3.5" /> <span className="hidden sm:inline">AI</span>
                         </button>
                       </div>
                     </div>
@@ -2750,7 +3016,7 @@ export default function IntrihubHelpAutobotDesk({ onLogout }: IntrihubHelpAutobo
                             autoFocus
                           />
                           <button
-                            onClick={handleSaveProfile}
+                            onClick={() => handleSaveProfile()}
                             disabled={isSavingProfile}
                             className="p-1.5 bg-[#F26522] text-white rounded-lg text-xs font-bold cursor-pointer"
                             title="Save Name"
@@ -2797,6 +3063,51 @@ export default function IntrihubHelpAutobotDesk({ onLogout }: IntrihubHelpAutobo
                         >
                           <Copy className="h-3 w-3" />
                         </button>
+                      </div>
+
+                      {/* 1-Click Role Switcher */}
+                      <div className="mt-3 pt-3 border-t border-slate-100 flex flex-col items-center gap-1.5">
+                        <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400">
+                          Contact Category
+                        </span>
+                        <div className="grid grid-cols-3 gap-1.5 w-full">
+                          <button
+                            type="button"
+                            onClick={() => handleSaveProfile("customer")}
+                            className={`py-1.5 px-2 rounded-xl text-xs font-bold transition-all cursor-pointer flex items-center justify-center gap-1 border ${
+                              (customerProfile.role || "customer") === "customer"
+                                ? "bg-[#1E9E6B] border-[#1E9E6B] text-white shadow-2xs"
+                                : "bg-slate-50 border-slate-200 text-slate-600 hover:bg-slate-100"
+                            }`}
+                          >
+                            <User className="w-3 h-3" />
+                            <span>Customer</span>
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => handleSaveProfile("vendor")}
+                            className={`py-1.5 px-2 rounded-xl text-xs font-bold transition-all cursor-pointer flex items-center justify-center gap-1 border ${
+                              customerProfile.role === "vendor"
+                                ? "bg-purple-700 border-purple-700 text-white shadow-2xs"
+                                : "bg-slate-50 border-slate-200 text-slate-600 hover:bg-slate-100"
+                            }`}
+                          >
+                            <Building2 className="w-3 h-3" />
+                            <span>Vendor</span>
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => handleSaveProfile("team")}
+                            className={`py-1.5 px-2 rounded-xl text-xs font-bold transition-all cursor-pointer flex items-center justify-center gap-1 border ${
+                              customerProfile.role === "team"
+                                ? "bg-blue-700 border-blue-700 text-white shadow-2xs"
+                                : "bg-slate-50 border-slate-200 text-slate-600 hover:bg-slate-100"
+                            }`}
+                          >
+                            <Users className="w-3 h-3" />
+                            <span>Team</span>
+                          </button>
+                        </div>
                       </div>
                     </div>
                   </div>
@@ -2935,7 +3246,7 @@ export default function IntrihubHelpAutobotDesk({ onLogout }: IntrihubHelpAutobo
                       className="w-full p-3 bg-slate-50 border border-slate-200 rounded-xl text-xs text-slate-800 focus:bg-white focus:border-[#F26522] focus:outline-none"
                     />
                     <button
-                      onClick={handleSaveProfile}
+                      onClick={() => handleSaveProfile()}
                       disabled={isSavingProfile}
                       className="w-full py-2 bg-[#052A51] hover:bg-[#F26522] text-white rounded-xl text-xs font-bold transition-colors shadow-2xs cursor-pointer disabled:opacity-50"
                     >
@@ -3093,30 +3404,105 @@ export default function IntrihubHelpAutobotDesk({ onLogout }: IntrihubHelpAutobo
                         <Search className="w-3.5 h-3.5 absolute left-3 top-2.5 text-slate-400" />
                         <input
                           type="text"
-                          placeholder="Filter CRM contacts..."
+                          placeholder="Filter CRM contacts by name or phone..."
                           value={crmMemberSearch}
                           onChange={(e) => setCrmMemberSearch(e.target.value)}
                           className="w-full bg-slate-50 border border-slate-200 rounded-xl pl-8 pr-3 py-1.5 text-xs"
                         />
                       </div>
-                      <button
-                        type="button"
-                        onClick={() => {
-                          if (selectedCrmPhones.length === chats.length) {
-                            setSelectedCrmPhones([]);
-                          } else {
-                            setSelectedCrmPhones(chats.map((c) => c.customer_phone));
-                          }
-                        }}
-                        className="text-xs font-bold text-[#F26522] hover:underline cursor-pointer"
-                      >
-                        {selectedCrmPhones.length === chats.length ? "Deselect All" : "Select All"}
-                      </button>
+                    </div>
+
+                    {/* 1-Click Role Filter & Fast Batch Selectors */}
+                    <div className="flex flex-wrap items-center justify-between gap-1.5 bg-slate-50 p-2 rounded-xl border border-slate-200 text-[11px]">
+                      <div className="flex items-center gap-1">
+                        <button
+                          type="button"
+                          onClick={() => setCrmRoleFilter("all")}
+                          className={`px-2 py-0.5 rounded-lg font-bold transition-colors cursor-pointer ${
+                            crmRoleFilter === "all" ? "bg-[#052A51] text-white" : "bg-white text-slate-600 hover:bg-slate-100"
+                          }`}
+                        >
+                          All
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => setCrmRoleFilter("customer")}
+                          className={`px-2 py-0.5 rounded-lg font-bold transition-colors cursor-pointer ${
+                            crmRoleFilter === "customer" ? "bg-[#1E9E6B] text-white" : "bg-white text-slate-600 hover:bg-slate-100"
+                          }`}
+                        >
+                          Customers
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => setCrmRoleFilter("vendor")}
+                          className={`px-2 py-0.5 rounded-lg font-bold transition-colors cursor-pointer ${
+                            crmRoleFilter === "vendor" ? "bg-purple-700 text-white" : "bg-white text-slate-600 hover:bg-slate-100"
+                          }`}
+                        >
+                          Vendors
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => setCrmRoleFilter("team")}
+                          className={`px-2 py-0.5 rounded-lg font-bold transition-colors cursor-pointer ${
+                            crmRoleFilter === "team" ? "bg-blue-700 text-white" : "bg-white text-slate-600 hover:bg-slate-100"
+                          }`}
+                        >
+                          Team
+                        </button>
+                      </div>
+
+                      <div className="flex items-center gap-1.5">
+                        <button
+                          type="button"
+                          onClick={() => {
+                            const vendorPhones = chats.filter((c) => c.contact_role === "vendor").map((c) => c.customer_phone);
+                            setSelectedCrmPhones((prev) => Array.from(new Set([...prev, ...vendorPhones])));
+                          }}
+                          className="px-2 py-0.5 bg-purple-100 text-purple-800 hover:bg-purple-200 rounded-md font-extrabold cursor-pointer transition-colors"
+                          title="Select all verified vendors & suppliers"
+                        >
+                          ⚡ All Vendors
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => {
+                            const custPhones = chats.filter((c) => (c.contact_role || "customer") === "customer").map((c) => c.customer_phone);
+                            setSelectedCrmPhones((prev) => Array.from(new Set([...prev, ...custPhones])));
+                          }}
+                          className="px-2 py-0.5 bg-emerald-100 text-[#1E9E6B] hover:bg-emerald-200 rounded-md font-extrabold cursor-pointer transition-colors"
+                          title="Select all direct buyers and customers"
+                        >
+                          ⚡ All Customers
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => {
+                            const teamPhones = chats.filter((c) => c.contact_role === "team").map((c) => c.customer_phone);
+                            setSelectedCrmPhones((prev) => Array.from(new Set([...prev, ...teamPhones])));
+                          }}
+                          className="px-2 py-0.5 bg-blue-100 text-blue-800 hover:bg-blue-200 rounded-md font-extrabold cursor-pointer transition-colors"
+                          title="Select all internal team members"
+                        >
+                          ⚡ All Team
+                        </button>
+                        {selectedCrmPhones.length > 0 && (
+                          <button
+                            type="button"
+                            onClick={() => setSelectedCrmPhones([])}
+                            className="text-red-500 hover:underline font-bold ml-1 cursor-pointer"
+                          >
+                            Clear ({selectedCrmPhones.length})
+                          </button>
+                        )}
+                      </div>
                     </div>
 
                     <div className="max-h-48 overflow-y-auto border border-slate-200 rounded-xl p-2 divide-y divide-slate-100">
                       {filteredCrmContacts.map((c) => {
                         const isSelected = selectedCrmPhones.includes(c.customer_phone);
+                        const role = c.contact_role || "customer";
                         return (
                           <label
                             key={c.id}
@@ -3136,7 +3522,19 @@ export default function IntrihubHelpAutobotDesk({ onLogout }: IntrihubHelpAutobo
                                 className="rounded text-[#F26522] focus:ring-[#F26522]"
                               />
                               <div>
-                                <p className="font-bold text-[#052A51]">{c.customer_name || "Customer"}</p>
+                                <div className="flex items-center gap-1.5">
+                                  <p className="font-bold text-[#052A51]">{c.customer_name || "Contact"}</p>
+                                  {role === "vendor" && (
+                                    <span className="text-[9px] px-1.5 py-0.2 rounded font-extrabold bg-purple-100 text-purple-800">
+                                      Vendor
+                                    </span>
+                                  )}
+                                  {role === "team" && (
+                                    <span className="text-[9px] px-1.5 py-0.2 rounded font-extrabold bg-blue-100 text-blue-800">
+                                      Team
+                                    </span>
+                                  )}
+                                </div>
                                 <p className="text-[11px] text-slate-400 font-mono">{c.customer_phone}</p>
                               </div>
                             </div>
@@ -3241,27 +3639,86 @@ export default function IntrihubHelpAutobotDesk({ onLogout }: IntrihubHelpAutobo
                   autoFocus
                 />
               ) : (
-                <div className="max-h-48 overflow-y-auto border border-slate-200 rounded-xl p-2 divide-y divide-slate-100">
-                  {chats.map((c) => {
-                    const isSelected = addMembersCrmPhones.includes(c.customer_phone);
-                    return (
-                      <label key={c.id} className="flex items-center justify-between p-2 hover:bg-slate-50 rounded-lg cursor-pointer text-xs">
-                        <div className="flex items-center gap-2">
-                          <input
-                            type="checkbox"
-                            checked={isSelected}
-                            onChange={(e) => {
-                              if (e.target.checked) setAddMembersCrmPhones((prev) => [...prev, c.customer_phone]);
-                              else setAddMembersCrmPhones((prev) => prev.filter((p) => p !== c.customer_phone));
-                            }}
-                            className="rounded text-[#F26522]"
-                          />
-                          <span className="font-bold text-[#052A51]">{c.customer_name || c.customer_phone}</span>
-                        </div>
-                        <span className="text-[11px] text-slate-400 font-mono">{c.customer_phone}</span>
-                      </label>
-                    );
-                  })}
+                <div className="space-y-2">
+                  <div className="flex flex-wrap items-center justify-between gap-1.5 bg-slate-50 p-2 rounded-xl border border-slate-200 text-[11px]">
+                    <div className="flex items-center gap-1">
+                      <button
+                        type="button"
+                        onClick={() => {
+                          const vendorPhones = chats.filter((c) => c.contact_role === "vendor").map((c) => c.customer_phone);
+                          setAddMembersCrmPhones((prev) => Array.from(new Set([...prev, ...vendorPhones])));
+                        }}
+                        className="px-2 py-0.5 bg-purple-100 text-purple-800 hover:bg-purple-200 rounded-md font-extrabold cursor-pointer transition-colors"
+                      >
+                        ⚡ All Vendors
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          const custPhones = chats.filter((c) => (c.contact_role || "customer") === "customer").map((c) => c.customer_phone);
+                          setAddMembersCrmPhones((prev) => Array.from(new Set([...prev, ...custPhones])));
+                        }}
+                        className="px-2 py-0.5 bg-emerald-100 text-[#1E9E6B] hover:bg-emerald-200 rounded-md font-extrabold cursor-pointer transition-colors"
+                      >
+                        ⚡ All Customers
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          const teamPhones = chats.filter((c) => c.contact_role === "team").map((c) => c.customer_phone);
+                          setAddMembersCrmPhones((prev) => Array.from(new Set([...prev, ...teamPhones])));
+                        }}
+                        className="px-2 py-0.5 bg-blue-100 text-blue-800 hover:bg-blue-200 rounded-md font-extrabold cursor-pointer transition-colors"
+                      >
+                        ⚡ All Team
+                      </button>
+                    </div>
+                    {addMembersCrmPhones.length > 0 && (
+                      <button
+                        type="button"
+                        onClick={() => setAddMembersCrmPhones([])}
+                        className="text-red-500 hover:underline font-bold cursor-pointer"
+                      >
+                        Clear ({addMembersCrmPhones.length})
+                      </button>
+                    )}
+                  </div>
+
+                  <div className="max-h-48 overflow-y-auto border border-slate-200 rounded-xl p-2 divide-y divide-slate-100">
+                    {chats.map((c) => {
+                      const isSelected = addMembersCrmPhones.includes(c.customer_phone);
+                      const role = c.contact_role || "customer";
+                      return (
+                        <label key={c.id} className="flex items-center justify-between p-2 hover:bg-slate-50 rounded-lg cursor-pointer text-xs">
+                          <div className="flex items-center gap-2">
+                            <input
+                              type="checkbox"
+                              checked={isSelected}
+                              onChange={(e) => {
+                                if (e.target.checked) setAddMembersCrmPhones((prev) => [...prev, c.customer_phone]);
+                                else setAddMembersCrmPhones((prev) => prev.filter((p) => p !== c.customer_phone));
+                              }}
+                              className="rounded text-[#F26522]"
+                            />
+                            <div className="flex items-center gap-1.5">
+                              <span className="font-bold text-[#052A51]">{c.customer_name || c.customer_phone}</span>
+                              {role === "vendor" && (
+                                <span className="text-[9px] px-1.5 py-0.2 rounded font-extrabold bg-purple-100 text-purple-800">
+                                  Vendor
+                                </span>
+                              )}
+                              {role === "team" && (
+                                <span className="text-[9px] px-1.5 py-0.2 rounded font-extrabold bg-blue-100 text-blue-800">
+                                  Team
+                                </span>
+                              )}
+                            </div>
+                          </div>
+                          <span className="text-[11px] text-slate-400 font-mono">{c.customer_phone}</span>
+                        </label>
+                      );
+                    })}
+                  </div>
                 </div>
               )}
 
@@ -3622,6 +4079,53 @@ export default function IntrihubHelpAutobotDesk({ onLogout }: IntrihubHelpAutobo
 
               <div>
                 <label className="block text-xs font-bold text-slate-700 mb-1.5 uppercase tracking-wider">
+                  Contact Type / Category
+                </label>
+                <div className="grid grid-cols-3 gap-2">
+                  <button
+                    type="button"
+                    onClick={() => setNewContactRole("customer")}
+                    className={`flex flex-col items-center justify-center gap-1 py-2 px-2 rounded-xl text-xs font-bold border transition-all cursor-pointer ${
+                      newContactRole === "customer"
+                        ? "bg-[#1E9E6B] border-[#1E9E6B] text-white shadow-2xs"
+                        : "bg-slate-50 border-slate-200 text-slate-600 hover:bg-slate-100"
+                    }`}
+                  >
+                    <User className="w-3.5 h-3.5" />
+                    <span>User / Client</span>
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setNewContactRole("vendor")}
+                    className={`flex flex-col items-center justify-center gap-1 py-2 px-2 rounded-xl text-xs font-bold border transition-all cursor-pointer ${
+                      newContactRole === "vendor"
+                        ? "bg-purple-700 border-purple-700 text-white shadow-2xs"
+                        : "bg-slate-50 border-slate-200 text-slate-600 hover:bg-slate-100"
+                    }`}
+                  >
+                    <Building2 className="w-3.5 h-3.5" />
+                    <span>Vendor</span>
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setNewContactRole("team")}
+                    className={`flex flex-col items-center justify-center gap-1 py-2 px-2 rounded-xl text-xs font-bold border transition-all cursor-pointer ${
+                      newContactRole === "team"
+                        ? "bg-blue-700 border-blue-700 text-white shadow-2xs"
+                        : "bg-slate-50 border-slate-200 text-slate-600 hover:bg-slate-100"
+                    }`}
+                  >
+                    <Users className="w-3.5 h-3.5" />
+                    <span>Team</span>
+                  </button>
+                </div>
+                <p className="text-[10px] text-slate-400 mt-1">
+                  *Categorizes number for instant 1-click bulk broadcast and filter.
+                </p>
+              </div>
+
+              <div>
+                <label className="block text-xs font-bold text-slate-700 mb-1.5 uppercase tracking-wider">
                   Initial Mode
                 </label>
                 <div className="grid grid-cols-2 gap-2">
@@ -3681,6 +4185,206 @@ export default function IntrihubHelpAutobotDesk({ onLogout }: IntrihubHelpAutobo
                 </button>
               </div>
             </form>
+          </div>
+        </div>
+      )}
+
+      {/* ========================================================================= */}
+      {/* WHATSAPP MOBILE BOTTOM NAVIGATION BAR (md:hidden, when not in active chat) */}
+      {/* ========================================================================= */}
+      {!activeChat && (
+        <nav className="md:hidden fixed bottom-0 left-0 right-0 h-16 bg-white/95 backdrop-blur-md border-t border-slate-200 px-2 flex items-center justify-around z-40 shadow-lg">
+          <button
+            onClick={() => setActiveTab("inbox")}
+            className={`flex flex-col items-center justify-center flex-1 py-1 transition-all ${
+              activeTab === "inbox" ? "text-[#1E9E6B] font-extrabold" : "text-slate-500 hover:text-slate-800"
+            }`}
+          >
+            <div className="relative">
+              <MessageSquare className="w-5 h-5" />
+              {chats.length > 0 && (
+                <span className="absolute -top-1 -right-2 bg-[#25D366] text-slate-950 text-[9px] font-black w-4 h-4 rounded-full flex items-center justify-center">
+                  {chats.length > 99 ? "99+" : chats.length}
+                </span>
+              )}
+            </div>
+            <span className="text-[10px] mt-0.5">Chats</span>
+          </button>
+
+          <button
+            onClick={() => {
+              setActiveTab("groups");
+              fetchGroups();
+              fetchTemplates();
+            }}
+            className={`flex flex-col items-center justify-center flex-1 py-1 transition-all ${
+              activeTab === "groups" ? "text-[#052A51] font-extrabold" : "text-slate-500 hover:text-slate-800"
+            }`}
+          >
+            <Users className="w-5 h-5" />
+            <span className="text-[10px] mt-0.5">Groups</span>
+          </button>
+
+          <button
+            onClick={() => setActiveTab("dashboard")}
+            className={`flex flex-col items-center justify-center flex-1 py-1 transition-all ${
+              activeTab === "dashboard" ? "text-[#052A51] font-extrabold" : "text-slate-500 hover:text-slate-800"
+            }`}
+          >
+            <LayoutDashboard className="w-5 h-5" />
+            <span className="text-[10px] mt-0.5">Overview</span>
+          </button>
+
+          <button
+            onClick={() => setActiveTab("settings")}
+            className={`flex flex-col items-center justify-center flex-1 py-1 transition-all ${
+              activeTab === "settings" ? "text-[#052A51] font-extrabold" : "text-slate-500 hover:text-slate-800"
+            }`}
+          >
+            <Settings className="w-5 h-5" />
+            <span className="text-[10px] mt-0.5">Settings</span>
+          </button>
+
+          <button
+            onClick={handleInstallClick}
+            className="flex flex-col items-center justify-center flex-1 py-1 text-[#F26522] hover:text-[#d95a1e] font-extrabold"
+          >
+            <div className="relative">
+              <DownloadCloud className="w-5 h-5 text-[#F26522] animate-bounce" />
+              <span className="absolute -top-1 -right-1.5 w-2 h-2 rounded-full bg-[#25D366]" />
+            </div>
+            <span className="text-[10px] mt-0.5">Install App</span>
+          </button>
+        </nav>
+      )}
+
+      {/* ========================================================================= */}
+      {/* PWA INSTALL / APP DOWNLOAD MODAL */}
+      {/* ========================================================================= */}
+      {showInstallModal && (
+        <div className="fixed inset-0 bg-slate-900/70 backdrop-blur-xs flex items-center justify-center p-4 z-50 animate-in fade-in duration-200">
+          <div className="bg-white w-full max-w-md rounded-3xl shadow-2xl border border-slate-200 overflow-hidden text-slate-900">
+            {/* Header */}
+            <div className="bg-gradient-to-r from-[#052A51] via-[#0b3d75] to-[#128C7E] p-6 text-white text-center relative">
+              <button
+                onClick={() => setShowInstallModal(false)}
+                className="absolute top-4 right-4 p-1.5 text-white/80 hover:text-white rounded-full bg-white/10 hover:bg-white/20 transition-colors"
+              >
+                <X className="w-4 h-4" />
+              </button>
+              <div className="w-16 h-16 mx-auto mb-3 rounded-2xl bg-white/10 border border-white/20 flex items-center justify-center shadow-inner">
+                <img src="/logo/intri-web-logo.png" alt="IntriHub" className="h-8 w-auto brightness-0 invert" />
+              </div>
+              <h3 className="text-lg font-black tracking-tight">Download & Install IntriHub App</h3>
+              <p className="text-xs text-slate-200 mt-1">Get the native WhatsApp experience on your Android or iPhone</p>
+            </div>
+
+            {/* Content Body */}
+            <div className="p-6 space-y-4">
+              {deferredPrompt ? (
+                <div className="space-y-4">
+                  <div className="p-4 bg-emerald-50 border border-emerald-200 rounded-2xl text-xs text-emerald-900 space-y-1.5">
+                    <p className="font-bold flex items-center gap-1.5 text-[#1E9E6B]">
+                      <CheckCircle2 className="w-4 h-4 text-[#25D366]" />
+                      <span>Ready for 1-Click Installation</span>
+                    </p>
+                    <p className="text-slate-600">Install IntriHub HelpDesk directly to your home screen for full-screen WhatsApp workflow.</p>
+                  </div>
+
+                  <button
+                    onClick={async () => {
+                      if (deferredPrompt) {
+                        deferredPrompt.prompt();
+                        const { outcome } = await deferredPrompt.userChoice;
+                        if (outcome === "accepted") {
+                          setIsAppInstalled(true);
+                          setShowInstallBanner(false);
+                          setShowInstallModal(false);
+                        }
+                      }
+                    }}
+                    className="w-full py-3.5 bg-gradient-to-r from-[#25D366] to-[#128C7E] hover:from-[#20bd5a] hover:to-[#0f7a6e] text-white font-black rounded-2xl shadow-lg shadow-emerald-500/20 text-sm flex items-center justify-center gap-2 cursor-pointer transition-all"
+                  >
+                    <DownloadCloud className="w-5 h-5" />
+                    <span>Install App on this Device</span>
+                  </button>
+                </div>
+              ) : isIos ? (
+                <div className="space-y-3">
+                  <p className="text-xs font-bold text-slate-700">Follow these 3 quick steps on Safari (iPhone/iPad):</p>
+                  <div className="space-y-2.5 text-xs text-slate-700">
+                    <div className="flex items-start gap-3 p-3 bg-slate-50 border border-slate-200 rounded-xl">
+                      <div className="w-6 h-6 rounded-lg bg-blue-100 text-blue-600 flex items-center justify-center font-black shrink-0">1</div>
+                      <div>
+                        <p className="font-bold text-slate-900">Tap the Share Button</p>
+                        <p className="text-[11px] text-slate-500">Look for the share icon <Share2 className="w-3 h-3 inline text-blue-600" /> in Safari's bottom toolbar.</p>
+                      </div>
+                    </div>
+                    <div className="flex items-start gap-3 p-3 bg-slate-50 border border-slate-200 rounded-xl">
+                      <div className="w-6 h-6 rounded-lg bg-blue-100 text-blue-600 flex items-center justify-center font-black shrink-0">2</div>
+                      <div>
+                        <p className="font-bold text-slate-900">Select &quot;Add to Home Screen&quot;</p>
+                        <p className="text-[11px] text-slate-500">Scroll down in the share menu and tap <span className="font-bold text-slate-800">&quot;Add to Home Screen&quot;</span>.</p>
+                      </div>
+                    </div>
+                    <div className="flex items-start gap-3 p-3 bg-slate-50 border border-slate-200 rounded-xl">
+                      <div className="w-6 h-6 rounded-lg bg-blue-100 text-blue-600 flex items-center justify-center font-black shrink-0">3</div>
+                      <div>
+                        <p className="font-bold text-slate-900">Tap &quot;Add&quot; in Top Right</p>
+                        <p className="text-[11px] text-slate-500">Confirm the app name and tap Add. IntriHub will appear on your Home Screen.</p>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              ) : (
+                <div className="space-y-3">
+                  <p className="text-xs font-bold text-slate-700">Install via Chrome / Android browser menu:</p>
+                  <div className="space-y-2.5 text-xs text-slate-700">
+                    <div className="flex items-start gap-3 p-3 bg-slate-50 border border-slate-200 rounded-xl">
+                      <div className="w-6 h-6 rounded-lg bg-[#F26522]/10 text-[#F26522] flex items-center justify-center font-black shrink-0">1</div>
+                      <div>
+                        <p className="font-bold text-slate-900">Open Browser Menu (⋮)</p>
+                        <p className="text-[11px] text-slate-500">Tap the three vertical dots in the top right corner of Chrome.</p>
+                      </div>
+                    </div>
+                    <div className="flex items-start gap-3 p-3 bg-slate-50 border border-slate-200 rounded-xl">
+                      <div className="w-6 h-6 rounded-lg bg-[#F26522]/10 text-[#F26522] flex items-center justify-center font-black shrink-0">2</div>
+                      <div>
+                        <p className="font-bold text-slate-900">Tap &quot;Install app&quot; or &quot;Add to Home Screen&quot;</p>
+                        <p className="text-[11px] text-slate-500">Select Install to add the IntriHub standalone app to your device.</p>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              {/* Feature Perks */}
+              <div className="pt-2 border-t border-slate-100 grid grid-cols-2 gap-2 text-[11px] text-slate-600">
+                <div className="flex items-center gap-1.5">
+                  <CheckCircle2 className="w-3.5 h-3.5 text-[#25D366]" />
+                  <span>Full-screen UI</span>
+                </div>
+                <div className="flex items-center gap-1.5">
+                  <CheckCircle2 className="w-3.5 h-3.5 text-[#25D366]" />
+                  <span>Instant Notifications</span>
+                </div>
+                <div className="flex items-center gap-1.5">
+                  <CheckCircle2 className="w-3.5 h-3.5 text-[#25D366]" />
+                  <span>Fast WhatsApp Chat</span>
+                </div>
+                <div className="flex items-center gap-1.5">
+                  <CheckCircle2 className="w-3.5 h-3.5 text-[#25D366]" />
+                  <span>1-Tap Launch</span>
+                </div>
+              </div>
+
+              <button
+                onClick={() => setShowInstallModal(false)}
+                className="w-full py-2.5 bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold rounded-xl text-xs transition-colors cursor-pointer"
+              >
+                Close
+              </button>
+            </div>
           </div>
         </div>
       )}

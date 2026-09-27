@@ -13,6 +13,8 @@ import {
   ArrowLeft,
   Headphones,
   MessageSquare,
+  Smartphone,
+  DownloadCloud,
 } from "lucide-react";
 import IntrihubHelpAutobotDesk from "@/components/help/IntrihubHelpAutobotDesk";
 
@@ -26,8 +28,24 @@ export default function HelpDeskPage() {
   const [authError, setAuthError] = useState<string | null>(null);
   const [authSuccessMsg, setAuthSuccessMsg] = useState<string | null>(null);
   const [resendCountdown, setResendCountdown] = useState(0);
+  const [deferredPrompt, setDeferredPrompt] = useState<any>(null);
+  const [isAppInstalled, setIsAppInstalled] = useState(false);
 
   const otpInputRefs = useRef<(HTMLInputElement | null)[]>([]);
+
+  useEffect(() => {
+    if (typeof window !== "undefined") {
+      if (window.matchMedia("(display-mode: standalone)").matches || (window.navigator as any).standalone) {
+        setIsAppInstalled(true);
+      }
+      const handleBeforeInstall = (e: any) => {
+        e.preventDefault();
+        setDeferredPrompt(e);
+      };
+      window.addEventListener("beforeinstallprompt", handleBeforeInstall);
+      return () => window.removeEventListener("beforeinstallprompt", handleBeforeInstall);
+    }
+  }, []);
 
   // Check Initial Session
   useEffect(() => {
@@ -388,7 +406,7 @@ export default function HelpDeskPage() {
             )}
 
             {/* Direct Customer WhatsApp Support Action */}
-            <div className="pt-2">
+            <div className="pt-2 space-y-2">
               <a
                 href="https://wa.me/917090120211?text=Hi%20Intrihub,%20I%20need%20assistance%20with%20tiles,%20sanitaryware%20or%20site%20delivery"
                 target="_blank"
@@ -398,6 +416,28 @@ export default function HelpDeskPage() {
                 <MessageSquare className="h-4 w-4" />
                 <span>Chat on WhatsApp (+91 70901 20211)</span>
               </a>
+
+              {!isAppInstalled && (
+                <button
+                  type="button"
+                  onClick={async () => {
+                    if (deferredPrompt) {
+                      deferredPrompt.prompt();
+                      const { outcome } = await deferredPrompt.userChoice;
+                      if (outcome === "accepted") {
+                        setIsAppInstalled(true);
+                        setDeferredPrompt(null);
+                      }
+                    } else {
+                      alert("To install IntriHub on your phone:\n• Android (Chrome): Tap ⋮ (menu) > 'Install app' or 'Add to Home screen'\n• iPhone (Safari): Tap Share icon > 'Add to Home Screen'");
+                    }
+                  }}
+                  className="w-full py-3 px-4 rounded-2xl bg-emerald-50 hover:bg-emerald-100 text-[#1E9E6B] border border-emerald-200 font-extrabold text-xs tracking-wider uppercase transition-all flex items-center justify-center gap-2 cursor-pointer shadow-2xs"
+                >
+                  <DownloadCloud className="h-4 w-4 text-[#25D366]" />
+                  <span>Download & Install HelpDesk App</span>
+                </button>
+              )}
             </div>
 
             {/* Trust & Security Badge */}
