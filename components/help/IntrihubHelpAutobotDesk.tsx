@@ -129,6 +129,95 @@ type DocumentItem = {
   createdAt: string;
 };
 
+function getAvatarBgColor(identifier: string): string {
+  const colors = [
+    "bg-[#052A51] text-white",
+    "bg-[#F26522] text-white",
+    "bg-[#10B981] text-white",
+    "bg-[#6366F1] text-white",
+    "bg-[#0284C7] text-white",
+    "bg-[#D97706] text-white",
+    "bg-[#8B5CF6] text-white",
+    "bg-[#EC4899] text-white",
+    "bg-[#0D9488] text-white",
+  ];
+  let hash = 0;
+  for (let i = 0; i < identifier.length; i++) {
+    hash = identifier.charCodeAt(i) + ((hash << 5) - hash);
+  }
+  const index = Math.abs(hash) % colors.length;
+  return colors[index];
+}
+
+function getInitials(nameOrPhone: string): string {
+  if (!nameOrPhone) return "IH";
+  if (/^\+?\d+$/.test(nameOrPhone.trim())) {
+    const digits = nameOrPhone.replace(/\D/g, "");
+    return digits.length >= 2 ? digits.slice(-2) : digits || "IH";
+  }
+  const parts = nameOrPhone.trim().split(/\s+/);
+  if (parts.length >= 2) {
+    return (parts[0][0] + parts[1][0]).toUpperCase();
+  }
+  return nameOrPhone.slice(0, 2).toUpperCase();
+}
+
+function CustomerAvatar({
+  name,
+  phone,
+  avatarUrl,
+  size = "md",
+  showOnline = true,
+}: {
+  name?: string | null;
+  phone?: string;
+  avatarUrl?: string | null;
+  size?: "sm" | "md" | "lg" | "xl";
+  showOnline?: boolean;
+}) {
+  const identifier = name || phone || "Customer";
+  const initials = getInitials(identifier);
+  const colorClass = getAvatarBgColor(phone || name || "Intrihub");
+
+  const sizeClasses = {
+    sm: "w-8 h-8 text-[11px]",
+    md: "w-10 h-10 text-xs",
+    lg: "w-12 h-12 text-sm",
+    xl: "w-16 h-16 text-lg",
+  };
+
+  const dotSizes = {
+    sm: "w-2 h-2 -bottom-0.5 -right-0.5 border",
+    md: "w-2.5 h-2.5 bottom-0 right-0 border-2",
+    lg: "w-3 h-3 bottom-0 right-0 border-2",
+    xl: "w-3.5 h-3.5 bottom-0.5 right-0.5 border-2",
+  };
+
+  return (
+    <div className="relative shrink-0">
+      {avatarUrl ? (
+        <img
+          src={avatarUrl}
+          alt={name || phone || "Avatar"}
+          className={`${sizeClasses[size]} rounded-2xl object-cover border border-slate-200 shadow-2xs`}
+        />
+      ) : (
+        <div
+          className={`${sizeClasses[size]} ${colorClass} rounded-2xl flex items-center justify-center font-extrabold tracking-wider shadow-2xs`}
+        >
+          {initials}
+        </div>
+      )}
+      {showOnline && (
+        <span
+          className={`absolute ${dotSizes[size]} bg-[#25D366] border-white rounded-full`}
+          title="Online on WhatsApp"
+        />
+      )}
+    </div>
+  );
+}
+
 interface IntrihubHelpAutobotDeskProps {
   onLogout: () => void;
 }
@@ -811,31 +900,35 @@ export default function IntrihubHelpAutobotDesk({ onLogout }: IntrihubHelpAutobo
                   <button
                     key={chat.id}
                     onClick={() => setActiveChat(chat)}
-                    className={`w-full text-left p-3.5 rounded-xl transition-all duration-200 flex flex-col gap-1 border ${
+                    className={`w-full text-left p-3 rounded-2xl transition-all duration-200 flex items-center gap-3 border ${
                       activeChat?.id === chat.id
-                        ? "bg-orange-50/70 border-[#F26522] shadow-xs"
+                        ? "bg-orange-50/80 border-[#F26522] shadow-xs"
                         : "hover:bg-slate-50 border-transparent bg-slate-50/40"
                     }`}
                   >
-                    <div className="flex justify-between items-center w-full">
-                      <span className="font-bold text-sm text-[#052A51] truncate">
-                        {chat.customer_name || chat.customer_phone}
-                      </span>
-                      <span className="text-[11px] text-slate-400 font-medium">
-                        {new Date(chat.last_message_at).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}
-                      </span>
-                    </div>
-                    <div className="flex justify-between items-center w-full mt-0.5">
-                      <span className="text-xs text-slate-500 font-mono">{chat.customer_phone}</span>
-                      <span
-                        className={`text-[10px] px-2 py-0.5 rounded-full font-bold uppercase tracking-wider ${
-                          chat.chat_mode === "ai"
-                            ? "bg-orange-100 text-[#F26522] border border-orange-200"
-                            : "bg-emerald-100 text-[#1E9E6B] border border-emerald-200"
-                        }`}
-                      >
-                        {chat.chat_mode === "ai" ? "INSTANT" : "DIRECT"}
-                      </span>
+                    <CustomerAvatar name={chat.customer_name} phone={chat.customer_phone} size="md" />
+
+                    <div className="flex-1 min-w-0">
+                      <div className="flex justify-between items-center w-full">
+                        <span className="font-bold text-sm text-[#052A51] truncate">
+                          {chat.customer_name || chat.customer_phone}
+                        </span>
+                        <span className="text-[10px] text-slate-400 font-medium shrink-0">
+                          {new Date(chat.last_message_at).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}
+                        </span>
+                      </div>
+                      <div className="flex justify-between items-center w-full mt-0.5">
+                        <span className="text-xs text-slate-500 font-mono truncate">{chat.customer_phone}</span>
+                        <span
+                          className={`text-[9px] px-2 py-0.5 rounded-full font-bold uppercase tracking-wider shrink-0 ${
+                            chat.chat_mode === "ai"
+                              ? "bg-orange-100 text-[#F26522] border border-orange-200"
+                              : "bg-emerald-100 text-[#1E9E6B] border border-emerald-200"
+                          }`}
+                        >
+                          {chat.chat_mode === "ai" ? "INSTANT" : "DIRECT"}
+                        </span>
+                      </div>
                     </div>
                   </button>
                 ))}
@@ -860,9 +953,12 @@ export default function IntrihubHelpAutobotDesk({ onLogout }: IntrihubHelpAutobo
                 <>
                   <header className="h-16 px-6 border-b border-slate-200 bg-white flex items-center justify-between z-10 shrink-0">
                     <div className="flex items-center gap-3">
-                      <div className="w-10 h-10 rounded-xl bg-orange-50 flex items-center justify-center border border-orange-100 font-bold text-[#F26522]">
-                        {activeChat.customer_name ? activeChat.customer_name[0].toUpperCase() : <User className="w-5 h-5 text-slate-500" />}
-                      </div>
+                      <CustomerAvatar
+                        name={activeChat.customer_name}
+                        phone={activeChat.customer_phone}
+                        size="lg"
+                        showOnline={true}
+                      />
                       <div>
                         <h3 className="font-bold text-[#052A51] text-sm">
                           {activeChat.customer_name || "WhatsApp Customer"}

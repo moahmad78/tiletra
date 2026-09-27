@@ -36,12 +36,12 @@ export async function POST(request: Request) {
     const metaResult = await sendWhatsAppMessage(customerPhone, messageText);
 
     if (!metaResult.success) {
-      console.warn("WhatsApp message saved in DB, but Meta API reported:", metaResult.error);
+      console.warn("WhatsApp message saved in DB, but Meta API reported error:", metaResult.error);
       return NextResponse.json({
-        success: true,
-        warning: metaResult.error,
+        success: false,
+        error: metaResult.error || "Meta WhatsApp Cloud API rejected message delivery.",
         message: savedMsg,
-      });
+      }, { status: 400 });
     }
 
     return NextResponse.json({
