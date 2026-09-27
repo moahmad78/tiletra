@@ -118,14 +118,21 @@ export default function IntrihubHelpAutobotDesk({ onLogout }: IntrihubHelpAutobo
   const [isSavingSettings, setIsSavingSettings] = useState(false);
   const [settingsMsg, setSettingsMsg] = useState<{ type: "success" | "error"; text: string } | null>(null);
 
-  const fetchChats = async () => {
-    setIsLoadingChats(true);
-    const { data } = await supabase
-      .from("chats")
-      .select("*")
-      .order("last_message_at", { ascending: false });
-    if (data) setChats(data as Chat[]);
-    setIsLoadingChats(false);
+  const fetchChats = async (showLoading = true) => {
+    if (showLoading) setIsLoadingChats(true);
+    try {
+      const res = await fetch("/api/chats");
+      if (res.ok) {
+        const data = await res.json();
+        if (data.chats) {
+          setChats(data.chats);
+        }
+      }
+    } catch (err) {
+      console.error("Error fetching chats:", err);
+    } finally {
+      if (showLoading) setIsLoadingChats(false);
+    }
   };
 
   const fetchStats = async () => {
@@ -176,8 +183,22 @@ export default function IntrihubHelpAutobotDesk({ onLogout }: IntrihubHelpAutobo
     }
   };
 
+  const fetchMessages = async (chatId: string) => {
+    try {
+      const res = await fetch(`/api/messages?chatId=${chatId}`);
+      if (res.ok) {
+        const data = await res.json();
+        if (data.messages) {
+          setMessages(data.messages);
+        }
+      }
+    } catch (err) {
+      console.error("Error fetching messages:", err);
+    }
+  };
+
   useEffect(() => {
-    fetchChats();
+    fetchChats(true);
     fetchStats();
     fetchSettings();
     fetchDocuments();
@@ -187,6 +208,7 @@ export default function IntrihubHelpAutobotDesk({ onLogout }: IntrihubHelpAutobo
       .channel("public:chats_main")
       .on("postgres_changes", { event: "*", schema: "public", table: "chats" }, (payload) => {
         const newChat = payload.new as Chat;
+        if (!newChat || !newChat.id) return;
         setChats((prev) => {
           const exists = prev.find((c) => c.id === newChat.id);
           if (exists) {
@@ -208,19 +230,23 @@ export default function IntrihubHelpAutobotDesk({ onLogout }: IntrihubHelpAutobo
     };
   }, [activeChat]);
 
+  // Polling fallback to ensure new chats and incoming messages update seamlessly
+  useEffect(() => {
+    const interval = setInterval(() => {
+      fetchChats(false);
+      if (activeChat?.id) {
+        fetchMessages(activeChat.id);
+      }
+    }, 3500);
+
+    return () => clearInterval(interval);
+  }, [activeChat?.id]);
+
   // Fetch messages for active chat
   useEffect(() => {
     if (!activeChat) return;
 
-    const fetchMessages = async () => {
-      const { data } = await supabase
-        .from("messages")
-        .select("*")
-        .eq("chat_id", activeChat.id)
-        .order("created_at", { ascending: true });
-      if (data) setMessages(data as Message[]);
-    };
-    fetchMessages();
+    fetchMessages(activeChat.id);
 
     const messageSubscription = supabase
       .channel(`public:messages_main:${activeChat.id}`)
@@ -229,6 +255,7 @@ export default function IntrihubHelpAutobotDesk({ onLogout }: IntrihubHelpAutobo
         { event: "INSERT", schema: "public", table: "messages", filter: `chat_id=eq.${activeChat.id}` },
         (payload) => {
           const newMessage = payload.new as Message;
+          if (!newMessage || !newMessage.id) return;
           setMessages((prev) => {
             if (prev.find((m) => m.id === newMessage.id)) return prev;
             return [...prev, newMessage];
@@ -240,7 +267,7 @@ export default function IntrihubHelpAutobotDesk({ onLogout }: IntrihubHelpAutobo
     return () => {
       supabase.removeChannel(messageSubscription);
     };
-  }, [activeChat]);
+  }, [activeChat?.id]);
 
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
@@ -258,15 +285,43 @@ export default function IntrihubHelpAutobotDesk({ onLogout }: IntrihubHelpAutobo
 
   const handleToggleMode = async (newModeToggle: "human" | "ai") => {
     if (!activeChat) return;
-    setActiveChat({ ...activeChat, chat_mode: newModeToggle });
+    const prevMode = activeChat.chat_mode;
 
-    const { error } = await supabase
-      .from("chats")
-      .update({ chat_mode: newModeToggle })
-      .eq("id", activeChat.id);
+    // Optimistic UI Update
+    const updatedChat = { ...activeChat, chat_mode: newModeToggle };
+    setActiveChat(updatedChat);
+    setChats((prev) =>
+      prev.map((c) => (c.id === activeChat.id ? { ...c, chat_mode: newModeToggle } : c))
+    );
 
-    if (error) {
-      setActiveChat({ ...activeChat, chat_mode: activeChat.chat_mode });
+    try {
+      const res = await fetch("/api/chats", {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          chatId: activeChat.id,
+          chat_mode: newModeToggle,
+        }),
+      });
+
+      if (!res.ok) {
+        throw new Error("Failed to save chat mode to server.");
+      }
+
+      const data = await res.json();
+      if (data.chat) {
+        setActiveChat(data.chat);
+        setChats((prev) =>
+          prev.map((c) => (c.id === data.chat.id ? data.chat : c))
+        );
+      }
+    } catch (err) {
+      console.error("Toggle mode error:", err);
+      // Revert if error
+      setActiveChat({ ...activeChat, chat_mode: prevMode });
+      setChats((prev) =>
+        prev.map((c) => (c.id === activeChat.id ? { ...c, chat_mode: prevMode } : c))
+      );
     }
   };
 
@@ -521,7 +576,7 @@ export default function IntrihubHelpAutobotDesk({ onLogout }: IntrihubHelpAutobo
                       <Plus className="h-4 w-4" />
                     </button>
                     <button
-                      onClick={fetchChats}
+                      onClick={() => fetchChats(true)}
                       className="p-1.5 text-slate-400 hover:text-slate-800 rounded-lg hover:bg-slate-100 transition-colors"
                       title="Refresh Chats"
                     >
