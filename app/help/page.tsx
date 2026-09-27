@@ -12,6 +12,7 @@ import {
   ArrowRight,
   ArrowLeft,
   Headphones,
+  MessageSquare,
 } from "lucide-react";
 import ConnectDashboard from "@/components/connect/ConnectDashboard";
 
@@ -385,6 +386,19 @@ export default function HelpDeskPage() {
                 </button>
               </form>
             )}
+
+            {/* Direct Customer WhatsApp Support Action */}
+            <div className="pt-2">
+              <a
+                href="https://wa.me/917090120211?text=Hi%20Intrihub,%20I%20need%20assistance%20with%20tiles,%20sanitaryware%20or%20site%20delivery"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="w-full py-3.5 px-4 rounded-2xl bg-[#25D366] hover:bg-[#20bd5a] text-white font-extrabold text-xs tracking-wider uppercase shadow-md shadow-[#25D366]/25 hover:shadow-lg hover:shadow-[#25D366]/35 transition-all flex items-center justify-center gap-2.5 cursor-pointer"
+              >
+                <MessageSquare className="h-4 w-4" />
+                <span>Chat on WhatsApp (+91 70901 20211)</span>
+              </a>
+            </div>
 
             {/* Trust & Security Badge */}
             <div className="text-center pt-3 border-t border-slate-100 text-[11px] text-slate-400 flex items-center justify-center gap-1.5">
