@@ -29,6 +29,11 @@ export function middleware(request: NextRequest) {
     "127.0.0.1";
   const userAgent = request.headers.get("user-agent") || "";
 
+  // 0. Fast bypass for Webhooks (Meta WhatsApp Webhook verification and incoming events)
+  if (pathname.startsWith("/api/webhook")) {
+    return NextResponse.next();
+  }
+
   // 1. Edge-Level Admin Route Guard
   // Unauthorized requests to /admin/* are intercepted at the edge before any page bundle or HTML renders
   if (pathname.startsWith("/admin") && pathname !== "/admin/login") {
