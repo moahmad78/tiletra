@@ -3,6 +3,8 @@ import { supabaseAdmin } from "@/lib/autobot/supabase";
 import { getOrCreateDefaultProfile, INTRIHUB_DEFAULT_PROMPT } from "@/lib/autobot/profile";
 import { GoogleGenerativeAI } from "@google/generative-ai";
 
+export const dynamic = "force-dynamic";
+
 export async function GET(request: Request) {
   const { searchParams } = new URL(request.url);
   const mode = searchParams.get("hub.mode");
