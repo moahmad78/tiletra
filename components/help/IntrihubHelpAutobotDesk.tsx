@@ -46,6 +46,19 @@ import {
   ChevronLeft,
   Info,
   Check,
+  Users,
+  Radio,
+  History,
+  UserPlus,
+  Edit3,
+  AlertTriangle,
+  Layers,
+  CheckSquare,
+  Square,
+  Clock,
+  Filter,
+  CheckCircle,
+  HelpCircle,
 } from "lucide-react";
 import { supabase } from "@/lib/autobot/supabase";
 import { INTRIHUB_DEFAULT_PROMPT } from "@/lib/autobot/profile";
@@ -93,6 +106,7 @@ type Chat = {
   customer_name: string | null;
   chat_mode: "human" | "ai";
   last_message_at: string;
+  created_at?: string;
 };
 
 type Message = {
@@ -127,6 +141,103 @@ type DocumentItem = {
   fileName: string;
   chunkCount: number;
   createdAt: string;
+};
+
+// Broadcast Types
+type BroadcastGroupItem = {
+  id: string;
+  name: string;
+  description: string | null;
+  createdBy: string;
+  createdAt: string;
+  memberCount: number;
+  broadcastCount: number;
+  lastBroadcast: {
+    id: string;
+    sentAt: string;
+    totalRecipients: number;
+    successCount: number;
+    failedCount: number;
+    skippedCount: number;
+    messageContent: string;
+  } | null;
+};
+
+type BroadcastGroupMember = {
+  id: string;
+  groupId: string;
+  phoneNumber: string;
+  customerName: string | null;
+  addedAt: string;
+};
+
+type BroadcastLogEntry = {
+  id: string;
+  broadcastLogId: string;
+  phoneNumber: string;
+  customerName: string | null;
+  status: "sent" | "failed" | "skipped";
+  errorMessage: string | null;
+  sentAt: string;
+};
+
+type BroadcastLogRecord = {
+  id: string;
+  groupId: string;
+  messageContent: string;
+  mediaUrl: string | null;
+  mediaType: string | null;
+  templateName: string | null;
+  sentAt: string;
+  totalRecipients: number;
+  successCount: number;
+  failedCount: number;
+  skippedCount: number;
+  sentBy: string;
+  entries: BroadcastLogEntry[];
+};
+
+type BroadcastGroupDetail = {
+  id: string;
+  name: string;
+  description: string | null;
+  createdBy: string;
+  createdAt: string;
+  members: BroadcastGroupMember[];
+  logs: BroadcastLogRecord[];
+};
+
+type WhatsAppTemplate = {
+  name: string;
+  category: string;
+  language: string;
+  status: string;
+  components?: any[];
+};
+
+type CustomerProfileData = {
+  phone: string;
+  displayPhone: string;
+  name: string;
+  rawName: string | null;
+  city: string;
+  notes: string | null;
+  firstContactedAt: string | null;
+  lastActiveAt: string | null;
+  chatMode: string;
+  totalOrders: number;
+  lifetimeSpend: number;
+  orders: any[];
+  broadcastGroups: Array<{
+    groupId: string;
+    groupName: string;
+    description: string | null;
+    addedAt: string;
+  }>;
+  availableGroups: Array<{
+    id: string;
+    name: string;
+  }>;
 };
 
 function getAvatarBgColor(identifier: string): string {
@@ -183,14 +294,14 @@ function CustomerAvatar({
     sm: "w-8 h-8 text-[11px]",
     md: "w-10 h-10 text-xs",
     lg: "w-12 h-12 text-sm",
-    xl: "w-16 h-16 text-lg",
+    xl: "w-20 h-20 text-2xl font-black",
   };
 
   const dotSizes = {
     sm: "w-2 h-2 -bottom-0.5 -right-0.5 border",
     md: "w-2.5 h-2.5 bottom-0 right-0 border-2",
     lg: "w-3 h-3 bottom-0 right-0 border-2",
-    xl: "w-3.5 h-3.5 bottom-0.5 right-0.5 border-2",
+    xl: "w-4 h-4 bottom-1 right-1 border-2",
   };
 
   return (
@@ -203,7 +314,7 @@ function CustomerAvatar({
         />
       ) : (
         <div
-          className={`${sizeClasses[size]} ${colorClass} rounded-2xl flex items-center justify-center font-extrabold tracking-wider shadow-2xs`}
+          className={`${sizeClasses[size]} ${colorClass} rounded-2xl flex items-center justify-center font-extrabold tracking-wider shadow-2xs select-none`}
         >
           {initials}
         </div>
@@ -223,7 +334,7 @@ interface IntrihubHelpAutobotDeskProps {
 }
 
 export default function IntrihubHelpAutobotDesk({ onLogout }: IntrihubHelpAutobotDeskProps) {
-  const [activeTab, setActiveTab] = useState<"inbox" | "dashboard" | "settings">("inbox");
+  const [activeTab, setActiveTab] = useState<"inbox" | "groups" | "dashboard" | "settings">("inbox");
 
   // Inbox State
   const [chats, setChats] = useState<Chat[]>([]);
@@ -250,6 +361,72 @@ export default function IntrihubHelpAutobotDesk({ onLogout }: IntrihubHelpAutobo
   const [isOrderPanelOpen, setIsOrderPanelOpen] = useState(true);
   const [copiedOrderId, setCopiedOrderId] = useState<string | null>(null);
 
+  // Customer Detailed Profile Panel States
+  const [isProfilePanelOpen, setIsProfilePanelOpen] = useState(false);
+  const [customerProfile, setCustomerProfile] = useState<CustomerProfileData | null>(null);
+  const [isLoadingProfile, setIsLoadingProfile] = useState(false);
+  const [isEditingProfileName, setIsEditingProfileName] = useState(false);
+  const [profileEditName, setProfileEditName] = useState("");
+  const [profileNotes, setProfileNotes] = useState("");
+  const [isSavingProfile, setIsSavingProfile] = useState(false);
+  const [profileSaveSuccess, setProfileSaveSuccess] = useState(false);
+  const [selectedAddToGroupId, setSelectedAddToGroupId] = useState("");
+  const [isAddingToGroup, setIsAddingToGroup] = useState(false);
+  const [expandedProfileOrderId, setExpandedProfileOrderId] = useState<string | null>(null);
+
+  // Broadcast Groups States
+  const [groups, setGroups] = useState<BroadcastGroupItem[]>([]);
+  const [selectedGroup, setSelectedGroup] = useState<BroadcastGroupDetail | null>(null);
+  const [isLoadingGroups, setIsLoadingGroups] = useState(false);
+  const [isLoadingGroupDetail, setIsLoadingGroupDetail] = useState(false);
+  const [groupSearchQuery, setGroupSearchQuery] = useState("");
+  const [groupDetailTab, setGroupDetailTab] = useState<"members" | "history">("members");
+  const [memberSearchQuery, setMemberSearchQuery] = useState("");
+
+  // Create Group Modal States
+  const [isCreateGroupModalOpen, setIsCreateGroupModalOpen] = useState(false);
+  const [newGroupName, setNewGroupName] = useState("");
+  const [newGroupDescription, setNewGroupDescription] = useState("");
+  const [createGroupMemberMode, setCreateGroupMemberMode] = useState<"crm" | "paste">("crm");
+  const [selectedCrmPhones, setSelectedCrmPhones] = useState<string[]>([]);
+  const [pastedNumbers, setPastedNumbers] = useState("");
+  const [crmMemberSearch, setCrmMemberSearch] = useState("");
+  const [isSubmittingGroup, setIsSubmittingGroup] = useState(false);
+  const [createGroupError, setCreateGroupError] = useState<string | null>(null);
+
+  // Add Members to Existing Group Modal States
+  const [isAddMembersModalOpen, setIsAddMembersModalOpen] = useState(false);
+  const [addMembersRawInput, setAddMembersRawInput] = useState("");
+  const [addMembersCrmPhones, setAddMembersCrmPhones] = useState<string[]>([]);
+  const [addMembersMode, setAddMembersMode] = useState<"paste" | "crm">("paste");
+  const [isSubmittingMembers, setIsSubmittingMembers] = useState(false);
+
+  // Broadcast Composer Modal States
+  const [isBroadcastModalOpen, setIsBroadcastModalOpen] = useState(false);
+  const [broadcastTargetGroup, setBroadcastTargetGroup] = useState<BroadcastGroupDetail | BroadcastGroupItem | null>(null);
+  const [broadcastMessageText, setBroadcastMessageText] = useState("");
+  const [broadcastSelectedMedia, setBroadcastSelectedMedia] = useState<File | null>(null);
+  const [broadcastMediaPreview, setBroadcastMediaPreview] = useState<string | null>(null);
+  const [broadcastMediaCaption, setBroadcastMediaCaption] = useState("");
+  const [broadcastTemplateName, setBroadcastTemplateName] = useState("hello_world");
+  const [broadcastForceTemplate, setBroadcastForceTemplate] = useState(false);
+  const [broadcastSafetyConfirmed, setBroadcastSafetyConfirmed] = useState(false);
+  const [isSendingBroadcast, setIsSendingBroadcast] = useState(false);
+  const [broadcastProgressText, setBroadcastProgressText] = useState("");
+  const [broadcastResultSummary, setBroadcastResultSummary] = useState<{
+    totalRecipients: number;
+    successCount: number;
+    failedCount: number;
+    skippedCount: number;
+    logId?: string;
+    entries?: any[];
+  } | null>(null);
+  const [expandedLogId, setExpandedLogId] = useState<string | null>(null);
+
+  // Templates Gallery States
+  const [templates, setTemplates] = useState<WhatsAppTemplate[]>([]);
+  const [isLoadingTemplates, setIsLoadingTemplates] = useState(false);
+
   // New Chat Modal States
   const [isNewChatOpen, setIsNewChatOpen] = useState(false);
   const [newPhone, setNewPhone] = useState("");
@@ -269,11 +446,13 @@ export default function IntrihubHelpAutobotDesk({ onLogout }: IntrihubHelpAutobo
   const [systemPrompt, setSystemPrompt] = useState(INTRIHUB_DEFAULT_PROMPT);
   const [defaultMode, setDefaultMode] = useState<"ai" | "human">("ai");
   const [documents, setDocuments] = useState<DocumentItem[]>([]);
-  const [file, setFile] = useState<File | null>(null);
   const [isUploading, setIsUploading] = useState(false);
   const [isSavingSettings, setIsSavingSettings] = useState(false);
   const [settingsMsg, setSettingsMsg] = useState<{ type: "success" | "error"; text: string } | null>(null);
 
+  // -------------------------------------------------------------
+  // Data Fetchers
+  // -------------------------------------------------------------
   const fetchChats = async (showLoading = true) => {
     if (showLoading) setIsLoadingChats(true);
     try {
@@ -380,32 +559,372 @@ export default function IntrihubHelpAutobotDesk({ onLogout }: IntrihubHelpAutobo
     }
   };
 
-  const handleInsertOrderToChat = (order: OrderRecord) => {
-    const itemsSummary = order.items
-      .map((it) => `${it.boxQuantity}x ${it.productName}${it.variantDetails ? ` (${it.variantDetails})` : ""}`)
-      .join(", ");
-
-    const text = `Hi ${order.customerName || "there"}! Regarding your IntriHub order #${order.id} (${itemsSummary} • Total ₹${order.total.toLocaleString("en-IN")}): The order status is currently "${order.orderStatus.toUpperCase()}" with payment status "${order.paymentStatus}". Delivery ETA: ${order.estimatedDelivery}. Let me know if you need any further help!`;
-
-    setInputText(text);
-    if (activeChat?.chat_mode !== "human") {
-      handleToggleMode("human");
+  const fetchCustomerProfile = async (phone: string) => {
+    if (!phone) return;
+    setIsLoadingProfile(true);
+    try {
+      const res = await fetch(`/api/customer/profile?phone=${encodeURIComponent(phone)}`);
+      if (res.ok) {
+        const data = await res.json();
+        if (data.profile) {
+          setCustomerProfile(data.profile);
+          setProfileEditName(data.profile.rawName || "");
+          setProfileNotes(data.profile.notes || "");
+        }
+      }
+    } catch (err) {
+      console.error("Error fetching customer profile:", err);
+    } finally {
+      setIsLoadingProfile(false);
     }
   };
 
-  const handleCopyOrderId = (id: string) => {
-    navigator.clipboard.writeText(id);
-    setCopiedOrderId(id);
-    setTimeout(() => setCopiedOrderId(null), 2000);
+  const handleSaveProfile = async () => {
+    if (!customerProfile) return;
+    setIsSavingProfile(true);
+    setProfileSaveSuccess(false);
+    try {
+      const res = await fetch("/api/customer/profile", {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          phone: customerProfile.phone,
+          name: profileEditName.trim(),
+          notes: profileNotes.trim(),
+        }),
+      });
+
+      if (res.ok) {
+        setProfileSaveSuccess(true);
+        setIsEditingProfileName(false);
+        setCustomerProfile((prev) =>
+          prev
+            ? {
+                ...prev,
+                name: profileEditName.trim() || prev.displayPhone,
+                rawName: profileEditName.trim() || null,
+                notes: profileNotes.trim() || null,
+              }
+            : null
+        );
+        // Refresh chats list to reflect updated name
+        fetchChats(false);
+        if (activeChat) {
+          setActiveChat((prev) => (prev ? { ...prev, customer_name: profileEditName.trim() || null } : null));
+        }
+        setTimeout(() => setProfileSaveSuccess(false), 3000);
+      }
+    } catch (err) {
+      console.error("Error saving customer profile:", err);
+    } finally {
+      setIsSavingProfile(false);
+    }
   };
 
+  const handleAddCustomerToGroup = async () => {
+    if (!customerProfile || !selectedAddToGroupId) return;
+    setIsAddingToGroup(true);
+    try {
+      const res = await fetch("/api/customer/profile", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          phone: customerProfile.phone,
+          groupId: selectedAddToGroupId,
+          customerName: customerProfile.name,
+        }),
+      });
+
+      if (res.ok) {
+        fetchCustomerProfile(customerProfile.phone);
+        setSelectedAddToGroupId("");
+      }
+    } catch (err) {
+      console.error("Error adding customer to group:", err);
+    } finally {
+      setIsAddingToGroup(false);
+    }
+  };
+
+  // Broadcast Groups Fetchers
+  const fetchGroups = async () => {
+    setIsLoadingGroups(true);
+    try {
+      const res = await fetch("/api/broadcast/groups");
+      if (res.ok) {
+        const data = await res.json();
+        setGroups(data.groups || []);
+      }
+    } catch (err) {
+      console.error("Error fetching broadcast groups:", err);
+    } finally {
+      setIsLoadingGroups(false);
+    }
+  };
+
+  const fetchGroupDetails = async (id: string) => {
+    setIsLoadingGroupDetail(true);
+    try {
+      const res = await fetch(`/api/broadcast/groups/${id}`);
+      if (res.ok) {
+        const data = await res.json();
+        setSelectedGroup(data.group || null);
+      }
+    } catch (err) {
+      console.error("Error fetching group detail:", err);
+    } finally {
+      setIsLoadingGroupDetail(false);
+    }
+  };
+
+  const fetchTemplates = async () => {
+    setIsLoadingTemplates(true);
+    try {
+      const res = await fetch("/api/broadcast/templates");
+      if (res.ok) {
+        const data = await res.json();
+        setTemplates(data.templates || []);
+      }
+    } catch (err) {
+      console.error("Error fetching templates:", err);
+    } finally {
+      setIsLoadingTemplates(false);
+    }
+  };
+
+  const handleCreateGroup = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!newGroupName.trim()) {
+      setCreateGroupError("Please enter a valid group name.");
+      return;
+    }
+
+    setIsSubmittingGroup(true);
+    setCreateGroupError(null);
+
+    try {
+      let membersToAdd: { phone: string; name?: string }[] = [];
+
+      if (createGroupMemberMode === "crm") {
+        membersToAdd = selectedCrmPhones.map((ph) => {
+          const matchingChat = chats.find((c) => c.customer_phone === ph);
+          return {
+            phone: ph,
+            name: matchingChat?.customer_name || undefined,
+          };
+        });
+      } else {
+        const lines = pastedNumbers.split(/[\n,;]+/).map((l) => l.trim()).filter(Boolean);
+        membersToAdd = lines.map((l) => ({ phone: l }));
+      }
+
+      const res = await fetch("/api/broadcast/groups", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          name: newGroupName.trim(),
+          description: newGroupDescription.trim() || null,
+          members: membersToAdd,
+        }),
+      });
+
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || "Failed to create group.");
+
+      setIsCreateGroupModalOpen(false);
+      setNewGroupName("");
+      setNewGroupDescription("");
+      setSelectedCrmPhones([]);
+      setPastedNumbers("");
+      fetchGroups();
+      if (data.group?.id) {
+        fetchGroupDetails(data.group.id);
+      }
+    } catch (err: any) {
+      setCreateGroupError(err.message || "Failed to create broadcast group.");
+    } finally {
+      setIsSubmittingGroup(false);
+    }
+  };
+
+  const handleAddMembersToGroup = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!selectedGroup) return;
+
+    setIsSubmittingMembers(true);
+    try {
+      const payload: Record<string, any> = {};
+      if (addMembersMode === "crm") {
+        payload.members = addMembersCrmPhones.map((ph) => {
+          const match = chats.find((c) => c.customer_phone === ph);
+          return { phone: ph, name: match?.customer_name };
+        });
+      } else {
+        payload.rawInput = addMembersRawInput;
+      }
+
+      const res = await fetch(`/api/broadcast/groups/${selectedGroup.id}/members`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(payload),
+      });
+
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || "Failed to add members.");
+
+      setIsAddMembersModalOpen(false);
+      setAddMembersRawInput("");
+      setAddMembersCrmPhones([]);
+      fetchGroupDetails(selectedGroup.id);
+      fetchGroups();
+    } catch (err: any) {
+      alert(`Could not add members: ${err.message}`);
+    } finally {
+      setIsSubmittingMembers(false);
+    }
+  };
+
+  const handleRemoveMember = async (memberId: string) => {
+    if (!selectedGroup) return;
+    if (!confirm("Are you sure you want to remove this member from the group?")) return;
+
+    try {
+      const res = await fetch(`/api/broadcast/groups/${selectedGroup.id}/members?memberId=${memberId}`, {
+        method: "DELETE",
+      });
+      if (res.ok) {
+        fetchGroupDetails(selectedGroup.id);
+        fetchGroups();
+      }
+    } catch (err) {
+      console.error("Error removing member:", err);
+    }
+  };
+
+  const handleDeleteGroup = async (groupId: string) => {
+    if (!confirm("Are you sure you want to delete this broadcast group? All members and broadcast logs will be permanently deleted.")) return;
+
+    try {
+      const res = await fetch(`/api/broadcast/groups/${groupId}`, {
+        method: "DELETE",
+      });
+      if (res.ok) {
+        setSelectedGroup(null);
+        fetchGroups();
+      }
+    } catch (err) {
+      console.error("Error deleting group:", err);
+    }
+  };
+
+  const handleExecuteBroadcast = async () => {
+    if (!broadcastTargetGroup) return;
+    const recipientCount = (broadcastTargetGroup as any).memberCount || (broadcastTargetGroup as BroadcastGroupDetail).members?.length || 0;
+
+    if (recipientCount > 20 && !broadcastSafetyConfirmed) {
+      alert("Please confirm the safety check before launching broadcast to more than 20 recipients.");
+      return;
+    }
+
+    setIsSendingBroadcast(true);
+    setBroadcastProgressText("Preparing recipients & verifying 24-hour service windows...");
+
+    try {
+      let mediaUrl: string | null = null;
+      let mediaType: "image" | "document" | null = null;
+      let mediaFileName: string | null = null;
+
+      // Handle file upload first if attached
+      if (broadcastSelectedMedia) {
+        setBroadcastProgressText("Uploading broadcast media attachment...");
+        const fd = new FormData();
+        fd.append("file", broadcastSelectedMedia);
+        fd.append("chatId", "broadcast");
+        fd.append("customerPhone", "broadcast");
+        fd.append("caption", broadcastMediaCaption || broadcastMessageText);
+
+        const uploadRes = await fetch("/api/messages/media", {
+          method: "POST",
+          body: fd,
+        });
+        const uploadData = await uploadRes.json();
+        if (uploadRes.ok && uploadData.mediaUrl) {
+          mediaUrl = uploadData.mediaUrl;
+          mediaType = uploadData.mediaType;
+          mediaFileName = uploadData.fileName || broadcastSelectedMedia.name;
+        }
+      }
+
+      setBroadcastProgressText(`Dispatching throttled messages to ${recipientCount} recipients...`);
+
+      const res = await fetch("/api/broadcast/send", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          groupId: broadcastTargetGroup.id,
+          messageText: broadcastMessageText.trim() || undefined,
+          mediaUrl,
+          mediaType,
+          mediaCaption: broadcastMediaCaption || undefined,
+          mediaFileName,
+          templateName: broadcastTemplateName,
+          forceTemplateAll: broadcastForceTemplate,
+        }),
+      });
+
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || "Failed to execute broadcast.");
+
+      setBroadcastResultSummary({
+        totalRecipients: data.summary.totalRecipients,
+        successCount: data.summary.successCount,
+        failedCount: data.summary.failedCount,
+        skippedCount: data.summary.skippedCount,
+        logId: data.log?.id,
+        entries: data.log?.entries || [],
+      });
+
+      // Clear composer states
+      setBroadcastMessageText("");
+      setBroadcastSelectedMedia(null);
+      setBroadcastMediaPreview(null);
+      setBroadcastMediaCaption("");
+      setBroadcastSafetyConfirmed(false);
+      setIsBroadcastModalOpen(false);
+
+      // Refresh group logs
+      if (selectedGroup && selectedGroup.id === broadcastTargetGroup.id) {
+        fetchGroupDetails(selectedGroup.id);
+      }
+      fetchGroups();
+    } catch (err: any) {
+      alert(`Broadcast failed: ${err.message}`);
+    } finally {
+      setIsSendingBroadcast(false);
+      setBroadcastProgressText("");
+    }
+  };
+
+  const handleOpenBroadcastComposer = (group: BroadcastGroupDetail | BroadcastGroupItem) => {
+    setBroadcastTargetGroup(group);
+    setBroadcastMessageText("");
+    setBroadcastSelectedMedia(null);
+    setBroadcastMediaPreview(null);
+    setBroadcastSafetyConfirmed(false);
+    setBroadcastForceTemplate(false);
+    setIsBroadcastModalOpen(true);
+    fetchTemplates();
+  };
+
+  // Initial & Interval Subscriptions
   useEffect(() => {
     fetchChats(true);
     fetchStats();
     fetchSettings();
     fetchDocuments();
+    fetchGroups();
+    fetchTemplates();
 
-    // Subscribe to new/updated chats
     const chatSubscription = supabase
       .channel("public:chats_main")
       .on("postgres_changes", { event: "*", schema: "public", table: "chats" }, (payload) => {
@@ -432,7 +951,7 @@ export default function IntrihubHelpAutobotDesk({ onLogout }: IntrihubHelpAutobo
     };
   }, [activeChat]);
 
-  // Polling fallback to ensure new chats and incoming messages update seamlessly
+  // Polling fallback
   useEffect(() => {
     const interval = setInterval(() => {
       fetchChats(false);
@@ -444,24 +963,30 @@ export default function IntrihubHelpAutobotDesk({ onLogout }: IntrihubHelpAutobo
     return () => clearInterval(interval);
   }, [activeChat?.id]);
 
-  // Fetch messages for active chat
   useEffect(() => {
     if (!activeChat) return;
 
     fetchMessages(activeChat.id);
+    fetchCustomerOrders(activeChat.customer_phone);
 
     const messageSubscription = supabase
-      .channel(`public:messages_main:${activeChat.id}`)
+      .channel(`public:messages_${activeChat.id}`)
       .on(
         "postgres_changes",
-        { event: "INSERT", schema: "public", table: "messages", filter: `chat_id=eq.${activeChat.id}` },
+        {
+          event: "INSERT",
+          schema: "public",
+          table: "messages",
+          filter: `chat_id=eq.${activeChat.id}`,
+        },
         (payload) => {
-          const newMessage = payload.new as Message;
-          if (!newMessage || !newMessage.id) return;
-          setMessages((prev) => {
-            if (prev.find((m) => m.id === newMessage.id)) return prev;
-            return [...prev, newMessage];
-          });
+          const newMsg = payload.new as Message;
+          if (newMsg && newMsg.chat_id === activeChat.id) {
+            setMessages((prev) => {
+              if (prev.some((m) => m.id === newMsg.id)) return prev;
+              return [...prev, newMsg];
+            });
+          }
         }
       )
       .subscribe();
@@ -470,17 +995,6 @@ export default function IntrihubHelpAutobotDesk({ onLogout }: IntrihubHelpAutobo
       supabase.removeChannel(messageSubscription);
     };
   }, [activeChat?.id]);
-
-  // Auto-fetch Customer Order History when active chat changes
-  useEffect(() => {
-    if (activeChat?.customer_phone) {
-      setOrderSearchQuery("");
-      fetchCustomerOrders(activeChat.customer_phone, false);
-    } else {
-      setOrders([]);
-      setOrderSummary(null);
-    }
-  }, [activeChat?.customer_phone]);
 
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
@@ -496,11 +1010,41 @@ export default function IntrihubHelpAutobotDesk({ onLogout }: IntrihubHelpAutobo
     );
   }, [chats, searchQuery]);
 
+  const filteredGroups = useMemo(() => {
+    if (!groupSearchQuery.trim()) return groups;
+    const q = groupSearchQuery.toLowerCase();
+    return groups.filter(
+      (g) =>
+        g.name.toLowerCase().includes(q) ||
+        (g.description && g.description.toLowerCase().includes(q))
+    );
+  }, [groups, groupSearchQuery]);
+
+  const filteredMembers = useMemo(() => {
+    if (!selectedGroup) return [];
+    if (!memberSearchQuery.trim()) return selectedGroup.members;
+    const q = memberSearchQuery.toLowerCase();
+    return selectedGroup.members.filter(
+      (m) =>
+        m.phoneNumber.includes(q) ||
+        (m.customerName && m.customerName.toLowerCase().includes(q))
+    );
+  }, [selectedGroup, memberSearchQuery]);
+
+  const filteredCrmContacts = useMemo(() => {
+    if (!crmMemberSearch.trim()) return chats;
+    const q = crmMemberSearch.toLowerCase();
+    return chats.filter(
+      (c) =>
+        c.customer_phone.includes(q) ||
+        (c.customer_name && c.customer_name.toLowerCase().includes(q))
+    );
+  }, [chats, crmMemberSearch]);
+
   const handleToggleMode = async (newModeToggle: "human" | "ai") => {
     if (!activeChat) return;
     const prevMode = activeChat.chat_mode;
 
-    // Optimistic UI Update
     const updatedChat = { ...activeChat, chat_mode: newModeToggle };
     setActiveChat(updatedChat);
     setChats((prev) =>
@@ -517,24 +1061,16 @@ export default function IntrihubHelpAutobotDesk({ onLogout }: IntrihubHelpAutobo
         }),
       });
 
-      if (!res.ok) {
-        throw new Error("Failed to save chat mode to server.");
-      }
-
+      if (!res.ok) throw new Error("Failed to save chat mode.");
       const data = await res.json();
       if (data.chat) {
         setActiveChat(data.chat);
-        setChats((prev) =>
-          prev.map((c) => (c.id === data.chat.id ? data.chat : c))
-        );
+        setChats((prev) => prev.map((c) => (c.id === data.chat.id ? data.chat : c)));
       }
     } catch (err) {
       console.error("Toggle mode error:", err);
-      // Revert if error
       setActiveChat({ ...activeChat, chat_mode: prevMode });
-      setChats((prev) =>
-        prev.map((c) => (c.id === activeChat.id ? { ...c, chat_mode: prevMode } : c))
-      );
+      setChats((prev) => prev.map((c) => (c.id === activeChat.id ? { ...c, chat_mode: prevMode } : c)));
     }
   };
 
@@ -569,9 +1105,7 @@ export default function IntrihubHelpAutobotDesk({ onLogout }: IntrihubHelpAutobo
       });
 
       const data = await res.json();
-      if (!res.ok) {
-        throw new Error(data.error || "Failed to send message via API");
-      }
+      if (!res.ok) throw new Error(data.error || "Failed to send message via API");
     } catch (error: any) {
       console.error("Send error:", error);
       alert(`Message notice: ${error?.message || "Saved to local dashboard."}`);
@@ -602,31 +1136,17 @@ export default function IntrihubHelpAutobotDesk({ onLogout }: IntrihubHelpAutobo
     presetFileName?: string
   ) => {
     if (!activeChat) return;
-    const targetFile = fileToSend || selectedMediaFile;
-    if (!targetFile && !presetUrl) return;
+    const file = fileToSend || selectedMediaFile;
+    const caption = captionToSend || mediaCaption;
+
+    if (!file && !presetUrl) return;
 
     setIsSendingMedia(true);
-    const caption = captionToSend !== undefined ? captionToSend : mediaCaption;
-
-    const isImage = targetFile ? targetFile.type.startsWith("image/") : presetType === "image";
-    const tempUrl = targetFile ? URL.createObjectURL(targetFile) : presetUrl || "";
-
-    const optimisticMessage: Message = {
-      id: `temp_media_${Date.now()}`,
-      chat_id: activeChat.id,
-      sender: "human_agent",
-      message_type: isImage ? "image" : "document",
-      body: tempUrl,
-      created_at: new Date().toISOString(),
-    };
-
-    setMessages((prev) => [...prev, optimisticMessage]);
-
     try {
       const formData = new FormData();
-      if (targetFile) formData.append("file", targetFile);
-      if (presetUrl) formData.append("mediaUrl", presetUrl);
-      if (presetType) formData.append("mediaType", presetType);
+      if (file) formData.append("file", file);
+      if (presetUrl) formData.append("presetUrl", presetUrl);
+      if (presetType) formData.append("presetType", presetType);
       if (presetFileName) formData.append("fileName", presetFileName);
       formData.append("chatId", activeChat.id);
       formData.append("customerPhone", activeChat.customer_phone);
@@ -638,9 +1158,7 @@ export default function IntrihubHelpAutobotDesk({ onLogout }: IntrihubHelpAutobo
       });
 
       const data = await res.json();
-      if (!res.ok) {
-        throw new Error(data.error || "Failed to send media via WhatsApp API");
-      }
+      if (!res.ok) throw new Error(data.error || "Failed to send media via WhatsApp API");
 
       setSelectedMediaFile(null);
       setMediaPreviewUrl(null);
@@ -688,9 +1206,7 @@ export default function IntrihubHelpAutobotDesk({ onLogout }: IntrihubHelpAutobo
       });
 
       const data = await res.json();
-      if (!res.ok) {
-        throw new Error(data.error || "Failed to create new conversation.");
-      }
+      if (!res.ok) throw new Error(data.error || "Failed to create new conversation.");
 
       const createdChat: Chat = data.chat;
       setChats((prev) => {
@@ -727,14 +1243,15 @@ export default function IntrihubHelpAutobotDesk({ onLogout }: IntrihubHelpAutobo
           default_mode: defaultMode,
         }),
       });
+
       const data = await res.json();
       if (res.ok) {
-        setSettingsMsg({ type: "success", text: "Customer Desk Guidelines saved successfully!" });
+        setSettingsMsg({ type: "success", text: "Desk settings updated successfully!" });
       } else {
         setSettingsMsg({ type: "error", text: data.error || "Failed to save settings." });
       }
-    } catch {
-      setSettingsMsg({ type: "error", text: "Failed to connect to server." });
+    } catch (err: any) {
+      setSettingsMsg({ type: "error", text: err.message || "Network error saving settings." });
     } finally {
       setIsSavingSettings(false);
     }
@@ -796,10 +1313,10 @@ export default function IntrihubHelpAutobotDesk({ onLogout }: IntrihubHelpAutobo
         </div>
 
         {/* Navigation Tabs */}
-        <div className="flex items-center gap-2 bg-slate-100 p-1 rounded-2xl border border-slate-200">
+        <div className="flex items-center gap-1.5 bg-slate-100 p-1 rounded-2xl border border-slate-200">
           <button
             onClick={() => setActiveTab("inbox")}
-            className={`flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-bold transition-all ${
+            className={`flex items-center gap-2 px-3.5 py-2 rounded-xl text-xs font-bold transition-all ${
               activeTab === "inbox"
                 ? "bg-[#F26522] text-white shadow-xs"
                 : "text-slate-600 hover:text-slate-900"
@@ -809,8 +1326,23 @@ export default function IntrihubHelpAutobotDesk({ onLogout }: IntrihubHelpAutobo
             <span>Live Inbox</span>
           </button>
           <button
+            onClick={() => {
+              setActiveTab("groups");
+              fetchGroups();
+              fetchTemplates();
+            }}
+            className={`flex items-center gap-2 px-3.5 py-2 rounded-xl text-xs font-bold transition-all ${
+              activeTab === "groups"
+                ? "bg-[#052A51] text-white shadow-xs"
+                : "text-slate-600 hover:text-slate-900"
+            }`}
+          >
+            <Users className="h-4 w-4" />
+            <span>Broadcast Groups</span>
+          </button>
+          <button
             onClick={() => setActiveTab("dashboard")}
-            className={`flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-bold transition-all ${
+            className={`flex items-center gap-2 px-3.5 py-2 rounded-xl text-xs font-bold transition-all ${
               activeTab === "dashboard"
                 ? "bg-[#052A51] text-white shadow-xs"
                 : "text-slate-600 hover:text-slate-900"
@@ -821,7 +1353,7 @@ export default function IntrihubHelpAutobotDesk({ onLogout }: IntrihubHelpAutobo
           </button>
           <button
             onClick={() => setActiveTab("settings")}
-            className={`flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-bold transition-all ${
+            className={`flex items-center gap-2 px-3.5 py-2 rounded-xl text-xs font-bold transition-all ${
               activeTab === "settings"
                 ? "bg-[#052A51] text-white shadow-xs"
                 : "text-slate-600 hover:text-slate-900"
@@ -836,14 +1368,14 @@ export default function IntrihubHelpAutobotDesk({ onLogout }: IntrihubHelpAutobo
         <div className="flex items-center gap-3">
           <button
             onClick={() => setIsNewChatOpen(true)}
-            className="hidden md:inline-flex items-center gap-2 px-3.5 py-2 rounded-xl bg-[#F26522] hover:bg-[#d95a1e] text-white text-xs font-bold shadow-xs transition-all"
+            className="hidden md:inline-flex items-center gap-2 px-3.5 py-2 rounded-xl bg-[#F26522] hover:bg-[#d95a1e] text-white text-xs font-bold shadow-xs transition-all cursor-pointer"
           >
             <Plus className="h-4 w-4" />
             <span>New Message</span>
           </button>
           <button
             onClick={onLogout}
-            className="flex items-center gap-1.5 px-3 py-2 rounded-xl text-xs font-bold text-slate-500 hover:text-red-600 hover:bg-red-50 transition-colors border border-transparent hover:border-red-200"
+            className="flex items-center gap-1.5 px-3 py-2 rounded-xl text-xs font-bold text-slate-500 hover:text-red-600 hover:bg-red-50 transition-colors border border-transparent hover:border-red-200 cursor-pointer"
             title="Logout from Customer Desk"
           >
             <LogOut className="h-4 w-4" />
@@ -852,107 +1384,120 @@ export default function IntrihubHelpAutobotDesk({ onLogout }: IntrihubHelpAutobo
         </div>
       </header>
 
-      {/* Main Tab Views */}
+      {/* Main Content Area */}
       <main className="flex-1 flex overflow-hidden">
+        {/* ========================================================================= */}
         {/* TAB 1: LIVE INBOX */}
+        {/* ========================================================================= */}
         {activeTab === "inbox" && (
           <div className="flex-1 flex h-[calc(100vh-5rem)] overflow-hidden">
             {/* Left Chat List */}
-            <div className="w-80 md:w-96 border-r border-slate-200 bg-white flex flex-col shrink-0">
-              <div className="p-4 border-b border-slate-100 space-y-3 bg-white">
-                <div className="flex items-center justify-between">
-                  <h2 className="text-base font-bold text-[#052A51] flex items-center gap-2">
-                    <MessageSquare className="h-4 w-4 text-[#F26522]" />
-                    Conversations
+            <aside className="w-80 lg:w-96 border-r border-slate-200 bg-white flex flex-col shrink-0">
+              <div className="p-4 border-b border-slate-200 space-y-3">
+                <div className="flex justify-between items-center">
+                  <h2 className="font-extrabold text-base text-[#052A51] flex items-center gap-2">
+                    <Headphones className="w-5 h-5 text-[#F26522]" />
+                    <span>WhatsApp Inquiries</span>
                   </h2>
-                  <div className="flex items-center gap-1.5">
-                    <button
-                      onClick={() => setIsNewChatOpen(true)}
-                      className="p-1.5 bg-orange-50 hover:bg-[#F26522] text-[#F26522] hover:text-white rounded-lg transition-colors border border-orange-200 shadow-2xs"
-                      title="Type Number & Send Message"
-                    >
-                      <Plus className="h-4 w-4" />
-                    </button>
+                  <div className="flex items-center gap-1">
                     <button
                       onClick={() => fetchChats(true)}
-                      className="p-1.5 text-slate-400 hover:text-slate-800 rounded-lg hover:bg-slate-100 transition-colors"
-                      title="Refresh Chats"
+                      className="p-2 text-slate-400 hover:text-slate-600 rounded-lg hover:bg-slate-100 transition-colors"
+                      title="Refresh conversations"
                     >
-                      <RefreshCw className={`h-4 w-4 ${isLoadingChats ? "animate-spin" : ""}`} />
+                      <RefreshCw className="w-4 h-4" />
+                    </button>
+                    <button
+                      onClick={() => setIsNewChatOpen(true)}
+                      className="p-2 bg-orange-50 text-[#F26522] hover:bg-orange-100 rounded-lg transition-colors"
+                      title="Type new phone number"
+                    >
+                      <Plus className="w-4 h-4" />
                     </button>
                   </div>
                 </div>
 
                 <div className="relative">
-                  <Search className="w-4 h-4 absolute left-3 top-3 text-slate-400" />
+                  <Search className="w-4 h-4 absolute left-3 top-2.5 text-slate-400" />
                   <input
                     type="text"
+                    placeholder="Search name or mobile number..."
                     value={searchQuery}
                     onChange={(e) => setSearchQuery(e.target.value)}
-                    placeholder="Search phone or name..."
-                    className="w-full bg-slate-50 border border-slate-200 rounded-xl pl-9 pr-4 py-2 text-xs text-slate-900 focus:outline-none focus:border-[#F26522] focus:bg-white transition-colors"
+                    className="w-full bg-slate-50 border border-slate-200 rounded-xl pl-9 pr-4 py-2 text-xs text-slate-800 placeholder-slate-400 focus:outline-none focus:border-[#F26522] focus:bg-white transition-colors"
                   />
                 </div>
               </div>
 
-              <div className="flex-1 overflow-y-auto p-3 space-y-2">
-                {filteredChats.map((chat) => (
-                  <button
-                    key={chat.id}
-                    onClick={() => setActiveChat(chat)}
-                    className={`w-full text-left p-3 rounded-2xl transition-all duration-200 flex items-center gap-3 border ${
-                      activeChat?.id === chat.id
-                        ? "bg-orange-50/80 border-[#F26522] shadow-xs"
-                        : "hover:bg-slate-50 border-transparent bg-slate-50/40"
-                    }`}
-                  >
-                    <CustomerAvatar name={chat.customer_name} phone={chat.customer_phone} size="md" />
-
-                    <div className="flex-1 min-w-0">
-                      <div className="flex justify-between items-center w-full">
-                        <span className="font-bold text-sm text-[#052A51] truncate">
-                          {chat.customer_name || chat.customer_phone}
-                        </span>
-                        <span className="text-[10px] text-slate-400 font-medium shrink-0">
-                          {new Date(chat.last_message_at).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}
-                        </span>
-                      </div>
-                      <div className="flex justify-between items-center w-full mt-0.5">
-                        <span className="text-xs text-slate-500 font-mono truncate">{chat.customer_phone}</span>
-                        <span
-                          className={`text-[9px] px-2 py-0.5 rounded-full font-bold uppercase tracking-wider shrink-0 ${
-                            chat.chat_mode === "ai"
-                              ? "bg-orange-100 text-[#F26522] border border-orange-200"
-                              : "bg-emerald-100 text-[#1E9E6B] border border-emerald-200"
-                          }`}
-                        >
-                          {chat.chat_mode === "ai" ? "INSTANT" : "DIRECT"}
-                        </span>
-                      </div>
-                    </div>
-                  </button>
-                ))}
-
-                {!isLoadingChats && filteredChats.length === 0 && (
-                  <div className="text-center py-12 px-4 text-slate-400 text-xs space-y-3">
-                    <p>No active WhatsApp conversations found.</p>
-                    <button
-                      onClick={() => setIsNewChatOpen(true)}
-                      className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-white border border-slate-200 text-xs font-bold text-[#F26522] hover:bg-orange-50 transition-colors shadow-2xs"
-                    >
-                      <Plus className="w-3.5 h-3.5" /> Start Conversation
-                    </button>
+              <div className="flex-1 overflow-y-auto p-2 space-y-1">
+                {isLoadingChats ? (
+                  <div className="py-12 text-center text-slate-400 space-y-2 text-xs">
+                    <Loader2 className="w-6 h-6 animate-spin mx-auto text-[#F26522]" />
+                    <p>Loading WhatsApp inquiries...</p>
                   </div>
+                ) : filteredChats.length === 0 ? (
+                  <div className="py-12 text-center text-slate-400 space-y-3 text-xs p-4">
+                    <MessageSquare className="w-8 h-8 mx-auto text-slate-300" />
+                    <p className="font-bold text-slate-600">No active conversations yet</p>
+                    <p className="text-[11px] text-slate-400">
+                      When a customer messages <strong className="text-slate-700 font-mono">+91 70901 20211</strong>, it will appear here automatically.
+                    </p>
+                  </div>
+                ) : (
+                  filteredChats.map((chat) => (
+                    <button
+                      key={chat.id}
+                      onClick={() => setActiveChat(chat)}
+                      className={`w-full text-left p-3 rounded-2xl transition-all duration-200 flex items-center gap-3 border ${
+                        activeChat?.id === chat.id
+                          ? "bg-orange-50/80 border-[#F26522] shadow-xs"
+                          : "hover:bg-slate-50 border-transparent bg-slate-50/40"
+                      }`}
+                    >
+                      <CustomerAvatar name={chat.customer_name} phone={chat.customer_phone} size="md" />
+
+                      <div className="flex-1 min-w-0">
+                        <div className="flex justify-between items-center w-full">
+                          <span className="font-bold text-sm text-[#052A51] truncate">
+                            {chat.customer_name || chat.customer_phone}
+                          </span>
+                          <span className="text-[10px] text-slate-400 font-medium shrink-0">
+                            {new Date(chat.last_message_at).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}
+                          </span>
+                        </div>
+                        <div className="flex justify-between items-center w-full mt-0.5">
+                          <span className="text-xs text-slate-500 font-mono truncate">{chat.customer_phone}</span>
+                          <span
+                            className={`text-[9px] px-2 py-0.5 rounded-full font-bold uppercase tracking-wider shrink-0 ${
+                              chat.chat_mode === "ai"
+                                ? "bg-orange-100 text-[#F26522] border border-orange-200"
+                                : "bg-emerald-100 text-[#1E9E6B] border border-emerald-200"
+                            }`}
+                          >
+                            {chat.chat_mode === "ai" ? "INSTANT" : "DIRECT"}
+                          </span>
+                        </div>
+                      </div>
+                    </button>
+                  ))
                 )}
               </div>
-            </div>
+            </aside>
 
-            {/* Right Chat Panel */}
-            <div className="flex-1 flex flex-col bg-[#f8fafc] relative overflow-hidden">
+            {/* Middle Active Chat Stream */}
+            <div className="flex-1 flex flex-col bg-[#f8fafc] overflow-hidden border-r border-slate-200">
               {activeChat ? (
                 <>
+                  {/* Chat Header */}
                   <header className="h-16 px-6 border-b border-slate-200 bg-white flex items-center justify-between z-10 shrink-0">
-                    <div className="flex items-center gap-3">
+                    <button
+                      onClick={() => {
+                        fetchCustomerProfile(activeChat.customer_phone);
+                        setIsProfilePanelOpen(true);
+                      }}
+                      className="flex items-center gap-3 text-left hover:opacity-80 transition-opacity group cursor-pointer"
+                      title="Click to view full Customer WhatsApp Profile & Details"
+                    >
                       <CustomerAvatar
                         name={activeChat.customer_name}
                         phone={activeChat.customer_phone}
@@ -960,43 +1505,68 @@ export default function IntrihubHelpAutobotDesk({ onLogout }: IntrihubHelpAutobo
                         showOnline={true}
                       />
                       <div>
-                        <h3 className="font-bold text-[#052A51] text-sm">
-                          {activeChat.customer_name || "WhatsApp Customer"}
-                        </h3>
-                        <p className="text-xs text-slate-500 flex items-center gap-1.5 font-mono">
-                          <Phone className="w-3 h-3 text-[#1E9E6B]" /> {activeChat.customer_phone}
+                        <div className="flex items-center gap-1.5">
+                          <h3 className="font-bold text-[#052A51] text-sm group-hover:text-[#F26522] transition-colors">
+                            {activeChat.customer_name || "WhatsApp Customer"}
+                          </h3>
+                          <Info className="w-3.5 h-3.5 text-slate-400 group-hover:text-[#F26522]" />
+                        </div>
+                        <p className="text-xs text-slate-500 font-mono flex items-center gap-1.5">
+                          <span>{activeChat.customer_phone}</span>
+                          <span className="text-[10px] text-emerald-600 font-bold bg-emerald-50 px-1.5 py-0.2 rounded border border-emerald-200">
+                            Verified WABA
+                          </span>
                         </p>
                       </div>
-                    </div>
+                    </button>
 
-                    <div className="flex items-center gap-2">
+                    <div className="flex items-center gap-3">
+                      {/* Customer Profile Trigger Button */}
                       <button
-                        onClick={() => setIsOrderPanelOpen(!isOrderPanelOpen)}
-                        className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all flex items-center gap-1.5 border cursor-pointer ${
-                          isOrderPanelOpen
-                            ? "bg-[#052A51] text-white border-[#052A51] shadow-2xs"
-                            : "bg-white text-slate-700 hover:bg-slate-50 border-slate-200"
-                        }`}
-                        title="Toggle Customer Orders & Purchase History"
+                        onClick={() => {
+                          fetchCustomerProfile(activeChat.customer_phone);
+                          setIsProfilePanelOpen(true);
+                        }}
+                        className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-xl text-xs font-bold transition-colors cursor-pointer"
                       >
-                        <Package className="w-3.5 h-3.5 text-[#F26522]" />
-                        <span>Order History {orders.length > 0 ? `(${orders.length})` : ""}</span>
+                        <User className="w-3.5 h-3.5 text-slate-500" />
+                        <span>Contact Info</span>
                       </button>
 
-                      <div className="flex items-center gap-1 bg-slate-100 p-1 rounded-xl border border-slate-200">
+                      {/* Orders Panel Toggle */}
+                      <button
+                        onClick={() => setIsOrderPanelOpen(!isOrderPanelOpen)}
+                        className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-bold transition-colors border ${
+                          isOrderPanelOpen
+                            ? "bg-[#052A51] text-white border-[#052A51]"
+                            : "bg-white text-slate-700 border-slate-200 hover:bg-slate-50"
+                        }`}
+                        title="Toggle Orders & Purchase History CRM drawer"
+                      >
+                        <Package className="w-3.5 h-3.5 text-amber-400" />
+                        <span className="hidden sm:inline">Orders</span>
+                        {orders.length > 0 && (
+                          <span className="bg-[#F26522] text-white text-[10px] px-1.5 py-0.2 rounded-full font-extrabold">
+                            {orders.length}
+                          </span>
+                        )}
+                      </button>
+
+                      {/* Dual Mode Switcher Button */}
+                      <div className="flex items-center bg-slate-100 p-1 rounded-xl border border-slate-200">
                         <button
                           onClick={() => handleToggleMode("human")}
-                          className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all ${
+                          className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer ${
                             activeChat.chat_mode === "human"
                               ? "bg-[#1E9E6B] text-white shadow-2xs"
                               : "text-slate-600 hover:text-slate-900"
                           }`}
                         >
-                          Direct Agent
+                          <UserCheck className="w-3.5 h-3.5" /> Direct Agent
                         </button>
                         <button
                           onClick={() => handleToggleMode("ai")}
-                          className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all flex items-center gap-1.5 ${
+                          className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer ${
                             activeChat.chat_mode === "ai"
                               ? "bg-[#F26522] text-white shadow-2xs"
                               : "text-slate-600 hover:text-slate-900"
@@ -1017,7 +1587,7 @@ export default function IntrihubHelpAutobotDesk({ onLogout }: IntrihubHelpAutobo
                       <button
                         onClick={handleSendOfficialCatalogPdf}
                         disabled={isSendingMedia}
-                        className="inline-flex items-center gap-1.5 px-3 py-1 bg-white hover:bg-orange-50 text-[#F26522] border border-orange-200 rounded-lg font-bold shadow-2xs transition-colors shrink-0 disabled:opacity-50"
+                        className="inline-flex items-center gap-1.5 px-3 py-1 bg-white hover:bg-orange-50 text-[#F26522] border border-orange-200 rounded-lg font-bold shadow-2xs transition-colors shrink-0 disabled:opacity-50 cursor-pointer"
                         title="Send Official IntriHub Catalog to WhatsApp customer"
                       >
                         <FileText className="w-3.5 h-3.5 text-[#F26522]" />
@@ -1026,7 +1596,7 @@ export default function IntrihubHelpAutobotDesk({ onLogout }: IntrihubHelpAutobo
                       <button
                         onClick={() => mediaFileInputRef.current?.click()}
                         disabled={isSendingMedia}
-                        className="inline-flex items-center gap-1.5 px-3 py-1 bg-white hover:bg-slate-100 text-slate-700 border border-slate-200 rounded-lg font-bold shadow-2xs transition-colors shrink-0 disabled:opacity-50"
+                        className="inline-flex items-center gap-1.5 px-3 py-1 bg-white hover:bg-slate-100 text-slate-700 border border-slate-200 rounded-lg font-bold shadow-2xs transition-colors shrink-0 disabled:opacity-50 cursor-pointer"
                         title="Attach sample tile image or custom document"
                       >
                         <Paperclip className="w-3.5 h-3.5 text-slate-500" />
@@ -1035,6 +1605,7 @@ export default function IntrihubHelpAutobotDesk({ onLogout }: IntrihubHelpAutobo
                     </div>
                   </div>
 
+                  {/* Messages Feed */}
                   <div className="flex-1 overflow-y-auto p-6 space-y-4">
                     {messages.map((msg, index) => {
                       const isCustomer = msg.sender === "customer";
@@ -1090,8 +1661,8 @@ export default function IntrihubHelpAutobotDesk({ onLogout }: IntrihubHelpAutobo
                     <div ref={messagesEndRef} />
                   </div>
 
+                  {/* Message Input Bar */}
                   <div className="p-4 bg-white border-t border-slate-200 shrink-0 space-y-3">
-                    {/* Hidden Native File Input */}
                     <input
                       type="file"
                       ref={mediaFileInputRef}
@@ -1100,7 +1671,6 @@ export default function IntrihubHelpAutobotDesk({ onLogout }: IntrihubHelpAutobo
                       onChange={handleMediaFileSelected}
                     />
 
-                    {/* Floating Selected Media Attachment Bar */}
                     {selectedMediaFile && (
                       <div className="p-3.5 bg-orange-50 border border-orange-200 rounded-2xl flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 animate-in fade-in">
                         <div className="flex items-center gap-3 w-full sm:w-auto">
@@ -1141,7 +1711,7 @@ export default function IntrihubHelpAutobotDesk({ onLogout }: IntrihubHelpAutobo
                             type="button"
                             onClick={() => handleSendMedia()}
                             disabled={isSendingMedia}
-                            className="inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-[#F26522] hover:bg-[#d95a1e] text-white text-xs font-bold shadow-md shadow-[#F26522]/20 transition-all disabled:opacity-50"
+                            className="inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-[#F26522] hover:bg-[#d95a1e] text-white text-xs font-bold shadow-md shadow-[#F26522]/20 transition-all disabled:opacity-50 cursor-pointer"
                           >
                             {isSendingMedia ? (
                               <>
@@ -1164,7 +1734,7 @@ export default function IntrihubHelpAutobotDesk({ onLogout }: IntrihubHelpAutobo
                         <button
                           type="button"
                           onClick={() => mediaFileInputRef.current?.click()}
-                          className="p-2 text-slate-500 hover:text-[#F26522] hover:bg-slate-100 rounded-lg transition-colors shrink-0"
+                          className="p-2 text-slate-500 hover:text-[#F26522] hover:bg-slate-100 rounded-lg transition-colors shrink-0 cursor-pointer"
                           title="Attach PDF Catalog or Product Photo"
                         >
                           <Paperclip className="w-4 h-4" />
@@ -1180,7 +1750,7 @@ export default function IntrihubHelpAutobotDesk({ onLogout }: IntrihubHelpAutobo
                         <button
                           onClick={handleSendMessage}
                           disabled={isSending || !inputText.trim()}
-                          className="p-2.5 bg-[#F26522] hover:bg-[#d95a1e] disabled:bg-slate-200 disabled:text-slate-400 text-white rounded-lg transition-colors shadow-2xs shrink-0"
+                          className="p-2.5 bg-[#F26522] hover:bg-[#d95a1e] disabled:bg-slate-200 disabled:text-slate-400 text-white rounded-lg transition-colors shadow-2xs shrink-0 cursor-pointer"
                         >
                           <Send className="w-4 h-4" />
                         </button>
@@ -1198,7 +1768,7 @@ export default function IntrihubHelpAutobotDesk({ onLogout }: IntrihubHelpAutobo
                         </div>
                         <button
                           onClick={() => handleToggleMode("human")}
-                          className="text-xs px-3.5 py-1.5 rounded-lg bg-[#F26522] hover:bg-[#d95a1e] text-white font-bold transition-colors shrink-0 shadow-2xs"
+                          className="text-xs px-3.5 py-1.5 rounded-lg bg-[#F26522] hover:bg-[#d95a1e] text-white font-bold transition-colors shrink-0 shadow-2xs cursor-pointer"
                         >
                           Reply Directly
                         </button>
@@ -1217,7 +1787,7 @@ export default function IntrihubHelpAutobotDesk({ onLogout }: IntrihubHelpAutobo
                   </p>
                   <button
                     onClick={() => setIsNewChatOpen(true)}
-                    className="inline-flex items-center gap-2 rounded-xl bg-[#F26522] hover:bg-[#d95a1e] px-4 py-2.5 text-xs font-bold text-white shadow-md shadow-[#F26522]/20 transition-all"
+                    className="inline-flex items-center gap-2 rounded-xl bg-[#F26522] hover:bg-[#d95a1e] px-4 py-2.5 text-xs font-bold text-white shadow-md shadow-[#F26522]/20 transition-all cursor-pointer"
                   >
                     <Plus className="w-4 h-4" /> Type New Number & Send Message
                   </button>
@@ -1228,7 +1798,6 @@ export default function IntrihubHelpAutobotDesk({ onLogout }: IntrihubHelpAutobo
             {/* Right Customer Orders & CRM Intelligence Panel */}
             {isOrderPanelOpen && activeChat && (
               <aside className="w-80 lg:w-96 border-l border-slate-200 bg-white flex flex-col shrink-0 overflow-hidden z-20">
-                {/* CRM Header */}
                 <div className="p-4 border-b border-slate-200 bg-slate-50/70 space-y-3">
                   <div className="flex items-center justify-between">
                     <div className="flex items-center gap-2">
@@ -1249,7 +1818,6 @@ export default function IntrihubHelpAutobotDesk({ onLogout }: IntrihubHelpAutobo
                     </button>
                   </div>
 
-                  {/* Customer Lifetime Spend & KPI summary */}
                   {orderSummary && (
                     <div className="grid grid-cols-2 gap-2 p-2.5 bg-white rounded-xl border border-slate-200 shadow-2xs">
                       <div>
@@ -1263,7 +1831,6 @@ export default function IntrihubHelpAutobotDesk({ onLogout }: IntrihubHelpAutobo
                     </div>
                   )}
 
-                  {/* Live Search by Order ID or Phone Number */}
                   <form
                     onSubmit={(e) => {
                       e.preventDefault();
@@ -1288,7 +1855,6 @@ export default function IntrihubHelpAutobotDesk({ onLogout }: IntrihubHelpAutobo
                   </form>
                 </div>
 
-                {/* Orders List Content */}
                 <div className="flex-1 overflow-y-auto p-3 space-y-3 bg-[#f8fafc]">
                   {isLoadingOrders ? (
                     <div className="py-12 text-center text-slate-400 space-y-2 text-xs">
@@ -1306,14 +1872,17 @@ export default function IntrihubHelpAutobotDesk({ onLogout }: IntrihubHelpAutobo
                           key={order.id}
                           className="bg-white rounded-2xl border border-slate-200 p-3.5 shadow-2xs hover:shadow-xs transition-shadow space-y-3"
                         >
-                          {/* Order Top Line */}
                           <div className="flex items-center justify-between">
                             <div className="flex items-center gap-1.5">
                               <span className="font-mono text-xs font-extrabold text-[#052A51]">
                                 #{order.id.slice(-8).toUpperCase()}
                               </span>
                               <button
-                                onClick={() => handleCopyOrderId(order.id)}
+                                onClick={() => {
+                                  navigator.clipboard.writeText(order.id);
+                                  setCopiedOrderId(order.id);
+                                  setTimeout(() => setCopiedOrderId(null), 2000);
+                                }}
                                 className="p-1 text-slate-400 hover:text-slate-800 rounded transition-colors cursor-pointer"
                                 title="Copy Full Order ID"
                               >
@@ -1339,7 +1908,6 @@ export default function IntrihubHelpAutobotDesk({ onLogout }: IntrihubHelpAutobo
                             </span>
                           </div>
 
-                          {/* Amount & Payment Method */}
                           <div className="flex items-center justify-between text-xs pb-2 border-b border-slate-100">
                             <div className="flex items-center gap-1 text-slate-500">
                               <Calendar className="w-3 h-3 text-slate-400" />
@@ -1351,52 +1919,36 @@ export default function IntrihubHelpAutobotDesk({ onLogout }: IntrihubHelpAutobo
                             </div>
                           </div>
 
-                          {/* Products in this order */}
-                          <div className="space-y-2">
-                            <span className="text-[10px] uppercase font-bold text-slate-400 tracking-wider block">
-                              Items Ordered ({order.items.length})
-                            </span>
-                            <div className="space-y-1.5 max-h-36 overflow-y-auto pr-1">
-                              {order.items.map((item) => (
-                                <div key={item.id} className="flex items-center gap-2 text-xs bg-slate-50 p-1.5 rounded-xl border border-slate-100">
+                          <div className="space-y-1.5">
+                            {order.items.map((item) => (
+                              <div key={item.id} className="flex items-center justify-between text-xs bg-slate-50 p-2 rounded-xl border border-slate-100">
+                                <div className="flex items-center gap-2 min-w-0">
                                   {item.image ? (
-                                    <img src={item.image} alt={item.productName} className="w-8 h-8 rounded-lg object-cover border border-slate-200 shrink-0" />
+                                    <img src={item.image} alt={item.productName} className="w-7 h-7 rounded-lg object-cover border border-slate-200" />
                                   ) : (
-                                    <div className="w-8 h-8 rounded-lg bg-white border border-slate-200 flex items-center justify-center text-slate-400 shrink-0">
-                                      <Package className="w-4 h-4" />
-                                    </div>
+                                    <div className="w-7 h-7 rounded-lg bg-orange-100 text-[#F26522] flex items-center justify-center font-bold text-[10px]">IH</div>
                                   )}
-                                  <div className="flex-1 min-w-0">
-                                    <p className="font-bold text-slate-800 truncate text-[11px]">{item.productName}</p>
-                                    <p className="text-[10px] text-slate-500 truncate">
-                                      {item.boxQuantity} box(es) • ₹{item.totalPrice.toLocaleString("en-IN")}
-                                    </p>
+                                  <div className="min-w-0">
+                                    <p className="font-bold text-[#052A51] truncate text-[11px]">{item.productName}</p>
+                                    <p className="text-[10px] text-slate-400">{item.boxQuantity} Boxes • ₹{item.pricePerBox}/box</p>
                                   </div>
                                 </div>
-                              ))}
-                            </div>
+                                <span className="font-extrabold text-slate-700 text-xs shrink-0">₹{item.totalPrice.toLocaleString("en-IN")}</span>
+                              </div>
+                            ))}
                           </div>
 
-                          {/* Delivery Snapshot */}
-                          <div className="p-2 bg-slate-50 rounded-xl border border-slate-100 text-[11px] text-slate-600 space-y-1">
-                            <div className="flex items-start gap-1.5">
-                              <MapPin className="w-3 h-3 text-slate-400 shrink-0 mt-0.5" />
-                              <span className="line-clamp-2">{order.deliveryAddress}</span>
-                            </div>
-                            <div className="flex items-center gap-1.5 text-slate-500">
-                              <Truck className="w-3 h-3 text-[#F26522] shrink-0" />
-                              <span>ETA: {order.estimatedDelivery}</span>
-                            </div>
-                          </div>
-
-                          {/* Quick Action: Insert in WhatsApp Message */}
                           <button
                             type="button"
-                            onClick={() => handleInsertOrderToChat(order)}
-                            className="w-full py-2 px-3 rounded-xl bg-orange-50 hover:bg-[#F26522] text-[#F26522] hover:text-white font-bold text-xs transition-colors border border-orange-200 flex items-center justify-center gap-1.5 shadow-2xs cursor-pointer"
+                            onClick={() => {
+                              const itemsSummary = order.items.map((it) => `${it.boxQuantity}x ${it.productName}`).join(", ");
+                              const text = `Hi ${order.customerName || "there"}! Regarding your IntriHub order #${order.id} (${itemsSummary} • Total ₹${order.total.toLocaleString("en-IN")}): The status is "${order.orderStatus.toUpperCase()}". Delivery ETA: ${order.estimatedDelivery}. Let me know if you need any further help!`;
+                              setInputText(text);
+                              if (activeChat?.chat_mode !== "human") handleToggleMode("human");
+                            }}
+                            className="w-full py-1.5 bg-orange-50 hover:bg-orange-100 text-[#F26522] rounded-xl text-[11px] font-bold transition-colors flex items-center justify-center gap-1.5 border border-orange-200 cursor-pointer"
                           >
-                            <MessageSquare className="w-3.5 h-3.5" />
-                            <span>Send Order Status in Chat</span>
+                            <Send className="w-3 h-3" /> Insert Status into Chat
                           </button>
                         </div>
                       );
@@ -1404,10 +1956,8 @@ export default function IntrihubHelpAutobotDesk({ onLogout }: IntrihubHelpAutobo
                   ) : (
                     <div className="py-12 text-center text-slate-400 space-y-2 text-xs">
                       <Package className="w-8 h-8 mx-auto text-slate-300" />
-                      <p className="font-bold text-slate-600">No Orders Found</p>
-                      <p className="text-[11px] text-slate-400 max-w-[200px] mx-auto">
-                        No previous orders found for this phone number. Try searching an Order ID above.
-                      </p>
+                      <p className="font-bold text-slate-600">No previous orders found</p>
+                      <p className="text-[11px] text-slate-400">This number has not placed an e-commerce order on IntriHub yet.</p>
                     </div>
                   )}
                 </div>
@@ -1416,86 +1966,565 @@ export default function IntrihubHelpAutobotDesk({ onLogout }: IntrihubHelpAutobo
           </div>
         )}
 
-        {/* TAB 2: OVERVIEW & STATS */}
+        {/* ========================================================================= */}
+        {/* TAB 2: BROADCAST GROUPS & CAMPAIGNS */}
+        {/* ========================================================================= */}
+        {activeTab === "groups" && (
+          <div className="flex-1 overflow-y-auto p-6 md:p-8 bg-[#f8fafc]">
+            {!selectedGroup ? (
+              <div className="max-w-6xl mx-auto space-y-6">
+                {/* Broadcast Header & Stats */}
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                  <div>
+                    <h2 className="text-2xl font-extrabold text-[#052A51] flex items-center gap-2.5">
+                      <Users className="h-7 w-7 text-[#F26522]" />
+                      <span>WhatsApp Broadcast Groups</span>
+                    </h2>
+                    <p className="text-xs text-slate-500 mt-1">
+                      Group customer numbers and broadcast promotions, price lists & PDF catalogs via Meta Cloud API.
+                    </p>
+                  </div>
+                  <div className="flex items-center gap-2.5">
+                    <button
+                      onClick={() => fetchTemplates()}
+                      className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl bg-white border border-slate-200 text-slate-700 text-xs font-bold hover:bg-slate-50 shadow-2xs transition-colors cursor-pointer"
+                      title="View pre-approved Meta message templates"
+                    >
+                      <Radio className="h-4 w-4 text-[#1E9E6B]" />
+                      <span>Meta Templates</span>
+                    </button>
+                    <button
+                      onClick={() => {
+                        setIsCreateGroupModalOpen(true);
+                        setSelectedCrmPhones([]);
+                        setPastedNumbers("");
+                        setCreateGroupError(null);
+                      }}
+                      className="inline-flex items-center gap-2 rounded-xl bg-[#F26522] hover:bg-[#d95a1e] px-4 py-2 text-xs font-bold text-white shadow-md shadow-[#F26522]/20 transition-all cursor-pointer"
+                    >
+                      <Plus className="h-4 w-4" />
+                      <span>Create Broadcast Group</span>
+                    </button>
+                  </div>
+                </div>
+
+                {/* Broadcast Groups Metrics Cards */}
+                <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+                  <div className="p-4 bg-white rounded-2xl border border-slate-200 shadow-2xs space-y-1">
+                    <span className="text-[11px] font-bold uppercase text-slate-400">Total Groups</span>
+                    <p className="text-2xl font-extrabold text-[#052A51]">{groups.length}</p>
+                    <span className="text-[10px] text-slate-500">Segmented WhatsApp lists</span>
+                  </div>
+                  <div className="p-4 bg-white rounded-2xl border border-slate-200 shadow-2xs space-y-1">
+                    <span className="text-[11px] font-bold uppercase text-slate-400">Total Reachable Contacts</span>
+                    <p className="text-2xl font-extrabold text-[#1E9E6B]">
+                      {groups.reduce((acc, g) => acc + g.memberCount, 0)}
+                    </p>
+                    <span className="text-[10px] text-slate-500">Verified WhatsApp recipients</span>
+                  </div>
+                  <div className="p-4 bg-white rounded-2xl border border-slate-200 shadow-2xs space-y-1">
+                    <span className="text-[11px] font-bold uppercase text-slate-400">Campaigns Dispatched</span>
+                    <p className="text-2xl font-extrabold text-[#F26522]">
+                      {groups.reduce((acc, g) => acc + g.broadcastCount, 0)}
+                    </p>
+                    <span className="text-[10px] text-slate-500">Total broadcast executions</span>
+                  </div>
+                  <div className="p-4 bg-white rounded-2xl border border-slate-200 shadow-2xs space-y-1">
+                    <span className="text-[11px] font-bold uppercase text-slate-400">24-Hour Session Gate</span>
+                    <div className="flex items-center gap-1.5 text-xs font-bold text-emerald-700">
+                      <ShieldCheck className="h-4 w-4 text-emerald-600" />
+                      <span>Template Fallback Active</span>
+                    </div>
+                    <span className="text-[10px] text-slate-400">Meta policy compliant</span>
+                  </div>
+                </div>
+
+                {/* Search Groups Filter */}
+                <div className="relative max-w-md">
+                  <Search className="w-4 h-4 absolute left-3.5 top-3 text-slate-400" />
+                  <input
+                    type="text"
+                    placeholder="Search broadcast groups by name or description..."
+                    value={groupSearchQuery}
+                    onChange={(e) => setGroupSearchQuery(e.target.value)}
+                    className="w-full bg-white border border-slate-200 rounded-2xl pl-10 pr-4 py-2.5 text-xs text-slate-800 placeholder-slate-400 focus:outline-none focus:border-[#F26522] shadow-2xs transition-colors"
+                  />
+                </div>
+
+                {/* Groups Grid */}
+                {isLoadingGroups ? (
+                  <div className="py-16 text-center text-slate-400 space-y-2 text-xs">
+                    <Loader2 className="w-8 h-8 animate-spin mx-auto text-[#F26522]" />
+                    <p>Loading broadcast groups...</p>
+                  </div>
+                ) : filteredGroups.length === 0 ? (
+                  <div className="py-16 text-center bg-white rounded-3xl border border-dashed border-slate-300 p-8 space-y-4">
+                    <Users className="w-12 h-12 mx-auto text-slate-300" />
+                    <div>
+                      <h3 className="text-base font-bold text-[#052A51]">No Broadcast Groups Found</h3>
+                      <p className="text-xs text-slate-500 mt-1 max-w-md mx-auto">
+                        Create your first broadcast group to send updates to contractors, builders, or tile buyers in one click.
+                      </p>
+                    </div>
+                    <button
+                      onClick={() => setIsCreateGroupModalOpen(true)}
+                      className="inline-flex items-center gap-2 rounded-xl bg-[#F26522] hover:bg-[#d95a1e] px-4 py-2.5 text-xs font-bold text-white shadow-md shadow-[#F26522]/20 transition-all cursor-pointer"
+                    >
+                      <Plus className="h-4 w-4" /> Create Broadcast Group
+                    </button>
+                  </div>
+                ) : (
+                  <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+                    {filteredGroups.map((group) => (
+                      <div
+                        key={group.id}
+                        className="bg-white rounded-2xl border border-slate-200 p-5 shadow-2xs hover:shadow-md transition-all flex flex-col justify-between space-y-4 group"
+                      >
+                        <div className="space-y-2.5">
+                          <div className="flex items-start justify-between gap-2">
+                            <div className="flex items-center gap-2.5">
+                              <div className="h-10 w-10 rounded-xl bg-orange-50 border border-orange-200 flex items-center justify-center text-[#F26522] font-bold shadow-2xs shrink-0">
+                                <Users className="h-5 w-5" />
+                              </div>
+                              <div>
+                                <h3 className="text-sm font-extrabold text-[#052A51] group-hover:text-[#F26522] transition-colors">
+                                  {group.name}
+                                </h3>
+                                <p className="text-[11px] text-slate-400">
+                                  Created {new Date(group.createdAt).toLocaleDateString()}
+                                </p>
+                              </div>
+                            </div>
+                            <span className="px-2.5 py-0.5 rounded-full text-xs font-extrabold bg-slate-100 text-[#052A51] border border-slate-200 shrink-0">
+                              {group.memberCount} Members
+                            </span>
+                          </div>
+
+                          {group.description && (
+                            <p className="text-xs text-slate-600 line-clamp-2 leading-relaxed">
+                              {group.description}
+                            </p>
+                          )}
+
+                          {group.lastBroadcast ? (
+                            <div className="p-2.5 bg-slate-50 rounded-xl border border-slate-100 text-[11px] text-slate-600 space-y-1">
+                              <div className="flex items-center justify-between font-bold">
+                                <span className="text-[#052A51]">Last Broadcast:</span>
+                                <span className="text-emerald-700">
+                                  {group.lastBroadcast.successCount}/{group.lastBroadcast.totalRecipients} Delivered
+                                </span>
+                              </div>
+                              <p className="text-[10px] text-slate-400 truncate">
+                                {new Date(group.lastBroadcast.sentAt).toLocaleString([], { dateStyle: "short", timeStyle: "short" })}
+                              </p>
+                            </div>
+                          ) : (
+                            <div className="p-2.5 bg-slate-50 rounded-xl border border-slate-100 text-[11px] text-slate-400">
+                              No broadcasts sent yet
+                            </div>
+                          )}
+                        </div>
+
+                        <div className="flex items-center gap-2 pt-2 border-t border-slate-100">
+                          <button
+                            onClick={() => {
+                              fetchGroupDetails(group.id);
+                              setGroupDetailTab("members");
+                            }}
+                            className="flex-1 py-2 bg-slate-100 hover:bg-slate-200 text-[#052A51] rounded-xl text-xs font-bold transition-colors text-center cursor-pointer"
+                          >
+                            Manage Members
+                          </button>
+                          <button
+                            onClick={() => handleOpenBroadcastComposer(group)}
+                            className="inline-flex items-center justify-center gap-1.5 px-3.5 py-2 bg-[#F26522] hover:bg-[#d95a1e] text-white rounded-xl text-xs font-bold shadow-2xs transition-all cursor-pointer"
+                            title="Compose Broadcast"
+                          >
+                            <Send className="h-3.5 w-3.5" />
+                            <span>Broadcast</span>
+                          </button>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+            ) : (
+              /* Group Detail Screen */
+              <div className="max-w-5xl mx-auto space-y-6">
+                {/* Back to list & Group title */}
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 bg-white p-6 rounded-2xl border border-slate-200 shadow-2xs">
+                  <div className="space-y-1">
+                    <button
+                      onClick={() => setSelectedGroup(null)}
+                      className="inline-flex items-center gap-1 text-xs font-bold text-slate-500 hover:text-[#052A51] mb-1 transition-colors cursor-pointer"
+                    >
+                      <ChevronLeft className="h-4 w-4" />
+                      <span>Back to All Groups</span>
+                    </button>
+                    <div className="flex items-center gap-3">
+                      <h2 className="text-xl font-extrabold text-[#052A51]">{selectedGroup.name}</h2>
+                      <span className="px-3 py-1 rounded-full text-xs font-extrabold bg-orange-100 text-[#F26522] border border-orange-200">
+                        {selectedGroup.members.length} Members
+                      </span>
+                    </div>
+                    {selectedGroup.description && (
+                      <p className="text-xs text-slate-500">{selectedGroup.description}</p>
+                    )}
+                  </div>
+
+                  <div className="flex items-center gap-2 shrink-0">
+                    <button
+                      onClick={() => {
+                        setIsAddMembersModalOpen(true);
+                        setAddMembersRawInput("");
+                        setAddMembersCrmPhones([]);
+                      }}
+                      className="inline-flex items-center gap-1.5 px-3.5 py-2 bg-slate-100 hover:bg-slate-200 text-slate-800 rounded-xl text-xs font-bold transition-colors cursor-pointer"
+                    >
+                      <UserPlus className="h-4 w-4 text-[#052A51]" />
+                      <span>Add Members</span>
+                    </button>
+                    <button
+                      onClick={() => handleOpenBroadcastComposer(selectedGroup)}
+                      className="inline-flex items-center gap-1.5 px-4 py-2 bg-[#F26522] hover:bg-[#d95a1e] text-white rounded-xl text-xs font-bold shadow-md shadow-[#F26522]/20 transition-all cursor-pointer"
+                    >
+                      <Send className="h-4 w-4" />
+                      <span>Send Broadcast</span>
+                    </button>
+                    <button
+                      onClick={() => handleDeleteGroup(selectedGroup.id)}
+                      className="p-2 text-slate-400 hover:text-red-600 hover:bg-red-50 rounded-xl transition-colors cursor-pointer"
+                      title="Delete Group"
+                    >
+                      <Trash2 className="h-4 w-4" />
+                    </button>
+                  </div>
+                </div>
+
+                {/* Sub-Tabs: Members vs Broadcast History */}
+                <div className="flex items-center gap-2 border-b border-slate-200 pb-2">
+                  <button
+                    onClick={() => setGroupDetailTab("members")}
+                    className={`inline-flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-bold transition-colors cursor-pointer ${
+                      groupDetailTab === "members"
+                        ? "bg-[#052A51] text-white"
+                        : "text-slate-600 hover:bg-slate-100"
+                    }`}
+                  >
+                    <Users className="h-4 w-4" />
+                    <span>Members List ({selectedGroup.members.length})</span>
+                  </button>
+                  <button
+                    onClick={() => setGroupDetailTab("history")}
+                    className={`inline-flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-bold transition-colors cursor-pointer ${
+                      groupDetailTab === "history"
+                        ? "bg-[#052A51] text-white"
+                        : "text-slate-600 hover:bg-slate-100"
+                    }`}
+                  >
+                    <History className="h-4 w-4" />
+                    <span>Broadcast History ({selectedGroup.logs.length})</span>
+                  </button>
+                </div>
+
+                {/* SUB-TAB 1: MEMBERS */}
+                {groupDetailTab === "members" && (
+                  <div className="bg-white rounded-2xl border border-slate-200 shadow-2xs overflow-hidden space-y-4 p-4">
+                    <div className="flex items-center justify-between gap-4">
+                      <div className="relative max-w-sm flex-1">
+                        <Search className="w-4 h-4 absolute left-3.5 top-2.5 text-slate-400" />
+                        <input
+                          type="text"
+                          placeholder="Search group members..."
+                          value={memberSearchQuery}
+                          onChange={(e) => setMemberSearchQuery(e.target.value)}
+                          className="w-full bg-slate-50 border border-slate-200 rounded-xl pl-9 pr-4 py-2 text-xs text-slate-800 placeholder-slate-400 focus:outline-none focus:border-[#F26522] transition-colors"
+                        />
+                      </div>
+                      <span className="text-xs text-slate-400 font-bold">
+                        {filteredMembers.length} contact{filteredMembers.length === 1 ? "" : "s"}
+                      </span>
+                    </div>
+
+                    <div className="divide-y divide-slate-100">
+                      {filteredMembers.length === 0 ? (
+                        <div className="py-12 text-center text-slate-400 text-xs">
+                          No members matching search query
+                        </div>
+                      ) : (
+                        filteredMembers.map((member) => (
+                          <div key={member.id} className="py-3 px-2 flex items-center justify-between hover:bg-slate-50 rounded-xl transition-colors">
+                            <div className="flex items-center gap-3">
+                              <CustomerAvatar name={member.customerName} phone={member.phoneNumber} size="sm" showOnline={false} />
+                              <div>
+                                <p className="text-xs font-bold text-[#052A51]">
+                                  {member.customerName || "WhatsApp Customer"}
+                                </p>
+                                <p className="text-[11px] text-slate-500 font-mono">
+                                  +{member.phoneNumber}
+                                </p>
+                              </div>
+                            </div>
+
+                            <div className="flex items-center gap-3">
+                              <span className="text-[10px] text-slate-400">
+                                Added {new Date(member.addedAt).toLocaleDateString()}
+                              </span>
+                              <button
+                                onClick={() => handleRemoveMember(member.id)}
+                                className="p-1 text-slate-400 hover:text-red-600 rounded-lg hover:bg-red-50 transition-colors cursor-pointer"
+                                title="Remove from group"
+                              >
+                                <Trash2 className="h-3.5 w-3.5" />
+                              </button>
+                            </div>
+                          </div>
+                        ))
+                      )}
+                    </div>
+                  </div>
+                )}
+
+                {/* SUB-TAB 2: BROADCAST HISTORY */}
+                {groupDetailTab === "history" && (
+                  <div className="space-y-4">
+                    {selectedGroup.logs.length === 0 ? (
+                      <div className="py-16 text-center bg-white rounded-2xl border border-slate-200 p-8 space-y-3">
+                        <History className="w-10 h-10 mx-auto text-slate-300" />
+                        <h3 className="text-sm font-bold text-[#052A51]">No Broadcast History Yet</h3>
+                        <p className="text-xs text-slate-400">
+                          Click "Send Broadcast" to launch your first message or catalog to this group.
+                        </p>
+                      </div>
+                    ) : (
+                      selectedGroup.logs.map((log) => {
+                        const isExpanded = expandedLogId === log.id;
+                        return (
+                          <div key={log.id} className="bg-white rounded-2xl border border-slate-200 p-5 shadow-2xs space-y-3.5">
+                            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-slate-100 pb-3">
+                              <div className="flex items-center gap-2">
+                                <div className="p-1.5 rounded-lg bg-orange-100 text-[#F26522]">
+                                  <Radio className="h-4 w-4" />
+                                </div>
+                                <div>
+                                  <span className="text-xs font-bold text-[#052A51]">
+                                    Broadcast Campaign
+                                  </span>
+                                  <p className="text-[11px] text-slate-400">
+                                    {new Date(log.sentAt).toLocaleString([], { dateStyle: "medium", timeStyle: "short" })} • by {log.sentBy}
+                                  </p>
+                                </div>
+                              </div>
+
+                              {/* Badges */}
+                              <div className="flex items-center gap-2 text-xs font-extrabold">
+                                <span className="px-2.5 py-0.5 rounded-full bg-emerald-100 text-emerald-800 border border-emerald-200">
+                                  ✅ {log.successCount} Sent
+                                </span>
+                                {log.skippedCount > 0 && (
+                                  <span className="px-2.5 py-0.5 rounded-full bg-amber-100 text-amber-800 border border-amber-200" title="Skipped: Outside 24h Meta session window">
+                                    ⚠️ {log.skippedCount} Skipped
+                                  </span>
+                                )}
+                                {log.failedCount > 0 && (
+                                  <span className="px-2.5 py-0.5 rounded-full bg-red-100 text-red-800 border border-red-200">
+                                    ❌ {log.failedCount} Failed
+                                  </span>
+                                )}
+                              </div>
+                            </div>
+
+                            {/* Message Preview */}
+                            <div className="p-3 bg-slate-50 rounded-xl border border-slate-100 text-xs text-slate-800 font-mono whitespace-pre-wrap leading-relaxed">
+                              {log.messageContent}
+                            </div>
+
+                            {/* Expand entries button */}
+                            <div className="flex items-center justify-between pt-1 text-xs">
+                              <span className="text-slate-400 text-[11px]">
+                                Total Recipients: {log.totalRecipients}
+                              </span>
+                              <button
+                                onClick={() => setExpandedLogId(isExpanded ? null : log.id)}
+                                className="text-[#F26522] font-bold hover:underline inline-flex items-center gap-1 cursor-pointer"
+                              >
+                                {isExpanded ? "Hide Per-Number Status" : "View Per-Number Delivery Status"}
+                                <ChevronRight className={`h-3.5 w-3.5 transition-transform ${isExpanded ? "rotate-90" : ""}`} />
+                              </button>
+                            </div>
+
+                            {/* Expanded Entries Breakdown */}
+                            {isExpanded && (
+                              <div className="mt-3 pt-3 border-t border-slate-100 space-y-1.5 max-h-60 overflow-y-auto">
+                                {log.entries.map((ent) => (
+                                  <div key={ent.id} className="flex items-center justify-between text-xs py-1 px-2 rounded-lg bg-slate-50">
+                                    <div className="flex items-center gap-2">
+                                      <span className="font-mono text-[#052A51]">+{ent.phoneNumber}</span>
+                                      {ent.customerName && <span className="text-slate-400">({ent.customerName})</span>}
+                                    </div>
+                                    <div className="flex items-center gap-2">
+                                      <span
+                                        className={`text-[10px] px-2 py-0.5 rounded-full font-bold uppercase ${
+                                          ent.status === "sent"
+                                            ? "bg-emerald-100 text-emerald-800"
+                                            : ent.status === "skipped"
+                                            ? "bg-amber-100 text-amber-800"
+                                            : "bg-red-100 text-red-800"
+                                        }`}
+                                      >
+                                        {ent.status}
+                                      </span>
+                                      {ent.errorMessage && (
+                                        <span className="text-[10px] text-red-500 max-w-xs truncate" title={ent.errorMessage}>
+                                          {ent.errorMessage}
+                                        </span>
+                                      )}
+                                    </div>
+                                  </div>
+                                ))}
+                              </div>
+                            )}
+                          </div>
+                        );
+                      })
+                    )}
+                  </div>
+                )}
+              </div>
+            )}
+          </div>
+        )}
+
+        {/* ========================================================================= */}
+        {/* TAB 3: OVERVIEW & STATS */}
+        {/* ========================================================================= */}
         {activeTab === "dashboard" && (
-          <div className="flex-1 p-6 md:p-8 max-w-7xl mx-auto space-y-8 overflow-y-auto">
-            <div className="flex items-center justify-between border-b border-slate-200 pb-5">
+          <div className="flex-1 overflow-y-auto p-6 md:p-8 space-y-8 bg-[#f8fafc]">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
               <div>
-                <h2 className="text-2xl font-extrabold text-[#052A51]">Support Desk Analytics</h2>
-                <p className="text-xs text-slate-500 mt-1">Live customer inquiries, resolution metrics and response performance</p>
+                <h2 className="text-2xl font-extrabold text-[#052A51] flex items-center gap-2">
+                  <LayoutDashboard className="h-6 w-6 text-[#F26522]" />
+                  <span>Support Desk Intelligence</span>
+                </h2>
+                <p className="text-xs text-slate-500 mt-0.5">Real-time performance metrics and catalog vector analytics</p>
               </div>
               <button
                 onClick={fetchStats}
-                className="p-2.5 rounded-xl border border-slate-200 bg-white hover:bg-slate-50 text-slate-600 transition-all shadow-2xs"
-                title="Refresh Analytics"
+                disabled={isLoadingStats}
+                className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl bg-white border border-slate-200 text-xs font-bold text-slate-700 hover:bg-slate-50 transition-colors shadow-2xs cursor-pointer"
               >
                 <RefreshCw className={`h-4 w-4 ${isLoadingStats ? "animate-spin" : ""}`} />
+                <span>Refresh Live KPIs</span>
               </button>
             </div>
 
-            <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-4">
-              <div className="rounded-2xl border border-slate-200 bg-white p-6 shadow-2xs">
-                <span className="text-xs font-bold uppercase tracking-wider text-slate-500">Total Customer Inquiries</span>
-                <p className="mt-4 text-3xl font-extrabold text-[#052A51]">{stats?.totalChats || 0}</p>
-                <p className="mt-1 text-xs text-slate-500">Active customer threads</p>
+            <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+              <div className="rounded-2xl border border-slate-200 bg-white p-5 shadow-2xs space-y-2">
+                <span className="text-xs font-bold uppercase text-slate-400">Total Conversations</span>
+                <p className="text-3xl font-extrabold text-[#052A51]">{stats?.totalChats || 0}</p>
+                <p className="text-xs text-slate-500">All registered WhatsApp customers</p>
               </div>
-
-              <div className="rounded-2xl border border-slate-200 bg-white p-6 shadow-2xs">
-                <span className="text-xs font-bold uppercase tracking-wider text-slate-500">Active Today</span>
-                <p className="mt-4 text-3xl font-extrabold text-[#052A51]">{stats?.activeChats || 0}</p>
-                <p className="mt-1 text-xs text-slate-500">Inquiries in last 24h</p>
+              <div className="rounded-2xl border border-slate-200 bg-white p-5 shadow-2xs space-y-2">
+                <span className="text-xs font-bold uppercase text-slate-400">Active Inquiries</span>
+                <p className="text-3xl font-extrabold text-[#F26522]">{stats?.activeChats || 0}</p>
+                <p className="text-xs text-slate-500">Ongoing chat threads</p>
               </div>
-
-              <div className="rounded-2xl border border-slate-200 bg-white p-6 shadow-2xs">
-                <span className="text-xs font-bold uppercase tracking-wider text-slate-500">Instant Resolution</span>
-                <p className="mt-4 text-3xl font-extrabold text-[#052A51]">{stats?.aiResolutionRate || "0%"}</p>
-                <p className="mt-1 text-xs text-slate-500">Auto-resolved inquiries</p>
+              <div className="rounded-2xl border border-slate-200 bg-white p-5 shadow-2xs space-y-2">
+                <span className="text-xs font-bold uppercase text-slate-400">AI Instant Resolution</span>
+                <p className="text-3xl font-extrabold text-[#1E9E6B]">{stats?.aiResolutionRate || "100%"}</p>
+                <p className="text-xs text-slate-500">Powered by Gemini 2.5 Flash RAG</p>
               </div>
-
-              <div className="rounded-2xl border border-slate-200 bg-white p-6 shadow-2xs">
-                <span className="text-xs font-bold uppercase tracking-wider text-slate-500">Catalog Knowledge</span>
-                <p className="mt-4 text-3xl font-extrabold text-[#052A51]">{stats?.totalKnowledgeChunks || 0}</p>
-                <p className="mt-1 text-xs text-slate-500">Indexed catalog items</p>
+              <div className="rounded-2xl border border-slate-200 bg-white p-5 shadow-2xs space-y-2">
+                <span className="text-xs font-bold uppercase text-slate-400">Catalog Knowledge Chunks</span>
+                <p className="text-3xl font-extrabold text-[#052A51]">{stats?.totalKnowledgeChunks || 0}</p>
+                <p className="text-xs text-slate-500">Indexed vector embeddings</p>
               </div>
             </div>
 
-            <div className="rounded-2xl border border-slate-200 bg-white p-6 shadow-2xs space-y-4">
-              <h3 className="text-base font-bold text-[#052A51]">Inquiry Traffic & Distribution</h3>
-              <div className="h-3 w-full rounded-full bg-slate-100 overflow-hidden flex border border-slate-200">
-                <div style={{ width: `${aiPercentage}%` }} className="bg-[#F26522] h-full" title={`Instant Desk: ${aiPercentage}%`} />
-                <div style={{ width: `${humanPercentage}%` }} className="bg-[#052A51] h-full" title={`Direct Agent: ${humanPercentage}%`} />
-                <div style={{ width: `${customerPercentage}%` }} className="bg-[#25D366] h-full" title={`Customer: ${customerPercentage}%`} />
+            <div className="grid gap-6 lg:grid-cols-2">
+              <div className="rounded-2xl border border-slate-200 bg-white p-6 shadow-2xs space-y-4">
+                <h3 className="text-base font-bold text-[#052A51]">Message Volume Distribution</h3>
+                <div className="space-y-3">
+                  <div>
+                    <div className="flex justify-between text-xs font-bold text-slate-700 mb-1">
+                      <span>AI Executive Responses</span>
+                      <span>{stats?.aiMessages || 0} ({aiPercentage}%)</span>
+                    </div>
+                    <div className="h-2 w-full rounded-full bg-slate-100 overflow-hidden">
+                      <div className="h-full bg-[#F26522] rounded-full transition-all duration-500" style={{ width: `${aiPercentage}%` }} />
+                    </div>
+                  </div>
+                  <div>
+                    <div className="flex justify-between text-xs font-bold text-slate-700 mb-1">
+                      <span>Human Support Agent Messages</span>
+                      <span>{stats?.humanMessages || 0} ({humanPercentage}%)</span>
+                    </div>
+                    <div className="h-2 w-full rounded-full bg-slate-100 overflow-hidden">
+                      <div className="h-full bg-[#052A51] rounded-full transition-all duration-500" style={{ width: `${humanPercentage}%` }} />
+                    </div>
+                  </div>
+                  <div>
+                    <div className="flex justify-between text-xs font-bold text-slate-700 mb-1">
+                      <span>Incoming WhatsApp Customer Inquiries</span>
+                      <span>{stats?.customerMessages || 0} ({customerPercentage}%)</span>
+                    </div>
+                    <div className="h-2 w-full rounded-full bg-slate-100 overflow-hidden">
+                      <div className="h-full bg-[#1E9E6B] rounded-full transition-all duration-500" style={{ width: `${customerPercentage}%` }} />
+                    </div>
+                  </div>
+                </div>
               </div>
-              <div className="grid grid-cols-3 gap-4 pt-2">
-                <div className="p-3.5 rounded-xl bg-slate-50 border border-slate-200">
-                  <span className="text-xs text-slate-600 font-semibold flex items-center gap-1.5"><span className="h-2 w-2 rounded-full bg-[#F26522]" /> Instant Support Desk</span>
-                  <p className="mt-1 text-lg font-extrabold text-[#052A51]">{stats?.aiMessages || 0}</p>
-                </div>
-                <div className="p-3.5 rounded-xl bg-slate-50 border border-slate-200">
-                  <span className="text-xs text-slate-600 font-semibold flex items-center gap-1.5"><span className="h-2 w-2 rounded-full bg-[#052A51]" /> Direct Support Agent</span>
-                  <p className="mt-1 text-lg font-extrabold text-[#052A51]">{stats?.humanMessages || 0}</p>
-                </div>
-                <div className="p-3.5 rounded-xl bg-slate-50 border border-slate-200">
-                  <span className="text-xs text-slate-600 font-semibold flex items-center gap-1.5"><span className="h-2 w-2 rounded-full bg-[#25D366]" /> Customer Inbound</span>
-                  <p className="mt-1 text-lg font-extrabold text-[#052A51]">{stats?.customerMessages || 0}</p>
+
+              <div className="rounded-2xl border border-slate-200 bg-white p-6 shadow-2xs space-y-4">
+                <h3 className="text-base font-bold text-[#052A51]">Recent Active Conversations</h3>
+                <div className="divide-y divide-slate-100">
+                  {stats?.recentChats && stats.recentChats.length > 0 ? (
+                    stats.recentChats.map((c) => (
+                      <div key={c.id} className="py-2.5 flex items-center justify-between text-xs">
+                        <div className="flex items-center gap-2.5">
+                          <CustomerAvatar name={c.customer_name} phone={c.customer_phone} size="sm" showOnline={false} />
+                          <div>
+                            <p className="font-bold text-[#052A51]">{c.customer_name || c.customer_phone}</p>
+                            <p className="text-slate-400 font-mono">{c.customer_phone}</p>
+                          </div>
+                        </div>
+                        <div className="text-right">
+                          <span className={`px-2 py-0.5 rounded-full text-[10px] font-bold ${c.chat_mode === "ai" ? "bg-orange-100 text-[#F26522]" : "bg-emerald-100 text-[#1E9E6B]"}`}>
+                            {c.chat_mode === "ai" ? "INSTANT" : "DIRECT"}
+                          </span>
+                          <p className="text-[10px] text-slate-400 mt-0.5">
+                            {new Date(c.last_message_at).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}
+                          </p>
+                        </div>
+                      </div>
+                    ))
+                  ) : (
+                    <p className="text-xs text-slate-400 py-4">No recent activity logged yet.</p>
+                  )}
                 </div>
               </div>
             </div>
           </div>
         )}
 
-        {/* TAB 3: DESK SETTINGS & GUIDELINES */}
+        {/* ========================================================================= */}
+        {/* TAB 4: SETTINGS & LIVE WABA CONNECTION */}
+        {/* ========================================================================= */}
         {activeTab === "settings" && (
-          <div className="flex-1 p-6 md:p-8 max-w-6xl mx-auto space-y-8 overflow-y-auto">
-            <div className="flex items-center justify-between border-b border-slate-200 pb-5">
+          <div className="flex-1 overflow-y-auto p-6 md:p-8 space-y-8 bg-[#f8fafc]">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
               <div>
-                <h2 className="text-2xl font-extrabold text-[#052A51]">Customer Desk Settings & Guidelines</h2>
-                <p className="text-xs text-slate-500 mt-1">Configure AI executive persona, brand rules, and index Intrihub catalog</p>
+                <h2 className="text-2xl font-extrabold text-[#052A51] flex items-center gap-2">
+                  <Settings className="h-6 w-6 text-[#052A51]" />
+                  <span>Autobot Configuration & System Prompts</span>
+                </h2>
+                <p className="text-xs text-slate-500 mt-0.5">Manage AI persona, system prompt instructions, and official catalog RAG</p>
               </div>
               <button
                 onClick={handleSaveSettings}
                 disabled={isSavingSettings}
-                className="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl bg-[#F26522] hover:bg-[#d95a1e] text-white text-xs font-bold shadow-md shadow-[#F26522]/20 transition-all disabled:opacity-50"
+                className="inline-flex items-center gap-2 rounded-xl bg-[#F26522] hover:bg-[#d95a1e] px-5 py-2.5 text-xs font-bold text-white shadow-md shadow-[#F26522]/20 transition-all disabled:opacity-50 cursor-pointer"
               >
                 {isSavingSettings ? <Loader2 className="h-4 w-4 animate-spin" /> : <CheckCircle2 className="h-4 w-4" />}
                 <span>Save Settings</span>
@@ -1638,7 +2667,7 @@ export default function IntrihubHelpAutobotDesk({ onLogout }: IntrihubHelpAutobo
                   <button
                     onClick={handleUploadOfficialCatalog}
                     disabled={isUploading}
-                    className="inline-flex items-center gap-2 rounded-xl bg-[#F26522] hover:bg-[#d95a1e] px-4 py-2 text-xs font-bold text-white shadow-md shadow-[#F26522]/20 transition-all disabled:opacity-50"
+                    className="inline-flex items-center gap-2 rounded-xl bg-[#F26522] hover:bg-[#d95a1e] px-4 py-2 text-xs font-bold text-white shadow-md shadow-[#F26522]/20 transition-all disabled:opacity-50 cursor-pointer"
                   >
                     {isUploading ? <Loader2 className="h-4 w-4 animate-spin" /> : <Sparkles className="h-4 w-4" />}
                     <span>Auto-Index Catalog Knowledge</span>
@@ -1670,7 +2699,868 @@ export default function IntrihubHelpAutobotDesk({ onLogout }: IntrihubHelpAutobo
         )}
       </main>
 
-      {/* NEW CHAT MODAL DIALOG */}
+      {/* ========================================================================= */}
+      {/* SLIDE-IN DETAILED CUSTOMER PROFILE PANEL (WHATSAPP CONTACT INFO SCREEN) */}
+      {/* ========================================================================= */}
+      {isProfilePanelOpen && (
+        <div className="fixed inset-0 z-50 flex justify-end bg-slate-900/40 backdrop-blur-xs animate-in fade-in duration-200">
+          <aside className="w-full max-w-md bg-white h-full shadow-2xl flex flex-col justify-between overflow-hidden animate-in slide-in-from-right duration-250">
+            {/* Panel Top Header */}
+            <div className="p-4 border-b border-slate-200 flex items-center justify-between bg-slate-50">
+              <h3 className="text-sm font-extrabold text-[#052A51] flex items-center gap-2">
+                <User className="h-4 w-4 text-[#F26522]" />
+                <span>Customer WhatsApp Contact Info</span>
+              </h3>
+              <button
+                onClick={() => setIsProfilePanelOpen(false)}
+                className="p-1.5 text-slate-400 hover:text-slate-700 hover:bg-slate-200 rounded-xl transition-colors cursor-pointer"
+              >
+                <X className="h-5 w-5" />
+              </button>
+            </div>
+
+            {/* Profile Content Body */}
+            <div className="flex-1 overflow-y-auto p-6 space-y-6">
+              {isLoadingProfile ? (
+                <div className="py-20 text-center text-slate-400 space-y-2 text-xs">
+                  <Loader2 className="h-8 w-8 animate-spin mx-auto text-[#F26522]" />
+                  <p>Loading WhatsApp profile details...</p>
+                </div>
+              ) : customerProfile ? (
+                <>
+                  {/* Avatar & Core Identity */}
+                  <div className="flex flex-col items-center text-center space-y-3 pb-4 border-b border-slate-100">
+                    <CustomerAvatar
+                      name={customerProfile.name}
+                      phone={customerProfile.phone}
+                      size="xl"
+                      showOnline={true}
+                    />
+
+                    {/* Editable Name */}
+                    <div className="w-full">
+                      {isEditingProfileName ? (
+                        <div className="flex items-center gap-2 justify-center">
+                          <input
+                            type="text"
+                            value={profileEditName}
+                            onChange={(e) => setProfileEditName(e.target.value)}
+                            placeholder="Enter customer name or company..."
+                            className="text-center font-bold text-base text-[#052A51] px-3 py-1 bg-slate-50 border border-[#F26522] rounded-xl focus:outline-none"
+                            autoFocus
+                          />
+                          <button
+                            onClick={handleSaveProfile}
+                            disabled={isSavingProfile}
+                            className="p-1.5 bg-[#F26522] text-white rounded-lg text-xs font-bold cursor-pointer"
+                            title="Save Name"
+                          >
+                            <Check className="h-4 w-4" />
+                          </button>
+                          <button
+                            onClick={() => {
+                              setIsEditingProfileName(false);
+                              setProfileEditName(customerProfile.rawName || "");
+                            }}
+                            className="p-1.5 bg-slate-200 text-slate-600 rounded-lg text-xs cursor-pointer"
+                            title="Cancel"
+                          >
+                            <X className="h-4 w-4" />
+                          </button>
+                        </div>
+                      ) : (
+                        <div className="flex items-center justify-center gap-2 group">
+                          <h2 className="text-lg font-extrabold text-[#052A51]">
+                            {customerProfile.name}
+                          </h2>
+                          <button
+                            onClick={() => setIsEditingProfileName(true)}
+                            className="p-1 text-slate-400 hover:text-[#F26522] rounded-md transition-colors cursor-pointer"
+                            title="Edit customer display name"
+                          >
+                            <Edit3 className="h-3.5 w-3.5" />
+                          </button>
+                        </div>
+                      )}
+
+                      <div className="flex items-center justify-center gap-2 mt-1">
+                        <span className="text-xs text-slate-500 font-mono">
+                          {customerProfile.displayPhone}
+                        </span>
+                        <button
+                          onClick={() => {
+                            navigator.clipboard.writeText(customerProfile.phone);
+                            alert("Phone number copied to clipboard!");
+                          }}
+                          className="p-1 text-slate-400 hover:text-slate-700 cursor-pointer"
+                          title="Copy phone"
+                        >
+                          <Copy className="h-3 w-3" />
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Timeline & First Contacted Timestamps */}
+                  <div className="grid grid-cols-2 gap-2 text-xs">
+                    <div className="p-3 bg-slate-50 rounded-2xl border border-slate-200">
+                      <span className="text-[10px] uppercase font-bold text-slate-400 block flex items-center gap-1">
+                        <Calendar className="w-3 h-3 text-[#F26522]" /> First Contacted
+                      </span>
+                      <span className="text-xs font-bold text-[#052A51] mt-0.5 block">
+                        {customerProfile.firstContactedAt
+                          ? new Date(customerProfile.firstContactedAt).toLocaleDateString([], { month: "short", day: "numeric", year: "numeric" })
+                          : "Today"}
+                      </span>
+                    </div>
+                    <div className="p-3 bg-slate-50 rounded-2xl border border-slate-200">
+                      <span className="text-[10px] uppercase font-bold text-slate-400 block flex items-center gap-1">
+                        <Clock className="w-3 h-3 text-emerald-600" /> Last Active
+                      </span>
+                      <span className="text-xs font-bold text-[#052A51] mt-0.5 block">
+                        {customerProfile.lastActiveAt
+                          ? new Date(customerProfile.lastActiveAt).toLocaleDateString([], { month: "short", day: "numeric" })
+                          : "Active Now"}
+                      </span>
+                    </div>
+                  </div>
+
+                  {/* WhatsApp Cloud API Profile Field Notice */}
+                  <div className="p-3 bg-slate-50 rounded-2xl border border-slate-200 text-xs space-y-1">
+                    <span className="font-bold text-[#052A51] flex items-center gap-1.5 text-[11px] uppercase">
+                      <ShieldCheck className="h-3.5 w-3.5 text-emerald-600" /> Meta WhatsApp Cloud API Metadata
+                    </span>
+                    <p className="text-slate-600 text-[11px]">
+                      Display Name: <strong>{customerProfile.rawName || "Provided via incoming WhatsApp contact"}</strong>
+                    </p>
+                    <p className="text-[10px] text-slate-400">
+                      *Note: Meta Cloud API restricts direct access to private WhatsApp DP photos. Color-coded initials avatar is securely generated.
+                    </p>
+                  </div>
+
+                  {/* Customer Purchase & CRM Summary */}
+                  <div className="space-y-2">
+                    <h4 className="text-xs font-bold uppercase tracking-wider text-slate-400">
+                      IntriHub Purchase History
+                    </h4>
+                    <div className="grid grid-cols-2 gap-2">
+                      <div className="p-3 bg-white rounded-2xl border border-slate-200 shadow-2xs">
+                        <span className="text-[10px] uppercase font-bold text-slate-400 block">Total Orders</span>
+                        <span className="text-base font-extrabold text-[#052A51]">{customerProfile.totalOrders} Placed</span>
+                      </div>
+                      <div className="p-3 bg-white rounded-2xl border border-slate-200 shadow-2xs">
+                        <span className="text-[10px] uppercase font-bold text-slate-400 block">Lifetime Spend</span>
+                        <span className="text-base font-extrabold text-[#1E9E6B]">₹{customerProfile.lifetimeSpend.toLocaleString("en-IN")}</span>
+                      </div>
+                    </div>
+
+                    {/* Expandable Past Orders List */}
+                    <div className="space-y-1.5 pt-1">
+                      {customerProfile.orders && customerProfile.orders.length > 0 ? (
+                        customerProfile.orders.map((ord: any) => {
+                          const isExpanded = expandedProfileOrderId === ord.id;
+                          return (
+                            <div
+                              key={ord.id}
+                              className="bg-white rounded-xl border border-slate-200 p-3 text-xs shadow-2xs transition-all"
+                            >
+                              <div
+                                onClick={() => setExpandedProfileOrderId(isExpanded ? null : ord.id)}
+                                className="flex items-center justify-between cursor-pointer"
+                              >
+                                <div>
+                                  <span className="font-mono font-bold text-[#052A51]">
+                                    #{ord.id.slice(0, 8).toUpperCase()}
+                                  </span>
+                                  <span className="text-[10px] text-slate-400 ml-2">
+                                    {new Date(ord.createdAt).toLocaleDateString()}
+                                  </span>
+                                </div>
+                                <div className="flex items-center gap-2">
+                                  <span className="font-bold text-[#1E9E6B]">₹{ord.total?.toLocaleString("en-IN")}</span>
+                                  <span className="px-2 py-0.5 rounded-full text-[9px] font-extrabold uppercase bg-emerald-100 text-emerald-800">
+                                    {ord.orderStatus || "CONFIRMED"}
+                                  </span>
+                                  <ChevronRight
+                                    className={`w-3.5 h-3.5 text-slate-400 transition-transform ${
+                                      isExpanded ? "rotate-90" : ""
+                                    }`}
+                                  />
+                                </div>
+                              </div>
+
+                              {/* Expanded Order Items */}
+                              {isExpanded && ord.items && ord.items.length > 0 && (
+                                <div className="mt-2.5 pt-2.5 border-t border-slate-100 space-y-1 text-[11px]">
+                                  {ord.items.map((item: any) => (
+                                    <div key={item.id} className="flex justify-between items-center text-slate-600">
+                                      <span className="truncate max-w-[180px]">
+                                        {item.productName} ({item.boxQuantity} boxes)
+                                      </span>
+                                      <span className="font-mono font-bold text-slate-800">
+                                        ₹{item.totalPrice?.toLocaleString("en-IN")}
+                                      </span>
+                                    </div>
+                                  ))}
+                                </div>
+                              )}
+                            </div>
+                          );
+                        })
+                      ) : (
+                        <div className="py-4 text-center bg-slate-50 rounded-xl border border-dashed border-slate-200 text-xs text-slate-400">
+                          No orders yet
+                        </div>
+                      )}
+                    </div>
+                  </div>
+
+                  {/* Support Agent Private Notes */}
+                  <div className="space-y-2">
+                    <div className="flex items-center justify-between">
+                      <h4 className="text-xs font-bold uppercase tracking-wider text-slate-400">
+                        Agent Private Notes
+                      </h4>
+                      {profileSaveSuccess && (
+                        <span className="text-[11px] font-bold text-emerald-600 flex items-center gap-1">
+                          <CheckCircle className="h-3 w-3" /> Saved
+                        </span>
+                      )}
+                    </div>
+                    <textarea
+                      rows={3}
+                      value={profileNotes}
+                      onChange={(e) => setProfileNotes(e.target.value)}
+                      placeholder="Add private customer tags, architect firm details, payment preferences, or site location notes..."
+                      className="w-full p-3 bg-slate-50 border border-slate-200 rounded-xl text-xs text-slate-800 focus:bg-white focus:border-[#F26522] focus:outline-none"
+                    />
+                    <button
+                      onClick={handleSaveProfile}
+                      disabled={isSavingProfile}
+                      className="w-full py-2 bg-[#052A51] hover:bg-[#F26522] text-white rounded-xl text-xs font-bold transition-colors shadow-2xs cursor-pointer disabled:opacity-50"
+                    >
+                      {isSavingProfile ? "Saving Notes..." : "Save Customer Notes"}
+                    </button>
+                  </div>
+
+                  {/* Broadcast Groups Membership */}
+                  <div className="space-y-3 pb-4">
+                    <h4 className="text-xs font-bold uppercase tracking-wider text-slate-400">
+                      Broadcast Groups ({customerProfile.broadcastGroups.length})
+                    </h4>
+
+                    {customerProfile.broadcastGroups.length > 0 ? (
+                      <div className="flex flex-wrap gap-2">
+                        {customerProfile.broadcastGroups.map((bg) => (
+                          <span
+                            key={bg.groupId}
+                            className="inline-flex items-center gap-1.5 px-3 py-1 rounded-xl bg-orange-50 text-[#F26522] border border-orange-200 text-xs font-bold"
+                          >
+                            <Users className="h-3 w-3" />
+                            <span>{bg.groupName}</span>
+                          </span>
+                        ))}
+                      </div>
+                    ) : (
+                      <p className="text-xs text-slate-400 italic">Not a member of any broadcast group yet.</p>
+                    )}
+
+                    {/* Quick Add to Group */}
+                    {customerProfile.availableGroups.length > 0 && (
+                      <div className="flex items-center gap-2 pt-1">
+                        <select
+                          value={selectedAddToGroupId}
+                          onChange={(e) => setSelectedAddToGroupId(e.target.value)}
+                          className="flex-1 bg-white border border-slate-200 rounded-xl px-3 py-1.5 text-xs text-slate-800 focus:outline-none focus:border-[#F26522]"
+                        >
+                          <option value="">Select a Broadcast Group...</option>
+                          {customerProfile.availableGroups.map((g) => (
+                            <option key={g.id} value={g.id}>
+                              {g.name}
+                            </option>
+                          ))}
+                        </select>
+                        <button
+                          onClick={handleAddCustomerToGroup}
+                          disabled={!selectedAddToGroupId || isAddingToGroup}
+                          className="px-3.5 py-1.5 bg-[#1E9E6B] hover:bg-emerald-700 disabled:opacity-50 text-white rounded-xl text-xs font-bold transition-colors cursor-pointer"
+                        >
+                          {isAddingToGroup ? "Adding..." : "+ Add to Group"}
+                        </button>
+                      </div>
+                    )}
+                  </div>
+                </>
+              ) : null}
+            </div>
+          </aside>
+        </div>
+      )}
+
+      {/* ========================================================================= */}
+      {/* MODAL 1: CREATE BROADCAST GROUP */}
+      {/* ========================================================================= */}
+      {isCreateGroupModalOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/50 backdrop-blur-xs p-4">
+          <div className="w-full max-w-xl rounded-2xl bg-white p-6 shadow-2xl border border-slate-200 space-y-5 animate-in fade-in zoom-in-95 duration-150 max-h-[90vh] flex flex-col justify-between">
+            <div className="flex items-center justify-between border-b border-slate-100 pb-3">
+              <div className="flex items-center gap-2.5">
+                <div className="h-9 w-9 rounded-xl bg-orange-50 border border-orange-200 flex items-center justify-center text-[#F26522]">
+                  <Users className="h-5 w-5" />
+                </div>
+                <div>
+                  <h3 className="text-base font-bold text-[#052A51]">Create New Broadcast Group</h3>
+                  <p className="text-xs text-slate-500">Create a named list of WhatsApp recipients for bulk campaigns</p>
+                </div>
+              </div>
+              <button
+                onClick={() => setIsCreateGroupModalOpen(false)}
+                className="p-1.5 text-slate-400 hover:text-slate-700 rounded-lg hover:bg-slate-100 transition-colors cursor-pointer"
+              >
+                <X className="h-4 w-4" />
+              </button>
+            </div>
+
+            {createGroupError && (
+              <div className="p-3 rounded-xl bg-red-50 border border-red-200 text-xs font-semibold text-red-600">
+                {createGroupError}
+              </div>
+            )}
+
+            <form onSubmit={handleCreateGroup} className="space-y-4 flex-1 overflow-y-auto pr-1">
+              <div>
+                <label className="block text-xs font-bold text-slate-700 mb-1.5 uppercase tracking-wider">
+                  Group Name <span className="text-red-500">*</span>
+                </label>
+                <input
+                  type="text"
+                  required
+                  value={newGroupName}
+                  onChange={(e) => setNewGroupName(e.target.value)}
+                  placeholder="e.g. South Bangalore Builders & Architects"
+                  className="w-full rounded-xl border border-slate-300 bg-white px-4 py-2.5 text-sm text-slate-900 focus:border-[#F26522] focus:outline-none"
+                  autoFocus
+                />
+              </div>
+
+              <div>
+                <label className="block text-xs font-bold text-slate-700 mb-1.5 uppercase tracking-wider">
+                  Group Description (Optional)
+                </label>
+                <input
+                  type="text"
+                  value={newGroupDescription}
+                  onChange={(e) => setNewGroupDescription(e.target.value)}
+                  placeholder="e.g. Tile contractors receiving weekly wholesale price drops"
+                  className="w-full rounded-xl border border-slate-300 bg-white px-4 py-2.5 text-sm text-slate-900 focus:border-[#F26522] focus:outline-none"
+                />
+              </div>
+
+              {/* Choose Member Source Mode */}
+              <div className="space-y-2 pt-2 border-t border-slate-100">
+                <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider">
+                  Add Initial Members
+                </label>
+                <div className="grid grid-cols-2 gap-2">
+                  <button
+                    type="button"
+                    onClick={() => setCreateGroupMemberMode("crm")}
+                    className={`py-2 px-3 rounded-xl text-xs font-bold border transition-all cursor-pointer ${
+                      createGroupMemberMode === "crm"
+                        ? "bg-[#052A51] border-[#052A51] text-white shadow-2xs"
+                        : "bg-slate-50 border-slate-200 text-slate-600 hover:bg-slate-100"
+                    }`}
+                  >
+                    Select from CRM & Inquiries ({chats.length})
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setCreateGroupMemberMode("paste")}
+                    className={`py-2 px-3 rounded-xl text-xs font-bold border transition-all cursor-pointer ${
+                      createGroupMemberMode === "paste"
+                        ? "bg-[#052A51] border-[#052A51] text-white shadow-2xs"
+                        : "bg-slate-50 border-slate-200 text-slate-600 hover:bg-slate-100"
+                    }`}
+                  >
+                    Paste Phone Numbers
+                  </button>
+                </div>
+
+                {createGroupMemberMode === "crm" ? (
+                  <div className="space-y-2 pt-2">
+                    <div className="flex items-center justify-between gap-2">
+                      <div className="relative flex-1">
+                        <Search className="w-3.5 h-3.5 absolute left-3 top-2.5 text-slate-400" />
+                        <input
+                          type="text"
+                          placeholder="Filter CRM contacts..."
+                          value={crmMemberSearch}
+                          onChange={(e) => setCrmMemberSearch(e.target.value)}
+                          className="w-full bg-slate-50 border border-slate-200 rounded-xl pl-8 pr-3 py-1.5 text-xs"
+                        />
+                      </div>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          if (selectedCrmPhones.length === chats.length) {
+                            setSelectedCrmPhones([]);
+                          } else {
+                            setSelectedCrmPhones(chats.map((c) => c.customer_phone));
+                          }
+                        }}
+                        className="text-xs font-bold text-[#F26522] hover:underline cursor-pointer"
+                      >
+                        {selectedCrmPhones.length === chats.length ? "Deselect All" : "Select All"}
+                      </button>
+                    </div>
+
+                    <div className="max-h-48 overflow-y-auto border border-slate-200 rounded-xl p-2 divide-y divide-slate-100">
+                      {filteredCrmContacts.map((c) => {
+                        const isSelected = selectedCrmPhones.includes(c.customer_phone);
+                        return (
+                          <label
+                            key={c.id}
+                            className="flex items-center justify-between p-2 hover:bg-slate-50 rounded-lg cursor-pointer text-xs"
+                          >
+                            <div className="flex items-center gap-2.5">
+                              <input
+                                type="checkbox"
+                                checked={isSelected}
+                                onChange={(e) => {
+                                  if (e.target.checked) {
+                                    setSelectedCrmPhones((prev) => [...prev, c.customer_phone]);
+                                  } else {
+                                    setSelectedCrmPhones((prev) => prev.filter((p) => p !== c.customer_phone));
+                                  }
+                                }}
+                                className="rounded text-[#F26522] focus:ring-[#F26522]"
+                              />
+                              <div>
+                                <p className="font-bold text-[#052A51]">{c.customer_name || "Customer"}</p>
+                                <p className="text-[11px] text-slate-400 font-mono">{c.customer_phone}</p>
+                              </div>
+                            </div>
+                            <span className="text-[10px] text-slate-400">
+                              {new Date(c.last_message_at).toLocaleDateString()}
+                            </span>
+                          </label>
+                        );
+                      })}
+                    </div>
+                  </div>
+                ) : (
+                  <div className="space-y-1.5 pt-2">
+                    <textarea
+                      rows={5}
+                      value={pastedNumbers}
+                      onChange={(e) => setPastedNumbers(e.target.value)}
+                      placeholder="Paste mobile numbers separated by commas or on new lines:&#10;9876543210&#10;919876543210&#10;+91 98765 43210"
+                      className="w-full rounded-xl border border-slate-300 bg-white p-3 text-xs font-mono text-slate-900 focus:border-[#F26522] focus:outline-none"
+                    />
+                    <p className="text-[11px] text-slate-400">
+                      *Numbers will be automatically sanitized into international format (+91).
+                    </p>
+                  </div>
+                )}
+              </div>
+
+              <div className="pt-4 border-t border-slate-100 flex items-center justify-end gap-3">
+                <button
+                  type="button"
+                  onClick={() => setIsCreateGroupModalOpen(false)}
+                  className="px-4 py-2 text-xs font-bold text-slate-600 hover:text-slate-900 cursor-pointer"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  disabled={isSubmittingGroup || !newGroupName.trim()}
+                  className="inline-flex items-center gap-2 rounded-xl bg-[#F26522] hover:bg-[#d95a1e] px-5 py-2.5 text-xs font-bold text-white shadow-md shadow-[#F26522]/20 transition-all disabled:opacity-50 cursor-pointer"
+                >
+                  {isSubmittingGroup ? <Loader2 className="h-4 w-4 animate-spin" /> : <Check className="h-4 w-4" />}
+                  <span>Create Group</span>
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* ========================================================================= */}
+      {/* MODAL 2: ADD MEMBERS TO EXISTING GROUP */}
+      {/* ========================================================================= */}
+      {isAddMembersModalOpen && selectedGroup && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/50 backdrop-blur-xs p-4">
+          <div className="w-full max-w-lg rounded-2xl bg-white p-6 shadow-2xl border border-slate-200 space-y-4 animate-in fade-in zoom-in-95 duration-150">
+            <div className="flex items-center justify-between border-b border-slate-100 pb-3">
+              <div>
+                <h3 className="text-base font-bold text-[#052A51]">Add Members to {selectedGroup.name}</h3>
+                <p className="text-xs text-slate-500">Paste phone numbers or pick from customer CRM</p>
+              </div>
+              <button
+                onClick={() => setIsAddMembersModalOpen(false)}
+                className="p-1.5 text-slate-400 hover:text-slate-700 rounded-lg hover:bg-slate-100 transition-colors cursor-pointer"
+              >
+                <X className="h-4 w-4" />
+              </button>
+            </div>
+
+            <form onSubmit={handleAddMembersToGroup} className="space-y-4">
+              <div className="grid grid-cols-2 gap-2">
+                <button
+                  type="button"
+                  onClick={() => setAddMembersMode("paste")}
+                  className={`py-2 px-3 rounded-xl text-xs font-bold border transition-all cursor-pointer ${
+                    addMembersMode === "paste"
+                      ? "bg-[#052A51] border-[#052A51] text-white"
+                      : "bg-slate-50 border-slate-200 text-slate-600"
+                  }`}
+                >
+                  Paste Numbers
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setAddMembersMode("crm")}
+                  className={`py-2 px-3 rounded-xl text-xs font-bold border transition-all cursor-pointer ${
+                    addMembersMode === "crm"
+                      ? "bg-[#052A51] border-[#052A51] text-white"
+                      : "bg-slate-50 border-slate-200 text-slate-600"
+                  }`}
+                >
+                  Choose from CRM
+                </button>
+              </div>
+
+              {addMembersMode === "paste" ? (
+                <textarea
+                  rows={5}
+                  value={addMembersRawInput}
+                  onChange={(e) => setAddMembersRawInput(e.target.value)}
+                  placeholder="Paste phone numbers (one per line or comma-separated):&#10;9876543210&#10;919876543210"
+                  className="w-full rounded-xl border border-slate-300 bg-white p-3 text-xs font-mono text-slate-900 focus:border-[#F26522] focus:outline-none"
+                  autoFocus
+                />
+              ) : (
+                <div className="max-h-48 overflow-y-auto border border-slate-200 rounded-xl p-2 divide-y divide-slate-100">
+                  {chats.map((c) => {
+                    const isSelected = addMembersCrmPhones.includes(c.customer_phone);
+                    return (
+                      <label key={c.id} className="flex items-center justify-between p-2 hover:bg-slate-50 rounded-lg cursor-pointer text-xs">
+                        <div className="flex items-center gap-2">
+                          <input
+                            type="checkbox"
+                            checked={isSelected}
+                            onChange={(e) => {
+                              if (e.target.checked) setAddMembersCrmPhones((prev) => [...prev, c.customer_phone]);
+                              else setAddMembersCrmPhones((prev) => prev.filter((p) => p !== c.customer_phone));
+                            }}
+                            className="rounded text-[#F26522]"
+                          />
+                          <span className="font-bold text-[#052A51]">{c.customer_name || c.customer_phone}</span>
+                        </div>
+                        <span className="text-[11px] text-slate-400 font-mono">{c.customer_phone}</span>
+                      </label>
+                    );
+                  })}
+                </div>
+              )}
+
+              <div className="pt-3 border-t border-slate-100 flex items-center justify-end gap-3">
+                <button
+                  type="button"
+                  onClick={() => setIsAddMembersModalOpen(false)}
+                  className="px-4 py-2 text-xs font-bold text-slate-600 hover:text-slate-900 cursor-pointer"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  disabled={isSubmittingMembers}
+                  className="inline-flex items-center gap-2 rounded-xl bg-[#F26522] hover:bg-[#d95a1e] px-5 py-2.5 text-xs font-bold text-white shadow-md shadow-[#F26522]/20 transition-all cursor-pointer"
+                >
+                  {isSubmittingMembers ? <Loader2 className="h-4 w-4 animate-spin" /> : <UserPlus className="h-4 w-4" />}
+                  <span>Add to Group</span>
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* ========================================================================= */}
+      {/* MODAL 3: BROADCAST MESSAGE COMPOSER & CAMPAIGN LAUNCHER */}
+      {/* ========================================================================= */}
+      {isBroadcastModalOpen && broadcastTargetGroup && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/50 backdrop-blur-xs p-4">
+          <div className="w-full max-w-xl rounded-2xl bg-white p-6 shadow-2xl border border-slate-200 space-y-5 animate-in fade-in zoom-in-95 duration-150 max-h-[92vh] flex flex-col justify-between">
+            <div className="flex items-center justify-between border-b border-slate-100 pb-3">
+              <div className="flex items-center gap-2.5">
+                <div className="h-9 w-9 rounded-xl bg-orange-100 text-[#F26522] flex items-center justify-center">
+                  <Radio className="h-5 w-5" />
+                </div>
+                <div>
+                  <h3 className="text-base font-bold text-[#052A51]">
+                    Broadcast to {broadcastTargetGroup.name}
+                  </h3>
+                  <p className="text-xs text-slate-500">
+                    Target Audience: <strong className="text-[#052A51]">{(broadcastTargetGroup as any).memberCount || (broadcastTargetGroup as BroadcastGroupDetail).members?.length || 0} Verified Recipients</strong>
+                  </p>
+                </div>
+              </div>
+              <button
+                onClick={() => !isSendingBroadcast && setIsBroadcastModalOpen(false)}
+                disabled={isSendingBroadcast}
+                className="p-1.5 text-slate-400 hover:text-slate-700 rounded-lg hover:bg-slate-100 transition-colors cursor-pointer"
+              >
+                <X className="h-4 w-4" />
+              </button>
+            </div>
+
+            <div className="space-y-4 flex-1 overflow-y-auto pr-1">
+              {/* 24-Hour Rule Explanation Banner */}
+              <div className="p-3 bg-amber-50 border border-amber-200 rounded-xl text-xs space-y-1 text-amber-900">
+                <div className="flex items-center gap-1.5 font-bold text-amber-800">
+                  <AlertTriangle className="h-4 w-4 text-amber-600" />
+                  <span>Meta 24-Hour Customer Window & Template Rule</span>
+                </div>
+                <p className="text-[11px] leading-relaxed">
+                  WhatsApp allows free-form text to contacts who messaged within 24 hours. For all other contacts, Meta requires a pre-approved template message.
+                </p>
+              </div>
+
+              {/* Message Textarea */}
+              <div>
+                <label className="block text-xs font-bold text-slate-700 mb-1.5 uppercase tracking-wider">
+                  Broadcast Message Content
+                </label>
+                <textarea
+                  rows={4}
+                  value={broadcastMessageText}
+                  onChange={(e) => setBroadcastMessageText(e.target.value)}
+                  placeholder="Type promotional update, bulk pricing announcement, or product launch message..."
+                  className="w-full rounded-xl border border-slate-300 bg-white p-3 text-xs leading-relaxed text-slate-900 focus:border-[#F26522] focus:outline-none"
+                />
+                <div className="flex justify-between text-[11px] text-slate-400 mt-1">
+                  <span>Supports standard WhatsApp formatting (*bold*, _italic_)</span>
+                  <span>{broadcastMessageText.length} characters</span>
+                </div>
+              </div>
+
+              {/* Media Attachment Selector */}
+              <div className="space-y-2">
+                <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider">
+                  Optional Media Attachment
+                </label>
+                <div className="flex items-center gap-2">
+                  <input
+                    type="file"
+                    id="broadcastMediaInput"
+                    accept="image/png,image/jpeg,image/webp,application/pdf"
+                    className="hidden"
+                    onChange={(e) => {
+                      const f = e.target.files?.[0];
+                      if (f) {
+                        setBroadcastSelectedMedia(f);
+                        if (f.type.startsWith("image/")) setBroadcastMediaPreview(URL.createObjectURL(f));
+                        else setBroadcastMediaPreview(null);
+                        setBroadcastMediaCaption(f.name.replace(/\.[^/.]+$/, ""));
+                      }
+                      e.target.value = "";
+                    }}
+                  />
+                  <button
+                    type="button"
+                    onClick={() => document.getElementById("broadcastMediaInput")?.click()}
+                    className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-xl text-xs font-bold transition-colors cursor-pointer"
+                  >
+                    <Paperclip className="h-3.5 w-3.5" />
+                    <span>{broadcastSelectedMedia ? "Change Attachment" : "Attach PDF / Photo"}</span>
+                  </button>
+                  {broadcastSelectedMedia && (
+                    <div className="flex items-center gap-2 text-xs text-slate-700 bg-orange-50 px-2.5 py-1 rounded-xl border border-orange-200 truncate">
+                      <FileText className="h-3.5 w-3.5 text-[#F26522]" />
+                      <span className="truncate max-w-[200px]">{broadcastSelectedMedia.name}</span>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setBroadcastSelectedMedia(null);
+                          setBroadcastMediaPreview(null);
+                        }}
+                        className="text-slate-400 hover:text-red-600"
+                      >
+                        <X className="h-3.5 w-3.5" />
+                      </button>
+                    </div>
+                  )}
+                </div>
+              </div>
+
+              {/* Fallback Template Selector */}
+              <div className="space-y-1.5 pt-2 border-t border-slate-100">
+                <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider">
+                  Fallback Meta Approved Template (for out-of-window contacts)
+                </label>
+                <select
+                  value={broadcastTemplateName}
+                  onChange={(e) => setBroadcastTemplateName(e.target.value)}
+                  className="w-full bg-white border border-slate-300 rounded-xl px-3 py-2 text-xs text-slate-900 focus:outline-none focus:border-[#F26522]"
+                >
+                  {templates.map((tpl) => (
+                    <option key={tpl.name} value={tpl.name}>
+                      {tpl.name} ({tpl.category} • {tpl.status})
+                    </option>
+                  ))}
+                </select>
+              </div>
+
+              {/* High Volume Safety Check (if > 20 members) */}
+              {((broadcastTargetGroup as any).memberCount || (broadcastTargetGroup as BroadcastGroupDetail).members?.length || 0) > 20 && (
+                <div className="p-3 bg-slate-50 border border-slate-200 rounded-xl space-y-2">
+                  <label className="flex items-start gap-2 cursor-pointer text-xs text-slate-700">
+                    <input
+                      type="checkbox"
+                      checked={broadcastSafetyConfirmed}
+                      onChange={(e) => setBroadcastSafetyConfirmed(e.target.checked)}
+                      className="mt-0.5 rounded text-[#F26522] focus:ring-[#F26522]"
+                    />
+                    <span className="font-bold text-[#052A51]">
+                      Safety Confirmation: I confirm dispatching this broadcast message to {((broadcastTargetGroup as any).memberCount || (broadcastTargetGroup as BroadcastGroupDetail).members?.length || 0)} recipients sequentially.
+                    </span>
+                  </label>
+                </div>
+              )}
+
+              {/* Sending Progress Message */}
+              {isSendingBroadcast && (
+                <div className="p-4 bg-orange-50 border border-orange-200 rounded-xl text-center space-y-2 text-xs">
+                  <Loader2 className="h-6 w-6 animate-spin mx-auto text-[#F26522]" />
+                  <p className="font-bold text-[#052A51]">{broadcastProgressText || "Broadcasting..."}</p>
+                  <p className="text-[10px] text-slate-400">Please do not close this window during dispatch.</p>
+                </div>
+              )}
+            </div>
+
+            <div className="pt-3 border-t border-slate-100 flex items-center justify-end gap-3">
+              <button
+                type="button"
+                onClick={() => setIsBroadcastModalOpen(false)}
+                disabled={isSendingBroadcast}
+                className="px-4 py-2 text-xs font-bold text-slate-600 hover:text-slate-900 cursor-pointer disabled:opacity-50"
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                onClick={handleExecuteBroadcast}
+                disabled={
+                  isSendingBroadcast ||
+                  (!broadcastMessageText.trim() && !broadcastSelectedMedia && !broadcastTemplateName) ||
+                  (((broadcastTargetGroup as any).memberCount || (broadcastTargetGroup as BroadcastGroupDetail).members?.length || 0) > 20 && !broadcastSafetyConfirmed)
+                }
+                className="inline-flex items-center gap-2 rounded-xl bg-[#F26522] hover:bg-[#d95a1e] px-5 py-2.5 text-xs font-bold text-white shadow-md shadow-[#F26522]/20 transition-all disabled:opacity-50 cursor-pointer"
+              >
+                {isSendingBroadcast ? (
+                  <>
+                    <Loader2 className="h-4 w-4 animate-spin" />
+                    <span>Dispatching...</span>
+                  </>
+                ) : (
+                  <>
+                    <Send className="h-4 w-4" />
+                    <span>Launch Broadcast</span>
+                  </>
+                )}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ========================================================================= */}
+      {/* MODAL 4: BROADCAST RESULTS SUMMARY REPORT */}
+      {/* ========================================================================= */}
+      {broadcastResultSummary && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/50 backdrop-blur-xs p-4">
+          <div className="w-full max-w-lg rounded-2xl bg-white p-6 shadow-2xl border border-slate-200 space-y-4 animate-in fade-in zoom-in-95 duration-150 max-h-[85vh] flex flex-col justify-between">
+            <div className="flex items-center justify-between border-b border-slate-100 pb-3">
+              <div className="flex items-center gap-2">
+                <div className="h-8 w-8 rounded-xl bg-emerald-100 text-[#1E9E6B] flex items-center justify-center">
+                  <CheckCircle className="h-5 w-5" />
+                </div>
+                <div>
+                  <h3 className="text-base font-bold text-[#052A51]">Broadcast Execution Completed</h3>
+                  <p className="text-xs text-slate-500">Summary of message deliveries via Meta Cloud API</p>
+                </div>
+              </div>
+              <button
+                onClick={() => setBroadcastResultSummary(null)}
+                className="p-1.5 text-slate-400 hover:text-slate-700 rounded-lg hover:bg-slate-100 transition-colors cursor-pointer"
+              >
+                <X className="h-4 w-4" />
+              </button>
+            </div>
+
+            <div className="grid grid-cols-3 gap-3 text-center">
+              <div className="p-3 bg-emerald-50 border border-emerald-200 rounded-xl">
+                <span className="text-[10px] uppercase font-bold text-emerald-600 block">Delivered</span>
+                <span className="text-xl font-extrabold text-emerald-800">{broadcastResultSummary.successCount}</span>
+              </div>
+              <div className="p-3 bg-amber-50 border border-amber-200 rounded-xl">
+                <span className="text-[10px] uppercase font-bold text-amber-600 block">Skipped (24h)</span>
+                <span className="text-xl font-extrabold text-amber-800">{broadcastResultSummary.skippedCount}</span>
+              </div>
+              <div className="p-3 bg-red-50 border border-red-200 rounded-xl">
+                <span className="text-[10px] uppercase font-bold text-red-600 block">Failed</span>
+                <span className="text-xl font-extrabold text-red-800">{broadcastResultSummary.failedCount}</span>
+              </div>
+            </div>
+
+            {broadcastResultSummary.entries && broadcastResultSummary.entries.length > 0 && (
+              <div className="flex-1 overflow-y-auto max-h-52 border border-slate-200 rounded-xl p-2 divide-y divide-slate-100 text-xs">
+                {broadcastResultSummary.entries.map((entry: any, i: number) => (
+                  <div key={i} className="py-2 flex items-center justify-between">
+                    <div className="flex items-center gap-2">
+                      <span className="font-mono text-[#052A51]">+{entry.phoneNumber}</span>
+                      {entry.customerName && <span className="text-slate-400">({entry.customerName})</span>}
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <span
+                        className={`text-[10px] px-2 py-0.5 rounded-full font-bold uppercase ${
+                          entry.status === "sent"
+                            ? "bg-emerald-100 text-emerald-800"
+                            : entry.status === "skipped"
+                            ? "bg-amber-100 text-amber-800"
+                            : "bg-red-100 text-red-800"
+                        }`}
+                      >
+                        {entry.status}
+                      </span>
+                      {entry.errorMessage && (
+                        <span className="text-[10px] text-red-500 max-w-[150px] truncate" title={entry.errorMessage}>
+                          {entry.errorMessage}
+                        </span>
+                      )}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+
+            <div className="pt-3 border-t border-slate-100 flex justify-end">
+              <button
+                onClick={() => setBroadcastResultSummary(null)}
+                className="px-5 py-2 bg-[#052A51] hover:bg-[#F26522] text-white rounded-xl text-xs font-bold transition-colors cursor-pointer"
+              >
+                Close Report
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ========================================================================= */}
+      {/* MODAL 5: NEW 1-ON-1 CHAT DIALOG */}
+      {/* ========================================================================= */}
       {isNewChatOpen && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/50 backdrop-blur-xs p-4">
           <div className="w-full max-w-md rounded-2xl bg-white p-6 shadow-2xl border border-slate-200 space-y-5 animate-in fade-in zoom-in-95 duration-150">
@@ -1686,7 +3576,7 @@ export default function IntrihubHelpAutobotDesk({ onLogout }: IntrihubHelpAutobo
               </div>
               <button
                 onClick={() => setIsNewChatOpen(false)}
-                className="p-1.5 text-slate-400 hover:text-slate-700 rounded-lg hover:bg-slate-100 transition-colors"
+                className="p-1.5 text-slate-400 hover:text-slate-700 rounded-lg hover:bg-slate-100 transition-colors cursor-pointer"
               >
                 <X className="h-4 w-4" />
               </button>
@@ -1738,7 +3628,7 @@ export default function IntrihubHelpAutobotDesk({ onLogout }: IntrihubHelpAutobo
                   <button
                     type="button"
                     onClick={() => setNewMode("human")}
-                    className={`flex items-center justify-center gap-1.5 py-2 px-3 rounded-xl text-xs font-bold border transition-all ${
+                    className={`flex items-center justify-center gap-1.5 py-2 px-3 rounded-xl text-xs font-bold border transition-all cursor-pointer ${
                       newMode === "human"
                         ? "bg-[#1E9E6B] border-[#1E9E6B] text-white shadow-2xs"
                         : "bg-slate-50 border-slate-200 text-slate-600 hover:bg-slate-100"
@@ -1749,45 +3639,45 @@ export default function IntrihubHelpAutobotDesk({ onLogout }: IntrihubHelpAutobo
                   <button
                     type="button"
                     onClick={() => setNewMode("ai")}
-                    className={`flex items-center justify-center gap-1.5 py-2 px-3 rounded-xl text-xs font-bold border transition-all ${
+                    className={`flex items-center justify-center gap-1.5 py-2 px-3 rounded-xl text-xs font-bold border transition-all cursor-pointer ${
                       newMode === "ai"
                         ? "bg-[#F26522] border-[#F26522] text-white shadow-2xs"
                         : "bg-slate-50 border-slate-200 text-slate-600 hover:bg-slate-100"
                     }`}
                   >
-                    <Sparkles className="w-3.5 h-3.5" /> Instant Desk
+                    <Sparkles className="w-3.5 h-3.5" /> Instant AI
                   </button>
                 </div>
               </div>
 
               <div>
                 <label className="block text-xs font-bold text-slate-700 mb-1.5 uppercase tracking-wider">
-                  First Message (Optional)
+                  Initial Message (Optional)
                 </label>
                 <textarea
                   rows={3}
                   value={newInitialMessage}
                   onChange={(e) => setNewInitialMessage(e.target.value)}
-                  placeholder="Namaste sir! Intrihub se mai aapke construction requirement ke liye contact kar raha hoon..."
-                  className="w-full rounded-xl border border-slate-300 bg-white p-3 text-xs leading-relaxed text-slate-800 focus:border-[#F26522] focus:outline-none"
+                  placeholder="Namaste! Intrihub desk se aapke sath quotation share kar rahe hain..."
+                  className="w-full rounded-xl border border-slate-300 bg-white p-3 text-xs text-slate-900 focus:border-[#F26522] focus:outline-none"
                 />
               </div>
 
-              <div className="pt-2 flex items-center justify-end gap-2.5">
+              <div className="pt-2 flex items-center justify-end gap-3">
                 <button
                   type="button"
                   onClick={() => setIsNewChatOpen(false)}
-                  className="px-4 py-2 rounded-xl text-xs font-bold text-slate-600 hover:bg-slate-100 transition-colors"
+                  className="px-4 py-2 text-xs font-bold text-slate-600 hover:text-slate-900 cursor-pointer"
                 >
                   Cancel
                 </button>
                 <button
                   type="submit"
                   disabled={isCreatingChat || !newPhone.trim()}
-                  className="inline-flex items-center gap-2 rounded-xl bg-[#F26522] hover:bg-[#d95a1e] px-5 py-2 text-xs font-bold text-white shadow-md shadow-[#F26522]/20 transition-all disabled:opacity-50"
+                  className="inline-flex items-center gap-2 rounded-xl bg-[#F26522] hover:bg-[#d95a1e] px-5 py-2.5 text-xs font-bold text-white shadow-md shadow-[#F26522]/20 transition-all disabled:opacity-50 cursor-pointer"
                 >
-                  {isCreatingChat ? <Loader2 className="w-4 h-4 animate-spin" /> : <Send className="w-4 h-4" />}
-                  <span>Start WhatsApp Chat</span>
+                  {isCreatingChat ? <Loader2 className="h-4 w-4 animate-spin" /> : <Send className="h-4 w-4" />}
+                  <span>Start Conversation</span>
                 </button>
               </div>
             </form>

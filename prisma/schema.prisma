@@ -1246,3 +1246,72 @@ model GuidePost {
   @@index([status, publishedAt])
   @@index([category])
 }
+
+// ----------------------------------------------------
+// 18. WhatsApp Broadcast Groups & Campaign Logs
+// ----------------------------------------------------
+model BroadcastGroup {
+  id          String                 @id @default(cuid())
+  name        String
+  description String?
+  createdBy   String                 @default("Support Team")
+  createdAt   DateTime               @default(now())
+  updatedAt   DateTime               @updatedAt
+
+  members     BroadcastGroupMember[]
+  logs        BroadcastLog[]
+
+  @@index([name])
+  @@index([createdAt])
+}
+
+model BroadcastGroupMember {
+  id           String         @id @default(cuid())
+  groupId      String
+  phoneNumber  String         // E.164 clean phone e.g. "919876543210"
+  customerName String?
+  addedAt      DateTime       @default(now())
+
+  group        BroadcastGroup @relation(fields: [groupId], references: [id], onDelete: Cascade)
+
+  @@unique([groupId, phoneNumber])
+  @@index([groupId])
+  @@index([phoneNumber])
+}
+
+model BroadcastLog {
+  id               String              @id @default(cuid())
+  groupId          String
+  messageContent   String              @db.Text
+  mediaUrl         String?
+  mediaType        String?             // "image" | "document"
+  templateName     String?
+  sentAt           DateTime            @default(now())
+  totalRecipients  Int                 @default(0)
+  successCount     Int                 @default(0)
+  failedCount      Int                 @default(0)
+  skippedCount     Int                 @default(0)
+  sentBy           String              @default("Support Agent")
+
+  group            BroadcastGroup      @relation(fields: [groupId], references: [id], onDelete: Cascade)
+  entries          BroadcastLogEntry[]
+
+  @@index([groupId])
+  @@index([sentAt])
+}
+
+model BroadcastLogEntry {
+  id             String       @id @default(cuid())
+  broadcastLogId String
+  phoneNumber    String
+  customerName   String?
+  status         String       // "sent" | "failed" | "skipped"
+  errorMessage   String?      @db.Text
+  sentAt         DateTime     @default(now())
+
+  broadcastLog   BroadcastLog @relation(fields: [broadcastLogId], references: [id], onDelete: Cascade)
+
+  @@index([broadcastLogId])
+  @@index([phoneNumber])
+  @@index([status])
+}
