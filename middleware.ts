@@ -55,8 +55,8 @@ export function middleware(request: NextRequest) {
     });
   }
 
-  // 2. Anti-Scraping & Automated Bot Blocker on Data API Endpoints
-  if (pathname.startsWith("/api/")) {
+  // 2. Anti-Scraping & Automated Bot Blocker on Data API Endpoints (Exempt webhooks like Meta WhatsApp)
+  if (pathname.startsWith("/api/") && !pathname.startsWith("/api/webhook")) {
     if (SCRAPER_BOT_REGEX.test(userAgent)) {
       console.warn(
         `[SEC-ALERT] [BOT_SCRAPER_BLOCKED] agent="${userAgent}" path="${pathname}" ip=${clientIp}`
