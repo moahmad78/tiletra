@@ -16,6 +16,7 @@ import {
 import { useAuthStore } from "../src/store/authStore";
 import { useCartStore } from "../src/store/cartStore";
 import { useNotificationStore } from "../src/store/notificationStore";
+import { useLocationStore } from "../src/store/locationStore";
 import { socketService } from "../src/store/socketStore";
 import { usePushNotifications } from "../src/hooks/usePushNotifications";
 import AnimatedSplashScreen from "../src/components/AnimatedSplashScreen";
@@ -86,6 +87,7 @@ export default function RootLayout() {
         initAuth(),
         loadCart(),
         useNotificationStore.getState().fetchUnreadCount().catch(() => {}),
+        useLocationStore.getState().prefetchLocation().catch(() => {}),
         // Minimum natural sequence duration so user experiences the active running road and intro
         new Promise((resolve) => setTimeout(resolve, 2200)),
       ]);

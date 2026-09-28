@@ -30,6 +30,7 @@ import * as Location from "expo-location";
 import { Address } from "../types";
 import { COLORS, SPACING, RADIUS, SHADOWS } from "../constants/theme";
 import { useAuthStore } from "../store/authStore";
+import { useLocationStore } from "../store/locationStore";
 import { GOOGLE_MAPS_API_KEY } from "../constants/config";
 import { MapPickerModal, PickedLocation } from "./MapPickerModal";
 import { apiClient } from "../api/client";
@@ -216,14 +217,14 @@ export const AddressModal: React.FC<AddressModalProps> = ({ visible, onClose, on
     onClose();
   };
 
-  // ── 1-CLICK AUTOMATIC ADDRESS DETECTION (GPS + GOOGLE MAPS) ──
+  // ── INSTANT ZERO-WAIT AUTOMATIC ADDRESS DETECTION ──
   const handleUseCurrentLocation = async () => {
     try {
       setDetectingLocation(true);
       setError("");
 
-      const { status } = await Location.requestForegroundPermissionsAsync();
-      if (status !== "granted") {
+      const detected = await useLocationStore.getState().getQuickLocation();
+      if (!detected) {
         Alert.alert(
           "Location Permission",
           "Please allow location access to auto-detect your delivery address via Google Maps."
@@ -232,84 +233,18 @@ export const AddressModal: React.FC<AddressModalProps> = ({ visible, onClose, on
         return;
       }
 
-      const position = await Location.getCurrentPositionAsync({
-        accuracy: Location.Accuracy.Balanced,
-      });
-      const { latitude, longitude } = position.coords;
-
-      let detectedStreet = "";
-      let detectedArea = "";
-      let detectedCity = "Bengaluru";
-      let detectedState = "Karnataka";
-      let detectedPincode = "";
-      let detectedHouse = "";
-      let detectedLandmark = "";
-
-      // 1. Google Maps Geocoding API
-      let googleSuccess = false;
-      if (GOOGLE_MAPS_API_KEY) {
-        try {
-          const res = await fetch(
-            `https://maps.googleapis.com/maps/api/geocode/json?latlng=${latitude},${longitude}&key=${GOOGLE_MAPS_API_KEY}&region=in`
-          );
-          const data = await res.json();
-          if (data.status === "OK" && data.results?.[0]) {
-            const result = data.results[0];
-            for (const comp of result.address_components || []) {
-              const types = comp.types || [];
-              if (types.includes("street_number")) detectedHouse = comp.long_name;
-              if (types.includes("route")) detectedStreet = comp.long_name;
-              if (types.includes("sublocality_level_1") || types.includes("neighborhood")) {
-                detectedArea = comp.long_name;
-              } else if (types.includes("sublocality_level_2") && !detectedArea) {
-                detectedArea = comp.long_name;
-              }
-              if (types.includes("point_of_interest") || types.includes("establishment")) {
-                detectedLandmark = comp.long_name;
-              }
-              if (types.includes("postal_code")) detectedPincode = comp.long_name;
-              if (types.includes("locality")) {
-                detectedCity = comp.long_name;
-              } else if (!detectedCity && (types.includes("administrative_area_level_2") || types.includes("postal_town"))) {
-                detectedCity = comp.long_name;
-              }
-              if (types.includes("administrative_area_level_1")) detectedState = comp.long_name;
-            }
-            googleSuccess = true;
-          }
-        } catch (gErr) {
-          console.warn("Google reverse-geocode failed, using native:", gErr);
-        }
-      }
-
-      // 2. Fallback to native reverse geocode if needed
-      if (!googleSuccess || (!detectedStreet && !detectedArea)) {
-        try {
-          const [nativeAddr] = await Location.reverseGeocodeAsync({ latitude, longitude });
-          if (nativeAddr) {
-            detectedStreet = nativeAddr.street || nativeAddr.name || detectedStreet;
-            detectedArea = nativeAddr.subregion || nativeAddr.district || detectedArea;
-            if (nativeAddr.city) detectedCity = nativeAddr.city;
-            if (nativeAddr.region) detectedState = nativeAddr.region;
-            if (nativeAddr.postalCode) detectedPincode = nativeAddr.postalCode;
-          }
-        } catch (nErr) {
-          console.warn("Native reverse-geocode error:", nErr);
-        }
-      }
-
-      if (detectedStreet) setStreet(detectedStreet);
-      if (detectedArea) setArea(detectedArea);
-      if (detectedCity) setCity(detectedCity);
-      if (detectedState) setState(detectedState);
-      if (detectedPincode) setPincode(detectedPincode);
-      if (detectedHouse && !houseNumber) setHouseNumber(detectedHouse);
-      if (detectedLandmark && !landmark) setLandmark(detectedLandmark);
+      if (detected.street) setStreet(detected.street);
+      if (detected.area) setArea(detected.area);
+      if (detected.city) setCity(detected.city);
+      if (detected.state) setState(detected.state);
+      if (detected.pincode) setPincode(detected.pincode);
+      if (detected.houseNumber && !houseNumber) setHouseNumber(detected.houseNumber);
+      if (detected.landmark && !landmark) setLandmark(detected.landmark);
 
       setIsAddingNew(true);
     } catch (err: any) {
       console.error("Auto detect address error:", err);
-      Alert.alert("Location Detection", "Could not get current address. Please enter manually.");
+      Alert.alert("Location Detection", "Could not get current address. Please choose on Google Maps.");
     } finally {
       setDetectingLocation(false);
     }

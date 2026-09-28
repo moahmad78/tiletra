@@ -16,6 +16,7 @@ import { X, MapPin, Check, Crosshair, Sparkles } from "lucide-react-native";
 import * as Location from "expo-location";
 import { COLORS, SPACING, RADIUS, SHADOWS } from "../constants/theme";
 import { GOOGLE_MAPS_API_KEY } from "../constants/config";
+import { useLocationStore } from "../store/locationStore";
 
 const { width: SCREEN_WIDTH, height: SCREEN_HEIGHT } = Dimensions.get("window");
 
@@ -151,21 +152,23 @@ export const MapPickerModal: React.FC<MapPickerModalProps> = ({
     }
   };
 
-  // Recenter to device GPS
+  // Recenter to device GPS (Instant from locationStore)
   const handleRecenterGPS = async () => {
     try {
       setIsLocating(true);
-      const { status } = await Location.requestForegroundPermissionsAsync();
-      if (status !== "granted") {
+      const loc = await useLocationStore.getState().getQuickLocation(false);
+      if (!loc) {
         Alert.alert("Permission Required", "Please allow location access to center map to your current location.");
         setIsLocating(false);
         return;
       }
 
-      const loc = await Location.getCurrentPositionAsync({ accuracy: Location.Accuracy.Balanced });
-      const { latitude, longitude } = loc.coords;
-
+      const { latitude, longitude } = loc;
       setCurrentCoords({ lat: latitude, lng: longitude });
+
+      if (loc.formattedAddress) {
+        setAddressDetails(loc);
+      }
 
       if (webViewRef.current) {
         const js = `
@@ -178,19 +181,36 @@ export const MapPickerModal: React.FC<MapPickerModalProps> = ({
         webViewRef.current.injectJavaScript(js);
       }
 
-      fetchAddressForCoords(latitude, longitude);
+      if (!loc.formattedAddress) {
+        fetchAddressForCoords(latitude, longitude);
+      }
     } catch (err) {
-      console.error("handleRecenterGPS error:", err);
-      Alert.alert("GPS Error", "Could not acquire current GPS location.");
+      console.warn("handleRecenterGPS error:", err);
     } finally {
       setIsLocating(false);
     }
   };
 
-  // Trigger initial GPS fetch on mount when modal opens
+  // Immediate location load on modal open: Use pre-cached location if available
   useEffect(() => {
     if (visible) {
-      handleRecenterGPS();
+      const cached = useLocationStore.getState().cachedLocation;
+      if (cached) {
+        setCurrentCoords({ lat: cached.latitude, lng: cached.longitude });
+        setAddressDetails(cached);
+        if (webViewRef.current) {
+          const js = `
+            if (window.map) {
+              window.map.panTo({ lat: ${cached.latitude}, lng: ${cached.longitude} });
+              window.map.setZoom(17);
+            }
+            true;
+          `;
+          webViewRef.current.injectJavaScript(js);
+        }
+      } else {
+        handleRecenterGPS();
+      }
     }
   }, [visible]);
 
