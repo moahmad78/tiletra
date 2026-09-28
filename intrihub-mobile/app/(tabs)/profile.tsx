@@ -8,7 +8,6 @@ import {
   Platform,
   StatusBar,
   Linking,
-  Switch,
   Modal,
   TextInput,
   ActivityIndicator,
@@ -21,18 +20,15 @@ import {
   User,
   MapPin,
   Heart,
-  Bell,
   Headphones,
   PhoneCall,
   MessageCircle,
-  LogOut,
   ChevronRight,
   ShieldCheck,
   Edit2,
   Camera,
   X,
   Check,
-  Trash2,
   Star,
 } from "lucide-react-native";
 import { useAuthStore } from "../../src/store/authStore";
@@ -46,7 +42,6 @@ export default function ProfileScreen() {
   const { user, isAuthenticated, setUser, logout } = useAuthStore();
   const [addressModalVisible, setAddressModalVisible] = useState(false);
   const [editProfileModalVisible, setEditProfileModalVisible] = useState(false);
-  const [orderPushEnabled, setOrderPushEnabled] = useState(true);
 
   // Edit Profile Form State
   const [editName, setEditName] = useState("");
@@ -151,7 +146,12 @@ export default function ProfileScreen() {
         Alert.alert("Update Failed", res.error || "Could not update profile details.");
       }
     } catch (err: any) {
-      Alert.alert("Error", err?.message || "Failed to update profile.");
+      const errorMsg =
+        err?.response?.data?.error ||
+        err?.response?.data?.message ||
+        err?.message ||
+        "Failed to update profile.";
+      Alert.alert("Update Failed", errorMsg);
     } finally {
       setSavingProfile(false);
     }
@@ -167,23 +167,6 @@ export default function ProfileScreen() {
 
   const handlePrivacyPolicy = () => {
     router.push("/privacy" as any);
-  };
-
-  const handleDeleteAccount = () => {
-    Alert.alert(
-      "Delete Account & Data",
-      "Are you sure you want to delete your account? All your personal information, saved addresses, and active sessions will be permanently purged in accordance with data privacy regulations.\n\nYou can proceed via our verified web deletion portal.",
-      [
-        { text: "Cancel", style: "cancel" },
-        {
-          text: "Request Deletion",
-          style: "destructive",
-          onPress: () => {
-            Linking.openURL("https://www.intrihub.com/delete-account");
-          },
-        },
-      ]
-    );
   };
 
   return (
@@ -272,19 +255,6 @@ export default function ProfileScreen() {
             </View>
             <ChevronRight size={18} color={COLORS.textMuted} />
           </TouchableOpacity>
-
-          <View style={styles.menuItem}>
-            <View style={styles.menuLeft}>
-              <Bell size={20} color={COLORS.primary} />
-              <Text style={styles.menuLabel}>Push Notifications</Text>
-            </View>
-            <Switch
-              value={orderPushEnabled}
-              onValueChange={setOrderPushEnabled}
-              trackColor={{ false: COLORS.surfaceTertiary, true: COLORS.primary }}
-              thumbColor={COLORS.surface}
-            />
-          </View>
         </View>
 
         {/* Section: Help & Support */}
@@ -331,26 +301,7 @@ export default function ProfileScreen() {
             </View>
             <ChevronRight size={18} color={COLORS.textMuted} />
           </TouchableOpacity>
-
-          <TouchableOpacity style={styles.menuItem} onPress={handleDeleteAccount} activeOpacity={0.75}>
-            <View style={styles.menuLeft}>
-              <Trash2 size={20} color={COLORS.error} />
-              <View style={{ marginLeft: 12 }}>
-                <Text style={[styles.menuLabel, { color: COLORS.error, marginLeft: 0 }]}>Delete Account & Data</Text>
-                <Text style={styles.supportSubText}>Request permanent account removal</Text>
-              </View>
-            </View>
-            <ChevronRight size={18} color={COLORS.textMuted} />
-          </TouchableOpacity>
         </View>
-
-        {/* Logout Button */}
-        {isAuthenticated && (
-          <TouchableOpacity style={styles.logoutBtn} onPress={logout} activeOpacity={0.8}>
-            <LogOut size={18} color={COLORS.error} />
-            <Text style={styles.logoutText}>Sign Out</Text>
-          </TouchableOpacity>
-        )}
 
         <View style={styles.appInfo}>
           <Text style={styles.versionText}>IntriHub Mobile v1.1.2 (Android)</Text>

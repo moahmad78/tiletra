@@ -31,7 +31,7 @@ export const useAuthStore = create<AuthState>((set, get) => ({
       set({ isLoading: true });
       const token = await getStoredAccessToken();
       if (!token) {
-        set({ user: null, isAuthenticated: false, isLoading: false });
+        set({ user: null, isAuthenticated: false });
         return;
       }
 
@@ -55,7 +55,6 @@ export const useAuthStore = create<AuthState>((set, get) => ({
           user: cachedUser,
           isAuthenticated: true,
           selectedAddress: savedAddress,
-          isLoading: false,
         });
       }
 
@@ -69,14 +68,14 @@ export const useAuthStore = create<AuthState>((set, get) => ({
           user: res.user,
           isAuthenticated: true,
           selectedAddress: savedAddress,
-          isLoading: false,
         });
       } else if (!cachedUser) {
-        set({ user: null, isAuthenticated: false, isLoading: false });
-      } else {
-        set({ isLoading: false });
+        set({ user: null, isAuthenticated: false });
       }
-    } catch {
+    } catch (e) {
+      console.warn("[initAuth] Failed to initialize auth:", e);
+      set({ user: null, isAuthenticated: false });
+    } finally {
       set({ isLoading: false });
     }
   },

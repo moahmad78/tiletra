@@ -30,8 +30,22 @@ import { Category } from "../types";
 import { COLORS, SPACING, RADIUS } from "../constants/theme";
 import { getImageUrl } from "../constants/config";
 
-if (Platform.OS === "android" && UIManager.setLayoutAnimationEnabledExperimental) {
-  UIManager.setLayoutAnimationEnabledExperimental(true);
+// In React Native New Architecture (Fabric / Bridgeless), LayoutAnimation is enabled by default
+// and calling setLayoutAnimationEnabledExperimental triggers a no-op warning.
+const isNewArch =
+  Boolean((global as any).RN$Bridgeless) ||
+  Boolean((global as any).nativeFabricUIManager);
+
+if (
+  Platform.OS === "android" &&
+  !isNewArch &&
+  typeof UIManager.setLayoutAnimationEnabledExperimental === "function"
+) {
+  try {
+    UIManager.setLayoutAnimationEnabledExperimental(true);
+  } catch {
+    // no-op in New Architecture
+  }
 }
 
 interface CategoryGridProps {
@@ -56,7 +70,9 @@ export const CategoryGrid: React.FC<CategoryGridProps> = ({ categories, mode = "
   const router = useRouter();
   const { width: windowWidth } = useWindowDimensions();
   const columns = windowWidth >= 900 ? 8 : windowWidth >= 600 ? 6 : 4;
-  const itemWidthPercent = columns === 8 ? "11.5%" : columns === 6 ? "15.5%" : "23%";
+  const gap = 10;
+  const availableWidth = windowWidth - SPACING.md * 2;
+  const itemWidth = Math.floor((availableWidth - gap * (columns - 1)) / columns);
   const [isExpanded, setIsExpanded] = useState(true);
   const bounceAnim = useRef(new Animated.Value(0)).current;
 
@@ -131,7 +147,7 @@ export const CategoryGrid: React.FC<CategoryGridProps> = ({ categories, mode = "
         {displayedCategories.map((cat) => (
           <TouchableOpacity
             key={cat.id || cat.slug}
-            style={[styles.gridItem, { width: itemWidthPercent as any }]}
+            style={[styles.gridItem, { width: itemWidth }]}
             onPress={() => handleCategoryPress(cat.slug)}
             activeOpacity={0.7}
           >
@@ -185,13 +201,13 @@ const styles = StyleSheet.create({
   gridContainer: {
     flexDirection: "row",
     flexWrap: "wrap",
-    justifyContent: "space-between",
+    justifyContent: "flex-start",
     paddingHorizontal: SPACING.md,
+    columnGap: 10,
+    rowGap: 14,
   },
   gridItem: {
-    width: "23%",
     alignItems: "center",
-    marginBottom: SPACING.md,
   },
   gridIconBox: {
     width: 60,

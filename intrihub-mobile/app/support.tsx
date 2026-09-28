@@ -30,7 +30,10 @@ import {
   RotateCcw,
   Send,
   Building2,
+  LogOut,
+  Trash2,
 } from "lucide-react-native";
+import { useAuthStore } from "../src/store/authStore";
 import { COLORS, SPACING, RADIUS, SHADOWS } from "../src/constants/theme";
 
 interface FAQItem {
@@ -86,6 +89,7 @@ const FAQ_DATA: FAQItem[] = [
 
 export default function CustomerSupportScreen() {
   const router = useRouter();
+  const { user, isAuthenticated, logout } = useAuthStore();
   const [expandedFaqId, setExpandedFaqId] = useState<string | null>("1");
   const [queryText, setQueryText] = useState("");
   const [sendingQuery, setSendingQuery] = useState(false);
@@ -100,6 +104,37 @@ export default function CustomerSupportScreen() {
 
   const handleEmail = () => {
     Linking.openURL("mailto:support@intrihub.com?subject=Customer%20Support%20Inquiry");
+  };
+
+  const handleLogout = () => {
+    Alert.alert("Sign Out", "Are you sure you want to sign out of IntriHub?", [
+      { text: "Cancel", style: "cancel" },
+      {
+        text: "Sign Out",
+        style: "destructive",
+        onPress: async () => {
+          await logout();
+          router.replace("/(tabs)/profile" as any);
+        },
+      },
+    ]);
+  };
+
+  const handleDeleteAccount = () => {
+    Alert.alert(
+      "Delete Account & Data",
+      "Are you sure you want to delete your account? All your personal information, saved addresses, and active sessions will be permanently purged in accordance with data privacy regulations.\n\nYou can proceed via our verified web deletion portal.",
+      [
+        { text: "Cancel", style: "cancel" },
+        {
+          text: "Request Deletion",
+          style: "destructive",
+          onPress: () => {
+            Linking.openURL("https://www.intrihub.com/delete-account");
+          },
+        },
+      ]
+    );
   };
 
   const handleSendQuery = () => {
@@ -284,6 +319,51 @@ export default function CustomerSupportScreen() {
             <Send size={15} color={COLORS.textWhite} />
             <Text style={styles.querySubmitText}>Submit Inquiry</Text>
           </TouchableOpacity>
+        </View>
+
+        {/* Account & Data Management (Logout & Delete Account) */}
+        <View style={styles.accountActionSection}>
+          <Text style={styles.accountSectionTitle}>ACCOUNT & DATA PRIVACY</Text>
+
+          {isAuthenticated && (
+            <TouchableOpacity
+              style={styles.actionRowBtn}
+              onPress={handleLogout}
+              activeOpacity={0.8}
+            >
+              <View style={styles.actionRowLeft}>
+                <View style={[styles.actionIconBox, { backgroundColor: "#fee2e2" }]}>
+                  <LogOut size={18} color={COLORS.error} />
+                </View>
+                <View style={{ marginLeft: 12 }}>
+                  <Text style={styles.actionRowTitle}>Sign Out from IntriHub</Text>
+                  <Text style={styles.actionRowSub}>Safely end your active customer session</Text>
+                </View>
+              </View>
+              <Text style={styles.actionLogoutText}>Sign Out</Text>
+            </TouchableOpacity>
+          )}
+
+          <TouchableOpacity
+            style={[styles.actionRowBtn, { marginTop: isAuthenticated ? 10 : 0 }]}
+            onPress={handleDeleteAccount}
+            activeOpacity={0.8}
+          >
+            <View style={styles.actionRowLeft}>
+              <View style={[styles.actionIconBox, { backgroundColor: "#fef2f2" }]}>
+                <Trash2 size={18} color="#dc2626" />
+              </View>
+              <View style={{ marginLeft: 12 }}>
+                <Text style={[styles.actionRowTitle, { color: "#dc2626" }]}>Delete Account & Data</Text>
+                <Text style={styles.actionRowSub}>Request permanent removal of your account</Text>
+              </View>
+            </View>
+            <Text style={styles.actionDeleteText}>Request</Text>
+          </TouchableOpacity>
+        </View>
+
+        <View style={styles.appFooterInfo}>
+          <Text style={styles.footerVersion}>IntriHub Customer Support • Everything, Every Place</Text>
         </View>
       </ScrollView>
     </SafeAreaView>
@@ -560,5 +640,70 @@ const styles = StyleSheet.create({
     color: COLORS.textWhite,
     fontSize: 13,
     fontWeight: "800",
+  },
+  accountActionSection: {
+    marginTop: SPACING.xl,
+    marginBottom: SPACING.sm,
+  },
+  accountSectionTitle: {
+    fontSize: 11,
+    fontWeight: "800",
+    color: COLORS.textMuted,
+    letterSpacing: 0.8,
+    marginBottom: SPACING.sm,
+    marginLeft: 4,
+  },
+  actionRowBtn: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    backgroundColor: COLORS.surface,
+    paddingHorizontal: SPACING.md,
+    paddingVertical: 14,
+    borderRadius: RADIUS.lg,
+    borderWidth: 1,
+    borderColor: COLORS.border,
+    ...SHADOWS.sm,
+  },
+  actionRowLeft: {
+    flexDirection: "row",
+    alignItems: "center",
+    flex: 1,
+  },
+  actionIconBox: {
+    width: 38,
+    height: 38,
+    borderRadius: RADIUS.md,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  actionRowTitle: {
+    fontSize: 14,
+    fontWeight: "700",
+    color: COLORS.text,
+  },
+  actionRowSub: {
+    fontSize: 11,
+    color: COLORS.textMuted,
+    marginTop: 2,
+  },
+  actionLogoutText: {
+    fontSize: 12,
+    fontWeight: "800",
+    color: COLORS.error,
+  },
+  actionDeleteText: {
+    fontSize: 12,
+    fontWeight: "800",
+    color: "#dc2626",
+  },
+  appFooterInfo: {
+    alignItems: "center",
+    paddingVertical: SPACING.lg,
+  },
+  footerVersion: {
+    fontSize: 11,
+    color: COLORS.textMuted,
+    fontWeight: "600",
   },
 });

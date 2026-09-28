@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useCallback } from "react";
 import {
   View,
   Text,
@@ -13,7 +13,7 @@ import {
   Platform,
 } from "react-native";
 import { useQuery, useInfiniteQuery } from "@tanstack/react-query";
-import { useRouter } from "expo-router";
+import { useRouter, useFocusEffect } from "expo-router";
 import { ArrowRight, TrendingUp, Award, Shield, CheckCircle2 } from "lucide-react-native";
 import { Header } from "../../src/components/Header";
 import { BannerCarousel } from "../../src/components/BannerCarousel";
@@ -31,29 +31,38 @@ export default function HomeScreen() {
   const numColumns = windowWidth >= 900 ? 4 : windowWidth >= 600 ? 3 : 2;
   const [addressModalVisible, setAddressModalVisible] = useState(false);
 
-  // Hardware Back Button Exit Confirmation on Android
-  useEffect(() => {
-    if (Platform.OS !== "android") return;
+  // Hardware Back Button Exit Confirmation on Android - Only active when Home screen is focused
+  useFocusEffect(
+    useCallback(() => {
+      if (Platform.OS !== "android") return;
 
-    const onBackPress = () => {
-      Alert.alert(
-        "Exit IntriHub?",
-        "Are you sure you want to close the IntriHub app?",
-        [
-          { text: "Stay", style: "cancel" },
-          {
-            text: "Exit",
-            style: "destructive",
-            onPress: () => BackHandler.exitApp(),
-          },
-        ]
-      );
-      return true;
-    };
+      const onBackPress = () => {
+        // If there is any previous screen in the stack history, go back normally
+        if (router.canGoBack()) {
+          router.back();
+          return true;
+        }
 
-    const backHandler = BackHandler.addEventListener("hardwareBackPress", onBackPress);
-    return () => backHandler.remove();
-  }, []);
+        // Only on the root Home screen (last step) ask before closing/exiting the app
+        Alert.alert(
+          "Exit IntriHub?",
+          "Are you sure you want to close the IntriHub app?",
+          [
+            { text: "Stay", style: "cancel" },
+            {
+              text: "Exit",
+              style: "destructive",
+              onPress: () => BackHandler.exitApp(),
+            },
+          ]
+        );
+        return true;
+      };
+
+      const backHandler = BackHandler.addEventListener("hardwareBackPress", onBackPress);
+      return () => backHandler.remove();
+    }, [router])
+  );
 
   // 1. Fetch Categories & Banners
   const {

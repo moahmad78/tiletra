@@ -226,7 +226,7 @@ export default function CheckoutScreen() {
           <View style={styles.successRow}>
             <Text style={styles.successKey}>Payment Mode</Text>
             <Text style={styles.successValue}>
-              {completedOrder.paymentMethod === "cod" ? "Cash on Delivery" : "Online (Razorpay)"}
+              {completedOrder.paymentMethod === "cod" ? "Cash on Delivery" : "Online Payment"}
             </Text>
           </View>
           <View style={styles.successRow}>
@@ -357,7 +357,7 @@ export default function CheckoutScreen() {
               </View>
               <CreditCard size={20} color={COLORS.primary} style={{ marginLeft: 10 }} />
               <View style={{ marginLeft: 10 }}>
-                <Text style={styles.paymentName}>Online Payment (Razorpay)</Text>
+                <Text style={styles.paymentName}>Online Payment</Text>
                 <Text style={styles.paymentSub}>UPI (GPay / PhonePe), Cards, NetBanking</Text>
               </View>
             </View>
@@ -429,7 +429,7 @@ export default function CheckoutScreen() {
             <ActivityIndicator color={COLORS.textWhite} />
           ) : (
             <Text style={styles.placeOrderText}>
-              {paymentMethod === "cod" ? "Place COD Order" : "Pay with Razorpay"}
+              {paymentMethod === "cod" ? "Place COD Order" : "Pay"}
             </Text>
           )}
         </TouchableOpacity>

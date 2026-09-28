@@ -11,7 +11,7 @@ import {
   AppStateStatus,
   ScrollView,
 } from "react-native";
-import * as Notifications from "expo-notifications";
+import Constants, { ExecutionEnvironment } from "expo-constants";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { DownloadCloud, ArrowUpCircle, CheckCircle2, X } from "lucide-react-native";
 import { apiClient } from "../api/client";
@@ -73,8 +73,13 @@ export default function AppUpdateModal() {
 
       // Trigger local push notification if not notified for this version yet
       const lastNotifiedCode = await AsyncStorage.getItem(STORAGE_KEY_LAST_NOTIFIED_VERSION);
-      if (lastNotifiedCode !== String(info.latestVersionCode)) {
+      const isExpoGo =
+        Constants.appOwnership === "expo" ||
+        Constants.executionEnvironment === ExecutionEnvironment.StoreClient;
+
+      if (lastNotifiedCode !== String(info.latestVersionCode) && !isExpoGo && Platform.OS !== "web") {
         try {
+          const Notifications = require("expo-notifications");
           await Notifications.scheduleNotificationAsync({
             content: {
               title: info.title || "🚀 Update Available!",

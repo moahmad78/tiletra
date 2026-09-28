@@ -13,7 +13,6 @@ import {
   Modal,
   Keyboard,
   TouchableWithoutFeedback,
-  InteractionManager,
   Pressable,
 } from "react-native";
 import { Image } from "expo-image";
@@ -52,21 +51,17 @@ export default function CategoriesScreen() {
   useFocusEffect(
     useCallback(() => {
       if (params?.focus || params?.autoFocus) {
-        const task = InteractionManager.runAfterInteractions(() => {
-          setTimeout(() => {
+        let timer: ReturnType<typeof setTimeout>;
+        const frame = requestAnimationFrame(() => {
+          timer = setTimeout(() => {
             inputRef.current?.focus();
             setIsSearchFocused(true);
-          }, 80);
+          }, 100);
         });
 
-        const backupTimer = setTimeout(() => {
-          inputRef.current?.focus();
-          setIsSearchFocused(true);
-        }, 220);
-
         return () => {
-          task.cancel();
-          clearTimeout(backupTimer);
+          cancelAnimationFrame(frame);
+          if (timer) clearTimeout(timer);
         };
       }
     }, [params?.focus, params?.autoFocus])

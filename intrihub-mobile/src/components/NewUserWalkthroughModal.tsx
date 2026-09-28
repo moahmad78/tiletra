@@ -158,9 +158,7 @@ export function NewUserWalkthroughModal() {
             <Text style={[styles.tagline, { color: activeStep.color }]}>
               {activeStep.tagline}
             </Text>
-            <h2 style={{ margin: 0, padding: 0 }}>
-              <Text style={styles.title}>{activeStep.title}</Text>
-            </h2>
+            <Text style={styles.title}>{activeStep.title}</Text>
             <Text style={styles.description}>{activeStep.description}</Text>
           </View>
 

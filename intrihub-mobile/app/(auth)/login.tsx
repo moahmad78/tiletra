@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import {
   View,
   Text,
@@ -15,28 +15,15 @@ import { Image } from "expo-image";
 import { useRouter } from "expo-router";
 import * as WebBrowser from "expo-web-browser";
 import * as AuthSession from "expo-auth-session";
-import * as Google from "expo-auth-session/providers/google";
 import Svg, { Path } from "react-native-svg";
 import { ArrowLeft, ShieldCheck, Mail, ArrowRight, RotateCw, Lock, ChevronLeft, Eye, EyeOff, KeyRound } from "lucide-react-native";
 import { COLORS, SPACING, RADIUS, SHADOWS } from "../../src/constants/theme";
-import { sendOtp, verifyOtp, loginWithGoogle, checkAuthMethod, loginWithPassword } from "../../src/api/auth";
+import { sendOtp, verifyOtp, checkAuthMethod, loginWithPassword } from "../../src/api/auth";
 import { setStoredTokens } from "../../src/api/client";
 import { useAuthStore } from "../../src/store/authStore";
 
+// maybeCompleteAuthSession is still needed to finalise any in-flight auth sessions
 WebBrowser.maybeCompleteAuthSession();
-
-// Google Client IDs supporting Web, Android Native and iOS
-const GOOGLE_WEB_CLIENT_ID =
-  process.env.EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID ||
-  "602084779648-k1gfeq3u4vein82tvt93d1iv5t43b8oh.apps.googleusercontent.com";
-
-const GOOGLE_ANDROID_CLIENT_ID =
-  process.env.EXPO_PUBLIC_GOOGLE_ANDROID_CLIENT_ID ||
-  "602084779648-bchh5lt1n03g719qisutva4bkhjg17cb.apps.googleusercontent.com";
-
-const GOOGLE_IOS_CLIENT_ID =
-  process.env.EXPO_PUBLIC_GOOGLE_IOS_CLIENT_ID ||
-  "602084779648-omckasog9cejsf7d0p84d0aomanm7c5d.apps.googleusercontent.com";
 
 function GoogleIcon() {
   return (
@@ -61,16 +48,9 @@ function GoogleIcon() {
   );
 }
 
-import Constants, { ExecutionEnvironment } from "expo-constants";
-
-// Detect if running inside standard Expo Go app
-const isExpoGo =
-  Constants.appOwnership === "expo" ||
-  Constants.executionEnvironment === ExecutionEnvironment.StoreClient;
-
 export default function LoginScreen() {
   const router = useRouter();
-  const { setUser } = useAuthStore();
+  const { user, isAuthenticated, setUser } = useAuthStore();
 
   const [step, setStep] = useState<"input" | "otp" | "password">("input");
   const [email, setEmail] = useState("");
@@ -84,85 +64,45 @@ export default function LoginScreen() {
   const [timer, setTimer] = useState(60);
   const [canResend, setCanResend] = useState(false);
 
-  const redirectUri = __DEV__
-    ? "https://auth.expo.io/@sahil_sheikh78/intrihub"
-    : AuthSession.makeRedirectUri({
-        scheme: "intrihub",
-      });
+  // Directly navigate to Account (Profile) tab upon successful login
+  const navigateAfterLogin = useCallback(() => {
+    router.replace("/(tabs)/profile" as any);
+  }, [router]);
 
-  // Google OAuth Request:
-  // In development, uses Web Client ID with Expo Auth Proxy.
-  // In standalone production/preview builds, uses native Android and iOS Client IDs.
-  const [request, response, promptAsync] = Google.useAuthRequest({
-    androidClientId: __DEV__ ? undefined : GOOGLE_ANDROID_CLIENT_ID,
-    iosClientId: __DEV__ ? undefined : GOOGLE_IOS_CLIENT_ID,
-    webClientId: GOOGLE_WEB_CLIENT_ID,
-    clientId: GOOGLE_WEB_CLIENT_ID,
-    scopes: ["profile", "email"],
-    redirectUri,
-  });
-
+  // If already authenticated, redirect immediately to Account page
   useEffect(() => {
-    console.log("[Google OAuth] Configured Redirect URI:", redirectUri);
-  }, [redirectUri]);
-
-  const navigateAfterLogin = () => {
-    if (router.canGoBack()) {
-      router.back();
-    } else {
-      router.replace("/(tabs)/home" as any);
+    if (isAuthenticated && user) {
+      router.replace("/(tabs)/profile" as any);
     }
-  };
+  }, [isAuthenticated, user, router]);
 
-  // Countdown timer for OTP
+  // Countdown timer for OTP — starts fresh whenever `step` enters "otp".
+  // Timer resets (setTimer/setCanResend) happen in the handlers that trigger
+  // the OTP step, so the effect body only needs to start the interval.
   useEffect(() => {
     if (step !== "otp") return;
-    if (timer <= 0) {
-      setCanResend(true);
-      return;
-    }
-    const interval = setInterval(() => setTimer((t) => t - 1), 1000);
-    return () => clearInterval(interval);
-  }, [step, timer]);
-
-  // Handle Google OAuth Response
-  useEffect(() => {
-    async function handleGoogleResponse() {
-      if (response?.type === "success") {
-        const { authentication } = response;
-        const accessToken = authentication?.accessToken;
-        const idToken = authentication?.idToken;
-
-        if (accessToken || idToken) {
-          setGoogleLoading(true);
-          setError("");
-          try {
-            const res = await loginWithGoogle({ accessToken, idToken });
-            if (res.success && res.user) {
-              setUser(res.user);
-              navigateAfterLogin();
-            } else {
-              setError(res.error || "Google login failed. Please try again.");
-            }
-          } catch (err: any) {
-            setError(err?.response?.data?.error || err.message || "Failed to complete Google Sign In");
-          } finally {
-            setGoogleLoading(false);
-          }
+    const interval = setInterval(() => {
+      setTimer((t) => {
+        if (t <= 1) {
+          clearInterval(interval);
+          setCanResend(true);
+          return 0;
         }
-      } else if (response?.type === "error") {
-        setError(response.error?.message || "Google authentication was cancelled or failed");
-      }
-    }
-
-    handleGoogleResponse();
-  }, [response]);
+        return t - 1;
+      });
+    }, 1000);
+    return () => clearInterval(interval);
+  }, [step]);
 
   // Deep Link listener for web-bridge Google OAuth
   useEffect(() => {
     const handleDeepLink = async (event: { url: string }) => {
       const urlStr = event.url;
       if (urlStr.includes("intrihub://") && urlStr.includes("accessToken=")) {
+        try {
+          WebBrowser.dismissAuthSession();
+          WebBrowser.dismissBrowser();
+        } catch {}
         const queryIndex = urlStr.indexOf("?");
         if (queryIndex !== -1) {
           const queryString = urlStr.substring(queryIndex + 1);
@@ -193,7 +133,7 @@ export default function LoginScreen() {
     return () => {
       sub.remove();
     };
-  }, []);
+  }, [navigateAfterLogin, setUser]); // include stable callback deps
 
   const handleEmailSubmit = async () => {
     setError("");
@@ -222,8 +162,9 @@ export default function LoginScreen() {
       } else {
         setError(res.error || "Failed to send verification code. Please try again.");
       }
-    } catch (err: any) {
-      setError(err?.response?.data?.error || err.message || "Network error. Please try again.");
+    } catch (err: unknown) {
+      const e = err as { response?: { data?: { error?: string } }; message?: string };
+      setError(e?.response?.data?.error || e?.message || "Network error. Please try again.");
     } finally {
       setLoading(false);
     }
@@ -245,8 +186,9 @@ export default function LoginScreen() {
       } else {
         setError(res.error || "Invalid password. Please check your credentials.");
       }
-    } catch (err: any) {
-      setError(err?.response?.data?.error || err?.response?.data?.message || err.message || "Failed to sign in. Please try again.");
+    } catch (err: unknown) {
+      const e = err as { response?: { data?: { error?: string; message?: string } }; message?: string };
+      setError(e?.response?.data?.error || e?.response?.data?.message || e?.message || "Failed to sign in. Please try again.");
     } finally {
       setLoading(false);
     }
@@ -274,8 +216,9 @@ export default function LoginScreen() {
       } else {
         setError(res.error || "Invalid verification code. Please try again.");
       }
-    } catch (err: any) {
-      setError(err?.response?.data?.error || err.message || "Failed to verify code");
+    } catch (err: unknown) {
+      const e = err as { response?: { data?: { error?: string } }; message?: string };
+      setError(e?.response?.data?.error || e?.message || "Failed to verify code");
     } finally {
       setLoading(false);
     }
@@ -294,8 +237,9 @@ export default function LoginScreen() {
       } else {
         setError(res.error || "Failed to resend code");
       }
-    } catch (err: any) {
-      setError(err?.response?.data?.error || err?.response?.data?.message || err?.message || "Failed to resend verification code");
+    } catch (err: unknown) {
+      const e = err as { response?: { data?: { error?: string; message?: string } }; message?: string };
+      setError(e?.response?.data?.error || e?.response?.data?.message || e?.message || "Failed to resend verification code");
     } finally {
       setLoading(false);
     }
@@ -321,9 +265,23 @@ export default function LoginScreen() {
         redirectUrl
       )}`;
 
-      const result = await WebBrowser.openAuthSessionAsync(authUrl, redirectUrl);
+      // Log the exact URLs so they appear in crash logs / Metro for debugging
+      console.log("[Google OAuth] authUrl:", authUrl);
+      console.log("[Google OAuth] redirectUrl:", redirectUrl);
 
-      if (result.type === "success" && result.url) {
+      let result;
+      try {
+        result = await WebBrowser.openAuthSessionAsync(authUrl, redirectUrl, {
+          preferEphemeralSession: false,
+          showInRecents: true,
+        });
+      } catch (browserErr) {
+        console.warn("[Google OAuth] openAuthSessionAsync failed, falling back to Linking:", browserErr);
+        await Linking.openURL(authUrl);
+        return;
+      }
+
+      if (result && result.type === "success" && result.url) {
         const urlStr = result.url;
         const queryIndex = urlStr.indexOf("?");
         if (queryIndex !== -1) {
@@ -334,28 +292,50 @@ export default function LoginScreen() {
           const userRaw = params.get("user");
 
           if (accessToken && refreshToken && userRaw) {
-            const userObj = JSON.parse(decodeURIComponent(userRaw));
+            // Guard JSON.parse independently — a bad payload must never cause
+            // the outer catch to re-open the auth URL (infinite loop risk).
+            let userObj: unknown;
+            try {
+              userObj = JSON.parse(decodeURIComponent(userRaw));
+            } catch (parseErr) {
+              console.error("[Google OAuth] Failed to parse user payload:", parseErr, "raw:", userRaw);
+              setError("Sign-in succeeded but user data could not be read. Please try again.");
+              return;
+            }
             await setStoredTokens(accessToken, refreshToken);
-            setUser(userObj);
+            setUser(userObj as Parameters<typeof setUser>[0]);
             navigateAfterLogin();
             return;
           }
         }
       }
-    } catch (err: any) {
-      console.error("Google login error:", err);
-      setError(err?.message || "Google Sign-In was cancelled or failed.");
+    } catch (err: unknown) {
+      const e = err as { message?: string };
+      console.error("Google login error:", e);
+      // Final fallback to system browser
+      try {
+        const redirectUrl = AuthSession.makeRedirectUri({
+          scheme: "intrihub",
+          path: "oauth",
+        });
+        const authUrl = `https://www.intrihub.com/api/auth/google?intent=mobile&redirect_to=${encodeURIComponent(
+          redirectUrl
+        )}`;
+        await Linking.openURL(authUrl);
+      } catch {
+        setError(e?.message || "Google Sign-In was cancelled or failed.");
+      }
     } finally {
       setGoogleLoading(false);
     }
   };
 
   const handleTermsOfUse = () => {
-    router.push("/terms" as any);
+    router.push("/terms" as Parameters<typeof router.push>[0]);
   };
 
   const handlePrivacyPolicy = () => {
-    router.push("/privacy" as any);
+    router.push("/privacy" as Parameters<typeof router.push>[0]);
   };
 
   return (
@@ -398,10 +378,11 @@ export default function LoginScreen() {
         <View style={styles.brandSection}>
           <View style={styles.logoRow}>
             <Image
-              source={require("../../assets/intri-web-logo.png")}
+              source={require("../../assets/intri-web-logo.png")} // eslint-disable-line @typescript-eslint/no-require-imports
               style={styles.brandLogo}
               contentFit="contain"
               transition={150}
+              alt=""
             />
           </View>
           <Text style={styles.brandTitle}>
@@ -625,7 +606,7 @@ export default function LoginScreen() {
         )}
 
         <Text style={styles.termsText}>
-          By continuing, you agree to Intrihub's{"\n"}
+          By continuing, you agree to Intrihub&apos;s{"\n"}
           <Text style={styles.termsLink} onPress={handleTermsOfUse}>
             Terms of Use
           </Text>{" "}

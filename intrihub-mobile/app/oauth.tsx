@@ -28,7 +28,7 @@ export default function OAuthCallbackScreen() {
           await setStoredTokens(accessToken, refreshToken);
           if (isMounted) {
             setUser(userObj);
-            router.replace("/(tabs)/home");
+            router.replace("/(tabs)/profile");
           }
           return;
         } catch (err) {
@@ -36,10 +36,10 @@ export default function OAuthCallbackScreen() {
         }
       }
 
-      // Fallback: if already logged in or params missing, return smoothly to home
+      // Fallback: if already logged in or params missing, return smoothly to profile
       const timeout = setTimeout(() => {
         if (isMounted) {
-          router.replace("/(tabs)/home");
+          router.replace("/(tabs)/profile");
         }
       }, 300);
 

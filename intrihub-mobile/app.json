@@ -3,7 +3,7 @@
     "name": "Intrihub",
     "slug": "intrihub",
     "owner": "sahil_sheikh78",
-    "version": "1.1.7",
+    "version": "1.1.9",
     "orientation": "portrait",
     "icon": "./assets/icon.png",
     "scheme": "intrihub",
@@ -36,7 +36,12 @@
     },
     "android": {
       "package": "com.intrihub.app",
-      "versionCode": 10,
+      "versionCode": 12,
+      "config": {
+        "googleMaps": {
+          "apiKey": "AIzaSyBejehWWHi-GPuqK8V6v2F8sKt_P0ap_oc"
+        }
+      },
       "googleServicesFile": "./google-services.json",
       "adaptiveIcon": {
         "foregroundImage": "./assets/adaptive-icon.png",
@@ -65,12 +70,26 @@
         }
       ],
       "expo-font",
-      "expo-web-browser"
+      "expo-web-browser",
+      [
+        "expo-build-properties",
+        {
+          "android": {
+            "extraProguardRules": "-keep class expo.modules.location.** { *; }\n-keep class expo.modules.print.** { *; }\n-keep class expo.modules.haptics.** { *; }"
+          }
+        }
+      ],
+      "expo-asset",
+      "expo-image",
+      "expo-sharing",
+      "expo-splash-screen",
+      "expo-status-bar"
     ],
     "experiments": {
       "typedRoutes": true
     },
     "extra": {
+      "googleMapsApiKey": "AIzaSyBejehWWHi-GPuqK8V6v2F8sKt_P0ap_oc",
       "eas": {
         "projectId": "7c786f97-0217-4a68-b51f-14499a3311a2"
       }

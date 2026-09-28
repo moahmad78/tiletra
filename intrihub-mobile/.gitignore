@@ -18,3 +18,6 @@ npm-debug.*
 
 expo-env.d.ts
 # @end expo-cli
+
+.idea/
+android_backup/

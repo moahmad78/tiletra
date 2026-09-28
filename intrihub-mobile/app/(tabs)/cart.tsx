@@ -184,7 +184,7 @@ export default function CartScreen() {
         <View style={styles.trustRow}>
           <ShieldCheck size={16} color={COLORS.primary} />
           <Text style={styles.trustText}>
-            Safe and Secure Payments with Razorpay • 100% Authentic Products
+            100% Safe and Secure Payments • Authentic Products
           </Text>
         </View>
 

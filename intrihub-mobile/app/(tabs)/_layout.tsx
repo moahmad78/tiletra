@@ -11,6 +11,7 @@ export default function TabLayout() {
 
   return (
     <Tabs
+      backBehavior="firstRoute"
       screenOptions={{
         headerShown: false,
         tabBarActiveTintColor: COLORS.primary,

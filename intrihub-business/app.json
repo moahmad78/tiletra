@@ -3,7 +3,7 @@
     "name": "Intrihub Business",
     "slug": "intrihub-business",
     "owner": "sahil_sheikh78",
-    "version": "1.0.9",
+    "version": "1.0.10",
     "orientation": "portrait",
     "icon": "./assets/icon.png",
     "scheme": "intrihub-biz",
@@ -36,7 +36,12 @@
     },
     "android": {
       "package": "com.intrihub.business",
-      "versionCode": 10,
+      "versionCode": 11,
+      "config": {
+        "googleMaps": {
+          "apiKey": "AIzaSyBejehWWHi-GPuqK8V6v2F8sKt_P0ap_oc"
+        }
+      },
       "googleServicesFile": "./google-services.json",
       "adaptiveIcon": {
         "foregroundImage": "./assets/adaptive-icon.png",

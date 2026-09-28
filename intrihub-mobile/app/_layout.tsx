@@ -1,5 +1,5 @@
 import { useEffect, useState, useLayoutEffect } from "react";
-import { View, StyleSheet, Platform } from "react-native";
+import { View, StyleSheet, LogBox } from "react-native";
 import { Stack } from "expo-router";
 import { StatusBar } from "expo-status-bar";
 import * as SplashScreen from "expo-splash-screen";
@@ -19,8 +19,32 @@ import { useNotificationStore } from "../src/store/notificationStore";
 import { socketService } from "../src/store/socketStore";
 import { usePushNotifications } from "../src/hooks/usePushNotifications";
 import AnimatedSplashScreen from "../src/components/AnimatedSplashScreen";
+import { ErrorBoundary } from "../src/components/ErrorBoundary";
 import AppUpdateModal from "../src/components/AppUpdateModal";
 import { COLORS } from "../src/constants/theme";
+
+// Suppress non-fatal dev CLI connection warning from popping up on screen
+LogBox.ignoreLogs([
+  "Cannot connect to Expo CLI",
+]);
+
+// ─── Global JS Error Handler ──────────────────────────────────────────────────
+declare const ErrorUtils: {
+  getGlobalHandler: () => (error: Error, isFatal?: boolean) => void;
+  setGlobalHandler: (handler: (error: Error, isFatal?: boolean) => void) => void;
+} | undefined;
+
+if (typeof ErrorUtils !== "undefined" && ErrorUtils?.getGlobalHandler) {
+  try {
+    const defaultHandler = ErrorUtils.getGlobalHandler();
+    ErrorUtils.setGlobalHandler((error: Error, isFatal?: boolean) => {
+      console.error("GLOBAL", error?.message, error?.stack);
+      defaultHandler?.(error, isFatal);
+    });
+  } catch {
+    // Ignore error handler initialization failure
+  }
+}
 
 // Keep native splash screen visible while app JS bundle loads
 SplashScreen.preventAutoHideAsync().catch(() => {});
@@ -36,7 +60,7 @@ const queryClient = new QueryClient({
 });
 
 export default function RootLayout() {
-  const [fontsLoaded] = useFonts({
+  useFonts({
     PlusJakartaSans_400Regular,
     PlusJakartaSans_500Medium,
     PlusJakartaSans_600SemiBold,
@@ -58,24 +82,25 @@ export default function RootLayout() {
 
   useEffect(() => {
     async function prepareApp() {
-      try {
-        await Promise.all([
-          initAuth(),
-          loadCart(),
-          useNotificationStore.getState().fetchUnreadCount().catch(() => {}),
-          // Minimum natural sequence duration so user experiences the active running road and intro
-          new Promise((resolve) => setTimeout(resolve, 2200)),
-        ]);
-      } catch (e) {
-        console.warn("Error during app initialization:", e);
-      } finally {
-        // Signal animated splash to perform its smooth 300ms exit transition
-        setIsAppReady(true);
-      }
+      const results = await Promise.allSettled([
+        initAuth(),
+        loadCart(),
+        useNotificationStore.getState().fetchUnreadCount().catch(() => {}),
+        // Minimum natural sequence duration so user experiences the active running road and intro
+        new Promise((resolve) => setTimeout(resolve, 2200)),
+      ]);
+      // Log any unexpected failures for debugging
+      results.forEach((r, i) => {
+        if (r.status === "rejected") {
+          console.warn(`[prepareApp] task[${i}] failed:`, r.reason);
+        }
+      });
+      // Signal animated splash to perform its smooth 300ms exit transition
+      setIsAppReady(true);
     }
 
     prepareApp();
-  }, []);
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps -- initAuth/loadCart are stable zustand actions; this runs once on mount
 
   useEffect(() => {
     if (user?.id) {
@@ -86,10 +111,11 @@ export default function RootLayout() {
         useNotificationStore.getState().fetchNotifications();
       });
 
-      const unsubNotif = socketService.subscribe("notification", (data: any) => {
+      const unsubNotif = socketService.subscribe("notification", (data: Record<string, unknown>) => {
         useNotificationStore.getState().incrementUnreadCount();
         if (data?.notification) {
-          useNotificationStore.getState().addNewNotification(data.notification);
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
+          useNotificationStore.getState().addNewNotification(data.notification as any);
         } else {
           useNotificationStore.getState().fetchNotifications();
         }
@@ -106,9 +132,10 @@ export default function RootLayout() {
   return (
     <SafeAreaProvider>
       <QueryClientProvider client={queryClient}>
-        <View style={styles.rootContainer}>
-          <StatusBar style="dark" backgroundColor="transparent" translucent />
-          <Stack
+        <ErrorBoundary>
+          <View style={styles.rootContainer}>
+            <StatusBar style="dark" backgroundColor="transparent" translucent />
+            <Stack
             screenOptions={{
               headerShown: false,
               contentStyle: { backgroundColor: COLORS.background },
@@ -140,6 +167,7 @@ export default function RootLayout() {
             />
           )}
         </View>
+        </ErrorBoundary>
       </QueryClientProvider>
     </SafeAreaProvider>
   );
