@@ -3,7 +3,7 @@
     "name": "Intrihub",
     "slug": "intrihub",
     "owner": "sahil_sheikh78",
-    "version": "1.1.9",
+    "version": "1.2.0",
     "orientation": "portrait",
     "icon": "./assets/icon.png",
     "scheme": "intrihub",
@@ -36,7 +36,7 @@
     },
     "android": {
       "package": "com.intrihub.app",
-      "versionCode": 12,
+      "versionCode": 13,
       "config": {
         "googleMaps": {
           "apiKey": "AIzaSyBejehWWHi-GPuqK8V6v2F8sKt_P0ap_oc"

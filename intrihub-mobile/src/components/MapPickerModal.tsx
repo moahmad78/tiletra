@@ -12,7 +12,7 @@ import {
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { WebView } from "react-native-webview";
-import { X, MapPin, Check, Crosshair, Sparkles } from "lucide-react-native";
+import { X, MapPin, Check, Crosshair } from "lucide-react-native";
 import * as Location from "expo-location";
 import { COLORS, SPACING, RADIUS, SHADOWS } from "../constants/theme";
 import { GOOGLE_MAPS_API_KEY } from "../constants/config";
@@ -386,15 +386,10 @@ export const MapPickerModal: React.FC<MapPickerModalProps> = ({
                 <Text style={styles.areaTitle}>
                   {addressDetails.area || addressDetails.street || "Pin Location"}
                 </Text>
-                {isReverseGeocoding ? (
+                {isReverseGeocoding && (
                   <View style={styles.geocodingPill}>
                     <ActivityIndicator size="small" color={COLORS.primary} style={{ transform: [{ scale: 0.7 }] }} />
                     <Text style={styles.geocodingText}>Detecting...</Text>
-                  </View>
-                ) : (
-                  <View style={styles.verifiedPill}>
-                    <Sparkles size={11} color="#15803d" />
-                    <Text style={styles.verifiedText}>GPS Accurated</Text>
                   </View>
                 )}
               </View>
