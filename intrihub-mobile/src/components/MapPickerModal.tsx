@@ -8,9 +8,9 @@ import {
   ActivityIndicator,
   Alert,
   Dimensions,
-  SafeAreaView,
   Platform,
 } from "react-native";
+import { SafeAreaView } from "react-native-safe-area-context";
 import { WebView } from "react-native-webview";
 import { X, MapPin, Check, Crosshair, Sparkles } from "lucide-react-native";
 import * as Location from "expo-location";
@@ -309,7 +309,7 @@ export const MapPickerModal: React.FC<MapPickerModalProps> = ({
 
   return (
     <Modal visible={visible} animationType="slide" onRequestClose={onClose}>
-      <SafeAreaView style={styles.container}>
+      <SafeAreaView style={styles.container} edges={["top"]}>
         {/* Header Bar */}
         <View style={styles.header}>
           <TouchableOpacity onPress={onClose} style={styles.closeBtn} activeOpacity={0.8}>
