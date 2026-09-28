@@ -1,5 +1,6 @@
 import * as Print from "expo-print";
 import * as Sharing from "expo-sharing";
+import * as FileSystem from "expo-file-system";
 import { Alert } from "react-native";
 import { Order } from "../types";
 
@@ -390,25 +391,73 @@ export function getInvoiceHtml(order: any): string {
 }
 
 /**
+ * Safely copy generated PDF from private cache to FileProvider-accessible documentDirectory
+ */
+async function preparePdfUri(rawUri: string, orderId: string): Promise<string> {
+  try {
+    let cleanUri = rawUri;
+    if (!cleanUri.startsWith("file://") && !cleanUri.startsWith("content://")) {
+      cleanUri = `file://${cleanUri}`;
+    }
+
+    const safeOrderId = String(orderId).replace(/[^a-zA-Z0-9_-]/g, "");
+    const fileName = `IntriHub_Invoice_${safeOrderId || Date.now()}.pdf`;
+    const targetDir = FileSystem.documentDirectory || FileSystem.cacheDirectory;
+
+    if (targetDir) {
+      const destination = `${targetDir}${fileName}`;
+      await FileSystem.copyAsync({
+        from: cleanUri,
+        to: destination,
+      });
+      return destination;
+    }
+    return cleanUri;
+  } catch (err) {
+    console.warn("Could not copy PDF to documentDirectory, using original uri:", err);
+    return rawUri;
+  }
+}
+
+/**
  * Direct PDF Download to device storage
  */
 export async function downloadInvoicePDFDirect(order: Order): Promise<{ success: boolean; uri?: string }> {
   try {
     const html = getInvoiceHtml(order);
     const { uri } = await Print.printToFileAsync({ html, base64: false });
+    const orderId = (order as any).orderNumber || order.id || "Order";
+    const shareableUri = await preparePdfUri(uri, orderId);
 
-    if (await Sharing.isAvailableAsync()) {
-      await Sharing.shareAsync(uri, {
-        mimeType: "application/pdf",
-        dialogTitle: `Save Invoice PDF #${order.id}`,
-        UTI: "com.adobe.pdf",
-      });
+    const isAvailable = await Sharing.isAvailableAsync();
+    if (isAvailable) {
+      try {
+        await Sharing.shareAsync(shareableUri, {
+          mimeType: "application/pdf",
+          dialogTitle: `Save Invoice PDF #${orderId}`,
+          UTI: "com.adobe.pdf",
+        });
+        return { success: true, uri: shareableUri };
+      } catch (shareErr) {
+        console.warn("Sharing.shareAsync failed, opening system print dialog as fallback:", shareErr);
+        // Fallback: Opens native system print sheet which has "Save as PDF" built-in
+        await Print.printAsync({ html });
+        return { success: true, uri: shareableUri };
+      }
+    } else {
+      await Print.printAsync({ html });
+      return { success: true, uri: shareableUri };
     }
-
-    return { success: true, uri };
   } catch (error: any) {
     console.error("Direct PDF download error:", error);
-    return { success: false };
+    try {
+      const html = getInvoiceHtml(order);
+      await Print.printAsync({ html });
+      return { success: true };
+    } catch (fallbackErr) {
+      console.error("Print fallback error:", fallbackErr);
+      return { success: false };
+    }
   }
 }
 
@@ -419,16 +468,26 @@ export async function shareInvoicePDF(order: Order): Promise<{ success: boolean 
   try {
     const html = getInvoiceHtml(order);
     const { uri } = await Print.printToFileAsync({ html, base64: false });
+    const orderId = (order as any).orderNumber || order.id || "Order";
+    const shareableUri = await preparePdfUri(uri, orderId);
 
     if (await Sharing.isAvailableAsync()) {
-      await Sharing.shareAsync(uri, {
-        mimeType: "application/pdf",
-        dialogTitle: `Share IntriHub Tax Invoice #${order.id}`,
-        UTI: "com.adobe.pdf",
-      });
+      try {
+        await Sharing.shareAsync(shareableUri, {
+          mimeType: "application/pdf",
+          dialogTitle: `Share IntriHub Tax Invoice #${orderId}`,
+          UTI: "com.adobe.pdf",
+        });
+        return { success: true };
+      } catch (shareErr) {
+        console.warn("Sharing failed, opening print sheet as fallback:", shareErr);
+        await Print.printAsync({ html });
+        return { success: true };
+      }
+    } else {
+      await Print.printAsync({ html });
       return { success: true };
     }
-    return { success: false };
   } catch (error: any) {
     console.error("Share PDF error:", error);
     return { success: false };
