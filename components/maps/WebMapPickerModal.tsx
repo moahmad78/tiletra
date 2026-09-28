@@ -185,12 +185,21 @@ export default function WebMapPickerModal({
       <div className="relative w-full max-w-2xl h-[90vh] max-h-[700px] bg-white rounded-3xl overflow-hidden shadow-2xl flex flex-col border border-gray-100 animate-in fade-in zoom-in-95 duration-200">
         {/* Header */}
         <div className="flex items-center justify-between px-5 py-3.5 border-b border-gray-100 bg-white z-10">
-          <div>
-            <h3 className="text-base font-black text-[#052a51] flex items-center gap-2">
-              <MapPin size={18} className="text-[#F26522]" />
-              Select Exact Delivery Point
-            </h3>
-            <p className="text-xs text-gray-500 mt-0.5">Drag map to pin your site, gate or entrance</p>
+          <div className="flex items-center gap-2.5">
+            <svg width="22" height="22" viewBox="0 0 48 48">
+              <path d="M24 4C14.06 4 6 12.06 6 22c0 7.7 5.02 14.23 12.06 16.71L24 44l5.94-5.29C36.98 36.23 42 29.7 42 22c0-9.94-8.06-18-18-18z" fill="#EA4335" />
+              <path d="M24 4c-9.94 0-18 8.06-18 18 0 7.7 5.02 14.23 12.06 16.71L24 44V22H6.1c.14-1.39.46-2.73.95-4L24 4z" fill="#4285F4" />
+              <path d="M24 4v18h17.9c-.14-1.39-.46-2.73-.95-4L24 4z" fill="#FBBC04" />
+              <path d="M24 22v22l5.94-5.29C36.98 36.23 42 29.7 42 22H24z" fill="#34A853" />
+              <circle cx="24" cy="22" r="7" fill="#ffffff" />
+            </svg>
+            <div>
+              <div className="flex items-center gap-2">
+                <h3 className="text-sm font-black text-[#052a51]">Google Maps Location Picker</h3>
+                <span className="text-[10px] font-bold text-green-700 bg-green-50 px-2 py-0.5 rounded-full border border-green-200">Live</span>
+              </div>
+              <p className="text-xs text-gray-500">Drag map to pin your exact site, gate or entrance</p>
+            </div>
           </div>
           <button
             type="button"
@@ -216,12 +225,15 @@ export default function WebMapPickerModal({
           {/* Center Pin Overlay (Fixed to center of map) */}
           <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-full pointer-events-none z-30 flex flex-col items-center select-none">
             <div className="px-3 py-1 bg-[#052a51] text-white text-[11px] font-black rounded-full shadow-lg mb-1 whitespace-nowrap animate-bounce flex items-center gap-1">
-              <Sparkles size={11} className="text-[#F26522]" />
+              <Sparkles size={11} className="text-amber-300" />
               <span>Deliver here</span>
             </div>
-            <svg width="44" height="44" viewBox="0 0 24 24" fill="#F26522" stroke="#ffffff" strokeWidth="1.5">
-              <path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7z" />
-              <circle cx="12" cy="9" r="2.5" fill="#ffffff" />
+            <svg width="48" height="48" viewBox="0 0 48 48">
+              <path d="M24 4C14.06 4 6 12.06 6 22c0 7.7 5.02 14.23 12.06 16.71L24 44l5.94-5.29C36.98 36.23 42 29.7 42 22c0-9.94-8.06-18-18-18z" fill="#EA4335" />
+              <path d="M24 4c-9.94 0-18 8.06-18 18 0 7.7 5.02 14.23 12.06 16.71L24 44V22H6.1c.14-1.39.46-2.73.95-4L24 4z" fill="#4285F4" />
+              <path d="M24 4v18h17.9c-.14-1.39-.46-2.73-.95-4L24 4z" fill="#FBBC04" />
+              <path d="M24 22v22l5.94-5.29C36.98 36.23 42 29.7 42 22H24z" fill="#34A853" />
+              <circle cx="24" cy="22" r="7" fill="#ffffff" />
             </svg>
             <div className="w-3.5 h-1.5 bg-black/30 rounded-full mt-[-3px]" />
           </div>

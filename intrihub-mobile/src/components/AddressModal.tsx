@@ -10,6 +10,7 @@ import {
   ActivityIndicator,
   Alert,
 } from "react-native";
+import Svg, { Path, Circle } from "react-native-svg";
 import {
   X,
   Plus,
@@ -21,6 +22,9 @@ import {
   HardHat,
   AlertCircle,
   Sparkles,
+  ChevronDown,
+  ChevronUp,
+  Navigation,
 } from "lucide-react-native";
 import * as Location from "expo-location";
 import { Address } from "../types";
@@ -29,6 +33,29 @@ import { useAuthStore } from "../store/authStore";
 import { updateProfile } from "../api/auth";
 import { GOOGLE_MAPS_API_KEY } from "../constants/config";
 import { MapPickerModal, PickedLocation } from "./MapPickerModal";
+
+// Authentic Google Maps 4-color Pin Icon
+export const GoogleMapsIcon: React.FC<{ size?: number }> = ({ size = 20 }) => (
+  <Svg width={size} height={size} viewBox="0 0 48 48">
+    <Path
+      d="M24 4C14.06 4 6 12.06 6 22c0 7.7 5.02 14.23 12.06 16.71L24 44l5.94-5.29C36.98 36.23 42 29.7 42 22c0-9.94-8.06-18-18-18z"
+      fill="#EA4335"
+    />
+    <Path
+      d="M24 4c-9.94 0-18 8.06-18 18 0 7.7 5.02 14.23 12.06 16.71L24 44V22H6.1c.14-1.39.46-2.73.95-4L24 4z"
+      fill="#4285F4"
+    />
+    <Path
+      d="M24 4v18h17.9c-.14-1.39-.46-2.73-.95-4L24 4z"
+      fill="#FBBC04"
+    />
+    <Path
+      d="M24 22v22l5.94-5.29C36.98 36.23 42 29.7 42 22H24z"
+      fill="#34A853"
+    />
+    <Circle cx="24" cy="22" r="7" fill="#ffffff" />
+  </Svg>
+);
 
 interface AddressModalProps {
   visible: boolean;
@@ -42,16 +69,14 @@ export const AddressModal: React.FC<AddressModalProps> = ({ visible, onClose, on
   const [isAddingNew, setIsAddingNew] = useState(false);
   const [loading, setLoading] = useState(false);
   const [detectingLocation, setDetectingLocation] = useState(false);
-  const [detectedNotice, setDetectedNotice] = useState<string | null>(null);
   const [showMapPicker, setShowMapPicker] = useState(false);
+  const [showManualAreaEdit, setShowManualAreaEdit] = useState(false);
 
   // Form Fields
   const [label, setLabel] = useState<"Home" | "Work" | "Site" | "Other">("Home");
   const [fullName, setFullName] = useState(user?.name || "");
   const [phone, setPhone] = useState(user?.phone?.replace(/\D/g, "").slice(-10) || "");
   const [houseNumber, setHouseNumber] = useState("");
-  const [buildingName, setBuildingName] = useState("");
-  const [floor, setFloor] = useState("");
   const [street, setStreet] = useState("");
   const [area, setArea] = useState("");
   const [landmark, setLandmark] = useState("");
@@ -80,13 +105,12 @@ export const AddressModal: React.FC<AddressModalProps> = ({ visible, onClose, on
     try {
       setDetectingLocation(true);
       setError("");
-      setDetectedNotice(null);
 
       const { status } = await Location.requestForegroundPermissionsAsync();
       if (status !== "granted") {
         Alert.alert(
-          "Permission Required",
-          "Please enable location access in device settings to automatically detect your address."
+          "Location Permission",
+          "Please allow location access to auto-detect your delivery address via Google Maps."
         );
         setDetectingLocation(false);
         return;
@@ -163,10 +187,9 @@ export const AddressModal: React.FC<AddressModalProps> = ({ visible, onClose, on
       if (detectedCity) setCity(detectedCity);
       if (detectedState) setState(detectedState);
       if (detectedPincode) setPincode(detectedPincode);
-      if (detectedHouse) setHouseNumber(detectedHouse);
-      if (detectedLandmark) setLandmark(detectedLandmark);
+      if (detectedHouse && !houseNumber) setHouseNumber(detectedHouse);
+      if (detectedLandmark && !landmark) setLandmark(detectedLandmark);
 
-      setDetectedNotice("GPS Address detected! Review & add flat/floor details if needed.");
       setIsAddingNew(true);
     } catch (err: any) {
       console.error("Auto detect address error:", err);
@@ -186,12 +209,12 @@ export const AddressModal: React.FC<AddressModalProps> = ({ visible, onClose, on
       setError("Please enter a valid 10-digit phone number");
       return;
     }
-    if (!street.trim() && !area.trim() && !buildingName.trim()) {
-      setError("Please enter street, area or building name");
+    if (!houseNumber.trim() && !street.trim() && !area.trim()) {
+      setError("Please enter flat / house / building name");
       return;
     }
     if (!city.trim()) {
-      setError("Please enter city");
+      setError("Please select city or detect location");
       return;
     }
     if (!pincode.trim() || pincode.replace(/\D/g, "").length < 6) {
@@ -204,12 +227,12 @@ export const AddressModal: React.FC<AddressModalProps> = ({ visible, onClose, on
       setError("");
 
       const formatted = [
-        houseNumber ? `Flat ${houseNumber}` : null,
-        buildingName,
-        street,
-        area,
-        city,
-        pincode,
+        houseNumber.trim(),
+        street.trim(),
+        area.trim(),
+        landmark.trim() ? `Near ${landmark.trim()}` : null,
+        city.trim(),
+        pincode.trim(),
       ]
         .filter(Boolean)
         .join(", ");
@@ -220,8 +243,6 @@ export const AddressModal: React.FC<AddressModalProps> = ({ visible, onClose, on
         phone: phone.trim(),
         label,
         houseNumber: houseNumber.trim() || undefined,
-        buildingName: buildingName.trim() || undefined,
-        floor: floor.trim() || undefined,
         street: street.trim() || area.trim(),
         area: area.trim() || undefined,
         landmark: landmark.trim() || undefined,
@@ -234,8 +255,8 @@ export const AddressModal: React.FC<AddressModalProps> = ({ visible, onClose, on
         deliveryInstructions: deliveryInstructions.trim() || undefined,
         formattedAddress: formatted,
         isDefault: addresses.length === 0,
-        addressLine1: [houseNumber, buildingName, street].filter(Boolean).join(", "),
-        addressLine2: [area, landmark].filter(Boolean).join(", "),
+        addressLine1: [houseNumber.trim(), street.trim()].filter(Boolean).join(", "),
+        addressLine2: [area.trim(), landmark.trim()].filter(Boolean).join(", "),
       };
 
       // Update auth store addresses
@@ -269,15 +290,15 @@ export const AddressModal: React.FC<AddressModalProps> = ({ visible, onClose, on
           <View style={styles.header}>
             <View>
               <Text style={styles.headerTitle}>
-                {isAddingNew ? "Add Delivery Address" : "Delivery Address"}
+                {isAddingNew ? "Add Delivery Address" : "Select Delivery Address"}
               </Text>
               <Text style={styles.headerSubtitle}>
                 {isAddingNew
-                  ? "Enter accurate delivery details for swift material dispatch"
-                  : "Choose where your materials should be delivered"}
+                  ? "Where should your materials be delivered?"
+                  : "Choose delivery location for orders"}
               </Text>
             </View>
-            <TouchableOpacity onPress={onClose} style={styles.closeBtn}>
+            <TouchableOpacity onPress={onClose} style={styles.closeBtn} activeOpacity={0.7}>
               <X size={20} color={COLORS.textSecondary} />
             </TouchableOpacity>
           </View>
@@ -285,40 +306,35 @@ export const AddressModal: React.FC<AddressModalProps> = ({ visible, onClose, on
           <ScrollView style={styles.content} showsVerticalScrollIndicator={false}>
             {isAddingNew ? (
               <View style={styles.form}>
-                {/* 1-Click Detect Location & Drag on Map Buttons */}
-                <View style={styles.formDetectRow}>
-                  <TouchableOpacity
-                    style={styles.detectLocationFormBtn}
-                    onPress={handleUseCurrentLocation}
-                    disabled={detectingLocation}
-                    activeOpacity={0.85}
-                  >
-                    {detectingLocation ? (
-                      <ActivityIndicator size="small" color="#fff" />
-                    ) : (
-                      <MapPin size={15} color="#fff" />
-                    )}
-                    <Text style={styles.detectLocationFormBtnText}>
-                      {detectingLocation ? "Detecting..." : "Auto-Detect GPS"}
-                    </Text>
-                  </TouchableOpacity>
-
-                  <TouchableOpacity
-                    style={styles.pickOnMapFormBtn}
-                    onPress={() => setShowMapPicker(true)}
-                    activeOpacity={0.85}
-                  >
-                    <Sparkles size={14} color={COLORS.primary} />
-                    <Text style={styles.pickOnMapFormBtnText}>Choose on Map (Drag)</Text>
-                  </TouchableOpacity>
-                </View>
-
-                {detectedNotice ? (
-                  <View style={styles.successBanner}>
-                    <Check size={14} color="#15803d" />
-                    <Text style={styles.successText}>{detectedNotice}</Text>
+                {/* 1. Google Maps Verified Location Card */}
+                <View style={styles.googleMapsCard}>
+                  <View style={styles.googleMapsCardHeader}>
+                    <View style={styles.googleBrandRow}>
+                      <GoogleMapsIcon size={18} />
+                      <Text style={styles.googleBrandText}>Google Maps</Text>
+                      <View style={styles.verifiedDot} />
+                      <Text style={styles.verifiedText}>Verified</Text>
+                    </View>
+                    <TouchableOpacity
+                      style={styles.changeOnMapBtn}
+                      onPress={() => setShowMapPicker(true)}
+                      activeOpacity={0.8}
+                    >
+                      <Text style={styles.changeOnMapBtnText}>Change on Map</Text>
+                    </TouchableOpacity>
                   </View>
-                ) : null}
+
+                  <View style={styles.googleLocationDetails}>
+                    <Text style={styles.googleAreaTitle} numberOfLines={1}>
+                      {area || street || "Location Selected"}
+                    </Text>
+                    <Text style={styles.googleSubText} numberOfLines={2}>
+                      {[street, area, city, pincode ? `PIN ${pincode}` : null]
+                        .filter(Boolean)
+                        .join(", ") || "Tap Change on Map to pick exact site"}
+                    </Text>
+                  </View>
+                </View>
 
                 {error ? (
                   <View style={styles.errorBanner}>
@@ -327,43 +343,70 @@ export const AddressModal: React.FC<AddressModalProps> = ({ visible, onClose, on
                   </View>
                 ) : null}
 
-                {/* Address Type Selector */}
-                <Text style={styles.inputLabel}>Address Type</Text>
-                <View style={styles.labelRow}>
-                  {[
-                    { key: "Home", icon: Home },
-                    { key: "Work", icon: Briefcase },
-                    { key: "Site", icon: HardHat },
-                    { key: "Other", icon: Building },
-                  ].map(({ key, icon: Icon }) => (
-                    <TouchableOpacity
-                      key={key}
-                      style={[styles.labelBtn, label === key && styles.labelBtnActive]}
-                      onPress={() => setLabel(key as any)}
-                    >
-                      <Icon
-                        size={14}
-                        color={label === key ? COLORS.textWhite : COLORS.textSecondary}
-                      />
-                      <Text
-                        style={[
-                          styles.labelText,
-                          label === key && styles.labelTextActive,
-                        ]}
-                      >
-                        {key}
-                      </Text>
-                    </TouchableOpacity>
-                  ))}
+                {/* 2. Primary Doorstep Input */}
+                <View style={styles.field}>
+                  <Text style={styles.inputLabel}>Flat / House / Building *</Text>
+                  <TextInput
+                    style={styles.input}
+                    placeholder="e.g. Flat 402, 4th Floor, Sobha Daffodil"
+                    placeholderTextColor={COLORS.textTertiary}
+                    value={houseNumber}
+                    onChangeText={setHouseNumber}
+                  />
                 </View>
 
-                {/* Contact Fields */}
+                {/* 3. Nearby Landmark */}
+                <View style={styles.field}>
+                  <Text style={styles.inputLabel}>Nearby Landmark (Optional)</Text>
+                  <TextInput
+                    style={styles.input}
+                    placeholder="e.g. Near BDA Complex / Gate 2"
+                    placeholderTextColor={COLORS.textTertiary}
+                    value={landmark}
+                    onChangeText={setLandmark}
+                  />
+                </View>
+
+                {/* 4. Save Address As (Chips) */}
+                <View style={styles.field}>
+                  <Text style={styles.inputLabel}>Save Address As</Text>
+                  <View style={styles.labelRow}>
+                    {[
+                      { key: "Home", icon: Home, label: "Home" },
+                      { key: "Work", icon: Briefcase, label: "Work" },
+                      { key: "Site", icon: HardHat, label: "Site" },
+                      { key: "Other", icon: Building, label: "Other" },
+                    ].map(({ key, icon: Icon, label: itemLabel }) => (
+                      <TouchableOpacity
+                        key={key}
+                        style={[styles.labelBtn, label === key && styles.labelBtnActive]}
+                        onPress={() => setLabel(key as any)}
+                        activeOpacity={0.8}
+                      >
+                        <Icon
+                          size={14}
+                          color={label === key ? COLORS.textWhite : COLORS.textSecondary}
+                        />
+                        <Text
+                          style={[
+                            styles.labelText,
+                            label === key && styles.labelTextActive,
+                          ]}
+                        >
+                          {itemLabel}
+                        </Text>
+                      </TouchableOpacity>
+                    ))}
+                  </View>
+                </View>
+
+                {/* 5. Contact Details (Compact Row) */}
                 <View style={styles.fieldRow}>
                   <View style={styles.fieldHalf}>
                     <Text style={styles.inputLabel}>Recipient Name *</Text>
                     <TextInput
                       style={styles.input}
-                      placeholder="e.g. IntriHub"
+                      placeholder="Name"
                       placeholderTextColor={COLORS.textTertiary}
                       value={fullName}
                       onChangeText={setFullName}
@@ -383,117 +426,77 @@ export const AddressModal: React.FC<AddressModalProps> = ({ visible, onClose, on
                   </View>
                 </View>
 
-                {/* Doorstep Precision Fields */}
-                <View style={styles.fieldRow}>
-                  <View style={styles.fieldHalf}>
-                    <Text style={styles.inputLabel}>House / Flat / Shop No.</Text>
-                    <TextInput
-                      style={styles.input}
-                      placeholder="e.g. Flat 402"
-                      placeholderTextColor={COLORS.textTertiary}
-                      value={houseNumber}
-                      onChangeText={setHouseNumber}
-                    />
+                {/* 6. Expandable Manual Area/City/PIN Override */}
+                <TouchableOpacity
+                  style={styles.accordionToggle}
+                  onPress={() => setShowManualAreaEdit(!showManualAreaEdit)}
+                  activeOpacity={0.7}
+                >
+                  <Text style={styles.accordionToggleText}>
+                    {showManualAreaEdit ? "Hide full address details" : "Edit street, city or PIN code"}
+                  </Text>
+                  {showManualAreaEdit ? (
+                    <ChevronUp size={15} color={COLORS.primary} />
+                  ) : (
+                    <ChevronDown size={15} color={COLORS.primary} />
+                  )}
+                </TouchableOpacity>
+
+                {showManualAreaEdit && (
+                  <View style={styles.manualAreaBox}>
+                    <View style={styles.field}>
+                      <Text style={styles.inputLabel}>Street / Road</Text>
+                      <TextInput
+                        style={styles.input}
+                        placeholder="Street name"
+                        placeholderTextColor={COLORS.textTertiary}
+                        value={street}
+                        onChangeText={setStreet}
+                      />
+                    </View>
+                    <View style={styles.field}>
+                      <Text style={styles.inputLabel}>Area / Locality</Text>
+                      <TextInput
+                        style={styles.input}
+                        placeholder="Area name"
+                        placeholderTextColor={COLORS.textTertiary}
+                        value={area}
+                        onChangeText={setArea}
+                      />
+                    </View>
+                    <View style={styles.fieldRow}>
+                      <View style={styles.fieldHalf}>
+                        <Text style={styles.inputLabel}>City</Text>
+                        <TextInput
+                          style={styles.input}
+                          placeholder="City"
+                          placeholderTextColor={COLORS.textTertiary}
+                          value={city}
+                          onChangeText={setCity}
+                        />
+                      </View>
+                      <View style={styles.fieldHalf}>
+                        <Text style={styles.inputLabel}>PIN Code</Text>
+                        <TextInput
+                          style={styles.input}
+                          placeholder="6-digit PIN"
+                          placeholderTextColor={COLORS.textTertiary}
+                          keyboardType="number-pad"
+                          maxLength={6}
+                          value={pincode}
+                          onChangeText={setPincode}
+                        />
+                      </View>
+                    </View>
                   </View>
-                  <View style={styles.fieldHalf}>
-                    <Text style={styles.inputLabel}>Floor (Optional)</Text>
-                    <TextInput
-                      style={styles.input}
-                      placeholder="e.g. 4th Floor"
-                      placeholderTextColor={COLORS.textTertiary}
-                      value={floor}
-                      onChangeText={setFloor}
-                    />
-                  </View>
-                </View>
+                )}
 
-                <View style={styles.field}>
-                  <Text style={styles.inputLabel}>Building / Apartment / Project Name</Text>
-                  <TextInput
-                    style={styles.input}
-                    placeholder="e.g. Kumari Elite Apartment / Sobha Daffodil"
-                    placeholderTextColor={COLORS.textTertiary}
-                    value={buildingName}
-                    onChangeText={setBuildingName}
-                  />
-                </View>
-
-                <View style={styles.field}>
-                  <Text style={styles.inputLabel}>Street / Road *</Text>
-                  <TextInput
-                    style={styles.input}
-                    placeholder="e.g. 24th Main Road, Sector 2"
-                    placeholderTextColor={COLORS.textTertiary}
-                    value={street}
-                    onChangeText={setStreet}
-                  />
-                </View>
-
-                <View style={styles.field}>
-                  <Text style={styles.inputLabel}>Area / Locality / Sector</Text>
-                  <TextInput
-                    style={styles.input}
-                    placeholder="e.g. HSR Layout"
-                    placeholderTextColor={COLORS.textTertiary}
-                    value={area}
-                    onChangeText={setArea}
-                  />
-                </View>
-
-                <View style={styles.field}>
-                  <Text style={styles.inputLabel}>Nearby Landmark</Text>
-                  <TextInput
-                    style={styles.input}
-                    placeholder="e.g. Opposite BDA Complex Gate 2"
-                    placeholderTextColor={COLORS.textTertiary}
-                    value={landmark}
-                    onChangeText={setLandmark}
-                  />
-                </View>
-
-                <View style={styles.fieldRow}>
-                  <View style={styles.fieldHalf}>
-                    <Text style={styles.inputLabel}>City *</Text>
-                    <TextInput
-                      style={styles.input}
-                      placeholder="e.g. Bengaluru"
-                      placeholderTextColor={COLORS.textTertiary}
-                      value={city}
-                      onChangeText={setCity}
-                    />
-                  </View>
-                  <View style={styles.fieldHalf}>
-                    <Text style={styles.inputLabel}>PIN Code *</Text>
-                    <TextInput
-                      style={styles.input}
-                      placeholder="6-digit PIN"
-                      placeholderTextColor={COLORS.textTertiary}
-                      keyboardType="number-pad"
-                      maxLength={6}
-                      value={pincode}
-                      onChangeText={setPincode}
-                    />
-                  </View>
-                </View>
-
-                <View style={styles.field}>
-                  <Text style={styles.inputLabel}>Delivery Instructions (For Driver)</Text>
-                  <TextInput
-                    style={[styles.input, styles.textArea]}
-                    placeholder="e.g. Call before entering gate, heavy tiles unloading site"
-                    placeholderTextColor={COLORS.textTertiary}
-                    multiline
-                    numberOfLines={2}
-                    value={deliveryInstructions}
-                    onChangeText={setDeliveryInstructions}
-                  />
-                </View>
-
-                {/* Form Action Buttons */}
+                {/* 7. Action Buttons */}
                 <View style={styles.formActions}>
                   <TouchableOpacity
                     style={styles.cancelBtn}
                     onPress={() => setIsAddingNew(false)}
+                    activeOpacity={0.8}
                   >
                     <Text style={styles.cancelBtnText}>Back</Text>
                   </TouchableOpacity>
@@ -514,7 +517,29 @@ export const AddressModal: React.FC<AddressModalProps> = ({ visible, onClose, on
             ) : (
               /* Saved Address List */
               <View style={styles.addressList}>
-                {/* 1-Click Use Current Location Banner */}
+                {/* 1. Google Maps Choice Card */}
+                <TouchableOpacity
+                  style={styles.googleMapsHeroCard}
+                  onPress={() => setShowMapPicker(true)}
+                  activeOpacity={0.88}
+                >
+                  <View style={styles.googleMapsHeroIconWrap}>
+                    <GoogleMapsIcon size={24} />
+                  </View>
+                  <View style={styles.heroTextContainer}>
+                    <View style={styles.heroTitleRow}>
+                      <Text style={styles.heroTitle}>Choose on Google Maps</Text>
+                      <View style={styles.googleBadge}>
+                        <Text style={styles.googleBadgeText}>MAP PIN</Text>
+                      </View>
+                    </View>
+                    <Text style={styles.heroSubtitle}>
+                      Drag pin to select exact building, gate or site
+                    </Text>
+                  </View>
+                </TouchableOpacity>
+
+                {/* 2. Auto-Detect Current GPS Location */}
                 <TouchableOpacity
                   style={styles.detectLocationHeroCard}
                   onPress={handleUseCurrentLocation}
@@ -523,67 +548,46 @@ export const AddressModal: React.FC<AddressModalProps> = ({ visible, onClose, on
                 >
                   <View style={styles.detectLocationIconWrap}>
                     {detectingLocation ? (
-                      <ActivityIndicator size="small" color="#fff" />
+                      <ActivityIndicator size="small" color={COLORS.primary} />
                     ) : (
-                      <MapPin size={20} color="#fff" />
+                      <Navigation size={20} color={COLORS.primary} />
                     )}
                   </View>
-                  <View style={styles.detectLocationTextContainer}>
-                    <View style={styles.detectLocationTitleRow}>
-                      <Text style={styles.detectLocationTitle}>Use Current Location</Text>
+                  <View style={styles.heroTextContainer}>
+                    <View style={styles.heroTitleRow}>
+                      <Text style={styles.detectHeroTitle}>Use Current Location</Text>
                       <View style={styles.oneClickBadge}>
-                        <Sparkles size={10} color="#fff" />
+                        <Sparkles size={9} color="#fff" />
                         <Text style={styles.oneClickBadgeText}>1-CLICK</Text>
                       </View>
                     </View>
-                    <Text style={styles.detectLocationSubtitle}>
+                    <Text style={styles.detectHeroSubtitle}>
                       {detectingLocation
-                        ? "Fetching GPS & reverse geocoding address..."
+                        ? "Detecting via Google Maps..."
                         : "Auto-detects street, area, city & PIN code"}
                     </Text>
                   </View>
                 </TouchableOpacity>
 
-                {/* 2. Choose on Interactive Map Card */}
-                <TouchableOpacity
-                  style={styles.pickOnMapHeroCard}
-                  onPress={() => setShowMapPicker(true)}
-                  activeOpacity={0.88}
-                >
-                  <View style={styles.pickOnMapHeroIconWrap}>
-                    <Sparkles size={18} color={COLORS.primary} />
-                  </View>
-                  <View style={styles.detectLocationTextContainer}>
-                    <View style={styles.detectLocationTitleRow}>
-                      <Text style={styles.pickOnMapHeroTitle}>Choose on Interactive Map</Text>
-                      <View style={styles.dragPinBadge}>
-                        <Text style={styles.dragPinBadgeText}>DRAG PIN</Text>
-                      </View>
-                    </View>
-                    <Text style={styles.pickOnMapHeroSubtitle}>
-                      Pin exact site, gate or entrance on Google Map
-                    </Text>
-                  </View>
-                </TouchableOpacity>
-
+                {/* 3. Manual Add Button */}
                 <TouchableOpacity
                   style={styles.addNewBtn}
                   onPress={() => {
-                    setDetectedNotice(null);
                     setIsAddingNew(true);
                   }}
                   activeOpacity={0.85}
                 >
-                  <Plus size={18} color={COLORS.primary} />
-                  <Text style={styles.addNewText}>Add New Delivery Address Manually</Text>
+                  <Plus size={16} color={COLORS.textSecondary} />
+                  <Text style={styles.addNewText}>Enter Address Manually</Text>
                 </TouchableOpacity>
 
+                {/* Saved Address Cards */}
                 {addresses.length === 0 ? (
                   <View style={styles.emptyState}>
-                    <MapPin size={40} color={COLORS.textTertiary} />
+                    <MapPin size={36} color={COLORS.textTertiary} />
                     <Text style={styles.emptyTitle}>No saved addresses</Text>
                     <Text style={styles.emptySub}>
-                      Add your site, home or shop address to place material orders
+                      Add your site, home or shop address to place orders
                     </Text>
                   </View>
                 ) : (
@@ -646,9 +650,8 @@ export const AddressModal: React.FC<AddressModalProps> = ({ visible, onClose, on
           if (loc.city) setCity(loc.city);
           if (loc.state) setState(loc.state);
           if (loc.pincode) setPincode(loc.pincode);
-          if (loc.houseNumber) setHouseNumber(loc.houseNumber);
-          if (loc.landmark) setLandmark(loc.landmark);
-          setDetectedNotice(`Location pinned: ${loc.formattedAddress}`);
+          if (loc.houseNumber && !houseNumber) setHouseNumber(loc.houseNumber);
+          if (loc.landmark && !landmark) setLandmark(loc.landmark);
           setIsAddingNew(true);
         }}
       />
@@ -666,29 +669,35 @@ const styles = StyleSheet.create({
     backgroundColor: COLORS.surface,
     borderTopLeftRadius: RADIUS.xl,
     borderTopRightRadius: RADIUS.xl,
-    maxHeight: "90%",
-    paddingBottom: SPACING.xl,
+    maxHeight: "92%",
   },
   header: {
     flexDirection: "row",
-    alignItems: "flex-start",
+    alignItems: "center",
     justifyContent: "space-between",
-    padding: SPACING.lg,
+    paddingHorizontal: SPACING.lg,
+    paddingTop: SPACING.md,
+    paddingBottom: SPACING.sm,
     borderBottomWidth: 1,
     borderBottomColor: COLORS.border,
   },
   headerTitle: {
-    fontSize: 17,
+    fontSize: 16,
     fontWeight: "800",
     color: COLORS.text,
   },
   headerSubtitle: {
-    fontSize: 12,
+    fontSize: 11,
     color: COLORS.textTertiary,
     marginTop: 2,
   },
   closeBtn: {
-    padding: SPACING.xs,
+    width: 32,
+    height: 32,
+    borderRadius: 16,
+    alignItems: "center",
+    justifyContent: "center",
+    backgroundColor: COLORS.background,
   },
   content: {
     paddingHorizontal: SPACING.lg,
@@ -696,6 +705,68 @@ const styles = StyleSheet.create({
   },
   form: {
     paddingBottom: SPACING.xxl,
+  },
+  googleMapsCard: {
+    backgroundColor: "#F8FAFC",
+    borderRadius: RADIUS.lg,
+    padding: SPACING.md,
+    borderWidth: 1.5,
+    borderColor: "#E2E8F0",
+    marginBottom: SPACING.md,
+  },
+  googleMapsCardHeader: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    marginBottom: 6,
+  },
+  googleBrandRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 6,
+  },
+  googleBrandText: {
+    fontSize: 13,
+    fontWeight: "800",
+    color: "#1E293B",
+  },
+  verifiedDot: {
+    width: 4,
+    height: 4,
+    borderRadius: 2,
+    backgroundColor: "#94A3B8",
+  },
+  verifiedText: {
+    fontSize: 10,
+    fontWeight: "700",
+    color: "#16A34A",
+  },
+  changeOnMapBtn: {
+    paddingHorizontal: 10,
+    paddingVertical: 4,
+    backgroundColor: "#EFF6FF",
+    borderRadius: RADIUS.sm,
+    borderWidth: 1,
+    borderColor: "#BFDBFE",
+  },
+  changeOnMapBtnText: {
+    fontSize: 11,
+    fontWeight: "800",
+    color: COLORS.primary,
+  },
+  googleLocationDetails: {
+    marginTop: 2,
+  },
+  googleAreaTitle: {
+    fontSize: 15,
+    fontWeight: "800",
+    color: COLORS.text,
+  },
+  googleSubText: {
+    fontSize: 12,
+    color: COLORS.textSecondary,
+    marginTop: 2,
+    lineHeight: 16,
   },
   errorBanner: {
     flexDirection: "row",
@@ -712,18 +783,36 @@ const styles = StyleSheet.create({
     fontWeight: "600",
     flex: 1,
   },
+  field: {
+    marginBottom: SPACING.md,
+  },
+  fieldRow: {
+    flexDirection: "row",
+    gap: SPACING.md,
+    marginBottom: SPACING.md,
+  },
+  fieldHalf: {
+    flex: 1,
+  },
   inputLabel: {
     fontSize: 11,
     fontWeight: "700",
     color: COLORS.textSecondary,
-    marginBottom: 6,
-    textTransform: "uppercase",
-    letterSpacing: 0.5,
+    marginBottom: 5,
+  },
+  input: {
+    backgroundColor: COLORS.background,
+    borderWidth: 1,
+    borderColor: COLORS.border,
+    borderRadius: RADIUS.md,
+    paddingHorizontal: SPACING.md,
+    height: 44,
+    fontSize: 13,
+    color: COLORS.text,
   },
   labelRow: {
     flexDirection: "row",
     gap: SPACING.sm,
-    marginBottom: SPACING.md,
   },
   labelBtn: {
     flex: 1,
@@ -731,7 +820,7 @@ const styles = StyleSheet.create({
     alignItems: "center",
     justifyContent: "center",
     gap: 4,
-    paddingVertical: 10,
+    height: 38,
     backgroundColor: COLORS.background,
     borderRadius: RADIUS.md,
     borderWidth: 1,
@@ -749,36 +838,30 @@ const styles = StyleSheet.create({
   labelTextActive: {
     color: COLORS.textWhite,
   },
-  field: {
-    marginBottom: SPACING.md,
-  },
-  fieldRow: {
+  accordionToggle: {
     flexDirection: "row",
-    gap: SPACING.md,
+    alignItems: "center",
+    justifyContent: "space-between",
+    paddingVertical: 10,
+    marginBottom: SPACING.sm,
+  },
+  accordionToggleText: {
+    fontSize: 12,
+    fontWeight: "700",
+    color: COLORS.primary,
+  },
+  manualAreaBox: {
+    backgroundColor: "#F8FAFC",
+    padding: SPACING.md,
+    borderRadius: RADIUS.md,
     marginBottom: SPACING.md,
-  },
-  fieldHalf: {
-    flex: 1,
-  },
-  input: {
-    backgroundColor: COLORS.background,
     borderWidth: 1,
     borderColor: COLORS.border,
-    borderRadius: RADIUS.md,
-    paddingHorizontal: SPACING.md,
-    height: 44,
-    fontSize: 13,
-    color: COLORS.text,
-  },
-  textArea: {
-    height: 60,
-    paddingTop: SPACING.sm,
-    textAlignVertical: "top",
   },
   formActions: {
     flexDirection: "row",
     gap: SPACING.md,
-    marginTop: SPACING.md,
+    marginTop: SPACING.sm,
   },
   cancelBtn: {
     flex: 1,
@@ -805,99 +888,88 @@ const styles = StyleSheet.create({
     ...SHADOWS.sm,
   },
   saveBtnText: {
-    fontSize: 13,
+    fontSize: 14,
     fontWeight: "800",
     color: COLORS.textWhite,
-  },
-  formDetectRow: {
-    flexDirection: "row",
-    gap: SPACING.sm,
-    marginBottom: SPACING.md,
-  },
-  detectLocationFormBtn: {
-    flex: 1,
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "center",
-    gap: 6,
-    backgroundColor: COLORS.primary,
-    paddingVertical: 12,
-    borderRadius: RADIUS.md,
-    ...SHADOWS.sm,
-  },
-  detectLocationFormBtnText: {
-    fontSize: 12,
-    fontWeight: "800",
-    color: "#fff",
-  },
-  pickOnMapFormBtn: {
-    flex: 1,
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "center",
-    gap: 6,
-    backgroundColor: "#fff",
-    borderWidth: 1.5,
-    borderColor: COLORS.primary,
-    paddingVertical: 12,
-    borderRadius: RADIUS.md,
-    ...SHADOWS.sm,
-  },
-  pickOnMapFormBtnText: {
-    fontSize: 12,
-    fontWeight: "800",
-    color: COLORS.primary,
-  },
-  successBanner: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 6,
-    backgroundColor: "#f0fdf4",
-    borderWidth: 1,
-    borderColor: "#bbf7d0",
-    padding: SPACING.sm,
-    borderRadius: RADIUS.md,
-    marginBottom: SPACING.md,
-  },
-  successText: {
-    fontSize: 12,
-    fontWeight: "700",
-    color: "#15803d",
-    flex: 1,
   },
   addressList: {
     paddingBottom: SPACING.xxl,
   },
-  detectLocationHeroCard: {
+  googleMapsHeroCard: {
     flexDirection: "row",
     alignItems: "center",
-    backgroundColor: COLORS.primary,
+    backgroundColor: "#FFFFFF",
     padding: SPACING.md,
     borderRadius: RADIUS.lg,
-    marginBottom: SPACING.xs,
+    marginBottom: SPACING.sm,
     gap: SPACING.md,
-    ...SHADOWS.md,
+    borderWidth: 1.5,
+    borderColor: "#E2E8F0",
+    ...SHADOWS.sm,
   },
-  detectLocationIconWrap: {
-    width: 42,
-    height: 42,
-    borderRadius: 21,
-    backgroundColor: "rgba(255,255,255,0.2)",
+  googleMapsHeroIconWrap: {
+    width: 44,
+    height: 44,
+    borderRadius: 22,
+    backgroundColor: "#F1F5F9",
     alignItems: "center",
     justifyContent: "center",
   },
-  detectLocationTextContainer: {
+  heroTextContainer: {
     flex: 1,
   },
-  detectLocationTitleRow: {
+  heroTitleRow: {
     flexDirection: "row",
     alignItems: "center",
     gap: 6,
   },
-  detectLocationTitle: {
+  heroTitle: {
     fontSize: 14,
     fontWeight: "800",
-    color: "#fff",
+    color: "#0F172A",
+  },
+  googleBadge: {
+    backgroundColor: "#EFF6FF",
+    paddingHorizontal: 6,
+    paddingVertical: 2,
+    borderRadius: 8,
+    borderWidth: 1,
+    borderColor: "#BFDBFE",
+  },
+  googleBadgeText: {
+    fontSize: 9,
+    fontWeight: "900",
+    color: COLORS.primary,
+    letterSpacing: 0.5,
+  },
+  heroSubtitle: {
+    fontSize: 11,
+    color: COLORS.textSecondary,
+    marginTop: 2,
+  },
+  detectLocationHeroCard: {
+    flexDirection: "row",
+    alignItems: "center",
+    backgroundColor: "#F8FAFC",
+    padding: SPACING.md,
+    borderRadius: RADIUS.lg,
+    marginBottom: SPACING.sm,
+    gap: SPACING.md,
+    borderWidth: 1,
+    borderColor: "#E2E8F0",
+  },
+  detectLocationIconWrap: {
+    width: 44,
+    height: 44,
+    borderRadius: 22,
+    backgroundColor: "#EFF6FF",
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  detectHeroTitle: {
+    fontSize: 14,
+    fontWeight: "800",
+    color: COLORS.text,
   },
   oneClickBadge: {
     flexDirection: "row",
@@ -905,8 +977,8 @@ const styles = StyleSheet.create({
     backgroundColor: COLORS.accentOrange,
     paddingHorizontal: 6,
     paddingVertical: 2,
-    borderRadius: 10,
-    gap: 3,
+    borderRadius: 8,
+    gap: 2,
   },
   oneClickBadgeText: {
     fontSize: 9,
@@ -914,53 +986,7 @@ const styles = StyleSheet.create({
     color: "#fff",
     letterSpacing: 0.5,
   },
-  detectLocationSubtitle: {
-    fontSize: 11,
-    color: "rgba(255,255,255,0.85)",
-    marginTop: 2,
-  },
-  pickOnMapHeroCard: {
-    flexDirection: "row",
-    alignItems: "center",
-    backgroundColor: "#fff",
-    padding: SPACING.md,
-    borderRadius: RADIUS.lg,
-    marginBottom: SPACING.sm,
-    gap: SPACING.md,
-    borderWidth: 1.5,
-    borderColor: "#e2e8f0",
-    ...SHADOWS.sm,
-  },
-  pickOnMapHeroIconWrap: {
-    width: 42,
-    height: 42,
-    borderRadius: 21,
-    backgroundColor: "#EFF6FF",
-    alignItems: "center",
-    justifyContent: "center",
-  },
-  pickOnMapHeroTitle: {
-    fontSize: 14,
-    fontWeight: "800",
-    color: COLORS.primary,
-  },
-  dragPinBadge: {
-    flexDirection: "row",
-    alignItems: "center",
-    backgroundColor: "#EFF6FF",
-    paddingHorizontal: 6,
-    paddingVertical: 2,
-    borderRadius: 10,
-    borderWidth: 1,
-    borderColor: "#bfdbfe",
-  },
-  dragPinBadgeText: {
-    fontSize: 9,
-    fontWeight: "900",
-    color: COLORS.primary,
-    letterSpacing: 0.5,
-  },
-  pickOnMapHeroSubtitle: {
+  detectHeroSubtitle: {
     fontSize: 11,
     color: COLORS.textSecondary,
     marginTop: 2,
@@ -969,25 +995,25 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "center",
-    gap: SPACING.xs,
-    paddingVertical: SPACING.md,
+    gap: 6,
+    paddingVertical: 12,
     borderRadius: RADIUS.md,
-    borderWidth: 1.5,
-    borderColor: COLORS.primary,
-    borderStyle: "dashed",
+    borderWidth: 1,
+    borderColor: COLORS.border,
+    backgroundColor: COLORS.background,
     marginBottom: SPACING.md,
   },
   addNewText: {
-    fontSize: 13,
+    fontSize: 12,
     fontWeight: "700",
-    color: COLORS.primary,
+    color: COLORS.textSecondary,
   },
   emptyState: {
     alignItems: "center",
-    paddingVertical: SPACING.xxl,
+    paddingVertical: SPACING.xl,
   },
   emptyTitle: {
-    fontSize: 15,
+    fontSize: 14,
     fontWeight: "800",
     color: COLORS.text,
     marginTop: SPACING.sm,

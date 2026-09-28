@@ -268,9 +268,12 @@ export const MapPickerModal: React.FC<MapPickerModalProps> = ({
         <div class="pin-shadow"></div>
         <div class="center-pin-container">
           <div class="pin-bubble">Deliver here</div>
-          <svg width="44" height="44" viewBox="0 0 24 24" fill="#F26522" stroke="#ffffff" stroke-width="1.5">
-            <path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7z"/>
-            <circle cx="12" cy="9" r="2.5" fill="#ffffff"/>
+          <svg width="48" height="48" viewBox="0 0 48 48">
+            <path d="M24 4C14.06 4 6 12.06 6 22c0 7.7 5.02 14.23 12.06 16.71L24 44l5.94-5.29C36.98 36.23 42 29.7 42 22c0-9.94-8.06-18-18-18z" fill="#EA4335"/>
+            <path d="M24 4c-9.94 0-18 8.06-18 18 0 7.7 5.02 14.23 12.06 16.71L24 44V22H6.1c.14-1.39.46-2.73.95-4L24 4z" fill="#4285F4"/>
+            <path d="M24 4v18h17.9c-.14-1.39-.46-2.73-.95-4L24 4z" fill="#FBBC04"/>
+            <path d="M24 22v22l5.94-5.29C36.98 36.23 42 29.7 42 22H24z" fill="#34A853"/>
+            <circle cx="24" cy="22" r="7" fill="#ffffff"/>
           </svg>
         </div>
         <script>
