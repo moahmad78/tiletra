@@ -77,7 +77,71 @@ export async function PATCH(req: NextRequest) {
         );
       }
       if (user.role !== "admin") {
+        if (cleanEmail !== user.email) {
+          const existingByEmail = await prisma.user.findUnique({
+            where: { email: cleanEmail },
+          });
+          if (existingByEmail && existingByEmail.id !== user.id) {
+            return mobileApiResponse(
+              { success: false, error: "This email address is already linked to another account." },
+              400
+            );
+          }
+        }
         emailToUpdate = cleanEmail;
+      }
+    }
+
+    // Handle phone update & deduplication/merging
+    if (cleanPhone && cleanPhone !== user.phone) {
+      const existingUserWithPhone = await prisma.user.findUnique({
+        where: { phone: cleanPhone },
+        include: {
+          orders: { select: { id: true } },
+          addresses: true,
+          vendor: true,
+        },
+      });
+
+      if (existingUserWithPhone && existingUserWithPhone.id !== user.id) {
+        if (existingUserWithPhone.role === "admin" || existingUserWithPhone.vendor) {
+          return mobileApiResponse(
+            { success: false, error: "This phone number is registered to an admin or vendor partner account." },
+            400
+          );
+        }
+
+        try {
+          // Re-link orders and addresses from existing duplicate account to current user
+          if (existingUserWithPhone.orders.length > 0) {
+            await prisma.order.updateMany({
+              where: { userId: existingUserWithPhone.id },
+              data: { userId: user.id },
+            });
+          }
+          if (existingUserWithPhone.addresses.length > 0) {
+            await prisma.address.updateMany({
+              where: { userId: existingUserWithPhone.id },
+              data: { userId: user.id },
+            });
+          }
+          await prisma.user.delete({
+            where: { id: existingUserWithPhone.id },
+          });
+        } catch (mergeErr) {
+          console.warn("Could not delete duplicate user, modifying phone instead:", mergeErr);
+          try {
+            await prisma.user.update({
+              where: { id: existingUserWithPhone.id },
+              data: { phone: `merged_${existingUserWithPhone.id}_${Date.now()}` },
+            });
+          } catch {
+            return mobileApiResponse(
+              { success: false, error: "This phone number is already registered with another account." },
+              400
+            );
+          }
+        }
       }
     }
 
@@ -112,9 +176,28 @@ export async function PATCH(req: NextRequest) {
     });
   } catch (err: any) {
     console.error("Mobile profile update error:", err);
+    if (err?.code === "P2002") {
+      const target = String(err?.meta?.target || "");
+      if (target.includes("phone")) {
+        return mobileApiResponse(
+          { success: false, error: "This phone number is already linked to another account." },
+          400
+        );
+      }
+      if (target.includes("email")) {
+        return mobileApiResponse(
+          { success: false, error: "This email address is already linked to another account." },
+          400
+        );
+      }
+      return mobileApiResponse(
+        { success: false, error: "This account detail is already in use by another user." },
+        400
+      );
+    }
     return mobileApiResponse(
-      { success: false, error: err.message || "Failed to update profile" },
-      500
+      { success: false, error: err?.message || "Failed to update profile" },
+      400
     );
   }
 }
