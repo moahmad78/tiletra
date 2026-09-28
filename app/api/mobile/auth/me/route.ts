@@ -104,42 +104,57 @@ export async function PATCH(req: NextRequest) {
       });
 
       if (existingUserWithPhone && existingUserWithPhone.id !== user.id) {
-        if (existingUserWithPhone.role === "admin" || existingUserWithPhone.vendor) {
+        if (existingUserWithPhone.role === "admin") {
           return mobileApiResponse(
-            { success: false, error: "This phone number is registered to an admin or vendor partner account." },
+            { success: false, error: "This phone number is registered to an administrator account." },
             400
           );
         }
 
-        try {
-          // Re-link orders and addresses from existing duplicate account to current user
-          if (existingUserWithPhone.orders.length > 0) {
-            await prisma.order.updateMany({
-              where: { userId: existingUserWithPhone.id },
-              data: { userId: user.id },
-            });
-          }
-          if (existingUserWithPhone.addresses.length > 0) {
-            await prisma.address.updateMany({
-              where: { userId: existingUserWithPhone.id },
-              data: { userId: user.id },
-            });
-          }
-          await prisma.user.delete({
-            where: { id: existingUserWithPhone.id },
-          });
-        } catch (mergeErr) {
-          console.warn("Could not delete duplicate user, modifying phone instead:", mergeErr);
+        if (existingUserWithPhone.vendor) {
+          // Reassign the vendor's user record phone so the customer account can claim their phone
           try {
             await prisma.user.update({
               where: { id: existingUserWithPhone.id },
-              data: { phone: `merged_${existingUserWithPhone.id}_${Date.now()}` },
+              data: { phone: `${cleanPhone}_vendor_${existingUserWithPhone.id.slice(-4)}` },
             });
           } catch {
             return mobileApiResponse(
-              { success: false, error: "This phone number is already registered with another account." },
+              { success: false, error: "This phone number is already registered to another account." },
               400
             );
+          }
+        } else {
+          try {
+            // Re-link orders and addresses from existing duplicate account to current user
+            if (existingUserWithPhone.orders.length > 0) {
+              await prisma.order.updateMany({
+                where: { userId: existingUserWithPhone.id },
+                data: { userId: user.id },
+              });
+            }
+            if (existingUserWithPhone.addresses.length > 0) {
+              await prisma.address.updateMany({
+                where: { userId: existingUserWithPhone.id },
+                data: { userId: user.id },
+              });
+            }
+            await prisma.user.delete({
+              where: { id: existingUserWithPhone.id },
+            });
+          } catch (mergeErr) {
+            console.warn("Could not delete duplicate user, modifying phone instead:", mergeErr);
+            try {
+              await prisma.user.update({
+                where: { id: existingUserWithPhone.id },
+                data: { phone: `merged_${existingUserWithPhone.id}_${Date.now()}` },
+              });
+            } catch {
+              return mobileApiResponse(
+                { success: false, error: "This phone number is already registered with another account." },
+                400
+              );
+            }
           }
         }
       }
