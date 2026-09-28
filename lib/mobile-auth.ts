@@ -144,6 +144,18 @@ export async function getAuthenticatedMobileUser(req: Request | NextRequest) {
       },
     });
 
+    if (user && user.addresses.length === 0) {
+      try {
+        const { getUserAddresses } = await import("@/lib/actions/addresses");
+        const backfilled = await getUserAddresses(user.id);
+        if (backfilled && backfilled.length > 0) {
+          (user as any).addresses = backfilled;
+        }
+      } catch (bfErr) {
+        console.warn("Backfill user addresses error in getAuthenticatedMobileUser:", bfErr);
+      }
+    }
+
     return user;
   } catch (err) {
     console.error("getAuthenticatedMobileUser error:", err);

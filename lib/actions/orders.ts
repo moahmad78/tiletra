@@ -385,6 +385,51 @@ export async function createOrder(input: CreateOrderInput) {
         },
       });
 
+      // 4.1 Auto-save delivery address to User Saved Addresses if valid user
+      if (validUserId && (addrStreet || addrArea)) {
+        try {
+          const effectiveStreet = addrStreet || addrArea || "Main Road";
+          const effectivePincode = addrPostalCode || "560001";
+          const existingAddr = await tx.address.findFirst({
+            where: {
+              userId: validUserId,
+              street: effectiveStreet,
+              pincode: effectivePincode,
+            },
+          });
+          if (!existingAddr) {
+            await tx.address.create({
+              data: {
+                userId: validUserId,
+                label: (rawAddr?.label as string) || "Home",
+                fullName: addrFullName,
+                phone: addrPhone,
+                houseNumber: addrHouseNumber,
+                buildingName: addrBuildingName,
+                floor: addrFloor,
+                street: effectiveStreet,
+                area: addrArea,
+                landmark: addrLandmark,
+                city: addrCity || "Bengaluru",
+                district: addrDistrict,
+                state: addrState || "Karnataka",
+                country: addrCountry || "India",
+                pincode: effectivePincode,
+                postalCode: effectivePincode,
+                latitude: rawAddr?.latitude ? Number(rawAddr.latitude) : null,
+                longitude: rawAddr?.longitude ? Number(rawAddr.longitude) : null,
+                accuracy: (input.shippingAddress as any)?.accuracy ? Number((input.shippingAddress as any).accuracy) : null,
+                source: (input.shippingAddress as any)?.source || "ORDER",
+                deliveryInstructions: (input.shippingAddress as any)?.deliveryInstructions || null,
+                isDefault: true,
+              },
+            });
+          }
+        } catch (addrErr) {
+          console.warn("[createOrder] Non-fatal error auto-saving user address:", addrErr);
+        }
+      }
+
       // 5. Multi-Vendor Marketplace: Route & Split Order to Vendors
       //    F2 — Geo-Fencing: use customer GPS to pick nearest eligible vendor
       //    F3 — Auto-Accept: skip manual accept if storeSettings or vendor allows it

@@ -402,7 +402,7 @@ async function preparePdfUri(rawUri: string, orderId: string): Promise<string> {
 
     const safeOrderId = String(orderId).replace(/[^a-zA-Z0-9_-]/g, "");
     const fileName = `IntriHub_Invoice_${safeOrderId || Date.now()}.pdf`;
-    const targetDir = FileSystem.documentDirectory || FileSystem.cacheDirectory;
+    const targetDir = (FileSystem as any).documentDirectory || (FileSystem as any).cacheDirectory;
 
     if (targetDir) {
       const destination = `${targetDir}${fileName}`;

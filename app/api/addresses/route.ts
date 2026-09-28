@@ -1,7 +1,7 @@
-import { NextRequest, NextResponse } from "next/server";
+import { NextRequest } from "next/server";
 import { getUserAddresses, saveAddress } from "@/lib/actions/addresses";
 import { getAuthenticatedUser } from "@/lib/auth-helpers";
-import { handleMobileCorsOptions } from "@/lib/mobile-auth";
+import { handleMobileCorsOptions, mobileApiResponse } from "@/lib/mobile-auth";
 import { addressInputSchema } from "@/lib/validations/schemas";
 import { sanitizeString } from "@/lib/sanitization";
 
@@ -13,9 +13,9 @@ export async function GET(req: NextRequest) {
   try {
     const user = await getAuthenticatedUser(req);
     if (!user) {
-      return NextResponse.json(
+      return mobileApiResponse(
         { success: false, error: "Authentication required to view addresses" },
-        { status: 401 }
+        401
       );
     }
 
@@ -25,17 +25,20 @@ export async function GET(req: NextRequest) {
 
     // IDOR check: Users can only query their own addresses unless they are super admin
     if (targetUserId !== user.id && user.role !== "admin" && user.role !== "superadmin") {
-      return NextResponse.json(
+      return mobileApiResponse(
         { success: false, error: "Forbidden: You cannot access addresses of other users" },
-        { status: 403 }
+        403
       );
     }
 
     const addresses = await getUserAddresses(targetUserId);
-    return NextResponse.json({ success: true, addresses });
+    return mobileApiResponse({ success: true, addresses });
   } catch (error: any) {
     console.error("GET /api/addresses error:", error);
-    return NextResponse.json({ success: false, error: error?.message || "Failed to fetch addresses" }, { status: 500 });
+    return mobileApiResponse(
+      { success: false, error: error?.message || "Failed to fetch addresses" },
+      500
+    );
   }
 }
 
@@ -43,17 +46,17 @@ export async function POST(req: NextRequest) {
   try {
     const user = await getAuthenticatedUser(req);
     if (!user) {
-      return NextResponse.json(
+      return mobileApiResponse(
         { success: false, error: "Authentication required to save address" },
-        { status: 401 }
+        401
       );
     }
 
     const rawBody = await req.json().catch(() => null);
     if (!rawBody || typeof rawBody !== "object") {
-      return NextResponse.json(
+      return mobileApiResponse(
         { success: false, error: "Invalid JSON request payload" },
-        { status: 400 }
+        400
       );
     }
 
@@ -63,9 +66,9 @@ export async function POST(req: NextRequest) {
     const validationResult = addressInputSchema.safeParse(addressInput);
     if (!validationResult.success) {
       const firstError = validationResult.error.issues[0]?.message || "Invalid address data";
-      return NextResponse.json(
+      return mobileApiResponse(
         { success: false, error: firstError, details: validationResult.error.issues },
-        { status: 400 }
+        400
       );
     }
 
@@ -74,12 +77,15 @@ export async function POST(req: NextRequest) {
 
     const result = await saveAddress(effectiveUserId, validationResult.data as any);
     if (!result.success) {
-      return NextResponse.json({ success: false, error: result.error }, { status: 400 });
+      return mobileApiResponse({ success: false, error: result.error }, 400);
     }
 
-    return NextResponse.json({ success: true, address: result.address });
+    return mobileApiResponse({ success: true, address: result.address });
   } catch (error: any) {
     console.error("POST /api/addresses error:", error);
-    return NextResponse.json({ success: false, error: error?.message || "Failed to save address" }, { status: 500 });
+    return mobileApiResponse(
+      { success: false, error: error?.message || "Failed to save address" },
+      500
+    );
   }
 }

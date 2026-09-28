@@ -21,18 +21,19 @@ import {
   Briefcase,
   HardHat,
   AlertCircle,
-  Sparkles,
   ChevronDown,
   ChevronUp,
+  ChevronRight,
   Navigation,
 } from "lucide-react-native";
 import * as Location from "expo-location";
 import { Address } from "../types";
 import { COLORS, SPACING, RADIUS, SHADOWS } from "../constants/theme";
 import { useAuthStore } from "../store/authStore";
-import { updateProfile } from "../api/auth";
 import { GOOGLE_MAPS_API_KEY } from "../constants/config";
 import { MapPickerModal, PickedLocation } from "./MapPickerModal";
+import { apiClient } from "../api/client";
+import { getOrders } from "../api/orders";
 
 // Authentic Google Maps 4-color Pin Icon
 export const GoogleMapsIcon: React.FC<{ size?: number }> = ({ size = 20 }) => (
@@ -65,7 +66,8 @@ interface AddressModalProps {
 
 export const AddressModal: React.FC<AddressModalProps> = ({ visible, onClose, onSelectAddress }) => {
   const { user, selectedAddress, setSelectedAddress } = useAuthStore();
-  const addresses: Address[] = user?.addresses || [];
+  const [savedAddresses, setSavedAddresses] = useState<Address[]>(user?.addresses || []);
+  const [loadingAddresses, setLoadingAddresses] = useState(false);
   const [isAddingNew, setIsAddingNew] = useState(false);
   const [loading, setLoading] = useState(false);
   const [detectingLocation, setDetectingLocation] = useState(false);
@@ -93,6 +95,120 @@ export const AddressModal: React.FC<AddressModalProps> = ({ visible, onClose, on
       if (user.phone && !phone) setPhone(user.phone.replace(/\D/g, "").slice(-10));
     }
   }, [visible, user]);
+
+  // Load saved addresses from server (/api/addresses) AND past orders
+  useEffect(() => {
+    if (!visible) return;
+
+    let isMounted = true;
+    const fetchAddresses = async () => {
+      try {
+        setLoadingAddresses(true);
+        const combined: Address[] = [];
+        const seenFingerprints = new Set<string>();
+
+        const addAddressIfDistinct = (addr: Address) => {
+          if (!addr) return;
+          const streetStr = (addr.street || addr.area || "").trim();
+          const pinStr = (addr.pincode || addr.postalCode || "").trim();
+          const houseStr = (addr.houseNumber || "").trim();
+          const areaStr = (addr.area || "").trim();
+          const fp = `${houseStr}|${streetStr}|${areaStr}|${pinStr}`.toLowerCase();
+          if (fp.length > 2 && !seenFingerprints.has(fp)) {
+            seenFingerprints.add(fp);
+            combined.push(addr);
+          }
+        };
+
+        // 1. Fetch addresses from /api/addresses
+        try {
+          const res = await apiClient.get("/api/addresses");
+          if (res.data?.success && Array.isArray(res.data.addresses)) {
+            res.data.addresses.forEach(addAddressIfDistinct);
+          }
+        } catch (apiErr) {
+          console.warn("AddressModal /api/addresses fetch notice:", apiErr);
+        }
+
+        // 2. Fetch past orders to include previous delivery addresses
+        try {
+          const ordersRes = await getOrders(1, 10);
+          if (ordersRes?.success && Array.isArray(ordersRes.orders)) {
+            for (const ord of ordersRes.orders) {
+              const sAddr: any = ord.shippingAddress;
+              const streetVal = ord.deliveryStreet || sAddr?.street || sAddr?.line1 || sAddr?.area || "";
+              const pinVal = ord.deliveryPostalCode || sAddr?.postalCode || sAddr?.pincode || "";
+              const houseVal = ord.deliveryHouseNumber || sAddr?.houseNumber || sAddr?.flatNumber || "";
+              const areaVal = ord.deliveryArea || sAddr?.area || sAddr?.line2 || "";
+              const landmarkVal = ord.deliveryLandmark || sAddr?.landmark || "";
+              const cityVal = ord.deliveryCity || sAddr?.city || "Bengaluru";
+              const stateVal = ord.deliveryState || sAddr?.state || "Karnataka";
+              const nameVal = ord.deliveryName || sAddr?.fullName || ord.customerName;
+              const phoneVal = ord.deliveryPhone || sAddr?.phone || ord.customerPhone;
+              const formattedVal =
+                ord.deliveryAddress ||
+                sAddr?.formattedAddress ||
+                [houseVal, streetVal, areaVal, cityVal, pinVal ? `PIN: ${pinVal}` : null]
+                  .filter(Boolean)
+                  .join(", ");
+
+              if (streetVal || areaVal || houseVal || formattedVal) {
+                addAddressIfDistinct({
+                  id: `order_addr_${ord.id}`,
+                  label: (sAddr?.label as string) || "Home",
+                  fullName: nameVal,
+                  phone: phoneVal,
+                  houseNumber: houseVal || null,
+                  buildingName: ord.deliveryBuildingName || sAddr?.buildingName || null,
+                  street: streetVal || formattedVal,
+                  area: areaVal || null,
+                  landmark: landmarkVal || null,
+                  city: cityVal,
+                  state: stateVal,
+                  country: "India",
+                  pincode: pinVal || "560001",
+                  postalCode: pinVal || "560001",
+                  formattedAddress: formattedVal,
+                  source: "ORDER",
+                });
+              }
+            }
+          }
+        } catch (orderErr) {
+          console.warn("AddressModal getOrders fetch notice:", orderErr);
+        }
+
+        // 3. User addresses from local auth store
+        if (user?.addresses && Array.isArray(user.addresses)) {
+          user.addresses.forEach(addAddressIfDistinct);
+        }
+
+        if (isMounted) {
+          setSavedAddresses(combined);
+          // Sync with auth store
+          const currentUser = useAuthStore.getState().user;
+          if (currentUser && combined.length > 0) {
+            useAuthStore.getState().setUser({ ...currentUser, addresses: combined });
+          }
+
+          // If no address is currently selected, select default or first
+          if (!useAuthStore.getState().selectedAddress && combined.length > 0) {
+            const defaultAddr = combined.find((a) => a.isDefault) || combined[0];
+            setSelectedAddress(defaultAddr);
+          }
+        }
+      } catch (err) {
+        console.warn("Error loading saved addresses:", err);
+      } finally {
+        if (isMounted) setLoadingAddresses(false);
+      }
+    };
+
+    fetchAddresses();
+    return () => {
+      isMounted = false;
+    };
+  }, [visible]);
 
   const handleSelect = (addr: Address) => {
     setSelectedAddress(addr);
@@ -254,21 +370,45 @@ export const AddressModal: React.FC<AddressModalProps> = ({ visible, onClose, on
         postalCode: pincode.trim(),
         deliveryInstructions: deliveryInstructions.trim() || undefined,
         formattedAddress: formatted,
-        isDefault: addresses.length === 0,
+        isDefault: savedAddresses.length === 0,
         addressLine1: [houseNumber.trim(), street.trim()].filter(Boolean).join(", "),
         addressLine2: [area.trim(), landmark.trim()].filter(Boolean).join(", "),
       };
 
-      // Update auth store addresses
-      const updatedAddresses = [...addresses, newAddressPayload];
+      // Persist to backend database via /api/addresses
+      try {
+        const res = await apiClient.post("/api/addresses", {
+          label: newAddressPayload.label,
+          fullName: newAddressPayload.fullName,
+          phone: newAddressPayload.phone,
+          houseNumber: newAddressPayload.houseNumber,
+          street: newAddressPayload.street,
+          area: newAddressPayload.area,
+          landmark: newAddressPayload.landmark,
+          city: newAddressPayload.city,
+          state: newAddressPayload.state,
+          pincode: newAddressPayload.pincode,
+          postalCode: newAddressPayload.postalCode,
+          deliveryInstructions: newAddressPayload.deliveryInstructions,
+          isDefault: newAddressPayload.isDefault,
+        });
+        if (res.data?.success && res.data.address?.id) {
+          newAddressPayload.id = res.data.address.id;
+        }
+      } catch (syncErr) {
+        console.warn("Could not sync address to /api/addresses:", syncErr);
+      }
+
+      // Update local state and auth store
+      const updatedAddresses = [
+        newAddressPayload,
+        ...savedAddresses.filter((a) => a.id !== newAddressPayload.id),
+      ];
+      setSavedAddresses(updatedAddresses);
+
       const currentUser = useAuthStore.getState().user;
       if (currentUser) {
         useAuthStore.getState().setUser({ ...currentUser, addresses: updatedAddresses });
-      }
-      try {
-        await updateProfile({ addresses: updatedAddresses } as any);
-      } catch (syncErr) {
-        console.warn("Could not sync address to backend:", syncErr);
       }
 
       // Automatically select newly saved address
@@ -517,82 +657,106 @@ export const AddressModal: React.FC<AddressModalProps> = ({ visible, onClose, on
             ) : (
               /* Saved Address List */
               <View style={styles.addressList}>
-                {/* 1. Google Maps Choice Card */}
+                {/* 1. Google Maps Card */}
                 <TouchableOpacity
-                  style={styles.googleMapsHeroCard}
+                  style={styles.actionCard}
                   onPress={() => setShowMapPicker(true)}
-                  activeOpacity={0.88}
+                  activeOpacity={0.75}
                 >
-                  <View style={styles.googleMapsHeroIconWrap}>
+                  <View style={styles.actionIconWrapGoogle}>
                     <GoogleMapsIcon size={24} />
                   </View>
-                  <View style={styles.heroTextContainer}>
-                    <View style={styles.heroTitleRow}>
-                      <Text style={styles.heroTitle}>Choose on Google Maps</Text>
-                      <View style={styles.googleBadge}>
-                        <Text style={styles.googleBadgeText}>MAP PIN</Text>
-                      </View>
-                    </View>
-                    <Text style={styles.heroSubtitle}>
+                  <View style={styles.actionTextContainer}>
+                    <Text style={styles.actionTitle}>Choose on Google Maps</Text>
+                    <Text style={styles.actionSubtitle}>
                       Drag pin to select exact building, gate or site
                     </Text>
                   </View>
+                  <ChevronRight size={18} color="#94A3B8" />
                 </TouchableOpacity>
 
                 {/* 2. Auto-Detect Current GPS Location */}
                 <TouchableOpacity
-                  style={styles.detectLocationHeroCard}
+                  style={styles.actionCard}
                   onPress={handleUseCurrentLocation}
                   disabled={detectingLocation}
-                  activeOpacity={0.88}
+                  activeOpacity={0.75}
                 >
-                  <View style={styles.detectLocationIconWrap}>
+                  <View style={styles.actionIconWrapGps}>
                     {detectingLocation ? (
                       <ActivityIndicator size="small" color={COLORS.primary} />
                     ) : (
                       <Navigation size={20} color={COLORS.primary} />
                     )}
                   </View>
-                  <View style={styles.heroTextContainer}>
-                    <View style={styles.heroTitleRow}>
-                      <Text style={styles.detectHeroTitle}>Use Current Location</Text>
-                      <View style={styles.oneClickBadge}>
-                        <Sparkles size={9} color="#fff" />
-                        <Text style={styles.oneClickBadgeText}>1-CLICK</Text>
-                      </View>
-                    </View>
-                    <Text style={styles.detectHeroSubtitle}>
+                  <View style={styles.actionTextContainer}>
+                    <Text style={styles.actionTitle}>Use Current Location</Text>
+                    <Text style={styles.actionSubtitle}>
                       {detectingLocation
-                        ? "Detecting via Google Maps..."
+                        ? "Detecting address via GPS..."
                         : "Auto-detects street, area, city & PIN code"}
                     </Text>
                   </View>
+                  <ChevronRight size={18} color="#94A3B8" />
                 </TouchableOpacity>
 
-                {/* 3. Manual Add Button */}
-                <TouchableOpacity
-                  style={styles.addNewBtn}
-                  onPress={() => {
-                    setIsAddingNew(true);
-                  }}
-                  activeOpacity={0.85}
-                >
-                  <Plus size={16} color={COLORS.textSecondary} />
-                  <Text style={styles.addNewText}>Enter Address Manually</Text>
-                </TouchableOpacity>
+                {/* Section Header: Saved Addresses */}
+                <View style={styles.sectionHeaderRow}>
+                  <Text style={styles.sectionTitle}>SAVED ADDRESSES</Text>
+                  {savedAddresses.length > 0 && (
+                    <Text style={styles.sectionCount}>
+                      {savedAddresses.length} saved
+                    </Text>
+                  )}
+                </View>
 
                 {/* Saved Address Cards */}
-                {addresses.length === 0 ? (
+                {loadingAddresses ? (
+                  <View style={styles.loadingContainer}>
+                    <ActivityIndicator size="small" color={COLORS.primary} />
+                    <Text style={styles.loadingText}>Loading saved addresses...</Text>
+                  </View>
+                ) : savedAddresses.length === 0 ? (
                   <View style={styles.emptyState}>
-                    <MapPin size={36} color={COLORS.textTertiary} />
+                    <View style={styles.emptyIconWrap}>
+                      <MapPin size={26} color={COLORS.textTertiary} />
+                    </View>
                     <Text style={styles.emptyTitle}>No saved addresses</Text>
                     <Text style={styles.emptySub}>
-                      Add your site, home or shop address to place orders
+                      Select on Google Maps or use current location to place orders
                     </Text>
                   </View>
                 ) : (
-                  addresses.map((addr: Address) => {
-                    const isSelected = selectedAddress?.id === addr.id;
+                  savedAddresses.map((addr: Address) => {
+                    const isSelected =
+                      selectedAddress?.id === addr.id ||
+                      (selectedAddress?.pincode === addr.pincode &&
+                        selectedAddress?.street === addr.street &&
+                        Boolean(addr.street));
+
+                    const LabelIcon =
+                      addr.label === "Work"
+                        ? Briefcase
+                        : addr.label === "Site"
+                        ? HardHat
+                        : addr.label === "Other"
+                        ? Building
+                        : Home;
+
+                    const formattedDisplay =
+                      addr.formattedAddress ||
+                      [
+                        addr.houseNumber,
+                        addr.buildingName,
+                        addr.street,
+                        addr.area,
+                        addr.landmark ? `Near ${addr.landmark}` : null,
+                        addr.city,
+                        addr.pincode ? `PIN: ${addr.pincode}` : null,
+                      ]
+                        .filter(Boolean)
+                        .join(", ");
+
                     return (
                       <TouchableOpacity
                         key={addr.id}
@@ -601,35 +765,37 @@ export const AddressModal: React.FC<AddressModalProps> = ({ visible, onClose, on
                           isSelected && styles.addressCardSelected,
                         ]}
                         onPress={() => handleSelect(addr)}
-                        activeOpacity={0.85}
+                        activeOpacity={0.8}
                       >
-                        <View style={styles.addressCardHeader}>
-                          <View style={styles.labelBadge}>
-                            <Text style={styles.labelBadgeText}>
-                              {addr.label || "Address"}
+                        <View style={styles.addressCardTopRow}>
+                          <View style={styles.addressLabelChip}>
+                            <LabelIcon size={13} color={COLORS.primary} />
+                            <Text style={styles.addressLabelText}>
+                              {addr.label || "Home"}
                             </Text>
                           </View>
-                          {isSelected && (
-                            <View style={styles.selectedBadge}>
-                              <Check size={12} color="#fff" />
+                          {isSelected ? (
+                            <View style={styles.selectedPill}>
+                              <Check size={11} color="#fff" />
+                              <Text style={styles.selectedPillText}>DELIVERING HERE</Text>
                             </View>
+                          ) : (
+                            <View style={styles.radioCircle} />
                           )}
                         </View>
-                        <Text style={styles.addressName}>{addr.fullName}</Text>
-                        <Text style={styles.addressDetails}>
-                          {[
-                            addr.houseNumber,
-                            addr.buildingName,
-                            addr.street,
-                            addr.area,
-                            addr.landmark ? `Near ${addr.landmark}` : null,
-                            addr.city,
-                            addr.pincode,
-                          ]
-                            .filter(Boolean)
-                            .join(", ")}
+
+                        {addr.fullName ? (
+                          <Text style={styles.addressRecipient}>
+                            {addr.fullName}
+                            {addr.phone
+                              ? ` • +91 ${addr.phone.replace(/\D/g, "").slice(-10)}`
+                              : ""}
+                          </Text>
+                        ) : null}
+
+                        <Text style={styles.addressDetails} numberOfLines={3}>
+                          {formattedDisplay}
                         </Text>
-                        <Text style={styles.addressPhone}>Phone: +91 {addr.phone}</Text>
                       </TouchableOpacity>
                     );
                   })
@@ -895,191 +1061,175 @@ const styles = StyleSheet.create({
   addressList: {
     paddingBottom: SPACING.xxl,
   },
-  googleMapsHeroCard: {
+  actionCard: {
     flexDirection: "row",
     alignItems: "center",
     backgroundColor: "#FFFFFF",
-    padding: SPACING.md,
-    borderRadius: RADIUS.lg,
-    marginBottom: SPACING.sm,
-    gap: SPACING.md,
-    borderWidth: 1.5,
+    paddingVertical: 12,
+    paddingHorizontal: 14,
+    borderRadius: 14,
+    marginBottom: 10,
+    gap: 12,
+    borderWidth: 1.2,
     borderColor: "#E2E8F0",
     ...SHADOWS.sm,
   },
-  googleMapsHeroIconWrap: {
-    width: 44,
-    height: 44,
-    borderRadius: 22,
-    backgroundColor: "#F1F5F9",
+  actionIconWrapGoogle: {
+    width: 42,
+    height: 42,
+    borderRadius: 21,
+    backgroundColor: "#F8FAFC",
     alignItems: "center",
     justifyContent: "center",
-  },
-  heroTextContainer: {
-    flex: 1,
-  },
-  heroTitleRow: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 6,
-  },
-  heroTitle: {
-    fontSize: 14,
-    fontWeight: "800",
-    color: "#0F172A",
-  },
-  googleBadge: {
-    backgroundColor: "#EFF6FF",
-    paddingHorizontal: 6,
-    paddingVertical: 2,
-    borderRadius: 8,
-    borderWidth: 1,
-    borderColor: "#BFDBFE",
-  },
-  googleBadgeText: {
-    fontSize: 9,
-    fontWeight: "900",
-    color: COLORS.primary,
-    letterSpacing: 0.5,
-  },
-  heroSubtitle: {
-    fontSize: 11,
-    color: COLORS.textSecondary,
-    marginTop: 2,
-  },
-  detectLocationHeroCard: {
-    flexDirection: "row",
-    alignItems: "center",
-    backgroundColor: "#F8FAFC",
-    padding: SPACING.md,
-    borderRadius: RADIUS.lg,
-    marginBottom: SPACING.sm,
-    gap: SPACING.md,
     borderWidth: 1,
     borderColor: "#E2E8F0",
   },
-  detectLocationIconWrap: {
-    width: 44,
-    height: 44,
-    borderRadius: 22,
+  actionIconWrapGps: {
+    width: 42,
+    height: 42,
+    borderRadius: 21,
     backgroundColor: "#EFF6FF",
     alignItems: "center",
     justifyContent: "center",
+    borderWidth: 1,
+    borderColor: "#DBEAFE",
   },
-  detectHeroTitle: {
+  actionTextContainer: {
+    flex: 1,
+  },
+  actionTitle: {
     fontSize: 14,
-    fontWeight: "800",
-    color: COLORS.text,
+    fontWeight: "700",
+    color: "#0F172A",
   },
-  oneClickBadge: {
+  actionSubtitle: {
+    fontSize: 11,
+    color: "#64748B",
+    marginTop: 2,
+    lineHeight: 15,
+  },
+  sectionHeaderRow: {
     flexDirection: "row",
     alignItems: "center",
-    backgroundColor: COLORS.accentOrange,
-    paddingHorizontal: 6,
-    paddingVertical: 2,
-    borderRadius: 8,
-    gap: 2,
+    justifyContent: "space-between",
+    marginTop: 14,
+    marginBottom: 10,
+    paddingHorizontal: 2,
   },
-  oneClickBadgeText: {
-    fontSize: 9,
-    fontWeight: "900",
-    color: "#fff",
-    letterSpacing: 0.5,
-  },
-  detectHeroSubtitle: {
+  sectionTitle: {
     fontSize: 11,
-    color: COLORS.textSecondary,
-    marginTop: 2,
+    fontWeight: "800",
+    color: "#64748B",
+    letterSpacing: 0.8,
   },
-  addNewBtn: {
+  sectionCount: {
+    fontSize: 11,
+    fontWeight: "700",
+    color: COLORS.primary,
+  },
+  loadingContainer: {
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "center",
-    gap: 6,
-    paddingVertical: 12,
-    borderRadius: RADIUS.md,
-    borderWidth: 1,
-    borderColor: COLORS.border,
-    backgroundColor: COLORS.background,
-    marginBottom: SPACING.md,
+    paddingVertical: 24,
+    gap: 8,
   },
-  addNewText: {
+  loadingText: {
     fontSize: 12,
-    fontWeight: "700",
     color: COLORS.textSecondary,
+    fontWeight: "600",
   },
   emptyState: {
     alignItems: "center",
-    paddingVertical: SPACING.xl,
+    paddingVertical: 28,
+  },
+  emptyIconWrap: {
+    width: 50,
+    height: 50,
+    borderRadius: 25,
+    backgroundColor: "#F1F5F9",
+    alignItems: "center",
+    justifyContent: "center",
+    marginBottom: 8,
   },
   emptyTitle: {
     fontSize: 14,
     fontWeight: "800",
     color: COLORS.text,
-    marginTop: SPACING.sm,
   },
   emptySub: {
     fontSize: 12,
     color: COLORS.textTertiary,
     marginTop: 4,
     textAlign: "center",
-    paddingHorizontal: SPACING.xl,
+    maxWidth: 260,
+    lineHeight: 16,
   },
   addressCard: {
-    backgroundColor: COLORS.background,
-    borderRadius: RADIUS.md,
-    padding: SPACING.md,
-    marginBottom: SPACING.sm,
-    borderWidth: 1,
-    borderColor: COLORS.border,
+    backgroundColor: "#FFFFFF",
+    borderRadius: 14,
+    padding: 14,
+    marginBottom: 10,
+    borderWidth: 1.5,
+    borderColor: "#E2E8F0",
+    ...SHADOWS.sm,
   },
   addressCardSelected: {
     borderColor: COLORS.primary,
-    borderWidth: 2,
-    backgroundColor: "#EFF6FF",
+    backgroundColor: "#F8FAFC",
   },
-  addressCardHeader: {
+  addressCardTopRow: {
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "space-between",
-    marginBottom: 6,
+    marginBottom: 8,
   },
-  labelBadge: {
-    backgroundColor: COLORS.surface,
+  addressLabelChip: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 5,
+    backgroundColor: "#F1F5F9",
     paddingHorizontal: 8,
-    paddingVertical: 2,
-    borderRadius: RADIUS.sm,
-    borderWidth: 1,
-    borderColor: COLORS.border,
+    paddingVertical: 3,
+    borderRadius: 6,
   },
-  labelBadgeText: {
+  addressLabelText: {
     fontSize: 10,
     fontWeight: "800",
-    color: COLORS.textSecondary,
+    color: COLORS.text,
     textTransform: "uppercase",
   },
-  selectedBadge: {
-    width: 20,
-    height: 20,
-    borderRadius: 10,
-    backgroundColor: COLORS.primary,
+  selectedPill: {
+    flexDirection: "row",
     alignItems: "center",
-    justifyContent: "center",
+    gap: 4,
+    backgroundColor: COLORS.primary,
+    paddingHorizontal: 8,
+    paddingVertical: 3,
+    borderRadius: 12,
   },
-  addressName: {
-    fontSize: 14,
+  selectedPillText: {
+    fontSize: 9,
+    fontWeight: "800",
+    color: "#FFFFFF",
+    letterSpacing: 0.5,
+  },
+  radioCircle: {
+    width: 16,
+    height: 16,
+    borderRadius: 8,
+    borderWidth: 1.5,
+    borderColor: "#CBD5E1",
+  },
+  addressRecipient: {
+    fontSize: 13,
     fontWeight: "700",
     color: COLORS.text,
+    marginBottom: 2,
   },
   addressDetails: {
     fontSize: 12,
     color: COLORS.textSecondary,
-    marginTop: 2,
-    lineHeight: 16,
-  },
-  addressPhone: {
-    fontSize: 12,
-    color: COLORS.textTertiary,
-    marginTop: 4,
+    lineHeight: 17,
   },
 });

@@ -32,10 +32,103 @@ export interface AddressInput {
 export async function getUserAddresses(userId: string) {
   try {
     if (!userId) return [];
-    const addresses = await prisma.address.findMany({
+    let addresses = await prisma.address.findMany({
       where: { userId },
       orderBy: [{ isDefault: "desc" }, { createdAt: "desc" }],
     });
+
+    // If user has few or no saved addresses, automatically backfill from their past orders
+    const user = await prisma.user.findUnique({
+      where: { id: userId },
+      select: { phone: true },
+    });
+
+    const pastOrders = await prisma.order.findMany({
+      where: {
+        OR: [
+          { userId },
+          ...(user?.phone ? [{ customerPhone: user.phone }] : []),
+        ],
+      },
+      orderBy: { createdAt: "desc" },
+      take: 10,
+      select: {
+        id: true,
+        shippingAddress: true,
+        deliveryName: true,
+        deliveryPhone: true,
+        deliveryHouseNumber: true,
+        deliveryBuildingName: true,
+        deliveryFloor: true,
+        deliveryStreet: true,
+        deliveryArea: true,
+        deliveryLandmark: true,
+        deliveryCity: true,
+        deliveryState: true,
+        deliveryPostalCode: true,
+        deliveryLatitude: true,
+        deliveryLongitude: true,
+        deliveryInstructions: true,
+        deliveryLocationSource: true,
+      },
+    });
+
+    // Build fingerprint set of existing addresses to prevent duplicates
+    const existingFingerprints = new Set(
+      addresses.map((a) =>
+        `${a.houseNumber || ""}|${a.street || ""}|${a.area || ""}|${a.pincode || ""}`.toLowerCase()
+      )
+    );
+
+    for (const order of pastOrders) {
+      const rawAddr: any = order.shippingAddress || {};
+      const street = order.deliveryStreet || rawAddr.street || rawAddr.line1 || rawAddr.area || "";
+      const pincode = order.deliveryPostalCode || rawAddr.postalCode || rawAddr.pincode || "560001";
+      const houseNumber = order.deliveryHouseNumber || rawAddr.houseNumber || rawAddr.flatNumber || null;
+      const buildingName = order.deliveryBuildingName || rawAddr.buildingName || rawAddr.building || null;
+      const area = order.deliveryArea || rawAddr.area || rawAddr.line2 || null;
+      const city = order.deliveryCity || rawAddr.city || "Bengaluru";
+      const state = order.deliveryState || rawAddr.state || "Karnataka";
+      const fullName = order.deliveryName || rawAddr.fullName || rawAddr.name || null;
+      const phone = order.deliveryPhone || rawAddr.phone || null;
+
+      if (!street && !houseNumber && !area) continue;
+
+      const fp = `${houseNumber || ""}|${street}|${area || ""}|${pincode}`.toLowerCase();
+      if (!existingFingerprints.has(fp)) {
+        existingFingerprints.add(fp);
+        try {
+          const created = await prisma.address.create({
+            data: {
+              userId,
+              label: (rawAddr.label as string) || "Home",
+              fullName,
+              phone,
+              houseNumber,
+              buildingName,
+              floor: order.deliveryFloor || rawAddr.floor || null,
+              street: street || "Main Road",
+              area,
+              landmark: order.deliveryLandmark || rawAddr.landmark || null,
+              city,
+              state,
+              country: "India",
+              pincode,
+              postalCode: pincode,
+              latitude: order.deliveryLatitude || (rawAddr.latitude ? Number(rawAddr.latitude) : null),
+              longitude: order.deliveryLongitude || (rawAddr.longitude ? Number(rawAddr.longitude) : null),
+              source: order.deliveryLocationSource || "ORDER",
+              deliveryInstructions: order.deliveryInstructions || null,
+              isDefault: addresses.length === 0,
+            },
+          });
+          addresses.push(created);
+        } catch (e) {
+          console.warn("[getUserAddresses] Error saving backfilled order address:", e);
+        }
+      }
+    }
+
     return addresses;
   } catch (error) {
     console.error("Error fetching user addresses:", error);
