@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useState, useRef } from "react";
 import {
   MapPin,
   Plus,
@@ -17,6 +17,8 @@ import {
   Sparkles,
   Loader2,
   Navigation,
+  Search,
+  X,
 } from "lucide-react";
 import { type CustomerAddress, useAuthStore } from "@/lib/auth-store";
 import { toast } from "sonner";
@@ -59,7 +61,66 @@ export default function AddressStep({
   const [isDefault, setIsDefault] = useState(userAddresses.length === 0);
   const [isSubmitting, setIsSubmitting] = useState(false);
 
-  // ── 1-CLICK AUTOMATIC ADDRESS DETECTION (BROWSER GPS + GOOGLE MAPS) ──
+  // ── Blinkit-Style Address Autocomplete Search ──
+  const [addressSearch, setAddressSearch] = useState("");
+  const [addressPredictions, setAddressPredictions] = useState<
+    Array<{ placeId: string; description: string; mainText: string; secondaryText: string }>
+  >([]);
+  const [isSearchingAddress, setIsSearchingAddress] = useState(false);
+  const searchDebounceRef = useRef<NodeJS.Timeout | null>(null);
+
+  const handleAddressSearchChange = (text: string) => {
+    setAddressSearch(text);
+    if (!text.trim() || text.length < 2) {
+      setAddressPredictions([]);
+      return;
+    }
+    if (searchDebounceRef.current) clearTimeout(searchDebounceRef.current);
+    searchDebounceRef.current = setTimeout(async () => {
+      try {
+        setIsSearchingAddress(true);
+        const res = await fetch(`/api/geo/autocomplete?input=${encodeURIComponent(text)}`);
+        const data = await res.json();
+        if (data.success && Array.isArray(data.predictions)) {
+          setAddressPredictions(data.predictions);
+        }
+      } catch (err) {
+        console.error("Autocomplete search error:", err);
+      } finally {
+        setIsSearchingAddress(false);
+      }
+    }, 250);
+  };
+
+  const handleSelectSearchedAddress = async (prediction: { placeId: string; mainText: string; description: string }) => {
+    setAddressPredictions([]);
+    setAddressSearch(prediction.mainText);
+    try {
+      setIsSearchingAddress(true);
+      const res = await fetch(`/api/geo/place-details?placeId=${encodeURIComponent(prediction.placeId)}`);
+      const data = await res.json();
+      if (data.success && data.location) {
+        const loc = data.location;
+        if (loc.houseNumber) setHouseNumber(loc.houseNumber);
+        if (loc.street) setLine1(loc.street);
+        else if (loc.formattedAddress) setLine1(loc.formattedAddress.split(",")[0] || "");
+        if (loc.area) setLine2(loc.area);
+        if (loc.city) setCity(loc.city);
+        if (loc.state) setState(loc.state);
+        if (loc.pincode) setPincode(loc.pincode);
+        if (loc.landmark) setLandmark(loc.landmark);
+        setDetectedNotice(`Selected: ${loc.formattedAddress}`);
+        setIsAddingNew(true);
+        toast.success("Address details auto-filled from search!");
+      }
+    } catch (err) {
+      console.error("Place details error:", err);
+    } finally {
+      setIsSearchingAddress(false);
+    }
+  };
+
+  // ── INSTANT ZERO-WAIT ADDRESS DETECTION (FAST BROWSER GPS + GOOGLE MAPS) ──
   const handleDetectLocation = () => {
     if (typeof window === "undefined" || !navigator.geolocation) {
       toast.error("Geolocation is not supported by your browser");
@@ -69,51 +130,72 @@ export default function AddressStep({
     setIsDetectingLocation(true);
     setDetectedNotice(null);
 
-    navigator.geolocation.getCurrentPosition(
-      async (pos) => {
-        try {
-          const { latitude, longitude } = pos.coords;
-          const res = await fetch(`/api/geo/reverse-geocode?lat=${latitude}&lng=${longitude}`);
-          const data = await res.json();
+    const applyCoords = async (latitude: number, longitude: number) => {
+      try {
+        const res = await fetch(`/api/geo/reverse-geocode?lat=${latitude}&lng=${longitude}`);
+        const data = await res.json();
 
-          if (data.success && data.address) {
-            const addr = data.address;
-            if (addr.houseNumber) setHouseNumber(addr.houseNumber);
-            if (addr.street) setLine1(addr.street);
-            else if (addr.formattedAddress) setLine1(addr.formattedAddress.split(",")[0] || "");
-            if (addr.area) setLine2(addr.area);
-            if (addr.city) setCity(addr.city);
-            if (addr.state) setState(addr.state);
-            if (addr.pincode) setPincode(addr.pincode);
-            if (addr.landmark) setLandmark(addr.landmark);
+        if (data.success && data.address) {
+          const addr = data.address;
+          if (addr.houseNumber) setHouseNumber(addr.houseNumber);
+          if (addr.street) setLine1(addr.street);
+          else if (addr.formattedAddress) setLine1(addr.formattedAddress.split(",")[0] || "");
+          if (addr.area) setLine2(addr.area);
+          if (addr.city) setCity(addr.city);
+          if (addr.state) setState(addr.state);
+          if (addr.pincode) setPincode(addr.pincode);
+          if (addr.landmark) setLandmark(addr.landmark);
 
-            setDetectedNotice("GPS address auto-detected! Verify and add flat/floor details if needed.");
-            setIsAddingNew(true);
-            toast.success("Current address detected via Google Maps!");
-          } else {
-            toast.error("Could not fetch address details for this location.");
-          }
-        } catch (err) {
-          console.error("Detect location error:", err);
-          toast.error("Failed to detect location. Please enter manually.");
-        } finally {
-          setIsDetectingLocation(false);
-        }
-      },
-      (err) => {
-        console.warn("Geolocation error:", err);
-        setIsDetectingLocation(false);
-        if (err.code === err.PERMISSION_DENIED) {
-          toast.error("Location permission denied. Please allow location access in your browser.");
+          setDetectedNotice("GPS address auto-detected! Verify and add flat/floor details if needed.");
+          setIsAddingNew(true);
+          toast.success("Current address detected via Google Maps!");
+          try {
+            sessionStorage.setItem("last_coords", JSON.stringify({ lat: latitude, lng: longitude }));
+          } catch {}
+          return true;
         } else {
-          toast.error("Could not fetch GPS coordinates.");
+          toast.error("Could not fetch address details for this location.");
         }
+      } catch (err) {
+        console.error("Detect location error:", err);
+        toast.error("Failed to detect location. Please enter manually.");
+      } finally {
+        setIsDetectingLocation(false);
+      }
+      return false;
+    };
+
+    // Stage 1: Ultra-fast coarse / cached position (<300ms)
+    navigator.geolocation.getCurrentPosition(
+      (pos) => {
+        applyCoords(pos.coords.latitude, pos.coords.longitude);
       },
-      { enableHighAccuracy: true, timeout: 10000, maximumAge: 60000 }
+      () => {
+        // Stage 2: Fallback to high accuracy if coarse fails
+        navigator.geolocation.getCurrentPosition(
+          (pos) => {
+            applyCoords(pos.coords.latitude, pos.coords.longitude);
+          },
+          (err) => {
+            console.warn("Geolocation fallback notice:", err);
+            setIsDetectingLocation(false);
+            if (err.code === err.PERMISSION_DENIED) {
+              toast.error("Location permission denied. Please allow location access in your browser.");
+            } else {
+              toast.error("Could not fetch GPS coordinates. Please select on map.");
+            }
+          },
+          { enableHighAccuracy: true, timeout: 4000, maximumAge: 60000 }
+        );
+      },
+      { enableHighAccuracy: false, timeout: 2500, maximumAge: 300000 }
     );
   };
 
   const handleMapLocationConfirmed = (loc: WebPickedLocation) => {
+    if (loc.label && ["Home", "Work", "Site", "Other"].includes(loc.label)) {
+      setLabel(loc.label as any);
+    }
     if (loc.houseNumber) setHouseNumber(loc.houseNumber);
     if (loc.street) setLine1(loc.street);
     else if (loc.formattedAddress) setLine1(loc.formattedAddress.split(",")[0] || "");
@@ -258,11 +340,7 @@ export default function AddressStep({
             >
               <div className="flex items-center gap-3">
                 <div className="w-10 h-10 rounded-xl bg-white/10 flex items-center justify-center text-white shrink-0">
-                  {isDetectingLocation ? (
-                    <Loader2 size={18} className="animate-spin text-white" />
-                  ) : (
-                    <MapPin size={18} className="text-[#F26522]" />
-                  )}
+                  <MapPin size={18} className="text-[#F26522]" />
                 </div>
                 <div className="text-left">
                   <div className="flex items-center gap-1.5">
@@ -429,7 +507,7 @@ export default function AddressStep({
                 disabled={isDetectingLocation}
                 className="px-3 py-1.5 bg-[#052a51] hover:bg-[#041f3d] text-white text-xs font-bold rounded-xl transition-all flex items-center gap-1.5 cursor-pointer disabled:opacity-50 shadow-xs active:scale-95"
               >
-                {isDetectingLocation ? <Loader2 size={12} className="animate-spin" /> : <Sparkles size={12} className="text-amber-300" />}
+                <Sparkles size={12} className="text-amber-300" />
                 <span>{isDetectingLocation ? "Detecting..." : "Auto GPS"}</span>
               </button>
               <button
@@ -451,6 +529,60 @@ export default function AddressStep({
           )}
 
           <form onSubmit={handleSaveAddress} className="space-y-4">
+            {/* Blinkit-Style Quick Address Autocomplete Search */}
+            <div className="relative">
+              <label className="block text-xs font-bold text-gray-700 mb-1 flex items-center gap-1.5">
+                <Search size={13} className="text-[#F26522]" />
+                <span>Search Area, Society, Apartment (Blinkit Auto-Fill)</span>
+              </label>
+              <div className="relative">
+                <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 text-gray-400" size={15} />
+                <input
+                  type="text"
+                  value={addressSearch}
+                  onChange={(e) => handleAddressSearchChange(e.target.value)}
+                  placeholder="Search apartment, society, landmark (e.g. Indiranagar, HSR Layout)..."
+                  className="w-full h-11 pl-10 pr-9 bg-white border border-gray-300 rounded-xl text-xs font-medium text-[#052a51] placeholder:text-gray-400 focus:outline-none focus:border-[#F26522] focus:ring-2 focus:ring-[#F26522]/15 shadow-xs"
+                />
+                {isSearchingAddress ? (
+                  <div className="absolute right-3 top-1/2 -translate-y-1/2">
+                    <Loader2 className="animate-spin text-[#F26522]" size={14} />
+                  </div>
+                ) : addressSearch ? (
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setAddressSearch("");
+                      setAddressPredictions([]);
+                    }}
+                    className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 p-0.5"
+                  >
+                    <X size={14} />
+                  </button>
+                ) : null}
+              </div>
+
+              {/* Dropdown Predictions */}
+              {addressPredictions.length > 0 && (
+                <div className="absolute z-30 left-0 right-0 top-full mt-1.5 bg-white rounded-xl shadow-xl border border-gray-200 overflow-hidden divide-y divide-gray-100 max-h-56 overflow-y-auto">
+                  {addressPredictions.map((pred) => (
+                    <button
+                      key={pred.placeId}
+                      type="button"
+                      onClick={() => handleSelectSearchedAddress(pred)}
+                      className="w-full px-3.5 py-2.5 text-left hover:bg-orange-50/70 transition-colors flex items-start gap-2.5 group cursor-pointer"
+                    >
+                      <MapPin size={15} className="text-[#F26522] shrink-0 mt-0.5 group-hover:scale-110 transition-transform" />
+                      <div className="flex-1 min-w-0">
+                        <p className="text-xs font-bold text-[#052a51] truncate">{pred.mainText}</p>
+                        <p className="text-[11px] text-gray-500 truncate">{pred.secondaryText || pred.description}</p>
+                      </div>
+                    </button>
+                  ))}
+                </div>
+              )}
+            </div>
+
             {/* Address Type Selector */}
             <div>
               <label className="block text-xs font-bold text-gray-700 uppercase tracking-wider mb-2">

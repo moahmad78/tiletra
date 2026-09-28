@@ -16,6 +16,7 @@ import {
 import { useAuthStore, useAuthStatus } from "@/lib/auth-store";
 import { useWishlistStore } from "@/lib/wishlist-store";
 import { toast } from "sonner";
+import UserAvatar from "@/components/ui/UserAvatar";
 
 export default function AccountSidebar() {
   const pathname = usePathname();
@@ -89,22 +90,13 @@ export default function AccountSidebar() {
         ) : (
           <>
             <div className="relative shrink-0">
-              {isAuthenticated && user?.avatar ? (
-                // eslint-disable-next-line @next/next/no-img-element
-                <img
-                  src={user.avatar}
-                  alt={user.name || "Customer"}
-                  className="w-14 h-14 rounded-full object-cover border-2 border-[#052a51]/20 shadow-xs"
-                />
-              ) : (
-                <div className="w-14 h-14 rounded-full bg-[#052a51] text-white flex items-center justify-center text-xl font-black shadow-xs">
-                  {isAuthenticated && user?.name ? (
-                    user.name[0].toUpperCase()
-                  ) : (
-                    <User size={24} />
-                  )}
-                </div>
-              )}
+              <UserAvatar
+                src={isAuthenticated ? user?.avatar : null}
+                name={isAuthenticated ? user?.name : null}
+                size={56}
+                className="border-2 border-[#052a51]/20 shadow-xs"
+                fallbackClassName="bg-[#052a51] text-xl"
+              />
               {isAuthenticated && (
                 <button
                   onClick={() => fileInputRef.current?.click()}

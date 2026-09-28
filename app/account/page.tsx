@@ -36,12 +36,15 @@ import {
   AlertCircle,
   Store,
   ArrowLeft,
+  Search,
+  Sparkles,
 } from "lucide-react";
 import { useSearchParams } from "next/navigation";
 import { Suspense } from "react";
 import { useWishlistStore } from "@/lib/wishlist-store";
 import { useAuthStore, useAuthStatus, type CustomerAddress } from "@/lib/auth-store";
 import { toast } from "sonner";
+import UserAvatar from "@/components/ui/UserAvatar";
 
 type TabType = "profile" | "addresses" | "gst" | "payments";
 
@@ -94,6 +97,60 @@ function AccountPageContent() {
   const [addrState, setAddrState] = useState("Karnataka");
   const [addrLandmark, setAddrLandmark] = useState("");
   const [addrLabel, setAddrLabel] = useState<"Home" | "Work" | "Site" | "Other" | string>("Home");
+
+  // ── Blinkit-Style Address Autocomplete Search ──
+  const [quickSearch, setQuickSearch] = useState("");
+  const [quickPredictions, setQuickPredictions] = useState<
+    Array<{ placeId: string; description: string; mainText: string; secondaryText: string }>
+  >([]);
+  const [isSearchingQuick, setIsSearchingQuick] = useState(false);
+  const quickDebounceRef = useRef<NodeJS.Timeout | null>(null);
+
+  const handleQuickSearchChange = (text: string) => {
+    setQuickSearch(text);
+    if (!text.trim() || text.length < 2) {
+      setQuickPredictions([]);
+      return;
+    }
+    if (quickDebounceRef.current) clearTimeout(quickDebounceRef.current);
+    quickDebounceRef.current = setTimeout(async () => {
+      try {
+        setIsSearchingQuick(true);
+        const res = await fetch(`/api/geo/autocomplete?input=${encodeURIComponent(text)}`);
+        const data = await res.json();
+        if (data.success && Array.isArray(data.predictions)) {
+          setQuickPredictions(data.predictions);
+        }
+      } catch (err) {
+        console.error("Autocomplete error:", err);
+      } finally {
+        setIsSearchingQuick(false);
+      }
+    }, 250);
+  };
+
+  const handleSelectQuickPrediction = async (prediction: { placeId: string; mainText: string; description: string }) => {
+    setQuickPredictions([]);
+    setQuickSearch(prediction.mainText);
+    try {
+      setIsSearchingQuick(true);
+      const res = await fetch(`/api/geo/place-details?placeId=${encodeURIComponent(prediction.placeId)}`);
+      const data = await res.json();
+      if (data.success && data.location) {
+        const loc = data.location;
+        setAddrLine1(loc.street || prediction.mainText);
+        setAddrCity(loc.city || "Bengaluru");
+        setAddrState(loc.state || "Karnataka");
+        setAddrPincode(loc.pincode || "");
+        if (loc.landmark) setAddrLandmark(loc.landmark);
+        toast.success("Address details auto-filled from location!");
+      }
+    } catch (e) {
+      console.error("Place details error:", e);
+    } finally {
+      setIsSearchingQuick(false);
+    }
+  };
 
   // GST / Business Details State (Flipkart B2B pattern)
   const [gstNumber, setGstNumber] = useState("");
@@ -196,6 +253,8 @@ function AccountPageContent() {
     setAddrLabel("Home");
     setIsAddingAddress(false);
     setEditingAddressId(null);
+    setQuickSearch("");
+    setQuickPredictions([]);
   };
 
   const handleStartEditAddress = (addr: CustomerAddress) => {
@@ -312,22 +371,13 @@ function AccountPageContent() {
               <div className="flex items-center gap-3.5">
                 {/* Avatar */}
                 <div className="relative shrink-0">
-                  {isAuthenticated && user?.avatar ? (
-                    // eslint-disable-next-line @next/next/no-img-element
-                    <img
-                      src={user.avatar}
-                      alt={user.name || "Customer"}
-                      className="w-16 h-16 rounded-full object-cover border-2 border-white/40 shadow-md"
-                    />
-                  ) : (
-                    <div className="w-16 h-16 rounded-full bg-white/10 text-white flex items-center justify-center text-xl font-black border border-white/20 shadow-md">
-                      {isAuthenticated && user?.name ? (
-                        user.name[0].toUpperCase()
-                      ) : (
-                        <User size={28} />
-                      )}
-                    </div>
-                  )}
+                  <UserAvatar
+                    src={isAuthenticated ? user?.avatar : null}
+                    name={isAuthenticated ? user?.name : null}
+                    size={64}
+                    className="border-2 border-white/40 shadow-md"
+                    fallbackClassName="bg-white/10 border border-white/20 text-xl text-white"
+                  />
                   {isAuthenticated && (
                     <button
                       onClick={() => {
@@ -412,20 +462,13 @@ function AccountPageContent() {
 
               {/* Avatar */}
               <div className="flex items-center gap-3">
-                {editAvatar ? (
-                  <Image
-                    src={editAvatar}
-                    alt="Avatar"
-                    width={56}
-                    height={56}
-                    unoptimized={editAvatar.startsWith("data:") || editAvatar.startsWith("blob:")}
-                    className="w-14 h-14 rounded-full object-cover border border-gray-200"
-                  />
-                ) : (
-                  <div className="w-14 h-14 rounded-full bg-gray-100 text-gray-400 flex items-center justify-center font-black text-lg">
-                    {user?.name?.[0]?.toUpperCase() || <User size={22} />}
-                  </div>
-                )}
+                <UserAvatar
+                  src={editAvatar}
+                  name={user?.name}
+                  size={56}
+                  className="border border-gray-200"
+                  fallbackClassName="bg-gray-100 text-gray-400 text-lg"
+                />
                 <div className="flex flex-col gap-1">
                   <button type="button" onClick={() => fileInputRef.current?.click()} className="text-xs font-bold text-[#F26522] hover:underline text-left">Upload Photo</button>
                   {editAvatar && <button type="button" onClick={() => setEditAvatar(null)} className="text-[11px] font-semibold text-red-500 hover:underline text-left">Remove</button>}
@@ -1039,6 +1082,60 @@ function AccountPageContent() {
                       >
                         Cancel
                       </button>
+                    </div>
+
+                    {/* Blinkit-Style Quick Address Autocomplete Search */}
+                    <div className="relative">
+                      <label className="block text-xs font-bold text-gray-700 mb-1 flex items-center gap-1.5">
+                        <Search size={13} className="text-[#F26522]" />
+                        <span>Search Area, Society, Apartment (Blinkit Auto-Fill)</span>
+                      </label>
+                      <div className="relative">
+                        <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 text-gray-400" size={15} />
+                        <input
+                          type="text"
+                          value={quickSearch}
+                          onChange={(e) => handleQuickSearchChange(e.target.value)}
+                          placeholder="Search apartment, society, landmark (e.g. Indiranagar, HSR Layout)..."
+                          className="w-full h-10 pl-9 pr-9 bg-white border border-gray-300 rounded-xl text-xs font-medium text-[#052a51] placeholder:text-gray-400 focus:outline-none focus:border-[#F26522] focus:ring-2 focus:ring-[#F26522]/15 shadow-xs"
+                        />
+                        {isSearchingQuick ? (
+                          <div className="absolute right-3 top-1/2 -translate-y-1/2">
+                            <Loader2 className="animate-spin text-[#F26522]" size={14} />
+                          </div>
+                        ) : quickSearch ? (
+                          <button
+                            type="button"
+                            onClick={() => {
+                              setQuickSearch("");
+                              setQuickPredictions([]);
+                            }}
+                            className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 p-0.5"
+                          >
+                            <X size={14} />
+                          </button>
+                        ) : null}
+                      </div>
+
+                      {/* Dropdown Predictions */}
+                      {quickPredictions.length > 0 && (
+                        <div className="absolute z-30 left-0 right-0 top-full mt-1.5 bg-white rounded-xl shadow-xl border border-gray-200 overflow-hidden divide-y divide-gray-100 max-h-56 overflow-y-auto">
+                          {quickPredictions.map((pred) => (
+                            <button
+                              key={pred.placeId}
+                              type="button"
+                              onClick={() => handleSelectQuickPrediction(pred)}
+                              className="w-full px-3.5 py-2.5 text-left hover:bg-orange-50/70 transition-colors flex items-start gap-2.5 group cursor-pointer"
+                            >
+                              <MapPin size={15} className="text-[#F26522] shrink-0 mt-0.5 group-hover:scale-110 transition-transform" />
+                              <div className="flex-1 min-w-0">
+                                <p className="text-xs font-bold text-[#052a51] truncate">{pred.mainText}</p>
+                                <p className="text-[11px] text-gray-500 truncate">{pred.secondaryText || pred.description}</p>
+                              </div>
+                            </button>
+                          ))}
+                        </div>
+                      )}
                     </div>
 
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">

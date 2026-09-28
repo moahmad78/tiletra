@@ -13,6 +13,7 @@ import SearchModal from "@/components/SearchModal";
 import NotificationCenter from "@/components/notifications/NotificationCenter";
 import CategoryNavBar from "@/components/CategoryNavBar";
 import RotatingHeaderContact from "@/components/RotatingHeaderContact";
+import UserAvatar from "@/components/ui/UserAvatar";
 
 export default function Header() {
   const [isScrolled, setIsScrolled] = useState(false);
@@ -193,19 +194,12 @@ export default function Header() {
                   aria-label="Account"
                   className="hidden lg:flex items-center gap-2 px-2.5 h-[40px] rounded-xl text-xs font-bold text-[#052a51] hover:bg-gray-100 transition-colors"
                 >
-                  {user.avatar ? (
-                    <Image
-                      src={user.avatar}
-                      alt={user.name || "User"}
-                      width={28}
-                      height={28}
-                      className="w-7 h-7 rounded-full object-cover border border-[#052a51]/20 shadow-2xs"
-                    />
-                  ) : (
-                    <div className="w-7 h-7 rounded-full bg-[#052a51] text-white flex items-center justify-center text-[11px] font-black">
-                      {user.name ? user.name[0].toUpperCase() : "U"}
-                    </div>
-                  )}
+                  <UserAvatar
+                    src={user.avatar}
+                    name={user.name}
+                    size={28}
+                    className="border border-[#052a51]/20 shadow-2xs"
+                  />
                   <span className="truncate max-w-[100px]">{user.name?.split(" ")[0] || "Account"}</span>
                 </Link>
               ) : (

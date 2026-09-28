@@ -75,6 +75,7 @@ interface AuthState {
   }) => Promise<void>;
   updateProfile: (data: { name?: string | null; email?: string | null; avatar?: string | null }) => Promise<{ success: boolean; message?: string }>;
   updateUserPhone: (phone: string) => Promise<{ success: boolean; message?: string }>;
+  syncUserWithDb: () => Promise<void>;
   logout: () => void;
   setHasHydrated: (v: boolean) => void;
 
@@ -248,6 +249,7 @@ export const useAuthStore = create<AuthState>()(
                 user: {
                   ...state.user,
                   id: dbUser.id,
+                  avatar: userData.avatar || dbUser.avatar || state.user.avatar,
                   phone: resolvedPhone,
                   phoneVerified: dbUser.phoneVerified,
                   addresses,
@@ -403,6 +405,35 @@ export const useAuthStore = create<AuthState>()(
           return { success: false, message: res.error || "Failed to update phone" };
         } catch (e: any) {
           return { success: false, message: e?.message || "Failed to update phone" };
+        }
+      },
+
+      syncUserWithDb: async () => {
+        const currentUser = get().user;
+        if (!currentUser?.id || currentUser.id.startsWith("usr-")) return;
+        try {
+          const { getDbUser } = await import("@/lib/actions/auth");
+          const dbUser = await getDbUser(currentUser.id);
+          if (dbUser) {
+            set((state) => {
+              if (!state.user || state.user.id !== dbUser.id) return state;
+              const dbPhone =
+                dbUser.phone && !dbUser.phone.startsWith("google_") && !dbUser.phone.startsWith("email_")
+                  ? dbUser.phone.replace(/\D/g, "").slice(-10)
+                  : state.user.phone;
+              return {
+                user: {
+                  ...state.user,
+                  name: dbUser.name || state.user.name,
+                  avatar: dbUser.avatar || state.user.avatar,
+                  phone: dbPhone,
+                  phoneVerified: dbUser.phoneVerified,
+                },
+              };
+            });
+          }
+        } catch (e) {
+          console.error("Failed to sync user with DB:", e);
         }
       },
 

@@ -35,7 +35,14 @@ function decodeBase64Url(str: string): string {
 export default function GoogleSessionHydrator() {
   const searchParams = useSearchParams();
   const router = useRouter();
-  const { googleSignIn, isAuthenticated } = useAuthStore();
+  const { googleSignIn, user, isAuthenticated, syncUserWithDb } = useAuthStore();
+
+  // Defense-in-depth: if user is logged in but their localStorage snapshot lacks avatar, sync from DB
+  useEffect(() => {
+    if (isAuthenticated && user?.id && !user.avatar && !user.id.startsWith("usr-")) {
+      syncUserWithDb();
+    }
+  }, [isAuthenticated, user?.id, user?.avatar, syncUserWithDb]);
 
   useEffect(() => {
     const session = searchParams.get("google_session");

@@ -9,14 +9,18 @@ import {
   Alert,
   Dimensions,
   Platform,
+  TextInput,
+  ScrollView,
+  Keyboard,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { WebView } from "react-native-webview";
-import { X, MapPin, Check, Crosshair } from "lucide-react-native";
+import { X, MapPin, Check, Crosshair, Search } from "lucide-react-native";
 import * as Location from "expo-location";
 import { COLORS, SPACING, RADIUS, SHADOWS } from "../constants/theme";
 import { GOOGLE_MAPS_API_KEY } from "../constants/config";
 import { useLocationStore } from "../store/locationStore";
+import { apiClient } from "../api/client";
 
 const { width: SCREEN_WIDTH, height: SCREEN_HEIGHT } = Dimensions.get("window");
 
@@ -64,6 +68,116 @@ export const MapPickerModal: React.FC<MapPickerModalProps> = ({
     latitude: initialLat,
     longitude: initialLng,
   });
+
+  // ── Blinkit-Style Live Address Search State ──
+  const searchDebounceRef = useRef<any>(null);
+  const [searchQuery, setSearchQuery] = useState("");
+  const [predictions, setPredictions] = useState<
+    Array<{ placeId: string; description: string; mainText: string; secondaryText: string; latitude?: number; longitude?: number }>
+  >([]);
+  const [isSearching, setIsSearching] = useState(false);
+  const [showPredictions, setShowPredictions] = useState(false);
+
+  // Live address search typing with debouncing
+  const handleSearchChange = (text: string) => {
+    setSearchQuery(text);
+    if (!text.trim() || text.length < 2) {
+      setPredictions([]);
+      setShowPredictions(false);
+      return;
+    }
+
+    if (searchDebounceRef.current) clearTimeout(searchDebounceRef.current);
+    searchDebounceRef.current = setTimeout(async () => {
+      try {
+        setIsSearching(true);
+        const res = await apiClient.get("/api/geo/autocomplete", {
+          params: {
+            input: text,
+            lat: currentCoords.lat,
+            lng: currentCoords.lng,
+          },
+        });
+        if (res.data?.success && Array.isArray(res.data.predictions)) {
+          setPredictions(res.data.predictions);
+          setShowPredictions(true);
+        }
+      } catch (err) {
+        console.warn("Mobile autocomplete error:", err);
+      } finally {
+        setIsSearching(false);
+      }
+    }, 250);
+  };
+
+  // Handle clicking a search prediction
+  const handleSelectPrediction = async (prediction: {
+    placeId: string;
+    mainText: string;
+    description: string;
+    latitude?: number;
+    longitude?: number;
+  }) => {
+    setShowPredictions(false);
+    setSearchQuery(prediction.mainText);
+    Keyboard.dismiss();
+    try {
+      setIsSearching(true);
+
+      if (prediction.latitude && prediction.longitude) {
+        const { latitude, longitude } = prediction;
+        setCurrentCoords({ lat: latitude, lng: longitude });
+        if (webViewRef.current) {
+          const js = `
+            if (window.map) {
+              window.map.panTo({ lat: ${latitude}, lng: ${longitude} });
+              window.map.setZoom(17);
+            }
+            true;
+          `;
+          webViewRef.current.injectJavaScript(js);
+        }
+        fetchAddressForCoords(latitude, longitude);
+        return;
+      }
+
+      const res = await apiClient.get("/api/geo/place-details", {
+        params: { placeId: prediction.placeId },
+      });
+      if (res.data?.success && res.data.location) {
+        const loc = res.data.location;
+        const { latitude, longitude } = loc;
+        setCurrentCoords({ lat: latitude, lng: longitude });
+        setAddressDetails({
+          street: loc.street || "",
+          area: loc.area || "",
+          city: loc.city || "Bengaluru",
+          state: loc.state || "Karnataka",
+          pincode: loc.pincode || "",
+          houseNumber: loc.houseNumber || "",
+          landmark: loc.landmark || "",
+          formattedAddress: loc.formattedAddress || `${latitude.toFixed(5)}, ${longitude.toFixed(5)}`,
+          latitude,
+          longitude,
+        });
+
+        if (webViewRef.current) {
+          const js = `
+            if (window.map) {
+              window.map.panTo({ lat: ${latitude}, lng: ${longitude} });
+              window.map.setZoom(17);
+            }
+            true;
+          `;
+          webViewRef.current.injectJavaScript(js);
+        }
+      }
+    } catch (e) {
+      console.warn("handleSelectPrediction error:", e);
+    } finally {
+      setIsSearching(false);
+    }
+  };
 
   // Debounce ref to avoid spamming Google reverse geocoding on drag
   const debounceTimerRef = useRef<any>(null);
@@ -360,6 +474,70 @@ export const MapPickerModal: React.FC<MapPickerModalProps> = ({
             onMessage={handleWebViewMessage}
           />
 
+          {/* Floating Search Bar (Blinkit Style) */}
+          <View style={styles.searchFloatingContainer}>
+            <View style={styles.searchBar}>
+              <Search size={18} color={COLORS.textTertiary} />
+              <TextInput
+                style={styles.searchInput}
+                placeholder="Search area, apartment, street..."
+                placeholderTextColor={COLORS.textTertiary}
+                value={searchQuery}
+                onChangeText={handleSearchChange}
+                returnKeyType="search"
+              />
+              {isSearching ? (
+                <ActivityIndicator size="small" color={COLORS.primary} />
+              ) : searchQuery ? (
+                <TouchableOpacity onPress={() => { setSearchQuery(""); setPredictions([]); setShowPredictions(false); }}>
+                  <X size={16} color={COLORS.textTertiary} />
+                </TouchableOpacity>
+              ) : null}
+            </View>
+
+            {/* Blinkit Dropdown Predictions */}
+            {showPredictions && predictions.length > 0 && (
+              <View style={styles.predictionsCard}>
+                <ScrollView style={styles.predictionsScroll} keyboardShouldPersistTaps="handled">
+                  {/* Use current location quick button */}
+                  <TouchableOpacity
+                    style={styles.predictionItem}
+                    onPress={() => {
+                      setShowPredictions(false);
+                      handleRecenterGPS();
+                    }}
+                    activeOpacity={0.7}
+                  >
+                    <View style={[styles.predictionIconWrap, { backgroundColor: "#FFF7ED" }]}>
+                      <Crosshair size={16} color={COLORS.primary} />
+                    </View>
+                    <View style={styles.predictionTextWrap}>
+                      <Text style={[styles.predictionMainText, { color: COLORS.primary }]}>Use current location</Text>
+                      <Text style={styles.predictionSubText}>Using GPS • Instant detection</Text>
+                    </View>
+                  </TouchableOpacity>
+
+                  {predictions.map((p) => (
+                    <TouchableOpacity
+                      key={p.placeId}
+                      style={styles.predictionItem}
+                      onPress={() => handleSelectPrediction(p)}
+                      activeOpacity={0.7}
+                    >
+                      <View style={styles.predictionIconWrap}>
+                        <MapPin size={16} color={COLORS.textSecondary} />
+                      </View>
+                      <View style={styles.predictionTextWrap}>
+                        <Text style={styles.predictionMainText} numberOfLines={1}>{p.mainText}</Text>
+                        <Text style={styles.predictionSubText} numberOfLines={1}>{p.secondaryText || p.description}</Text>
+                      </View>
+                    </TouchableOpacity>
+                  ))}
+                </ScrollView>
+              </View>
+            )}
+          </View>
+
           {/* Floating GPS Recenter Button */}
           <TouchableOpacity
             style={styles.gpsFloatingBtn}
@@ -388,7 +566,6 @@ export const MapPickerModal: React.FC<MapPickerModalProps> = ({
                 </Text>
                 {isReverseGeocoding && (
                   <View style={styles.geocodingPill}>
-                    <ActivityIndicator size="small" color={COLORS.primary} style={{ transform: [{ scale: 0.7 }] }} />
                     <Text style={styles.geocodingText}>Detecting...</Text>
                   </View>
                 )}
@@ -476,6 +653,75 @@ const styles = StyleSheet.create({
     fontSize: 13,
     fontWeight: "700",
     color: COLORS.textSecondary,
+  },
+  searchFloatingContainer: {
+    position: "absolute",
+    top: 12,
+    left: 12,
+    right: 12,
+    zIndex: 99,
+  },
+  searchBar: {
+    flexDirection: "row",
+    alignItems: "center",
+    backgroundColor: "#ffffff",
+    borderRadius: RADIUS.lg,
+    paddingHorizontal: 12,
+    height: 46,
+    gap: 8,
+    borderWidth: 1,
+    borderColor: "#E2E8F0",
+    ...SHADOWS.md,
+  },
+  searchInput: {
+    flex: 1,
+    fontSize: 13,
+    fontWeight: "700",
+    color: COLORS.text,
+    paddingVertical: 0,
+  },
+  predictionsCard: {
+    backgroundColor: "#ffffff",
+    borderRadius: RADIUS.lg,
+    marginTop: 6,
+    maxHeight: 250,
+    borderWidth: 1,
+    borderColor: "#E2E8F0",
+    overflow: "hidden",
+    ...SHADOWS.lg,
+  },
+  predictionsScroll: {
+    maxHeight: 250,
+  },
+  predictionItem: {
+    flexDirection: "row",
+    alignItems: "center",
+    paddingHorizontal: 12,
+    paddingVertical: 10,
+    borderBottomWidth: 1,
+    borderBottomColor: "#F1F5F9",
+    gap: 10,
+  },
+  predictionIconWrap: {
+    width: 32,
+    height: 32,
+    borderRadius: 16,
+    backgroundColor: "#F1F5F9",
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  predictionTextWrap: {
+    flex: 1,
+  },
+  predictionMainText: {
+    fontSize: 13,
+    fontWeight: "700",
+    color: COLORS.text,
+  },
+  predictionSubText: {
+    fontSize: 11,
+    color: COLORS.textTertiary,
+    marginTop: 2,
   },
   gpsFloatingBtn: {
     position: "absolute",

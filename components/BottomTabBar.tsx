@@ -5,12 +5,17 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { Home, Grid3x3, ShoppingBag, User } from "lucide-react";
 import { useCartStore } from "@/lib/cart-store";
+import { useAuthStore } from "@/lib/auth-store";
+import UserAvatar from "@/components/ui/UserAvatar";
 import { cn } from "@/lib/utils";
 
 export default function BottomTabBar() {
   const pathname = usePathname();
   const cartCount = useCartStore((state) => state.getTotalItems());
   const [mounted, setMounted] = useState(false);
+
+  const user = useAuthStore((state) => state.user);
+  const isAuthenticated = useAuthStore((state) => state.isAuthenticated);
 
   useEffect(() => {
     setMounted(true);
@@ -100,11 +105,20 @@ export default function BottomTabBar() {
           href="/account"
           className="flex flex-col items-center justify-center gap-0.5 flex-1 h-full relative active:scale-90 transition-transform duration-150"
         >
-          <User
-            size={21}
-            strokeWidth={isAccountActive ? 2.5 : 1.8}
-            className={cn("transition-colors duration-200", isAccountActive ? "text-[#052a51]" : "text-gray-400")}
-          />
+          {mounted && isAuthenticated && user?.avatar ? (
+            <UserAvatar
+              src={user.avatar}
+              name={user.name}
+              size={22}
+              className={cn("border transition-colors", isAccountActive ? "border-[#052a51] ring-1 ring-[#052a51]" : "border-gray-200")}
+            />
+          ) : (
+            <User
+              size={21}
+              strokeWidth={isAccountActive ? 2.5 : 1.8}
+              className={cn("transition-colors duration-200", isAccountActive ? "text-[#052a51]" : "text-gray-400")}
+            />
+          )}
           <span className={cn("text-[10px] font-semibold transition-colors", isAccountActive ? "text-[#052a51] font-bold" : "text-gray-400")}>
             Account
           </span>

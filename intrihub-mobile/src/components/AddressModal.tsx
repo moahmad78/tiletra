@@ -25,6 +25,10 @@ import {
   ChevronUp,
   ChevronRight,
   Navigation,
+  Edit3,
+  Trash2,
+  ArrowLeft,
+  Search,
 } from "lucide-react-native";
 import * as Location from "expo-location";
 import { Address } from "../types";
@@ -70,6 +74,7 @@ export const AddressModal: React.FC<AddressModalProps> = ({ visible, onClose, on
   const [savedAddresses, setSavedAddresses] = useState<Address[]>(user?.addresses || []);
   const [loadingAddresses, setLoadingAddresses] = useState(false);
   const [isAddingNew, setIsAddingNew] = useState(false);
+  const [editingAddress, setEditingAddress] = useState<Address | null>(null);
   const [loading, setLoading] = useState(false);
   const [detectingLocation, setDetectingLocation] = useState(false);
   const [showMapPicker, setShowMapPicker] = useState(false);
@@ -88,6 +93,86 @@ export const AddressModal: React.FC<AddressModalProps> = ({ visible, onClose, on
   const [pincode, setPincode] = useState("");
   const [deliveryInstructions, setDeliveryInstructions] = useState("");
   const [error, setError] = useState("");
+
+  // ── Blinkit-Style Address Search State ──
+  const [addressSearchQuery, setAddressSearchQuery] = useState("");
+  const [addressPredictions, setAddressPredictions] = useState<
+    Array<{ placeId: string; description: string; mainText: string; secondaryText: string; latitude?: number; longitude?: number }>
+  >([]);
+  const [isSearchingAddress, setIsSearchingAddress] = useState(false);
+  const [showAddressPredictions, setShowAddressPredictions] = useState(false);
+  const addressSearchDebounceRef = useRef<any>(null);
+
+  const handleAddressSearchChange = (text: string) => {
+    setAddressSearchQuery(text);
+    if (!text.trim() || text.length < 2) {
+      setAddressPredictions([]);
+      setShowAddressPredictions(false);
+      return;
+    }
+
+    if (addressSearchDebounceRef.current) clearTimeout(addressSearchDebounceRef.current);
+    addressSearchDebounceRef.current = setTimeout(async () => {
+      try {
+        setIsSearchingAddress(true);
+        const res = await apiClient.get("/api/geo/autocomplete", {
+          params: { input: text },
+        });
+        if (res.data?.success && Array.isArray(res.data.predictions)) {
+          setAddressPredictions(res.data.predictions);
+          setShowAddressPredictions(true);
+        }
+      } catch (err) {
+        console.warn("Mobile address search error:", err);
+      } finally {
+        setIsSearchingAddress(false);
+      }
+    }, 250);
+  };
+
+  const handleSelectSearchedAddress = async (prediction: {
+    placeId: string;
+    mainText: string;
+    description: string;
+    latitude?: number;
+    longitude?: number;
+  }) => {
+    setShowAddressPredictions(false);
+    setAddressSearchQuery("");
+    try {
+      setLoading(true);
+
+      if (prediction.latitude && prediction.longitude) {
+        setStreet(prediction.mainText);
+        setArea("");
+        setLatitude(prediction.latitude);
+        setLongitude(prediction.longitude);
+        setFormattedAddress(prediction.description);
+        setIsAddingNew(true);
+        return;
+      }
+
+      const res = await apiClient.get("/api/geo/place-details", {
+        params: { placeId: prediction.placeId },
+      });
+      if (res.data?.success && res.data.location) {
+        const loc = res.data.location;
+        setStreet(loc.street || prediction.mainText);
+        setArea(loc.area || "");
+        setCity(loc.city || "Bengaluru");
+        setState(loc.state || "Karnataka");
+        setPincode(loc.pincode || "");
+        setLatitude(loc.latitude || null);
+        setLongitude(loc.longitude || null);
+        setFormattedAddress(loc.formattedAddress || prediction.description);
+        setIsAddingNew(true);
+      }
+    } catch (e) {
+      console.warn("Failed to fetch searched place details:", e);
+    } finally {
+      setLoading(false);
+    }
+  };
 
   // Populate recipient defaults on open
   useEffect(() => {
@@ -217,9 +302,91 @@ export const AddressModal: React.FC<AddressModalProps> = ({ visible, onClose, on
     onClose();
   };
 
+  const resetForm = () => {
+    setEditingAddress(null);
+    setLabel("Home");
+    setFullName(user?.name || "");
+    setPhone(user?.phone?.replace(/\D/g, "").slice(-10) || "");
+    setHouseNumber("");
+    setStreet("");
+    setArea("");
+    setLandmark("");
+    setCity("Bengaluru");
+    setState("Karnataka");
+    setPincode("");
+    setDeliveryInstructions("");
+    setError("");
+  };
+
+  const handleStartEdit = (addr: Address) => {
+    setEditingAddress(addr);
+    setLabel((addr.label as any) || "Home");
+    setFullName(addr.fullName || user?.name || "");
+    setPhone(
+      addr.phone
+        ? addr.phone.replace(/\D/g, "").slice(-10)
+        : user?.phone?.replace(/\D/g, "").slice(-10) || ""
+    );
+    setHouseNumber(addr.houseNumber || "");
+    setStreet(addr.street || "");
+    setArea(addr.area || "");
+    setLandmark(addr.landmark || "");
+    setCity(addr.city || "Bengaluru");
+    setState(addr.state || "Karnataka");
+    setPincode(addr.pincode || addr.postalCode || "");
+    setDeliveryInstructions(addr.deliveryInstructions || "");
+    setError("");
+    setIsAddingNew(true);
+  };
+
+  const handleConfirmDelete = (addr: Address) => {
+    Alert.alert(
+      "Delete Address",
+      `Are you sure you want to delete this ${addr.label || "saved"} address?`,
+      [
+        { text: "Cancel", style: "cancel" },
+        {
+          text: "Delete",
+          style: "destructive",
+          onPress: async () => {
+            try {
+              if (!addr.id.startsWith("order_addr_") && !addr.id.startsWith("addr_")) {
+                try {
+                  await apiClient.delete(`/api/addresses/${addr.id}`);
+                } catch (delErr) {
+                  console.warn("Could not delete address on server:", delErr);
+                }
+              }
+
+              const remaining = savedAddresses.filter((a) => a.id !== addr.id);
+              setSavedAddresses(remaining);
+
+              const currentUser = useAuthStore.getState().user;
+              if (currentUser) {
+                useAuthStore.getState().setUser({ ...currentUser, addresses: remaining });
+              }
+
+              if (selectedAddress?.id === addr.id) {
+                const nextSelected = remaining.length > 0 ? remaining[0] : null;
+                setSelectedAddress(nextSelected);
+                if (nextSelected) {
+                  onSelectAddress(nextSelected);
+                }
+              }
+            } catch (err: any) {
+              console.error("Delete address error:", err);
+              Alert.alert("Error", "Could not delete address. Please try again.");
+            }
+          },
+        },
+      ]
+    );
+  };
+
   // ── INSTANT ZERO-WAIT AUTOMATIC ADDRESS DETECTION ──
   const handleUseCurrentLocation = async () => {
     try {
+      resetForm();
       setDetectingLocation(true);
       setError("");
 
@@ -250,7 +417,7 @@ export const AddressModal: React.FC<AddressModalProps> = ({ visible, onClose, on
     }
   };
 
-  // ── SAVE ADDRESS HANDLER ──
+  // ── SAVE / UPDATE ADDRESS HANDLER ──
   const handleSaveAddress = async () => {
     if (!fullName.trim()) {
       setError("Please enter recipient name");
@@ -288,8 +455,8 @@ export const AddressModal: React.FC<AddressModalProps> = ({ visible, onClose, on
         .filter(Boolean)
         .join(", ");
 
-      const newAddressPayload: Address = {
-        id: `addr_${Date.now()}_${Math.random().toString(36).substring(2, 7)}`,
+      const addressPayload: Address = {
+        id: editingAddress?.id || `addr_${Date.now()}_${Math.random().toString(36).substring(2, 7)}`,
         fullName: fullName.trim(),
         phone: phone.trim(),
         label,
@@ -305,50 +472,107 @@ export const AddressModal: React.FC<AddressModalProps> = ({ visible, onClose, on
         postalCode: pincode.trim(),
         deliveryInstructions: deliveryInstructions.trim() || undefined,
         formattedAddress: formatted,
-        isDefault: savedAddresses.length === 0,
+        isDefault: editingAddress ? Boolean(editingAddress.isDefault) : savedAddresses.length === 0,
         addressLine1: [houseNumber.trim(), street.trim()].filter(Boolean).join(", "),
         addressLine2: [area.trim(), landmark.trim()].filter(Boolean).join(", "),
       };
 
-      // Persist to backend database via /api/addresses
-      try {
-        const res = await apiClient.post("/api/addresses", {
-          label: newAddressPayload.label,
-          fullName: newAddressPayload.fullName,
-          phone: newAddressPayload.phone,
-          houseNumber: newAddressPayload.houseNumber,
-          street: newAddressPayload.street,
-          area: newAddressPayload.area,
-          landmark: newAddressPayload.landmark,
-          city: newAddressPayload.city,
-          state: newAddressPayload.state,
-          pincode: newAddressPayload.pincode,
-          postalCode: newAddressPayload.postalCode,
-          deliveryInstructions: newAddressPayload.deliveryInstructions,
-          isDefault: newAddressPayload.isDefault,
-        });
-        if (res.data?.success && res.data.address?.id) {
-          newAddressPayload.id = res.data.address.id;
+      if (editingAddress) {
+        // ── UPDATE MODE (PATCH /api/addresses/[id]) ──
+        try {
+          if (!editingAddress.id.startsWith("order_addr_") && !editingAddress.id.startsWith("addr_")) {
+            await apiClient.patch(`/api/addresses/${editingAddress.id}`, {
+              label: addressPayload.label,
+              fullName: addressPayload.fullName,
+              phone: addressPayload.phone,
+              houseNumber: addressPayload.houseNumber,
+              street: addressPayload.street,
+              area: addressPayload.area,
+              landmark: addressPayload.landmark,
+              city: addressPayload.city,
+              state: addressPayload.state,
+              pincode: addressPayload.pincode,
+              postalCode: addressPayload.postalCode,
+              deliveryInstructions: addressPayload.deliveryInstructions,
+              isDefault: addressPayload.isDefault,
+            });
+          } else {
+            // For order address or temp address, save as a persistent address
+            const res = await apiClient.post("/api/addresses", {
+              label: addressPayload.label,
+              fullName: addressPayload.fullName,
+              phone: addressPayload.phone,
+              houseNumber: addressPayload.houseNumber,
+              street: addressPayload.street,
+              area: addressPayload.area,
+              landmark: addressPayload.landmark,
+              city: addressPayload.city,
+              state: addressPayload.state,
+              pincode: addressPayload.pincode,
+              postalCode: addressPayload.postalCode,
+              deliveryInstructions: addressPayload.deliveryInstructions,
+              isDefault: addressPayload.isDefault,
+            });
+            if (res.data?.success && res.data.address?.id) {
+              addressPayload.id = res.data.address.id;
+            }
+          }
+        } catch (syncErr) {
+          console.warn("Could not patch address on server:", syncErr);
         }
-      } catch (syncErr) {
-        console.warn("Could not sync address to /api/addresses:", syncErr);
+
+        const updatedAddresses = savedAddresses.map((a) =>
+          a.id === editingAddress.id ? addressPayload : a
+        );
+        setSavedAddresses(updatedAddresses);
+
+        const currentUser = useAuthStore.getState().user;
+        if (currentUser) {
+          useAuthStore.getState().setUser({ ...currentUser, addresses: updatedAddresses });
+        }
+
+        handleSelect(addressPayload);
+        setEditingAddress(null);
+        setIsAddingNew(false);
+      } else {
+        // ── CREATE NEW MODE (POST /api/addresses) ──
+        try {
+          const res = await apiClient.post("/api/addresses", {
+            label: addressPayload.label,
+            fullName: addressPayload.fullName,
+            phone: addressPayload.phone,
+            houseNumber: addressPayload.houseNumber,
+            street: addressPayload.street,
+            area: addressPayload.area,
+            landmark: addressPayload.landmark,
+            city: addressPayload.city,
+            state: addressPayload.state,
+            pincode: addressPayload.pincode,
+            postalCode: addressPayload.postalCode,
+            deliveryInstructions: addressPayload.deliveryInstructions,
+            isDefault: addressPayload.isDefault,
+          });
+          if (res.data?.success && res.data.address?.id) {
+            addressPayload.id = res.data.address.id;
+          }
+        } catch (syncErr) {
+          console.warn("Could not sync address to /api/addresses:", syncErr);
+        }
+
+        const updatedAddresses = [
+          addressPayload,
+          ...savedAddresses.filter((a) => a.id !== addressPayload.id),
+        ];
+        setSavedAddresses(updatedAddresses);
+
+        const currentUser = useAuthStore.getState().user;
+        if (currentUser) {
+          useAuthStore.getState().setUser({ ...currentUser, addresses: updatedAddresses });
+        }
+
+        handleSelect(addressPayload);
+        setIsAddingNew(false);
       }
-
-      // Update local state and auth store
-      const updatedAddresses = [
-        newAddressPayload,
-        ...savedAddresses.filter((a) => a.id !== newAddressPayload.id),
-      ];
-      setSavedAddresses(updatedAddresses);
-
-      const currentUser = useAuthStore.getState().user;
-      if (currentUser) {
-        useAuthStore.getState().setUser({ ...currentUser, addresses: updatedAddresses });
-      }
-
-      // Automatically select newly saved address
-      handleSelect(newAddressPayload);
-      setIsAddingNew(false);
     } catch (err: any) {
       console.error("Save address error:", err);
       setError(err?.message || "Failed to save address");
@@ -363,15 +587,36 @@ export const AddressModal: React.FC<AddressModalProps> = ({ visible, onClose, on
         <View style={styles.modalCard}>
           {/* Header */}
           <View style={styles.header}>
-            <View>
-              <Text style={styles.headerTitle}>
-                {isAddingNew ? "Add Delivery Address" : "Select Delivery Address"}
-              </Text>
-              <Text style={styles.headerSubtitle}>
-                {isAddingNew
-                  ? "Where should your materials be delivered?"
-                  : "Choose delivery location for orders"}
-              </Text>
+            <View style={styles.headerTitleContainer}>
+              {isAddingNew && (
+                <TouchableOpacity
+                  onPress={() => {
+                    setIsAddingNew(false);
+                    setEditingAddress(null);
+                    setError("");
+                  }}
+                  style={styles.backBtn}
+                  activeOpacity={0.7}
+                >
+                  <ArrowLeft size={18} color={COLORS.text} />
+                </TouchableOpacity>
+              )}
+              <View style={{ flex: 1 }}>
+                <Text style={styles.headerTitle}>
+                  {editingAddress
+                    ? "Edit Delivery Address"
+                    : isAddingNew
+                    ? "Add Delivery Address"
+                    : "Select Delivery Address"}
+                </Text>
+                <Text style={styles.headerSubtitle}>
+                  {editingAddress
+                    ? "Update your delivery location details"
+                    : isAddingNew
+                    ? "Where should your materials be delivered?"
+                    : "Choose delivery location for orders"}
+                </Text>
+              </View>
             </View>
             <TouchableOpacity onPress={onClose} style={styles.closeBtn} activeOpacity={0.7}>
               <X size={20} color={COLORS.textSecondary} />
@@ -570,7 +815,11 @@ export const AddressModal: React.FC<AddressModalProps> = ({ visible, onClose, on
                 <View style={styles.formActions}>
                   <TouchableOpacity
                     style={styles.cancelBtn}
-                    onPress={() => setIsAddingNew(false)}
+                    onPress={() => {
+                      setIsAddingNew(false);
+                      setEditingAddress(null);
+                      setError("");
+                    }}
                     activeOpacity={0.8}
                   >
                     <Text style={styles.cancelBtnText}>Back</Text>
@@ -584,7 +833,9 @@ export const AddressModal: React.FC<AddressModalProps> = ({ visible, onClose, on
                     {loading ? (
                       <ActivityIndicator size="small" color="#fff" />
                     ) : (
-                      <Text style={styles.saveBtnText}>Save Delivery Address</Text>
+                      <Text style={styles.saveBtnText}>
+                        {editingAddress ? "Update Delivery Address" : "Save Delivery Address"}
+                      </Text>
                     )}
                   </TouchableOpacity>
                 </View>
@@ -592,10 +843,57 @@ export const AddressModal: React.FC<AddressModalProps> = ({ visible, onClose, on
             ) : (
               /* Saved Address List */
               <View style={styles.addressList}>
+                {/* 0. Blinkit-Style Address Search Input */}
+                <View style={styles.addressSearchBarContainer}>
+                  <View style={styles.addressSearchBar}>
+                    <Search size={18} color={COLORS.textTertiary} />
+                    <TextInput
+                      style={styles.addressSearchInput}
+                      placeholder="Search area, apartment, street (e.g. Indiranagar)..."
+                      placeholderTextColor={COLORS.textTertiary}
+                      value={addressSearchQuery}
+                      onChangeText={handleAddressSearchChange}
+                      returnKeyType="search"
+                    />
+                    {isSearchingAddress ? (
+                      <ActivityIndicator size="small" color={COLORS.primary} />
+                    ) : addressSearchQuery ? (
+                      <TouchableOpacity onPress={() => { setAddressSearchQuery(""); setAddressPredictions([]); setShowAddressPredictions(false); }}>
+                        <X size={16} color={COLORS.textTertiary} />
+                      </TouchableOpacity>
+                    ) : null}
+                  </View>
+
+                  {/* Predictions List */}
+                  {showAddressPredictions && addressPredictions.length > 0 && (
+                    <View style={styles.searchPredictionsCard}>
+                      {addressPredictions.map((p) => (
+                        <TouchableOpacity
+                          key={p.placeId}
+                          style={styles.searchPredictionItem}
+                          onPress={() => handleSelectSearchedAddress(p)}
+                          activeOpacity={0.7}
+                        >
+                          <View style={styles.searchPredictionIcon}>
+                            <MapPin size={16} color={COLORS.primary} />
+                          </View>
+                          <View style={{ flex: 1 }}>
+                            <Text style={styles.searchPredictionMain} numberOfLines={1}>{p.mainText}</Text>
+                            <Text style={styles.searchPredictionSub} numberOfLines={1}>{p.secondaryText || p.description}</Text>
+                          </View>
+                        </TouchableOpacity>
+                      ))}
+                    </View>
+                  )}
+                </View>
+
                 {/* 1. Google Maps Card */}
                 <TouchableOpacity
                   style={styles.actionCard}
-                  onPress={() => setShowMapPicker(true)}
+                  onPress={() => {
+                    resetForm();
+                    setShowMapPicker(true);
+                  }}
                   activeOpacity={0.75}
                 >
                   <View style={styles.actionIconWrapGoogle}>
@@ -618,11 +916,7 @@ export const AddressModal: React.FC<AddressModalProps> = ({ visible, onClose, on
                   activeOpacity={0.75}
                 >
                   <View style={styles.actionIconWrapGps}>
-                    {detectingLocation ? (
-                      <ActivityIndicator size="small" color={COLORS.primary} />
-                    ) : (
-                      <Navigation size={20} color={COLORS.primary} />
-                    )}
+                    <Navigation size={20} color={COLORS.primary} />
                   </View>
                   <View style={styles.actionTextContainer}>
                     <Text style={styles.actionTitle}>Use Current Location</Text>
@@ -693,45 +987,69 @@ export const AddressModal: React.FC<AddressModalProps> = ({ visible, onClose, on
                         .join(", ");
 
                     return (
-                      <TouchableOpacity
+                      <View
                         key={addr.id}
                         style={[
                           styles.addressCard,
                           isSelected && styles.addressCardSelected,
                         ]}
-                        onPress={() => handleSelect(addr)}
-                        activeOpacity={0.8}
                       >
-                        <View style={styles.addressCardTopRow}>
-                          <View style={styles.addressLabelChip}>
-                            <LabelIcon size={13} color={COLORS.primary} />
-                            <Text style={styles.addressLabelText}>
-                              {addr.label || "Home"}
-                            </Text>
-                          </View>
-                          {isSelected ? (
-                            <View style={styles.selectedPill}>
-                              <Check size={11} color="#fff" />
-                              <Text style={styles.selectedPillText}>DELIVERING HERE</Text>
+                        <TouchableOpacity
+                          onPress={() => handleSelect(addr)}
+                          activeOpacity={0.7}
+                        >
+                          <View style={styles.addressCardTopRow}>
+                            <View style={styles.addressLabelChip}>
+                              <LabelIcon size={13} color={COLORS.primary} />
+                              <Text style={styles.addressLabelText}>
+                                {addr.label || "Home"}
+                              </Text>
                             </View>
-                          ) : (
-                            <View style={styles.radioCircle} />
-                          )}
-                        </View>
+                            {isSelected ? (
+                              <View style={styles.selectedPill}>
+                                <Check size={11} color="#fff" />
+                                <Text style={styles.selectedPillText}>DELIVERING HERE</Text>
+                              </View>
+                            ) : (
+                              <View style={styles.radioCircle} />
+                            )}
+                          </View>
 
-                        {addr.fullName ? (
-                          <Text style={styles.addressRecipient}>
-                            {addr.fullName}
-                            {addr.phone
-                              ? ` • +91 ${addr.phone.replace(/\D/g, "").slice(-10)}`
-                              : ""}
+                          {addr.fullName ? (
+                            <Text style={styles.addressRecipient}>
+                              {addr.fullName}
+                              {addr.phone
+                                ? ` • +91 ${addr.phone.replace(/\D/g, "").slice(-10)}`
+                                : ""}
+                            </Text>
+                          ) : null}
+
+                          <Text style={styles.addressDetails} numberOfLines={3}>
+                            {formattedDisplay}
                           </Text>
-                        ) : null}
+                        </TouchableOpacity>
 
-                        <Text style={styles.addressDetails} numberOfLines={3}>
-                          {formattedDisplay}
-                        </Text>
-                      </TouchableOpacity>
+                        {/* Zepto/Blinkit Actions: Edit & Delete */}
+                        <View style={styles.cardActionsFooter}>
+                          <TouchableOpacity
+                            style={styles.cardActionBtn}
+                            onPress={() => handleStartEdit(addr)}
+                            activeOpacity={0.7}
+                          >
+                            <Edit3 size={13} color={COLORS.primary} />
+                            <Text style={styles.cardActionBtnText}>Edit</Text>
+                          </TouchableOpacity>
+
+                          <TouchableOpacity
+                            style={styles.cardActionBtnDelete}
+                            onPress={() => handleConfirmDelete(addr)}
+                            activeOpacity={0.7}
+                          >
+                            <Trash2 size={13} color="#EF4444" />
+                            <Text style={styles.cardActionBtnDeleteText}>Delete</Text>
+                          </TouchableOpacity>
+                        </View>
+                      </View>
                     );
                   })
                 )}
@@ -781,6 +1099,20 @@ const styles = StyleSheet.create({
     paddingBottom: SPACING.sm,
     borderBottomWidth: 1,
     borderBottomColor: COLORS.border,
+  },
+  headerTitleContainer: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 10,
+    flex: 1,
+  },
+  backBtn: {
+    width: 32,
+    height: 32,
+    borderRadius: 16,
+    backgroundColor: "#F1F5F9",
+    alignItems: "center",
+    justifyContent: "center",
   },
   headerTitle: {
     fontSize: 16,
@@ -1166,5 +1498,102 @@ const styles = StyleSheet.create({
     fontSize: 12,
     color: COLORS.textSecondary,
     lineHeight: 17,
+  },
+  cardActionsFooter: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "flex-end",
+    marginTop: 10,
+    paddingTop: 8,
+    borderTopWidth: 1,
+    borderTopColor: "#F1F5F9",
+    gap: 8,
+  },
+  cardActionBtn: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 5,
+    paddingVertical: 5,
+    paddingHorizontal: 11,
+    borderRadius: 8,
+    backgroundColor: "#F1F5F9",
+  },
+  cardActionBtnText: {
+    fontSize: 12,
+    fontWeight: "700",
+    color: COLORS.primary,
+  },
+  cardActionBtnDelete: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 5,
+    paddingVertical: 5,
+    paddingHorizontal: 11,
+    borderRadius: 8,
+    backgroundColor: "#FEF2F2",
+  },
+  cardActionBtnDeleteText: {
+    fontSize: 12,
+    fontWeight: "700",
+    color: "#EF4444",
+  },
+  addressSearchBarContainer: {
+    marginBottom: SPACING.md,
+  },
+  addressSearchBar: {
+    flexDirection: "row",
+    alignItems: "center",
+    backgroundColor: "#ffffff",
+    borderRadius: RADIUS.lg,
+    paddingHorizontal: 14,
+    height: 48,
+    gap: 10,
+    borderWidth: 1.5,
+    borderColor: "#E2E8F0",
+    ...SHADOWS.sm,
+  },
+  addressSearchInput: {
+    flex: 1,
+    fontSize: 13,
+    fontWeight: "700",
+    color: COLORS.text,
+    paddingVertical: 0,
+  },
+  searchPredictionsCard: {
+    backgroundColor: "#ffffff",
+    borderRadius: RADIUS.lg,
+    marginTop: 6,
+    maxHeight: 260,
+    borderWidth: 1,
+    borderColor: "#E2E8F0",
+    overflow: "hidden",
+    ...SHADOWS.md,
+  },
+  searchPredictionItem: {
+    flexDirection: "row",
+    alignItems: "center",
+    paddingHorizontal: 14,
+    paddingVertical: 11,
+    borderBottomWidth: 1,
+    borderBottomColor: "#F1F5F9",
+    gap: 12,
+  },
+  searchPredictionIcon: {
+    width: 32,
+    height: 32,
+    borderRadius: 16,
+    backgroundColor: "#EFF6FF",
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  searchPredictionMain: {
+    fontSize: 13,
+    fontWeight: "800",
+    color: COLORS.text,
+  },
+  searchPredictionSub: {
+    fontSize: 11,
+    color: COLORS.textTertiary,
+    marginTop: 2,
   },
 });

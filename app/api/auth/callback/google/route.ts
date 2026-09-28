@@ -146,7 +146,9 @@ export async function GET(request: NextRequest) {
     if (existingByEmail) {
       const shouldUpdateName =
         name && (!existingByEmail.name || existingByEmail.name.startsWith("User "));
-      const shouldUpdateAvatar = avatar && !existingByEmail.avatar;
+      const isCustomAvatar =
+        existingByEmail.avatar && !existingByEmail.avatar.includes("googleusercontent.com");
+      const shouldUpdateAvatar = avatar && (!existingByEmail.avatar || !isCustomAvatar);
 
       user = await prisma.user.update({
         where: { id: existingByEmail.id },
