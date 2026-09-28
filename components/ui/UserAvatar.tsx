@@ -63,7 +63,6 @@ export default function UserAvatar({
         width={size}
         height={size}
         referrerPolicy="no-referrer"
-        crossOrigin="anonymous"
         loading={priority ? "eager" : "lazy"}
         onError={() => setHasError(true)}
         className={cn("w-full h-full object-cover rounded-full", imageClassName)}

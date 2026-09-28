@@ -333,8 +333,8 @@ export type ApiRateLimitTier = "standard" | "sensitive" | "strict";
 
 const API_TIER_CONFIGS: Record<ApiRateLimitTier, { limit: number; windowMs: number }> = {
   standard: { limit: 100, windowMs: 60 * 1000 },  // 100 req / min
-  sensitive: { limit: 20, windowMs: 60 * 1000 },   // 20 req / min (checkout, orders, search)
-  strict: { limit: 5, windowMs: 60 * 1000 },       // 5 req / min (auth mutations, pass reset)
+  sensitive: { limit: 30, windowMs: 60 * 1000 },   // 30 req / min (checkout, orders, search)
+  strict: { limit: 20, windowMs: 60 * 1000 },       // 20 req / min (auth mutations, pass reset)
 };
 
 /**

@@ -58,3 +58,6 @@ intrihub-business/android/
 # backups
 backups/
 migrate-failed.json
+.expo/
+**/.expo/
+

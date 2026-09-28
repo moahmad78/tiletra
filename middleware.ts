@@ -94,8 +94,8 @@ export function middleware(request: NextRequest) {
         tier = "sensitive";
       } else if (
         pathname.startsWith("/api/admin/auth") ||
-        pathname.startsWith("/api/auth") ||
-        pathname.startsWith("/api/mobile/auth")
+        (pathname.startsWith("/api/auth") && !pathname.startsWith("/api/auth/google") && !pathname.startsWith("/api/auth/callback")) ||
+        (pathname.startsWith("/api/mobile/auth") && !pathname.startsWith("/api/mobile/auth/me"))
       ) {
         tier = "strict";
       }

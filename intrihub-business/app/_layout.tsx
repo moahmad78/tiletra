@@ -1,5 +1,5 @@
 import React, { useEffect, Component, ErrorInfo, ReactNode } from "react";
-import { View, Text, TouchableOpacity, ActivityIndicator, StyleSheet } from "react-native";
+import { View, Text, TouchableOpacity, ActivityIndicator, StyleSheet, LogBox } from "react-native";
 import { Stack } from "expo-router";
 import { StatusBar } from "expo-status-bar";
 import * as SplashScreen from "expo-splash-screen";
@@ -20,6 +20,11 @@ import AnimatedSplashScreen from "../src/components/AnimatedSplashScreen";
 import AppUpdateModal from "../src/components/AppUpdateModal";
 import * as Sentry from "@sentry/react-native";
 import { COLORS } from "../src/constants/theme";
+
+// Suppress non-fatal dev CLI connection warning from popping up on screen
+LogBox.ignoreLogs([
+  "Cannot connect to Expo CLI",
+]);
 
 // Keep native splash screen visible while app JS bundle loads
 // Must be called BEFORE Sentry.init() to ensure splash stays up if Sentry hangs

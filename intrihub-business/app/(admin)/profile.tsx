@@ -16,6 +16,7 @@ import { useRouter } from "expo-router";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { Image } from "expo-image";
 import * as ImagePicker from "expo-image-picker";
+import UserAvatar from "../../src/components/UserAvatar";
 import {
   User,
   Shield,
@@ -726,12 +727,10 @@ export default function AdminAccountMasterHubScreen() {
         </TouchableOpacity>
 
         <View style={styles.heroTop}>
-          <Image
-            source={
-              user?.avatar
-                ? { uri: user.avatar }
-                : require("../../assets/intri-icon.png")
-            }
+          <UserAvatar
+            uri={user?.avatar}
+            name={user?.name || "Super Admin"}
+            size={76}
             style={styles.avatar}
           />
           <View style={styles.heroInfo}>

@@ -14,7 +14,7 @@ import {
 import { Image } from "expo-image";
 import { useRouter } from "expo-router";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
-import * as Google from "expo-auth-session/providers/google";
+import * as WebBrowser from "expo-web-browser";
 import * as AuthSession from "expo-auth-session";
 import Svg, { Path } from "react-native-svg";
 import {
@@ -38,8 +38,11 @@ import {
   KeyRound,
 } from "lucide-react-native";
 import { loginWithGoogle, sendOtp, verifyOtp, checkAuthMethod, loginWithPassword } from "../../src/api/auth";
+import { apiClient, setStoredTokens, clearStoredTokens } from "../../src/api/client";
 import { useAuthStore } from "../../src/store/authStore";
 import { COLORS, SHADOWS } from "../../src/constants/theme";
+
+WebBrowser.maybeCompleteAuthSession();
 
 const GOOGLE_WEB_CLIENT_ID =
   process.env.EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID ||
@@ -107,21 +110,6 @@ export default function BusinessLoginScreen() {
   const [isLocked, setIsLocked] = useState(false);
   const [lockoutSeconds, setLockoutSeconds] = useState(0);
 
-  const redirectUri = __DEV__
-    ? "https://auth.expo.io/@sahil_sheikh78/intrihub-business"
-    : AuthSession.makeRedirectUri({
-        scheme: "intrihub-biz",
-      });
-
-  const [request, response, promptAsync] = Google.useAuthRequest({
-    androidClientId: __DEV__ ? undefined : GOOGLE_ANDROID_CLIENT_ID,
-    iosClientId: __DEV__ ? undefined : GOOGLE_IOS_CLIENT_ID,
-    webClientId: GOOGLE_WEB_CLIENT_ID,
-    clientId: GOOGLE_WEB_CLIENT_ID,
-    scopes: ["profile", "email"],
-    redirectUri,
-  });
-
   // Countdown timer for OTP
   useEffect(() => {
     if (step !== "otp") return;
@@ -170,67 +158,177 @@ export default function BusinessLoginScreen() {
   };
 
   const handleRoleRouting = (user: any) => {
-    setUser(user);
     if (user.role === "vendor") {
+      setUser(user);
       router.replace("/(vendor)/dashboard" as any);
     } else if (user.role === "admin" || user.role === "superadmin") {
+      setUser(user);
       router.replace("/(admin)/dashboard" as any);
     } else {
-      router.replace("/(auth)/blocked" as any);
+      // User is not a registered vendor or admin:
+      // Return immediately to login page with an error banner - NO website redirect, NO delay!
+      clearStoredTokens();
+      setError("This email does not exist as an approved vendor account. Please sign in with your registered vendor email.");
+      setStep("input");
     }
   };
 
-  // Handle Google OAuth Response
-  useEffect(() => {
-    async function handleGoogleResponse() {
-      if (response?.type === "success") {
-        const { authentication } = response;
-        const accessToken = authentication?.accessToken;
-        const idToken = authentication?.idToken;
+  const processAuthUrl = async (urlStr: string) => {
+    if (
+      (urlStr.includes("intrihub-biz://") ||
+        urlStr.includes("intrihub://") ||
+        urlStr.includes("exp://") ||
+        urlStr.includes("oauth")) &&
+      urlStr.includes("accessToken=")
+    ) {
+      try {
+        WebBrowser.dismissAuthSession();
+        WebBrowser.dismissBrowser();
+      } catch {}
 
-        if (accessToken || idToken) {
-          setGoogleLoading(true);
-          setError("");
+      const queryIndex = urlStr.indexOf("?");
+      if (queryIndex !== -1) {
+        const queryString = urlStr.substring(queryIndex + 1);
+        const params = new URLSearchParams(queryString);
+        const accessToken = params.get("accessToken");
+        const refreshToken = params.get("refreshToken");
+        const userRaw = params.get("user");
+
+        if (accessToken && refreshToken && userRaw) {
           try {
-            const res = await loginWithGoogle({ accessToken, idToken });
-            if (res.success && res.user) {
-              handleRoleRouting(res.user);
-            } else {
-              handleLockoutResponse(res);
-              if (res.reason) {
-                setUnapprovedDetails({
-                  reason: (res.reason as any) || "NOT_FOUND",
-                  message: res.error || "This Google account is not registered as an approved vendor.",
-                  vendorName: (res as any).vendorName,
-                  attemptedEmail: (res as any).email || "Google Account",
-                });
-                setStep("unapproved");
-              } else {
-                setError(res.error || "Google sign-in failed. Please try again.");
+            const userObj = JSON.parse(decodeURIComponent(userRaw));
+
+            // Verify vendor status via business auth API endpoint
+            try {
+              const bizRes = await loginWithGoogle({
+                accessToken,
+                profile: {
+                  email: userObj.email,
+                  name: userObj.name,
+                  avatar: userObj.avatar,
+                },
+              });
+
+              if (bizRes.success && bizRes.user) {
+                await setStoredTokens(accessToken, refreshToken);
+                handleRoleRouting(bizRes.user);
+                return;
+              } else if (!bizRes.success) {
+                await clearStoredTokens();
+                setError(
+                  bizRes.error ||
+                    "This email does not exist as an approved vendor account. Please sign in with your registered vendor email."
+                );
+                setStep("input");
+                return;
+              }
+            } catch (bizErr: any) {
+              const errData = bizErr?.response?.data;
+              if (errData?.reason === "NOT_FOUND" || errData?.error) {
+                await clearStoredTokens();
+                setError(
+                  errData?.error ||
+                    "This email does not exist as an approved vendor account. Please sign in with your registered vendor email."
+                );
+                setStep("input");
+                return;
               }
             }
-          } catch (err: any) {
-            const errData = err?.response?.data;
-            handleLockoutResponse(errData);
-            if (errData?.reason) {
-              setUnapprovedDetails({
-                reason: errData.reason,
-                message: errData.error || "This Google account is not registered as an approved vendor.",
-                vendorName: errData.vendorName,
-                attemptedEmail: errData.email || "Google Account",
+
+            // Fallback: check profile endpoint
+            try {
+              const meRes = await apiClient.get("/api/mobile/auth/me", {
+                headers: { Authorization: `Bearer ${accessToken}` },
               });
-              setStep("unapproved");
-            } else {
-              setError(errData?.error || err.message || "Failed to complete Google Sign In");
+              if (meRes.data?.success && meRes.data?.user) {
+                await setStoredTokens(accessToken, refreshToken);
+                handleRoleRouting(meRes.data.user);
+                return;
+              }
+            } catch (meErr) {
+              console.warn("[Google OAuth] Profile fetch fallback:", meErr);
             }
-          } finally {
-            setGoogleLoading(false);
+
+            // If still unverified or role is customer
+            if (userObj.role === "vendor" || userObj.role === "admin" || userObj.role === "superadmin") {
+              await setStoredTokens(accessToken, refreshToken);
+              handleRoleRouting(userObj);
+            } else {
+              await clearStoredTokens();
+              setError("This email does not exist as an approved vendor account. Please sign in with your registered vendor email.");
+              setStep("input");
+            }
+          } catch (parseErr) {
+            console.error("[Google OAuth] Parse error:", parseErr);
+            setError("Sign-in succeeded but account data could not be parsed.");
           }
         }
       }
     }
-    handleGoogleResponse();
-  }, [response]);
+  };
+
+  // Deep Link listener for Google OAuth web bridge callback
+  useEffect(() => {
+    const handleDeepLink = async (event: { url: string }) => {
+      if (event?.url) {
+        await processAuthUrl(event.url);
+      }
+    };
+
+    const sub = Linking.addEventListener("url", handleDeepLink);
+    Linking.getInitialURL().then((url) => {
+      if (url) processAuthUrl(url);
+    });
+
+    return () => {
+      sub.remove();
+    };
+  }, []);
+
+  const handleGoogleLogin = async () => {
+    if (isLocked) return;
+    setGoogleLoading(true);
+    setError("");
+
+    try {
+      if (Platform.OS === "web") {
+        if (typeof window !== "undefined") {
+          window.location.href = "https://www.intrihub.com/api/auth/google?intent=mobile";
+        }
+        return;
+      }
+
+      // Automatically generates exp:// in Expo Go and intrihub-biz:// in standalone builds
+      const redirectUrl = AuthSession.makeRedirectUri({
+        path: "oauth",
+      });
+
+      const authUrl = `https://www.intrihub.com/api/auth/google?intent=mobile&redirect_to=${encodeURIComponent(
+        redirectUrl
+      )}`;
+
+      let result;
+      try {
+        result = await WebBrowser.openAuthSessionAsync(authUrl, redirectUrl, {
+          preferEphemeralSession: false,
+          showInRecents: true,
+        });
+      } catch (browserErr) {
+        console.warn("[Google OAuth] openAuthSessionAsync failed, falling back to Linking:", browserErr);
+        await Linking.openURL(authUrl);
+        return;
+      }
+
+      if (result && result.type === "success" && result.url) {
+        await processAuthUrl(result.url);
+      }
+    } catch (err: any) {
+      console.error("[Google OAuth] Login error:", err);
+      setError(err?.message || "Google Sign-In was cancelled or failed.");
+    } finally {
+      setGoogleLoading(false);
+    }
+  };
 
   const handleSendOtp = async () => {
     if (isLocked) return;
@@ -434,8 +532,8 @@ export default function BusinessLoginScreen() {
               {/* Official Google Button with 4-Color G Logo */}
               <TouchableOpacity
                 style={[styles.googleBtn, isLocked && styles.btnDisabled]}
-                onPress={() => promptAsync()}
-                disabled={googleLoading || !request || isLocked}
+                onPress={handleGoogleLogin}
+                disabled={googleLoading || isLocked}
                 activeOpacity={0.85}
               >
                 {googleLoading ? (

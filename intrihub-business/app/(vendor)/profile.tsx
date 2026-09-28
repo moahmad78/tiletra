@@ -15,6 +15,7 @@ import { useRouter } from "expo-router";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { Image } from "expo-image";
 import * as ImagePicker from "expo-image-picker";
+import UserAvatar from "../../src/components/UserAvatar";
 import {
   Building2,
   Phone,
@@ -234,16 +235,12 @@ export default function VendorProfileScreen() {
               <View style={styles.storeIconCircle}>
                 <ActivityIndicator size="small" color={COLORS.accentOrange} />
               </View>
-            ) : (vendor?.logo || storeLogo || user?.avatar) ? (
-              <Image
-                source={{ uri: (vendor?.logo || storeLogo || user?.avatar || "") as string }}
-                style={styles.storeLogoImg}
-                contentFit="cover"
-              />
             ) : (
-              <View style={styles.storeIconCircle}>
-                <Building2 size={32} color={COLORS.accentOrange} />
-              </View>
+              <UserAvatar
+                uri={vendor?.logo || storeLogo || user?.avatar}
+                name={vendor?.businessName || user?.name || "Vendor"}
+                size={80}
+              />
             )}
             <View style={styles.cameraIconBadge}>
               <Camera size={12} color="#FFFFFF" />

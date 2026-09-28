@@ -77,7 +77,7 @@ export default function AppUpdateModal() {
         Constants.appOwnership === "expo" ||
         Constants.executionEnvironment === ExecutionEnvironment.StoreClient;
 
-      if (lastNotifiedCode !== String(info.latestVersionCode) && !isExpoGo && Platform.OS !== "web") {
+      if (lastNotifiedCode !== String(info.latestVersionCode) && !isExpoGo && (Platform.OS as string) !== "web") {
         try {
           const Notifications = require("expo-notifications");
           await Notifications.scheduleNotificationAsync({

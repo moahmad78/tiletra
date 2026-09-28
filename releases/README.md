@@ -1,44 +1,49 @@
 # IntriHub Mobile Apps — Release Builds
 
-All previous legacy/scattered AAB files have been cleaned up. The latest, fresh production builds are organized here:
+The latest, fresh production builds ready for Google Play Store release:
 
 ---
 
 ## 1. 📱 Customer / User App (IntriHub)
-* **File Name:** `IntriHub-Customer-v1.1.8(11).aab`
-* **Full Local Path:** `d:\Intrihub\releases\IntriHub-Customer-v1.1.8(11).aab`
-* **Version Name:** `1.1.8`
-* **Version Code:** `11`
+* **File Name:** `intrihub-mobile-release-v1.2.2-code15.aab`
+* **Full Local Path:** `d:\Intrihub\releases\intrihub-mobile-release-v1.2.2-code15.aab`
+* **Bundle Output Path:** `d:\Intrihub\intrihub-mobile\android\app\build\outputs\bundle\release\app-release.aab`
+* **File Size:** ~75.5 MB
+* **Version Name:** `1.2.2`
+* **Version Code:** `15`
 * **Package Name:** `com.intrihub.app`
 * **Signing Keystore:** `intrihub-mobile/android/app/intrihub-release-key.keystore`
 * **Key Alias:** `intrihub-key-alias`
-* **Build Date:** September 28, 2026
+* **Build Date:** September 29, 2026
 
 ### Release Notes (Play Console):
 ```text
-• Fixed Google OAuth login flow with Chrome Custom Tabs & OAuth 2.0 policy compliance (eliminated Error 400 policy blocks).
-• Implemented auto-dismissal of auth browser session upon successful deep link return.
-• Enhanced startup stability and eliminated unexpected null-state exceptions during first launch.
-• Upgraded core React Native & Hermes engine performance for ultra-fast checkout and product browsing.
-• Full native compatibility enhancements for Android 12, 13, 14, and 15 (API 35/36).
+• Enhanced address search experience with Blinkit-style auto-complete.
+• Google Profile picture display optimization and dynamic initial fallback.
+• Instant zero-latency location prefetching for ultra-fast checkout.
+• Critical startup stability and memory performance improvements.
+• Android 15 (API 35) full runtime compatibility.
 ```
 
 ---
 
 ## 2. 💼 Business / Vendor App (IntriHub Business)
-* **File Name:** `IntriHub-Business-v1.0.10(11).aab`
-* **Full Local Path:** `d:\Intrihub\releases\IntriHub-Business-v1.0.10(11).aab`
-* **Version Name:** `1.0.10`
-* **Version Code:** `11`
+* **File Name:** `intrihub-business-release-v1.0.11-code12.aab`
+* **Full Local Path:** `d:\Intrihub\releases\intrihub-business-release-v1.0.11-code12.aab`
+* **Bundle Output Path:** `d:\Intrihub\intrihub-business\android\app\build\outputs\bundle\release\app-release.aab`
+* **File Size:** ~81.4 MB
+* **Version Name:** `1.0.11`
+* **Version Code:** `12`
 * **Package Name:** `com.intrihub.business`
 * **Signing Keystore:** `intrihub-business/android/app/intrihub-business-release-key.keystore`
 * **Key Alias:** `intrihub-biz-alias`
-* **Build Date:** September 28, 2026
+* **Build Date:** September 29, 2026
 
 ### Release Notes (Play Console):
 ```text
-• Enhanced vendor catalog management with instant stock & price updates.
-• Real-time order dispatch notifications and QR handover verification.
-• Live revenue analytics, settlement summaries, and instant payouts.
-• Performance optimizations and native stability for Android 12, 13, 14, and 15 (API 35/36).
+• Fixed Google OAuth sign-in flow for vendor operations.
+• Immediate inline error feedback if an email is not registered as an approved vendor.
+• Profile avatar display with Google DP sync and high-contrast letter fallback.
+• Hermes engine optimization and background socket stability.
+• Android 15 (API 35) edge-to-edge support and system performance upgrades.
 ```

@@ -136,7 +136,7 @@ export default function RootLayout() {
       <QueryClientProvider client={queryClient}>
         <ErrorBoundary>
           <View style={styles.rootContainer}>
-            <StatusBar style="dark" backgroundColor="transparent" translucent />
+            <StatusBar style="dark" />
             <Stack
             screenOptions={{
               headerShown: false,

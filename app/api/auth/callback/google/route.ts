@@ -196,7 +196,41 @@ export async function GET(request: NextRequest) {
     const encoded = Buffer.from(sessionPayload).toString("base64url");
 
     // ─── 5. Redirect back to mobile app or web app ────────────────────────────
-    if (intent === "mobile" || intent.startsWith("mobile") || stateRedirectTo) {
+    if (
+      intent === "mobile" ||
+      intent.startsWith("mobile") ||
+      intent === "business" ||
+      intent.startsWith("business") ||
+      intent === "vendor" ||
+      stateRedirectTo
+    ) {
+      // For business/vendor intents, check and link admin or vendor roles
+      if (intent === "business" || intent.startsWith("business") || intent === "vendor") {
+        const allowedAdminEmail = (process.env.ADMIN_ALLOWED_EMAIL || "admin@intrihub.com").toLowerCase().trim();
+        const cleanEmail = (user.email || "").toLowerCase().trim();
+        if (cleanEmail === allowedAdminEmail && user.role !== "admin" && user.role !== "superadmin") {
+          user = await prisma.user.update({
+            where: { id: user.id },
+            data: { role: "admin" },
+          });
+        } else if (user.role === "customer") {
+          const matchedVendor = await prisma.vendor.findFirst({
+            where: {
+              OR: [
+                { contactEmail: { equals: cleanEmail, mode: "insensitive" } },
+                { owner: { email: { equals: cleanEmail, mode: "insensitive" } } },
+              ],
+            },
+          });
+          if (matchedVendor) {
+            user = await prisma.user.update({
+              where: { id: user.id },
+              data: { role: "vendor" },
+            });
+          }
+        }
+      }
+
       const mobileTokens = generateMobileTokens(user);
       const mobileUserJson = encodeURIComponent(
         JSON.stringify({
@@ -212,12 +246,16 @@ export async function GET(request: NextRequest) {
       );
 
       // Validate and sanitize baseRedirect to prevent open redirect or script injection
-      let baseRedirect = "intrihub://oauth";
+      let baseRedirect = intent.includes("biz") || intent.includes("business") || intent.includes("vendor")
+        ? "intrihub-biz://oauth"
+        : "intrihub://oauth";
+
       if (stateRedirectTo) {
         const trimmed = stateRedirectTo.trim();
         // Allow approved custom app schemes or relative paths (must not start with //)
         if (
           trimmed.startsWith("intrihub://") ||
+          trimmed.startsWith("intrihub-biz://") ||
           trimmed.startsWith("exp://") ||
           (trimmed.startsWith("/") && !trimmed.startsWith("//") && !trimmed.startsWith("/\\"))
         ) {

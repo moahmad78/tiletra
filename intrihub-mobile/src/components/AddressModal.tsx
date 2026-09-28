@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import {
   View,
   Text,
@@ -145,9 +145,6 @@ export const AddressModal: React.FC<AddressModalProps> = ({ visible, onClose, on
       if (prediction.latitude && prediction.longitude) {
         setStreet(prediction.mainText);
         setArea("");
-        setLatitude(prediction.latitude);
-        setLongitude(prediction.longitude);
-        setFormattedAddress(prediction.description);
         setIsAddingNew(true);
         return;
       }
@@ -162,9 +159,6 @@ export const AddressModal: React.FC<AddressModalProps> = ({ visible, onClose, on
         setCity(loc.city || "Bengaluru");
         setState(loc.state || "Karnataka");
         setPincode(loc.pincode || "");
-        setLatitude(loc.latitude || null);
-        setLongitude(loc.longitude || null);
-        setFormattedAddress(loc.formattedAddress || prediction.description);
         setIsAddingNew(true);
       }
     } catch (e) {

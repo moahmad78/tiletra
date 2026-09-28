@@ -626,7 +626,7 @@ const styles = StyleSheet.create({
     position: "relative",
   },
   placeholderTouch: {
-    ...StyleSheet.absoluteFillObject,
+    ...StyleSheet.absoluteFill,
     left: 36,
     justifyContent: "center",
   },
@@ -641,7 +641,7 @@ const styles = StyleSheet.create({
   },
   // Touch-blocking backdrop behind dropdown
   suggestionsBackdrop: {
-    ...StyleSheet.absoluteFillObject,
+    ...StyleSheet.absoluteFill,
     top: 0,
     left: 0,
     right: 0,
@@ -936,7 +936,7 @@ const styles = StyleSheet.create({
     justifyContent: "flex-end",
   },
   modalBackdrop: {
-    ...StyleSheet.absoluteFillObject,
+    ...StyleSheet.absoluteFill,
     backgroundColor: "rgba(0, 0, 0, 0.5)",
   },
   bottomSheet: {

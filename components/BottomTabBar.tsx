@@ -105,10 +105,10 @@ export default function BottomTabBar() {
           href="/account"
           className="flex flex-col items-center justify-center gap-0.5 flex-1 h-full relative active:scale-90 transition-transform duration-150"
         >
-          {mounted && isAuthenticated && user?.avatar ? (
+          {mounted && isAuthenticated ? (
             <UserAvatar
-              src={user.avatar}
-              name={user.name}
+              src={user?.avatar}
+              name={user?.name || user?.email}
               size={22}
               className={cn("border transition-colors", isAccountActive ? "border-[#052a51] ring-1 ring-[#052a51]" : "border-gray-200")}
             />

@@ -33,8 +33,8 @@ import { getImageUrl } from "../constants/config";
 // In React Native New Architecture (Fabric / Bridgeless), LayoutAnimation is enabled by default
 // and calling setLayoutAnimationEnabledExperimental triggers a no-op warning.
 const isNewArch =
-  Boolean((global as any).RN$Bridgeless) ||
-  Boolean((global as any).nativeFabricUIManager);
+  Boolean((globalThis as any).RN$Bridgeless) ||
+  Boolean((globalThis as any).nativeFabricUIManager);
 
 if (
   Platform.OS === "android" &&

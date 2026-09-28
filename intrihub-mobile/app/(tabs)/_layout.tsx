@@ -34,21 +34,21 @@ export default function TabLayout() {
         name="home"
         options={{
           title: "Home",
-          tabBarIcon: ({ color, size }: { color: string; size?: number }) => <Home size={size || 22} color={color} />,
+          tabBarIcon: ({ color, size }: { color: any; size?: number }) => <Home size={size || 22} color={color} />,
         }}
       />
       <Tabs.Screen
         name="categories"
         options={{
           title: "Shop",
-          tabBarIcon: ({ color, size }: { color: string; size?: number }) => <Grid size={size || 22} color={color} />,
+          tabBarIcon: ({ color, size }: { color: any; size?: number }) => <Grid size={size || 22} color={color} />,
         }}
       />
       <Tabs.Screen
         name="orders"
         options={{
           title: "Orders",
-          tabBarIcon: ({ color, size }: { color: string; size?: number }) => <Package size={size || 22} color={color} />,
+          tabBarIcon: ({ color, size }: { color: any; size?: number }) => <Package size={size || 22} color={color} />,
         }}
       />
       <Tabs.Screen
@@ -62,14 +62,14 @@ export default function TabLayout() {
             fontSize: 10,
             fontWeight: "800",
           },
-          tabBarIcon: ({ color, size }: { color: string; size?: number }) => <ShoppingBag size={size || 22} color={color} />,
+          tabBarIcon: ({ color, size }: { color: any; size?: number }) => <ShoppingBag size={size || 22} color={color} />,
         }}
       />
       <Tabs.Screen
         name="profile"
         options={{
           title: "Account",
-          tabBarIcon: ({ color, size }: { color: string; size?: number }) => <User size={size || 22} color={color} />,
+          tabBarIcon: ({ color, size }: { color: any; size?: number }) => <User size={size || 22} color={color} />,
         }}
       />
     </Tabs>

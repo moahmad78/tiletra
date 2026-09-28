@@ -253,7 +253,7 @@ const styles = StyleSheet.create({
     height: "100%",
   },
   gradient: {
-    ...StyleSheet.absoluteFillObject,
+    ...StyleSheet.absoluteFill,
     padding: SPACING.lg,
     justifyContent: "flex-end",
   },
