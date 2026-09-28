@@ -1,7 +1,7 @@
 import * as Print from "expo-print";
 import * as Sharing from "expo-sharing";
-import * as FileSystem from "expo-file-system";
-import { Alert } from "react-native";
+import * as FileSystem from "expo-file-system/legacy";
+import { Alert, Platform } from "react-native";
 import { Order } from "../types";
 
 /**
@@ -392,6 +392,7 @@ export function getInvoiceHtml(order: any): string {
 
 /**
  * Safely copy generated PDF from private cache to FileProvider-accessible documentDirectory
+ * and retrieve a valid content:// URI on Android.
  */
 async function preparePdfUri(rawUri: string, orderId: string): Promise<string> {
   try {
@@ -402,7 +403,7 @@ async function preparePdfUri(rawUri: string, orderId: string): Promise<string> {
 
     const safeOrderId = String(orderId).replace(/[^a-zA-Z0-9_-]/g, "");
     const fileName = `IntriHub_Invoice_${safeOrderId || Date.now()}.pdf`;
-    const targetDir = (FileSystem as any).documentDirectory || (FileSystem as any).cacheDirectory;
+    const targetDir = FileSystem.documentDirectory || FileSystem.cacheDirectory;
 
     if (targetDir) {
       const destination = `${targetDir}${fileName}`;
@@ -410,6 +411,20 @@ async function preparePdfUri(rawUri: string, orderId: string): Promise<string> {
         from: cleanUri,
         to: destination,
       });
+
+      // On Android, convert file:// to a native content:// URI via FileProvider
+      // so external apps & ExpoSharing have explicit read permissions!
+      if (Platform.OS === "android" && typeof (FileSystem as any).getContentUriAsync === "function") {
+        try {
+          const contentUri = await (FileSystem as any).getContentUriAsync(destination);
+          if (contentUri) {
+            return contentUri;
+          }
+        } catch (contentErr) {
+          console.warn("getContentUriAsync notice:", contentErr);
+        }
+      }
+
       return destination;
     }
     return cleanUri;
