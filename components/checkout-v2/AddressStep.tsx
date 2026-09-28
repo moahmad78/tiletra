@@ -20,6 +20,7 @@ import {
 } from "lucide-react";
 import { type CustomerAddress, useAuthStore } from "@/lib/auth-store";
 import { toast } from "sonner";
+import WebMapPickerModal, { WebPickedLocation } from "@/components/maps/WebMapPickerModal";
 
 interface AddressStepProps {
   selectedAddress: CustomerAddress | null;
@@ -37,6 +38,7 @@ export default function AddressStep({
   const [isAddingNew, setIsAddingNew] = useState(userAddresses.length === 0);
   const [isDetectingLocation, setIsDetectingLocation] = useState(false);
   const [detectedNotice, setDetectedNotice] = useState<string | null>(null);
+  const [showWebMapModal, setShowWebMapModal] = useState(false);
 
   // Manual Form State
   const [label, setLabel] = useState<"Home" | "Work" | "Site" | "Other">("Home");
@@ -109,6 +111,20 @@ export default function AddressStep({
       },
       { enableHighAccuracy: true, timeout: 10000, maximumAge: 60000 }
     );
+  };
+
+  const handleMapLocationConfirmed = (loc: WebPickedLocation) => {
+    if (loc.houseNumber) setHouseNumber(loc.houseNumber);
+    if (loc.street) setLine1(loc.street);
+    else if (loc.formattedAddress) setLine1(loc.formattedAddress.split(",")[0] || "");
+    if (loc.area) setLine2(loc.area);
+    if (loc.city) setCity(loc.city);
+    if (loc.state) setState(loc.state);
+    if (loc.pincode) setPincode(loc.pincode);
+    if (loc.landmark) setLandmark(loc.landmark);
+    setDetectedNotice(`Location pinned: ${loc.formattedAddress}`);
+    setIsAddingNew(true);
+    toast.success("Delivery point selected from map!");
   };
 
   const handleSetDefault = (e: React.MouseEvent, id: string) => {
@@ -232,38 +248,61 @@ export default function AddressStep({
             </button>
           </div>
 
-          {/* 1-Click Detect Current Location Hero Card */}
-          <button
-            type="button"
-            onClick={handleDetectLocation}
-            disabled={isDetectingLocation}
-            className="w-full p-3.5 sm:p-4 rounded-2xl bg-[#052a51] hover:bg-[#041f3d] text-white flex items-center justify-between shadow-sm transition-all cursor-pointer group active:scale-[0.99] border border-[#052a51]"
-          >
-            <div className="flex items-center gap-3">
-              <div className="w-10 h-10 rounded-xl bg-white/10 flex items-center justify-center text-white shrink-0">
-                {isDetectingLocation ? (
-                  <Loader2 size={20} className="animate-spin text-white" />
-                ) : (
-                  <MapPin size={20} className="text-[#F26522]" />
-                )}
-              </div>
-              <div className="text-left">
-                <div className="flex items-center gap-2">
-                  <span className="text-sm font-black">Use Current Location</span>
-                  <span className="text-[10px] font-black uppercase bg-[#F26522] text-white px-2 py-0.5 rounded-full flex items-center gap-1 shadow-xs">
-                    <Sparkles size={10} />
-                    1-Click
-                  </span>
+          {/* Location Actions: 1-Click GPS or Interactive Draggable Map */}
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+            <button
+              type="button"
+              onClick={handleDetectLocation}
+              disabled={isDetectingLocation}
+              className="p-3.5 sm:p-4 rounded-2xl bg-[#052a51] hover:bg-[#041f3d] text-white flex items-center justify-between shadow-xs transition-all cursor-pointer group active:scale-[0.99] border border-[#052a51]"
+            >
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 rounded-xl bg-white/10 flex items-center justify-center text-white shrink-0">
+                  {isDetectingLocation ? (
+                    <Loader2 size={18} className="animate-spin text-white" />
+                  ) : (
+                    <MapPin size={18} className="text-[#F26522]" />
+                  )}
                 </div>
-                <p className="text-xs text-white/80 mt-0.5">
-                  {isDetectingLocation
-                    ? "Fetching GPS & reverse geocoding via Google Maps..."
-                    : "Auto-detects street, area, city & PIN code instantly"}
-                </p>
+                <div className="text-left">
+                  <div className="flex items-center gap-1.5">
+                    <span className="text-xs sm:text-sm font-black">Use Current Location</span>
+                    <span className="text-[9px] font-black uppercase bg-[#F26522] text-white px-1.5 py-0.5 rounded-full">
+                      1-Click
+                    </span>
+                  </div>
+                  <p className="text-[11px] text-white/75 mt-0.5">
+                    {isDetectingLocation ? "Detecting GPS..." : "Auto-detect via device GPS"}
+                  </p>
+                </div>
               </div>
-            </div>
-            <ArrowRight size={18} className="text-white/60 group-hover:text-white group-hover:translate-x-1 transition-all shrink-0" />
-          </button>
+              <ArrowRight size={16} className="text-white/60 group-hover:text-white group-hover:translate-x-1 transition-all shrink-0" />
+            </button>
+
+            <button
+              type="button"
+              onClick={() => setShowWebMapModal(true)}
+              className="p-3.5 sm:p-4 rounded-2xl bg-white hover:bg-gray-50 text-[#052a51] flex items-center justify-between shadow-xs transition-all cursor-pointer group active:scale-[0.99] border-2 border-gray-200 hover:border-[#052a51]/30"
+            >
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 rounded-xl bg-[#052a51]/5 flex items-center justify-center text-[#052a51] shrink-0">
+                  <Sparkles size={18} className="text-[#052a51]" />
+                </div>
+                <div className="text-left">
+                  <div className="flex items-center gap-1.5">
+                    <span className="text-xs sm:text-sm font-black text-[#052a51]">Choose on Map</span>
+                    <span className="text-[9px] font-black uppercase bg-blue-100 text-[#052a51] px-1.5 py-0.5 rounded-full border border-blue-200 font-bold">
+                      Drag Pin
+                    </span>
+                  </div>
+                  <p className="text-[11px] text-gray-500 mt-0.5">
+                    Pin exact gate / delivery site
+                  </p>
+                </div>
+              </div>
+              <ArrowRight size={16} className="text-gray-400 group-hover:text-[#052a51] group-hover:translate-x-1 transition-all shrink-0" />
+            </button>
+          </div>
 
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5">
             {userAddresses.map((addr: CustomerAddress) => {
@@ -368,8 +407,8 @@ export default function AddressStep({
             )}
           </div>
 
-          {/* 1-Click GPS Auto-detect Bar inside Form */}
-          <div className="p-3.5 rounded-2xl bg-gradient-to-r from-[#052a51]/5 to-[#F26522]/5 border border-[#052a51]/15 flex items-center justify-between gap-3">
+          {/* 1-Click GPS & Drag on Map Bar inside Form */}
+          <div className="p-3.5 rounded-2xl bg-gradient-to-r from-[#052a51]/5 to-[#F26522]/5 border border-[#052a51]/15 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
             <div className="flex items-center gap-2.5">
               <div className="w-8 h-8 rounded-xl bg-[#052a51] text-white flex items-center justify-center shrink-0">
                 {isDetectingLocation ? (
@@ -379,19 +418,29 @@ export default function AddressStep({
                 )}
               </div>
               <div>
-                <p className="text-xs font-black text-[#052a51]">Auto-Fill from Current Location</p>
-                <p className="text-[11px] text-gray-500">Detects street, area, city & PIN code in 1-click</p>
+                <p className="text-xs font-black text-[#052a51]">Auto-Fill from Location / Map</p>
+                <p className="text-[11px] text-gray-500">Detect GPS or drag pin on Google Map</p>
               </div>
             </div>
-            <button
-              type="button"
-              onClick={handleDetectLocation}
-              disabled={isDetectingLocation}
-              className="px-3.5 py-2 bg-[#052a51] hover:bg-[#041f3d] text-white text-xs font-bold rounded-xl transition-all flex items-center gap-1.5 cursor-pointer disabled:opacity-50 shrink-0 shadow-xs active:scale-95"
-            >
-              {isDetectingLocation ? <Loader2 size={13} className="animate-spin" /> : <Sparkles size={13} className="text-amber-300" />}
-              <span>{isDetectingLocation ? "Detecting..." : "Detect Location"}</span>
-            </button>
+            <div className="flex items-center gap-2 shrink-0">
+              <button
+                type="button"
+                onClick={handleDetectLocation}
+                disabled={isDetectingLocation}
+                className="px-3 py-1.5 bg-[#052a51] hover:bg-[#041f3d] text-white text-xs font-bold rounded-xl transition-all flex items-center gap-1.5 cursor-pointer disabled:opacity-50 shadow-xs active:scale-95"
+              >
+                {isDetectingLocation ? <Loader2 size={12} className="animate-spin" /> : <Sparkles size={12} className="text-amber-300" />}
+                <span>{isDetectingLocation ? "Detecting..." : "Auto GPS"}</span>
+              </button>
+              <button
+                type="button"
+                onClick={() => setShowWebMapModal(true)}
+                className="px-3 py-1.5 bg-white hover:bg-gray-50 text-[#052a51] border border-gray-300 text-xs font-bold rounded-xl transition-all flex items-center gap-1.5 cursor-pointer shadow-xs active:scale-95"
+              >
+                <MapPin size={12} className="text-[#F26522]" />
+                <span>Drag on Map</span>
+              </button>
+            </div>
           </div>
 
           {detectedNotice && (
@@ -626,6 +675,13 @@ export default function AddressStep({
           </form>
         </div>
       )}
+
+      {/* Interactive Google Map Picker Modal */}
+      <WebMapPickerModal
+        isOpen={showWebMapModal}
+        onClose={() => setShowWebMapModal(false)}
+        onConfirmLocation={handleMapLocationConfirmed}
+      />
     </div>
   );
 }

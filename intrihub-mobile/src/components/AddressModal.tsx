@@ -28,6 +28,7 @@ import { COLORS, SPACING, RADIUS, SHADOWS } from "../constants/theme";
 import { useAuthStore } from "../store/authStore";
 import { updateProfile } from "../api/auth";
 import { GOOGLE_MAPS_API_KEY } from "../constants/config";
+import { MapPickerModal, PickedLocation } from "./MapPickerModal";
 
 interface AddressModalProps {
   visible: boolean;
@@ -42,6 +43,7 @@ export const AddressModal: React.FC<AddressModalProps> = ({ visible, onClose, on
   const [loading, setLoading] = useState(false);
   const [detectingLocation, setDetectingLocation] = useState(false);
   const [detectedNotice, setDetectedNotice] = useState<string | null>(null);
+  const [showMapPicker, setShowMapPicker] = useState(false);
 
   // Form Fields
   const [label, setLabel] = useState<"Home" | "Work" | "Site" | "Other">("Home");
@@ -283,23 +285,33 @@ export const AddressModal: React.FC<AddressModalProps> = ({ visible, onClose, on
           <ScrollView style={styles.content} showsVerticalScrollIndicator={false}>
             {isAddingNew ? (
               <View style={styles.form}>
-                {/* 1-Click Detect Location Bar inside form */}
-                <TouchableOpacity
-                  style={styles.detectLocationFormBtn}
-                  onPress={handleUseCurrentLocation}
-                  disabled={detectingLocation}
-                  activeOpacity={0.85}
-                >
-                  {detectingLocation ? (
-                    <ActivityIndicator size="small" color="#fff" />
-                  ) : (
-                    <MapPin size={16} color="#fff" />
-                  )}
-                  <Text style={styles.detectLocationFormBtnText}>
-                    {detectingLocation ? "Detecting GPS location..." : "Auto-Detect My Current Location"}
-                  </Text>
-                  <Sparkles size={14} color="#fde047" />
-                </TouchableOpacity>
+                {/* 1-Click Detect Location & Drag on Map Buttons */}
+                <View style={styles.formDetectRow}>
+                  <TouchableOpacity
+                    style={styles.detectLocationFormBtn}
+                    onPress={handleUseCurrentLocation}
+                    disabled={detectingLocation}
+                    activeOpacity={0.85}
+                  >
+                    {detectingLocation ? (
+                      <ActivityIndicator size="small" color="#fff" />
+                    ) : (
+                      <MapPin size={15} color="#fff" />
+                    )}
+                    <Text style={styles.detectLocationFormBtnText}>
+                      {detectingLocation ? "Detecting..." : "Auto-Detect GPS"}
+                    </Text>
+                  </TouchableOpacity>
+
+                  <TouchableOpacity
+                    style={styles.pickOnMapFormBtn}
+                    onPress={() => setShowMapPicker(true)}
+                    activeOpacity={0.85}
+                  >
+                    <Sparkles size={14} color={COLORS.primary} />
+                    <Text style={styles.pickOnMapFormBtnText}>Choose on Map (Drag)</Text>
+                  </TouchableOpacity>
+                </View>
 
                 {detectedNotice ? (
                   <View style={styles.successBanner}>
@@ -532,6 +544,28 @@ export const AddressModal: React.FC<AddressModalProps> = ({ visible, onClose, on
                   </View>
                 </TouchableOpacity>
 
+                {/* 2. Choose on Interactive Map Card */}
+                <TouchableOpacity
+                  style={styles.pickOnMapHeroCard}
+                  onPress={() => setShowMapPicker(true)}
+                  activeOpacity={0.88}
+                >
+                  <View style={styles.pickOnMapHeroIconWrap}>
+                    <Sparkles size={18} color={COLORS.primary} />
+                  </View>
+                  <View style={styles.detectLocationTextContainer}>
+                    <View style={styles.detectLocationTitleRow}>
+                      <Text style={styles.pickOnMapHeroTitle}>Choose on Interactive Map</Text>
+                      <View style={styles.dragPinBadge}>
+                        <Text style={styles.dragPinBadgeText}>DRAG PIN</Text>
+                      </View>
+                    </View>
+                    <Text style={styles.pickOnMapHeroSubtitle}>
+                      Pin exact site, gate or entrance on Google Map
+                    </Text>
+                  </View>
+                </TouchableOpacity>
+
                 <TouchableOpacity
                   style={styles.addNewBtn}
                   onPress={() => {
@@ -601,6 +635,23 @@ export const AddressModal: React.FC<AddressModalProps> = ({ visible, onClose, on
           </ScrollView>
         </View>
       </View>
+
+      {/* Interactive Google Map Picker Modal */}
+      <MapPickerModal
+        visible={showMapPicker}
+        onClose={() => setShowMapPicker(false)}
+        onConfirmLocation={(loc) => {
+          if (loc.street) setStreet(loc.street);
+          if (loc.area) setArea(loc.area);
+          if (loc.city) setCity(loc.city);
+          if (loc.state) setState(loc.state);
+          if (loc.pincode) setPincode(loc.pincode);
+          if (loc.houseNumber) setHouseNumber(loc.houseNumber);
+          if (loc.landmark) setLandmark(loc.landmark);
+          setDetectedNotice(`Location pinned: ${loc.formattedAddress}`);
+          setIsAddingNew(true);
+        }}
+      />
     </Modal>
   );
 };
@@ -758,21 +809,44 @@ const styles = StyleSheet.create({
     fontWeight: "800",
     color: COLORS.textWhite,
   },
+  formDetectRow: {
+    flexDirection: "row",
+    gap: SPACING.sm,
+    marginBottom: SPACING.md,
+  },
   detectLocationFormBtn: {
+    flex: 1,
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "center",
-    gap: 8,
+    gap: 6,
     backgroundColor: COLORS.primary,
     paddingVertical: 12,
     borderRadius: RADIUS.md,
-    marginBottom: SPACING.md,
     ...SHADOWS.sm,
   },
   detectLocationFormBtnText: {
-    fontSize: 13,
+    fontSize: 12,
     fontWeight: "800",
     color: "#fff",
+  },
+  pickOnMapFormBtn: {
+    flex: 1,
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    gap: 6,
+    backgroundColor: "#fff",
+    borderWidth: 1.5,
+    borderColor: COLORS.primary,
+    paddingVertical: 12,
+    borderRadius: RADIUS.md,
+    ...SHADOWS.sm,
+  },
+  pickOnMapFormBtnText: {
+    fontSize: 12,
+    fontWeight: "800",
+    color: COLORS.primary,
   },
   successBanner: {
     flexDirection: "row",
@@ -800,7 +874,7 @@ const styles = StyleSheet.create({
     backgroundColor: COLORS.primary,
     padding: SPACING.md,
     borderRadius: RADIUS.lg,
-    marginBottom: SPACING.sm,
+    marginBottom: SPACING.xs,
     gap: SPACING.md,
     ...SHADOWS.md,
   },
@@ -843,6 +917,52 @@ const styles = StyleSheet.create({
   detectLocationSubtitle: {
     fontSize: 11,
     color: "rgba(255,255,255,0.85)",
+    marginTop: 2,
+  },
+  pickOnMapHeroCard: {
+    flexDirection: "row",
+    alignItems: "center",
+    backgroundColor: "#fff",
+    padding: SPACING.md,
+    borderRadius: RADIUS.lg,
+    marginBottom: SPACING.sm,
+    gap: SPACING.md,
+    borderWidth: 1.5,
+    borderColor: "#e2e8f0",
+    ...SHADOWS.sm,
+  },
+  pickOnMapHeroIconWrap: {
+    width: 42,
+    height: 42,
+    borderRadius: 21,
+    backgroundColor: "#EFF6FF",
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  pickOnMapHeroTitle: {
+    fontSize: 14,
+    fontWeight: "800",
+    color: COLORS.primary,
+  },
+  dragPinBadge: {
+    flexDirection: "row",
+    alignItems: "center",
+    backgroundColor: "#EFF6FF",
+    paddingHorizontal: 6,
+    paddingVertical: 2,
+    borderRadius: 10,
+    borderWidth: 1,
+    borderColor: "#bfdbfe",
+  },
+  dragPinBadgeText: {
+    fontSize: 9,
+    fontWeight: "900",
+    color: COLORS.primary,
+    letterSpacing: 0.5,
+  },
+  pickOnMapHeroSubtitle: {
+    fontSize: 11,
+    color: COLORS.textSecondary,
     marginTop: 2,
   },
   addNewBtn: {
