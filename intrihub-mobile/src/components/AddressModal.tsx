@@ -8,6 +8,7 @@ import {
   TextInput,
   ScrollView,
   ActivityIndicator,
+  Alert,
 } from "react-native";
 import {
   X,
@@ -19,11 +20,14 @@ import {
   Briefcase,
   HardHat,
   AlertCircle,
+  Sparkles,
 } from "lucide-react-native";
+import * as Location from "expo-location";
 import { Address } from "../types";
 import { COLORS, SPACING, RADIUS, SHADOWS } from "../constants/theme";
 import { useAuthStore } from "../store/authStore";
 import { updateProfile } from "../api/auth";
+import { GOOGLE_MAPS_API_KEY } from "../constants/config";
 
 interface AddressModalProps {
   visible: boolean;
@@ -36,6 +40,8 @@ export const AddressModal: React.FC<AddressModalProps> = ({ visible, onClose, on
   const addresses: Address[] = user?.addresses || [];
   const [isAddingNew, setIsAddingNew] = useState(false);
   const [loading, setLoading] = useState(false);
+  const [detectingLocation, setDetectingLocation] = useState(false);
+  const [detectedNotice, setDetectedNotice] = useState<string | null>(null);
 
   // Form Fields
   const [label, setLabel] = useState<"Home" | "Work" | "Site" | "Other">("Home");
@@ -65,6 +71,107 @@ export const AddressModal: React.FC<AddressModalProps> = ({ visible, onClose, on
     setSelectedAddress(addr);
     onSelectAddress(addr);
     onClose();
+  };
+
+  // ── 1-CLICK AUTOMATIC ADDRESS DETECTION (GPS + GOOGLE MAPS) ──
+  const handleUseCurrentLocation = async () => {
+    try {
+      setDetectingLocation(true);
+      setError("");
+      setDetectedNotice(null);
+
+      const { status } = await Location.requestForegroundPermissionsAsync();
+      if (status !== "granted") {
+        Alert.alert(
+          "Permission Required",
+          "Please enable location access in device settings to automatically detect your address."
+        );
+        setDetectingLocation(false);
+        return;
+      }
+
+      const position = await Location.getCurrentPositionAsync({
+        accuracy: Location.Accuracy.Balanced,
+      });
+      const { latitude, longitude } = position.coords;
+
+      let detectedStreet = "";
+      let detectedArea = "";
+      let detectedCity = "Bengaluru";
+      let detectedState = "Karnataka";
+      let detectedPincode = "";
+      let detectedHouse = "";
+      let detectedLandmark = "";
+
+      // 1. Google Maps Geocoding API
+      let googleSuccess = false;
+      if (GOOGLE_MAPS_API_KEY) {
+        try {
+          const res = await fetch(
+            `https://maps.googleapis.com/maps/api/geocode/json?latlng=${latitude},${longitude}&key=${GOOGLE_MAPS_API_KEY}&region=in`
+          );
+          const data = await res.json();
+          if (data.status === "OK" && data.results?.[0]) {
+            const result = data.results[0];
+            for (const comp of result.address_components || []) {
+              const types = comp.types || [];
+              if (types.includes("street_number")) detectedHouse = comp.long_name;
+              if (types.includes("route")) detectedStreet = comp.long_name;
+              if (types.includes("sublocality_level_1") || types.includes("neighborhood")) {
+                detectedArea = comp.long_name;
+              } else if (types.includes("sublocality_level_2") && !detectedArea) {
+                detectedArea = comp.long_name;
+              }
+              if (types.includes("point_of_interest") || types.includes("establishment")) {
+                detectedLandmark = comp.long_name;
+              }
+              if (types.includes("postal_code")) detectedPincode = comp.long_name;
+              if (types.includes("locality")) {
+                detectedCity = comp.long_name;
+              } else if (!detectedCity && (types.includes("administrative_area_level_2") || types.includes("postal_town"))) {
+                detectedCity = comp.long_name;
+              }
+              if (types.includes("administrative_area_level_1")) detectedState = comp.long_name;
+            }
+            googleSuccess = true;
+          }
+        } catch (gErr) {
+          console.warn("Google reverse-geocode failed, using native:", gErr);
+        }
+      }
+
+      // 2. Fallback to native reverse geocode if needed
+      if (!googleSuccess || (!detectedStreet && !detectedArea)) {
+        try {
+          const [nativeAddr] = await Location.reverseGeocodeAsync({ latitude, longitude });
+          if (nativeAddr) {
+            detectedStreet = nativeAddr.street || nativeAddr.name || detectedStreet;
+            detectedArea = nativeAddr.subregion || nativeAddr.district || detectedArea;
+            if (nativeAddr.city) detectedCity = nativeAddr.city;
+            if (nativeAddr.region) detectedState = nativeAddr.region;
+            if (nativeAddr.postalCode) detectedPincode = nativeAddr.postalCode;
+          }
+        } catch (nErr) {
+          console.warn("Native reverse-geocode error:", nErr);
+        }
+      }
+
+      if (detectedStreet) setStreet(detectedStreet);
+      if (detectedArea) setArea(detectedArea);
+      if (detectedCity) setCity(detectedCity);
+      if (detectedState) setState(detectedState);
+      if (detectedPincode) setPincode(detectedPincode);
+      if (detectedHouse) setHouseNumber(detectedHouse);
+      if (detectedLandmark) setLandmark(detectedLandmark);
+
+      setDetectedNotice("GPS Address detected! Review & add flat/floor details if needed.");
+      setIsAddingNew(true);
+    } catch (err: any) {
+      console.error("Auto detect address error:", err);
+      Alert.alert("Location Detection", "Could not get current address. Please enter manually.");
+    } finally {
+      setDetectingLocation(false);
+    }
   };
 
   // ── SAVE ADDRESS HANDLER ──
@@ -176,6 +283,31 @@ export const AddressModal: React.FC<AddressModalProps> = ({ visible, onClose, on
           <ScrollView style={styles.content} showsVerticalScrollIndicator={false}>
             {isAddingNew ? (
               <View style={styles.form}>
+                {/* 1-Click Detect Location Bar inside form */}
+                <TouchableOpacity
+                  style={styles.detectLocationFormBtn}
+                  onPress={handleUseCurrentLocation}
+                  disabled={detectingLocation}
+                  activeOpacity={0.85}
+                >
+                  {detectingLocation ? (
+                    <ActivityIndicator size="small" color="#fff" />
+                  ) : (
+                    <MapPin size={16} color="#fff" />
+                  )}
+                  <Text style={styles.detectLocationFormBtnText}>
+                    {detectingLocation ? "Detecting GPS location..." : "Auto-Detect My Current Location"}
+                  </Text>
+                  <Sparkles size={14} color="#fde047" />
+                </TouchableOpacity>
+
+                {detectedNotice ? (
+                  <View style={styles.successBanner}>
+                    <Check size={14} color="#15803d" />
+                    <Text style={styles.successText}>{detectedNotice}</Text>
+                  </View>
+                ) : null}
+
                 {error ? (
                   <View style={styles.errorBanner}>
                     <AlertCircle size={14} color={COLORS.accentRed} />
@@ -370,13 +502,46 @@ export const AddressModal: React.FC<AddressModalProps> = ({ visible, onClose, on
             ) : (
               /* Saved Address List */
               <View style={styles.addressList}>
+                {/* 1-Click Use Current Location Banner */}
+                <TouchableOpacity
+                  style={styles.detectLocationHeroCard}
+                  onPress={handleUseCurrentLocation}
+                  disabled={detectingLocation}
+                  activeOpacity={0.88}
+                >
+                  <View style={styles.detectLocationIconWrap}>
+                    {detectingLocation ? (
+                      <ActivityIndicator size="small" color="#fff" />
+                    ) : (
+                      <MapPin size={20} color="#fff" />
+                    )}
+                  </View>
+                  <View style={styles.detectLocationTextContainer}>
+                    <View style={styles.detectLocationTitleRow}>
+                      <Text style={styles.detectLocationTitle}>Use Current Location</Text>
+                      <View style={styles.oneClickBadge}>
+                        <Sparkles size={10} color="#fff" />
+                        <Text style={styles.oneClickBadgeText}>1-CLICK</Text>
+                      </View>
+                    </View>
+                    <Text style={styles.detectLocationSubtitle}>
+                      {detectingLocation
+                        ? "Fetching GPS & reverse geocoding address..."
+                        : "Auto-detects street, area, city & PIN code"}
+                    </Text>
+                  </View>
+                </TouchableOpacity>
+
                 <TouchableOpacity
                   style={styles.addNewBtn}
-                  onPress={() => setIsAddingNew(true)}
+                  onPress={() => {
+                    setDetectedNotice(null);
+                    setIsAddingNew(true);
+                  }}
                   activeOpacity={0.85}
                 >
                   <Plus size={18} color={COLORS.primary} />
-                  <Text style={styles.addNewText}>Add New Delivery Address</Text>
+                  <Text style={styles.addNewText}>Add New Delivery Address Manually</Text>
                 </TouchableOpacity>
 
                 {addresses.length === 0 ? (
@@ -593,8 +758,92 @@ const styles = StyleSheet.create({
     fontWeight: "800",
     color: COLORS.textWhite,
   },
+  detectLocationFormBtn: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    gap: 8,
+    backgroundColor: COLORS.primary,
+    paddingVertical: 12,
+    borderRadius: RADIUS.md,
+    marginBottom: SPACING.md,
+    ...SHADOWS.sm,
+  },
+  detectLocationFormBtnText: {
+    fontSize: 13,
+    fontWeight: "800",
+    color: "#fff",
+  },
+  successBanner: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 6,
+    backgroundColor: "#f0fdf4",
+    borderWidth: 1,
+    borderColor: "#bbf7d0",
+    padding: SPACING.sm,
+    borderRadius: RADIUS.md,
+    marginBottom: SPACING.md,
+  },
+  successText: {
+    fontSize: 12,
+    fontWeight: "700",
+    color: "#15803d",
+    flex: 1,
+  },
   addressList: {
     paddingBottom: SPACING.xxl,
+  },
+  detectLocationHeroCard: {
+    flexDirection: "row",
+    alignItems: "center",
+    backgroundColor: COLORS.primary,
+    padding: SPACING.md,
+    borderRadius: RADIUS.lg,
+    marginBottom: SPACING.sm,
+    gap: SPACING.md,
+    ...SHADOWS.md,
+  },
+  detectLocationIconWrap: {
+    width: 42,
+    height: 42,
+    borderRadius: 21,
+    backgroundColor: "rgba(255,255,255,0.2)",
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  detectLocationTextContainer: {
+    flex: 1,
+  },
+  detectLocationTitleRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 6,
+  },
+  detectLocationTitle: {
+    fontSize: 14,
+    fontWeight: "800",
+    color: "#fff",
+  },
+  oneClickBadge: {
+    flexDirection: "row",
+    alignItems: "center",
+    backgroundColor: COLORS.accentOrange,
+    paddingHorizontal: 6,
+    paddingVertical: 2,
+    borderRadius: 10,
+    gap: 3,
+  },
+  oneClickBadgeText: {
+    fontSize: 9,
+    fontWeight: "900",
+    color: "#fff",
+    letterSpacing: 0.5,
+  },
+  detectLocationSubtitle: {
+    fontSize: 11,
+    color: "rgba(255,255,255,0.85)",
+    marginTop: 2,
   },
   addNewBtn: {
     flexDirection: "row",

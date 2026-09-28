@@ -33,10 +33,12 @@ import {
   Edit3,
   Film,
   X as CloseIcon,
+  Maximize2,
 } from "lucide-react-native";
 import { getProductDetails, getProducts } from "../../src/api/products";
 import { getProductReviews, checkReviewEligibility, ReviewMedia } from "../../src/api/reviews";
 import { WriteReviewModal } from "../../src/components/WriteReviewModal";
+import { ImageZoomModal } from "../../src/components/ImageZoomModal";
 import { useCartStore } from "../../src/store/cartStore";
 import { useWishlistStore } from "../../src/store/wishlistStore";
 import { Product, ProductVariant } from "../../src/types";
@@ -75,11 +77,15 @@ function getPriceUnitSuffix(product: any): string {
 const ProductGallery = React.memo(function ProductGallery({
   images,
   width,
+  productTitle,
 }: {
   images: string[];
   width: number;
+  productTitle?: string;
 }) {
   const [activeIndex, setActiveIndex] = useState(0);
+  const [zoomModalVisible, setZoomModalVisible] = useState(false);
+  const [zoomInitialIndex, setZoomInitialIndex] = useState(0);
   const scrollRef = useRef<ScrollView>(null);
 
   const handleScrollEnd = (e: any) => {
@@ -88,6 +94,11 @@ const ProductGallery = React.memo(function ProductGallery({
     if (idx >= 0 && idx < images.length && idx !== activeIndex) {
       setActiveIndex(idx);
     }
+  };
+
+  const handleOpenZoom = (index: number) => {
+    setZoomInitialIndex(index);
+    setZoomModalVisible(true);
   };
 
   return (
@@ -105,14 +116,19 @@ const ProductGallery = React.memo(function ProductGallery({
         style={{ width, height: width * 0.9 }}
       >
         {images.map((item, idx) => (
-          <View key={`product-img-${idx}-${item}`} style={{ width, height: width * 0.9 }}>
+          <TouchableOpacity
+            key={`product-img-${idx}-${item}`}
+            style={{ width, height: width * 0.9 }}
+            activeOpacity={0.95}
+            onPress={() => handleOpenZoom(idx)}
+          >
             <Image
               source={{ uri: item }}
               style={[styles.galleryImage, { width, height: width * 0.9 }]}
               contentFit="cover"
               cachePolicy="memory-disk"
             />
-          </View>
+          </TouchableOpacity>
         ))}
       </ScrollView>
 
@@ -124,6 +140,16 @@ const ProductGallery = React.memo(function ProductGallery({
           </Text>
         </View>
       )}
+
+      {/* Tap to Zoom Badge */}
+      <TouchableOpacity
+        style={styles.tapToZoomBadge}
+        activeOpacity={0.8}
+        onPress={() => handleOpenZoom(activeIndex)}
+      >
+        <Maximize2 size={12} color="#FFFFFF" />
+        <Text style={styles.tapToZoomText}>Tap to zoom</Text>
+      </TouchableOpacity>
 
       {/* Left Arrow Navigation Button */}
       {images.length > 1 && activeIndex > 0 && (
@@ -174,6 +200,81 @@ const ProductGallery = React.memo(function ProductGallery({
           ))}
         </View>
       )}
+
+      {/* Fullscreen Interactive Zoom Modal */}
+      <ImageZoomModal
+        visible={zoomModalVisible}
+        images={images}
+        initialIndex={zoomInitialIndex}
+        onClose={() => setZoomModalVisible(false)}
+        title={productTitle}
+      />
+    </View>
+  );
+});
+
+function renderBoldSegments(text: string) {
+  const parts = text.split(/(\*\*[^*]+\*\*)/g);
+  if (parts.length === 1) return text;
+
+  return parts.map((part, i) => {
+    if (part.startsWith("**") && part.endsWith("**")) {
+      return (
+        <Text key={i} style={styles.descBold}>
+          {part.slice(2, -2)}
+        </Text>
+      );
+    }
+    return part;
+  });
+}
+
+const FormattedDescription = React.memo(function FormattedDescription({
+  content,
+}: {
+  content: string;
+}) {
+  if (!content) return null;
+
+  const lines = content.split("\n");
+
+  return (
+    <View style={styles.descContainer}>
+      {lines.map((line, idx) => {
+        const trimmed = line.trim();
+        if (!trimmed) {
+          return <View key={`desc-spacer-${idx}`} style={{ height: 6 }} />;
+        }
+
+        // Markdown headings: #, ##, ###, ####
+        if (/^#{1,6}\s+/.test(trimmed)) {
+          const headingText = trimmed.replace(/^#{1,6}\s+/, "");
+          return (
+            <Text key={`desc-h-${idx}`} style={styles.descHeading}>
+              {headingText}
+            </Text>
+          );
+        }
+
+        // Markdown bullet points: - or *
+        if (/^[-*]\s+/.test(trimmed)) {
+          const bulletText = trimmed.replace(/^[-*]\s+/, "");
+          return (
+            <View key={`desc-b-${idx}`} style={styles.descBulletRow}>
+              <Text style={styles.descBulletDot}>•</Text>
+              <Text style={styles.descBulletText}>
+                {renderBoldSegments(bulletText)}
+              </Text>
+            </View>
+          );
+        }
+
+        return (
+          <Text key={`desc-p-${idx}`} style={styles.descriptionText}>
+            {renderBoldSegments(trimmed)}
+          </Text>
+        );
+      })}
     </View>
   );
 });
@@ -370,7 +471,7 @@ export default function ProductDetailScreen() {
   const renderHeader = () => (
     <View>
       {/* Product Image Gallery */}
-      <ProductGallery images={images} width={width} />
+      <ProductGallery images={images} width={width} productTitle={product.name} />
 
       {/* Product Details Card */}
       <View style={styles.detailsCard}>
@@ -606,7 +707,7 @@ export default function ProductDetailScreen() {
       {product.description ? (
         <View style={styles.sectionCard}>
           <Text style={styles.sectionHeading}>Product Overview</Text>
-          <Text style={styles.descriptionText}>{product.description}</Text>
+          <FormattedDescription content={product.description} />
         </View>
       ) : null}
 
@@ -1028,6 +1129,24 @@ const styles = StyleSheet.create({
     fontSize: 11,
     fontWeight: "800",
   },
+  tapToZoomBadge: {
+    position: "absolute",
+    bottom: 12,
+    right: 12,
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 4,
+    backgroundColor: "rgba(5, 42, 81, 0.78)",
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    borderRadius: RADIUS.full,
+    zIndex: 10,
+  },
+  tapToZoomText: {
+    color: "#FFFFFF",
+    fontSize: 10,
+    fontWeight: "700",
+  },
   galleryNavBtn: {
     position: "absolute",
     top: "44%",
@@ -1069,6 +1188,7 @@ const styles = StyleSheet.create({
     padding: SPACING.lg,
     borderBottomWidth: 1,
     borderColor: COLORS.border,
+    marginBottom: SPACING.md,
   },
   productName: {
     fontSize: 18,
@@ -1257,23 +1377,61 @@ const styles = StyleSheet.create({
   specRow: {
     flexDirection: "row",
     justifyContent: "space-between",
+    alignItems: "flex-start",
     paddingVertical: 7,
     borderBottomWidth: 1,
     borderBottomColor: "rgba(0,0,0,0.04)",
+    gap: 12,
   },
   specKey: {
     fontSize: 12.5,
     color: COLORS.textMuted,
+    width: "32%",
+    flexShrink: 0,
   },
   specValue: {
     fontSize: 12.5,
     fontWeight: "700",
     color: COLORS.text,
+    flex: 1,
+    textAlign: "right",
   },
   descriptionText: {
     fontSize: 13,
     color: COLORS.textSecondary,
     lineHeight: 20,
+    marginBottom: 4,
+  },
+  descContainer: {
+    gap: 2,
+  },
+  descHeading: {
+    fontSize: 13.5,
+    fontWeight: "800",
+    color: COLORS.primary,
+    marginTop: 8,
+    marginBottom: 4,
+  },
+  descBulletRow: {
+    flexDirection: "row",
+    alignItems: "flex-start",
+    gap: 6,
+    marginBottom: 3,
+  },
+  descBulletDot: {
+    fontSize: 13,
+    color: COLORS.primary,
+    lineHeight: 18,
+  },
+  descBulletText: {
+    flex: 1,
+    fontSize: 13,
+    color: COLORS.textSecondary,
+    lineHeight: 19,
+  },
+  descBold: {
+    fontWeight: "800",
+    color: COLORS.text,
   },
 
   // Similar Products Carousel

@@ -16,8 +16,19 @@ export const RAZORPAY_KEY_ID =
   process.env.EXPO_PUBLIC_RAZORPAY_KEY_ID ||
   "rzp_live_default";
 
-export const APP_VERSION = "1.1.3";
-export const APP_VERSION_CODE = 6;
+export const GOOGLE_MAPS_API_KEY =
+  process.env.EXPO_PUBLIC_GOOGLE_MAPS_API_KEY ||
+  Constants.expoConfig?.extra?.googleMapsApiKey ||
+  "AIzaSyBejehWWHi-GPuqK8V6v2F8sKt_P0ap_oc";
+
+export const APP_VERSION: string =
+  (Constants.expoConfig?.version as string | undefined) ??
+  "1.1.9";
+
+export const APP_VERSION_CODE: number =
+  (Constants.expoConfig?.android?.versionCode as number | undefined) ??
+  12;
+
 export const PACKAGE_NAME = "com.intrihub.app";
 export const SUPPORT_PHONE = "7090120211";
 export const SUPPORT_CALL_URL = "tel:7090120211";

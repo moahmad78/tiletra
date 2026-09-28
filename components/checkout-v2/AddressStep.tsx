@@ -14,6 +14,9 @@ import {
   User,
   Phone,
   Check,
+  Sparkles,
+  Loader2,
+  Navigation,
 } from "lucide-react";
 import { type CustomerAddress, useAuthStore } from "@/lib/auth-store";
 import { toast } from "sonner";
@@ -32,6 +35,8 @@ export default function AddressStep({
   const { user, addAddress, deleteAddress, setDefaultAddress, updateUserPhone } = useAuthStore();
   const userAddresses = user?.addresses || [];
   const [isAddingNew, setIsAddingNew] = useState(userAddresses.length === 0);
+  const [isDetectingLocation, setIsDetectingLocation] = useState(false);
+  const [detectedNotice, setDetectedNotice] = useState<string | null>(null);
 
   // Manual Form State
   const [label, setLabel] = useState<"Home" | "Work" | "Site" | "Other">("Home");
@@ -51,6 +56,60 @@ export default function AddressStep({
   const [deliveryInstructions, setDeliveryInstructions] = useState("");
   const [isDefault, setIsDefault] = useState(userAddresses.length === 0);
   const [isSubmitting, setIsSubmitting] = useState(false);
+
+  // ── 1-CLICK AUTOMATIC ADDRESS DETECTION (BROWSER GPS + GOOGLE MAPS) ──
+  const handleDetectLocation = () => {
+    if (typeof window === "undefined" || !navigator.geolocation) {
+      toast.error("Geolocation is not supported by your browser");
+      return;
+    }
+
+    setIsDetectingLocation(true);
+    setDetectedNotice(null);
+
+    navigator.geolocation.getCurrentPosition(
+      async (pos) => {
+        try {
+          const { latitude, longitude } = pos.coords;
+          const res = await fetch(`/api/geo/reverse-geocode?lat=${latitude}&lng=${longitude}`);
+          const data = await res.json();
+
+          if (data.success && data.address) {
+            const addr = data.address;
+            if (addr.houseNumber) setHouseNumber(addr.houseNumber);
+            if (addr.street) setLine1(addr.street);
+            else if (addr.formattedAddress) setLine1(addr.formattedAddress.split(",")[0] || "");
+            if (addr.area) setLine2(addr.area);
+            if (addr.city) setCity(addr.city);
+            if (addr.state) setState(addr.state);
+            if (addr.pincode) setPincode(addr.pincode);
+            if (addr.landmark) setLandmark(addr.landmark);
+
+            setDetectedNotice("GPS address auto-detected! Verify and add flat/floor details if needed.");
+            setIsAddingNew(true);
+            toast.success("Current address detected via Google Maps!");
+          } else {
+            toast.error("Could not fetch address details for this location.");
+          }
+        } catch (err) {
+          console.error("Detect location error:", err);
+          toast.error("Failed to detect location. Please enter manually.");
+        } finally {
+          setIsDetectingLocation(false);
+        }
+      },
+      (err) => {
+        console.warn("Geolocation error:", err);
+        setIsDetectingLocation(false);
+        if (err.code === err.PERMISSION_DENIED) {
+          toast.error("Location permission denied. Please allow location access in your browser.");
+        } else {
+          toast.error("Could not fetch GPS coordinates.");
+        }
+      },
+      { enableHighAccuracy: true, timeout: 10000, maximumAge: 60000 }
+    );
+  };
 
   const handleSetDefault = (e: React.MouseEvent, id: string) => {
     e.stopPropagation();
@@ -162,13 +221,49 @@ export default function AddressStep({
             </h3>
             <button
               type="button"
-              onClick={() => setIsAddingNew(true)}
+              onClick={() => {
+                setDetectedNotice(null);
+                setIsAddingNew(true);
+              }}
               className="text-xs font-bold text-[#F26522] hover:text-[#d95a1e] flex items-center gap-1 cursor-pointer"
             >
               <Plus size={14} />
               Add New Address
             </button>
           </div>
+
+          {/* 1-Click Detect Current Location Hero Card */}
+          <button
+            type="button"
+            onClick={handleDetectLocation}
+            disabled={isDetectingLocation}
+            className="w-full p-3.5 sm:p-4 rounded-2xl bg-[#052a51] hover:bg-[#041f3d] text-white flex items-center justify-between shadow-sm transition-all cursor-pointer group active:scale-[0.99] border border-[#052a51]"
+          >
+            <div className="flex items-center gap-3">
+              <div className="w-10 h-10 rounded-xl bg-white/10 flex items-center justify-center text-white shrink-0">
+                {isDetectingLocation ? (
+                  <Loader2 size={20} className="animate-spin text-white" />
+                ) : (
+                  <MapPin size={20} className="text-[#F26522]" />
+                )}
+              </div>
+              <div className="text-left">
+                <div className="flex items-center gap-2">
+                  <span className="text-sm font-black">Use Current Location</span>
+                  <span className="text-[10px] font-black uppercase bg-[#F26522] text-white px-2 py-0.5 rounded-full flex items-center gap-1 shadow-xs">
+                    <Sparkles size={10} />
+                    1-Click
+                  </span>
+                </div>
+                <p className="text-xs text-white/80 mt-0.5">
+                  {isDetectingLocation
+                    ? "Fetching GPS & reverse geocoding via Google Maps..."
+                    : "Auto-detects street, area, city & PIN code instantly"}
+                </p>
+              </div>
+            </div>
+            <ArrowRight size={18} className="text-white/60 group-hover:text-white group-hover:translate-x-1 transition-all shrink-0" />
+          </button>
 
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5">
             {userAddresses.map((addr: CustomerAddress) => {
@@ -272,6 +367,39 @@ export default function AddressStep({
               </button>
             )}
           </div>
+
+          {/* 1-Click GPS Auto-detect Bar inside Form */}
+          <div className="p-3.5 rounded-2xl bg-gradient-to-r from-[#052a51]/5 to-[#F26522]/5 border border-[#052a51]/15 flex items-center justify-between gap-3">
+            <div className="flex items-center gap-2.5">
+              <div className="w-8 h-8 rounded-xl bg-[#052a51] text-white flex items-center justify-center shrink-0">
+                {isDetectingLocation ? (
+                  <Loader2 size={16} className="animate-spin text-white" />
+                ) : (
+                  <MapPin size={16} className="text-[#F26522]" />
+                )}
+              </div>
+              <div>
+                <p className="text-xs font-black text-[#052a51]">Auto-Fill from Current Location</p>
+                <p className="text-[11px] text-gray-500">Detects street, area, city & PIN code in 1-click</p>
+              </div>
+            </div>
+            <button
+              type="button"
+              onClick={handleDetectLocation}
+              disabled={isDetectingLocation}
+              className="px-3.5 py-2 bg-[#052a51] hover:bg-[#041f3d] text-white text-xs font-bold rounded-xl transition-all flex items-center gap-1.5 cursor-pointer disabled:opacity-50 shrink-0 shadow-xs active:scale-95"
+            >
+              {isDetectingLocation ? <Loader2 size={13} className="animate-spin" /> : <Sparkles size={13} className="text-amber-300" />}
+              <span>{isDetectingLocation ? "Detecting..." : "Detect Location"}</span>
+            </button>
+          </div>
+
+          {detectedNotice && (
+            <div className="p-3 rounded-xl bg-green-50 border border-green-200 text-xs font-semibold text-green-800 flex items-center gap-2">
+              <CheckCircle2 size={16} className="text-green-600 shrink-0" />
+              <span>{detectedNotice}</span>
+            </div>
+          )}
 
           <form onSubmit={handleSaveAddress} className="space-y-4">
             {/* Address Type Selector */}
