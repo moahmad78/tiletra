@@ -7,7 +7,7 @@ export function getGoogleMapsApiKey(): string {
   return (
     process.env.NEXT_PUBLIC_GOOGLE_MAPS_KEY ||
     process.env.GOOGLE_MAPS_API_KEY ||
-    "AIzaSyBejehWWHi-GPuqK8V6v2F8sKt_P0ap_oc"
+    ""
   );
 }
 

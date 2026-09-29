@@ -19,7 +19,7 @@ export const RAZORPAY_KEY_ID =
 export const GOOGLE_MAPS_API_KEY =
   process.env.EXPO_PUBLIC_GOOGLE_MAPS_API_KEY ||
   Constants.expoConfig?.extra?.googleMapsApiKey ||
-  "AIzaSyBejehWWHi-GPuqK8V6v2F8sKt_P0ap_oc";
+  "";
 
 export const APP_VERSION: string =
   (Constants.expoConfig?.version as string | undefined) ??

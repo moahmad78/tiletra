@@ -366,7 +366,7 @@ export default function WebMapPickerModal({
       initMap();
     } else {
       const apiKey =
-        process.env.NEXT_PUBLIC_GOOGLE_MAPS_KEY || "AIzaSyBejehWWHi-GPuqK8V6v2F8sKt_P0ap_oc";
+        process.env.NEXT_PUBLIC_GOOGLE_MAPS_KEY || "";
       const existingScript = document.getElementById("google-maps-script");
 
       if (!existingScript) {
