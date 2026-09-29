@@ -240,6 +240,38 @@ export async function getGuidePosts(filter: GuidePostFilter = {}) {
       }),
     ]);
 
+    if (posts.length === 0) {
+      const fallbackPosts = BUYING_GUIDES.map((g, idx) => ({
+        id: `fallback-${g.slug}`,
+        title: g.title,
+        slug: g.slug,
+        featuredImage: g.image,
+        featuredImageAlt: `${g.title} - IntriHub Guide`,
+        excerpt: g.shortDescription,
+        content: g.summary,
+        metaTitle: `${g.title} | IntriHub Guide`,
+        metaDescription: g.shortDescription,
+        category: g.category,
+        tags: [g.category, "Buying Guide"],
+        keywords: [g.category, "buying guide", "intrihub", "materials"],
+        status: "PUBLISHED",
+        publishedAt: new Date(g.publishedAt),
+        authorName: g.author,
+        readTimeMinutes: parseInt(g.readTime.replace(/\D/g, ""), 10) || 5,
+        readTime: g.readTime,
+        viewsCount: 120 + idx * 15,
+        createdAt: new Date(g.publishedAt),
+        updatedAt: new Date(g.publishedAt),
+      }));
+      return {
+        posts: fallbackPosts as any,
+        total: fallbackPosts.length,
+        page: 1,
+        totalPages: 1,
+        hasMore: false,
+      };
+    }
+
     return {
       posts,
       total,
@@ -249,7 +281,29 @@ export async function getGuidePosts(filter: GuidePostFilter = {}) {
     };
   } catch (error) {
     console.error("Error in getGuidePosts:", error);
-    return { posts: [], total: 0, page: 1, totalPages: 1, hasMore: false };
+    const fallbackPosts = BUYING_GUIDES.map((g, idx) => ({
+      id: `fallback-${g.slug}`,
+      title: g.title,
+      slug: g.slug,
+      featuredImage: g.image,
+      featuredImageAlt: `${g.title} - IntriHub Guide`,
+      excerpt: g.shortDescription,
+      content: g.summary,
+      metaTitle: `${g.title} | IntriHub Guide`,
+      metaDescription: g.shortDescription,
+      category: g.category,
+      tags: [g.category, "Buying Guide"],
+      keywords: [g.category, "buying guide", "intrihub", "materials"],
+      status: "PUBLISHED",
+      publishedAt: new Date(g.publishedAt),
+      authorName: g.author,
+      readTimeMinutes: parseInt(g.readTime.replace(/\D/g, ""), 10) || 5,
+      readTime: g.readTime,
+      viewsCount: 120 + idx * 15,
+      createdAt: new Date(g.publishedAt),
+      updatedAt: new Date(g.publishedAt),
+    }));
+    return { posts: fallbackPosts as any, total: fallbackPosts.length, page: 1, totalPages: 1, hasMore: false };
   }
 }
 
@@ -264,19 +318,99 @@ export async function getGuidePostBySlug(slug: string) {
       where: { slug },
     });
 
-    if (!post) return null;
+    if (post) {
+      // Increment views asynchronously without blocking
+      prisma.guidePost
+        .update({
+          where: { id: post.id },
+          data: { viewsCount: { increment: 1 } },
+        })
+        .catch(() => {});
 
-    // Increment views asynchronously without blocking
-    prisma.guidePost
-      .update({
-        where: { id: post.id },
-        data: { viewsCount: { increment: 1 } },
-      })
-      .catch(() => {});
+      return post;
+    }
 
-    return post;
+    // Fallback to static BUYING_GUIDES
+    const fallback = BUYING_GUIDES.find((g) => g.slug === slug);
+    if (fallback) {
+      let htmlContent = `<div class="guide-summary-box mb-8 p-6 rounded-2xl bg-amber-50/80 border border-amber-200"><h3 class="text-sm font-extrabold uppercase tracking-wider text-amber-900 mb-2">Key Takeaways</h3><p class="text-slate-800 text-sm leading-relaxed">${fallback.summary}</p></div>`;
+      for (const section of fallback.sections) {
+        htmlContent += `<h2>${section.heading}</h2>`;
+        for (const p of section.content) {
+          htmlContent += `<p>${p}</p>`;
+        }
+      }
+      if (fallback.faqs && fallback.faqs.length > 0) {
+        htmlContent += `<h2>Frequently Asked Questions</h2>`;
+        for (const faq of fallback.faqs) {
+          htmlContent += `<h3>${faq.question}</h3><p>${faq.answer}</p>`;
+        }
+      }
+      return {
+        id: `fallback-${fallback.slug}`,
+        title: fallback.title,
+        slug: fallback.slug,
+        featuredImage: fallback.image,
+        featuredImageAlt: `${fallback.title} - IntriHub Guide`,
+        excerpt: fallback.shortDescription,
+        content: htmlContent,
+        metaTitle: `${fallback.title} | IntriHub Guide`,
+        metaDescription: fallback.shortDescription,
+        category: fallback.category,
+        tags: [fallback.category, "Buying Guide"],
+        keywords: [fallback.category, "buying guide", "intrihub", "materials"],
+        status: "PUBLISHED",
+        publishedAt: new Date(fallback.publishedAt),
+        authorName: fallback.author,
+        readTimeMinutes: parseInt(fallback.readTime.replace(/\D/g, ""), 10) || 5,
+        readTime: fallback.readTime,
+        viewsCount: 150,
+        createdAt: new Date(fallback.publishedAt),
+        updatedAt: new Date(fallback.publishedAt),
+      } as any;
+    }
+
+    return null;
   } catch (error) {
     console.error(`Error in getGuidePostBySlug (${slug}):`, error);
+    const fallback = BUYING_GUIDES.find((g) => g.slug === slug);
+    if (fallback) {
+      let htmlContent = `<div class="guide-summary-box mb-8 p-6 rounded-2xl bg-amber-50/80 border border-amber-200"><h3 class="text-sm font-extrabold uppercase tracking-wider text-amber-900 mb-2">Key Takeaways</h3><p class="text-slate-800 text-sm leading-relaxed">${fallback.summary}</p></div>`;
+      for (const section of fallback.sections) {
+        htmlContent += `<h2>${section.heading}</h2>`;
+        for (const p of section.content) {
+          htmlContent += `<p>${p}</p>`;
+        }
+      }
+      if (fallback.faqs && fallback.faqs.length > 0) {
+        htmlContent += `<h2>Frequently Asked Questions</h2>`;
+        for (const faq of fallback.faqs) {
+          htmlContent += `<h3>${faq.question}</h3><p>${faq.answer}</p>`;
+        }
+      }
+      return {
+        id: `fallback-${fallback.slug}`,
+        title: fallback.title,
+        slug: fallback.slug,
+        featuredImage: fallback.image,
+        featuredImageAlt: `${fallback.title} - IntriHub Guide`,
+        excerpt: fallback.shortDescription,
+        content: htmlContent,
+        metaTitle: `${fallback.title} | IntriHub Guide`,
+        metaDescription: fallback.shortDescription,
+        category: fallback.category,
+        tags: [fallback.category, "Buying Guide"],
+        keywords: [fallback.category, "buying guide", "intrihub", "materials"],
+        status: "PUBLISHED",
+        publishedAt: new Date(fallback.publishedAt),
+        authorName: fallback.author,
+        readTimeMinutes: parseInt(fallback.readTime.replace(/\D/g, ""), 10) || 5,
+        readTime: fallback.readTime,
+        viewsCount: 150,
+        createdAt: new Date(fallback.publishedAt),
+        updatedAt: new Date(fallback.publishedAt),
+      } as any;
+    }
     return null;
   }
 }

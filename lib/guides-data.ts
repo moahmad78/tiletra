@@ -23,6 +23,47 @@ export interface BuyingGuide {
 
 export const BUYING_GUIDES: BuyingGuide[] = [
   {
+    slug: "vitrified-tiles-online-buying-guide",
+    title: "Vitrified Tiles Online: Complete Buying Guide for Indian Homes (2026)",
+    shortDescription:
+      "GVT, PGVT, double charge or full body? Learn how to pick size, finish and thickness, and order vitrified tiles online from IntriHub in Bengaluru.",
+    category: "Tiles & Flooring",
+    readTime: "9 min read",
+    publishedAt: "2026-09-29T00:00:00.000Z",
+    updatedAt: "2026-09-29T00:00:00.000Z",
+    image: "/images/categories/cat-tiles-stone.jpg",
+    author: "IntriHub Materials Engineering Team",
+    summary:
+      "Comprehensive technical buying guide for selecting GVT, PGVT, double-charge, and full-body vitrified tiles for living rooms, kitchens, bathrooms, and parking in Indian homes.",
+    sections: [
+      {
+        heading: "1. What are vitrified tiles?",
+        content: [
+          "Vitrified tiles are engineered ceramic surfaces produced through hydraulic pressing of silica, feldspar, and kaolin clay fired above 1200°C to achieve water absorption below 0.5%.",
+        ],
+      },
+      {
+        heading: "2. Types of vitrified tiles",
+        content: [
+          "Choose from Soluble Salt, Double Charge, Glazed Vitrified (GVT), Polished Glazed (PGVT), and Full Body Vitrified tiles depending on foot traffic and aesthetic requirements.",
+        ],
+      },
+    ],
+    faqs: [
+      {
+        question: "What is the primary difference between GVT and PGVT tiles?",
+        answer:
+          "GVT features a digital inkjet print with matte, satin, or carved relief. PGVT adds an extra nano-polishing pass for an ultra-glossy mirror finish.",
+      },
+      {
+        question: "What is IntriHub's delivery timeline for vitrified tile orders?",
+        answer:
+          "IntriHub delivers with guaranteed 60-minute delivery in Bengaluru; 3-7 days Pan-India (outside Bengaluru).",
+      },
+    ],
+    relatedCategorySlugs: ["tiles-stone", "adhesives-sealants-waterproofing", "flooring"],
+  },
+  {
     slug: "how-to-choose-tiles-for-home",
     title: "How to Choose the Right Tiles for Your Home: Floor vs Wall & Vitrified Guide",
     shortDescription:

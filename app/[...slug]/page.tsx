@@ -8,6 +8,7 @@ import SeoLandingPageClient, {
 } from "@/components/seo/SeoLandingPageClient";
 import { getProducts } from "@/lib/actions/products";
 import type { Product } from "@/lib/data/products";
+import { SEO_PAGES_SEED_DATA } from "@/prisma/seed-seo-pages";
 
 export const revalidate = 3600; // 1 hour ISR revalidation
 
@@ -15,32 +16,90 @@ interface PageProps {
   params: Promise<{ slug: string[] }>;
 }
 
-export async function generateMetadata({ params }: PageProps): Promise<Metadata> {
-  const { slug: rawSlug } = await params;
-  const slug = Array.isArray(rawSlug) ? rawSlug.join("/") : rawSlug;
+export async function generateStaticParams() {
+  return SEO_PAGES_SEED_DATA.map((item) => ({
+    slug: item.slug.split("/"),
+  }));
+}
 
-  const page = await prisma.seoPage.findUnique({
-    where: { slug },
-  });
+async function getSeoPageData(slug: string) {
+  let page: any = null;
+  try {
+    page = await prisma.seoPage.findUnique({
+      where: { slug },
+    });
+  } catch (error) {
+    console.warn(`Prisma error fetching SeoPage for slug ${slug}, using fallback data:`, error);
+  }
 
-  if (!page || !page.isPublished) {
-    // Check if it's an alias
+  if (page && page.isPublished) {
+    return { page, redirectUrl: null };
+  }
+
+  // Check alias in DB
+  try {
     const aliasMatch = await prisma.seoPage.findFirst({
       where: {
         aliases: { has: slug },
         isPublished: true,
       },
     });
-
     if (aliasMatch) {
-      return {
-        title: "Redirecting...",
-        alternates: {
-          canonical: `${BASE_SITE_URL}/${aliasMatch.slug}`,
-        },
-      };
+      return { page: null, redirectUrl: `${BASE_SITE_URL}/${aliasMatch.slug}` };
     }
+  } catch (error) {
+    // fallback
+  }
 
+  // Fallback to SEO_PAGES_SEED_DATA
+  const seedMatch = SEO_PAGES_SEED_DATA.find((p) => p.slug === slug);
+  if (seedMatch) {
+    return {
+      page: {
+        id: `seed-${seedMatch.slug.replace(/[^a-zA-Z0-9]/g, "-")}`,
+        slug: seedMatch.slug,
+        aliases: seedMatch.aliases || [],
+        pageType: seedMatch.pageType,
+        category: seedMatch.category,
+        locality: seedMatch.locality || null,
+        targetKeyword: seedMatch.targetKeyword,
+        title: seedMatch.title,
+        metaDescription: seedMatch.metaDescription,
+        h1: seedMatch.h1,
+        introContent: seedMatch.introContent,
+        faqItems: seedMatch.faqItems,
+        productFilter: seedMatch.productFilter,
+        isPublished: true,
+        updatedAt: new Date("2026-09-20"),
+      },
+      redirectUrl: null,
+    };
+  }
+
+  const aliasSeed = SEO_PAGES_SEED_DATA.find((p) => p.aliases?.includes(slug));
+  if (aliasSeed) {
+    return { page: null, redirectUrl: `${BASE_SITE_URL}/${aliasSeed.slug}` };
+  }
+
+  return { page: null, redirectUrl: null };
+}
+
+export async function generateMetadata({ params }: PageProps): Promise<Metadata> {
+  const { slug: rawSlug } = await params;
+  const slug = Array.isArray(rawSlug) ? rawSlug.join("/") : rawSlug;
+
+  const { page, redirectUrl } = await getSeoPageData(slug);
+
+  if (redirectUrl) {
+    return {
+      title: "Redirecting...",
+      alternates: {
+        canonical: redirectUrl,
+      },
+    };
+  }
+
+  if (!page || !page.isPublished) {
     return {
       title: "Page Not Found | IntriHub",
       robots: { index: false, follow: false },
@@ -94,25 +153,14 @@ export default async function SeoLandingPage({ params }: PageProps) {
   const { slug: rawSlug } = await params;
   const slug = Array.isArray(rawSlug) ? rawSlug.join("/") : rawSlug;
 
-  // 1. Direct Slug Lookup
-  let page = await prisma.seoPage.findUnique({
-    where: { slug },
-  });
+  // 1. Direct Slug Lookup & Alias Lookup
+  const { page, redirectUrl } = await getSeoPageData(slug);
 
-  // 2. Alias Lookup and 301/308 Permanent Redirection
+  if (redirectUrl) {
+    permanentRedirect(redirectUrl.replace(BASE_SITE_URL, ""));
+  }
+
   if (!page || !page.isPublished) {
-    const aliasMatch = await prisma.seoPage.findFirst({
-      where: {
-        aliases: { has: slug },
-        isPublished: true,
-      },
-    });
-
-    if (aliasMatch) {
-      permanentRedirect(`/${aliasMatch.slug}`);
-    }
-
-    // 3. Fall through to standard Next.js 404
     notFound();
   }
 
@@ -150,36 +198,65 @@ export default async function SeoLandingPage({ params }: PageProps) {
   }> = [];
 
   if (page.category) {
-    siblingPages = await prisma.seoPage.findMany({
-      where: {
-        category: page.category,
-        id: { not: page.id },
-        isPublished: true,
-      },
-      take: 4,
-      select: {
-        slug: true,
-        title: true,
-        targetKeyword: true,
-        pageType: true,
-      },
-    });
+    try {
+      siblingPages = await prisma.seoPage.findMany({
+        where: {
+          category: page.category,
+          id: { not: page.id },
+          isPublished: true,
+        },
+        take: 4,
+        select: {
+          slug: true,
+          title: true,
+          targetKeyword: true,
+          pageType: true,
+        },
+      });
+    } catch (error) {
+      // fallback to seed data
+    }
+
+    if (siblingPages.length === 0) {
+      siblingPages = SEO_PAGES_SEED_DATA
+        .filter((p) => p.category === page.category && p.slug !== page.slug)
+        .slice(0, 4)
+        .map((p) => ({
+          slug: p.slug,
+          title: p.title,
+          targetKeyword: p.targetKeyword,
+          pageType: p.pageType,
+        }));
+    }
   }
 
   // 6. Fetch Parent Category Page
   let parentCategoryPage: { slug: string; title: string } | null = null;
   if (page.pageType !== "CATEGORY" && page.category) {
-    parentCategoryPage = await prisma.seoPage.findFirst({
-      where: {
-        pageType: "CATEGORY",
-        category: page.category,
-        isPublished: true,
-      },
-      select: {
-        slug: true,
-        title: true,
-      },
-    });
+    try {
+      parentCategoryPage = await prisma.seoPage.findFirst({
+        where: {
+          pageType: "CATEGORY",
+          category: page.category,
+          isPublished: true,
+        },
+        select: {
+          slug: true,
+          title: true,
+        },
+      });
+    } catch (error) {
+      // fallback to seed data
+    }
+
+    if (!parentCategoryPage) {
+      const parentSeed = SEO_PAGES_SEED_DATA.find(
+        (p) => p.pageType === "CATEGORY" && p.category === page.category
+      );
+      if (parentSeed) {
+        parentCategoryPage = { slug: parentSeed.slug, title: parentSeed.title };
+      }
+    }
   }
 
   // 7. Fetch Subcategory Pages (for Category pages) & Price Guide Pages (for Category & Subcategory pages)
@@ -188,33 +265,61 @@ export default async function SeoLandingPage({ params }: PageProps) {
 
   if (page.category) {
     if (page.pageType === "CATEGORY") {
-      subCategoryPages = await prisma.seoPage.findMany({
-        where: {
-          category: page.category,
-          pageType: "SUBCATEGORY",
-          isPublished: true,
-        },
-        select: {
-          slug: true,
-          title: true,
-          targetKeyword: true,
-        },
-      });
+      try {
+        subCategoryPages = await prisma.seoPage.findMany({
+          where: {
+            category: page.category,
+            pageType: "SUBCATEGORY",
+            isPublished: true,
+          },
+          select: {
+            slug: true,
+            title: true,
+            targetKeyword: true,
+          },
+        });
+      } catch (error) {
+        // fallback
+      }
+
+      if (subCategoryPages.length === 0) {
+        subCategoryPages = SEO_PAGES_SEED_DATA
+          .filter((p) => p.category === page.category && p.pageType === "SUBCATEGORY")
+          .map((p) => ({
+            slug: p.slug,
+            title: p.title,
+            targetKeyword: p.targetKeyword,
+          }));
+      }
     }
 
     if (page.pageType === "CATEGORY" || page.pageType === "SUBCATEGORY") {
-      priceGuidePages = await prisma.seoPage.findMany({
-        where: {
-          category: page.category,
-          pageType: "PRICE_INTENT",
-          isPublished: true,
-        },
-        select: {
-          slug: true,
-          title: true,
-          targetKeyword: true,
-        },
-      });
+      try {
+        priceGuidePages = await prisma.seoPage.findMany({
+          where: {
+            category: page.category,
+            pageType: "PRICE_INTENT",
+            isPublished: true,
+          },
+          select: {
+            slug: true,
+            title: true,
+            targetKeyword: true,
+          },
+        });
+      } catch (error) {
+        // fallback
+      }
+
+      if (priceGuidePages.length === 0) {
+        priceGuidePages = SEO_PAGES_SEED_DATA
+          .filter((p) => p.category === page.category && p.pageType === "PRICE_INTENT")
+          .map((p) => ({
+            slug: p.slug,
+            title: p.title,
+            targetKeyword: p.targetKeyword,
+          }));
+      }
     }
   }
 

@@ -79,11 +79,13 @@ export function generateRootGraphSchema() {
           "Empowering Local Indian Vendors",
         ],
         email: "support@intrihub.com",
-        telephone: "+91-70901-20211",
+        telephone: "+91 92649 20211",
         sameAs: [
           "https://www.instagram.com/intrihub_/",
           "https://www.linkedin.com/company/intrihub",
           "https://www.facebook.com/intrihub",
+          "https://www.indiamart.com/intrihub/",
+          "https://maps.google.com/?cid=intrihub",
         ],
         address: {
           "@type": "PostalAddress",
@@ -96,10 +98,10 @@ export function generateRootGraphSchema() {
         contactPoint: [
           {
             "@type": "ContactPoint",
-            telephone: "+91-70901-20211",
+            telephone: "+91 92649 20211",
             contactType: "customer service",
             areaServed: "IN",
-            availableLanguage: ["en", "hi"],
+            availableLanguage: ["en", "hi", "kn"],
           },
         ],
       },

@@ -4,7 +4,7 @@ import Image from "next/image";
 import { ArrowRight, BookOpen, Clock, Tag, Search, Sparkles, User, Calendar } from "lucide-react";
 import Header from "@/components/Header";
 import Footer from "@/components/Footer";
-import { getGuidePosts, seedInitialGuidesIfEmpty } from "@/lib/actions/guides";
+import { getGuidePosts, seedInitialGuidesIfEmpty, type GuidePostItem } from "@/lib/actions/guides";
 import { BASE_SITE_URL, getCanonicalUrl, generateBreadcrumbSchema, safeJsonLd } from "@/lib/seo";
 
 export const metadata: Metadata = {
@@ -46,20 +46,20 @@ export default async function GuidesIndexPage({
   // Auto seed and fetch guides
   await seedInitialGuidesIfEmpty();
   const data = await getGuidePosts();
-  const allGuides = data.posts || [];
+  const allGuides: GuidePostItem[] = (data.posts as any) || [];
 
   // Filter published only (with publish dates in past or now)
-  const publishedGuides = allGuides.filter((g) => {
+  const publishedGuides: GuidePostItem[] = allGuides.filter((g: GuidePostItem) => {
     if (g.status !== "PUBLISHED") return false;
     if (g.publishedAt && new Date(g.publishedAt).getTime() > Date.now()) return false;
     return true;
   });
 
   // Extract unique categories
-  const categories: string[] = ["all", ...Array.from(new Set(publishedGuides.map((g) => g.category)))];
+  const categories: string[] = ["all", ...Array.from(new Set(publishedGuides.map((g: GuidePostItem) => g.category)))];
 
   // Apply filters
-  const filteredGuides = publishedGuides.filter((guide) => {
+  const filteredGuides: GuidePostItem[] = publishedGuides.filter((guide: GuidePostItem) => {
     const matchesCategory =
       activeCategory === "all" ||
       guide.category.toLowerCase() === activeCategory.toLowerCase();
@@ -142,7 +142,7 @@ export default async function GuidesIndexPage({
             </div>
           ) : (
             <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-              {filteredGuides.map((guide) => (
+              {filteredGuides.map((guide: GuidePostItem) => (
                 <Link
                   key={guide.id || guide.slug}
                   href={`/guides/${guide.slug}`}

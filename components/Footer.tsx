@@ -36,10 +36,17 @@ const shopLinks = [
 
 const helpLinks = [
   { label: "Buying Guides & Calculators", href: "/guides" },
+  { label: "Vitrified Tiles Buying Guide (2026)", href: "/guides/vitrified-tiles-online-buying-guide" },
+  { label: "Bengaluru House Construction Checklist", href: "/guides/building-material-list-for-house-construction-bengaluru" },
+  { label: "Contractor Material Checklist", href: "/guides/interior-material-checklist-contractors" },
+  { label: "Electrical Material Selection Guide", href: "/guides/electrical-material-selection-guide-bengaluru" },
+  { label: "Design Mood Boards & Inspiration", href: "/inspiration" },
+  { label: "Building Materials Online", href: "/building-materials-online" },
   { label: "For Architects", href: "/for-architects" },
   { label: "For Interior Designers", href: "/for-interior-designers" },
   { label: "For Contractors", href: "/for-contractors" },
-  { label: "Why IntriHub? (20 Core Reasons)", href: "/why-intrihub" },
+  { label: "Why IntriHub? (20 Reasons)", href: "/why-intrihub" },
+  { label: "Bulk Project Orders", href: "/bulk-orders" },
   { label: "About Us", href: "/about" },
   { label: "Founder's Vision", href: "/founder" },
   { label: "Contact Us", href: "/contact" },
@@ -52,11 +59,23 @@ const helpLinks = [
 
 const categoryLandingLinks = [
   { label: "Tiles", href: "/tiles" },
+  { label: "Vitrified Tiles", href: "/tiles/vitrified-tiles" },
+  { label: "Floor Tiles", href: "/tiles/floor-tiles" },
+  { label: "Wall Tiles", href: "/tiles/wall-tiles" },
+  { label: "Bathroom Tiles", href: "/tiles/bathroom-tiles" },
   { label: "Plywood", href: "/plywood" },
+  { label: "Marine Plywood", href: "/plywood/marine-plywood" },
+  { label: "710 Waterproof Ply", href: "/plywood/710-waterproof-plywood" },
+  { label: "MDF Board", href: "/plywood/mdf-board" },
   { label: "Electrical Supplies", href: "/electrical" },
+  { label: "Wires & Cables", href: "/electrical/wires-and-cables" },
+  { label: "Switches & Sockets", href: "/electrical/switches-and-sockets" },
   { label: "Plumbing Materials", href: "/plumbing" },
+  { label: "CPVC Pipes", href: "/plumbing/cpvc-pipes" },
   { label: "Architectural Hardware", href: "/hardware" },
+  { label: "Door Fittings", href: "/hardware/door-fittings" },
   { label: "Sanitaryware", href: "/sanitaryware" },
+  { label: "Wash Basins", href: "/sanitaryware/wash-basin" },
   { label: "Paints & Coatings", href: "/paints" },
   { label: "Furniture Materials", href: "/furniture" },
   { label: "Cement & Concrete", href: "/cement-and-concrete" },
@@ -112,6 +131,24 @@ const highIntentKeywordLinks = [
   { label: "Terracotta Finish Bengaluru", href: "/terracotta-finish-material-bengaluru" },
   { label: "False Ceiling Materials", href: "/false-ceiling-material-provider-bengaluru" },
   { label: "Designer Ceilings Karnataka", href: "/designer-ceiling-material-karnataka" },
+  { label: "Vitrified Tiles Price Bangalore", href: "/vitrified-tiles-price-in-bangalore" },
+  { label: "Plywood Price per Sheet", href: "/plywood-price-per-sheet-bangalore" },
+  { label: "Cement Price Bangalore", href: "/cement-price-in-bangalore" },
+  { label: "TMT Rebar Price Bangalore", href: "/tmt-bar-price-in-bangalore" },
+  { label: "Wall Tiles Price per Sq.Ft", href: "/wall-tiles-price-per-sq-ft" },
+  { label: "CPVC Pipe Price List", href: "/cpvc-pipe-price-list" },
+  { label: "Electrical Wire Price Meter", href: "/electrical-wire-price-per-meter" },
+  { label: "Bathroom Tiles Price Bangalore", href: "/bathroom-tiles-price-in-bangalore" },
+  { label: "Matte Tiles Bangalore", href: "/matte-tiles-bangalore" },
+  { label: "Terracotta Look Tiles", href: "/terracotta-look-tiles" },
+  { label: "Sandstone Effect Tiles", href: "/sandstone-effect-tiles" },
+  { label: "Warm Travertine Tiles", href: "/warm-travertine-tiles" },
+  { label: "Honey Oak Wood Tiles", href: "/honey-oak-wood-tiles" },
+  { label: "E0 Grade Safe Plywood", href: "/e0-grade-plywood" },
+  { label: "Plywood Veneer Designs", href: "/plywood-veneer-designs" },
+  { label: "Modular Plywood Furniture", href: "/modular-plywood-furniture" },
+  { label: "Acoustic Panels Interior", href: "/acoustic-panels-interior" },
+  { label: "Nature-Inspired Laminates", href: "/nature-inspired-laminates" },
   { label: "Whitefield Materials", href: "/best-interior-material-whitefield" },
   { label: "Electronic City Materials", href: "/best-interior-material-electronic-city" },
   { label: "Hebbal Materials", href: "/best-interior-material-hebbal" },
@@ -375,7 +412,7 @@ export default function Footer() {
             </Link>
           </h4>
           <p className="text-white/80 leading-relaxed mb-2 text-xs sm:text-sm">
-            We deliver building &amp; interior materials across India — 3-7 day delivery nationwide, with 60-minute instant delivery in Bengaluru (expanding city by city as we onboard local vendors).
+            We deliver building &amp; interior materials with guaranteed 60-minute delivery in Bengaluru; 3-7 days Pan-India (outside Bengaluru).
           </p>
           <p className="text-white/50 leading-relaxed text-[11px] sm:text-xs">
             Andhra Pradesh, Arunachal Pradesh, Assam, Bihar, Chhattisgarh, Goa, Gujarat, Haryana, Himachal Pradesh, Jharkhand, Karnataka, Kerala, Madhya Pradesh, Maharashtra, Manipur, Meghalaya, Mizoram, Nagaland, Odisha, Punjab, Rajasthan, Sikkim, Tamil Nadu, Telangana, Tripura, Uttar Pradesh, Uttarakhand, West Bengal, Delhi (NCR), and other Union Territories.

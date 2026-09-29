@@ -576,23 +576,44 @@ export default function BuildingMaterialsOnlinePage() {
         {/* FEATURED TECHNICAL GUIDE BANNER */}
         <section className="py-12 bg-gradient-to-r from-slate-900 to-stone-900 text-white">
           <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-            <div className="flex flex-col md:flex-row items-center justify-between gap-6">
-              <div className="space-y-2 max-w-2xl">
-                <span className="text-xs font-bold uppercase tracking-wider text-amber-400">Technical Construction Guide</span>
-                <h3 className="text-xl sm:text-2xl font-black">
-                  Building a New Home in Bengaluru? Read Our Complete 7-Stage Checklist
-                </h3>
-                <p className="text-xs sm:text-sm text-stone-300">
-                  Comprehensive guide covering cement grades (OPC vs PPC), TMT steel specifications, CPVC vs UPVC plumbing, and tile wastage buffering.
-                </p>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              <div className="bg-slate-800/80 rounded-2xl p-6 sm:p-8 flex flex-col justify-between gap-6 border border-stone-700/60 shadow-md">
+                <div className="space-y-2">
+                  <span className="text-xs font-bold uppercase tracking-wider text-amber-400">Technical Construction Guide</span>
+                  <h3 className="text-xl sm:text-2xl font-black">
+                    Building a New Home in Bengaluru? Read Our Complete 7-Stage Checklist
+                  </h3>
+                  <p className="text-xs sm:text-sm text-stone-300">
+                    Comprehensive guide covering cement grades (OPC vs PPC), TMT steel specifications, CPVC vs UPVC plumbing, and tile wastage buffering.
+                  </p>
+                </div>
+                <Link
+                  href="/guides/building-material-list-for-house-construction-bengaluru"
+                  className="inline-flex items-center gap-2 px-6 py-3.5 rounded-xl bg-amber-500 text-slate-950 font-bold text-xs sm:text-sm hover:bg-amber-400 transition-colors whitespace-nowrap shadow-md self-start"
+                >
+                  <span>Read Bengaluru Checklist</span>
+                  <ArrowRight className="w-4 h-4" />
+                </Link>
               </div>
-              <Link
-                href="/guides/building-material-list-for-house-construction-bengaluru"
-                className="inline-flex items-center gap-2 px-6 py-3.5 rounded-xl bg-amber-500 text-slate-950 font-bold text-xs sm:text-sm hover:bg-amber-400 transition-colors whitespace-nowrap shadow-md"
-              >
-                <span>Read Bengaluru Checklist</span>
-                <ArrowRight className="w-4 h-4" />
-              </Link>
+
+              <div className="bg-gradient-to-br from-[#052A51] to-[#093A6D] rounded-2xl p-6 sm:p-8 flex flex-col justify-between gap-6 border border-blue-900/60 shadow-md">
+                <div className="space-y-2">
+                  <span className="text-xs font-bold uppercase tracking-wider text-[#FF9900]">Related Buying Guide</span>
+                  <h3 className="text-xl sm:text-2xl font-black">
+                    Vitrified Tiles Online: Complete Buying Guide for Indian Homes (2026)
+                  </h3>
+                  <p className="text-xs sm:text-sm text-slate-200">
+                    GVT, PGVT, double charge or full body? Compare tile types, finishes, size recommendations, and 7 essential checks before ordering online.
+                  </p>
+                </div>
+                <Link
+                  href="/guides/vitrified-tiles-online-buying-guide"
+                  className="inline-flex items-center gap-2 px-6 py-3.5 rounded-xl bg-[#F26522] text-white font-bold text-xs sm:text-sm hover:bg-[#d95a1e] transition-colors whitespace-nowrap shadow-md self-start"
+                >
+                  <span>Read Vitrified Tiles Guide</span>
+                  <ArrowRight className="w-4 h-4" />
+                </Link>
+              </div>
             </div>
           </div>
         </section>

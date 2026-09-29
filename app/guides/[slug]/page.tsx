@@ -22,7 +22,7 @@ export async function generateStaticParams() {
   try {
     await seedInitialGuidesIfEmpty();
     const data = await getGuidePosts();
-    return (data.posts || []).map((g) => ({ slug: g.slug }));
+    return (data.posts || []).map((g: any) => ({ slug: g.slug }));
   } catch {
     return BUYING_GUIDES.map((g) => ({ slug: g.slug }));
   }

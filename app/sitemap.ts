@@ -7,6 +7,7 @@ import { categories as defaultCategories } from "@/lib/data/categories";
 import { SEO_LOCATIONS } from "@/lib/data/seo-locations";
 import { SEO_PAGES_SEED_DATA } from "@/prisma/seed-seo-pages";
 import { getApprovedSitemapLocationRoutes } from "@/lib/seo-quality-gate";
+import { getCategorySeo } from "@/lib/data/category-seo";
 import { USP_ITEMS } from "@/lib/data/usps";
 
 export const revalidate = 3600; // Revalidate every 1 hour
@@ -22,7 +23,19 @@ const EXCLUDED_SITEMAP_PATTERNS = [
   /^\/api(\/.*)?$/i,
   /^\/upload(\/.*)?$/i,
   /^\/designs(\/.*)?$/i, // Redirects to /shop
-  /^\/inspiration(\/.*)?$/i, // Redirects to /shop
+];
+
+const INSPIRATION_TREND_SLUGS = [
+  "matte-tiles-bangalore",
+  "terracotta-look-tiles",
+  "sandstone-effect-tiles",
+  "warm-travertine-tiles",
+  "honey-oak-wood-tiles",
+  "e0-grade-plywood",
+  "plywood-veneer-designs",
+  "modular-plywood-furniture",
+  "acoustic-panels-interior",
+  "nature-inspired-laminates",
 ];
 
 function isPublicIndexableUrl(urlStr: string): boolean {
@@ -50,139 +63,151 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   const staticRoutes: MetadataRoute.Sitemap = [
     {
       url: `${BASE_SITE_URL}`,
-      lastModified: new Date(),
+      lastModified: new Date("2026-09-29T00:00:00.000Z"),
       changeFrequency: "daily",
       priority: 1.0,
     },
     {
       url: `${BASE_SITE_URL}/shop`,
-      lastModified: new Date(),
+      lastModified: new Date("2026-09-29T00:00:00.000Z"),
       changeFrequency: "daily",
       priority: 0.9,
     },
     {
       url: `${BASE_SITE_URL}/categories`,
-      lastModified: new Date(),
+      lastModified: new Date("2026-09-28T00:00:00.000Z"),
       changeFrequency: "daily",
       priority: 0.9,
     },
     {
       url: `${BASE_SITE_URL}/building-materials-online`,
-      lastModified: new Date(),
+      lastModified: new Date("2026-09-29T00:00:00.000Z"),
       changeFrequency: "daily",
       priority: 0.9,
     },
     {
       url: `${BASE_SITE_URL}/areas`,
-      lastModified: new Date(),
+      lastModified: new Date("2026-09-25T00:00:00.000Z"),
       changeFrequency: "weekly",
       priority: 0.85,
     },
     {
       url: `${BASE_SITE_URL}/guides`,
-      lastModified: new Date(),
+      lastModified: new Date("2026-09-29T00:00:00.000Z"),
       changeFrequency: "weekly",
       priority: 0.85,
     },
     {
+      url: `${BASE_SITE_URL}/guides/vitrified-tiles-online-buying-guide`,
+      lastModified: new Date("2026-09-29T00:00:00.000Z"),
+      changeFrequency: "weekly",
+      priority: 0.9,
+    },
+    {
+      url: `${BASE_SITE_URL}/inspiration`,
+      lastModified: new Date("2026-09-29T00:00:00.000Z"),
+      changeFrequency: "weekly",
+      priority: 0.85,
+    },
+    ...INSPIRATION_TREND_SLUGS.map((slug) => ({
+      url: `${BASE_SITE_URL}/${slug}`,
+      lastModified: new Date("2026-09-28T00:00:00.000Z"),
+      changeFrequency: "weekly" as const,
+      priority: 0.8,
+    })),
+    {
       url: `${BASE_SITE_URL}/for-architects`,
-      lastModified: new Date(),
+      lastModified: new Date("2026-09-20T00:00:00.000Z"),
       changeFrequency: "weekly",
       priority: 0.8,
     },
     {
       url: `${BASE_SITE_URL}/for-interior-designers`,
-      lastModified: new Date(),
+      lastModified: new Date("2026-09-20T00:00:00.000Z"),
       changeFrequency: "weekly",
       priority: 0.8,
     },
     {
       url: `${BASE_SITE_URL}/for-contractors`,
-      lastModified: new Date(),
+      lastModified: new Date("2026-09-20T00:00:00.000Z"),
       changeFrequency: "weekly",
       priority: 0.8,
     },
     {
       url: `${BASE_SITE_URL}/about`,
-      lastModified: new Date(),
+      lastModified: new Date("2026-09-15T00:00:00.000Z"),
       changeFrequency: "weekly",
       priority: 0.85,
     },
     {
       url: `${BASE_SITE_URL}/why-intrihub`,
-      lastModified: new Date(),
+      lastModified: new Date("2026-09-28T00:00:00.000Z"),
       changeFrequency: "daily",
       priority: 0.9,
     },
     ...USP_ITEMS.map((usp) => ({
       url: `${BASE_SITE_URL}/${usp.slug}`,
-      lastModified: new Date(),
+      lastModified: new Date("2026-09-20T00:00:00.000Z"),
       changeFrequency: "weekly" as const,
       priority: 0.85,
     })),
     {
       url: `${BASE_SITE_URL}/founder`,
-      lastModified: new Date(),
+      lastModified: new Date("2026-09-15T00:00:00.000Z"),
       changeFrequency: "weekly",
       priority: 0.85,
     },
     {
       url: `${BASE_SITE_URL}/contact`,
-      lastModified: new Date(),
+      lastModified: new Date("2026-09-01T00:00:00.000Z"),
       changeFrequency: "monthly",
       priority: 0.7,
     },
     {
       url: `${BASE_SITE_URL}/faq`,
-      lastModified: new Date(),
+      lastModified: new Date("2026-09-01T00:00:00.000Z"),
       changeFrequency: "monthly",
       priority: 0.6,
     },
     {
       url: `${BASE_SITE_URL}/vendor/apply`,
-      lastModified: new Date(),
+      lastModified: new Date("2026-09-10T00:00:00.000Z"),
       changeFrequency: "monthly",
       priority: 0.7,
     },
     {
       url: `${BASE_SITE_URL}/pan-india-delivery`,
-      lastModified: new Date(),
+      lastModified: new Date("2026-09-28T00:00:00.000Z"),
       changeFrequency: "weekly",
       priority: 0.85,
     },
     {
       url: `${BASE_SITE_URL}/shipping-policy`,
-      lastModified: new Date(),
+      lastModified: new Date("2026-08-15T00:00:00.000Z"),
       changeFrequency: "monthly",
       priority: 0.5,
     },
     {
       url: `${BASE_SITE_URL}/returns-policy`,
-      lastModified: new Date(),
+      lastModified: new Date("2026-08-15T00:00:00.000Z"),
       changeFrequency: "monthly",
       priority: 0.5,
     },
     {
       url: `${BASE_SITE_URL}/terms`,
-      lastModified: new Date(),
+      lastModified: new Date("2026-08-15T00:00:00.000Z"),
       changeFrequency: "monthly",
       priority: 0.5,
     },
     {
       url: `${BASE_SITE_URL}/privacy-policy`,
-      lastModified: new Date(),
-      changeFrequency: "monthly",
-      priority: 0.5,
-    },
-    {
-      url: `${BASE_SITE_URL}/founder`,
-      lastModified: new Date(),
+      lastModified: new Date("2026-08-15T00:00:00.000Z"),
       changeFrequency: "monthly",
       priority: 0.5,
     },
     {
       url: `${BASE_SITE_URL}/bulk-orders`,
-      lastModified: new Date(),
+      lastModified: new Date("2026-09-20T00:00:00.000Z"),
       changeFrequency: "weekly",
       priority: 0.8,
     },
@@ -266,10 +291,14 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
             .map((p: { slug: string }) => ({ slug: p.slug, updatedAt: new Date() }));
 
     const categoryRoutes: MetadataRoute.Sitemap = resolvedCategories
-      .filter((cat: { slug: string }) => Boolean(cat.slug) && !cat.slug.toLowerCase().includes("test"))
+      .filter((cat: { slug: string }) => {
+        if (!cat.slug || cat.slug.toLowerCase().includes("test")) return false;
+        const seo = getCategorySeo(cat.slug);
+        return seo.isIndexable;
+      })
       .map((cat: { slug: string; updatedAt?: Date | null }) => ({
         url: `${BASE_SITE_URL}/shop/${encodeURIComponent(cat.slug)}`,
-        lastModified: cat.updatedAt instanceof Date ? cat.updatedAt : new Date(),
+        lastModified: cat.updatedAt instanceof Date ? cat.updatedAt : new Date("2026-09-29T00:00:00.000Z"),
         changeFrequency: "daily",
         priority: 0.85,
       }));
@@ -332,10 +361,14 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     console.error("Error generating dynamic sitemap from DB, falling back to static catalog:", error);
 
     const fallbackCategoryRoutes: MetadataRoute.Sitemap = defaultCategories
-      .filter((cat) => Boolean(cat.slug) && !cat.slug.toLowerCase().includes("test"))
+      .filter((cat) => {
+        if (!cat.slug || cat.slug.toLowerCase().includes("test")) return false;
+        const seo = getCategorySeo(cat.slug);
+        return seo.isIndexable;
+      })
       .map((cat) => ({
         url: `${BASE_SITE_URL}/shop/${encodeURIComponent(cat.slug)}`,
-        lastModified: new Date(),
+        lastModified: new Date("2026-09-29T00:00:00.000Z"),
         changeFrequency: "daily",
         priority: 0.85,
       }));

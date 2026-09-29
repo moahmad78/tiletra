@@ -11,6 +11,7 @@ This version has breaking changes — APIs, conventions, and file structure may 
 # Project Scope & Lock Rules (ACTIVE)
 - **LOCKED (NO CHANGES):** 
   - User Mobile App (`intrihub-mobile/`) is LOCKED. Do not make any edits or changes.
-  - Website / Web Customer Portal (`app/`, `components/`, `public/`, etc.) is LOCKED. Do not make changes.
+  - Business App (`intrihub-business/`) is LOCKED. Do not make changes unless requested.
 - **ACTIVE WORKING DIRECTORY:** 
-  - All current changes and features MUST be restricted ONLY to the Business App (`intrihub-business/`).
+  - Website / Web Customer Portal (`app/`, `components/`, `lib/`, `docs/`, `scripts/`, `public/`, etc.) for SEO Build Sprint.
+

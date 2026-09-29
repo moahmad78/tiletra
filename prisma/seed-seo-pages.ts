@@ -28,7 +28,7 @@ const ORIGINAL_SEO_PAGES: SeedSeoPageItem[] = [
     pageType: SeoPageType.CATEGORY,
     category: "tiles",
     targetKeyword: "vitrified tiles online India",
-    title: "Vitrified Tiles & Flooring Materials Online | Best Price | IntriHub",
+    title: "Vitrified Tiles & Flooring Materials Online | IntriHub",
     metaDescription: "Explore vitrified tiles online India at the floor tiles best price online. Buy anti-skid bathroom tiles, kitchen wall tiles & digital vitrified tiles 600x600.",
     h1: "Vitrified Tiles & Flooring Materials Online",
     introContent: `Choosing the right tile is one of the most impactful decisions in any interior or construction project. At IntriHub, explore vitrified tiles online India at the floor tiles best price online. Our expansive surface catalog connects you directly to premier ISO-certified manufacturing plants in Morbi, Rajasthan, and Gujarat, eliminating unnecessary middlemen markups.
@@ -62,7 +62,7 @@ Elevate your interiors with glossy finish living room tiles, weather-resistant o
     pageType: SeoPageType.CATEGORY,
     category: "plywood",
     targetKeyword: "waterproof plywood 710 grade price",
-    title: "Plywood, Architectural Hardware & Interior Finishes | IntriHub",
+    title: "Plywood & Interior Hardware Materials Online | IntriHub",
     metaDescription: "Check waterproof plywood 710 grade price, commercial plywood online store, blockboard and flush doors India & decorative laminate sheets price.",
     h1: "Plywood, Architectural Hardware & Interior Finishes",
     introContent: `Engineered wood panels and architectural hardware form the structural core of bespoke cabinetry, wardrobes, and modern interiors. At IntriHub, check waterproof plywood 710 grade price, commercial plywood online store, blockboard and flush doors India, decorative laminate sheets price, MDF and particle board online, and termite proof plywood sheets.
@@ -96,7 +96,7 @@ Ensure lasting durability with multi-purpose construction adhesives, structural 
     pageType: SeoPageType.CATEGORY,
     category: "electrical",
     targetKeyword: "electrical wiring materials online",
-    title: "Commercial & Residential Electrical Supplies Online | IntriHub",
+    title: "Electrical Supplies & Wiring Materials Online | IntriHub",
     metaDescription: "Shop certified electrical wiring materials online, best modular switches and plates price & genuine copper electrical wires online at IntriHub.",
     h1: "Commercial & Residential Electrical Supplies Online",
     introContent: `Electrical infrastructure forms the vital backbone of every residential and commercial development. At IntriHub, shop certified electrical wiring materials online, best modular switches and plates price, and genuine copper electrical wires online from top ISI-certified brands including Havells, Polycab, Finolex, and Schneider Electric.
@@ -164,7 +164,7 @@ Equip kitchens and utility areas with kitchen sink stainless steel online, drain
     pageType: SeoPageType.CATEGORY,
     category: "hardware",
     targetKeyword: "architectural hardware fittings",
-    title: "Architectural Hardware Fittings & Door Locks Online | IntriHub",
+    title: "Architectural Hardware & Door Locks Online | IntriHub",
     metaDescription: "Buy architectural hardware fittings, door locks and handles online, heavy duty drawer channels & hydraulic hinges for kitchen cabinets at trade prices.",
     h1: "Architectural Hardware Fittings & Door Locks Online",
     introContent: `Hardware and architectural fittings are the essential moving parts that define the daily comfort, safety, and longevity of your interiors. At IntriHub, browse premium architectural hardware fittings, door locks and handles online, heavy duty drawer channels, hydraulic hinges for kitchen cabinets, tower bolts and door stoppers, glass fittings and patch locks, and modular kitchen hardware online.
@@ -196,7 +196,7 @@ We stock industrial-grade multi-purpose construction adhesives, structural silic
     pageType: SeoPageType.CATEGORY,
     category: "sanitaryware",
     targetKeyword: "sanitaryware online India",
-    title: "Sanitaryware Online India — Water Closets, Basins & Faucets | IntriHub",
+    title: "Sanitaryware Online — Closets, Basins & Faucets | IntriHub",
     metaDescription: "Buy premium sanitaryware and bathroom fittings online in India. Rimless wall-hung WCs, ceramic countertop basins & brass shower mixers with site delivery.",
     h1: "Buy Sanitaryware Online in India — Ceramic Closets & Bath Fittings",
     introContent: `Modern bathroom design requires sanitaryware that harmonizes water efficiency, hygienic ceramic glazes, and minimalist architectural contours. Sourcing sanitaryware online through IntriHub guarantees vitreous china fixtures that undergo high-temperature kiln firing (above 1200°C), resulting in ultra-dense, non-porous ceramic bodies with water absorption rates below 0.5%. This prevents micro-fissuring, odor retention, and hard water scale buildup over decades of daily use.
@@ -272,7 +272,7 @@ Choose from thousands of architectural paint colors and specialized primers usin
     pageType: SeoPageType.CATEGORY,
     category: "furniture",
     targetKeyword: "furniture materials online",
-    title: "Furniture Materials Online — Boards, Fittings & Laminates | IntriHub",
+    title: "Furniture Materials — Boards, Fittings & Laminates",
     metaDescription: "Source modular furniture materials online in India. High-density boards, edge banding tapes, laminates, and precision joinery hardware delivered to site.",
     h1: "Furniture Materials Online — Core Boards, Laminates & Joinery Fittings",
     introContent: `Building modern modular furniture — from floor-to-ceiling master bedroom wardrobes to floating entertainment centers and commercial workstations — demands an integrated palette of high-density boards, decorative surface overlays, and micro-adjustable joinery fittings. IntriHub supplies turnkey furniture manufacturers, modular interior factories, and on-site carpentry crews with commercial-grade furniture materials delivered on demand.
@@ -310,7 +310,7 @@ IntriHub supports carpentry studios and modular interior fabricators with precis
     pageType: SeoPageType.CATEGORY,
     category: "cement-and-concrete",
     targetKeyword: "cement online Bangalore",
-    title: "Cement Online Bangalore — 53 & 43 Grade, PPC & Ready Concrete | IntriHub",
+    title: "Cement Online Bangalore — 53 Grade & PPC Bags | IntriHub",
     metaDescription: "Buy fresh 53 Grade OPC, PPC cement and ready-mix dry concrete online in Bangalore. Fresh mill-tested bags delivered directly to site within 60 mins.",
     h1: "Buy Cement Online in Bangalore — Fresh 53 Grade, PPC & Construction Mixes",
     introContent: `Cement is the fundamental binding agent that dictates the compressive strength, structural integrity, and durability of your foundation footings, reinforced concrete beams, masonry plaster, and floor screeds. Purchasing fresh cement online requires strict guarantees against warehouse moisture lumping, stale stock older than 30 days, and tampered paper/polypropylene sacks. IntriHub delivers fresh, mill-certified cement sacks directly from regional manufacturing plants to active job sites across Bengaluru.
@@ -348,7 +348,7 @@ Streamline your structural material sourcing with IntriHub's certified cement su
     pageType: SeoPageType.CATEGORY,
     category: "doors-and-windows",
     targetKeyword: "doors and windows online",
-    title: "Doors & Windows Online — Flush Doors, UPVC & Aluminum | IntriHub",
+    title: "Doors & Windows Online — Flush Doors & UPVC | IntriHub",
     metaDescription: "Shop solid flush doors, aluminum window sections, UPVC profiles & architectural frames online in India with reliable job site delivery.",
     h1: "Doors and Windows Online — Solid Core Flush Doors & Window Systems",
     introContent: `Fenestration systems define the acoustic isolation, thermal energy efficiency, security, and natural daylighting performance of modern living spaces. Selecting doors and windows online requires verified timber seasoning to eliminate warping, high-precision aluminum extrusions, and multi-chambered UPVC profiles. IntriHub connects architects, builders, and developers with calibrated door and window systems engineered for the Indian climate.
@@ -390,7 +390,7 @@ Order custom and standard fenestration systems through IntriHub with complete di
     pageType: SeoPageType.SUBCATEGORY,
     category: "tiles",
     targetKeyword: "vitrified tiles",
-    title: "Vitrified Tiles Online — Glazed, Double Charge & Full Body | IntriHub",
+    title: "Vitrified Tiles Online — Glazed, Double Charge & Full Body",
     metaDescription: "Buy premium vitrified tiles online in India. High-gloss PGVT, durable double-charge, and full-body porcelain tiles delivered to your site at factory rates.",
     h1: "Vitrified Tiles Online — Premium Glazed & Double Charge Flooring",
     introContent: `Vitrified tiles represent the pinnacle of modern ceramic engineering, produced through hydraulic pressing of refined silica, clay, and quartz powders fired at temperatures exceeding 1200°C. This extreme thermal fusion creates a micro-crystalline structure with a water absorption rate under 0.05%, making vitrified surfaces virtually impervious to moisture, coffee stains, turmeric spills, and bacterial penetration. IntriHub supplies residential and commercial projects with premium vitrified tiles direct from Morbi factories.
@@ -428,7 +428,7 @@ Ordering vitrified slabs on IntriHub is backed by our direct quality inspection 
     pageType: SeoPageType.SUBCATEGORY,
     category: "tiles",
     targetKeyword: "wall tiles",
-    title: "Wall Tiles Online — Bathroom, Kitchen & Elevation Designs | IntriHub",
+    title: "Wall Tiles Online — Bathroom & Kitchen Wall Tiles",
     metaDescription: "Explore ceramic and vitrified wall tiles online in India. Glossy kitchen splashbacks, anti-fungal bathroom wall tiles & stone elevation tiles.",
     h1: "Designer Wall Tiles Online — Kitchen, Bathroom & Stone Elevation",
     introContent: `Wall tiles protect structural masonry from continuous water exposure, cooking oil vapors, and daily surface wear while serving as the primary decorative canvas for vertical interior surfaces. Unlike high-density floor tiles, specialized ceramic wall tiles feature a lighter body optimized for vertical adhesive bonding and easy cutting around concealed electrical conduits, diverters, and plumbing inlets. IntriHub supplies a diverse spectrum of certified wall tiles online.
@@ -466,7 +466,7 @@ IntriHub makes wall tile sourcing seamless for interior renovations and commerci
     pageType: SeoPageType.SUBCATEGORY,
     category: "tiles",
     targetKeyword: "floor tiles",
-    title: "Floor Tiles Online — Living Room, Bedroom & Outdoor | IntriHub",
+    title: "Floor Tiles Online — Living Room, Bedroom & Outdoor",
     metaDescription: "Buy durable floor tiles online in India. Vitrified living room tiles, anti-skid bathroom floor tiles & parking pavers with site delivery.",
     h1: "Floor Tiles Online — Durable Living Room & Anti-Skid Surfaces",
     introContent: `Flooring surfaces endure the harshest physical demands in any built environment: constant footfall friction, dragged furniture, heavy dropped objects, and frequent chemical mopping. Selecting the ideal floor tiles online requires balancing surface slip resistance (R-ratings), breaking strength, PEI abrasion resistance, and ease of routine cleaning. IntriHub offers a comprehensive online catalog of floor tiles engineered for Indian residential homes and high-traffic commercial spaces.
@@ -504,7 +504,7 @@ Select the ideal floor tiles for your project using IntriHub's intuitive technic
     pageType: SeoPageType.SUBCATEGORY,
     category: "tiles",
     targetKeyword: "bathroom tiles",
-    title: "Bathroom Tiles Online — Anti-Skid Floor & Wall Tile Sets | IntriHub",
+    title: "Bathroom Tiles Online — Anti-Skid Floor & Wall Tiles",
     metaDescription: "Shop coordinated bathroom tiles online in India. Anti-skid matte floor tiles, mildew-resistant wall tiles & matching vanity highlights delivered to site.",
     h1: "Bathroom Tiles Online — Coordinated Anti-Skid Floor & Wall Combinations",
     introContent: `Bathroom environments present unique architectural challenges: extreme humidity swings, direct water immersion in walk-in shower zones, acidic soap residues, and demanding safety requirements. Sourcing coordinated bathroom tiles online through IntriHub allows designers to assemble harmonious floor-to-wall combinations combining anti-skid safety with serene spa-like aesthetics.
@@ -542,7 +542,7 @@ Create modern, spa-like bathrooms with IntriHub's specialized moisture-resistant
     pageType: SeoPageType.SUBCATEGORY,
     category: "plywood",
     targetKeyword: "marine plywood",
-    title: "Marine Plywood Online — IS:710 Certified Waterproof Sheets | IntriHub",
+    title: "Marine Plywood Online — IS:710 Waterproof Sheets",
     metaDescription: "Buy genuine IS:710 marine plywood online in India. 100% boiling water proof, high-density hardwood core, anti-termite guarantee with direct site delivery.",
     h1: "Marine Plywood Online — 100% Boiling Water Proof (IS:710) Panels",
     introContent: `Marine plywood represents the gold standard of engineered wood durability, originally formulated to construct boat hulls subjected to continuous saltwater immersion. In contemporary interior construction, genuine IS:710 Marine Grade Plywood is essential for modular kitchen under-sink cabinets, bathroom vanity casework, exterior door shutters, and terrace furniture framing. IntriHub supplies builders and interior contractors with certified BWP Marine plywood sheets online.
@@ -656,7 +656,7 @@ Sourcing precision MDF boards is effortless with IntriHub. Filter by interior or
     pageType: SeoPageType.SUBCATEGORY,
     category: "electrical",
     targetKeyword: "electrical wires and cables",
-    title: "Electrical Wires and Cables Online — FRLS Copper Coils | IntriHub",
+    title: "Electrical Wires & Cables Online — FRLS Copper Coils",
     metaDescription: "Buy ISI-certified FRLS copper electrical wires online in India. 90m coils in 1.5, 2.5, 4.0 & 6.0 sq.mm gauges with express site delivery across Bangalore.",
     h1: "Electrical Wires & Cables Online — Certified FRLS Copper Conductors",
     introContent: `Electrical wires form the critical circulatory system of any modern building, conveying electric current to high-load air conditioning units, inductive water pumps, and delicate electronic circuits. Inferior cables manufactured from recycled scrap copper or impure PVC insulation cause voltage drops, excessive electrical resistance, high utility bills, and catastrophic short-circuit fire hazards. IntriHub supplies certified electrical wires and cables direct from verified manufacturers.
@@ -694,7 +694,7 @@ Ensure complete wiring safety with IntriHub's genuine, BIS-certified copper wire
     pageType: SeoPageType.SUBCATEGORY,
     category: "electrical",
     targetKeyword: "switches and sockets",
-    title: "Modular Switches & Sockets Online — Plates, Dimmers & USB | IntriHub",
+    title: "Modular Switches & Sockets Online — Plates & Dimmers",
     metaDescription: "Buy luxury modular switches and sockets online in India. Contemporary matte, glass & metal switch plates with arc-shielded mechanisms delivered fast.",
     h1: "Modular Switches & Sockets Online — Modern Plates & Smart Controls",
     introContent: `Modular switches and power sockets bridge technical circuitry and interior aesthetics, providing tactile control over room illumination, temperature, and appliance connectivity. Outdated conventional switches produce visible electrical arcing and yellow over time, whereas modern modular mechanisms incorporate silver-nickel contact tips for arc-shielded, spark-free switching rated for over 100,000 cycles. IntriHub offers a comprehensive online collection of modular switches and accessories.
@@ -732,7 +732,7 @@ Upgrade your interiors with modern modular switch plates and ergonomic accessori
     pageType: SeoPageType.SUBCATEGORY,
     category: "plumbing",
     targetKeyword: "CPVC pipes",
-    title: "CPVC Pipes Online — SDR 11 & SDR 13.5 Hot/Cold Water Lines | IntriHub",
+    title: "CPVC Pipes Online — SDR 11 & 13.5 Water Lines | IntriHub",
     metaDescription: "Buy certified lead-free CPVC pipes and fittings online in India. High-temperature hot/cold plumbing pipes with direct site delivery across Bangalore.",
     h1: "CPVC Pipes Online — High-Pressure Potable Water Plumbing Systems",
     introContent: `Chlorinated Polyvinyl Chloride (CPVC) is the premier piping material for concealed hot and cold potable water distribution in modern residential and commercial buildings. Produced through chemical chlorination of standard PVC resin, CPVC offers elevated glass transition temperatures and superior tensile strength, comfortably handling pressurized domestic water up to 93°C. IntriHub supplies certified lead-free CPVC piping systems online.
@@ -770,7 +770,7 @@ Procure NSF-certified CPVC pipes and pressure fittings directly from IntriHub's 
     pageType: SeoPageType.SUBCATEGORY,
     category: "sanitaryware",
     targetKeyword: "wash basin",
-    title: "Wash Basin Online — Countertop, Wall-Hung & Pedestal Sinks | IntriHub",
+    title: "Wash Basin Online — Countertop & Wall-Hung Sinks",
     metaDescription: "Buy designer wash basins online in India. Ceramic countertop table-top basins, modern wall-hung sinks & half-pedestal lavatories with fast site delivery.",
     h1: "Wash Basin Online — Designer Ceramic Countertop & Wall-Hung Sinks",
     introContent: `A wash basin is the crowning centerpiece of vanity counters, powder rooms, and dining hand-wash stations, setting the aesthetic tone for the entire grooming space. Premium wash basins must combine deep functional bowl geometry that prevents splashback with ultra-smooth vitreous ceramic glazes that resist everyday toothpaste stains, cosmetic residues, and hard water scale. IntriHub supplies an extensive portfolio of ceramic wash basins online.
@@ -808,7 +808,7 @@ Find the perfect ceramic wash basin for your powder room or master bathroom on I
     pageType: SeoPageType.SUBCATEGORY,
     category: "hardware",
     targetKeyword: "door fittings",
-    title: "Door Fittings Online — Mortise Handles, Locks & Hinges | IntriHub",
+    title: "Door Fittings Online — Mortise Handles, Locks & Hinges",
     metaDescription: "Source architectural door fittings online in India. Solid brass mortise locks, SS 304 ball-bearing hinges, tower bolts & door stoppers with site delivery.",
     h1: "Door Fittings Online — Mortise Handles, Security Locks & Hinges",
     introContent: `Door fittings govern the security, silent operation, and visual grandeur of every entrance, bedroom, and bathroom portal in a residence. Low-quality door fittings quickly suffer from loose latching, squeaking pins, and peeling surface plating. Sourcing precision architectural door hardware online through IntriHub guarantees heavy-duty stainless steel and solid brass components engineered for decades of smooth, silent operation.
@@ -890,7 +890,7 @@ IntriHub serves as Bangalore's premier digital tile supply platform, connecting 
     category: "plywood",
     locality: "bengaluru",
     targetKeyword: "plywood dealer Bangalore",
-    title: "Plywood Dealer in Bangalore — BWP 710 Marine & Calibrated | IntriHub",
+    title: "Plywood Dealer in Bangalore — BWP 710 Marine Sheets",
     metaDescription: "Verified plywood dealer in Bangalore. Buy certified IS:710 Marine, BWP, and calibrated plywood sheets online at mill rates with doorstep delivery in Bengaluru.",
     h1: "Plywood Dealer in Bangalore — Genuine IS:710 Marine & Calibrated Panels",
     introContent: `Bangalore's modular carpentry and interior fit-out industry requires certified, calibrated plywood that resists coastal-style monsoon humidity and eliminates uneven laminate waviness. As a verified plywood supplier in Bangalore, IntriHub connects interior designers, carpentry workshops, and homeowners with authentic IS:710 Marine Grade BWP and IS:303 Commercial plywood sourced directly from premier manufacturing mills with zero intermediary broker fees.
@@ -929,7 +929,7 @@ Procuring certified plywood in Bangalore is simple and transparent with IntriHub
     category: "electrical",
     locality: "bengaluru",
     targetKeyword: "electrical shop Bangalore",
-    title: "Electrical Shop in Bangalore — ISI Wires, Switches & MCBs | IntriHub",
+    title: "Electrical Shop in Bangalore — ISI Wires & MCBs | IntriHub",
     metaDescription: "Looking for an electrical shop in Bangalore? Buy FRLS copper wires, modular switches, and switchgear online at direct factory prices with express site delivery.",
     h1: "Electrical Shop in Bangalore — Certified Wires, Switches & Switchgear",
     introContent: `Bangalore's residential high-rises and commercial tech corridors demand precision electrical materials that conform strictly to National Electrical Code and BIS standards. IntriHub operates a modern online electrical supply platform headquartered in Begur, delivering certified FRLS copper wires, modular switch plates, MCBs, and PVC conduits directly to electrical contractors and builders throughout Bengaluru.
@@ -968,7 +968,7 @@ IntriHub provides Bangalore builders and electricians with direct access to genu
     category: "cement-and-concrete",
     locality: "begur",
     targetKeyword: "construction material Begur",
-    title: "Construction Material in Begur, Bangalore — Fast Site Delivery | IntriHub",
+    title: "Construction Material in Begur, Bangalore | IntriHub",
     metaDescription: "Buy construction materials in Begur, Bangalore. Fresh cement, vitrified tiles, CPVC pipes, electricals & hardware delivered to your Begur site within 60 mins.",
     h1: "Construction Material in Begur, Bangalore — Hyperlocal Site Delivery",
     introContent: `Begur is one of South Bangalore's most dynamic residential growth corridors, featuring active villa projects, luxury apartment developments, and commercial remodeling around Begur Lake, Hongasandra, and Janapriya Layout. IntriHub is proudly headquartered in Begur, providing local builders, contractors, and homeowners with instant access to high-grade construction and interior supplies delivered within minutes of ordering.
@@ -1085,7 +1085,7 @@ IntriHub is the preferred interior materials partner for design studios and cont
     category: "tiles",
     locality: "electronic-city",
     targetKeyword: "tiles Electronic City",
-    title: "Tiles in Electronic City, Bangalore — Direct Factory Rates | IntriHub",
+    title: "Tiles in Electronic City, Bangalore — Direct Rates",
     metaDescription: "Buy vitrified, ceramic & parking tiles in Electronic City, Bangalore. Factory-direct rates, certified quality with express 60-min delivery to your site.",
     h1: "Tiles in Electronic City — Vitrified Flooring & Designer Wall Tiles",
     introContent: `Electronic City hosts a dense cluster of major tech campuses, residential gated communities, and mid-rise apartment developments across Phase 1, Phase 2, and Doddathoguru. Turnkey developers and homeowners in Electronic City require durable vitrified floor tiles, anti-skid bathroom ceramics, and natural granite slabs without paying inflated suburban dealer premiums. IntriHub brings direct factory surface procurement to Electronic City.
@@ -1163,7 +1163,7 @@ IntriHub delivers premium building and interior materials to Koramangala's leadi
     category: "hardware",
     locality: "bengaluru",
     targetKeyword: "building material delivery Bangalore",
-    title: "Building Material Delivery Bangalore — Express 60-Min Fleet | IntriHub",
+    title: "Building Material Delivery Bangalore — 60-Min Fleet",
     metaDescription: "Fast building material delivery across Bangalore. Fresh cement, vitrified tiles, electricals, plumbing & plywood delivered within 60 mins to your site.",
     h1: "Building Material Delivery Bangalore — Rapid Quick-Commerce Logistics",
     introContent: `Construction site downtime represents one of the most substantial hidden costs in the Indian building sector: skilled carpenters, masons, and electricians sit idle whenever essential pipes, adhesive bags, or cables run short. IntriHub solves this chronic procurement bottleneck by operating Bangalore's premier quick-commerce delivery network for building and interior supplies, dispatching materials directly from our Begur hub.
@@ -1202,7 +1202,7 @@ Our specialized material delivery network across Bangalore is built to eliminate
     category: "plywood",
     locality: "bengaluru",
     targetKeyword: "interior material supplier Bangalore",
-    title: "Interior Material Supplier in Bangalore — Factory Direct | IntriHub",
+    title: "Interior Material Supplier in Bangalore | IntriHub",
     metaDescription: "Verified interior material supplier in Bangalore. Sourcing BWP plywood, modular hardware, tiles, sanitaryware & paints at factory rates with fast delivery.",
     h1: "Interior Material Supplier in Bangalore — Complete Turnkey Sourcing",
     introContent: `Executing high-end residential and commercial interior projects across Bangalore requires seamless coordination across multiple material categories: calibrated plywood, high-pressure decorative laminates, architectural hardware, vitreous sanitaryware, designer tiles, and luxury paints. Sourcing through fragmented retail stores results in mismatched deliveries, variable quality grades, and administrative chaos. IntriHub serves as Bangalore's unified digital interior material supplier.
@@ -1244,7 +1244,7 @@ Transform your interior projects with IntriHub's extensive catalog of verified m
     pageType: SeoPageType.PRICE_INTENT,
     category: "tiles",
     targetKeyword: "vitrified tiles price Bangalore",
-    title: "Vitrified Tiles Price in Bangalore — 2026 Rate Guide | IntriHub",
+    title: "Vitrified Tiles Price in Bangalore — 2026 Rate Guide",
     metaDescription: "Explore the latest vitrified tiles price list in Bangalore. Factory-direct per sq.ft and per box rates for double charge, GVT & full body tiles.",
     h1: "Vitrified Tiles Price in Bangalore — Current Factory Sourcing Index",
     introContent: `Budgeting for residential or commercial flooring requires accurate, up-to-date knowledge of prevailing vitrified tile prices in the Bangalore market. Tile costs fluctuate based on size format, manufacturing technology (double charge vs. glazed vitrified), glaze finish (nano-polished, satin matte, carved), and freight logistics from production hubs in Morbi to Bangalore warehouses. IntriHub publishes verified factory-direct vitrified tile rates to bring complete transparency to material procurement.
@@ -1282,7 +1282,7 @@ Use our live price tracking and surface cost calculators to estimate your overal
     pageType: SeoPageType.PRICE_INTENT,
     category: "plywood",
     targetKeyword: "plywood price per sheet Bangalore",
-    title: "Plywood Price Per Sheet Bangalore — 2026 Rate Guide | IntriHub",
+    title: "Plywood Price Per Sheet Bangalore — 2026 Rate Guide",
     metaDescription: "Compare plywood prices per sheet in Bangalore for 19mm, 16mm, 12mm & 6mm. BWP 710 Marine and commercial MR grade rates with direct mill delivery.",
     h1: "Plywood Price Per Sheet in Bangalore — Current 8x4 Panel Rate Card",
     introContent: `Estimating carpentry budgets for modular kitchens, wardrobes, and living room furniture requires transparent sheet-level plywood pricing. In Bangalore's timber markets, plywood prices vary widely based on core veneer species (100% hardwood vs. semi-hardwood), resin bonding class (IS:710 BWP vs. IS:303 MR), sheet thickness, and calibration precision. IntriHub publishes verified, mill-direct per-sheet price ranges for standard 8x4 feet panels.
@@ -1320,7 +1320,7 @@ Stay informed on current plywood market rates with IntriHub's transparent pricin
     pageType: SeoPageType.PRICE_INTENT,
     category: "cement-and-concrete",
     targetKeyword: "cement price Bangalore",
-    title: "Cement Price in Bangalore — 53 Grade & PPC Per Bag Rates | IntriHub",
+    title: "Cement Price in Bangalore — 53 Grade & PPC Per Bag",
     metaDescription: "Check current 53 Grade OPC and PPC cement prices per bag in Bangalore. Fresh mill-tested stock from top brands delivered to your site with live rates.",
     h1: "Cement Price in Bangalore — Current 50kg Bag Rate Index",
     introContent: `Cement represents one of the largest continuous material expenditures during structural civil construction, foundation casting, brickwork masonry, and exterior plastering. In the Bangalore market, 50kg cement bag prices fluctuate weekly based on limestone extraction costs, clinker freight tariffs, coal fuel prices, and regional supply-demand cycles. IntriHub maintains an active pricing index to help builders and individual homeowners budget accurately.
@@ -1358,7 +1358,7 @@ IntriHub provides up-to-date cement prices for Bangalore builders, helping you m
     pageType: SeoPageType.PRICE_INTENT,
     category: "hardware",
     targetKeyword: "TMT bar price Bangalore",
-    title: "TMT Bar Price in Bangalore — Fe 550D Rebar Per Ton Rates | IntriHub",
+    title: "TMT Bar Price in Bangalore — Fe 550D Rebar Rates",
     metaDescription: "Check live TMT bar prices per ton and per kg in Bangalore. Certified Fe 550D rebars across 8mm, 10mm, 12mm & 16mm with mill test certificates.",
     h1: "TMT Bar Price in Bangalore — Current Fe 550D Steel Rebar Rates",
     introContent: `Thermo-Mechanically Treated (TMT) steel rebars constitute the structural reinforcement skeleton of every residential footing, column, plinth beam, and suspended RCC slab. TMT steel prices in the Bangalore market shift dynamically according to international iron ore indices, scrap melting costs, and power tariffs. IntriHub tracks verified per-kilogram and per-metric-ton rates for primary and secondary Fe 500D and Fe 550D grade steel.
@@ -1396,7 +1396,7 @@ Plan your structural steel procurement with IntriHub's transparent per-tonne TMT
     pageType: SeoPageType.PRICE_INTENT,
     category: "tiles",
     targetKeyword: "wall tiles price per sq ft",
-    title: "Wall Tiles Price Per Sq Ft — 2026 Kitchen & Bath Rates | IntriHub",
+    title: "Wall Tiles Price Per Sq Ft — 2026 Kitchen & Bath Rates",
     metaDescription: "Explore current wall tiles prices per sq.ft in India. Ceramic kitchen backsplashes, bathroom wall tiles & stone elevation tiles with direct site delivery.",
     h1: "Wall Tiles Price Per Sq Ft — Current Ceramic & Vitrified Rate Card",
     introContent: `Planning vertical wall tiling for kitchens, bathrooms, and exterior accent walls requires clear visibility into per-square-foot and per-box material pricing. Wall tile pricing varies according to ceramic body composition, digital print complexity (marble look, geometric, or mosaic), glaze type (gloss, satin, or luster), and dimensional format. IntriHub provides transparent wall tile pricing direct from manufacturing plants to your site.
@@ -1434,7 +1434,7 @@ Calculate your exact wall finishing costs with IntriHub's transparent square-foo
     pageType: SeoPageType.PRICE_INTENT,
     category: "plumbing",
     targetKeyword: "CPVC pipe price list",
-    title: "CPVC Pipe Price List — SDR 11 & SDR 13.5 Per Meter Rates | IntriHub",
+    title: "CPVC Pipe Price List — SDR 11 & 13.5 Meter Rates",
     metaDescription: "Check the latest CPVC pipe price list in India for 1/2\", 3/4\", 1\", and 1.25\" pipes. Direct factory rates for SDR 11 and SDR 13.5 hot/cold plumbing pipes.",
     h1: "CPVC Pipe Price List — Verified Rates for Plumbing Lines & Fittings",
     introContent: `Plumbing contractors and plumbing consultants require transparent, up-to-date CPVC pipe rate cards to prepare accurate plumbing bill-of-quantities (BOQ) for residential and commercial builds. CPVC pricing is determined by resin polymer grades, wall thickness class (SDR 11 Class 1 vs. SDR 13.5 Class 2), nominal pipe diameter, and raw compound chlorination indices. IntriHub publishes verified factory rates to simplify plumbing estimation.
@@ -1472,7 +1472,7 @@ Access updated CPVC piping and fitting price lists directly on IntriHub. We help
     pageType: SeoPageType.PRICE_INTENT,
     category: "electrical",
     targetKeyword: "electrical wire price per meter",
-    title: "Electrical Wire Price Per Meter — 1.5, 2.5 & 4 sq.mm Rates | IntriHub",
+    title: "Electrical Wire Price Per Meter — Copper Wire Rates",
     metaDescription: "Compare electrical wire prices per meter and per 90m coil in India. Verified rates for 1.0, 1.5, 2.5, 4.0 & 6.0 sq.mm FRLS copper wires with fast delivery.",
     h1: "Electrical Wire Price Per Meter — Current FRLS Copper Coil Rates",
     introContent: `Budgeting for electrical installation in a home or office requires accurate knowledge of copper wire prices per meter and per 90-meter coil. Copper cable pricing is closely tied to international London Metal Exchange (LME) copper spot rates, PVC insulation resin grades, and flame-retardant (FRLS) chemical additives. IntriHub publishes verified, transparent wire rates direct from certified cable manufacturing facilities.
@@ -1510,7 +1510,7 @@ Monitor copper wire pricing trends with IntriHub's reliable per-meter and per-co
     pageType: SeoPageType.PRICE_INTENT,
     category: "tiles",
     targetKeyword: "bathroom tiles price Bangalore",
-    title: "Bathroom Tiles Price in Bangalore — 2026 Complete Cost Guide | IntriHub",
+    title: "Bathroom Tiles Price in Bangalore — 2026 Rate Guide",
     metaDescription: "Check current bathroom tiles prices in Bangalore. Anti-skid floor tiles and ceramic wall tile sets per sq.ft and per box with express 60-min delivery.",
     h1: "Bathroom Tiles Price in Bangalore — Anti-Skid Floor & Wall Tile Rates",
     introContent: `Renovating or building a contemporary bathroom in Bangalore requires a clear understanding of tile material costs for both wall cladding and non-slip flooring. Bathroom tile budgets depend on tile composition (ceramic vs. vitrified), finish texture (anti-skid punch, satin matte, or high gloss), tile dimensions, and coordinating accent features. IntriHub provides verified, factory-direct bathroom tile pricing across Bengaluru.
@@ -1552,7 +1552,7 @@ Plan your complete bathroom remodeling budget with IntriHub's clear tile pricing
     pageType: SeoPageType.TREND,
     category: "tiles",
     targetKeyword: "matte tiles Bangalore",
-    title: "Matte Tiles in Bangalore — Modern Architectural Flooring | IntriHub",
+    title: "Matte Tiles in Bangalore — Modern Architectural Flooring",
     metaDescription: "Discover trending matte tiles in Bangalore. Sophisticated non-reflective vitrified surfaces, soft-touch satin finishes & anti-skid textures for modern homes.",
     h1: "Matte Tiles in Bangalore — Understated Sophistication for Modern Floors",
     introContent: `Bangalore's contemporary architectural landscape is undergoing a deliberate visual shift away from high-gloss surfaces toward understated, tactile matte vitrified tiles. High-gloss polished floors reflect harsh overhead LED glares and readily display dusty footprints or water spots; in contrast, matte tiles diffuse ambient daylight softly, evoking natural limestone, micro-cement, and raw slate. IntriHub curates trending architectural matte tiles for modern homes across Bengaluru.
@@ -1590,7 +1590,7 @@ Discover the understated elegance of matte tiles for your contemporary Bangalore
     pageType: SeoPageType.TREND,
     category: "tiles",
     targetKeyword: "terracotta look tiles",
-    title: "Terracotta Look Tiles — Rustic Earthy Vitrified Flooring | IntriHub",
+    title: "Terracotta Look Tiles — Rustic Earthy Vitrified Tiles",
     metaDescription: "Shop trending terracotta look tiles in India. Warm baked-earth tones, rustic Spanish cotto aesthetics with the durable zero-maintenance benefits of porcelain.",
     h1: "Terracotta Look Tiles — Warm Mediterranean & Rustic Earthy Aesthetics",
     introContent: `The warmth of sun-baked Mediterranean earth and traditional Indian clay pottery has inspired one of the strongest interior design trends: terracotta look tiles. While traditional handmade terracotta tiles are highly porous, prone to staining, and require annual wax sealing, modern terracotta-look vitrified porcelain replicates the rustic shade variations, irregular edge charms, and burnt-sienna hues while delivering zero-absorption durability.
@@ -1628,7 +1628,7 @@ Infuse warmth and earthy character into your spaces with IntriHub's premium terr
     pageType: SeoPageType.TREND,
     category: "tiles",
     targetKeyword: "sandstone effect tiles",
-    title: "Sandstone Effect Tiles — Natural Sedimentary Stone Textures | IntriHub",
+    title: "Sandstone Effect Tiles — Natural Stone Textures",
     metaDescription: "Explore sandstone effect porcelain tiles in India. Subtle sedimentary grain textures, earthy beige tones & outdoor anti-skid finishes delivered to site.",
     h1: "Sandstone Effect Tiles — Organic Sedimentary Stone Textures",
     introContent: `Natural sandstone has long been celebrated in Indian architecture for its tactile mineral grain and gentle stratified earth layers. However, real quarried sandstone absorbs moisture rapidly, spalls in harsh weather, and stains easily under mineral-heavy water. Sandstone effect vitrified porcelain tiles capture the authentic fossilized veining, granular quartz textures, and muted desert tones of natural sandstone while delivering industrial durability.
@@ -1666,7 +1666,7 @@ Elevate your outdoor landscapes and feature walls with durable sandstone-effect 
     pageType: SeoPageType.TREND,
     category: "tiles",
     targetKeyword: "warm travertine tiles",
-    title: "Warm Travertine Tiles — Roman Stone Aesthetic in Vitrified | IntriHub",
+    title: "Warm Travertine Tiles — Roman Stone Vitrified Tiles",
     metaDescription: "Buy warm travertine look tiles in India. Linear vein-cut & cross-cut Italian limestone visuals with durable zero-porosity vitrified engineering.",
     h1: "Warm Travertine Tiles — Timeless Roman Limestone Visuals",
     introContent: `Travertine has embodied architectural luxury since the construction of ancient Roman monuments, renowned for its directional sedimentary banding, warm honey-beige hues, and soft pitted stone textures. In modern interior design, warm travertine look vitrified tiles are dominating luxury bathroom suites, fireplace surrounds, and living room accent floors. IntriHub offers premier vein-cut and cross-cut travertine porcelain tiles direct to your site.
@@ -1704,7 +1704,7 @@ Bring classical luxury to your living areas with IntriHub's warm travertine porc
     pageType: SeoPageType.TREND,
     category: "tiles",
     targetKeyword: "honey oak wood effect tiles",
-    title: "Honey Oak Wood Effect Tiles — Warm Timber Porcelain Planks | IntriHub",
+    title: "Honey Oak Wood Effect Tiles — Timber Porcelain Planks",
     metaDescription: "Shop trending honey oak wood effect porcelain tiles in India. Authentic wood grain textures, 200x1200mm plank formats & zero termite worries.",
     h1: "Honey Oak Wood Effect Tiles — Authentic Timber Planks in Porcelain",
     introContent: `The warmth, organic comfort, and biophilic serenity of natural hardwood flooring are undeniable, yet genuine hardwood floors in the Indian climate struggle with termite infestation, water damage from wet mopping, and seasonal humidity warping. Honey oak wood effect vitrified porcelain planks deliver the authentic grain patterns, knots, and radiant golden-amber tones of natural oak with the indestructible durability of vitrified porcelain.
@@ -1742,7 +1742,7 @@ Enjoy the timeless beauty of natural oak flooring with IntriHub's honey oak wood
     pageType: SeoPageType.TREND,
     category: "plywood",
     targetKeyword: "E0 grade plywood",
-    title: "E0 Grade Plywood Online — Zero-Formaldehyde Safe Panels | IntriHub",
+    title: "E0 Grade Plywood Online — Zero-Formaldehyde Panels",
     metaDescription: "Buy certified E0 emission grade plywood online in India. Ultra-low formaldehyde emissions for healthy indoor air quality in bedrooms and nurseries.",
     h1: "E0 Grade Plywood Online — Zero-Formaldehyde Healthy Interior Panels",
     introContent: `Indoor air quality (IAQ) has emerged as a paramount priority for health-conscious homeowners, architects, and green building consultants. Conventional composite wood panels bonded with cheap urea resins can off-gas carcinogenic formaldehyde volatile organic compounds for years inside air-conditioned bedrooms. E0 Grade Plywood represents the highest international standard for health safety, certifying that formaldehyde emissions are virtually undetectable (under 0.5 mg/L).
@@ -1780,7 +1780,7 @@ Protect your family's health and wellness by selecting certified E0-grade plywoo
     pageType: SeoPageType.TREND,
     category: "plywood",
     targetKeyword: "plywood veneer designs",
-    title: "Plywood Veneer Designs — Natural Sliced Timber Surfaces | IntriHub",
+    title: "Plywood Veneer Designs — Natural Sliced Timber Surfaces",
     metaDescription: "Explore luxury natural wood veneer designs in India. Sliced American walnut, smoked oak & teak veneers bonded on calibrated plywood with site delivery.",
     h1: "Plywood Veneer Designs — Authentic Natural Wood Architectural Surfaces",
     introContent: `Natural wood veneers represent the pinnacle of bespoke interior luxury, bringing the unique individuality, grain character, and tactile warmth of real timber into residential casework, entrance doors, and feature paneling. Unlike artificial printed plastic laminates, natural wood veneers are paper-thin slices (0.5mm to 0.8mm) harvested from sustainably forested logs of American Walnut, Smoked Oak, Burmese Teak, and Santos Rosewood. IntriHub supplies curated architectural veneer collections online.
@@ -1818,7 +1818,7 @@ Create distinctive, luxurious interiors with IntriHub's curated decorative wood 
     pageType: SeoPageType.TREND,
     category: "furniture",
     targetKeyword: "modular plywood furniture",
-    title: "Modular Plywood Furniture Materials — Hardware & Panels | IntriHub",
+    title: "Modular Plywood Furniture Materials — Hardware & Panels",
     metaDescription: "Source modular plywood furniture materials in India. Pre-calibrated boards, soft-close hardware, tandem boxes & PVC edge banding delivered to site.",
     h1: "Modular Plywood Furniture Materials — Precision Panels & Hardware",
     introContent: `The modern Indian interior industry has transitioned decisively from slow, messy on-site carpentry toward precision factory-fabricated modular furniture. Manufacturing reliable modular wardrobes, kitchen carcasses, and vanity units requires an integrated combination of calibrated structural boards, durable edge banding, and micro-adjustable knockdown joinery hardware. IntriHub supplies turnkey furniture factories and interior contractors with modular furniture materials on demand.
@@ -1856,7 +1856,7 @@ Optimize your modular manufacturing with IntriHub's calibrated, high-density ply
     pageType: SeoPageType.TREND,
     category: "paints",
     targetKeyword: "acoustic panels interior",
-    title: "Acoustic Panels Interior — Sound Absorbing Wall Slats | IntriHub",
+    title: "Acoustic Panels Interior — Sound Absorbing Wall Slats",
     metaDescription: "Buy modern acoustic interior wall panels in India. Fluted wooden slat panels, sound-dampening PET felt & noise reduction solutions with fast site delivery.",
     h1: "Acoustic Panels Interior — Fluted Wood Slats & Sound-Dampening Walls",
     introContent: `Modern residential and commercial architecture emphasizes open-plan layouts with hard tile floors, large glass windows, and concrete walls. While visually stunning, these hard surfaces create harsh acoustic flutter echoes, reverberations, and speech unintelligibility. Trending fluted wooden acoustic slat panels and sound-dampening PET felt wall surfaces resolve this acoustic dilemma by pairing elegant Scandinavian wood slat aesthetics with high-performance noise reduction.
@@ -1894,7 +1894,7 @@ Achieve optimal acoustic comfort and modern visual flair with IntriHub's archite
     pageType: SeoPageType.TREND,
     category: "plywood",
     targetKeyword: "nature inspired laminates",
-    title: "Nature Inspired Laminates — Organic Stone & Wood Textures | IntriHub",
+    title: "Nature Inspired Laminates — Organic Stone & Wood Textures",
     metaDescription: "Discover trending nature-inspired decorative laminates in India. Biophilic textures, raw timber grains, fluted stone & linen surfaces delivered to site.",
     h1: "Nature Inspired Laminates — Biophilic Surfaces & Organic Textures",
     introContent: `Biophilic interior design — the intentional integration of natural textures, organic tones, and tactile earthy surfaces into indoor environments — has become a defining movement in modern architecture. Nature-inspired decorative laminates translate this biophilic design philosophy into durable, zero-maintenance high-pressure laminate (HPL) surfaces that replicate raw timber grains, hand-woven linen fabrics, fluted clay, and honed river rocks.
