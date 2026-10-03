@@ -218,8 +218,11 @@ export default function Header() {
                 </button>
               )}
 
-              {/* Language Selector */}
-              <div className="hidden sm:block">
+              {/* Language Selector — globe only on md, full on lg+ */}
+              <div className="hidden md:flex lg:hidden items-center">
+                <LanguageSelector variant="minimal" />
+              </div>
+              <div className="hidden lg:flex items-center">
                 <LanguageSelector variant="header" />
               </div>
 

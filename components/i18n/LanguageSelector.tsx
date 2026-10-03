@@ -86,6 +86,9 @@ export default function LanguageSelector({
             <ChevronDown size={13} className="text-gray-400" />
           </>
         )}
+        {variant === "minimal" && (
+          <span className="text-[11px] font-black uppercase">{currentLangInfo.code}</span>
+        )}
       </button>
 
       {isOpen && (
