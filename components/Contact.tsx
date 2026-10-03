@@ -343,7 +343,7 @@ export default function Contact() {
                 <div className="pt-2 border-t border-white/10 space-y-2">
                   <div className="flex items-center gap-2">
                     <Clock size={14} className="text-[#F26522]" />
-                    <span>Service Availability: <strong>24/7 — Always Available</strong></span>
+                    <span>Service Availability: <strong>24*7 Service Available</strong></span>
                   </div>
                   <div className="flex items-center gap-2">
                     <Truck size={14} className="text-[#1E9E6B]" />

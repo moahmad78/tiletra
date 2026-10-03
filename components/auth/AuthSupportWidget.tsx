@@ -165,7 +165,7 @@ export default function AuthSupportWidget({ portalType = "general" }: AuthSuppor
                     </div>
                     <div>
                       <p className="text-xs text-gray-500 font-medium">Service Availability</p>
-                      <p className="text-xs font-bold text-gray-900">24/7 — Always Available</p>
+                      <p className="text-xs font-bold text-gray-900">24*7 Service Available</p>
                     </div>
                   </div>
                 </div>

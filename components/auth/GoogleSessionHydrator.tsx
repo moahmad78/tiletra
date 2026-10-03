@@ -1,7 +1,7 @@
 "use client";
 
-import { useEffect } from "react";
-import { useRouter, useSearchParams } from "next/navigation";
+import { useEffect, useRef } from "react";
+import { useSearchParams } from "next/navigation";
 import { useAuthStore } from "@/lib/auth-store";
 import { toast } from "sonner";
 
@@ -30,14 +30,14 @@ function decodeBase64Url(str: string): string {
  *   /?google_session=<base64url-encoded-user-json>
  *
  * This component (mounted in the root layout) reads that param,
- * hydrates the Zustand auth store, then strips the param from the URL.
+ * hydrates the Zustand auth store, then strips the param cleanly from the URL.
  */
 export default function GoogleSessionHydrator() {
   const searchParams = useSearchParams();
-  const router = useRouter();
   const { googleSignIn, user, isAuthenticated, syncUserWithDb } = useAuthStore();
+  const processedSessionRef = useRef<string | null>(null);
 
-  // Defense-in-depth: if user is logged in but their localStorage snapshot lacks avatar, sync from DB
+  // Defense-in-depth: if user is logged in but lacks avatar, sync from DB immediately
   useEffect(() => {
     if (isAuthenticated && user?.id && !user.avatar && !user.id.startsWith("usr-")) {
       syncUserWithDb();
@@ -58,26 +58,19 @@ export default function GoogleSessionHydrator() {
         server_error: "An unexpected error occurred. Please try again.",
       };
       toast.error(messages[authError] || "Google login failed. Please try again.");
-      // Clean up the URL
-      const url = new URL(window.location.href);
-      url.searchParams.delete("auth_error");
-      router.replace(url.pathname + (url.search || ""));
+      if (typeof window !== "undefined") {
+        const url = new URL(window.location.href);
+        url.searchParams.delete("auth_error");
+        window.history.replaceState({}, "", url.pathname + (url.search ? url.search : ""));
+      }
       return;
     }
 
-    if (session) {
+    if (session && processedSessionRef.current !== session) {
+      processedSessionRef.current = session;
       try {
         const jsonStr = decodeBase64Url(session);
         const decoded = JSON.parse(jsonStr);
-
-        // Explicit defense-in-depth: Clear old localStorage state before hydrating new user
-        if (typeof window !== "undefined") {
-          try {
-            localStorage.removeItem("intrihub-customer-auth");
-            localStorage.removeItem("tiletra-customer-auth");
-            sessionStorage.clear();
-          } catch {}
-        }
 
         googleSignIn({
           userId: decoded.userId,
@@ -94,12 +87,14 @@ export default function GoogleSessionHydrator() {
         console.error("Failed to parse google_session:", e);
       }
 
-      // Strip the param from URL without re-triggering navigation
-      const url = new URL(window.location.href);
-      url.searchParams.delete("google_session");
-      router.replace(url.pathname + (url.search || ""));
+      // Cleanly strip the param from URL without re-triggering Next.js router navigation
+      if (typeof window !== "undefined") {
+        const url = new URL(window.location.href);
+        url.searchParams.delete("google_session");
+        window.history.replaceState({}, "", url.pathname + (url.search ? url.search : ""));
+      }
     }
-  }, [searchParams, googleSignIn, router]);
+  }, [searchParams, googleSignIn]);
 
   return null;
 }

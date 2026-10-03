@@ -193,13 +193,16 @@ export const useAuthStore = create<AuthState>()(
         const userId = userData.userId || "";
         const realPhone = userData.phone && !userData.phone.startsWith("google_") && !userData.phone.startsWith("email_") ? userData.phone.replace(/\D/g, "").slice(-10) : "";
 
-        // 1. Explicit clean session start: wipe any previous user state immediately
+        const resolvedImmediateAvatar =
+          userData.avatar && !userData.avatar.includes("unavatar.io") ? userData.avatar : undefined;
+
+        // 1. Explicit clean session start: populate user state immediately
         const immediateUser: CustomerUser = {
           id: userId || `usr-google-${Date.now()}`,
           phone: realPhone,
           name: userData.name,
           email: userData.email,
-          avatar: userData.avatar,
+          avatar: resolvedImmediateAvatar,
           addresses: [],
           defaultAddressId: undefined,
           phoneVerified: Boolean(userData.phoneVerified),
@@ -212,7 +215,7 @@ export const useAuthStore = create<AuthState>()(
           isLoginModalOpen: false,
         });
 
-        // 2. Fetch real DB data (phone + addresses) for THIS specific user
+        // 2. Fetch real DB data (phone + addresses + avatar) for THIS specific user
         try {
           const { getDbUser, getDbUserByEmail } = await import("@/lib/actions/auth");
           let dbUser = null;
@@ -242,6 +245,11 @@ export const useAuthStore = create<AuthState>()(
               isDefault: Boolean(a.isDefault),
             }));
 
+            const resolvedAvatar =
+              (userData.avatar && !userData.avatar.includes("unavatar.io") ? userData.avatar : undefined) ||
+              (dbUser.avatar && !dbUser.avatar.includes("unavatar.io") ? dbUser.avatar : undefined) ||
+              undefined;
+
             set((state) => {
               // Safety: only update if state is still this same email/user
               if (!state.user || (state.user.email && state.user.email !== userData.email)) return state;
@@ -249,7 +257,7 @@ export const useAuthStore = create<AuthState>()(
                 user: {
                   ...state.user,
                   id: dbUser.id,
-                  avatar: userData.avatar || dbUser.avatar || state.user.avatar,
+                  avatar: resolvedAvatar ?? state.user.avatar,
                   phone: resolvedPhone,
                   phoneVerified: dbUser.phoneVerified,
                   addresses,
@@ -288,7 +296,6 @@ export const useAuthStore = create<AuthState>()(
             const { getDbUser } = await import("@/lib/actions/auth");
             const dbUser = await getDbUser(res.userId);
             const cleanEmail = email.trim().toLowerCase();
-            const autoAvatar = `https://unavatar.io/${encodeURIComponent(cleanEmail)}?fallback=false`;
             const resolvedUser = dbUser || res.user;
 
             if (resolvedUser) {
@@ -308,12 +315,17 @@ export const useAuthStore = create<AuthState>()(
                 isDefault: Boolean(a.isDefault),
               }));
 
+              const resolvedAvatar =
+                resolvedUser.avatar && !resolvedUser.avatar.includes("unavatar.io")
+                  ? resolvedUser.avatar
+                  : undefined;
+
               const loggedUser: CustomerUser = {
                 id: resolvedUser.id,
                 phone: realPhone,
                 name: resolvedUser.name || email.split("@")[0],
                 email: resolvedUser.email || email,
-                avatar: resolvedUser.avatar || autoAvatar,
+                avatar: resolvedAvatar,
                 addresses,
                 defaultAddressId: addresses.find((a) => a.isDefault)?.id || addresses[0]?.id,
                 phoneVerified: Boolean(resolvedUser.phoneVerified),
@@ -426,11 +438,14 @@ export const useAuthStore = create<AuthState>()(
                 dbUser.phone && !dbUser.phone.startsWith("google_") && !dbUser.phone.startsWith("email_")
                   ? dbUser.phone.replace(/\D/g, "").slice(-10)
                   : state.user.phone;
+              const resolvedAvatar =
+                (dbUser.avatar && !dbUser.avatar.includes("unavatar.io") ? dbUser.avatar : undefined) ||
+                (state.user.avatar && !state.user.avatar.includes("unavatar.io") ? state.user.avatar : undefined);
               return {
                 user: {
                   ...state.user,
                   name: dbUser.name || state.user.name,
-                  avatar: dbUser.avatar || state.user.avatar,
+                  avatar: resolvedAvatar,
                   phone: dbPhone,
                   phoneVerified: dbUser.phoneVerified,
                 },

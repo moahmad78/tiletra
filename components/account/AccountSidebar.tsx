@@ -24,13 +24,16 @@ export default function AccountSidebar() {
   const currentTab = searchParams.get("tab") || "profile";
   const [mounted, setMounted] = useState(false);
   const authStatus = useAuthStatus();
-  const { user, isAuthenticated, logout, openLoginModal, updateProfile } = useAuthStore();
+  const { user, isAuthenticated, logout, openLoginModal, updateProfile, syncUserWithDb } = useAuthStore();
   const wishlistCount = useWishlistStore((s) => s.items.length);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
     setMounted(true);
-  }, []);
+    if (isAuthenticated && (!user?.avatar || user.avatar.includes("unavatar.io"))) {
+      syncUserWithDb();
+    }
+  }, [isAuthenticated, user?.avatar, syncUserWithDb]);
 
   const handleLogout = () => {
     logout();

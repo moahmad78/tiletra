@@ -105,9 +105,14 @@ export default function LoginModal() {
     closeLoginModal();
     // Build intent param so the callback can redirect appropriately after login
     const intent = pendingIntent?.type || "";
-    const params = intent ? `?intent=${encodeURIComponent(intent)}` : "";
+    const params = new URLSearchParams();
+    if (intent) params.set("intent", intent);
+    if (typeof window !== "undefined" && window.location.pathname && window.location.pathname !== "/") {
+      params.set("redirect_to", window.location.pathname + window.location.search);
+    }
+    const qs = params.toString() ? `?${params.toString()}` : "";
     // Full page redirect to our OAuth initiate route
-    window.location.href = `/api/auth/google${params}`;
+    window.location.href = `/api/auth/google${qs}`;
   };
 
   // ─── Email OTP ────────────────────────────────────────────────────────────

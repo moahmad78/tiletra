@@ -147,8 +147,10 @@ export async function GET(request: NextRequest) {
       const shouldUpdateName =
         name && (!existingByEmail.name || existingByEmail.name.startsWith("User "));
       const isCustomAvatar =
-        existingByEmail.avatar && !existingByEmail.avatar.includes("googleusercontent.com");
-      const shouldUpdateAvatar = avatar && (!existingByEmail.avatar || !isCustomAvatar);
+        existingByEmail.avatar &&
+        !existingByEmail.avatar.includes("googleusercontent.com") &&
+        !existingByEmail.avatar.includes("unavatar.io");
+      const shouldUpdateAvatar = Boolean(avatar && (!existingByEmail.avatar || !isCustomAvatar));
 
       user = await prisma.user.update({
         where: { id: existingByEmail.id },
@@ -164,7 +166,7 @@ export async function GET(request: NextRequest) {
       if (existingByPhone) {
         user = await prisma.user.update({
           where: { id: existingByPhone.id },
-          data: { email, emailVerified: true, authProvider: "google", name, avatar },
+          data: { email, emailVerified: true, authProvider: "google", name, avatar: avatar || existingByPhone.avatar },
         });
       } else {
         user = await prisma.user.create({
@@ -183,11 +185,12 @@ export async function GET(request: NextRequest) {
     }
 
     // ─── 4. Set session payload ───────────────────────────────────────────────
+    const effectiveAvatar = user.avatar || avatar || undefined;
     const sessionPayload = JSON.stringify({
       userId: user.id,
       name: user.name,
       email: user.email,
-      avatar: user.avatar,
+      avatar: effectiveAvatar,
       phone: user.phone,
       phoneVerified: user.phoneVerified,
       createdAt: user.createdAt.toISOString(),
@@ -196,14 +199,18 @@ export async function GET(request: NextRequest) {
     const encoded = Buffer.from(sessionPayload).toString("base64url");
 
     // ─── 5. Redirect back to mobile app or web app ────────────────────────────
-    if (
+    const isMobileAppRedirect =
       intent === "mobile" ||
       intent.startsWith("mobile") ||
       intent === "business" ||
       intent.startsWith("business") ||
       intent === "vendor" ||
-      stateRedirectTo
-    ) {
+      (stateRedirectTo &&
+        (stateRedirectTo.startsWith("intrihub://") ||
+          stateRedirectTo.startsWith("intrihub-biz://") ||
+          stateRedirectTo.startsWith("exp://")));
+
+    if (isMobileAppRedirect) {
       // For business/vendor intents, check and link admin or vendor roles
       if (intent === "business" || intent.startsWith("business") || intent === "vendor") {
         const allowedAdminEmail = (process.env.ADMIN_ALLOWED_EMAIL || "admin@intrihub.com").toLowerCase().trim();
@@ -358,7 +365,11 @@ export async function GET(request: NextRequest) {
     }
 
     let redirectTo = "/";
-    if (intent === "checkout") redirectTo = "/checkout";
+    if (intent === "checkout") {
+      redirectTo = "/checkout";
+    } else if (stateRedirectTo && stateRedirectTo.startsWith("/") && !stateRedirectTo.startsWith("//") && !stateRedirectTo.startsWith("/\\")) {
+      redirectTo = stateRedirectTo;
+    }
 
     const response = NextResponse.redirect(`${baseUrl}${redirectTo}?google_session=${encoded}`);
 

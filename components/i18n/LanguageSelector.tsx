@@ -1,4 +1,4 @@
-"use client";
+ï»¿"use client";
 
 import { useState, useRef, useEffect } from "react";
 import { Globe, Check, ChevronDown } from "lucide-react";
@@ -43,7 +43,7 @@ export default function LanguageSelector({
     setIsOpen(false);
   };
 
-  // Skeleton placeholder before hydration — preserves layout space
+  // Skeleton placeholder before hydration ï¿½ preserves layout space
   if (!mounted) {
     return (
       <div
@@ -119,7 +119,7 @@ export default function LanguageSelector({
       {isOpen && (
         <div className="absolute right-0 mt-2 w-44 rounded-2xl bg-white shadow-xl border border-gray-100 py-1.5 z-[999] animate-in fade-in zoom-in-95 duration-100">
           <div className="px-3 py-1.5 text-[10px] font-bold uppercase tracking-wider text-gray-400 border-b border-gray-100">
-            Select Language / ????
+            Select Language
           </div>
           {languages.map((l) => (
             <button

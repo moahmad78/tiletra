@@ -352,8 +352,8 @@ export default function FloatingCustomerSupport() {
                         </div>
                         <div>
                           <p className="text-xs font-bold text-gray-900">Service Hours</p>
-                          <p className="text-[11px] text-gray-500 leading-snug mt-0.5">
-                            24/7 — Always Available
+                          <p className="text-[11px] text-emerald-600 font-bold leading-snug mt-0.5">
+                            24*7 Service Available
                           </p>
                         </div>
                       </div>

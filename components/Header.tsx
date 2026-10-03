@@ -159,6 +159,16 @@ export default function Header() {
               {/* Notification Center (Site-wide on mobile & desktop) */}
               <NotificationCenter />
 
+              {/* Mobile Hamburger Menu Toggle */}
+              <button
+                type="button"
+                onClick={() => setMobileMenuOpen((prev) => !prev)}
+                aria-label="Toggle mobile menu"
+                className="md:hidden w-9 h-9 rounded-xl flex items-center justify-center text-[#052a51] hover:bg-gray-100 active:scale-95 transition-all cursor-pointer shrink-0"
+              >
+                {mobileMenuOpen ? <X size={20} /> : <Menu size={20} />}
+              </button>
+
               {/* Wishlist Button (Desktop only - mobile uses BottomTabBar) */}
               <Link
                 href="/wishlist"
@@ -253,10 +263,6 @@ export default function Header() {
               </Link>
             ))}
             <div className="mt-3 pt-3 border-t border-gray-100 flex flex-col gap-2">
-              <div className="px-3 py-1 flex items-center justify-between">
-                <span className="text-xs font-bold text-gray-500 uppercase">{t("nav.language")}</span>
-                <LanguageSelector variant="header" />
-              </div>
               <Link href="/wishlist" onClick={() => setMobileMenuOpen(false)}>
                 <div className="flex items-center justify-between px-3 py-2.5 rounded-xl bg-gray-50 text-[#052a51] font-bold text-sm">
                   <span className="flex items-center gap-2">

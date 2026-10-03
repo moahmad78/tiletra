@@ -2,6 +2,7 @@ import type { Metadata, Viewport } from "next";
 import { Plus_Jakarta_Sans, Noto_Sans_Devanagari, Noto_Sans_Kannada } from "next/font/google";
 import { cookies } from "next/headers";
 import { Suspense } from "react";
+import { LANGUAGE_COOKIE } from "@/lib/i18n/config";
 import "./globals.css";
 import { QuoteModalProvider } from "@/components/QuoteModalProvider";
 import CartDrawer from "@/components/cart/CartDrawer";
@@ -187,7 +188,7 @@ export default async function RootLayout({
   const rootGraphSchema = generateRootGraphSchema();
   const gaMeasurementId = process.env.NEXT_PUBLIC_GA_MEASUREMENT_ID || "G-EGVGF17EPS";
   const cookieStore = await cookies();
-  const currentLang = cookieStore.get("intrihub_language")?.value || "en";
+  const currentLang = cookieStore.get(LANGUAGE_COOKIE)?.value || "en";
 
   return (
     <html

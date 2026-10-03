@@ -68,6 +68,7 @@ function AccountPageContent() {
     updateAddress,
     deleteAddress,
     setDefaultAddress,
+    syncUserWithDb,
   } = useAuthStore();
   const { t } = useTranslation();
 
@@ -163,13 +164,17 @@ function AccountPageContent() {
 
   useEffect(() => {
     setMounted(true);
-  }, []);
+    if (isAuthenticated && (!user?.avatar || user.avatar.includes("unavatar.io"))) {
+      syncUserWithDb();
+    }
+  }, [isAuthenticated, user?.avatar, syncUserWithDb]);
 
   useEffect(() => {
     if (user) {
       setEditName(user.name || "");
       setEditEmail(user.email || "");
-      setEditAvatar(user.avatar || null);
+      const cleanAvatar = user.avatar && !user.avatar.includes("unavatar.io") ? user.avatar : null;
+      setEditAvatar(cleanAvatar);
       const realPhone = user.phone && !user.phone.startsWith("google_") && !user.phone.startsWith("email_")
         ? user.phone.replace(/\D/g, "").slice(-10)
         : "";
@@ -888,6 +893,7 @@ function AccountPageContent() {
                           <img
                             src={editAvatar}
                             alt="Avatar"
+                            referrerPolicy="no-referrer"
                             className="w-12 h-12 rounded-full object-cover border border-gray-200"
                           />
                         ) : (

@@ -488,8 +488,6 @@ export async function verifyEmailOtp(
     },
   });
 
-  const autoEmailAvatar = `https://unavatar.io/${encodeURIComponent(cleanEmail)}?fallback=false`;
-
   let user: any;
   if (existingUser) {
     user = await prisma.user.update({
@@ -497,7 +495,8 @@ export async function verifyEmailOtp(
       data: {
         emailVerified: true,
         email: cleanEmail,
-        avatar: existingUser.avatar ? undefined : autoEmailAvatar,
+        // If existing avatar is broken unavatar, clean it
+        avatar: existingUser.avatar && !existingUser.avatar.includes("unavatar.io") ? undefined : null,
       },
       include: {
         addresses: {
@@ -515,7 +514,7 @@ export async function verifyEmailOtp(
         authProvider: "email",
         role: "customer",
         name: cleanEmail.split("@")[0],
-        avatar: autoEmailAvatar,
+        avatar: null,
       },
       include: {
         addresses: {
@@ -537,7 +536,7 @@ export async function verifyEmailOtp(
       email: user.email,
       phone: user.phone,
       role: user.role,
-      avatar: user.avatar,
+      avatar: user.avatar && !user.avatar.includes("unavatar.io") ? user.avatar : null,
       addresses: user.addresses,
       language: user.language || "en",
     },

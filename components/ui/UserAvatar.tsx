@@ -29,10 +29,10 @@ export default function UserAvatar({
 }: UserAvatarProps) {
   const [hasError, setHasError] = useState(false);
 
-  // Compute effective image src: custom src > email auto-avatar
+  // Compute effective image src: ignore unavatar.io placeholder/broken URLs
+  const cleanSrc = src && !src.includes("unavatar.io") ? src.trim() : null;
+  const effectiveSrc = cleanSrc || null;
   const cleanEmail = email?.trim().toLowerCase();
-  const effectiveSrc =
-    src || (cleanEmail ? `https://unavatar.io/${encodeURIComponent(cleanEmail)}?fallback=false` : null);
 
   // Reset error state when effectiveSrc changes
   useEffect(() => {

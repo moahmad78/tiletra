@@ -314,9 +314,9 @@ export default function Footer() {
                   </a>
                 </div>
               </li>
-              <li className="flex items-center gap-2 text-white/80 text-xs">
+              <li className="flex items-center gap-2 text-white/90 text-xs font-semibold">
                 <Clock size={15} className="text-[#F26522] shrink-0" />
-                <span>24/7 — Always Available</span>
+                <span>24*7 Service Available</span>
               </li>
             </ul>
 
