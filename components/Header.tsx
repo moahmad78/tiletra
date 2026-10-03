@@ -54,7 +54,6 @@ export default function Header() {
     { name: "Shop", href: "/shop" },
     { name: "Categories", href: "/categories" },
     { name: "Why IntriHub", href: "/why-intrihub" },
-    { name: "Inspiration", href: "/inspiration" },
     { name: "About", href: "/about" },
     { name: "FAQ", href: "/faq" },
     { name: "Contact", href: "/contact" },
