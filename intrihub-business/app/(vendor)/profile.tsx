@@ -33,7 +33,10 @@ import {
   Camera,
   UploadCloud,
   X,
+  Globe,
 } from "lucide-react-native";
+import LanguageModal from "../../src/components/LanguageModal";
+import { useTranslation } from "../../src/store/i18nStore";
 import { fetchVendorDashboard, updateVendorProfile } from "../../src/api/vendor";
 import { uploadBusinessImage } from "../../src/api/auth";
 import { apiClient } from "../../src/api/client";
@@ -44,6 +47,9 @@ export default function VendorProfileScreen() {
   const router = useRouter();
   const queryClient = useQueryClient();
   const { user, setUser, logout } = useAuthStore();
+  const { t, language, languages } = useTranslation();
+  const [langModalOpen, setLangModalOpen] = useState(false);
+  const currentLangObj = languages.find((l) => l.code === language);
 
   const { data, refetch } = useQuery({
     queryKey: ["vendor-dashboard"],
@@ -341,6 +347,28 @@ export default function VendorProfileScreen() {
             </View>
             <ChevronRight size={18} color={COLORS.textTertiary} />
           </TouchableOpacity>
+
+          <View style={styles.menuDivider} />
+
+          {/* Language Selector */}
+          <TouchableOpacity
+            style={styles.menuItem}
+            onPress={() => setLangModalOpen(true)}
+            activeOpacity={0.85}
+          >
+            <View style={styles.menuLeft}>
+              <View style={[styles.menuIconBox, { backgroundColor: "#F0FDF4" }]}>
+                <Globe size={18} color={COLORS.accentGreen} />
+              </View>
+              <View style={{ flex: 1 }}>
+                <Text style={styles.menuText}>{t("profile.language") || "Language / भाषा"}</Text>
+                <Text style={styles.menuSub}>
+                  {currentLangObj ? `${currentLangObj.nativeName} (${currentLangObj.name})` : "English"}
+                </Text>
+              </View>
+            </View>
+            <ChevronRight size={18} color={COLORS.textTertiary} />
+          </TouchableOpacity>
         </View>
 
         {/* Log Out */}
@@ -613,6 +641,12 @@ export default function VendorProfileScreen() {
           </ScrollView>
         </View>
       </Modal>
+
+      {/* Language Modal */}
+      <LanguageModal
+        visible={langModalOpen}
+        onClose={() => setLangModalOpen(false)}
+      />
     </View>
   );
 }

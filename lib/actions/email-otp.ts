@@ -112,10 +112,11 @@ export async function deliverEmail({
 
 export async function sendEmailOtp(
   email: string,
-  purpose: OtpPurpose = "customer"
+  purpose: OtpPurpose = "customer",
+  lang?: string
 ): Promise<{ success: boolean; message: string; expiresIn?: number }> {
   const cleanEmail = (email || "").trim().toLowerCase();
-  console.log(`[OTP_REQUEST_STARTED] email=${maskEmail(cleanEmail)} purpose=${purpose}`);
+  console.log(`[OTP_REQUEST_STARTED] email=${maskEmail(cleanEmail)} purpose=${purpose} lang=${lang || "auto"}`);
 
   const { validateEmail } = await import("@/lib/validators");
   if (!validateEmail(cleanEmail)) {
@@ -216,20 +217,63 @@ export async function sendEmailOtp(
     };
   }
 
-  // Professional Email Template
+  // Resolve user preferred language
+  let resolvedLang = lang;
+  if (!resolvedLang) {
+    try {
+      const userRec = await prisma.user.findFirst({
+        where: { email: { equals: cleanEmail, mode: "insensitive" } },
+        select: { language: true },
+      });
+      resolvedLang = userRec?.language || "en";
+    } catch {
+      resolvedLang = "en";
+    }
+  }
+
+  const emailCopies: Record<string, { subject: string; title: string; desc: string; expire: string; note: string; footer: string }> = {
+    en: {
+      subject: "Your Intrihub Login Verification Code",
+      title: "Your Login Verification Code",
+      desc: "Use the 6-digit code below to securely sign into your Intrihub account.",
+      expire: `⏱ This code will expire in <strong>${OTP_EXPIRY_MINUTES} minutes</strong>.<br />For security, never share this code with anyone.`,
+      note: "Build Better, We Deliver Faster",
+      footer: "If you did not request this verification code, you can safely ignore this email.",
+    },
+    hi: {
+      subject: "आपका Intrihub लॉगिन सत्यापन कोड (OTP)",
+      title: "लॉगिन सत्यापन कोड",
+      desc: "अपने Intrihub खाते में सुरक्षित रूप से साइन इन करने के लिए नीचे दिए गए 6-अंकों के कोड का उपयोग करें।",
+      expire: `⏱ यह कोड <strong>${OTP_EXPIRY_MINUTES} मिनट</strong> में समाप्त हो जाएगा।<br />सुरक्षा के लिए, यह कोड कभी किसी के साथ साझा न करें।`,
+      note: "बेहतरीन निर्माण, सबसे तेज डिलीवरी",
+      footer: "यदि आपने इस सत्यापन कोड का अनुरोध नहीं किया है, तो आप इस ईमेल को अनदेखा कर सकते हैं।",
+    },
+    kn: {
+      subject: "ನಿಮ್ಮ Intrihub ಲಾಗಿನ್ ಪರಿಶೀಲನಾ ಕೋಡ್ (OTP)",
+      title: "ಲಾಗಿನ್ ಪರಿಶೀಲನಾ ಕೋಡ್",
+      desc: "ನಿಮ್ಮ Intrihub ಖಾತೆಗೆ ಸುರಕ್ಷಿತವಾಗಿ ಸೈನ್ ಇನ್ ಮಾಡಲು ಕೆಳಗಿನ 6-ಅಂಕಿಯ ಕೋಡ್ ಬಳಸಿ.",
+      expire: `⏱ ಈ ಕೋಡ್ <strong>${OTP_EXPIRY_MINUTES} ನಿಮಿಷಗಳಲ್ಲಿ</strong> ಮುಕ್ತಾಯಗೊಳ್ಳುತ್ತದೆ.<br />ಭದ್ರತೆಗಾಗಿ, ಈ ಕೋಡ್ ಅನ್ನು ಯಾರೊಂದಿಗೂ ಹಂಚಿಕೊಳ್ಳಬೇಡಿ.`,
+      note: "ಉತ್ತಮ ನಿರ್ಮಾಣ, ವೇಗದ ವಿತರಣೆ",
+      footer: "ನೀವು ಈ ಪರಿಶೀಲನಾ ಕೋಡ್ ಅನ್ನು ವಿನಂತಿಸದಿದ್ದರೆ, ಈ ಇಮೇಲ್ ಅನ್ನು ನಿರ್ಲಕ್ಷಿಸಬಹುದು.",
+    },
+  };
+
+  const copy = emailCopies[resolvedLang || "en"] || emailCopies.en;
+
+  // Professional Localized Email Template
   const emailHtml = `
     <div style="font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif;max-width:520px;margin:0 auto;padding:36px 24px;background:#f8fafc;border-radius:16px;">
       <div style="text-align:center;margin-bottom:24px;">
         <a href="https://www.intrihub.com" target="_blank" style="text-decoration:none;display:inline-block;">
           <img src="https://www.intrihub.com/logo/intri-web-logo.png" alt="Intrihub" width="160" height="42" style="display:block;margin:0 auto;height:42px;width:auto;max-width:180px;border:0;outline:none;text-decoration:none;" />
         </a>
-        <p style="color:#64748b;font-size:13px;margin:10px 0 0;font-weight:500;">Build Better, We Deliver Faster</p>
+        <p style="color:#64748b;font-size:13px;margin:10px 0 0;font-weight:500;">${copy.note}</p>
       </div>
 
       <div style="background:#ffffff;border-radius:14px;padding:32px 24px;text-align:center;border:1px solid #e2e8f0;box-shadow:0 1px 3px rgba(0,0,0,0.05);">
-        <h2 style="font-size:18px;font-weight:800;color:#1e293b;margin:0 0 8px;">Your Login Verification Code</h2>
+        <h2 style="font-size:18px;font-weight:800;color:#1e293b;margin:0 0 8px;">${copy.title}</h2>
         <p style="color:#64748b;font-size:14px;margin:0 0 24px;line-height:1.5;">
-          Use the 6-digit code below to securely sign into your Intrihub account.
+          ${copy.desc}
         </p>
 
         <div style="background:#f1f5f9;border-radius:10px;padding:16px;margin:0 0 24px;display:inline-block;letter-spacing:10px;font-size:38px;font-weight:900;color:#052a51;font-family:monospace;">
@@ -237,8 +281,7 @@ export async function sendEmailOtp(
         </div>
 
         <p style="color:#94a3b8;font-size:12px;margin:0;line-height:1.5;">
-          ⏱ This code will expire in <strong>${OTP_EXPIRY_MINUTES} minutes</strong>.<br />
-          For security, never share this code with anyone.
+          ${copy.expire}
         </p>
       </div>
 
@@ -247,17 +290,17 @@ export async function sendEmailOtp(
           IntriHub&apos;s only official website is <a href="https://www.intrihub.com" style="color:#052a51;font-weight:bold;text-decoration:none;">www.intrihub.com</a>. We are not affiliated with any other website using a similar name.
         </p>
         <p style="color:#94a3b8;font-size:11px;margin:0;line-height:1.4;">
-          If you did not request this verification code, you can safely ignore this email.
+          ${copy.footer}
         </p>
       </div>
     </div>
   `;
 
   // Deliver Email through configured provider
-  console.log(`[RESEND_SEND_STARTED] email=${maskEmail(cleanEmail)}`);
+  console.log(`[RESEND_SEND_STARTED] email=${maskEmail(cleanEmail)} lang=${resolvedLang}`);
   const deliveryResult = await deliverEmail({
     to: cleanEmail,
-    subject: "Your Intrihub Login Verification Code",
+    subject: copy.subject,
     html: emailHtml,
   });
 
@@ -496,6 +539,7 @@ export async function verifyEmailOtp(
       role: user.role,
       avatar: user.avatar,
       addresses: user.addresses,
+      language: user.language || "en",
     },
   };
 }

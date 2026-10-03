@@ -3,6 +3,7 @@
 import Link from "next/link";
 import Image from "next/image";
 import { usePathname } from "next/navigation";
+import LanguageSelector from "@/components/i18n/LanguageSelector";
 import {
   MapPin,
   Phone,
@@ -284,7 +285,7 @@ export default function Footer() {
                 <li key={href}>
                   <Link
                     href={href}
-                    className="text-xs sm:text-sm text-white/80 hover:text-[#F26522] transition-colors flex items-center gap-1.5 group"
+                    className="text-xs text-white/80 hover:text-[#F26522] transition-colors flex items-center gap-1.5 group"
                   >
                     <span className="w-1 h-1 rounded-full bg-[#F26522]/50 group-hover:bg-[#F26522] transition-colors" />
                     {label}
@@ -315,7 +316,7 @@ export default function Footer() {
               </li>
               <li className="flex items-center gap-2 text-white/80 text-xs">
                 <Clock size={15} className="text-[#F26522] shrink-0" />
-                <span>Mon – Sat: 8:00 AM – 8:00 PM</span>
+                <span>24/7 — Always Available</span>
               </li>
             </ul>
 
@@ -421,7 +422,10 @@ export default function Footer() {
 
         {/* Bottom bar */}
         <div className="pt-6 flex flex-col md:flex-row justify-between items-center gap-4 text-xs text-white/50">
-          <p>© {new Date().getFullYear()} IntriHub. All Rights Reserved.</p>
+          <div className="flex flex-col sm:flex-row items-center gap-4">
+            <p>© {new Date().getFullYear()} IntriHub. All Rights Reserved.</p>
+            <LanguageSelector variant="footer" />
+          </div>
           <div className="flex items-center gap-4 flex-wrap justify-center">
             <Link href="/privacy-policy" className="hover:text-white transition-colors">Privacy Policy</Link>
             <span>·</span>

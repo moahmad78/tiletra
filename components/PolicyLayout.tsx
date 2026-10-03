@@ -301,7 +301,7 @@ export default function PolicyLayout({
                 <span>Need Direct Assistance?</span>
               </div>
               <p className="text-xs text-neutral-600 leading-relaxed font-medium">
-                Questions regarding site delivery, transit damage replacement, or orders? Our Bangalore desk is available Mon–Sat (8AM–8PM).
+                Questions regarding site delivery, transit damage replacement, or orders? Our support team is available 24/7 — always here to help.
               </p>
               <div className="space-y-2 pt-1">
                 <a

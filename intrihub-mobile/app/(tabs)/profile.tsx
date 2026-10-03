@@ -27,21 +27,25 @@ import {
   ShieldCheck,
   Edit2,
   Camera,
-  X,
-  Check,
   Star,
+  Globe,
 } from "lucide-react-native";
 import { useAuthStore } from "../../src/store/authStore";
 import { getProfile, updateProfile, uploadAvatarImage } from "../../src/api/auth";
 import { AddressModal } from "../../src/components/AddressModal";
+import LanguageModal from "../../src/components/LanguageModal";
+import { useTranslation } from "../../src/store/i18nStore";
 import { openPlayStoreRating } from "../../src/utils/inAppRating";
 import { COLORS, SPACING, RADIUS, SHADOWS } from "../../src/constants/theme";
 
 export default function ProfileScreen() {
   const router = useRouter();
   const { user, isAuthenticated, setUser, logout } = useAuthStore();
+  const { t, language, languages } = useTranslation();
   const [addressModalVisible, setAddressModalVisible] = useState(false);
   const [editProfileModalVisible, setEditProfileModalVisible] = useState(false);
+  const [langModalVisible, setLangModalVisible] = useState(false);
+  const currentLangObj = languages.find((l) => l.code === language);
 
   // Edit Profile Form State
   const [editName, setEditName] = useState("");
@@ -227,6 +231,24 @@ export default function ProfileScreen() {
         {/* Section: Account Actions */}
         <View style={styles.menuGroup}>
           <Text style={styles.groupTitle}>ACCOUNT & PREFERENCES</Text>
+
+          {/* App Language */}
+          <TouchableOpacity
+            style={styles.menuItem}
+            onPress={() => setLangModalVisible(true)}
+            activeOpacity={0.75}
+          >
+            <View style={styles.menuLeft}>
+              <Globe size={20} color={COLORS.primary} />
+              <View style={{ marginLeft: 12 }}>
+                <Text style={styles.menuLabel}>{t("profile.language") || "App Language"}</Text>
+                <Text style={styles.supportSubText}>
+                  {currentLangObj ? `${currentLangObj.nativeName} (${currentLangObj.name})` : "English"}
+                </Text>
+              </View>
+            </View>
+            <ChevronRight size={18} color={COLORS.textMuted} />
+          </TouchableOpacity>
 
           <TouchableOpacity
             style={styles.menuItem}
@@ -418,6 +440,12 @@ export default function ProfileScreen() {
         visible={addressModalVisible}
         onClose={() => setAddressModalVisible(false)}
         onSelectAddress={() => {}}
+      />
+
+      {/* Language Modal */}
+      <LanguageModal
+        visible={langModalVisible}
+        onClose={() => setLangModalVisible(false)}
       />
     </View>
   );

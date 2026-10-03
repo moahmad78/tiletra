@@ -353,7 +353,7 @@ export default function FloatingCustomerSupport() {
                         <div>
                           <p className="text-xs font-bold text-gray-900">Service Hours</p>
                           <p className="text-[11px] text-gray-500 leading-snug mt-0.5">
-                            Mon–Sat: 9:00 AM – 8:00 PM IST
+                            24/7 — Always Available
                           </p>
                         </div>
                       </div>

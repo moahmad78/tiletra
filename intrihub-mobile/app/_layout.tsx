@@ -23,6 +23,8 @@ import AnimatedSplashScreen from "../src/components/AnimatedSplashScreen";
 import { ErrorBoundary } from "../src/components/ErrorBoundary";
 import AppUpdateModal from "../src/components/AppUpdateModal";
 import { COLORS } from "../src/constants/theme";
+import LanguageModal from "../src/components/LanguageModal";
+import { useI18nStore } from "../src/store/i18nStore";
 
 // Suppress non-fatal dev CLI connection warning from popping up on screen
 LogBox.ignoreLogs([
@@ -73,8 +75,17 @@ export default function RootLayout() {
   const { loadCart } = useCartStore();
   const [isAppReady, setIsAppReady] = useState(false);
   const [splashMounted, setSplashMounted] = useState(true);
+  const hasSelectedLanguage = useI18nStore((s) => s.hasSelectedLanguage);
+  const isLangReady = useI18nStore((s) => s.isReady);
+  const [showFirstLaunchLang, setShowFirstLaunchLang] = useState(false);
 
   usePushNotifications();
+
+  useEffect(() => {
+    if (isLangReady && !hasSelectedLanguage && isAppReady) {
+      setShowFirstLaunchLang(true);
+    }
+  }, [isLangReady, hasSelectedLanguage, isAppReady]);
 
   // Hide the native OS splash screen immediately on React Native mount so Layer 2 AnimatedSplashScreen takes over
   useLayoutEffect(() => {
@@ -86,6 +97,7 @@ export default function RootLayout() {
       const results = await Promise.allSettled([
         initAuth(),
         loadCart(),
+        useI18nStore.getState().initLanguage().catch(() => {}),
         useNotificationStore.getState().fetchUnreadCount().catch(() => {}),
         useLocationStore.getState().prefetchLocation().catch(() => {}),
         // Minimum natural sequence duration so user experiences the active running road and intro
@@ -157,6 +169,13 @@ export default function RootLayout() {
             <Stack.Screen name="checkout" options={{ headerShown: false }} />
             <Stack.Screen name="order/[id]" options={{ headerShown: false }} />
           </Stack>
+
+          {/* Language Selection Modal on First Launch */}
+          <LanguageModal
+            visible={showFirstLaunchLang}
+            onClose={() => setShowFirstLaunchLang(false)}
+            isFirstLaunch
+          />
 
           {/* In-App Update Popup & Notification Dispatcher */}
           <AppUpdateModal />

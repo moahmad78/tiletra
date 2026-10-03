@@ -4,6 +4,7 @@ import { useVendorAuth } from "@/lib/vendor-auth";
 import { useRouter } from "next/navigation";
 import { Menu, LogOut, Store, Bell, CheckCircle2, AlertCircle } from "lucide-react";
 import Link from "next/link";
+import LanguageSelector from "@/components/i18n/LanguageSelector";
 
 export default function VendorHeader({
   onMobileMenuToggle,
@@ -40,7 +41,10 @@ export default function VendorHeader({
         </div>
       </div>
 
-      <div className="flex items-center gap-3">
+      <div className="flex items-center gap-2 md:gap-3">
+        {/* Language Selector */}
+        <LanguageSelector variant="panel" />
+
         {/* Quick Add Product Button */}
         <Link
           href="/vendor/products/new"

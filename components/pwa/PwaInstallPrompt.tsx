@@ -12,6 +12,18 @@ export default function PwaInstallPrompt() {
   const [isIos, setIsIos] = useState(false);
   const [showIosGuide, setShowIosGuide] = useState(false);
   const [isInstalled, setIsInstalled] = useState(false);
+  const [isPaused, setIsPaused] = useState(false);
+
+  // Auto-hide install prompt after 5 seconds of visibility
+  useEffect(() => {
+    if (!showPrompt || showIosGuide || isPaused) return;
+
+    const timer = setTimeout(() => {
+      setShowPrompt(false);
+    }, 5000);
+
+    return () => clearTimeout(timer);
+  }, [showPrompt, showIosGuide, isPaused]);
 
   useEffect(() => {
     if (typeof window === "undefined") return;
@@ -130,7 +142,11 @@ export default function PwaInstallPrompt() {
   return (
     <>
       {/* ── Main PWA Install Floating Banner / Sheet ── */}
-      <div className="fixed bottom-[68px] md:bottom-6 left-3 right-3 sm:left-auto sm:right-6 sm:max-w-sm z-50 animate-in slide-in-from-bottom-5 duration-300">
+      <div
+        onMouseEnter={() => setIsPaused(true)}
+        onMouseLeave={() => setIsPaused(false)}
+        className="fixed bottom-[68px] md:bottom-6 left-3 right-3 sm:left-auto sm:right-6 sm:max-w-sm z-50 animate-in slide-in-from-bottom-5 duration-300"
+      >
         <div className="bg-gradient-to-br from-[#052a51] via-[#04203d] to-[#021529] text-white p-4 sm:p-4.5 rounded-3xl shadow-2xl border border-white/15 relative overflow-hidden backdrop-blur-md">
           {/* Background Ambient Glow */}
           <div className="absolute -top-12 -right-12 w-32 h-32 bg-[#F26522]/20 rounded-full blur-2xl pointer-events-none" />

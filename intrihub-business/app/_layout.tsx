@@ -18,6 +18,8 @@ import { socketService } from "../src/store/socketStore";
 import { usePushNotifications } from "../src/hooks/usePushNotifications";
 import AnimatedSplashScreen from "../src/components/AnimatedSplashScreen";
 import AppUpdateModal from "../src/components/AppUpdateModal";
+import LanguageModal from "../src/components/LanguageModal";
+import { useI18nStore } from "../src/store/i18nStore";
 import * as Sentry from "@sentry/react-native";
 import { COLORS } from "../src/constants/theme";
 
@@ -116,6 +118,7 @@ function RootLayout() {
   });
 
   const { user, initAuth } = useAuthStore();
+  const hasSelectedLanguage = useI18nStore((s) => s.hasSelectedLanguage);
   const [isAppReady, setIsAppReady] = React.useState(false);
   const [splashMounted, setSplashMounted] = React.useState(true);
   usePushNotifications();
@@ -130,6 +133,7 @@ function RootLayout() {
       try {
         await Promise.all([
           initAuth().catch((err) => console.warn("Auth init error:", err)),
+          useI18nStore.getState().initLanguage().catch((err) => console.warn("i18n init error:", err)),
           new Promise((resolve) => setTimeout(resolve, 2000)),
         ]);
       } catch (err) {
@@ -179,6 +183,13 @@ function RootLayout() {
 
           {/* In-App Update Popup & Notification Dispatcher */}
           <AppUpdateModal />
+
+          {/* First launch language selection modal */}
+          <LanguageModal
+            visible={!hasSelectedLanguage && !splashMounted}
+            onClose={() => {}}
+            isFirstLaunch
+          />
 
           {/* Animated Quick-Commerce Splash Screen Layer (Option B) */}
           {splashMounted && (

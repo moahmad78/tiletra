@@ -1,5 +1,6 @@
 import type { Metadata, Viewport } from "next";
-import { Plus_Jakarta_Sans } from "next/font/google";
+import { Plus_Jakarta_Sans, Noto_Sans_Devanagari, Noto_Sans_Kannada } from "next/font/google";
+import { cookies } from "next/headers";
 import { Suspense } from "react";
 import "./globals.css";
 import { QuoteModalProvider } from "@/components/QuoteModalProvider";
@@ -26,6 +27,20 @@ const jakarta = Plus_Jakarta_Sans({
   subsets: ["latin"],
   display: "swap",
   fallback: ["system-ui", "-apple-system", "BlinkMacSystemFont", "Segoe UI", "sans-serif"],
+});
+
+const devanagari = Noto_Sans_Devanagari({
+  variable: "--font-devanagari",
+  subsets: ["devanagari"],
+  display: "swap",
+  weight: ["400", "500", "600", "700"],
+});
+
+const kannada = Noto_Sans_Kannada({
+  variable: "--font-kannada",
+  subsets: ["kannada"],
+  display: "swap",
+  weight: ["400", "500", "600", "700"],
 });
 
 export const viewport: Viewport = {
@@ -108,6 +123,12 @@ export const metadata: Metadata = {
   category: "Building & Construction Materials",
   alternates: {
     canonical: "https://www.intrihub.com/",
+    languages: {
+      "en": "https://www.intrihub.com/",
+      "hi": "https://www.intrihub.com/?lang=hi",
+      "kn": "https://www.intrihub.com/?lang=kn",
+      "x-default": "https://www.intrihub.com/",
+    },
   },
   robots: {
     index: true,
@@ -158,18 +179,20 @@ export const metadata: Metadata = {
   },
 };
 
-export default function RootLayout({
+export default async function RootLayout({
   children,
 }: Readonly<{
   children: React.ReactNode;
 }>) {
   const rootGraphSchema = generateRootGraphSchema();
   const gaMeasurementId = process.env.NEXT_PUBLIC_GA_MEASUREMENT_ID || "G-EGVGF17EPS";
+  const cookieStore = await cookies();
+  const currentLang = cookieStore.get("intrihub_language")?.value || "en";
 
   return (
     <html
-      lang="en"
-      className={`${jakarta.variable} h-full antialiased scroll-smooth`}
+      lang={currentLang}
+      className={`${jakarta.variable} ${devanagari.variable} ${kannada.variable} h-full antialiased scroll-smooth`}
     >
       <head>
         {/* Google Tag Manager */}

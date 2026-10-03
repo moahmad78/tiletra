@@ -60,6 +60,8 @@ import {
   Check,
   BookOpen,
 } from "lucide-react-native";
+import LanguageModal from "../../src/components/LanguageModal";
+import { useTranslation } from "../../src/store/i18nStore";
 import { useAuthStore } from "../../src/store/authStore";
 import { updateProfile as apiUpdateProfile, uploadBusinessImage } from "../../src/api/auth";
 import {
@@ -111,6 +113,9 @@ const getCleanPhone = (phone?: string | null) => {
 export default function AdminAccountMasterHubScreen() {
   const router = useRouter();
   const { user, logout, setUser } = useAuthStore();
+  const { t, language, languages } = useTranslation();
+  const [langModalOpen, setLangModalOpen] = useState(false);
+  const currentLangObj = languages.find((l) => l.code === language);
   const [isUpdatingProfile, setIsUpdatingProfile] = useState(false);
   const queryClient = useQueryClient();
 
@@ -860,6 +865,24 @@ export default function AdminAccountMasterHubScreen() {
           </Text>
         </View>
         <ChevronRight size={18} color="#DC2626" />
+      </TouchableOpacity>
+
+      {/* Language Preference */}
+      <TouchableOpacity
+        style={styles.menuCard}
+        onPress={() => setLangModalOpen(true)}
+        activeOpacity={0.85}
+      >
+        <View style={[styles.iconBox, { backgroundColor: "#F0FDF4" }]}>
+          <Globe size={20} color="#16A34A" />
+        </View>
+        <View style={{ flex: 1 }}>
+          <Text style={styles.menuTitle}>{t("profile.language") || "Language Preference"}</Text>
+          <Text style={styles.menuSub}>
+            {currentLangObj ? `${currentLangObj.nativeName} (${currentLangObj.name})` : "English"}
+          </Text>
+        </View>
+        <ChevronRight size={18} color="#94A3B8" />
       </TouchableOpacity>
 
       {/* Logout Action */}
@@ -2336,6 +2359,12 @@ export default function AdminAccountMasterHubScreen() {
           </ScrollView>
         </View>
       </Modal>
+
+      {/* Language Modal */}
+      <LanguageModal
+        visible={langModalOpen}
+        onClose={() => setLangModalOpen(false)}
+      />
     </ScrollView>
   );
 }

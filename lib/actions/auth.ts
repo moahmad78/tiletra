@@ -321,3 +321,24 @@ export async function updateUserPhoneInDb(userId: string, phone: string, email?:
   }
 }
 
+export async function updateUserLanguageInDb(language: string, userId?: string) {
+  try {
+    const validLangs = ["en", "hi", "kn"];
+    const targetLang = validLangs.includes(language) ? language : "en";
+
+    if (!userId || userId.startsWith("usr-")) {
+      return { success: true, language: targetLang };
+    }
+
+    await prisma.user.update({
+      where: { id: userId },
+      data: { language: targetLang },
+    });
+
+    return { success: true, language: targetLang };
+  } catch (err: any) {
+    console.error("Error updating user language in DB:", err);
+    return { success: false, error: err?.message };
+  }
+}
+

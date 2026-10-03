@@ -14,8 +14,11 @@ import NotificationCenter from "@/components/notifications/NotificationCenter";
 import CategoryNavBar from "@/components/CategoryNavBar";
 import RotatingHeaderContact from "@/components/RotatingHeaderContact";
 import UserAvatar from "@/components/ui/UserAvatar";
+import LanguageSelector from "@/components/i18n/LanguageSelector";
+import { useTranslation } from "@/lib/i18n/store";
 
 export default function Header() {
+  const { t } = useTranslation();
   const [isScrolled, setIsScrolled] = useState(false);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [searchOpen, setSearchOpen] = useState(false);
@@ -201,7 +204,7 @@ export default function Header() {
                     size={28}
                     className="border border-[#052a51]/20 shadow-2xs"
                   />
-                  <span className="truncate max-w-[100px]">{user.name?.split(" ")[0] || "Account"}</span>
+                  <span className="truncate max-w-[100px]">{user.name?.split(" ")[0] || t("nav.account")}</span>
                 </Link>
               ) : (
                 <button
@@ -211,14 +214,19 @@ export default function Header() {
                   className="hidden lg:flex items-center gap-1.5 px-3.5 h-[40px] rounded-xl text-xs font-bold text-[#052a51] hover:bg-gray-100 transition-colors"
                 >
                   <UserIcon size={16} />
-                  <span>Login</span>
+                  <span>{t("auth.login")}</span>
                 </button>
               )}
+
+              {/* Language Selector */}
+              <div className="hidden sm:block">
+                <LanguageSelector variant="header" />
+              </div>
 
               <Link href="/vendor/apply" className="hidden sm:block">
                 <Button className="rounded-xl px-3.5 lg:px-4 h-[40px] font-bold text-white bg-[#F26522] hover:bg-[#d95a1e] active:scale-95 shadow-xs hover:shadow transition-all whitespace-nowrap text-xs md:text-sm flex items-center gap-1.5">
                   <Store size={15} />
-                  <span>Become a Vendor</span>
+                  <span>{t("nav.becomeVendor")}</span>
                 </Button>
               </Link>
             </div>
@@ -242,6 +250,10 @@ export default function Header() {
               </Link>
             ))}
             <div className="mt-3 pt-3 border-t border-gray-100 flex flex-col gap-2">
+              <div className="px-3 py-1 flex items-center justify-between">
+                <span className="text-xs font-bold text-gray-500 uppercase">{t("nav.language")}</span>
+                <LanguageSelector variant="header" />
+              </div>
               <Link href="/wishlist" onClick={() => setMobileMenuOpen(false)}>
                 <div className="flex items-center justify-between px-3 py-2.5 rounded-xl bg-gray-50 text-[#052a51] font-bold text-sm">
                   <span className="flex items-center gap-2">

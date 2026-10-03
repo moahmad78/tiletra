@@ -38,6 +38,7 @@ import {
   ArrowLeft,
   Search,
   Sparkles,
+  Globe,
 } from "lucide-react";
 import { useSearchParams } from "next/navigation";
 import { Suspense } from "react";
@@ -45,6 +46,8 @@ import { useWishlistStore } from "@/lib/wishlist-store";
 import { useAuthStore, useAuthStatus, type CustomerAddress } from "@/lib/auth-store";
 import { toast } from "sonner";
 import UserAvatar from "@/components/ui/UserAvatar";
+import LanguageSelector from "@/components/i18n/LanguageSelector";
+import { useTranslation } from "@/lib/i18n/store";
 
 type TabType = "profile" | "addresses" | "gst" | "payments";
 
@@ -66,6 +69,7 @@ function AccountPageContent() {
     deleteAddress,
     setDefaultAddress,
   } = useAuthStore();
+  const { t } = useTranslation();
 
   const [activeTab, setActiveTab] = useState<TabType>("profile");
 
@@ -654,6 +658,18 @@ function AccountPageContent() {
               </div>
               <ChevronRight size={16} className="text-gray-400" />
             </button>
+
+            {/* Language Preference */}
+            <div className="w-full flex items-center justify-between p-3 rounded-2xl hover:bg-gray-50 transition-colors">
+              <div className="flex items-center gap-3">
+                <Globe size={18} className="text-[#052a51]" />
+                <div>
+                  <p className="text-xs font-bold text-[#052a51]">{t("account.languagePreference")}</p>
+                  <p className="text-[10px] text-gray-400">English, हिन्दी, ಕನ್ನಡ</p>
+                </div>
+              </div>
+              <LanguageSelector variant="panel" />
+            </div>
           </div>
 
           {/* Sell on Intrihub / Become a Vendor Card */}

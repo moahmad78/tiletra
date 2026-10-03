@@ -3,10 +3,12 @@ import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { Home, Grid, ShoppingBag, User, Package } from "lucide-react-native";
 import { COLORS } from "../../src/constants/theme";
 import { useCartStore } from "../../src/store/cartStore";
+import { useTranslation } from "../../src/store/i18nStore";
 
 export default function TabLayout() {
   const insets = useSafeAreaInsets();
   const cartItemCount = useCartStore((state) => state.getItemCount());
+  const { t } = useTranslation();
   const bottomInset = Math.max(insets.bottom, 10);
 
   return (
@@ -33,28 +35,28 @@ export default function TabLayout() {
       <Tabs.Screen
         name="home"
         options={{
-          title: "Home",
+          title: t("nav.home") || "Home",
           tabBarIcon: ({ color, size }: { color: any; size?: number }) => <Home size={size || 22} color={color} />,
         }}
       />
       <Tabs.Screen
         name="categories"
         options={{
-          title: "Shop",
+          title: t("nav.categories") || "Shop",
           tabBarIcon: ({ color, size }: { color: any; size?: number }) => <Grid size={size || 22} color={color} />,
         }}
       />
       <Tabs.Screen
         name="orders"
         options={{
-          title: "Orders",
+          title: t("nav.orders") || "Orders",
           tabBarIcon: ({ color, size }: { color: any; size?: number }) => <Package size={size || 22} color={color} />,
         }}
       />
       <Tabs.Screen
         name="cart"
         options={{
-          title: "Cart",
+          title: t("nav.cart") || "Cart",
           tabBarBadge: cartItemCount > 0 ? (cartItemCount > 99 ? "99+" : cartItemCount) : undefined,
           tabBarBadgeStyle: {
             backgroundColor: COLORS.accentOrange,
@@ -68,7 +70,7 @@ export default function TabLayout() {
       <Tabs.Screen
         name="profile"
         options={{
-          title: "Account",
+          title: t("nav.account") || "Account",
           tabBarIcon: ({ color, size }: { color: any; size?: number }) => <User size={size || 22} color={color} />,
         }}
       />
