@@ -7,6 +7,7 @@ import { cn } from "@/lib/utils";
 interface UserAvatarProps {
   src?: string | null;
   name?: string | null;
+  email?: string | null;
   size?: number; // size in pixels, default 28
   className?: string;
   imageClassName?: string;
@@ -18,6 +19,7 @@ interface UserAvatarProps {
 export default function UserAvatar({
   src,
   name,
+  email,
   size = 28,
   className,
   imageClassName,
@@ -27,16 +29,25 @@ export default function UserAvatar({
 }: UserAvatarProps) {
   const [hasError, setHasError] = useState(false);
 
-  // Reset error state when src changes
+  // Compute effective image src: custom src > email auto-avatar
+  const cleanEmail = email?.trim().toLowerCase();
+  const effectiveSrc =
+    src || (cleanEmail ? `https://unavatar.io/${encodeURIComponent(cleanEmail)}?fallback=false` : null);
+
+  // Reset error state when effectiveSrc changes
   useEffect(() => {
     setHasError(false);
-  }, [src]);
+  }, [effectiveSrc]);
 
-  const initial = name?.trim() ? name.trim()[0].toUpperCase() : null;
+  const initial = name?.trim()
+    ? name.trim()[0].toUpperCase()
+    : cleanEmail
+    ? cleanEmail[0].toUpperCase()
+    : null;
   const iconSize = fallbackIconSize || Math.max(12, Math.round(size * 0.48));
   const fontSize = Math.max(10, Math.round(size * 0.4));
 
-  if (!src || hasError) {
+  if (!effectiveSrc || hasError) {
     return (
       <div
         className={cn(
@@ -44,7 +55,7 @@ export default function UserAvatar({
           fallbackClassName || className
         )}
         style={{ width: size, height: size, fontSize }}
-        aria-label={name || "User Avatar"}
+        aria-label={name || cleanEmail || "User Avatar"}
       >
         {initial || <User size={iconSize} />}
       </div>
@@ -58,8 +69,8 @@ export default function UserAvatar({
     >
       {/* eslint-disable-next-line @next/next/no-img-element */}
       <img
-        src={src}
-        alt={name || "User Avatar"}
+        src={effectiveSrc}
+        alt={name || cleanEmail || "User Avatar"}
         width={size}
         height={size}
         referrerPolicy="no-referrer"

@@ -287,11 +287,16 @@ export const useAuthStore = create<AuthState>()(
 
             const { getDbUser } = await import("@/lib/actions/auth");
             const dbUser = await getDbUser(res.userId);
-            if (dbUser) {
-              const realPhone = (dbUser.phone && !dbUser.phone.startsWith("email_") && !dbUser.phone.startsWith("google_")) ? dbUser.phone.replace(/\D/g, "").slice(-10) : "";
-              const addresses: CustomerAddress[] = (dbUser.addresses || []).map((a: any) => ({
+            const cleanEmail = email.trim().toLowerCase();
+            const autoAvatar = `https://unavatar.io/${encodeURIComponent(cleanEmail)}?fallback=false`;
+            const resolvedUser = dbUser || res.user;
+
+            if (resolvedUser) {
+              const userPhone = resolvedUser.phone || "";
+              const realPhone = (userPhone && !userPhone.startsWith("email_") && !userPhone.startsWith("google_")) ? userPhone.replace(/\D/g, "").slice(-10) : "";
+              const addresses: CustomerAddress[] = (resolvedUser.addresses || []).map((a: any) => ({
                 id: a.id,
-                name: dbUser.name || "Customer",
+                name: resolvedUser.name || "Customer",
                 phone: realPhone,
                 pincode: a.pincode || "",
                 line1: a.street || "",
@@ -304,15 +309,15 @@ export const useAuthStore = create<AuthState>()(
               }));
 
               const loggedUser: CustomerUser = {
-                id: dbUser.id,
+                id: resolvedUser.id,
                 phone: realPhone,
-                name: dbUser.name || email.split("@")[0],
-                email: dbUser.email || email,
-                avatar: dbUser.avatar || undefined,
+                name: resolvedUser.name || email.split("@")[0],
+                email: resolvedUser.email || email,
+                avatar: resolvedUser.avatar || autoAvatar,
                 addresses,
                 defaultAddressId: addresses.find((a) => a.isDefault)?.id || addresses[0]?.id,
-                phoneVerified: dbUser.phoneVerified,
-                createdAt: dbUser.createdAt.toISOString(),
+                phoneVerified: Boolean(resolvedUser.phoneVerified),
+                createdAt: resolvedUser.createdAt ? new Date(resolvedUser.createdAt).toISOString() : new Date().toISOString(),
               };
 
               set({

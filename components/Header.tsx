@@ -197,6 +197,7 @@ export default function Header() {
                   <UserAvatar
                     src={user.avatar}
                     name={user.name}
+                    email={user.email}
                     size={28}
                     className="border border-[#052a51]/20 shadow-2xs"
                   />

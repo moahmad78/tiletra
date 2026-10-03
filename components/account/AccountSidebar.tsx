@@ -93,6 +93,7 @@ export default function AccountSidebar() {
               <UserAvatar
                 src={isAuthenticated ? user?.avatar : null}
                 name={isAuthenticated ? user?.name : null}
+                email={isAuthenticated ? user?.email : null}
                 size={56}
                 className="border-2 border-[#052a51]/20 shadow-xs"
                 fallbackClassName="bg-[#052a51] text-xl"

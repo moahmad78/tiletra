@@ -109,6 +109,7 @@ export default function BottomTabBar() {
             <UserAvatar
               src={user?.avatar}
               name={user?.name || user?.email}
+              email={user?.email}
               size={22}
               className={cn("border transition-colors", isAccountActive ? "border-[#052a51] ring-1 ring-[#052a51]" : "border-gray-200")}
             />

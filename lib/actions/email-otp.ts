@@ -445,6 +445,8 @@ export async function verifyEmailOtp(
     },
   });
 
+  const autoEmailAvatar = `https://unavatar.io/${encodeURIComponent(cleanEmail)}?fallback=false`;
+
   let user: any;
   if (existingUser) {
     user = await prisma.user.update({
@@ -452,6 +454,7 @@ export async function verifyEmailOtp(
       data: {
         emailVerified: true,
         email: cleanEmail,
+        avatar: existingUser.avatar ? undefined : autoEmailAvatar,
       },
       include: {
         addresses: {
@@ -469,6 +472,7 @@ export async function verifyEmailOtp(
         authProvider: "email",
         role: "customer",
         name: cleanEmail.split("@")[0],
+        avatar: autoEmailAvatar,
       },
       include: {
         addresses: {

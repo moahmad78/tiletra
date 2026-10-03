@@ -374,6 +374,7 @@ function AccountPageContent() {
                   <UserAvatar
                     src={isAuthenticated ? user?.avatar : null}
                     name={isAuthenticated ? user?.name : null}
+                    email={isAuthenticated ? user?.email : null}
                     size={64}
                     className="border-2 border-white/40 shadow-md"
                     fallbackClassName="bg-white/10 border border-white/20 text-xl text-white"
