@@ -55,7 +55,7 @@ export async function GET(req: NextRequest) {
       success: true,
       settings: {
         ...settings,
-        supportTimings: extraMap["setting_support_timings"] || "24*7 Service Available",
+        supportTimings: extraMap["setting_support_timings"] || "24/7 Dedicated Support",
         policyHelp: extraMap["setting_policy_help"] || "IntriHub Support: We are committed to providing premium building material procurement support.",
         policyPrivacy: extraMap["setting_policy_privacy"] || "IntriHub Privacy Policy: Your personal and commercial data is protected.",
         policyTerms: extraMap["setting_policy_terms"] || "IntriHub Terms of Service: Standard B2B/B2C marketplace terms.",

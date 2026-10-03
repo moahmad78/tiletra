@@ -291,12 +291,12 @@ export default function ProfileScreen() {
             <View style={styles.menuLeft}>
               <Headphones size={22} color={COLORS.accentGreen} />
               <View style={{ marginLeft: 12 }}>
-                <Text style={styles.menuLabel}>Customer Support 24*7</Text>
+                <Text style={styles.menuLabel}>24/7 Customer Support</Text>
                 <Text style={styles.supportSubText}>WhatsApp, Helpline & FAQs</Text>
               </View>
             </View>
             <View style={styles.badge247}>
-              <Text style={styles.badge247Text}>24*7</Text>
+              <Text style={styles.badge247Text}>24/7</Text>
               <ChevronRight size={16} color={COLORS.textMuted} />
             </View>
           </TouchableOpacity>

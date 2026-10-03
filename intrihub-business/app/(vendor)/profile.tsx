@@ -341,7 +341,7 @@ export default function VendorProfileScreen() {
                 <Headphones size={18} color={COLORS.primary} />
               </View>
               <View style={{ flex: 1 }}>
-                <Text style={styles.menuText}>Vendor Partner Support 24*7</Text>
+                <Text style={styles.menuText}>24/7 Vendor Partner Support</Text>
                 <Text style={styles.menuSub}>Helpline, WhatsApp chat, FAQs & tickets</Text>
               </View>
             </View>

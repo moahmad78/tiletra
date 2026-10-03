@@ -151,7 +151,7 @@ export default function VendorPartnerSupportScreen() {
           <ArrowLeft size={20} color="#FFFFFF" />
         </TouchableOpacity>
         <View style={{ flex: 1, marginLeft: 12 }}>
-          <Text style={styles.headerTitle}>Partner Support Desk 24*7</Text>
+          <Text style={styles.headerTitle}>24/7 Partner Support Desk</Text>
           <Text style={styles.headerSub}>Dedicated executive helpline & operations center</Text>
         </View>
       </View>

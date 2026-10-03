@@ -801,7 +801,7 @@ export default function AboutPage() {
                   <p className="text-sm font-semibold text-slate-900 mt-1">
                     +91 70901 20211 (Customer &amp; Trade Desk)
                   </p>
-                  <p className="text-xs font-bold text-emerald-600 mt-0.5">24*7 Service Available</p>
+                  <p className="text-xs font-bold text-emerald-600 mt-0.5">24/7 Dedicated Support</p>
                 </div>
               </div>
 

@@ -1045,7 +1045,7 @@ const SCREENS = [
         <div style="display: flex; align-items: center; gap: 12px;">
           <span style="font-size: 24px;">🎧</span>
           <div>
-            <div style="font-weight: 800; font-size: 15px; color: #0F172A;">24*7 Vendor Partner Support Desk</div>
+            <div style="font-weight: 800; font-size: 15px; color: #0F172A;">24/7 Vendor Partner Support Desk</div>
             <div style="font-size: 12px; color: #64748B;">WhatsApp direct line, dispute resolution & dedicated account manager</div>
           </div>
         </div>

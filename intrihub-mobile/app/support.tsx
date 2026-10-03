@@ -166,7 +166,7 @@ export default function CustomerSupportScreen() {
           <ArrowLeft size={20} color={COLORS.textWhite} />
         </TouchableOpacity>
         <View style={styles.headerTitleCol}>
-          <Text style={styles.headerTitle}>Customer Support 24*7</Text>
+          <Text style={styles.headerTitle}>24/7 Customer Support</Text>
           <Text style={styles.headerSub}>Help center, quick contacts & FAQs</Text>
         </View>
         <View style={{ width: 40 }} />
@@ -178,7 +178,7 @@ export default function CustomerSupportScreen() {
           <View style={styles.heroLeft}>
             <View style={styles.badge247}>
               <Headphones size={12} color={COLORS.accent} />
-              <Text style={styles.badge247Text}>24*7 LIVE ASSISTANCE</Text>
+              <Text style={styles.badge247Text}>24/7 LIVE ASSISTANCE</Text>
             </View>
             <Text style={styles.heroHeading}>How can we assist you today?</Text>
             <Text style={styles.heroSub}>

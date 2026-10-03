@@ -351,9 +351,9 @@ export default function FloatingCustomerSupport() {
                           <Clock size={16} />
                         </div>
                         <div>
-                          <p className="text-xs font-bold text-gray-900">Service Hours</p>
+                          <p className="text-xs font-bold text-gray-900">Customer Support</p>
                           <p className="text-[11px] text-emerald-600 font-bold leading-snug mt-0.5">
-                            24*7 Service Available
+                            24/7 Dedicated Support
                           </p>
                         </div>
                       </div>
