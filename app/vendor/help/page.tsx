@@ -340,7 +340,7 @@ export default function VendorHelpPage() {
 
           <div className="pt-3 border-t border-gray-100 flex items-center gap-2 text-[11px] text-gray-500">
             <Clock size={14} className="text-[#F26522] shrink-0" />
-            <span>Support Desk Active: Mon – Sat, 9:30 AM – 7:30 PM IST</span>
+            <span>Support Desk: Available 24/7 — Always Here to Help</span>
           </div>
         </div>
 

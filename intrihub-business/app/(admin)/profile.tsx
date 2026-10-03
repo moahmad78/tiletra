@@ -263,7 +263,7 @@ export default function AdminAccountMasterHubScreen() {
       setSupportPhone(s.supportPhone || "");
       setSupportEmail(s.supportEmail || "");
       setWhatsappNumber(s.whatsappNumber || "");
-      setSupportTimings(s.supportTimings || "Mon - Sat: 9:00 AM - 8:00 PM");
+      setSupportTimings(s.supportTimings || "24/7 — Always Available");
       setStoreAddress(s.storeAddress || "Plot 42, Sector 18, Gurugram, Haryana");
 
       setPolicyHelp(s.policyHelp || "");
