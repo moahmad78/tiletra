@@ -17,7 +17,13 @@ export default function LanguageSelector({
 }: LanguageSelectorProps) {
   const { language, setLanguage, languages } = useTranslation();
   const [isOpen, setIsOpen] = useState(false);
+  const [mounted, setMounted] = useState(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
+
+  // Fix SSR hydration: zustand persist uses localStorage, must wait for client mount
+  useEffect(() => {
+    setMounted(true);
+  }, []);
 
   // Close dropdown on outside click
   useEffect(() => {
@@ -36,6 +42,22 @@ export default function LanguageSelector({
     setLanguage(code);
     setIsOpen(false);
   };
+
+  // Skeleton placeholder before hydration � preserves layout space
+  if (!mounted) {
+    return (
+      <div
+        className={cn(
+          "rounded-xl animate-pulse bg-gray-100",
+          variant === "header" && "h-[40px] w-[90px]",
+          variant === "minimal" && "h-8 w-14",
+          variant === "panel" && "h-[36px] w-[80px]",
+          variant === "footer" && "h-7 w-[140px]",
+          className
+        )}
+      />
+    );
+  }
 
   if (variant === "footer") {
     return (
@@ -76,25 +98,28 @@ export default function LanguageSelector({
           variant === "panel" &&
             "h-[36px] px-3 bg-white hover:bg-gray-50 border border-gray-200 text-xs text-gray-700 shadow-2xs",
           variant === "minimal" &&
-            "p-1.5 text-gray-500 hover:text-gray-900 rounded-lg hover:bg-gray-100"
+            "h-8 px-2 text-gray-600 hover:text-[#052a51] rounded-lg hover:bg-gray-100 border border-gray-200/60"
         )}
       >
         <Globe size={15} className="text-[#052a51] shrink-0" />
-        {variant !== "minimal" && (
+        {(variant === "header" || variant === "panel") && (
           <>
             <span className="text-xs">{currentLangInfo.nativeName}</span>
             <ChevronDown size={13} className="text-gray-400" />
           </>
         )}
         {variant === "minimal" && (
-          <span className="text-[11px] font-black uppercase">{currentLangInfo.code}</span>
+          <>
+            <span className="text-[11px] font-black uppercase">{currentLangInfo.code}</span>
+            <ChevronDown size={11} className="text-gray-400" />
+          </>
         )}
       </button>
 
       {isOpen && (
-        <div className="absolute right-0 mt-2 w-44 rounded-2xl bg-white shadow-xl border border-gray-100 py-1.5 z-50 animate-in fade-in zoom-in-95 duration-100">
+        <div className="absolute right-0 mt-2 w-44 rounded-2xl bg-white shadow-xl border border-gray-100 py-1.5 z-[999] animate-in fade-in zoom-in-95 duration-100">
           <div className="px-3 py-1.5 text-[10px] font-bold uppercase tracking-wider text-gray-400 border-b border-gray-100">
-            Select Language / भाषा
+            Select Language / ????
           </div>
           {languages.map((l) => (
             <button
