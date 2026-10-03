@@ -280,7 +280,7 @@ export default function Footer() {
           {/* Help */}
           <div>
             <h3 className="text-white font-bold text-xs sm:text-sm uppercase tracking-[2px] mb-4">Help &amp; Support</h3>
-            <ul className="space-y-2.5">
+            <ul className="space-y-2">
               {helpLinks.map(({ label, href }) => (
                 <li key={href}>
                   <Link
