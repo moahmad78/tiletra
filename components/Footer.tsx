@@ -3,7 +3,6 @@
 import Link from "next/link";
 import Image from "next/image";
 import { usePathname } from "next/navigation";
-import LanguageSelector from "@/components/i18n/LanguageSelector";
 import { useTranslation } from "@/lib/i18n/client";
 import {
   MapPin,
@@ -436,7 +435,6 @@ export default function Footer() {
         <div className="pt-6 flex flex-col md:flex-row justify-between items-center gap-4 text-xs text-white/50">
           <div className="flex flex-col sm:flex-row items-center gap-4">
             <p>© {new Date().getFullYear()} IntriHub. {t("footer.allRightsReserved", "All Rights Reserved.")}</p>
-            <LanguageSelector variant="footer" />
           </div>
           <div className="flex items-center gap-4 flex-wrap justify-center">
             <Link href="/privacy-policy" className="hover:text-white transition-colors">{t("footer.privacyPolicy", "Privacy Policy")}</Link>

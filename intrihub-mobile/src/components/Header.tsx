@@ -1,4 +1,4 @@
-import React, { useEffect, useRef, useState } from "react";
+import React, { useEffect, useRef } from "react";
 import {
   View,
   Text,
@@ -12,13 +12,11 @@ import { Image } from "expo-image";
 import { LinearGradient } from "expo-linear-gradient";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useRouter } from "expo-router";
-import { Search, Bell, MapPin, ChevronDown, Globe } from "lucide-react-native";
+import { Search, Bell, MapPin, ChevronDown } from "lucide-react-native";
 import { COLORS, SPACING, RADIUS, SHADOWS } from "../constants/theme";
 import { useAuthStore } from "../store/authStore";
 import { useNotificationStore } from "../store/notificationStore";
-import { useTranslation } from "../store/i18nStore";
 import { AnimatedSearchPlaceholder } from "./AnimatedSearchPlaceholder";
-import LanguageModal from "./LanguageModal";
 
 interface HeaderProps {
   showSearch?: boolean;
@@ -35,8 +33,6 @@ export const Header: React.FC<HeaderProps> = ({
   const insets = useSafeAreaInsets();
   const { selectedAddress, isAuthenticated } = useAuthStore();
   const { unreadCount, fetchUnreadCount } = useNotificationStore();
-  const { language } = useTranslation();
-  const [langModalVisible, setLangModalVisible] = useState(false);
 
   const shakeAnim = useRef(new Animated.Value(0)).current;
 
@@ -127,53 +123,40 @@ export const Header: React.FC<HeaderProps> = ({
             <ChevronDown size={13} color={COLORS.primary} />
           </TouchableOpacity>
 
-          <View style={{ flexDirection: "row", alignItems: "center", gap: 6 }}>
-            {/* Language Selector Button */}
-            <TouchableOpacity
-              style={styles.langButton}
-              onPress={() => setLangModalVisible(true)}
-              activeOpacity={0.8}
-              accessibilityLabel="Change Language"
+          {/* Notification Bell Icon with unread count badge + Shake Animation */}
+          <TouchableOpacity
+            style={styles.notifButton}
+            onPress={() => router.push("/notifications" as any)}
+            activeOpacity={0.8}
+          >
+            <View
+              style={[
+                styles.notifIconWrapper,
+                unreadCount > 0 && styles.notifIconWrapperActive,
+              ]}
             >
-              <Globe size={15} color={COLORS.primary} />
-              <Text style={styles.langButtonText}>{(language || "en").toUpperCase()}</Text>
-            </TouchableOpacity>
-
-            {/* Notification Bell Icon with unread count badge + Shake Animation */}
-            <TouchableOpacity
-              style={styles.notifButton}
-              onPress={() => router.push("/notifications" as any)}
-              activeOpacity={0.8}
-            >
-              <View
-                style={[
-                  styles.notifIconWrapper,
-                  unreadCount > 0 && styles.notifIconWrapperActive,
-                ]}
+              <Animated.View
+                style={{
+                  transform: [
+                    {
+                      rotate: shakeAnim.interpolate({
+                        inputRange: [-16, 16],
+                        outputRange: ["-16deg", "16deg"],
+                      }),
+                    },
+                  ],
+                }}
               >
-                <Animated.View
-                  style={{
-                    transform: [
-                      {
-                        rotate: shakeAnim.interpolate({
-                          inputRange: [-16, 16],
-                          outputRange: ["-16deg", "16deg"],
-                        }),
-                      },
-                    ],
-                  }}
-                >
-                  <Bell size={21} color={bellColor} />
-                </Animated.View>
+                <Bell size={21} color={bellColor} />
+              </Animated.View>
 
-                {unreadCount > 0 && (
-                  <View style={styles.badge}>
-                    <Text style={styles.badgeText}>{unreadCount > 99 ? "99+" : unreadCount}</Text>
-                  </View>
-                )}
-              </View>
-            </TouchableOpacity>
-          </View>
+              {unreadCount > 0 && (
+                <View style={styles.badge}>
+                  <Text style={styles.badgeText}>{unreadCount > 99 ? "99+" : unreadCount}</Text>
+                </View>
+              )}
+            </View>
+          </TouchableOpacity>
         </View>
 
         {/* Search Trigger Bar (Sitting in Navy Zone) */}
@@ -195,12 +178,6 @@ export const Header: React.FC<HeaderProps> = ({
           </TouchableOpacity>
         )}
       </LinearGradient>
-
-      {/* Language Selection Modal */}
-      <LanguageModal
-        visible={langModalVisible}
-        onClose={() => setLangModalVisible(false)}
-      />
     </View>
   );
 };
@@ -296,21 +273,5 @@ const styles = StyleSheet.create({
     marginTop: 4,
     borderWidth: 1,
     borderColor: "rgba(255, 255, 255, 0.15)",
-  },
-  langButton: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 3,
-    height: 36,
-    paddingHorizontal: 8,
-    borderRadius: RADIUS.full,
-    backgroundColor: "rgba(5, 42, 81, 0.07)",
-    borderWidth: 1,
-    borderColor: "rgba(5, 42, 81, 0.12)",
-  },
-  langButtonText: {
-    fontSize: 10,
-    fontWeight: "800",
-    color: COLORS.primary,
   },
 });

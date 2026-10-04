@@ -14,7 +14,6 @@ import NotificationCenter from "@/components/notifications/NotificationCenter";
 import CategoryNavBar from "@/components/CategoryNavBar";
 import RotatingHeaderContact from "@/components/RotatingHeaderContact";
 import UserAvatar from "@/components/ui/UserAvatar";
-import LanguageSelector from "@/components/i18n/LanguageSelector";
 import { useTranslation } from "@/lib/i18n/client";
 
 export default function Header() {
@@ -233,14 +232,6 @@ export default function Header() {
                   <UserIcon size={18} />
                 </button>
               )}
-
-              {/* Language Selector — compact on mobile & tablet, full on desktop */}
-              <div className="flex lg:hidden items-center">
-                <LanguageSelector variant="minimal" />
-              </div>
-              <div className="hidden lg:flex items-center">
-                <LanguageSelector variant="header" />
-              </div>
 
               <Link href="/vendor/apply" className="hidden sm:block">
                 <Button className="rounded-xl px-3.5 lg:px-4 h-[40px] font-bold text-white bg-[#F26522] hover:bg-[#d95a1e] active:scale-95 shadow-xs hover:shadow transition-all whitespace-nowrap text-xs md:text-sm flex items-center gap-1.5">

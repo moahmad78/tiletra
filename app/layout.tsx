@@ -12,7 +12,6 @@ import GoogleSessionHydrator from "@/components/auth/GoogleSessionHydrator";
 import GoogleAnalyticsTracker from "@/components/analytics/GoogleAnalyticsTracker";
 import AddToCartToast from "@/components/cart/AddToCartToast";
 import PwaInstallPrompt from "@/components/pwa/PwaInstallPrompt";
-import GoogleTranslateScript from "@/components/i18n/GoogleTranslateScript";
 import { Toaster } from "sonner";
 import { ScrollingTitle } from "@/components/ScrollingTitle";
 
@@ -276,7 +275,6 @@ j=d.createElement(s),dl=l!='dataLayer'?'&l='+l:'';j.async=true;j.src=
           <BottomTabBar />
           <LoginModal />
           <PwaInstallPrompt />
-          <GoogleTranslateScript />
           <Toaster position="top-center" richColors />
           <Suspense fallback={null}>
             <GoogleSessionHydrator />
