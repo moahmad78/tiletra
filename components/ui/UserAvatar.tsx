@@ -29,6 +29,7 @@ export default function UserAvatar({
 }: UserAvatarProps) {
   const [hasError, setHasError] = useState(false);
   const [isLoaded, setIsLoaded] = useState(false);
+  const imgRef = useRef<HTMLImageElement>(null);
 
   const cleanEmail = email?.trim().toLowerCase();
   const directSrc = src && typeof src === "string" && src.trim().length > 0 ? src.trim() : null;
@@ -39,6 +40,15 @@ export default function UserAvatar({
   useEffect(() => {
     setHasError(false);
     setIsLoaded(false);
+
+    if (imgRef.current?.complete) {
+      if (imgRef.current.naturalWidth > 0) {
+        setIsLoaded(true);
+        setHasError(false);
+      } else {
+        setHasError(true);
+      }
+    }
   }, [effectiveSrc]);
 
   const initial = name?.trim()
@@ -89,6 +99,7 @@ export default function UserAvatar({
 
       {/* eslint-disable-next-line @next/next/no-img-element */}
       <img
+        ref={imgRef}
         src={effectiveSrc}
         alt={name || cleanEmail || "User Avatar"}
         width={size}

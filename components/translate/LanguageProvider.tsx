@@ -18,11 +18,21 @@ const DEFAULT_ENGLISH: LanguageOption = {
   isPinned: true,
 };
 
+const INITIAL_PINNED_LANGUAGES: LanguageOption[] = PINNED_LANGUAGE_CODES.map((code) => {
+  const names = resolveLanguageNames(code);
+  return {
+    code,
+    name: names.name,
+    nativeName: names.nativeName,
+    isPinned: true,
+  };
+});
+
 export function LanguageProvider({ children }: { children: React.ReactNode }) {
   const [currentLang, setCurrentLang] = useState<string>("en");
-  const [isReady, setIsReady] = useState<boolean>(false);
+  const [isReady, setIsReady] = useState<boolean>(true);
   const [isTranslating, setIsTranslating] = useState<boolean>(false);
-  const [languages, setLanguages] = useState<LanguageOption[]>([DEFAULT_ENGLISH]);
+  const [languages, setLanguages] = useState<LanguageOption[]>(INITIAL_PINNED_LANGUAGES);
 
   // Read saved language on mount
   useEffect(() => {

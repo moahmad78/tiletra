@@ -635,9 +635,6 @@ export const useAuthStatus = (): AuthStatus => {
   const user = useAuthStore((s) => s.user);
 
   if (!hasHydrated) return "loading";
-  if (typeof window !== "undefined" && new URLSearchParams(window.location.search).has("google_session") && !isAuthenticated) {
-    return "loading";
-  }
   if (isAuthenticated && user) return "authenticated";
   return "unauthenticated";
 };

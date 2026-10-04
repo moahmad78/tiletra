@@ -15,21 +15,30 @@ declare global {
  */
 export default function GoogleTranslateBootstrap() {
   useEffect(() => {
-    // If google translate script loaded before element was mounted, trigger init
-    if (
-      typeof window !== "undefined" &&
-      window.google &&
-      window.google.translate &&
-      window.google.translate.TranslateElement &&
-      !document.querySelector("select.goog-te-combo")
-    ) {
-      try {
-        new window.google.translate.TranslateElement(
-          { pageLanguage: "en", autoDisplay: false },
-          "google_translate_element"
-        );
-      } catch {}
-    }
+    const initTranslate = () => {
+      if (
+        typeof window !== "undefined" &&
+        window.google &&
+        window.google.translate &&
+        window.google.translate.TranslateElement &&
+        !document.querySelector("select.goog-te-combo")
+      ) {
+        try {
+          new window.google.translate.TranslateElement(
+            { pageLanguage: "en", autoDisplay: false },
+            "google_translate_element"
+          );
+        } catch {}
+      }
+    };
+
+    initTranslate();
+    const t1 = setTimeout(initTranslate, 600);
+    const t2 = setTimeout(initTranslate, 1800);
+    return () => {
+      clearTimeout(t1);
+      clearTimeout(t2);
+    };
   }, []);
 
   return (

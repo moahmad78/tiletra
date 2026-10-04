@@ -198,6 +198,38 @@ export default async function RootLayout({
       className={`${jakarta.variable} ${devanagari.variable} ${kannada.variable} h-full antialiased scroll-smooth`}
     >
       <head>
+        {/* DOM Mutation Safety Patch: Prevents React 19 hydration/reconciliation crashes from Google Translate wrapping nodes in <font> */}
+        <script
+          id="dom-mutation-safety-patch"
+          dangerouslySetInnerHTML={{
+            __html: `
+              (function() {
+                if (typeof Node === 'function' && Node.prototype) {
+                  var origRemoveChild = Node.prototype.removeChild;
+                  Node.prototype.removeChild = function(child) {
+                    if (child.parentNode !== this) {
+                      if (console && console.warn) {
+                        console.warn('[IntriHub DOM Safety] removeChild prevented from wrong parent:', child, this);
+                      }
+                      return child;
+                    }
+                    return origRemoveChild.apply(this, arguments);
+                  };
+                  var origInsertBefore = Node.prototype.insertBefore;
+                  Node.prototype.insertBefore = function(newNode, refNode) {
+                    if (refNode && refNode.parentNode !== this) {
+                      if (console && console.warn) {
+                        console.warn('[IntriHub DOM Safety] insertBefore prevented from wrong parent:', refNode, this);
+                      }
+                      return newNode;
+                    }
+                    return origInsertBefore.apply(this, arguments);
+                  };
+                }
+              })();
+            `,
+          }}
+        />
         {/* Google Tag Manager */}
         <Script
           id="google-tag-manager"
@@ -275,7 +307,7 @@ j=d.createElement(s),dl=l!='dataLayer'?'&l='+l:'';j.async=true;j.src=
         />
         <Script
           id="google-translate-script"
-          strategy="afterInteractive"
+          strategy="lazyOnload"
           src="https://translate.google.com/translate_a/element.js?cb=googleTranslateElementInit"
         />
       </head>

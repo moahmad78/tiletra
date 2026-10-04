@@ -205,7 +205,9 @@ export default function Header() {
               )}
 
               {/* Mobile Header Account Avatar / Sign In Button */}
-              {mounted && authStatus === "authenticated" && user ? (
+              {!mounted || authStatus === "loading" ? (
+                <div className="md:hidden w-8 h-8 rounded-full bg-gray-100/60 animate-pulse" />
+              ) : authStatus === "authenticated" && user ? (
                 <Link
                   href="/account"
                   aria-label="Account"
@@ -220,7 +222,7 @@ export default function Header() {
                     className="border border-[#052a51]/20 shadow-xs"
                   />
                 </Link>
-              ) : mounted && (
+              ) : (
                 <button
                   type="button"
                   onClick={() => openLoginModal()}

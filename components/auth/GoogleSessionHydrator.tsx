@@ -116,7 +116,7 @@ export default function GoogleSessionHydrator() {
           const cookieVal = decodeURIComponent(match[1]);
           const jsonStr = decodeBase64Url(cookieVal);
           const decoded = JSON.parse(jsonStr);
-          if (decoded && decoded.avatar && (!user || !user.avatar || user.avatar !== decoded.avatar)) {
+          if (decoded && (!isAuthenticated || !user || (!user.avatar && decoded.avatar))) {
             googleSignIn({
               userId: decoded.userId,
               name: decoded.name || decoded.email?.split("@")[0] || "User",

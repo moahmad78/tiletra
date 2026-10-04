@@ -139,11 +139,11 @@ export function driveGoogleCombo(langCode: string, retries = 0): Promise<boolean
     const combo = document.querySelector<HTMLSelectElement>("select.goog-te-combo");
 
     if (!combo) {
-      if (retries < 6) {
-        // Fast retry: 100ms up to 6 times (~600ms)
+      if (retries < 25) {
+        // Fast retry: 120ms up to 25 times (~3000ms) to allow lazyOnload script to mount
         setTimeout(() => {
           driveGoogleCombo(langCode, retries + 1).then(resolve);
-        }, 100);
+        }, 120);
         return;
       }
       return resolve(false);
