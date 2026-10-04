@@ -15,7 +15,7 @@ import CategoryNavBar from "@/components/CategoryNavBar";
 import RotatingHeaderContact from "@/components/RotatingHeaderContact";
 import UserAvatar from "@/components/ui/UserAvatar";
 import LanguageSelector from "@/components/i18n/LanguageSelector";
-import { useTranslation } from "@/lib/i18n/store";
+import { useTranslation } from "@/lib/i18n/client";
 
 export default function Header() {
   const { t } = useTranslation();
@@ -50,13 +50,13 @@ export default function Header() {
   }, []);
 
   const navLinks = [
-    { name: "Home", href: "/" },
-    { name: "Shop", href: "/shop" },
-    { name: "Categories", href: "/categories" },
-    { name: "Why IntriHub", href: "/why-intrihub" },
-    { name: "About", href: "/about" },
-    { name: "FAQ", href: "/faq" },
-    { name: "Contact", href: "/contact" },
+    { name: t("nav.home"), href: "/" },
+    { name: t("nav.shop"), href: "/shop" },
+    { name: t("nav.categories"), href: "/categories" },
+    { name: t("nav.whyIntriHub"), href: "/why-intrihub" },
+    { name: t("nav.about"), href: "/about" },
+    { name: t("nav.faq"), href: "/faq" },
+    { name: t("nav.contact"), href: "/contact" },
   ];
 
   return (
@@ -73,7 +73,7 @@ export default function Header() {
             <div className="flex justify-between items-center text-xs font-medium">
               <div className="flex items-center gap-6">
                 <span className="flex items-center gap-1.5">
-                  <MapPin size={13} className="text-[#F26522]" /> Bangalore, Karnataka
+                  <MapPin size={13} className="text-[#F26522]" /> {t("common.bangaloreKarnataka")}
                 </span>
                 <a
                   href="mailto:support@intrihub.com"
@@ -85,7 +85,7 @@ export default function Header() {
               <div className="flex items-center gap-4">
                 <span className="text-[#F26522] font-bold inline-flex items-center gap-1.5">
                   <Truck size={13} className="text-[#F26522]" />
-                  <span>Build Better, We Deliver Faster</span>
+                  <span>{t("common.buildBetterTagline")}</span>
                 </span>
                 <span className="text-white/30">|</span>
                 <RotatingHeaderContact />
@@ -103,11 +103,11 @@ export default function Header() {
         >
           <div className="w-full max-w-[1400px] mx-auto px-3 sm:px-4 md:px-6 lg:px-8 h-full flex items-center justify-between gap-2.5">
             {/* Logo */}
-            <div className="flex-shrink-0">
-              <Link href="/" className="flex items-center group">
+            <div className="flex-shrink-0 notranslate" translate="no">
+              <Link href="/" className="flex items-center group notranslate" translate="no">
                 <Image
                   src="/logo/intri-web-logo.png"
-                  alt="Intrihub Logo"
+                  alt="IntriHub"
                   width={150}
                   height={40}
                   priority
@@ -122,12 +122,12 @@ export default function Header() {
                 <button
                   type="button"
                   onClick={() => setSearchOpen(true)}
-                  aria-label="Search products"
+                  aria-label={t("nav.searchProducts")}
                   className="flex-1 flex items-center gap-2 min-w-0 text-left"
                 >
                   <Search size={14} className="text-[#F26522] shrink-0" />
                   <span className="text-xs text-gray-600 group-hover:text-gray-800 font-medium truncate">
-                    Search tiles, wires, pipes...
+                    {t("nav.searchPlaceholderMobile")}
                   </span>
                 </button>
               </div>
@@ -139,11 +139,11 @@ export default function Header() {
                 <button
                   type="button"
                   onClick={() => setSearchOpen(true)}
-                  aria-label="Search catalog"
+                  aria-label={t("nav.searchCatalog")}
                   className="flex-1 flex items-center gap-2.5 text-gray-600 group-hover:text-gray-800 text-xs font-semibold mr-2 overflow-hidden"
                 >
                   <Search size={16} className="text-gray-500 group-hover:text-[#F26522] transition-colors shrink-0" />
-                  <span className="truncate">Search tiles, electrical, plumbing, hardware, plywood, granite...</span>
+                  <span className="truncate">{t("nav.searchPlaceholderDesktop")}</span>
                 </button>
                 <div className="flex items-center gap-2 shrink-0">
                   <span className="text-[10px] font-bold text-gray-600 bg-white border border-gray-300 px-2 py-0.5 rounded-md shadow-2xs">
@@ -162,7 +162,7 @@ export default function Header() {
               <button
                 type="button"
                 onClick={() => setMobileMenuOpen((prev) => !prev)}
-                aria-label="Toggle mobile menu"
+                aria-label={t("nav.toggleMenu")}
                 className="md:hidden w-9 h-9 rounded-xl flex items-center justify-center text-[#052a51] hover:bg-gray-100 active:scale-95 transition-all cursor-pointer shrink-0"
               >
                 {mobileMenuOpen ? <X size={20} /> : <Menu size={20} />}
@@ -171,7 +171,7 @@ export default function Header() {
               {/* Wishlist Button (Desktop only - mobile uses BottomTabBar) */}
               <Link
                 href="/wishlist"
-                aria-label="View Wishlist"
+                aria-label={t("common.viewWishlist")}
                 className="hidden md:flex relative w-10 h-10 rounded-full items-center justify-center text-[#052a51] hover:bg-gray-100 active:scale-95 transition-all"
               >
                 <Heart size={20} />
@@ -186,7 +186,7 @@ export default function Header() {
               <button
                 id="cart-button"
                 onClick={toggleCart}
-                aria-label="Open cart"
+                aria-label={t("common.openCart")}
                 className="hidden md:flex relative w-10 h-10 rounded-full items-center justify-center text-[#052a51] hover:bg-gray-100 active:scale-95 transition-all"
               >
                 <ShoppingCart size={20} />
@@ -197,20 +197,21 @@ export default function Header() {
                 )}
               </button>
 
-              {/* Account Link / Sign In (Desktop) */}
+              {/* Account Link / Sign In (Desktop & Tablet) */}
               {!mounted || authStatus === "loading" ? (
-                <div className="hidden lg:block w-[76px] h-[40px] rounded-xl bg-gray-100/60 animate-pulse" />
+                <div className="hidden md:block w-[76px] h-[40px] rounded-xl bg-gray-100/60 animate-pulse" />
               ) : authStatus === "authenticated" && user ? (
                 <Link
                   href="/account"
-                  aria-label="Account"
-                  className="hidden lg:flex items-center gap-2 px-2.5 h-[40px] rounded-xl text-xs font-bold text-[#052a51] hover:bg-gray-100 transition-colors"
+                  aria-label={t("nav.account")}
+                  className="hidden md:flex items-center gap-2 px-2.5 h-[40px] rounded-xl text-xs font-bold text-[#052a51] hover:bg-gray-100 transition-colors"
                 >
                   <UserAvatar
                     src={user.avatar}
                     name={user.name}
                     email={user.email}
                     size={28}
+                    priority
                     className="border border-[#052a51]/20 shadow-2xs"
                   />
                   <span className="truncate max-w-[100px]">{user.name?.split(" ")[0] || t("nav.account")}</span>
@@ -219,12 +220,30 @@ export default function Header() {
                 <button
                   type="button"
                   onClick={() => openLoginModal()}
-                  aria-label="Sign in"
-                  className="hidden lg:flex items-center gap-1.5 px-3.5 h-[40px] rounded-xl text-xs font-bold text-[#052a51] hover:bg-gray-100 transition-colors"
+                  aria-label={t("common.signIn")}
+                  className="hidden md:flex items-center gap-1.5 px-3.5 h-[40px] rounded-xl text-xs font-bold text-[#052a51] hover:bg-gray-100 transition-colors"
                 >
                   <UserIcon size={16} />
                   <span>{t("auth.login")}</span>
                 </button>
+              )}
+
+              {/* Mobile Header Account Avatar Button (Visible on mobile header when logged in) */}
+              {mounted && authStatus === "authenticated" && user && (
+                <Link
+                  href="/account"
+                  aria-label={t("nav.account")}
+                  className="md:hidden flex items-center justify-center w-8 h-8 rounded-full shrink-0 active:scale-95 transition-transform"
+                >
+                  <UserAvatar
+                    src={user.avatar}
+                    name={user.name}
+                    email={user.email}
+                    size={28}
+                    priority
+                    className="border border-[#052a51]/20 shadow-xs"
+                  />
+                </Link>
               )}
 
               {/* Language Selector — globe only on md, full on lg+ */}
@@ -251,6 +270,39 @@ export default function Header() {
         {/* Mobile Menu Dropdown */}
         {mobileMenuOpen && (
           <div className="md:hidden absolute top-full left-0 right-0 bg-white shadow-xl py-5 px-6 flex flex-col gap-1 border-t border-gray-100 animate-in slide-in-from-top duration-200">
+            {mounted && authStatus === "authenticated" && user ? (
+              <Link
+                href="/account"
+                onClick={() => setMobileMenuOpen(false)}
+                className="mb-2 p-3 bg-blue-50/80 rounded-2xl flex items-center gap-3 border border-blue-100 active:scale-[0.98] transition-transform"
+              >
+                <UserAvatar
+                  src={user.avatar}
+                  name={user.name}
+                  email={user.email}
+                  size={42}
+                  priority
+                  className="border border-white shadow-xs shrink-0"
+                />
+                <div className="min-w-0 flex-1">
+                  <p className="text-sm font-black text-[#052a51] truncate">{user.name || "Customer"}</p>
+                  <p className="text-[11px] text-gray-500 truncate">{user.email || user.phone || ""}</p>
+                </div>
+              </Link>
+            ) : mounted && (
+              <button
+                type="button"
+                onClick={() => {
+                  setMobileMenuOpen(false);
+                  openLoginModal();
+                }}
+                className="mb-2 p-3 bg-[#052a51] text-white rounded-2xl flex items-center justify-center gap-2 font-bold text-sm shadow-xs active:scale-[0.98] transition-transform cursor-pointer"
+              >
+                <UserIcon size={16} />
+                <span>{t("auth.login")} / {t("auth.register")}</span>
+              </button>
+            )}
+
             {navLinks.map((link) => (
               <Link
                 key={link.name}
@@ -265,7 +317,7 @@ export default function Header() {
               <Link href="/wishlist" onClick={() => setMobileMenuOpen(false)}>
                 <div className="flex items-center justify-between px-3 py-2.5 rounded-xl bg-gray-50 text-[#052a51] font-bold text-sm">
                   <span className="flex items-center gap-2">
-                    <Heart size={16} className="text-red-500" /> My Wishlist
+                    <Heart size={16} className="text-red-500" /> {t("nav.myWishlist")}
                   </span>
                   {mounted && wishlistCount > 0 && (
                     <span className="px-2 py-0.5 bg-red-500 text-white rounded-full text-xs">
@@ -276,7 +328,7 @@ export default function Header() {
               </Link>
               <Link href="/shop" onClick={() => setMobileMenuOpen(false)}>
                 <Button className="w-full rounded-xl h-11 text-sm font-bold bg-[#F26522] text-white">
-                  Explore All Supplies
+                  {t("nav.exploreSupplies")}
                 </Button>
               </Link>
             </div>

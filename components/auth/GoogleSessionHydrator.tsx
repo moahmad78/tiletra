@@ -28,9 +28,11 @@ function decodeBase64Url(str: string): string {
  *
  * After Google OAuth callback, the server redirects to:
  *   /?google_session=<base64url-encoded-user-json>
+ * and also sets cookie: intrihub_session=<base64url-encoded-user-json>
  *
- * This component (mounted in the root layout) reads that param,
- * hydrates the Zustand auth store, then strips the param cleanly from the URL.
+ * This component (mounted in the root layout) reads that param or cookie,
+ * immediately hydrates the Zustand auth store with avatar and user details,
+ * then cleanly strips the param from the URL.
  */
 export default function GoogleSessionHydrator() {
   const searchParams = useSearchParams();
@@ -45,8 +47,18 @@ export default function GoogleSessionHydrator() {
   }, [isAuthenticated, user?.id, user?.avatar, syncUserWithDb]);
 
   useEffect(() => {
-    const session = searchParams.get("google_session");
-    const authError = searchParams.get("auth_error");
+    // Check both Next.js searchParams and raw window.location.search for instant sync
+    const urlSession =
+      searchParams.get("google_session") ||
+      (typeof window !== "undefined"
+        ? new URLSearchParams(window.location.search).get("google_session")
+        : null);
+
+    const authError =
+      searchParams.get("auth_error") ||
+      (typeof window !== "undefined"
+        ? new URLSearchParams(window.location.search).get("auth_error")
+        : null);
 
     if (authError) {
       const messages: Record<string, string> = {
@@ -66,10 +78,10 @@ export default function GoogleSessionHydrator() {
       return;
     }
 
-    if (session && processedSessionRef.current !== session) {
-      processedSessionRef.current = session;
+    if (urlSession && processedSessionRef.current !== urlSession) {
+      processedSessionRef.current = urlSession;
       try {
-        const jsonStr = decodeBase64Url(session);
+        const jsonStr = decodeBase64Url(urlSession);
         const decoded = JSON.parse(jsonStr);
 
         googleSignIn({
@@ -93,8 +105,34 @@ export default function GoogleSessionHydrator() {
         url.searchParams.delete("google_session");
         window.history.replaceState({}, "", url.pathname + (url.search ? url.search : ""));
       }
+      return;
     }
-  }, [searchParams, googleSignIn]);
+
+    // Cookie fallback: If no URL param, but intrihub_session cookie exists and user lacks avatar
+    if (!urlSession && typeof document !== "undefined" && (!isAuthenticated || !user?.avatar)) {
+      const match = document.cookie.match(/(?:^|;\s*)intrihub_session=([^;]+)/);
+      if (match && match[1]) {
+        try {
+          const cookieVal = decodeURIComponent(match[1]);
+          const jsonStr = decodeBase64Url(cookieVal);
+          const decoded = JSON.parse(jsonStr);
+          if (decoded && decoded.avatar && (!user || !user.avatar || user.avatar !== decoded.avatar)) {
+            googleSignIn({
+              userId: decoded.userId,
+              name: decoded.name || decoded.email?.split("@")[0] || "User",
+              email: decoded.email || "",
+              avatar: decoded.avatar || undefined,
+              phone: decoded.phone,
+              phoneVerified: decoded.phoneVerified,
+              createdAt: decoded.createdAt,
+            });
+          }
+        } catch (e) {
+          // silently ignore invalid cookie format
+        }
+      }
+    }
+  }, [searchParams, googleSignIn, isAuthenticated, user]);
 
   return null;
 }

@@ -38,10 +38,20 @@ interface I18nState {
   t: (key: string, params?: Record<string, string | number>) => string;
 }
 
+function getInitialLanguage(): SupportedLanguage {
+  if (typeof document !== "undefined") {
+    const match = document.cookie.match(new RegExp(`(?:^|; )${LANGUAGE_COOKIE}=([^;]*)`));
+    if (match && match[1] && SUPPORTED_LANGUAGES.some((l) => l.code === match[1])) {
+      return match[1] as SupportedLanguage;
+    }
+  }
+  return DEFAULT_LANGUAGE;
+}
+
 export const useI18nStore = create<I18nState>()(
   persist(
     (set, get) => ({
-      language: DEFAULT_LANGUAGE,
+      language: getInitialLanguage(),
 
       setLanguage: async (newLang: SupportedLanguage, syncBackend = true) => {
         if (!SUPPORTED_LANGUAGES.some((l) => l.code === newLang)) return;

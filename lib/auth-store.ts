@@ -253,11 +253,12 @@ export const useAuthStore = create<AuthState>()(
             set((state) => {
               // Safety: only update if state is still this same email/user
               if (!state.user || (state.user.email && state.user.email !== userData.email)) return state;
+              const finalAvatar = resolvedAvatar || state.user.avatar || undefined;
               return {
                 user: {
                   ...state.user,
                   id: dbUser.id,
-                  avatar: resolvedAvatar ?? state.user.avatar,
+                  avatar: finalAvatar,
                   phone: resolvedPhone,
                   phoneVerified: dbUser.phoneVerified,
                   addresses,
@@ -440,7 +441,8 @@ export const useAuthStore = create<AuthState>()(
                   : state.user.phone;
               const resolvedAvatar =
                 (dbUser.avatar && !dbUser.avatar.includes("unavatar.io") ? dbUser.avatar : undefined) ||
-                (state.user.avatar && !state.user.avatar.includes("unavatar.io") ? state.user.avatar : undefined);
+                (state.user.avatar && !state.user.avatar.includes("unavatar.io") ? state.user.avatar : undefined) ||
+                undefined;
               return {
                 user: {
                   ...state.user,

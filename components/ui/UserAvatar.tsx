@@ -25,19 +25,49 @@ export default function UserAvatar({
   imageClassName,
   fallbackClassName,
   fallbackIconSize,
-  priority = false,
+  priority = true,
 }: UserAvatarProps) {
   const [hasError, setHasError] = useState(false);
+  const [retryAttempt, setRetryAttempt] = useState(0);
+  const [isLoaded, setIsLoaded] = useState(false);
 
-  // Compute effective image src: ignore unavatar.io placeholder/broken URLs
+  // Clean effective image src: ignore unavatar.io broken placeholders
   const cleanSrc = src && !src.includes("unavatar.io") ? src.trim() : null;
-  const effectiveSrc = cleanSrc || null;
   const cleanEmail = email?.trim().toLowerCase();
 
-  // Reset error state when effectiveSrc changes
+  // Reset error state and retry count whenever cleanSrc changes
   useEffect(() => {
     setHasError(false);
-  }, [effectiveSrc]);
+    setRetryAttempt(0);
+    setIsLoaded(false);
+  }, [cleanSrc]);
+
+  // Compute alternative URL if first attempt on Google avatar fails
+  const getEffectiveSrc = () => {
+    if (!cleanSrc) return null;
+    if (retryAttempt === 0) return cleanSrc;
+
+    // Retry 1: If Google URL with `=s...`, try upgrading to `=s256-c` or removing size parameter
+    if (cleanSrc.includes("googleusercontent.com")) {
+      if (cleanSrc.includes("=")) {
+        return cleanSrc.replace(/=s\d+(-c)?$/, "=s256-c");
+      }
+      return `${cleanSrc}=s256-c`;
+    }
+
+    return cleanSrc;
+  };
+
+  const effectiveSrc = getEffectiveSrc();
+
+  const handleImageError = () => {
+    // If it's a Google image and we haven't retried with alternative format yet, retry once
+    if (cleanSrc?.includes("googleusercontent.com") && retryAttempt === 0) {
+      setRetryAttempt(1);
+    } else {
+      setHasError(true);
+    }
+  };
 
   const initial = name?.trim()
     ? name.trim()[0].toUpperCase()
@@ -64,19 +94,37 @@ export default function UserAvatar({
 
   return (
     <div
-      className={cn("relative shrink-0 rounded-full overflow-hidden select-none", className)}
+      className={cn("relative shrink-0 rounded-full overflow-hidden select-none bg-gray-100", className)}
       style={{ width: size, height: size }}
     >
+      {/* Fallback initial visible beneath while image is loading */}
+      {!isLoaded && (
+        <div
+          className="absolute inset-0 bg-[#052a51] text-white flex items-center justify-center font-black select-none"
+          style={{ fontSize }}
+        >
+          {initial || <User size={iconSize} />}
+        </div>
+      )}
+
       {/* eslint-disable-next-line @next/next/no-img-element */}
       <img
+        key={`${effectiveSrc}-${retryAttempt}`}
         src={effectiveSrc}
         alt={name || cleanEmail || "User Avatar"}
         width={size}
         height={size}
+        crossOrigin="anonymous"
         referrerPolicy="no-referrer"
         loading={priority ? "eager" : "lazy"}
-        onError={() => setHasError(true)}
-        className={cn("w-full h-full object-cover rounded-full", imageClassName)}
+        decoding="async"
+        onLoad={() => setIsLoaded(true)}
+        onError={handleImageError}
+        className={cn(
+          "w-full h-full object-cover rounded-full transition-opacity duration-150",
+          isLoaded ? "opacity-100" : "opacity-0",
+          imageClassName
+        )}
       />
     </div>
   );
