@@ -109,11 +109,7 @@ export function clearGoogtransCookie(): void {
 export function saveLanguagePreference(langCode: string): void {
   try {
     if (typeof window !== "undefined") {
-      if (langCode === "en") {
-        window.localStorage.removeItem(STORAGE_KEY);
-      } else {
-        window.localStorage.setItem(STORAGE_KEY, langCode);
-      }
+      window.localStorage.setItem(STORAGE_KEY, langCode);
     }
   } catch {}
 }
@@ -125,11 +121,11 @@ export function getSavedLanguagePreference(): string {
   try {
     if (typeof window !== "undefined") {
       const saved = window.localStorage.getItem(STORAGE_KEY);
-      if (saved && saved !== "en") return saved;
+      if (saved) return saved;
 
       // Fallback check from googtrans cookie (e.g. "/en/hi")
       const match = document.cookie.match(/(?:^|;\s*)googtrans=\/(?:en|auto)\/([a-zA-Z_-]+)/);
-      if (match && match[1] && match[1] !== "en") {
+      if (match && match[1]) {
         return match[1];
       }
     }
@@ -211,8 +207,8 @@ export function driveGoogleCombo(langCode: string, retries = 0): Promise<boolean
  * Restore original English without manual page reload (FR-4).
  */
 export function restoreOriginalEnglish(isUserAction = true): Promise<boolean> {
-  clearGoogtransCookie();
   saveLanguagePreference("en");
+  setGoogtransCookie("en");
 
   return new Promise((resolve) => {
     driveGoogleCombo("en").then((success) => {
