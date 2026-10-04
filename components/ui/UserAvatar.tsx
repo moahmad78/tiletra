@@ -28,61 +28,17 @@ export default function UserAvatar({
   priority = true,
 }: UserAvatarProps) {
   const [hasError, setHasError] = useState(false);
-  const [retryAttempt, setRetryAttempt] = useState(0);
-  const imgRef = useRef<HTMLImageElement | null>(null);
+  const [isLoaded, setIsLoaded] = useState(false);
 
   // Clean effective image src: ignore unavatar.io broken placeholders
   const cleanSrc = src && !src.includes("unavatar.io") ? src.trim() : null;
   const cleanEmail = email?.trim().toLowerCase();
 
-  // Reset error state and retry count whenever cleanSrc changes
+  // Reset states whenever cleanSrc changes
   useEffect(() => {
     setHasError(false);
-    setRetryAttempt(0);
+    setIsLoaded(false);
   }, [cleanSrc]);
-
-  // If already complete in cache upon mount, clear error
-  useEffect(() => {
-    if (imgRef.current && imgRef.current.complete) {
-      if (imgRef.current.naturalWidth > 0) {
-        setHasError(false);
-      } else if (imgRef.current.naturalWidth === 0 && cleanSrc) {
-        // Natural width 0 means image failed to load
-        if (cleanSrc.includes("googleusercontent.com") && retryAttempt === 0) {
-          setRetryAttempt(1);
-        } else {
-          setHasError(true);
-        }
-      }
-    }
-  }, [cleanSrc, retryAttempt]);
-
-  // Compute alternative URL if first attempt on Google avatar fails
-  const getEffectiveSrc = () => {
-    if (!cleanSrc) return null;
-    if (retryAttempt === 0) return cleanSrc;
-
-    // Retry 1: If Google URL with `=s...`, try upgrading to `=s256-c` or removing size parameter
-    if (cleanSrc.includes("googleusercontent.com")) {
-      if (cleanSrc.includes("=")) {
-        return cleanSrc.replace(/=s\d+(-c)?$/, "=s256-c");
-      }
-      return `${cleanSrc}=s256-c`;
-    }
-
-    return cleanSrc;
-  };
-
-  const effectiveSrc = getEffectiveSrc();
-
-  const handleImageError = () => {
-    // If it's a Google image and we haven't retried with alternative format yet, retry once
-    if (cleanSrc?.includes("googleusercontent.com") && retryAttempt === 0) {
-      setRetryAttempt(1);
-    } else {
-      setHasError(true);
-    }
-  };
 
   const initial = name?.trim()
     ? name.trim()[0].toUpperCase()
@@ -92,8 +48,8 @@ export default function UserAvatar({
   const iconSize = fallbackIconSize || Math.max(12, Math.round(size * 0.48));
   const fontSize = Math.max(10, Math.round(size * 0.4));
 
-  // If no source or image errored out completely, display fallback circle
-  if (!effectiveSrc || hasError) {
+  // If no image source at all, show fallback directly
+  if (!cleanSrc || hasError) {
     return (
       <div
         className={cn(
@@ -110,23 +66,46 @@ export default function UserAvatar({
 
   return (
     <div
-      className={cn("relative shrink-0 rounded-full overflow-hidden select-none bg-gray-100", className)}
-      style={{ width: size, height: size }}
+      className={cn(
+        "relative shrink-0 rounded-full overflow-hidden select-none bg-[#052a51] text-white flex items-center justify-center font-black",
+        className
+      )}
+      style={{ width: size, height: size, fontSize }}
+      aria-label={name || cleanEmail || "User Avatar"}
     >
+      {/* Fallback initial shown underneath while image downloads */}
+      {!isLoaded && (
+        <span
+          className={cn(
+            "absolute inset-0 flex items-center justify-center select-none bg-[#052a51] text-white font-black",
+            fallbackClassName
+          )}
+          style={{ fontSize }}
+        >
+          {initial || <User size={iconSize} />}
+        </span>
+      )}
+
       {/* eslint-disable-next-line @next/next/no-img-element */}
       <img
-        ref={imgRef}
-        key={`${effectiveSrc}-${retryAttempt}`}
-        src={effectiveSrc}
+        src={cleanSrc}
         alt={name || cleanEmail || "User Avatar"}
         width={size}
         height={size}
         referrerPolicy="no-referrer"
+        crossOrigin="anonymous"
         loading={priority ? "eager" : "lazy"}
         decoding="async"
-        onError={handleImageError}
+        onLoad={() => {
+          setIsLoaded(true);
+          setHasError(false);
+        }}
+        onError={() => {
+          setHasError(true);
+        }}
         className={cn(
-          "w-full h-full object-cover rounded-full block",
+          "w-full h-full object-cover rounded-full block relative z-10 transition-opacity duration-150",
+          isLoaded ? "opacity-100" : "opacity-0",
           imageClassName
         )}
       />

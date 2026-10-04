@@ -482,13 +482,19 @@ export const useAuthStore = create<AuthState>()(
 
       syncUserWithDb: async () => {
         const currentUser = get().user;
-        if (!currentUser?.id || currentUser.id.startsWith("usr-")) return;
+        if (!currentUser) return;
         try {
-          const { getDbUser } = await import("@/lib/actions/auth");
-          const dbUser = await getDbUser(currentUser.id);
+          const { getDbUser, getDbUserByEmail } = await import("@/lib/actions/auth");
+          let dbUser = null;
+          if (currentUser.id && !currentUser.id.startsWith("usr-")) {
+            dbUser = await getDbUser(currentUser.id);
+          }
+          if (!dbUser && currentUser.email) {
+            dbUser = await getDbUserByEmail(currentUser.email);
+          }
           if (dbUser) {
             set((state) => {
-              if (!state.user || state.user.id !== dbUser.id) return state;
+              if (!state.user) return state;
               const dbPhone =
                 dbUser.phone && !dbUser.phone.startsWith("google_") && !dbUser.phone.startsWith("email_")
                   ? dbUser.phone.replace(/\D/g, "").slice(-10)
@@ -500,6 +506,7 @@ export const useAuthStore = create<AuthState>()(
               return {
                 user: {
                   ...state.user,
+                  id: dbUser.id,
                   name: dbUser.name || state.user.name,
                   avatar: resolvedAvatar,
                   phone: dbPhone,

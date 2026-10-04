@@ -41,10 +41,10 @@ export default function GoogleSessionHydrator() {
 
   // Defense-in-depth: if user is logged in but lacks avatar, sync from DB immediately
   useEffect(() => {
-    if (isAuthenticated && user?.id && !user.avatar && !user.id.startsWith("usr-")) {
+    if (isAuthenticated && user && !user.avatar) {
       syncUserWithDb();
     }
-  }, [isAuthenticated, user?.id, user?.avatar, syncUserWithDb]);
+  }, [isAuthenticated, user, syncUserWithDb]);
 
   useEffect(() => {
     // Check both Next.js searchParams and raw window.location.search for instant sync
