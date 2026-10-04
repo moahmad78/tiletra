@@ -4,6 +4,13 @@ import { prisma } from "@/lib/prisma";
 import type { Product } from "@/lib/data/products";
 import { formatProduct, safeRevalidate } from "@/lib/formatters";
 import { createProduct, updateProduct, deleteProduct, CreateProductInput } from "./products";
+import {
+  DEFAULT_DELIVERY_SLOTS,
+  MASTER_DELIVERY_SLOTS,
+  sanitizeDeliverySlots,
+  type DeliverySlotDefinition,
+} from "@/lib/delivery-slots";
+import { getStoreDeliverySlotsConfig } from "./settings";
 
 export type VendorApplicationInput = {
   businessName: string;
@@ -1400,4 +1407,92 @@ export async function toggleVendorAutoAcceptOrders(vendorId: string, autoAccept:
     return { success: false, error: error?.message || "Failed to update vendor auto-accept setting" };
   }
 }
+
+// ── Vendor Delivery Slots Configuration ──────────────────────────────────────
+export async function getVendorDeliverySlotsConfig(vendorId: string): Promise<{
+  activeSlots: DeliverySlotDefinition[];
+  isCustom: boolean;
+  defaultSlots: DeliverySlotDefinition[];
+  masterSlots: DeliverySlotDefinition[];
+}> {
+  try {
+    const storeConfig = await getStoreDeliverySlotsConfig();
+
+    if (!vendorId) {
+      return {
+        activeSlots: storeConfig.activeSlots,
+        isCustom: false,
+        defaultSlots: storeConfig.defaultSlots,
+        masterSlots: storeConfig.masterSlots,
+      };
+    }
+
+    const vendor = await prisma.vendor.findUnique({
+      where: { id: vendorId },
+      select: { deliverySlots: true },
+    });
+
+    if (vendor && vendor.deliverySlots) {
+      const sanitized = sanitizeDeliverySlots(vendor.deliverySlots);
+      return {
+        activeSlots: sanitized,
+        isCustom: true,
+        defaultSlots: storeConfig.defaultSlots,
+        masterSlots: storeConfig.masterSlots,
+      };
+    }
+
+    return {
+      activeSlots: storeConfig.activeSlots,
+      isCustom: false,
+      defaultSlots: storeConfig.defaultSlots,
+      masterSlots: storeConfig.masterSlots,
+    };
+  } catch (error) {
+    console.error("getVendorDeliverySlotsConfig error:", error);
+    return {
+      activeSlots: DEFAULT_DELIVERY_SLOTS,
+      isCustom: false,
+      defaultSlots: DEFAULT_DELIVERY_SLOTS,
+      masterSlots: MASTER_DELIVERY_SLOTS,
+    };
+  }
+}
+
+export async function updateVendorDeliverySlotsConfig(
+  vendorId: string,
+  slots: DeliverySlotDefinition[] | null
+): Promise<{
+  success: boolean;
+  slots?: DeliverySlotDefinition[];
+  isCustom: boolean;
+  error?: string;
+}> {
+  try {
+    if (!vendorId) return { success: false, isCustom: false, error: "Vendor ID is required" };
+
+    const sanitized = slots ? sanitizeDeliverySlots(slots) : null;
+
+    await prisma.vendor.update({
+      where: { id: vendorId },
+      data: { deliverySlots: sanitized as any },
+    });
+
+    safeRevalidate("/vendor/settings");
+    safeRevalidate("/checkout");
+    safeRevalidate("/checkout-v2");
+
+    const storeConfig = await getStoreDeliverySlotsConfig();
+
+    return {
+      success: true,
+      slots: sanitized || storeConfig.activeSlots,
+      isCustom: Boolean(sanitized),
+    };
+  } catch (error: any) {
+    console.error("updateVendorDeliverySlotsConfig error:", error);
+    return { success: false, isCustom: false, error: error?.message || "Failed to update vendor delivery slots" };
+  }
+}
+
 

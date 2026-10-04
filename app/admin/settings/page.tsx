@@ -7,8 +7,24 @@ import {
   Phone,
   ShieldCheck,
   Loader2,
+  Clock,
+  Plus,
+  Trash2,
+  RotateCcw,
+  Check,
 } from "lucide-react";
-import { getStoreSettings, updateStoreSettings } from "@/lib/actions/settings";
+import {
+  getStoreSettings,
+  updateStoreSettings,
+  getStoreDeliverySlotsConfig,
+  updateStoreDeliverySlotsConfig,
+} from "@/lib/actions/settings";
+import {
+  DEFAULT_DELIVERY_SLOTS,
+  MASTER_DELIVERY_SLOTS,
+  formatSlotLabel,
+  type DeliverySlotDefinition,
+} from "@/lib/delivery-slots";
 import { toast } from "sonner";
 
 export default function AdminSettingsPage() {
@@ -32,11 +48,20 @@ export default function AdminSettingsPage() {
   const [codMaxLimit, setCodMaxLimit] = useState(25000);
   const [codBlockedPincodes, setCodBlockedPincodes] = useState("560099, 560088");
 
+  // Delivery Slots Management State (Default Morning Starts at 10:00 AM)
+  const [deliverySlots, setDeliverySlots] = useState<DeliverySlotDefinition[]>(DEFAULT_DELIVERY_SLOTS);
+  const [savingSlots, setSavingSlots] = useState(false);
+  const [customStartHour, setCustomStartHour] = useState(10);
+  const [customEndHour, setCustomEndHour] = useState(12);
+
   useEffect(() => {
     async function load() {
       try {
         setLoading(true);
-        const s: any = await getStoreSettings();
+        const [s, slotsConfig]: any = await Promise.all([
+          getStoreSettings(),
+          getStoreDeliverySlotsConfig(),
+        ]);
         if (s) {
           setStoreName(s.storeName);
           setGstNumber(s.gstNumber || "29AABCT1234F1Z8");
@@ -55,6 +80,9 @@ export default function AdminSettingsPage() {
           setCodMaxLimit(s.codMaxLimit);
           setCodBlockedPincodes((s.codBlockedPincodes || []).join(", "));
         }
+        if (slotsConfig?.activeSlots && slotsConfig.activeSlots.length > 0) {
+          setDeliverySlots(slotsConfig.activeSlots);
+        }
       } catch (err) {
         console.error("Error loading store settings:", err);
       } finally {
@@ -63,6 +91,71 @@ export default function AdminSettingsPage() {
     }
     load();
   }, []);
+
+  const toggleSlot = (preset: DeliverySlotDefinition) => {
+    setDeliverySlots((prev) => {
+      const exists = prev.some((s) => s.id === preset.id);
+      if (exists) {
+        if (prev.length <= 1) {
+          toast.error("At least one delivery slot must remain active.");
+          return prev;
+        }
+        return prev.filter((s) => s.id !== preset.id);
+      } else {
+        return [...prev, preset].sort((a, b) => a.startHour - b.startHour);
+      }
+    });
+  };
+
+  const handleAddCustomSlot = () => {
+    if (customStartHour >= customEndHour) {
+      toast.error("End hour must be later than start hour.");
+      return;
+    }
+    const id = `${customStartHour < 10 ? "0" + customStartHour : customStartHour}-${customEndHour < 10 ? "0" + customEndHour : customEndHour}`;
+    const exists = deliverySlots.some((s) => s.id === id);
+    if (exists) {
+      toast.error("This slot is already added.");
+      return;
+    }
+    const newSlot: DeliverySlotDefinition = {
+      id,
+      startHour: customStartHour,
+      endHour: customEndHour,
+      label: formatSlotLabel(customStartHour, customEndHour),
+    };
+    setDeliverySlots((prev) => [...prev, newSlot].sort((a, b) => a.startHour - b.startHour));
+    toast.success(`Added slot: ${newSlot.label}`);
+  };
+
+  const handleRemoveSlot = (id: string) => {
+    if (deliverySlots.length <= 1) {
+      toast.error("At least one delivery slot must remain active.");
+      return;
+    }
+    setDeliverySlots((prev) => prev.filter((s) => s.id !== id));
+  };
+
+  const handleResetSlotsToDefault = () => {
+    setDeliverySlots(DEFAULT_DELIVERY_SLOTS);
+    toast.info("Reset to standard slots (Starting at 10:00 AM). Click Save Slots to apply.");
+  };
+
+  const handleSaveSlots = async () => {
+    setSavingSlots(true);
+    try {
+      const res = await updateStoreDeliverySlotsConfig(deliverySlots);
+      if (res.success) {
+        toast.success("Delivery time slots saved successfully! Storefront and mobile app updated.");
+      } else {
+        toast.error(res.error || "Failed to update slots");
+      }
+    } catch {
+      toast.error("Failed to update slots");
+    } finally {
+      setSavingSlots(false);
+    }
+  };
 
   const handleSave = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -442,6 +535,189 @@ export default function AdminSettingsPage() {
                 />
                 <p className="text-[10px] text-gray-400 mt-1">Orders above this weight switch to 4-Wheeler.</p>
               </div>
+            </div>
+          </div>
+        </div>
+
+        {/* ── Section 2.5: Delivery Time Slots & Scheduling ── */}
+        <div className="bg-white p-6 rounded-2xl border border-gray-200/80 shadow-2xs space-y-5">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-3 border-b border-gray-100">
+            <div className="flex items-center gap-2">
+              <Clock size={18} className="text-[#F26522]" />
+              <div>
+                <div className="flex items-center gap-2">
+                  <h3 className="text-base font-black text-[#052a51]">Store Delivery Time Slots Configuration</h3>
+                  <span className="px-2 py-0.5 rounded-full text-[10px] font-black uppercase bg-emerald-100 text-emerald-800 border border-emerald-200">
+                    Morning Starts 10:00 AM
+                  </span>
+                </div>
+                <p className="text-xs text-gray-500 mt-0.5">
+                  Configure 2-hour delivery windows available for scheduled checkout on Web and Mobile Apps.
+                </p>
+              </div>
+            </div>
+
+            <div className="flex items-center gap-2">
+              <button
+                type="button"
+                onClick={handleResetSlotsToDefault}
+                className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-xl text-xs font-bold transition-all cursor-pointer"
+                title="Reset to 10:00 AM - 10:00 PM standard slots"
+              >
+                <RotateCcw size={13} />
+                <span>Reset to Default</span>
+              </button>
+
+              <button
+                type="button"
+                disabled={savingSlots}
+                onClick={handleSaveSlots}
+                className="inline-flex items-center gap-1.5 px-3.5 py-1.5 bg-[#052a51] hover:bg-[#041f3d] text-white rounded-xl text-xs font-black shadow-xs transition-all active:scale-95 cursor-pointer disabled:opacity-50"
+              >
+                {savingSlots ? <Loader2 size={13} className="animate-spin" /> : <Save size={13} />}
+                <span>Save Slots</span>
+              </button>
+            </div>
+          </div>
+
+          {/* Master 2-Hour Presets (Checkboxes) */}
+          <div className="space-y-3">
+            <div className="flex items-center justify-between">
+              <h4 className="text-xs font-bold text-[#052a51] uppercase tracking-wider">
+                Preset 2-Hour Slots (Click to Toggle Active on Storefront & App)
+              </h4>
+              <span className="text-[11px] font-semibold text-gray-500">
+                {deliverySlots.length} active slot{deliverySlots.length !== 1 ? "s" : ""}
+              </span>
+            </div>
+
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-2.5">
+              {MASTER_DELIVERY_SLOTS.map((slot) => {
+                const isActive = deliverySlots.some((s) => s.id === slot.id);
+                const isEarlyMorning = slot.id === "08-10";
+
+                return (
+                  <div
+                    key={slot.id}
+                    onClick={() => toggleSlot(slot)}
+                    className={`p-3 rounded-xl border-2 transition-all cursor-pointer flex items-center justify-between gap-2 select-none ${
+                      isActive
+                        ? "border-[#052a51] bg-[#052a51]/5 text-[#052a51]"
+                        : "border-gray-200 bg-gray-50/60 text-gray-400 hover:border-gray-300"
+                    }`}
+                  >
+                    <div className="min-w-0">
+                      <p className={`text-xs font-black ${isActive ? "text-[#052a51]" : "text-gray-500"}`}>
+                        {slot.label}
+                      </p>
+                      <p className="text-[10px] text-gray-400">
+                        {isEarlyMorning ? "Early morning (optional)" : "Standard daytime window"}
+                      </p>
+                    </div>
+
+                    <div
+                      className={`w-5 h-5 rounded-md flex items-center justify-center shrink-0 border transition-all ${
+                        isActive
+                          ? "bg-[#052a51] border-[#052a51] text-white"
+                          : "border-gray-300 bg-white"
+                      }`}
+                    >
+                      {isActive && <Check size={12} strokeWidth={3} />}
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+
+          {/* Custom Slot Addition */}
+          <div className="p-4 bg-gray-50 rounded-xl border border-gray-200/80 space-y-3">
+            <h4 className="text-xs font-bold text-[#052a51] uppercase tracking-wider">
+              Add Custom Delivery Window
+            </h4>
+
+            <div className="flex flex-wrap items-end gap-3">
+              <div>
+                <label className="block text-[11px] font-bold text-gray-600 mb-1">
+                  Start Hour (24-hr IST)
+                </label>
+                <select
+                  value={customStartHour}
+                  onChange={(e) => {
+                    const start = Number(e.target.value);
+                    setCustomStartHour(start);
+                    if (start >= customEndHour) setCustomEndHour(Math.min(24, start + 2));
+                  }}
+                  className="px-3 py-2 bg-white border border-gray-200 rounded-xl text-xs font-bold text-[#052a51] focus:outline-none"
+                >
+                  {Array.from({ length: 24 }).map((_, i) => (
+                    <option key={i} value={i}>
+                      {i < 10 ? `0${i}` : i}:00 ({i === 0 ? "12 AM" : i < 12 ? `${i} AM` : i === 12 ? "12 PM" : `${i - 12} PM`})
+                    </option>
+                  ))}
+                </select>
+              </div>
+
+              <div>
+                <label className="block text-[11px] font-bold text-gray-600 mb-1">
+                  End Hour (24-hr IST)
+                </label>
+                <select
+                  value={customEndHour}
+                  onChange={(e) => setCustomEndHour(Number(e.target.value))}
+                  className="px-3 py-2 bg-white border border-gray-200 rounded-xl text-xs font-bold text-[#052a51] focus:outline-none"
+                >
+                  {Array.from({ length: 25 }).map((_, i) => {
+                    if (i <= customStartHour) return null;
+                    return (
+                      <option key={i} value={i}>
+                        {i < 10 ? `0${i}` : i}:00 ({i === 24 ? "12 AM (Next Day)" : i < 12 ? `${i} AM` : i === 12 ? "12 PM" : `${i - 12} PM`})
+                      </option>
+                    );
+                  })}
+                </select>
+              </div>
+
+              <div className="flex-1 min-w-[140px]">
+                <p className="text-[11px] text-gray-500 mb-1 font-semibold">Slot Label Preview</p>
+                <p className="text-xs font-black text-[#052a51] px-3 py-2 bg-white border border-gray-200 rounded-xl">
+                  {formatSlotLabel(customStartHour, customEndHour)}
+                </p>
+              </div>
+
+              <button
+                type="button"
+                onClick={handleAddCustomSlot}
+                className="inline-flex items-center gap-1.5 px-4 py-2 bg-[#F26522] hover:bg-[#d95a1e] text-white rounded-xl text-xs font-black shadow-xs transition-all active:scale-95 cursor-pointer"
+              >
+                <Plus size={14} />
+                <span>Add Slot</span>
+              </button>
+            </div>
+          </div>
+
+          {/* Active Slots Summary */}
+          <div className="pt-2">
+            <p className="text-[11px] font-bold text-gray-500 mb-1.5">
+              Current Active Delivery Slots Shown to Customers:
+            </p>
+            <div className="flex flex-wrap gap-2">
+              {deliverySlots.map((slot) => (
+                <span
+                  key={slot.id}
+                  className="inline-flex items-center gap-1.5 px-3 py-1 bg-white rounded-lg border border-gray-200 text-xs font-bold text-[#052a51] shadow-2xs"
+                >
+                  <span>{slot.label}</span>
+                  <button
+                    type="button"
+                    onClick={() => handleRemoveSlot(slot.id)}
+                    className="text-gray-400 hover:text-red-500 p-0.5 rounded transition-colors cursor-pointer"
+                    title="Remove slot"
+                  >
+                    <Trash2 size={12} />
+                  </button>
+                </span>
+              ))}
             </div>
           </div>
         </div>

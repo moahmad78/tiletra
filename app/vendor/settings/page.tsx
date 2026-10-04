@@ -10,7 +10,16 @@ import {
   updateVendorKycDocuments,
   updateVendorDeliverySettings,
   changeVendorPassword,
+  getVendorDeliverySlotsConfig,
+  updateVendorDeliverySlotsConfig,
 } from "@/lib/actions/vendor";
+import {
+  MASTER_DELIVERY_SLOTS,
+  DEFAULT_DELIVERY_SLOTS,
+  formatSlotLabel,
+  sanitizeDeliverySlots,
+  DeliverySlotDefinition,
+} from "@/lib/delivery-slots";
 import {
   Store,
   Phone,
@@ -35,6 +44,9 @@ import {
   Check,
   Truck,
   Info,
+  RotateCcw,
+  Save,
+  Plus,
 } from "lucide-react";
 import { toast } from "sonner";
 
@@ -104,8 +116,21 @@ export default function VendorSettingsPage() {
     confirmPassword: "",
   });
 
+  // Delivery Slots Data
+  const [vendorSlots, setVendorSlots] = useState<DeliverySlotDefinition[]>(DEFAULT_DELIVERY_SLOTS);
+  const [isCustomSlotsEnabled, setIsCustomSlotsEnabled] = useState(false);
+  const [savingSlots, setSavingSlots] = useState(false);
+  const [customStartHour, setCustomStartHour] = useState(10);
+  const [customEndHour, setCustomEndHour] = useState(12);
+
   useEffect(() => {
     if (vendor?.id) {
+      getVendorDeliverySlotsConfig(vendor.id).then((slotConfig) => {
+        if (slotConfig) {
+          setVendorSlots(slotConfig.activeSlots || DEFAULT_DELIVERY_SLOTS);
+          setIsCustomSlotsEnabled(slotConfig.isCustom);
+        }
+      });
       getVendorProfile(vendor.id).then((v: any) => {
         if (v) {
           setShopData({
@@ -271,6 +296,86 @@ export default function VendorSettingsPage() {
       toast.success("Delivery & shipping rules updated successfully!");
     } else {
       toast.error(res.error || "Failed to update delivery settings");
+    }
+  };
+
+  // 3c. Vendor Delivery Time Slots Handlers
+  const handleToggleVendorSlot = (slot: DeliverySlotDefinition) => {
+    if (!isCustomSlotsEnabled) {
+      setIsCustomSlotsEnabled(true);
+    }
+    const exists = vendorSlots.some((s) => s.id === slot.id);
+    if (exists) {
+      if (vendorSlots.length <= 1) {
+        toast.error("At least one delivery slot must remain active");
+        return;
+      }
+      setVendorSlots(vendorSlots.filter((s) => s.id !== slot.id));
+    } else {
+      setVendorSlots([...vendorSlots, slot].sort((a, b) => a.startHour - b.startHour));
+    }
+  };
+
+  const handleAddCustomVendorSlot = () => {
+    if (customStartHour >= customEndHour) {
+      toast.error("End hour must be greater than start hour");
+      return;
+    }
+    if (!isCustomSlotsEnabled) {
+      setIsCustomSlotsEnabled(true);
+    }
+    const pad = (n: number) => (n < 10 ? "0" + n : String(n));
+    const slotId = `${pad(customStartHour)}-${pad(customEndHour)}`;
+    if (vendorSlots.some((s) => s.id === slotId)) {
+      toast.error("This delivery slot is already added");
+      return;
+    }
+    const label = formatSlotLabel(customStartHour, customEndHour);
+    const newSlot: DeliverySlotDefinition = {
+      id: slotId,
+      startHour: customStartHour,
+      endHour: customEndHour,
+      label,
+    };
+    setVendorSlots([...vendorSlots, newSlot].sort((a, b) => a.startHour - b.startHour));
+    toast.success(`Added slot ${label}`);
+  };
+
+  const handleRemoveVendorSlot = (slotId: string) => {
+    if (vendorSlots.length <= 1) {
+      toast.error("At least one delivery slot must remain active");
+      return;
+    }
+    setVendorSlots(vendorSlots.filter((s) => s.id !== slotId));
+  };
+
+  const handleResetVendorSlots = async () => {
+    if (!vendor?.id) return;
+    setSavingSlots(true);
+    const res = await updateVendorDeliverySlotsConfig(vendor.id, null);
+    setSavingSlots(false);
+    if (res.success) {
+      setIsCustomSlotsEnabled(false);
+      setVendorSlots(res.slots || DEFAULT_DELIVERY_SLOTS);
+      toast.success("Reset to platform default delivery schedule (10:00 AM - 10:00 PM)");
+    } else {
+      toast.error(res.error || "Failed to reset delivery slots");
+    }
+  };
+
+  const handleSaveVendorSlots = async () => {
+    if (!vendor?.id) return;
+    if (vendorSlots.length === 0) {
+      toast.error("Please configure at least one active delivery slot");
+      return;
+    }
+    setSavingSlots(true);
+    const res = await updateVendorDeliverySlotsConfig(vendor.id, isCustomSlotsEnabled ? vendorSlots : null);
+    setSavingSlots(false);
+    if (res.success) {
+      toast.success(isCustomSlotsEnabled ? "Custom shop delivery time slots saved!" : "Shop set to use platform standard delivery schedule (10 AM - 10 PM)!");
+    } else {
+      toast.error(res.error || "Failed to save delivery slots");
     }
   };
 
@@ -607,202 +712,416 @@ export default function VendorSettingsPage() {
 
       {/* ── TAB: DELIVERY & SHIPPING SETTINGS ── */}
       {activeTab === "shipping" && (
-        <form onSubmit={handleShippingSubmit} className="bg-white rounded-3xl p-6 sm:p-8 border border-gray-200/90 shadow-2xs space-y-6">
-          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-4 border-b border-gray-100">
-            <div>
-              <div className="flex items-center gap-2">
-                <Truck size={20} className="text-emerald-600" />
-                <h2 className="text-lg font-black text-gray-900">Shop Delivery & Freight Policy</h2>
+        <div className="space-y-6">
+          <form onSubmit={handleShippingSubmit} className="bg-white rounded-3xl p-6 sm:p-8 border border-gray-200/90 shadow-2xs space-y-6">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-4 border-b border-gray-100">
+              <div>
+                <div className="flex items-center gap-2">
+                  <Truck size={20} className="text-emerald-600" />
+                  <h2 className="text-lg font-black text-gray-900">Shop Delivery & Freight Policy</h2>
+                </div>
+                <p className="text-xs text-gray-500 mt-0.5">
+                  Manage whether your shop charges freight to buyers and configure custom delivery rates for your inventory.
+                </p>
               </div>
-              <p className="text-xs text-gray-500 mt-0.5">
-                Manage whether your shop charges freight to buyers and configure custom delivery rates for your inventory.
-              </p>
-            </div>
 
-            {/* Master Toggle */}
-            <label className="inline-flex items-center gap-3 p-2.5 px-4 bg-gray-50 hover:bg-gray-100 rounded-2xl border border-gray-200 cursor-pointer transition-all self-start sm:self-auto">
-              <span className="text-xs font-bold text-gray-800">Charge Delivery Fee</span>
-              <div className="relative inline-flex items-center">
-                <input
-                  type="checkbox"
-                  checked={shippingData.deliveryFeeEnabled}
-                  onChange={(e) => setShippingData((p) => ({ ...p, deliveryFeeEnabled: e.target.checked }))}
-                  className="sr-only peer"
-                />
-                <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-emerald-600"></div>
-              </div>
-            </label>
-          </div>
-
-          {/* Delivery Method Choice (Self vs Platform) */}
-          <div className="space-y-3">
-            <div>
-              <label className="block text-xs font-bold text-gray-700 uppercase tracking-wider">
-                Fulfillment & Delivery Model *
+              {/* Master Toggle */}
+              <label className="inline-flex items-center gap-3 p-2.5 px-4 bg-gray-50 hover:bg-gray-100 rounded-2xl border border-gray-200 cursor-pointer transition-all self-start sm:self-auto">
+                <span className="text-xs font-bold text-gray-800">Charge Delivery Fee</span>
+                <div className="relative inline-flex items-center">
+                  <input
+                    type="checkbox"
+                    checked={shippingData.deliveryFeeEnabled}
+                    onChange={(e) => setShippingData((p) => ({ ...p, deliveryFeeEnabled: e.target.checked }))}
+                    className="sr-only peer"
+                  />
+                  <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-emerald-600"></div>
+                </div>
               </label>
-              <p className="text-xs text-gray-500 mt-0.5">
-                Choose how your shop fulfills customer orders received on the marketplace.
-              </p>
             </div>
 
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-              {/* Self-Delivery Card */}
-              <div
-                onClick={() => setShippingData((p) => ({ ...p, deliveryMethod: "self" }))}
-                className={`p-5 rounded-2xl border-2 transition-all cursor-pointer relative ${
-                  shippingData.deliveryMethod === "self"
-                    ? "border-emerald-600 bg-emerald-50/40 shadow-sm"
-                    : "border-gray-200 bg-white hover:border-gray-300"
-                }`}
-              >
-                <div className="flex items-start justify-between">
-                  <div className="w-9 h-9 rounded-xl bg-emerald-100 text-emerald-700 flex items-center justify-center font-bold text-sm">
-                    🚚
-                  </div>
-                  <input
-                    type="radio"
-                    name="deliveryMethod"
-                    checked={shippingData.deliveryMethod === "self"}
-                    onChange={() => setShippingData((p) => ({ ...p, deliveryMethod: "self" }))}
-                    className="w-4 h-4 text-emerald-600 focus:ring-emerald-500 cursor-pointer"
-                  />
-                </div>
-                <div className="mt-3">
-                  <h3 className="text-sm font-bold text-gray-900">Self-Delivery (Vendor Courier)</h3>
-                  <p className="text-xs text-gray-600 mt-1 leading-relaxed">
-                    You manage your own logistics, local riders, or 3rd-party couriers. You update dispatch, tracking numbers, and confirm customer delivery yourself.
-                  </p>
-                  <span className="inline-block mt-2.5 text-[10px] font-bold px-2 py-0.5 rounded-md bg-emerald-100 text-emerald-800">
-                    Direct Vendor Control
-                  </span>
-                </div>
+            {/* Delivery Method Choice (Self vs Platform) */}
+            <div className="space-y-3">
+              <div>
+                <label className="block text-xs font-bold text-gray-700 uppercase tracking-wider">
+                  Fulfillment & Delivery Model *
+                </label>
+                <p className="text-xs text-gray-500 mt-0.5">
+                  Choose how your shop fulfills customer orders received on the marketplace.
+                </p>
               </div>
 
-              {/* Platform Logistics Card */}
-              <div
-                onClick={() => setShippingData((p) => ({ ...p, deliveryMethod: "platform" }))}
-                className={`p-5 rounded-2xl border-2 transition-all cursor-pointer relative ${
-                  shippingData.deliveryMethod === "platform"
-                    ? "border-blue-600 bg-blue-50/40 shadow-sm"
-                    : "border-gray-200 bg-white hover:border-gray-300"
-                }`}
-              >
-                <div className="flex items-start justify-between">
-                  <div className="w-9 h-9 rounded-xl bg-blue-100 text-blue-700 flex items-center justify-center font-bold text-sm">
-                    🏢
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                {/* Self-Delivery Card */}
+                <div
+                  onClick={() => setShippingData((p) => ({ ...p, deliveryMethod: "self" }))}
+                  className={`p-5 rounded-2xl border-2 transition-all cursor-pointer relative ${
+                    shippingData.deliveryMethod === "self"
+                      ? "border-emerald-600 bg-emerald-50/40 shadow-sm"
+                      : "border-gray-200 bg-white hover:border-gray-300"
+                  }`}
+                >
+                  <div className="flex items-start justify-between">
+                    <div className="w-9 h-9 rounded-xl bg-emerald-100 text-emerald-700 flex items-center justify-center font-bold text-sm">
+                      🚚
+                    </div>
+                    <input
+                      type="radio"
+                      name="deliveryMethod"
+                      checked={shippingData.deliveryMethod === "self"}
+                      onChange={() => setShippingData((p) => ({ ...p, deliveryMethod: "self" }))}
+                      className="w-4 h-4 text-emerald-600 focus:ring-emerald-500 cursor-pointer"
+                    />
                   </div>
-                  <input
-                    type="radio"
-                    name="deliveryMethod"
-                    checked={shippingData.deliveryMethod === "platform"}
-                    onChange={() => setShippingData((p) => ({ ...p, deliveryMethod: "platform" }))}
-                    className="w-4 h-4 text-blue-600 focus:ring-blue-500 cursor-pointer"
-                  />
+                  <div className="mt-3">
+                    <h3 className="text-sm font-bold text-gray-900">Self-Delivery (Vendor Courier)</h3>
+                    <p className="text-xs text-gray-600 mt-1 leading-relaxed">
+                      You manage your own logistics, local riders, or 3rd-party couriers. You update dispatch, tracking numbers, and confirm customer delivery yourself.
+                    </p>
+                    <span className="inline-block mt-2.5 text-[10px] font-bold px-2 py-0.5 rounded-md bg-emerald-100 text-emerald-800">
+                      Direct Vendor Control
+                    </span>
+                  </div>
                 </div>
-                <div className="mt-3">
-                  <h3 className="text-sm font-bold text-gray-900">Platform Logistics (Centralized)</h3>
-                  <p className="text-xs text-gray-600 mt-1 leading-relaxed">
-                    Intrihub centralized logistics picks up goods directly from your warehouse/shop and handles doorstep delivery & COD cash collection.
-                  </p>
-                  <span className="inline-block mt-2.5 text-[10px] font-bold px-2 py-0.5 rounded-md bg-blue-100 text-blue-800">
-                    Managed by Intrihub
-                  </span>
+
+                {/* Platform Logistics Card */}
+                <div
+                  onClick={() => setShippingData((p) => ({ ...p, deliveryMethod: "platform" }))}
+                  className={`p-5 rounded-2xl border-2 transition-all cursor-pointer relative ${
+                    shippingData.deliveryMethod === "platform"
+                      ? "border-blue-600 bg-blue-50/40 shadow-sm"
+                      : "border-gray-200 bg-white hover:border-gray-300"
+                  }`}
+                >
+                  <div className="flex items-start justify-between">
+                    <div className="w-9 h-9 rounded-xl bg-blue-100 text-blue-700 flex items-center justify-center font-bold text-sm">
+                      🏢
+                    </div>
+                    <input
+                      type="radio"
+                      name="deliveryMethod"
+                      checked={shippingData.deliveryMethod === "platform"}
+                      onChange={() => setShippingData((p) => ({ ...p, deliveryMethod: "platform" }))}
+                      className="w-4 h-4 text-blue-600 focus:ring-blue-500 cursor-pointer"
+                    />
+                  </div>
+                  <div className="mt-3">
+                    <h3 className="text-sm font-bold text-gray-900">Platform Logistics (Centralized)</h3>
+                    <p className="text-xs text-gray-600 mt-1 leading-relaxed">
+                      Intrihub centralized logistics picks up goods directly from your warehouse/shop and handles doorstep delivery & COD cash collection.
+                    </p>
+                    <span className="inline-block mt-2.5 text-[10px] font-bold px-2 py-0.5 rounded-md bg-blue-100 text-blue-800">
+                      Managed by Intrihub
+                    </span>
+                  </div>
                 </div>
               </div>
             </div>
-          </div>
 
-          {/* Status Preview Card */}
-          <div className={`p-4 rounded-2xl border flex items-start gap-3 transition-colors ${
-            shippingData.deliveryFeeEnabled
-              ? "bg-blue-50/60 border-blue-200/70 text-blue-900"
-              : "bg-emerald-50/80 border-emerald-200/80 text-emerald-900"
-          }`}>
-            <div className={`w-8 h-8 rounded-xl flex items-center justify-center shrink-0 font-bold text-xs ${
-              shippingData.deliveryFeeEnabled ? "bg-blue-100 text-blue-700" : "bg-emerald-100 text-emerald-700"
+            {/* Status Preview Card */}
+            <div className={`p-4 rounded-2xl border flex items-start gap-3 transition-colors ${
+              shippingData.deliveryFeeEnabled
+                ? "bg-blue-50/60 border-blue-200/70 text-blue-900"
+                : "bg-emerald-50/80 border-emerald-200/80 text-emerald-900"
             }`}>
-              {shippingData.deliveryFeeEnabled ? "🚚" : "🎉"}
+              <div className={`w-8 h-8 rounded-xl flex items-center justify-center shrink-0 font-bold text-xs ${
+                shippingData.deliveryFeeEnabled ? "bg-blue-100 text-blue-700" : "bg-emerald-100 text-emerald-700"
+              }`}>
+                {shippingData.deliveryFeeEnabled ? "🚚" : "🎉"}
+              </div>
+              <div className="text-xs leading-relaxed">
+                {shippingData.deliveryFeeEnabled ? (
+                  <>
+                    <p className="font-bold text-sm">Standard Delivery Charges Enabled</p>
+                    <p className="mt-0.5 text-blue-800/80">
+                      Buyers ordering from your shop will be charged freight on orders below your free delivery threshold.
+                      {shippingData.customDeliveryFee && ` Custom Rate: ₹${Number(shippingData.customDeliveryFee).toLocaleString("en-IN")}.`}
+                      {shippingData.freeDeliveryThreshold && ` Free shipping from: ₹${Number(shippingData.freeDeliveryThreshold).toLocaleString("en-IN")}.`}
+                    </p>
+                  </>
+                ) : (
+                  <>
+                    <p className="font-bold text-sm text-emerald-800">100% Free Shipping Offered by Your Shop</p>
+                    <p className="mt-0.5 text-emerald-700">
+                      Customers ordering your products will receive <strong>₹0 delivery charge</strong>, boosting conversion rates and highlighting your catalog as Free Shipping eligible.
+                    </p>
+                  </>
+                )}
+              </div>
             </div>
-            <div className="text-xs leading-relaxed">
-              {shippingData.deliveryFeeEnabled ? (
-                <>
-                  <p className="font-bold text-sm">Standard Delivery Charges Enabled</p>
-                  <p className="mt-0.5 text-blue-800/80">
-                    Buyers ordering from your shop will be charged freight on orders below your free delivery threshold.
-                    {shippingData.customDeliveryFee && ` Custom Rate: ₹${Number(shippingData.customDeliveryFee).toLocaleString("en-IN")}.`}
-                    {shippingData.freeDeliveryThreshold && ` Free shipping from: ₹${Number(shippingData.freeDeliveryThreshold).toLocaleString("en-IN")}.`}
+
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
+              <div className={!shippingData.deliveryFeeEnabled ? "opacity-50 pointer-events-none" : ""}>
+                <label className="block text-xs font-bold text-gray-700 uppercase tracking-wider mb-1.5">
+                  Custom Flat Delivery Fee (₹)
+                </label>
+                <input
+                  type="number"
+                  min={0}
+                  step="any"
+                  placeholder="Enter delivery charge (leave blank for platform default)"
+                  value={shippingData.customDeliveryFee}
+                  onChange={(e) => setShippingData((p) => ({ ...p, customDeliveryFee: e.target.value }))}
+                  className="w-full bg-gray-50 border border-gray-200 rounded-xl px-4 py-3 text-sm font-semibold text-gray-800 focus:bg-white focus:border-emerald-500 focus:outline-hidden"
+                />
+                <p className="text-[11px] text-gray-400 mt-1">
+                  Leave empty to automatically adopt the Intrihub standard delivery fee.
+                </p>
+              </div>
+
+              <div className={!shippingData.deliveryFeeEnabled ? "opacity-50 pointer-events-none" : ""}>
+                <label className="block text-xs font-bold text-gray-700 uppercase tracking-wider mb-1.5">
+                  Free Delivery Order Minimum (₹)
+                </label>
+                <input
+                  type="number"
+                  min={0}
+                  step="any"
+                  placeholder="Enter free delivery threshold (leave blank for platform default)"
+                  value={shippingData.freeDeliveryThreshold}
+                  onChange={(e) => setShippingData((p) => ({ ...p, freeDeliveryThreshold: e.target.value }))}
+                  className="w-full bg-gray-50 border border-gray-200 rounded-xl px-4 py-3 text-sm font-semibold text-gray-800 focus:bg-white focus:border-emerald-500 focus:outline-hidden"
+                />
+                <p className="text-[11px] text-gray-400 mt-1">
+                  Orders containing your items exceeding this total will not be charged freight.
+                </p>
+              </div>
+            </div>
+
+            <div className="p-4 rounded-2xl bg-gray-50 border border-gray-200 flex items-start gap-3">
+              <Info size={18} className="text-gray-500 shrink-0 mt-0.5" />
+              <div className="text-xs text-gray-600 leading-relaxed space-y-1">
+                <p className="font-bold text-gray-800">How Delivery Charges Work with Super Admin Rules:</p>
+                <p>
+                  If Super Admin turns delivery charges OFF platform-wide, all orders automatically receive 100% Free Shipping. When platform freight is ON, your shop&apos;s custom rates and threshold will apply to buyer checkouts.
+                </p>
+              </div>
+            </div>
+
+            <div className="flex justify-end pt-4 border-t border-gray-100">
+              <button
+                type="submit"
+                disabled={loading}
+                className="px-6 py-3 bg-emerald-600 hover:bg-emerald-700 active:scale-95 text-white font-bold text-xs rounded-xl shadow-md transition-all flex items-center gap-2 cursor-pointer disabled:opacity-50"
+              >
+                {loading ? <Loader2 size={16} className="animate-spin" /> : <Check size={16} />}
+                <span>Save Delivery Settings</span>
+              </button>
+            </div>
+          </form>
+
+          {/* ── Vendor Delivery Time Slots & Scheduling ── */}
+          <div className="bg-white rounded-3xl p-6 sm:p-8 border border-gray-200/90 shadow-2xs space-y-5">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-4 border-b border-gray-100">
+              <div className="flex items-center gap-2.5">
+                <Clock size={20} className="text-emerald-600" />
+                <div>
+                  <div className="flex items-center gap-2">
+                    <h2 className="text-lg font-black text-gray-900">Shop Delivery Time Slots</h2>
+                    <span className="px-2 py-0.5 rounded-full text-[10px] font-black uppercase bg-emerald-100 text-emerald-800 border border-emerald-200">
+                      Morning Starts 10:00 AM
+                    </span>
+                  </div>
+                  <p className="text-xs text-gray-500 mt-0.5">
+                    Customize the 2-hour delivery windows available for customers ordering from your shop.
                   </p>
-                </>
-              ) : (
-                <>
-                  <p className="font-bold text-sm text-emerald-800">100% Free Shipping Offered by Your Shop</p>
-                  <p className="mt-0.5 text-emerald-700">
-                    Customers ordering your products will receive <strong>₹0 delivery charge</strong>, boosting conversion rates and highlighting your catalog as Free Shipping eligible.
-                  </p>
-                </>
-              )}
-            </div>
-          </div>
+                </div>
+              </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
-            <div className={!shippingData.deliveryFeeEnabled ? "opacity-50 pointer-events-none" : ""}>
-              <label className="block text-xs font-bold text-gray-700 uppercase tracking-wider mb-1.5">
-                Custom Flat Delivery Fee (₹)
+              <div className="flex items-center gap-2">
+                <button
+                  type="button"
+                  onClick={handleResetVendorSlots}
+                  disabled={savingSlots}
+                  className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-xl text-xs font-bold transition-all cursor-pointer disabled:opacity-50"
+                  title="Reset to store default slots (10:00 AM - 10:00 PM)"
+                >
+                  <RotateCcw size={13} />
+                  <span>Reset to Store Default</span>
+                </button>
+
+                <button
+                  type="button"
+                  disabled={savingSlots}
+                  onClick={handleSaveVendorSlots}
+                  className="inline-flex items-center gap-1.5 px-4 py-2 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl text-xs font-bold shadow-xs transition-all active:scale-95 cursor-pointer disabled:opacity-50"
+                >
+                  {savingSlots ? <Loader2 size={13} className="animate-spin" /> : <Save size={13} />}
+                  <span>Save Slots</span>
+                </button>
+              </div>
+            </div>
+
+            {/* Custom Mode Switch */}
+            <div className="p-4 rounded-2xl bg-gray-50 border border-gray-200 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+              <div>
+                <p className="text-xs font-bold text-gray-900">
+                  {isCustomSlotsEnabled ? "Custom Shop Slots Enabled" : "Using Store Default Schedule"}
+                </p>
+                <p className="text-[11px] text-gray-500 mt-0.5">
+                  {isCustomSlotsEnabled
+                    ? "Your shop offers custom fulfillment windows tailored to your staff and dispatch capacity."
+                    : "Your shop automatically adopts the Intrihub marketplace fulfillment hours (starts 10:00 AM)."}
+                </p>
+              </div>
+
+              <label className="inline-flex items-center gap-2.5 cursor-pointer self-start sm:self-auto shrink-0">
+                <span className="text-xs font-semibold text-gray-700">Custom Slots</span>
+                <div className="relative inline-flex items-center">
+                  <input
+                    type="checkbox"
+                    checked={isCustomSlotsEnabled}
+                    onChange={(e) => setIsCustomSlotsEnabled(e.target.checked)}
+                    className="sr-only peer"
+                  />
+                  <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-emerald-600"></div>
+                </div>
               </label>
-              <input
-                type="number"
-                min={0}
-                step="any"
-                placeholder="Enter delivery charge (leave blank for platform default)"
-                value={shippingData.customDeliveryFee}
-                onChange={(e) => setShippingData((p) => ({ ...p, customDeliveryFee: e.target.value }))}
-                className="w-full bg-gray-50 border border-gray-200 rounded-xl px-4 py-3 text-sm font-semibold text-gray-800 focus:bg-white focus:border-emerald-500 focus:outline-hidden"
-              />
-              <p className="text-[11px] text-gray-400 mt-1">
-                Leave empty to automatically adopt the Intrihub standard delivery fee.
+            </div>
+
+            {/* Preset 2-Hour Slots (Checkboxes) */}
+            <div className="space-y-3">
+              <div className="flex items-center justify-between">
+                <h4 className="text-xs font-bold text-gray-700 uppercase tracking-wider">
+                  Preset 2-Hour Delivery Slots
+                </h4>
+                <span className="text-[11px] font-semibold text-gray-500">
+                  {vendorSlots.length} active window{vendorSlots.length !== 1 ? "s" : ""}
+                </span>
+              </div>
+
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2.5">
+                {MASTER_DELIVERY_SLOTS.map((slot) => {
+                  const isActive = vendorSlots.some((s) => s.id === slot.id);
+                  const isEarlyMorning = slot.id === "08-10";
+
+                  return (
+                    <div
+                      key={slot.id}
+                      onClick={() => handleToggleVendorSlot(slot)}
+                      className={`p-3 rounded-2xl border-2 transition-all cursor-pointer flex items-center justify-between gap-2 select-none ${
+                        isActive
+                          ? "border-emerald-600 bg-emerald-50/50 text-emerald-950"
+                          : "border-gray-200 bg-gray-50/60 text-gray-400 hover:border-gray-300"
+                      }`}
+                    >
+                      <div className="min-w-0">
+                        <p className={`text-xs font-black ${isActive ? "text-emerald-900" : "text-gray-500"}`}>
+                          {slot.label}
+                        </p>
+                        <p className="text-[10px] text-gray-400">
+                          {isEarlyMorning ? "Early morning (optional)" : "Standard delivery window"}
+                        </p>
+                      </div>
+
+                      <div
+                        className={`w-5 h-5 rounded-md flex items-center justify-center shrink-0 border transition-all ${
+                          isActive
+                            ? "bg-emerald-600 border-emerald-600 text-white"
+                            : "border-gray-300 bg-white"
+                        }`}
+                      >
+                        {isActive && <Check size={12} strokeWidth={3} />}
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+
+            {/* Custom Slot Addition */}
+            <div className="p-4 bg-gray-50 rounded-2xl border border-gray-200 space-y-3">
+              <h4 className="text-xs font-bold text-gray-700 uppercase tracking-wider">
+                Add Custom Fulfillment Slot
+              </h4>
+
+              <div className="flex flex-wrap items-end gap-3">
+                <div>
+                  <label className="block text-[11px] font-bold text-gray-600 mb-1">
+                    Start Hour (24-hr IST)
+                  </label>
+                  <select
+                    value={customStartHour}
+                    onChange={(e) => {
+                      const start = Number(e.target.value);
+                      setCustomStartHour(start);
+                      if (start >= customEndHour) setCustomEndHour(Math.min(24, start + 2));
+                    }}
+                    className="px-3 py-2 bg-white border border-gray-200 rounded-xl text-xs font-bold text-gray-800 focus:outline-none focus:border-emerald-500"
+                  >
+                    {Array.from({ length: 24 }).map((_, i) => (
+                      <option key={i} value={i}>
+                        {i < 10 ? "0" + i : i}:00 ({i >= 12 ? (i === 12 ? "12 PM" : `${i - 12} PM`) : i === 0 ? "12 AM" : `${i} AM`})
+                      </option>
+                    ))}
+                  </select>
+                </div>
+
+                <div>
+                  <label className="block text-[11px] font-bold text-gray-600 mb-1">
+                    End Hour (24-hr IST)
+                  </label>
+                  <select
+                    value={customEndHour}
+                    onChange={(e) => setCustomEndHour(Number(e.target.value))}
+                    className="px-3 py-2 bg-white border border-gray-200 rounded-xl text-xs font-bold text-gray-800 focus:outline-none focus:border-emerald-500"
+                  >
+                    {Array.from({ length: 24 }).map((_, i) => {
+                      const hour = i + 1;
+                      return (
+                        <option key={hour} value={hour} disabled={hour <= customStartHour}>
+                          {hour < 10 ? "0" + hour : hour}:00 ({hour === 24 ? "12 AM next day" : hour >= 12 ? (hour === 12 ? "12 PM" : `${hour - 12} PM`) : `${hour} AM`})
+                        </option>
+                      );
+                    })}
+                  </select>
+                </div>
+
+                <div className="pb-0.5">
+                  <button
+                    type="button"
+                    onClick={handleAddCustomVendorSlot}
+                    className="inline-flex items-center gap-1.5 px-4 py-2 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl text-xs font-bold transition-all active:scale-95 cursor-pointer"
+                  >
+                    <Plus size={14} />
+                    <span>Add Custom Slot</span>
+                  </button>
+                </div>
+              </div>
+
+              <p className="text-[11px] text-gray-400">
+                Preview: <strong className="text-gray-700">{formatSlotLabel(customStartHour, customEndHour)}</strong> ({customEndHour - customStartHour} hour window)
               </p>
             </div>
 
-            <div className={!shippingData.deliveryFeeEnabled ? "opacity-50 pointer-events-none" : ""}>
-              <label className="block text-xs font-bold text-gray-700 uppercase tracking-wider mb-1.5">
-                Free Delivery Order Minimum (₹)
-              </label>
-              <input
-                type="number"
-                min={0}
-                step="any"
-                placeholder="Enter free delivery threshold (leave blank for platform default)"
-                value={shippingData.freeDeliveryThreshold}
-                onChange={(e) => setShippingData((p) => ({ ...p, freeDeliveryThreshold: e.target.value }))}
-                className="w-full bg-gray-50 border border-gray-200 rounded-xl px-4 py-3 text-sm font-semibold text-gray-800 focus:bg-white focus:border-emerald-500 focus:outline-hidden"
-              />
-              <p className="text-[11px] text-gray-400 mt-1">
-                Orders containing your items exceeding this total will not be charged freight.
-              </p>
+            {/* Active Configured Slots Summary */}
+            <div className="space-y-2">
+              <h4 className="text-xs font-bold text-gray-700 uppercase tracking-wider">
+                Active Configured Delivery Windows ({vendorSlots.length})
+              </h4>
+
+              <div className="flex flex-wrap gap-2">
+                {vendorSlots.map((slot) => (
+                  <span
+                    key={slot.id}
+                    className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-bold bg-emerald-50 text-emerald-900 border border-emerald-200"
+                  >
+                    <Clock size={12} className="text-emerald-600" />
+                    <span>{slot.label}</span>
+                    <button
+                      type="button"
+                      onClick={() => handleRemoveVendorSlot(slot.id)}
+                      className="ml-1 text-emerald-400 hover:text-red-500 transition-colors cursor-pointer"
+                      title="Remove this slot"
+                    >
+                      <Trash2 size={12} />
+                    </button>
+                  </span>
+                ))}
+              </div>
             </div>
           </div>
-
-          <div className="p-4 rounded-2xl bg-gray-50 border border-gray-200 flex items-start gap-3">
-            <Info size={18} className="text-gray-500 shrink-0 mt-0.5" />
-            <div className="text-xs text-gray-600 leading-relaxed space-y-1">
-              <p className="font-bold text-gray-800">How Delivery Charges Work with Super Admin Rules:</p>
-              <p>
-                If Super Admin turns delivery charges OFF platform-wide, all orders automatically receive 100% Free Shipping. When platform freight is ON, your shop&apos;s custom rates and threshold will apply to buyer checkouts.
-              </p>
-            </div>
-          </div>
-
-          <div className="flex justify-end pt-4 border-t border-gray-100">
-            <button
-              type="submit"
-              disabled={loading}
-              className="px-6 py-3 bg-emerald-600 hover:bg-emerald-700 active:scale-95 text-white font-bold text-xs rounded-xl shadow-md transition-all flex items-center gap-2 cursor-pointer disabled:opacity-50"
-            >
-              {loading ? <Loader2 size={16} className="animate-spin" /> : <Check size={16} />}
-              <span>Save Delivery Settings</span>
-            </button>
-          </div>
-        </form>
+        </div>
       )}
 
       {/* ── TAB 2: MANDATORY LEGAL KYC DOCUMENTS ── */}

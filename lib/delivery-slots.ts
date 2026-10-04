@@ -22,7 +22,7 @@ export interface DeliverySlotDefinition {
   label: string;     // e.g. "10:00 AM - 12:00 PM"
 }
 
-export const STANDARD_DELIVERY_SLOTS: DeliverySlotDefinition[] = [
+export const MASTER_DELIVERY_SLOTS: DeliverySlotDefinition[] = [
   { id: "08-10", startHour: 8, endHour: 10, label: "08:00 AM - 10:00 AM" },
   { id: "10-12", startHour: 10, endHour: 12, label: "10:00 AM - 12:00 PM" },
   { id: "12-14", startHour: 12, endHour: 14, label: "12:00 PM - 02:00 PM" },
@@ -31,6 +31,61 @@ export const STANDARD_DELIVERY_SLOTS: DeliverySlotDefinition[] = [
   { id: "18-20", startHour: 18, endHour: 20, label: "06:00 PM - 08:00 PM" },
   { id: "20-22", startHour: 20, endHour: 22, label: "08:00 PM - 10:00 PM" },
 ];
+
+/**
+ * Standard default slots start at 10:00 AM in the morning.
+ * (08:00 AM - 10:00 AM is available as an optional preset in custom settings)
+ */
+export const DEFAULT_DELIVERY_SLOTS: DeliverySlotDefinition[] = [
+  { id: "10-12", startHour: 10, endHour: 12, label: "10:00 AM - 12:00 PM" },
+  { id: "12-14", startHour: 12, endHour: 14, label: "12:00 PM - 02:00 PM" },
+  { id: "14-16", startHour: 14, endHour: 16, label: "02:00 PM - 04:00 PM" },
+  { id: "16-18", startHour: 16, endHour: 18, label: "04:00 PM - 06:00 PM" },
+  { id: "18-20", startHour: 18, endHour: 20, label: "06:00 PM - 08:00 PM" },
+  { id: "20-22", startHour: 20, endHour: 22, label: "08:00 PM - 10:00 PM" },
+];
+
+export const STANDARD_DELIVERY_SLOTS: DeliverySlotDefinition[] = DEFAULT_DELIVERY_SLOTS;
+
+/**
+ * Helper to generate human-readable AM/PM label from 24-hr start and end hours
+ */
+export function formatSlotLabel(startHour: number, endHour: number): string {
+  const formatAmPm = (h: number) => {
+    const period = h >= 12 ? "PM" : "AM";
+    const displayHour = h % 12 === 0 ? 12 : h % 12;
+    return `${displayHour < 10 ? "0" + displayHour : displayHour}:00 ${period}`;
+  };
+  return `${formatAmPm(startHour)} - ${formatAmPm(endHour)}`;
+}
+
+/**
+ * Validates and sanitizes a raw array of slots from database or JSON input.
+ */
+export function sanitizeDeliverySlots(raw: any): DeliverySlotDefinition[] {
+  if (!raw || !Array.isArray(raw)) return DEFAULT_DELIVERY_SLOTS;
+  const sanitized: DeliverySlotDefinition[] = [];
+
+  for (const item of raw) {
+    if (typeof item === "object" && item !== null) {
+      const startHour = Number(item.startHour);
+      const endHour = Number(item.endHour);
+      const id = String(item.id || `${startHour}-${endHour}`);
+      const label = item.label || formatSlotLabel(startHour, endHour);
+
+      if (!isNaN(startHour) && !isNaN(endHour) && startHour >= 0 && endHour <= 24 && startHour < endHour) {
+        sanitized.push({
+          id,
+          startHour,
+          endHour,
+          label,
+        });
+      }
+    }
+  }
+
+  return sanitized.length > 0 ? sanitized : DEFAULT_DELIVERY_SLOTS;
+}
 
 export interface SlotAvailability {
   slot: DeliverySlotDefinition;
@@ -100,11 +155,17 @@ export function getSlotUtcDate(dateString: string, startHour: number, startMinut
 
 /**
  * Generates the full 7-day schedule with all slots and computed availability based on min 2h lead time.
+ * Supports custom slot configurations passed from Store or Vendor settings.
  */
-export function getAvailableDeliverySchedule(nowMs: number = Date.now()): DeliveryDayOption[] {
+export function getAvailableDeliverySchedule(
+  nowMs: number = Date.now(),
+  customSlots?: DeliverySlotDefinition[]
+): DeliveryDayOption[] {
   const days: DeliveryDayOption[] = [];
   const currentIST = getISTParts(nowMs);
   const minLeadInstantMs = nowMs + MIN_LEAD_MS;
+
+  const activeSlots = (customSlots && customSlots.length > 0) ? customSlots : DEFAULT_DELIVERY_SLOTS;
 
   // Compute midnight IST for today
   const todayMidnightUtcMs = Date.UTC(currentIST.year, currentIST.month - 1, currentIST.date, 0, 0, 0) - IST_OFFSET_MS;
@@ -121,7 +182,7 @@ export function getAvailableDeliverySchedule(nowMs: number = Date.now()): Delive
     const dateLabel = `${dayIST.date} ${MONTHS_SHORT[dayIST.month - 1]}`;
     const fullDateLabel = `${DAYS_FULL[dayIST.dayOfWeek]}, ${dayIST.date} ${MONTHS_FULL[dayIST.month - 1]}`;
 
-    const slots: SlotAvailability[] = STANDARD_DELIVERY_SLOTS.map((slot) => {
+    const slots: SlotAvailability[] = activeSlots.map((slot) => {
       const slotUtcDate = getSlotUtcDate(dateString, slot.startHour, 0);
       const slotStartMs = slotUtcDate.getTime();
       // Slot is available if it starts at least MIN_LEAD_MS after now (with 1-min clock tolerance)
@@ -154,11 +215,13 @@ export function getAvailableDeliverySchedule(nowMs: number = Date.now()): Delive
 /**
  * Validates a scheduled delivery submission server-side.
  * Returns valid: true and parsed values, or valid: false with an error message.
+ * Supports validating against active configured slots or any known master slot.
  */
 export function validateDeliverySchedule(
   scheduledFor: string | null | undefined,
   slotId: string | null | undefined,
-  nowMs: number = Date.now()
+  nowMs: number = Date.now(),
+  allowedSlots?: DeliverySlotDefinition[]
 ): {
   valid: boolean;
   isScheduled: boolean;
@@ -184,7 +247,14 @@ export function validateDeliverySchedule(
     };
   }
 
-  const slotDef = STANDARD_DELIVERY_SLOTS.find((s) => s.id === slotId);
+  // Lookup in active custom slots, default slots, or master presets
+  const slotPool = allowedSlots && allowedSlots.length > 0 ? allowedSlots : MASTER_DELIVERY_SLOTS;
+  let slotDef = slotPool.find((s) => s.id === slotId);
+
+  if (!slotDef) {
+    slotDef = MASTER_DELIVERY_SLOTS.find((s) => s.id === slotId);
+  }
+
   if (!slotDef) {
     return {
       valid: false,

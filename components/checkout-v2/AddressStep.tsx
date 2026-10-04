@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useRef } from "react";
+import React, { useState, useRef, useEffect } from "react";
 import {
   MapPin,
   Plus,
@@ -61,7 +61,22 @@ export default function AddressStep({
   const [showWebMapModal, setShowWebMapModal] = useState(false);
 
   // Delivery Time Scheduling State
-  const [scheduleDays] = useState<DeliveryDayOption[]>(() => getAvailableDeliverySchedule());
+  const [scheduleDays, setScheduleDays] = useState<DeliveryDayOption[]>(() => getAvailableDeliverySchedule());
+
+  useEffect(() => {
+    let isMounted = true;
+    fetch("/api/delivery-slots")
+      .then((res) => res.json())
+      .then((data) => {
+        if (isMounted && data?.success && Array.isArray(data.slots) && data.slots.length > 0) {
+          setScheduleDays(getAvailableDeliverySchedule(undefined, data.slots));
+        }
+      })
+      .catch((err) => console.error("Error fetching delivery slots:", err));
+    return () => {
+      isMounted = false;
+    };
+  }, []);
   const [deliveryMode, setDeliveryMode] = useState<"asap" | "schedule">(() =>
     scheduledDelivery?.isScheduled ? "schedule" : "asap"
   );

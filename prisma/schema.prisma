@@ -664,6 +664,7 @@ model StoreSettings {
   codMaxLimit           Float    @default(25000)
   codBlockedPincodes    String[] @default(["560099"])
   estimatedDelivery     String   @default("Within 60 Minutes")
+  deliverySlots         Json?    // Configured DeliverySlotDefinition[]
   updatedAt             DateTime @updatedAt
 }
 
@@ -827,6 +828,7 @@ model Vendor {
   deliveryFeeEnabled    Boolean            @default(true)
   customDeliveryFee     Float?             // null means follow store standard fee
   freeDeliveryThreshold Float?             // null means follow store threshold
+  deliverySlots         Json?              // Custom DeliverySlotDefinition[] for this vendor
 
   // Auto-Publishing Controls (Super Admin permission)
   autoPublishEnabled    Boolean            @default(false)

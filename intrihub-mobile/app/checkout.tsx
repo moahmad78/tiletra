@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import {
   View,
   Text,
@@ -31,7 +31,7 @@ import { createCheckoutOrder, verifyCheckoutPayment } from "../src/api/orders";
 import RazorpayCheckout from "react-native-razorpay";
 import { AddressModal } from "../src/components/AddressModal";
 import { COLORS, SPACING, RADIUS, SHADOWS } from "../src/constants/theme";
-import { getImageUrl } from "../src/constants/config";
+import { getImageUrl, API_BASE_URL } from "../src/constants/config";
 import { getAvailableDeliverySchedule, type DeliveryDayOption } from "../lib/delivery-slots";
 
 export default function CheckoutScreen() {
@@ -46,10 +46,25 @@ export default function CheckoutScreen() {
   const [errorMessage, setErrorMessage] = useState("");
 
   // Delivery Time Scheduling State
-  const [scheduleDays] = useState<DeliveryDayOption[]>(() => getAvailableDeliverySchedule());
+  const [scheduleDays, setScheduleDays] = useState<DeliveryDayOption[]>(() => getAvailableDeliverySchedule());
   const [deliveryMode, setDeliveryMode] = useState<"asap" | "schedule">("asap");
   const [selectedDayIdx, setSelectedDayIdx] = useState(0);
   const [selectedSlotId, setSelectedSlotId] = useState<string | null>(null);
+
+  useEffect(() => {
+    let isMounted = true;
+    fetch(`${API_BASE_URL}/api/delivery-slots`)
+      .then((res) => res.json())
+      .then((data) => {
+        if (isMounted && data?.success && Array.isArray(data.slots) && data.slots.length > 0) {
+          setScheduleDays(getAvailableDeliverySchedule(undefined, data.slots));
+        }
+      })
+      .catch((err) => console.log("Delivery slots fetch error:", err));
+    return () => {
+      isMounted = false;
+    };
+  }, []);
 
   const subtotal = getSubtotal();
   const deliveryFee = getDeliveryFee();

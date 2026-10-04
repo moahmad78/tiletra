@@ -3,6 +3,12 @@
 import { prisma } from "@/lib/prisma";
 import { safeRevalidate } from "@/lib/formatters";
 import { requireAdminAction } from "@/lib/admin-guard";
+import {
+  DEFAULT_DELIVERY_SLOTS,
+  MASTER_DELIVERY_SLOTS,
+  sanitizeDeliverySlots,
+  type DeliverySlotDefinition,
+} from "@/lib/delivery-slots";
 
 export async function getStoreSettings() {
   try {
@@ -305,3 +311,65 @@ export async function updateHomepageAnnouncements(data: {
     return { success: false, error: error?.message || "Failed to update announcements" };
   }
 }
+
+// ── Store Delivery Slots Configuration (Admin Master Controls) ───────────────
+export async function getStoreDeliverySlotsConfig(): Promise<{
+  activeSlots: DeliverySlotDefinition[];
+  defaultSlots: DeliverySlotDefinition[];
+  masterSlots: DeliverySlotDefinition[];
+}> {
+  try {
+    const settings = await prisma.storeSettings.findFirst({
+      select: { deliverySlots: true },
+    });
+
+    const activeSlots = settings?.deliverySlots
+      ? sanitizeDeliverySlots(settings.deliverySlots)
+      : DEFAULT_DELIVERY_SLOTS;
+
+    return {
+      activeSlots,
+      defaultSlots: DEFAULT_DELIVERY_SLOTS,
+      masterSlots: MASTER_DELIVERY_SLOTS,
+    };
+  } catch (error) {
+    console.error("Error fetching delivery slots config:", error);
+    return {
+      activeSlots: DEFAULT_DELIVERY_SLOTS,
+      defaultSlots: DEFAULT_DELIVERY_SLOTS,
+      masterSlots: MASTER_DELIVERY_SLOTS,
+    };
+  }
+}
+
+export async function updateStoreDeliverySlotsConfig(slots: DeliverySlotDefinition[]): Promise<{
+  success: boolean;
+  slots?: DeliverySlotDefinition[];
+  error?: string;
+}> {
+  try {
+    const sanitized = sanitizeDeliverySlots(slots);
+
+    let settings = await prisma.storeSettings.findFirst({ select: { id: true } });
+    if (settings) {
+      await prisma.storeSettings.update({
+        where: { id: settings.id },
+        data: { deliverySlots: sanitized as any },
+      });
+    } else {
+      await prisma.storeSettings.create({
+        data: { deliverySlots: sanitized as any } as any,
+      });
+    }
+
+    safeRevalidate("/admin/settings");
+    safeRevalidate("/checkout");
+    safeRevalidate("/checkout-v2");
+
+    return { success: true, slots: sanitized };
+  } catch (error: any) {
+    console.error("Error updating delivery slots config:", error);
+    return { success: false, error: error?.message || "Failed to update delivery slots" };
+  }
+}
+
