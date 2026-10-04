@@ -75,17 +75,30 @@ export function setGoogtransCookie(langCode: string): void {
  */
 export function clearGoogtransCookie(): void {
   if (typeof document === "undefined") return;
-  const currentHost = window.location.hostname;
-  const isLocal = currentHost === "localhost" || currentHost.includes("127.0.0.1") || /^\d+\.\d+\.\d+\.\d+$/.test(currentHost);
-  const rootDomain = getRootDomain();
-  const expired = "expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;";
+  const hostname = window.location.hostname;
+  const domains = [
+    "",
+    hostname,
+    `.${hostname}`,
+  ];
 
-  document.cookie = `${GOOGTRANS_COOKIE}=; ${expired}`;
+  const parts = hostname.split(".");
+  for (let i = 0; i < parts.length - 1; i++) {
+    const parentDomain = "." + parts.slice(i).join(".");
+    domains.push(parentDomain);
+    domains.push(parts.slice(i).join("."));
+  }
 
-  if (!isLocal) {
-    document.cookie = `${GOOGTRANS_COOKIE}=; domain=${currentHost}; ${expired}`;
-    if (rootDomain && rootDomain !== currentHost && !rootDomain.endsWith(".vercel.app")) {
-      document.cookie = `${GOOGTRANS_COOKIE}=; domain=${rootDomain}; ${expired}`;
+  const expiredDates = [
+    "expires=Thu, 01 Jan 1970 00:00:00 GMT",
+    "max-age=0",
+  ];
+
+  for (const d of domains) {
+    const domainPart = d ? `; domain=${d}` : "";
+    for (const exp of expiredDates) {
+      document.cookie = `googtrans=; path=/; ${exp}; SameSite=Lax${domainPart}`;
+      document.cookie = `googtrans=; path=; ${exp}; SameSite=Lax${domainPart}`;
     }
   }
 }
@@ -222,22 +235,14 @@ export function restoreOriginalEnglish(isUserAction = true): Promise<boolean> {
         return resolve(success);
       }
 
-      // If page still has translated elements after 800ms, auto-reload cleanly
+      // Reverting to original English requires a clean reload to remove residual translated font nodes
       setTimeout(() => {
-        if (typeof document !== "undefined") {
-          const isStillTranslated =
-            document.documentElement.classList.contains("translated-ltr") ||
-            document.documentElement.classList.contains("translated-rtl") ||
-            document.body.classList.contains("translated-ltr") ||
-            document.querySelector("font") !== null;
-
-          if (isStillTranslated && typeof window !== "undefined") {
-            window.location.reload();
-          }
+        if (typeof window !== "undefined") {
+          window.location.reload();
         }
-      }, 800);
+      }, 100);
 
-      resolve(success);
+      resolve(true);
     });
   });
 }
