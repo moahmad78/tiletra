@@ -226,12 +226,21 @@ export default function NotificationsScreen() {
 
               <View style={styles.cardContent}>
                 <View style={styles.titleRow}>
-                  <Text
-                    style={[styles.cardTitle, !item.isRead && styles.unreadTitle]}
-                    numberOfLines={1}
-                  >
-                    {item.title}
-                  </Text>
+                  <View style={{ flexDirection: "row", alignItems: "center", gap: 6, flex: 1 }}>
+                    <Text
+                      style={[styles.cardTitle, !item.isRead && styles.unreadTitle]}
+                      numberOfLines={1}
+                    >
+                      {item.title}
+                    </Text>
+                    {(item.title?.toLowerCase().includes("scheduled") || item.message?.toLowerCase().includes("scheduled")) && (
+                      <View style={{ backgroundColor: "#7C3AED", paddingHorizontal: 5, paddingVertical: 1.5, borderRadius: 3 }}>
+                        <Text style={{ color: "#FFFFFF", fontSize: 8, fontWeight: "900", letterSpacing: 0.5 }}>
+                          SCHEDULED
+                        </Text>
+                      </View>
+                    )}
+                  </View>
                   {!item.isRead && <View style={styles.unreadDot} />}
                 </View>
 

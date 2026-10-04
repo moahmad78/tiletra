@@ -126,11 +126,20 @@ export default function OrdersScreen() {
                     </Text>
                   </View>
 
-                  {/* Status Badge */}
-                  <View style={[styles.statusBadge, { backgroundColor: `${statusColor}15` }]}>
-                    <Text style={[styles.statusText, { color: statusColor }]}>
-                      {item.orderStatus.toUpperCase()}
-                    </Text>
+                  <View style={{ flexDirection: "row", alignItems: "center", gap: 6 }}>
+                    {item.isScheduled && (
+                      <View style={{ backgroundColor: "#7C3AED", paddingHorizontal: 6, paddingVertical: 2, borderRadius: 4 }}>
+                        <Text style={{ color: "#FFFFFF", fontSize: 9, fontWeight: "900", letterSpacing: 0.5 }}>
+                          SCHEDULED
+                        </Text>
+                      </View>
+                    )}
+                    {/* Status Badge */}
+                    <View style={[styles.statusBadge, { backgroundColor: `${statusColor}15` }]}>
+                      <Text style={[styles.statusText, { color: statusColor }]}>
+                        {item.orderStatus.toUpperCase()}
+                      </Text>
+                    </View>
                   </View>
                 </View>
 
@@ -157,6 +166,11 @@ export default function OrdersScreen() {
                     <Text style={styles.itemDetailsText}>
                       {item.items?.length || 1} Item(s) • Total: ₹{item.total.toLocaleString("en-IN")}
                     </Text>
+                    {item.isScheduled && item.deliverySlot ? (
+                      <Text style={{ fontSize: 11, fontWeight: "700", color: "#6D28D9", marginTop: 2 }}>
+                        ⏰ Slot: {item.deliverySlot}
+                      </Text>
+                    ) : null}
                   </View>
 
                   <ChevronRight size={18} color={COLORS.textMuted} />

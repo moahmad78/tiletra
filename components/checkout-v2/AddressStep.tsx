@@ -19,21 +19,39 @@ import {
   Navigation,
   Search,
   X,
+  Clock,
+  Calendar,
+  Zap,
 } from "lucide-react";
 import { type CustomerAddress, useAuthStore } from "@/lib/auth-store";
 import { toast } from "sonner";
 import WebMapPickerModal, { WebPickedLocation } from "@/components/maps/WebMapPickerModal";
+import { getAvailableDeliverySchedule, type DeliveryDayOption } from "@/lib/delivery-slots";
 
 interface AddressStepProps {
   selectedAddress: CustomerAddress | null;
   onSelectAddress: (address: CustomerAddress) => void;
   onProceedToDelivery: () => void;
+  scheduledDelivery?: {
+    isScheduled: boolean;
+    scheduledFor: string | null;
+    slotId: string | null;
+    deliverySlot: string | null;
+  };
+  onScheduleChange?: (schedule: {
+    isScheduled: boolean;
+    scheduledFor: string | null;
+    slotId: string | null;
+    deliverySlot: string | null;
+  }) => void;
 }
 
 export default function AddressStep({
   selectedAddress,
   onSelectAddress,
   onProceedToDelivery,
+  scheduledDelivery,
+  onScheduleChange,
 }: AddressStepProps) {
   const { user, addAddress, deleteAddress, setDefaultAddress, updateUserPhone } = useAuthStore();
   const userAddresses = user?.addresses || [];
@@ -41,6 +59,14 @@ export default function AddressStep({
   const [isDetectingLocation, setIsDetectingLocation] = useState(false);
   const [detectedNotice, setDetectedNotice] = useState<string | null>(null);
   const [showWebMapModal, setShowWebMapModal] = useState(false);
+
+  // Delivery Time Scheduling State
+  const [scheduleDays] = useState<DeliveryDayOption[]>(() => getAvailableDeliverySchedule());
+  const [deliveryMode, setDeliveryMode] = useState<"asap" | "schedule">(() =>
+    scheduledDelivery?.isScheduled ? "schedule" : "asap"
+  );
+  const [selectedDayIndex, setSelectedDayIndex] = useState<number>(0);
+  const [selectedSlotId, setSelectedSlotId] = useState<string | null>(() => scheduledDelivery?.slotId || null);
 
   // Manual Form State
   const [label, setLabel] = useState<"Home" | "Work" | "Site" | "Other">("Home");
@@ -451,11 +477,219 @@ export default function AddressStep({
             })}
           </div>
 
+          {/* ── Optional Delivery Time Section Directly Below Location Selector ── */}
+          <div className="mt-4 p-4 sm:p-5 rounded-2xl bg-gray-50/90 border border-gray-200/90 space-y-4">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+              <div className="flex items-center gap-2">
+                <div className="w-8 h-8 rounded-xl bg-[#052a51] text-white flex items-center justify-center shrink-0">
+                  <Clock size={16} />
+                </div>
+                <div>
+                  <div className="flex items-center gap-2">
+                    <h4 className="text-sm font-black text-[#052a51]">Delivery Time</h4>
+                    <span className="text-[10px] font-bold uppercase tracking-wider bg-gray-200 text-gray-700 px-2 py-0.5 rounded-full">
+                      Optional
+                    </span>
+                  </div>
+                  <p className="text-[11px] text-gray-500">
+                    Get immediate dispatch or schedule for a specific 2-hour window
+                  </p>
+                </div>
+              </div>
+
+              {/* Mode Switcher Tabs */}
+              <div className="flex items-center gap-1.5 p-1 bg-white rounded-xl border border-gray-200 shadow-2xs shrink-0">
+                <button
+                  type="button"
+                  onClick={() => {
+                    setDeliveryMode("asap");
+                    setSelectedSlotId(null);
+                    onScheduleChange?.({
+                      isScheduled: false,
+                      scheduledFor: null,
+                      slotId: null,
+                      deliverySlot: null,
+                    });
+                  }}
+                  className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-black transition-all cursor-pointer ${
+                    deliveryMode === "asap"
+                      ? "bg-[#052a51] text-white shadow-xs"
+                      : "text-gray-600 hover:text-gray-900 hover:bg-gray-50"
+                  }`}
+                >
+                  <Zap size={13} className={deliveryMode === "asap" ? "text-amber-400" : "text-gray-400"} />
+                  <span>Deliver ASAP</span>
+                </button>
+
+                <button
+                  type="button"
+                  onClick={() => {
+                    setDeliveryMode("schedule");
+                  }}
+                  className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-black transition-all cursor-pointer ${
+                    deliveryMode === "schedule"
+                      ? "bg-[#052a51] text-white shadow-xs"
+                      : "text-gray-600 hover:text-gray-900 hover:bg-gray-50"
+                  }`}
+                >
+                  <Calendar size={13} className={deliveryMode === "schedule" ? "text-white" : "text-gray-400"} />
+                  <span>Schedule for later</span>
+                </button>
+              </div>
+            </div>
+
+            {deliveryMode === "asap" ? (
+              <div className="flex items-center gap-2.5 p-3 rounded-xl bg-emerald-50/70 border border-emerald-200/80 text-xs text-emerald-900">
+                <CheckCircle2 size={16} className="text-emerald-600 shrink-0" />
+                <span className="font-semibold">
+                  Standard immediate dispatch: Materials are processed and dispatched within 60–90 minutes.
+                </span>
+              </div>
+            ) : (
+              <div className="space-y-3 pt-1">
+                {/* 7-Day Day Chips */}
+                <div>
+                  <p className="text-[11px] font-bold text-gray-500 uppercase tracking-wider mb-2">
+                    Select Delivery Day (Next 7 Days)
+                  </p>
+                  <div className="flex items-center gap-2 overflow-x-auto pb-1 scrollbar-none">
+                    {scheduleDays.map((day, idx) => {
+                      const isSelected = selectedDayIndex === idx;
+                      return (
+                        <button
+                          key={day.dateString}
+                          type="button"
+                          onClick={() => {
+                            setSelectedDayIndex(idx);
+                            const slotObj = day.slots.find((s) => s.slot.id === selectedSlotId);
+                            if (!slotObj || !slotObj.available) {
+                              setSelectedSlotId(null);
+                              onScheduleChange?.({
+                                isScheduled: true,
+                                scheduledFor: null,
+                                slotId: null,
+                                deliverySlot: null,
+                              });
+                            } else {
+                              onScheduleChange?.({
+                                isScheduled: true,
+                                scheduledFor: slotObj.scheduledForUtcIso,
+                                slotId: slotObj.slot.id,
+                                deliverySlot: slotObj.formattedFullSlot,
+                              });
+                            }
+                          }}
+                          className={`px-3.5 py-2 rounded-xl text-left border transition-all cursor-pointer shrink-0 ${
+                            isSelected
+                              ? "bg-[#052a51] text-white border-[#052a51] shadow-xs"
+                              : "bg-white text-gray-700 border-gray-200 hover:border-gray-300 hover:bg-gray-50"
+                          }`}
+                        >
+                          <p className={`text-[11px] font-black leading-tight ${isSelected ? "text-amber-400" : "text-gray-900"}`}>
+                            {day.dayLabel}
+                          </p>
+                          <p className={`text-[10px] font-semibold leading-tight mt-0.5 ${isSelected ? "text-white/80" : "text-gray-500"}`}>
+                            {day.dateLabel}
+                          </p>
+                        </button>
+                      );
+                    })}
+                  </div>
+                </div>
+
+                {/* 2-Hour Slot Pills */}
+                <div>
+                  <div className="flex items-center justify-between mb-2">
+                    <p className="text-[11px] font-bold text-gray-500 uppercase tracking-wider">
+                      Select 2-Hour Window (IST)
+                    </p>
+                    <span className="text-[10px] text-gray-400 font-medium">
+                      Min 2h advance lead time
+                    </span>
+                  </div>
+
+                  <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-2">
+                    {scheduleDays[selectedDayIndex]?.slots.map((s) => {
+                      const isSelected = selectedSlotId === s.slot.id;
+                      const isAvailable = s.available;
+
+                      return (
+                        <button
+                          key={s.slot.id}
+                          type="button"
+                          disabled={!isAvailable}
+                          onClick={() => {
+                            if (!isAvailable) return;
+                            setSelectedSlotId(s.slot.id);
+                            onScheduleChange?.({
+                              isScheduled: true,
+                              scheduledFor: s.scheduledForUtcIso,
+                              slotId: s.slot.id,
+                              deliverySlot: s.formattedFullSlot,
+                            });
+                          }}
+                          className={`p-2.5 rounded-xl border text-center transition-all ${
+                            !isAvailable
+                              ? "bg-gray-100/70 border-gray-200 text-gray-400 opacity-50 cursor-not-allowed line-through"
+                              : isSelected
+                              ? "bg-purple-700 text-white border-purple-700 shadow-xs font-bold"
+                              : "bg-white text-gray-800 border-gray-200 hover:border-gray-300 hover:bg-gray-50 cursor-pointer font-medium"
+                          }`}
+                          title={!isAvailable ? "Slot unavailable (requires at least 2h lead time)" : s.slot.label}
+                        >
+                          <p className="text-xs font-bold leading-tight">{s.slot.label}</p>
+                          <p className={`text-[10px] mt-0.5 leading-tight ${isSelected ? "text-purple-200" : isAvailable ? "text-gray-500" : "text-gray-400"}`}>
+                            {!isAvailable ? "Unavailable" : isSelected ? "Selected" : "2h Slot"}
+                          </p>
+                        </button>
+                      );
+                    })}
+                  </div>
+                </div>
+
+                {/* Selected Confirmation Banner */}
+                {selectedSlotId && (
+                  <div className="p-3 bg-purple-50 rounded-xl border border-purple-200 flex items-center justify-between text-xs text-purple-900">
+                    <div className="flex items-center gap-2">
+                      <span className="text-[10px] font-black uppercase tracking-wider bg-purple-600 text-white px-2 py-0.5 rounded-md">
+                        Scheduled
+                      </span>
+                      <span className="font-bold">
+                        {scheduleDays[selectedDayIndex]?.slots.find((s) => s.slot.id === selectedSlotId)?.formattedFullSlot}
+                      </span>
+                    </div>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setSelectedSlotId(null);
+                        onScheduleChange?.({
+                          isScheduled: true,
+                          scheduledFor: null,
+                          slotId: null,
+                          deliverySlot: null,
+                        });
+                      }}
+                      className="text-[11px] font-bold text-purple-700 hover:underline cursor-pointer"
+                    >
+                      Clear
+                    </button>
+                  </div>
+                )}
+              </div>
+            )}
+          </div>
+
           {selectedAddress && (
             <div className="pt-2 flex justify-end">
               <button
                 type="button"
-                onClick={onProceedToDelivery}
+                onClick={() => {
+                  if (deliveryMode === "schedule" && !selectedSlotId) {
+                    toast.error("Please pick an available 2-hour delivery slot or switch to Deliver ASAP");
+                    return;
+                  }
+                  onProceedToDelivery();
+                }}
                 className="w-full sm:w-auto px-7 py-3 bg-[#052a51] hover:bg-[#041f3d] text-white font-black text-xs sm:text-sm rounded-2xl shadow-md transition-all flex items-center justify-center gap-2 cursor-pointer active:scale-95"
               >
                 <span>Deliver to this Address</span>

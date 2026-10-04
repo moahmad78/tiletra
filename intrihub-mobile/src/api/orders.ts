@@ -23,6 +23,10 @@ export interface CreateOrderParams {
   subtotal?: number;
   deliveryFee?: number;
   discount?: number;
+  isScheduled?: boolean;
+  scheduledFor?: string;
+  deliverySlot?: string;
+  slotId?: string;
 }
 
 export interface VerifyPaymentParams {
@@ -39,6 +43,10 @@ export interface VerifyPaymentParams {
   deliveryFee: number;
   discount: number;
   total: number;
+  isScheduled?: boolean;
+  scheduledFor?: string;
+  deliverySlot?: string;
+  slotId?: string;
 }
 
 export async function createCheckoutOrder(params: CreateOrderParams) {

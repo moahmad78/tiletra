@@ -25,6 +25,10 @@ export async function POST(req: NextRequest) {
       deliveryFee,
       discount,
       total,
+      isScheduled,
+      scheduledFor,
+      deliverySlot,
+      slotId,
     } = body;
 
     if (!razorpay_order_id || !razorpay_payment_id || !razorpay_signature) {
@@ -80,6 +84,10 @@ export async function POST(req: NextRequest) {
       razorpayOrderId: razorpay_order_id,
       razorpayPaymentId: razorpay_payment_id,
       razorpaySignature: razorpay_signature,
+      isScheduled,
+      scheduledFor,
+      deliverySlot,
+      slotId,
     });
 
     if (!orderResult.success) {

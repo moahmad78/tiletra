@@ -207,6 +207,9 @@ export interface Order {
   trackingNumber?: string | null;
   courierName?: string | null;
   estimatedDelivery?: string | null;
+  isScheduled?: boolean;
+  scheduledFor?: string | null;
+  deliverySlot?: string | null;
 
   // Immutable Delivery Snapshot
   deliveryName?: string | null;

@@ -35,6 +35,19 @@ export default function CheckoutV2Page() {
   const [currentStep, setCurrentStep] = useState<1 | 2 | 3>(1);
   const [selectedAddress, setSelectedAddress] = useState<CustomerAddress | null>(null);
 
+  // Scheduled Delivery State
+  const [scheduledDelivery, setScheduledDelivery] = useState<{
+    isScheduled: boolean;
+    scheduledFor: string | null;
+    slotId: string | null;
+    deliverySlot: string | null;
+  }>({
+    isScheduled: false,
+    scheduledFor: null,
+    slotId: null,
+    deliverySlot: null,
+  });
+
   const addresses = user?.addresses || [];
 
   // Store Settings (with safe fallback)
@@ -248,6 +261,10 @@ export default function CheckoutV2Page() {
       razorpayOrderId: razorpayData?.orderId,
       razorpayPaymentId: razorpayData?.paymentId,
       razorpaySignature: razorpayData?.signature,
+      isScheduled: scheduledDelivery.isScheduled,
+      scheduledFor: scheduledDelivery.scheduledFor || undefined,
+      slotId: scheduledDelivery.slotId || undefined,
+      deliverySlot: scheduledDelivery.deliverySlot || undefined,
     });
 
     if (!res.success || !res.order) {
@@ -255,8 +272,11 @@ export default function CheckoutV2Page() {
     }
 
     clearCart();
+    const scheduledQuery = scheduledDelivery.isScheduled
+      ? `&isScheduled=true&slot=${encodeURIComponent(scheduledDelivery.deliverySlot || "")}`
+      : "";
     router.push(
-      `/checkout/success?orderId=${sessionOrderId}&method=${method.toLowerCase()}&total=${grandTotal}`
+      `/checkout/success?orderId=${sessionOrderId}&method=${method.toLowerCase()}&total=${grandTotal}${scheduledQuery}`
     );
   };
 
@@ -591,6 +611,8 @@ export default function CheckoutV2Page() {
                 <AddressStep
                   selectedAddress={selectedAddress}
                   onSelectAddress={(addr) => setSelectedAddress(addr)}
+                  scheduledDelivery={scheduledDelivery}
+                  onScheduleChange={setScheduledDelivery}
                   onProceedToDelivery={() => {
                     if (!selectedAddress) {
                       toast.error("Please choose a delivery address");
@@ -646,6 +668,8 @@ export default function CheckoutV2Page() {
               onApplyCoupon={handleApplyCoupon}
               onRemoveCoupon={handleRemoveCoupon}
               grandTotal={grandTotal}
+              isScheduled={scheduledDelivery.isScheduled}
+              scheduledSlot={scheduledDelivery.deliverySlot}
             />
           </div>
         </div>

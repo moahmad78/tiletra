@@ -59,6 +59,8 @@ export interface OrderUpdateContext {
   estimatedDelivery?: string;
   trackingNumber?: string;
   phone?: string;
+  isScheduled?: boolean;
+  deliverySlot?: string;
 }
 
 export interface InquiryContext {
@@ -157,7 +159,11 @@ export function generateNotificationMessage<R extends NotificationRole>(
     case "order_update": {
       const ctx = context as OrderUpdateContext;
       const totalStr = ctx.totalAmount ? `\n🧾 *Total Amount:* ₹${ctx.totalAmount.toLocaleString("en-IN")}` : "";
-      const deliveryStr = ctx.estimatedDelivery ? `\n🚚 *Estimated Delivery:* ${ctx.estimatedDelivery}` : "";
+      const deliveryStr = ctx.isScheduled && ctx.deliverySlot
+        ? `\n⏰ *Scheduled Delivery:* ${ctx.deliverySlot} [Scheduled]`
+        : ctx.estimatedDelivery
+        ? `\n🚚 *Estimated Delivery:* ${ctx.estimatedDelivery}`
+        : "";
       const trackingStr = ctx.trackingNumber ? `\n📍 *Tracking No:* ${ctx.trackingNumber}` : "";
 
       return [

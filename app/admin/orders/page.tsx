@@ -19,6 +19,7 @@ import {
   PackageCheck,
   FileText,
   Zap,
+  Clock,
 } from "lucide-react";
 import {
   getOrders,
@@ -541,6 +542,17 @@ export default function AdminOrdersPage() {
                             year: "numeric",
                           })}
                         </p>
+                        {order.isScheduled && (
+                          <div className="mt-1">
+                            <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[10px] font-black uppercase tracking-wider bg-purple-100 text-purple-800 border border-purple-200">
+                              <Clock size={10} />
+                              Scheduled
+                            </span>
+                            <p className="text-[10px] font-semibold text-purple-900 mt-0.5 truncate max-w-[150px]" title={order.deliverySlot || ""}>
+                              {order.deliverySlot}
+                            </p>
+                          </div>
+                        )}
                       </td>
 
                       <td className="py-3.5 px-4">

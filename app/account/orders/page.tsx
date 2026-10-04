@@ -186,7 +186,12 @@ export default function OrdersPage() {
                   </p>
                 </div>
 
-                <div className="flex items-center gap-3">
+                <div className="flex items-center gap-2 sm:gap-3 flex-wrap">
+                  {order.isScheduled && (
+                    <span className="px-2.5 py-0.5 rounded-full text-xs font-black uppercase tracking-wider bg-purple-100 text-purple-800 border border-purple-200">
+                      Scheduled
+                    </span>
+                  )}
                   <span
                     className={`px-3 py-1 rounded-full text-xs font-bold border ${getStatusColor(
                       order.orderStatus
@@ -245,7 +250,18 @@ export default function OrdersPage() {
                 <div className="flex items-center gap-2 text-xs text-gray-600">
                   <Truck size={16} className="text-[#F26522] shrink-0" />
                   <span>
-                    Estimated Delivery: <strong className="text-[#052a51]">{order.estimatedDelivery || "Within 60 Minutes"}</strong>
+                    {order.isScheduled ? (
+                      <>
+                        <strong className="text-purple-900 bg-purple-50 px-2 py-0.5 rounded border border-purple-200 mr-1.5">
+                          Scheduled Slot
+                        </strong>
+                        <strong className="text-[#052a51]">{order.deliverySlot || order.estimatedDelivery}</strong>
+                      </>
+                    ) : (
+                      <>
+                        Estimated Delivery: <strong className="text-[#052a51]">{order.estimatedDelivery || "Within 60 Minutes"}</strong>
+                      </>
+                    )}
                   </span>
                 </div>
 

@@ -353,6 +353,11 @@ model Order {
   internalNotes          String?
   estimatedDelivery      String          @default("Within 60 Minutes")
 
+  // Scheduled Delivery
+  isScheduled            Boolean         @default(false)
+  scheduledFor           DateTime?
+  deliverySlot           String?
+
   // Immutable Delivery Snapshot
   deliveryName           String?
   deliveryPhone          String?

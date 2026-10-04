@@ -3,6 +3,7 @@
 import { prisma } from "@/lib/prisma";
 import { safeRevalidate } from "@/lib/formatters";
 import { requireAdminAction } from "@/lib/admin-guard";
+import { validateDeliverySchedule } from "@/lib/delivery-slots";
 import Razorpay from "razorpay";
 import crypto from "crypto";
 
@@ -45,6 +46,11 @@ export type CreateOrderInput = {
   razorpayPaymentId?: string;
   razorpaySignature?: string;
   codConfirmed?: boolean;
+  // Optional Scheduled Delivery
+  isScheduled?: boolean;
+  scheduledFor?: string | Date;
+  deliverySlot?: string;
+  slotId?: string;
 };
 
 export async function createOrder(input: CreateOrderInput) {
@@ -53,6 +59,33 @@ export async function createOrder(input: CreateOrderInput) {
 
     const cleanPhone = input.customerPhone.replace(/\D/g, "");
     const cleanEmail = input.customerEmail?.trim().toLowerCase() || "";
+
+    // ── Server-Side Scheduled Delivery Slot Validation ──
+    let finalIsScheduled = Boolean(input.isScheduled);
+    let finalScheduledFor: Date | null = null;
+    let finalDeliverySlot: string | null = null;
+
+    if (input.isScheduled || input.scheduledFor || input.slotId) {
+      const scheduleValidation = validateDeliverySchedule(
+        typeof input.scheduledFor === "string"
+          ? input.scheduledFor
+          : input.scheduledFor instanceof Date
+          ? input.scheduledFor.toISOString()
+          : undefined,
+        input.slotId
+      );
+
+      if (!scheduleValidation.valid) {
+        return {
+          success: false,
+          error: scheduleValidation.error || "Invalid delivery slot selected.",
+        };
+      }
+
+      finalIsScheduled = scheduleValidation.isScheduled;
+      finalScheduledFor = scheduleValidation.scheduledForDate || null;
+      finalDeliverySlot = scheduleValidation.deliverySlot || input.deliverySlot || null;
+    }
 
     // ── Execute everything in an ACID Transaction for Atomic Stock Management & Data Integrity ──
     const order = await prisma.$transaction(async (tx) => {
@@ -344,7 +377,12 @@ export async function createOrder(input: CreateOrderInput) {
           razorpayPaymentId: input.razorpayPaymentId || null,
           razorpaySignature: input.razorpaySignature || null,
           orderStatus: "Processing",
-          estimatedDelivery: currentEstDelivery,
+          estimatedDelivery: finalIsScheduled && finalDeliverySlot ? `Scheduled: ${finalDeliverySlot}` : currentEstDelivery,
+
+          // Scheduled Delivery
+          isScheduled: finalIsScheduled,
+          scheduledFor: finalScheduledFor,
+          deliverySlot: finalDeliverySlot,
 
           // Immutable Delivery Snapshot
           deliveryName: addrFullName,
@@ -579,8 +617,10 @@ export async function createOrder(input: CreateOrderInput) {
     try {
       await prisma.adminNotification.create({
         data: {
-          title: `New Order #${order.id}`,
-          message: `${order.customerName} placed an order for ₹${order.total.toLocaleString("en-IN")}`,
+          title: order.isScheduled ? `New Scheduled Order #${order.id} ⏰` : `New Order #${order.id}`,
+          message: order.isScheduled
+            ? `${order.customerName} scheduled delivery for ${order.deliverySlot} (₹${order.total.toLocaleString("en-IN")})`
+            : `${order.customerName} placed an order for ₹${order.total.toLocaleString("en-IN")}`,
           type: "order",
           link: `/admin/orders/${order.id}`,
         },
@@ -595,8 +635,10 @@ export async function createOrder(input: CreateOrderInput) {
         await prisma.notification.create({
           data: {
             userId: order.userId,
-            title: `Order #${order.id} Confirmed!`,
-            message: `Thank you for your order! Your ${order.items?.length || 1} item(s) are being prepared for dispatch.`,
+            title: order.isScheduled ? `Order #${order.id} Confirmed (Scheduled) ⏰` : `Order #${order.id} Confirmed!`,
+            message: order.isScheduled
+              ? `Your order is confirmed and scheduled for delivery on ${order.deliverySlot}.`
+              : `Thank you for your order! Your ${order.items?.length || 1} item(s) are being prepared for dispatch.`,
             type: "order_placed",
             link: "/account/orders",
           },
@@ -609,9 +651,11 @@ export async function createOrder(input: CreateOrderInput) {
       try {
         const { sendPushToUser } = await import("@/lib/push-notifications");
         await sendPushToUser(order.userId, {
-          title: `Order #${order.id} Confirmed!`,
-          body: `Your order for ₹${order.total.toLocaleString("en-IN")} has been placed successfully.`,
-          data: { orderId: order.id, type: "order_placed" },
+          title: order.isScheduled ? `Order #${order.id} Confirmed (Scheduled)` : `Order #${order.id} Confirmed!`,
+          body: order.isScheduled
+            ? `Your order for ₹${order.total.toLocaleString("en-IN")} is scheduled for delivery on ${order.deliverySlot}.`
+            : `Your order for ₹${order.total.toLocaleString("en-IN")} has been placed successfully.`,
+          data: { orderId: order.id, type: "order_placed", isScheduled: order.isScheduled ? "true" : "false" },
         });
       } catch (e) {
         console.warn("Customer mobile push notification error:", e);
@@ -624,8 +668,10 @@ export async function createOrder(input: CreateOrderInput) {
 
       // Notify Super Admins
       await notifyAdminPush({
-        title: `New Order Received 🚀`,
-        body: `Order #${order.id} for ₹${order.total.toLocaleString("en-IN")} placed by ${order.customerName}.`,
+        title: order.isScheduled ? `New Scheduled Order Received ⏰` : `New Order Received 🚀`,
+        body: order.isScheduled
+          ? `Order #${order.id} (Scheduled: ${order.deliverySlot}) for ₹${order.total.toLocaleString("en-IN")} placed by ${order.customerName}.`
+          : `Order #${order.id} for ₹${order.total.toLocaleString("en-IN")} placed by ${order.customerName}.`,
         data: { orderId: order.id, type: "new_order" },
       });
 
@@ -638,8 +684,10 @@ export async function createOrder(input: CreateOrderInput) {
       for (const split of splits) {
         await notifyVendorPush({
           vendorId: split.vendorId,
-          title: `New Order Assigned 📦`,
-          body: `Order #${order.id} has items assigned to your store for fulfillment.`,
+          title: order.isScheduled ? `New Scheduled Order Assigned ⏰` : `New Order Assigned 📦`,
+          body: order.isScheduled
+            ? `Order #${order.id} scheduled for ${order.deliverySlot} has items assigned to your store.`
+            : `Order #${order.id} has items assigned to your store for fulfillment.`,
           data: { orderId: order.id, type: "vendor_order_assigned" },
         });
       }

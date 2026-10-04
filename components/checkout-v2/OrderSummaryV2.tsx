@@ -12,6 +12,7 @@ import {
   X,
   ChevronDown,
   ChevronUp,
+  Clock,
 } from "lucide-react";
 import { type CartItem } from "@/lib/cart-store";
 import { toast } from "sonner";
@@ -27,6 +28,8 @@ interface OrderSummaryV2Props {
   onApplyCoupon: (code: string) => Promise<boolean>;
   onRemoveCoupon: () => void;
   grandTotal: number;
+  isScheduled?: boolean;
+  scheduledSlot?: string | null;
 }
 
 export default function OrderSummaryV2({
@@ -40,6 +43,8 @@ export default function OrderSummaryV2({
   onApplyCoupon,
   onRemoveCoupon,
   grandTotal,
+  isScheduled,
+  scheduledSlot,
 }: OrderSummaryV2Props) {
   const [couponInput, setCouponInput] = useState("");
   const [isApplying, setIsApplying] = useState(false);
@@ -217,6 +222,23 @@ export default function OrderSummaryV2({
           <p className="text-[10px] text-[#2F7A4F] font-semibold text-right">
             ✓ Free Delivery Unlocked
           </p>
+        )}
+
+        {isScheduled && scheduledSlot && (
+          <div className="flex items-center justify-between text-xs py-2 px-3 rounded-xl bg-purple-50 border border-purple-200 mt-1">
+            <div className="flex items-center gap-1.5 text-purple-900 font-bold">
+              <Clock size={13} className="text-purple-600 shrink-0" />
+              <span>Slot:</span>
+            </div>
+            <div className="flex items-center gap-1.5 min-w-0">
+              <span className="text-[10px] font-black uppercase tracking-wider bg-purple-600 text-white px-1.5 py-0.5 rounded shrink-0">
+                Scheduled
+              </span>
+              <span className="font-extrabold text-purple-950 text-[11px] truncate">
+                {scheduledSlot}
+              </span>
+            </div>
+          </div>
         )}
 
         <div className="flex items-center justify-between text-[11px] text-gray-400 pt-1">

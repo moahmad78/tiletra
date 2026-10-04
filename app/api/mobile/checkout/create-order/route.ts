@@ -22,6 +22,10 @@ export async function POST(req: NextRequest) {
       couponCode,
       deliveryFee,
       discount,
+      isScheduled,
+      scheduledFor,
+      deliverySlot,
+      slotId,
     } = body;
 
     const finalUserId = user?.id || body.userId;
@@ -44,6 +48,10 @@ export async function POST(req: NextRequest) {
         paymentMethod: "cod",
         paymentStatus: "pending",
         codConfirmed: true,
+        isScheduled,
+        scheduledFor,
+        deliverySlot,
+        slotId,
       });
 
       if (!orderResult.success) {

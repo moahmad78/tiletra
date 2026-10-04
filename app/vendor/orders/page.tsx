@@ -404,6 +404,14 @@ export default function VendorOrdersPage() {
                           #{split.orderId}
                         </span>
 
+                      {/* Scheduled Delivery Badge */}
+                      {parent?.isScheduled && (
+                        <span className="text-[10px] font-extrabold uppercase px-2 py-0.5 rounded-md bg-purple-100 text-purple-900 border border-purple-200 flex items-center gap-1">
+                          <Clock size={11} className="text-purple-700" />
+                          <span>Scheduled: {parent.deliverySlot || "Slot"}</span>
+                        </span>
+                      )}
+
                       {/* Delivery Method Badge */}
                       <span
                         className={`text-[10px] font-extrabold uppercase px-2 py-0.5 rounded-md flex items-center gap-1 ${

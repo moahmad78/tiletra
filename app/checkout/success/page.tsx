@@ -25,6 +25,8 @@ function SuccessContent() {
     searchParams.get("orderId") || "IH-" + Math.floor(100000 + Math.random() * 900000);
   const method = searchParams.get("method") || "online";
   const total = searchParams.get("total");
+  const isScheduled = searchParams.get("isScheduled") === "true";
+  const slot = searchParams.get("slot");
 
   const isCod = method.toLowerCase() === "cod";
 
@@ -101,7 +103,16 @@ function SuccessContent() {
             )}
             <div className="flex justify-between items-center text-xs sm:text-sm">
               <span className="text-gray-500 font-medium">Estimated Delivery</span>
-              <span className="font-bold text-[#052a51]">Within 60 Minutes</span>
+              {isScheduled && slot ? (
+                <div className="flex items-center gap-1.5 text-right">
+                  <span className="text-[10px] font-black uppercase tracking-wider bg-purple-100 text-purple-800 border border-purple-200 px-2 py-0.5 rounded-md">
+                    Scheduled
+                  </span>
+                  <span className="font-bold text-purple-950">{slot}</span>
+                </div>
+              ) : (
+                <span className="font-bold text-[#052a51]">Within 60 Minutes</span>
+              )}
             </div>
             <div className="flex justify-between items-center text-xs sm:text-sm pt-1 border-t border-gray-200/60">
               <span className="text-gray-500 font-medium">Order Status</span>

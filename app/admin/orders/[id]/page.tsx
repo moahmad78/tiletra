@@ -17,6 +17,7 @@ import {
   Trash2,
   AlertTriangle,
   X,
+  Clock,
 } from "lucide-react";
 import {
   getOrderById,
@@ -183,6 +184,8 @@ export default function OrderDetailPage({
     estimatedDelivery: order.estimatedDelivery,
     trackingNumber: order.trackingNumber || undefined,
     phone: order.customerPhone,
+    isScheduled: order.isScheduled,
+    deliverySlot: order.deliverySlot || undefined,
   });
 
   return (
@@ -197,8 +200,13 @@ export default function OrderDetailPage({
             <ArrowLeft size={18} />
           </Link>
           <div>
-            <div className="flex items-center gap-2">
+            <div className="flex items-center gap-2 flex-wrap">
               <h2 className="text-xl font-black text-[#052a51]">Order #{order.id}</h2>
+              {order.isScheduled && (
+                <span className="px-2.5 py-0.5 rounded-full text-xs font-black uppercase tracking-wider bg-purple-100 text-purple-800 border border-purple-200">
+                  Scheduled
+                </span>
+              )}
               <span className="px-2.5 py-0.5 rounded-full text-xs font-extrabold bg-[#F26522]/10 text-[#F26522]">
                 {order.orderStatus}
               </span>
@@ -370,6 +378,16 @@ export default function OrderDetailPage({
                 <br />
                 {order.shippingAddress?.city || "Bangalore"}, {order.shippingAddress?.state || "Karnataka"} - {order.shippingAddress?.pincode || ""}
               </p>
+
+              {order.isScheduled && order.deliverySlot && (
+                <div className="mt-3 p-3 bg-purple-50 rounded-xl border border-purple-200 text-purple-950">
+                  <div className="flex items-center gap-1.5 font-black uppercase text-[10px] text-purple-700">
+                    <Clock size={12} />
+                    <span>Scheduled Delivery Window</span>
+                  </div>
+                  <p className="text-xs font-bold mt-0.5">{order.deliverySlot}</p>
+                </div>
+              )}
             </div>
           </div>
 

@@ -21,6 +21,9 @@ import {
   CheckCircle2,
   ChevronRight,
   Package,
+  Clock,
+  Calendar,
+  Zap,
 } from "lucide-react-native";
 import { useCartStore } from "../src/store/cartStore";
 import { useAuthStore } from "../src/store/authStore";
@@ -29,6 +32,7 @@ import RazorpayCheckout from "react-native-razorpay";
 import { AddressModal } from "../src/components/AddressModal";
 import { COLORS, SPACING, RADIUS, SHADOWS } from "../src/constants/theme";
 import { getImageUrl } from "../src/constants/config";
+import { getAvailableDeliverySchedule, type DeliveryDayOption } from "../lib/delivery-slots";
 
 export default function CheckoutScreen() {
   const router = useRouter();
@@ -40,6 +44,12 @@ export default function CheckoutScreen() {
   const [isProcessing, setIsProcessing] = useState(false);
   const [completedOrder, setCompletedOrder] = useState<any | null>(null);
   const [errorMessage, setErrorMessage] = useState("");
+
+  // Delivery Time Scheduling State
+  const [scheduleDays] = useState<DeliveryDayOption[]>(() => getAvailableDeliverySchedule());
+  const [deliveryMode, setDeliveryMode] = useState<"asap" | "schedule">("asap");
+  const [selectedDayIdx, setSelectedDayIdx] = useState(0);
+  const [selectedSlotId, setSelectedSlotId] = useState<string | null>(null);
 
   const subtotal = getSubtotal();
   const deliveryFee = getDeliveryFee();
@@ -78,6 +88,19 @@ export default function CheckoutScreen() {
     };
     const checkoutPhone = sanitizePhone(selectedAddress?.phone) || sanitizePhone(user?.phone) || "";
 
+    if (deliveryMode === "schedule" && !selectedSlotId) {
+      setErrorMessage("Please select a 2-hour delivery slot or switch to Deliver ASAP.");
+      setIsProcessing(false);
+      return;
+    }
+
+    const activeDay = scheduleDays[selectedDayIdx];
+    const activeSlot = activeDay?.slots.find((s) => s.slot.id === selectedSlotId);
+    const isScheduled = deliveryMode === "schedule" && Boolean(activeSlot);
+    const scheduledFor = isScheduled ? activeSlot?.scheduledForUtcIso : undefined;
+    const deliverySlot = isScheduled ? activeSlot?.formattedFullSlot : undefined;
+    const slotId = isScheduled ? activeSlot?.slot.id : undefined;
+
     try {
       const orderPayloadItems = items.map((i) => ({
         productId: i.product.id,
@@ -103,6 +126,10 @@ export default function CheckoutScreen() {
           subtotal,
           deliveryFee,
           discount: 0,
+          isScheduled,
+          scheduledFor,
+          deliverySlot,
+          slotId,
         });
 
         if (res.success && res.order) {
@@ -124,6 +151,10 @@ export default function CheckoutScreen() {
           subtotal,
           deliveryFee,
           discount: 0,
+          isScheduled,
+          scheduledFor,
+          deliverySlot,
+          slotId,
         });
 
         if (res.success && res.razorpayOrder) {
@@ -171,6 +202,10 @@ export default function CheckoutScreen() {
               deliveryFee,
               discount: 0,
               total,
+              isScheduled,
+              scheduledFor,
+              deliverySlot,
+              slotId,
             });
 
             if (verifyRes.success && verifyRes.order) {
@@ -231,7 +266,18 @@ export default function CheckoutScreen() {
           </View>
           <View style={styles.successRow}>
             <Text style={styles.successKey}>Estimated Delivery</Text>
-            <Text style={styles.successValue}>{completedOrder.estimatedDelivery || "Within 60 Minutes"}</Text>
+            {completedOrder.isScheduled ? (
+              <View style={{ flexDirection: "row", alignItems: "center", gap: 6 }}>
+                <View style={styles.scheduledMiniBadge}>
+                  <Text style={styles.scheduledMiniBadgeText}>SCHEDULED</Text>
+                </View>
+                <Text style={[styles.successValue, { color: COLORS.primary }]}>
+                  {completedOrder.deliverySlot || completedOrder.estimatedDelivery}
+                </Text>
+              </View>
+            ) : (
+              <Text style={styles.successValue}>{completedOrder.estimatedDelivery || "Within 60 Minutes"}</Text>
+            )}
           </View>
         </View>
 
@@ -311,6 +357,148 @@ export default function CheckoutScreen() {
           )}
         </View>
 
+        {/* ── Delivery Time Scheduling Section directly below location selector ── */}
+        <View style={styles.card}>
+          <View style={styles.cardHeader}>
+            <View style={styles.cardTitleRow}>
+              <Clock size={18} color={COLORS.primary} />
+              <Text style={styles.cardTitle}>Delivery Time</Text>
+            </View>
+            <View style={styles.optionalBadge}>
+              <Text style={styles.optionalBadgeText}>OPTIONAL</Text>
+            </View>
+          </View>
+
+          {/* Mode Switcher */}
+          <View style={styles.modeSwitcherContainer}>
+            <TouchableOpacity
+              style={[styles.modeTab, deliveryMode === "asap" && styles.modeTabActive]}
+              onPress={() => {
+                setDeliveryMode("asap");
+                setSelectedSlotId(null);
+              }}
+              activeOpacity={0.8}
+            >
+              <Zap size={14} color={deliveryMode === "asap" ? "#F59E0B" : COLORS.textMuted} />
+              <Text style={[styles.modeTabText, deliveryMode === "asap" && styles.modeTabTextActive]}>
+                Deliver ASAP
+              </Text>
+            </TouchableOpacity>
+
+            <TouchableOpacity
+              style={[styles.modeTab, deliveryMode === "schedule" && styles.modeTabActive]}
+              onPress={() => setDeliveryMode("schedule")}
+              activeOpacity={0.8}
+            >
+              <Calendar size={14} color={deliveryMode === "schedule" ? COLORS.textWhite : COLORS.textMuted} />
+              <Text style={[styles.modeTabText, deliveryMode === "schedule" && styles.modeTabTextActive]}>
+                Schedule for later
+              </Text>
+            </TouchableOpacity>
+          </View>
+
+          {deliveryMode === "asap" ? (
+            <View style={styles.asapInfoBox}>
+              <CheckCircle2 size={16} color={COLORS.accentGreen} />
+              <Text style={styles.asapInfoText}>
+                Standard immediate dispatch: Materials are processed and dispatched within 60–90 minutes.
+              </Text>
+            </View>
+          ) : (
+            <View style={{ marginTop: 12 }}>
+              {/* Day Chips */}
+              <Text style={styles.slotSectionLabel}>SELECT DELIVERY DAY (NEXT 7 DAYS)</Text>
+              <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.daysScroll}>
+                {scheduleDays.map((day, idx) => {
+                  const isSelected = selectedDayIdx === idx;
+                  return (
+                    <TouchableOpacity
+                      key={day.dateString}
+                      style={[styles.dayChip, isSelected && styles.dayChipActive]}
+                      onPress={() => {
+                        setSelectedDayIdx(idx);
+                        const slotObj = day.slots.find((s) => s.slot.id === selectedSlotId);
+                        if (!slotObj || !slotObj.available) {
+                          setSelectedSlotId(null);
+                        }
+                      }}
+                      activeOpacity={0.8}
+                    >
+                      <Text style={[styles.dayChipTitle, isSelected && styles.dayChipTitleActive]}>
+                        {day.dayLabel}
+                      </Text>
+                      <Text style={[styles.dayChipDate, isSelected && styles.dayChipDateActive]}>
+                        {day.dateLabel}
+                      </Text>
+                    </TouchableOpacity>
+                  );
+                })}
+              </ScrollView>
+
+              {/* 2-Hour Slot Chips */}
+              <View style={styles.slotHeaderRow}>
+                <Text style={styles.slotSectionLabel}>SELECT 2-HOUR WINDOW (IST)</Text>
+                <Text style={styles.leadTimeNotice}>Min 2h advance lead</Text>
+              </View>
+
+              <View style={styles.slotsGrid}>
+                {scheduleDays[selectedDayIdx]?.slots.map((s) => {
+                  const isSelected = selectedSlotId === s.slot.id;
+                  const isAvailable = s.available;
+
+                  return (
+                    <TouchableOpacity
+                      key={s.slot.id}
+                      disabled={!isAvailable}
+                      style={[
+                        styles.slotBtn,
+                        !isAvailable && styles.slotBtnDisabled,
+                        isSelected && styles.slotBtnActive,
+                      ]}
+                      onPress={() => {
+                        if (!isAvailable) return;
+                        setSelectedSlotId(s.slot.id);
+                      }}
+                      activeOpacity={0.8}
+                    >
+                      <Text
+                        style={[
+                          styles.slotBtnText,
+                          !isAvailable && styles.slotBtnTextDisabled,
+                          isSelected && styles.slotBtnTextActive,
+                        ]}
+                      >
+                        {s.slot.label}
+                      </Text>
+                      <Text
+                        style={[
+                          styles.slotBtnSub,
+                          !isAvailable && styles.slotBtnSubDisabled,
+                          isSelected && styles.slotBtnSubActive,
+                        ]}
+                      >
+                        {!isAvailable ? "Unavailable" : isSelected ? "Selected" : "2h Slot"}
+                      </Text>
+                    </TouchableOpacity>
+                  );
+                })}
+              </View>
+
+              {/* Selected Slot Notice */}
+              {selectedSlotId ? (
+                <View style={styles.selectedSlotNotice}>
+                  <View style={styles.scheduledMiniBadge}>
+                    <Text style={styles.scheduledMiniBadgeText}>SCHEDULED</Text>
+                  </View>
+                  <Text style={styles.selectedSlotNoticeText}>
+                    {scheduleDays[selectedDayIdx]?.slots.find((s) => s.slot.id === selectedSlotId)?.formattedFullSlot}
+                  </Text>
+                </View>
+              ) : null}
+            </View>
+          )}
+        </View>
+
         {/* Order Items Review */}
         <View style={styles.card}>
           <View style={styles.cardHeader}>
@@ -339,6 +527,17 @@ export default function CheckoutScreen() {
               </View>
             </View>
           ))}
+
+          {deliveryMode === "schedule" && selectedSlotId ? (
+            <View style={[styles.selectedSlotNotice, { marginTop: 12 }]}>
+              <View style={styles.scheduledMiniBadge}>
+                <Text style={styles.scheduledMiniBadgeText}>SCHEDULED</Text>
+              </View>
+              <Text style={styles.selectedSlotNoticeText}>
+                Delivery: {scheduleDays[selectedDayIdx]?.slots.find((s) => s.slot.id === selectedSlotId)?.formattedFullSlot}
+              </Text>
+            </View>
+          ) : null}
         </View>
 
         {/* Payment Method Selector */}
@@ -776,5 +975,190 @@ const styles = StyleSheet.create({
     color: COLORS.textSecondary,
     fontSize: 13,
     fontWeight: "700",
+  },
+  optionalBadge: {
+    paddingHorizontal: 8,
+    paddingVertical: 2,
+    borderRadius: RADIUS.full,
+    backgroundColor: COLORS.surfaceSecondary,
+  },
+  optionalBadgeText: {
+    fontSize: 9,
+    fontWeight: "800",
+    color: COLORS.textMuted,
+  },
+  modeSwitcherContainer: {
+    flexDirection: "row",
+    gap: 8,
+    marginTop: 10,
+    backgroundColor: COLORS.surfaceSecondary,
+    padding: 4,
+    borderRadius: RADIUS.md,
+  },
+  modeTab: {
+    flex: 1,
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    gap: 6,
+    paddingVertical: 8,
+    borderRadius: RADIUS.sm,
+  },
+  modeTabActive: {
+    backgroundColor: COLORS.primary,
+  },
+  modeTabText: {
+    fontSize: 12,
+    fontWeight: "700",
+    color: COLORS.textSecondary,
+  },
+  modeTabTextActive: {
+    color: COLORS.textWhite,
+    fontWeight: "800",
+  },
+  asapInfoBox: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 8,
+    backgroundColor: "rgba(16, 185, 129, 0.08)",
+    padding: 10,
+    borderRadius: RADIUS.sm,
+    marginTop: 10,
+  },
+  asapInfoText: {
+    flex: 1,
+    fontSize: 11,
+    color: COLORS.accentGreen,
+    fontWeight: "600",
+  },
+  slotSectionLabel: {
+    fontSize: 10,
+    fontWeight: "800",
+    color: COLORS.textMuted,
+    letterSpacing: 0.5,
+    marginTop: 8,
+    marginBottom: 6,
+  },
+  daysScroll: {
+    flexDirection: "row",
+    marginBottom: 10,
+  },
+  dayChip: {
+    paddingHorizontal: 14,
+    paddingVertical: 8,
+    borderRadius: RADIUS.md,
+    backgroundColor: COLORS.surfaceSecondary,
+    marginRight: 8,
+    borderWidth: 1,
+    borderColor: "transparent",
+  },
+  dayChipActive: {
+    backgroundColor: COLORS.primary,
+    borderColor: COLORS.primary,
+  },
+  dayChipTitle: {
+    fontSize: 12,
+    fontWeight: "800",
+    color: COLORS.text,
+  },
+  dayChipTitleActive: {
+    color: "#F59E0B",
+  },
+  dayChipDate: {
+    fontSize: 10,
+    fontWeight: "600",
+    color: COLORS.textMuted,
+    marginTop: 2,
+  },
+  dayChipDateActive: {
+    color: "rgba(255,255,255,0.8)",
+  },
+  slotHeaderRow: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+    marginTop: 6,
+    marginBottom: 6,
+  },
+  leadTimeNotice: {
+    fontSize: 10,
+    color: COLORS.textMuted,
+    fontWeight: "500",
+  },
+  slotsGrid: {
+    flexDirection: "row",
+    flexWrap: "wrap",
+    gap: 8,
+  },
+  slotBtn: {
+    width: "48%",
+    paddingVertical: 10,
+    paddingHorizontal: 8,
+    borderRadius: RADIUS.md,
+    backgroundColor: COLORS.surfaceSecondary,
+    borderWidth: 1,
+    borderColor: "transparent",
+    alignItems: "center",
+  },
+  slotBtnDisabled: {
+    opacity: 0.4,
+    backgroundColor: COLORS.surfaceSecondary,
+  },
+  slotBtnActive: {
+    backgroundColor: COLORS.primary,
+    borderColor: COLORS.primary,
+  },
+  slotBtnText: {
+    fontSize: 11,
+    fontWeight: "800",
+    color: COLORS.text,
+  },
+  slotBtnTextDisabled: {
+    textDecorationLine: "line-through",
+    color: COLORS.textMuted,
+  },
+  slotBtnTextActive: {
+    color: COLORS.textWhite,
+  },
+  slotBtnSub: {
+    fontSize: 9,
+    fontWeight: "600",
+    color: COLORS.textMuted,
+    marginTop: 2,
+  },
+  slotBtnSubDisabled: {
+    color: COLORS.textMuted,
+  },
+  slotBtnSubActive: {
+    color: "#E2E8F0",
+  },
+  selectedSlotNotice: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 8,
+    backgroundColor: "rgba(124, 58, 237, 0.08)",
+    padding: 10,
+    borderRadius: RADIUS.sm,
+    marginTop: 10,
+    borderWidth: 1,
+    borderColor: "rgba(124, 58, 237, 0.2)",
+  },
+  selectedSlotNoticeText: {
+    flex: 1,
+    fontSize: 11,
+    color: "#6D28D9",
+    fontWeight: "700",
+  },
+  scheduledMiniBadge: {
+    backgroundColor: "#7C3AED",
+    paddingHorizontal: 6,
+    paddingVertical: 2,
+    borderRadius: 4,
+  },
+  scheduledMiniBadgeText: {
+    color: "#FFFFFF",
+    fontSize: 9,
+    fontWeight: "900",
+    letterSpacing: 0.5,
   },
 });

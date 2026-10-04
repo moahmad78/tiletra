@@ -231,10 +231,21 @@ IntriHub — Everything, Every Place`;
         {/* Real-time Order Tracker Card */}
         <View style={[styles.card, SHADOWS.sm]}>
           <View style={styles.cardHeaderRow}>
-            <View>
-              <Text style={styles.cardHeaderTitle}>Delivery Status</Text>
+            <View style={{ flex: 1, marginRight: 8 }}>
+              <View style={{ flexDirection: "row", alignItems: "center", gap: 6, flexWrap: "wrap" }}>
+                <Text style={styles.cardHeaderTitle}>Delivery Status</Text>
+                {order.isScheduled && (
+                  <View style={{ backgroundColor: "#7C3AED", paddingHorizontal: 6, paddingVertical: 2, borderRadius: 4 }}>
+                    <Text style={{ color: "#FFFFFF", fontSize: 9, fontWeight: "900", letterSpacing: 0.5 }}>
+                      SCHEDULED
+                    </Text>
+                  </View>
+                )}
+              </View>
               <Text style={styles.estimatedDeliveryText}>
-                Estimated Delivery: {order.estimatedDelivery || "Within 60 Minutes"}
+                {order.isScheduled && order.deliverySlot
+                  ? `Scheduled: ${order.deliverySlot}`
+                  : `Estimated Delivery: ${order.estimatedDelivery || "Within 60 Minutes"}`}
               </Text>
             </View>
             <TouchableOpacity
@@ -310,6 +321,28 @@ IntriHub — Everything, Every Place`;
             </View>
           ) : null}
         </View>
+
+        {/* Scheduled Delivery Banner */}
+        {order.isScheduled && (
+          <View style={[styles.card, { backgroundColor: "rgba(124, 58, 237, 0.06)", borderColor: "rgba(124, 58, 237, 0.25)" }]}>
+            <View style={{ flexDirection: "row", alignItems: "center", gap: 10 }}>
+              <Clock size={20} color="#7C3AED" />
+              <View style={{ flex: 1 }}>
+                <View style={{ flexDirection: "row", alignItems: "center", gap: 6 }}>
+                  <View style={{ backgroundColor: "#7C3AED", paddingHorizontal: 6, paddingVertical: 2, borderRadius: 4 }}>
+                    <Text style={{ color: "#FFFFFF", fontSize: 9, fontWeight: "900", letterSpacing: 0.5 }}>
+                      SCHEDULED
+                    </Text>
+                  </View>
+                  <Text style={{ fontSize: 13, fontWeight: "800", color: "#4C1D95" }}>Confirmed Delivery Slot</Text>
+                </View>
+                <Text style={{ fontSize: 13, fontWeight: "700", color: "#6D28D9", marginTop: 3 }}>
+                  {order.deliverySlot || order.estimatedDelivery}
+                </Text>
+              </View>
+            </View>
+          </View>
+        )}
 
         {/* Delivery Address Card */}
         <View style={styles.card}>

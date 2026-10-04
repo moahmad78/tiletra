@@ -54,16 +54,25 @@ export default function OrderTrackingModal({
         <div className="p-6 overflow-y-auto space-y-6">
           {/* Status banner */}
           <div className="p-4 bg-gradient-to-br from-[#052a51] to-[#0a3869] rounded-2xl text-white space-y-1">
-            <div className="flex items-center justify-between">
-              <span className="text-[10px] font-black uppercase tracking-wider px-2 py-0.5 rounded bg-[#F26522] text-white">
-                Status: {currentStatus}
-              </span>
+            <div className="flex items-center justify-between flex-wrap gap-2">
+              <div className="flex items-center gap-1.5">
+                <span className="text-[10px] font-black uppercase tracking-wider px-2 py-0.5 rounded bg-[#F26522] text-white">
+                  Status: {currentStatus}
+                </span>
+                {order.isScheduled && (
+                  <span className="text-[10px] font-black uppercase tracking-wider px-2 py-0.5 rounded bg-purple-500 text-white">
+                    Scheduled
+                  </span>
+                )}
+              </div>
               <span className="text-xs text-white/80 font-bold">
-                📅 {order.estimatedDelivery || "Within 60 Minutes"}
+                ⏰ {order.deliverySlot || order.estimatedDelivery || "Within 60 Minutes"}
               </span>
             </div>
             <p className="text-sm font-bold pt-1">
-              Estimated Delivery: {order.estimatedDelivery || "Within 60 Minutes"}
+              {order.isScheduled
+                ? `Scheduled Delivery: ${order.deliverySlot || order.estimatedDelivery}`
+                : `Estimated Delivery: ${order.estimatedDelivery || "Within 60 Minutes"}`}
             </p>
             {order.trackingNumber && (
               <p className="text-xs text-white/70">
