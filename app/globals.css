@@ -172,5 +172,28 @@ body {
   }
 }
 
+/* 6. Google Website Translator Clean-Up & Suppression */
+.goog-te-banner-frame,
+.skiptranslate,
+#goog-gt-tt,
+.goog-te-balloon-frame {
+  display: none !important;
+}
 
+body {
+  top: 0px !important;
+  position: static !important;
+}
 
+/* Remove hover highlight boxes added by Google Translate */
+.goog-text-highlight {
+  background-color: transparent !important;
+  box-shadow: none !important;
+}
+
+/* Hide original text tooltip balloon */
+#goog-gt-tt,
+.goog-tooltip,
+.goog-tooltip:hover {
+  display: none !important;
+}

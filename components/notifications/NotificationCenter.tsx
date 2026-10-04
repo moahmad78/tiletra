@@ -24,16 +24,17 @@ import {
   type NotificationType,
 } from "@/lib/notifications-store";
 import { useAuthStore } from "@/lib/auth-store";
+import { useTranslation } from "@/lib/i18n/client";
 
-function formatRelativeTime(dateStr: string) {
+function formatRelativeTime(dateStr: string, t: (key: string, fallback?: string, params?: Record<string, string | number>) => string) {
   const diffMs = Date.now() - new Date(dateStr).getTime();
   const mins = Math.floor(diffMs / (1000 * 60));
-  if (mins < 1) return "Just now";
-  if (mins < 60) return `${mins}m ago`;
+  if (mins < 1) return t("notifications.justNow", "Just now");
+  if (mins < 60) return t("notifications.minutesAgo", "{{mins}}m ago", { mins });
   const hours = Math.floor(mins / 60);
-  if (hours < 24) return `${hours}h ago`;
+  if (hours < 24) return t("notifications.hoursAgo", "{{hours}}h ago", { hours });
   const days = Math.floor(hours / 24);
-  return `${days}d ago`;
+  return t("notifications.daysAgo", "{{days}}d ago", { days });
 }
 
 function getNotificationIcon(type: NotificationType) {
@@ -54,6 +55,7 @@ function getNotificationIcon(type: NotificationType) {
 
 export default function NotificationCenter() {
   const router = useRouter();
+  const { t } = useTranslation();
   const [isOpen, setIsOpen] = useState(false);
   const [filter, setFilter] = useState<"all" | "unread">("all");
   const [mounted, setMounted] = useState(false);
@@ -133,10 +135,10 @@ export default function NotificationCenter() {
             {/* Header */}
             <div className="flex items-center justify-between pb-3 border-b border-gray-100">
               <div className="flex items-center gap-2">
-                <h3 className="font-black text-[#052a51] text-sm">Notifications</h3>
+                <h3 className="font-black text-[#052a51] text-sm">{t("notifications.title", "Notifications")}</h3>
                 {effectiveUnreadCount > 0 && (
                   <span className="px-2 py-0.5 bg-[#F26522]/10 text-[#F26522] text-[10px] font-black rounded-full">
-                    {effectiveUnreadCount} new
+                    {effectiveUnreadCount} {t("notifications.unread", "unread")}
                   </span>
                 )}
               </div>
@@ -146,10 +148,10 @@ export default function NotificationCenter() {
                   <button
                     onClick={markAllAsRead}
                     className="text-[11px] font-bold text-gray-500 hover:text-[#F26522] flex items-center gap-1 px-2 py-1 rounded-lg hover:bg-gray-50 transition-colors"
-                    title="Mark all as read"
+                    title={t("notifications.markAllRead", "Mark all as read")}
                   >
                     <CheckCheck size={13} />
-                    <span>Mark all read</span>
+                    <span>{t("notifications.markAllRead", "Mark all read")}</span>
                   </button>
                 )}
                 {isAuthenticated && (
@@ -157,7 +159,7 @@ export default function NotificationCenter() {
                     href="/account/notifications"
                     onClick={() => setIsOpen(false)}
                     className="p-1.5 text-gray-400 hover:text-[#052a51] rounded-lg hover:bg-gray-50"
-                    title="Notification settings"
+                    title={t("notifications.settings", "Notification settings")}
                   >
                     <Settings size={14} />
                   </Link>
@@ -177,9 +179,9 @@ export default function NotificationCenter() {
                 <div className="w-12 h-12 rounded-2xl bg-[#052a51]/5 text-[#052a51] flex items-center justify-center mx-auto mb-3 shadow-2xs">
                   <Bell size={22} className="text-[#052a51]" />
                 </div>
-                <h4 className="font-black text-[#052a51] text-sm">Sign in for alerts</h4>
+                <h4 className="font-black text-[#052a51] text-sm">{t("notifications.signInForAlerts", "Sign in for alerts")}</h4>
                 <p className="text-xs text-gray-500 mt-1 max-w-[260px] mx-auto leading-relaxed">
-                  Log in to track your orders, receive delivery dispatches, and get exclusive offers.
+                  {t("notifications.signInDesc", "Log in to track your orders, receive delivery dispatches, and get exclusive offers.")}
                 </p>
                 <button
                   type="button"
@@ -190,7 +192,7 @@ export default function NotificationCenter() {
                   className="mt-4 inline-flex items-center gap-2 px-5 py-2.5 rounded-xl bg-[#052a51] hover:bg-[#F26522] text-white text-xs font-bold shadow-xs active:scale-95 transition-all"
                 >
                   <LogIn size={14} />
-                  <span>Log In / Register</span>
+                  <span>{t("notifications.loginRegister", "Log In / Register")}</span>
                 </button>
               </div>
             ) : (
@@ -206,7 +208,7 @@ export default function NotificationCenter() {
                         : "text-gray-500 hover:bg-gray-100"
                     }`}
                   >
-                    All ({notifications.length})
+                    {t("notifications.all", "All")} ({notifications.length})
                   </button>
                   <button
                     onClick={() => setFilter("unread")}
@@ -216,7 +218,7 @@ export default function NotificationCenter() {
                         : "text-gray-500 hover:bg-gray-100"
                     }`}
                   >
-                    Unread ({effectiveUnreadCount})
+                    {t("notifications.unread", "Unread")} ({effectiveUnreadCount})
                   </button>
                 </div>
 
@@ -225,14 +227,14 @@ export default function NotificationCenter() {
                   {isLoading ? (
                     <div className="py-10 text-center text-xs text-gray-400 flex flex-col items-center justify-center">
                       <Loader2 size={24} className="animate-spin text-[#F26522] mb-2" />
-                      <p>Loading your notifications...</p>
+                      <p>{t("notifications.loadingNotifications", "Loading your notifications...")}</p>
                     </div>
                   ) : displayedNotifications.length === 0 ? (
                     <div className="py-10 text-center text-xs text-gray-400">
                       <ShieldCheck size={26} className="mx-auto text-gray-300 mb-2" />
-                      <p className="font-bold text-[#052a51]">No notifications yet</p>
+                      <p className="font-bold text-[#052a51]">{t("notifications.noNotifications", "No notifications yet")}</p>
                       <p className="text-[11px] text-gray-400 mt-0.5 max-w-[260px] mx-auto">
-                        When you place orders or receive delivery updates, they'll appear here.
+                        {t("notifications.noNotificationsDesc", "When you place orders or receive delivery updates, they'll appear here.")}
                       </p>
                     </div>
                   ) : (
@@ -262,7 +264,7 @@ export default function NotificationCenter() {
                               {n.title}
                             </h4>
                             <span className="text-[10px] text-gray-400 shrink-0 font-medium">
-                              {formatRelativeTime(n.createdAt)}
+                              {formatRelativeTime(n.createdAt, t)}
                             </span>
                           </div>
                           <p className="text-[11px] text-gray-500 line-clamp-2 mt-0.5 leading-relaxed font-normal">
@@ -299,14 +301,14 @@ export default function NotificationCenter() {
                     onClick={() => setIsOpen(false)}
                     className="font-bold text-[#F26522] hover:underline"
                   >
-                    Track Live Orders →
+                    {t("notifications.trackLiveOrders", "Track Live Orders →")}
                   </Link>
                   <Link
                     href="/account/notifications"
                     onClick={() => setIsOpen(false)}
                     className="text-gray-400 hover:text-[#052a51] font-semibold"
                   >
-                    Preferences
+                    {t("notifications.preferences", "Preferences")}
                   </Link>
                 </div>
               </>

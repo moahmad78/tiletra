@@ -4,8 +4,10 @@ import { useState, useEffect, useRef } from "react";
 import { Phone } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { CONTACT_PERSONS } from "@/lib/data/contacts";
+import { useTranslation } from "@/lib/i18n/client";
 
 export default function RotatingHeaderContact() {
+  const { t } = useTranslation();
   const [index, setIndex] = useState(0);
   const [isHovered, setIsHovered] = useState(false);
   const isHoveredRef = useRef(false);
@@ -33,7 +35,7 @@ export default function RotatingHeaderContact() {
       className="flex items-center gap-1.5 h-6 overflow-hidden select-none"
     >
       <Phone size={13} className="text-[#F26522] shrink-0" />
-      <span className="text-white/60 text-xs hidden lg:inline">Helpline:</span>
+      <span className="text-white/60 text-xs hidden lg:inline">{t("nav.helpline")}:</span>
       <div className="relative h-5 min-w-[190px] overflow-hidden flex items-center">
         <AnimatePresence mode="wait">
           <motion.a
@@ -43,10 +45,11 @@ export default function RotatingHeaderContact() {
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0, y: -10 }}
             transition={{ duration: 0.3 }}
-            className="text-white hover:text-[#F26522] transition-colors font-bold tracking-wide text-xs flex items-center gap-1 whitespace-nowrap"
+            className="text-white hover:text-[#F26522] transition-colors font-bold tracking-wide text-xs flex items-center gap-1 whitespace-nowrap notranslate"
+            translate="no"
           >
-            <span className="text-[#F26522] font-extrabold">{contact.shortName}:</span>
-            <span>{contact.phone}</span>
+            <span className="text-[#F26522] font-extrabold notranslate" translate="no">{contact.shortName}:</span>
+            <span className="notranslate" translate="no">{contact.phone}</span>
           </motion.a>
         </AnimatePresence>
       </div>

@@ -7,7 +7,7 @@ import { Home, Grid3x3, ShoppingBag, User } from "lucide-react";
 import { useCartStore } from "@/lib/cart-store";
 import { useAuthStore } from "@/lib/auth-store";
 import UserAvatar from "@/components/ui/UserAvatar";
-import { useTranslation } from "@/lib/i18n/store";
+import { useTranslation } from "@/lib/i18n/client";
 import { cn } from "@/lib/utils";
 
 export default function BottomTabBar() {
@@ -112,7 +112,8 @@ export default function BottomTabBar() {
               src={user?.avatar}
               name={user?.name || user?.email}
               email={user?.email}
-              size={22}
+              size={24}
+              priority
               className={cn("border transition-colors", isAccountActive ? "border-[#052a51] ring-1 ring-[#052a51]" : "border-gray-200")}
             />
           ) : (

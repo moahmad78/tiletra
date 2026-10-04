@@ -1,9 +1,10 @@
-﻿"use client";
+"use client";
 
 import { useState, useRef, useEffect } from "react";
 import { Globe, Check, ChevronDown } from "lucide-react";
 import { useTranslation } from "@/lib/i18n/store";
 import { SupportedLanguage } from "@/lib/i18n/config";
+import { setGoogleTranslateLanguage, getActiveGoogleLanguage } from "@/lib/i18n/google-translate";
 import { cn } from "@/lib/utils";
 
 interface LanguageSelectorProps {
@@ -18,12 +19,15 @@ export default function LanguageSelector({
   const { language, setLanguage, languages } = useTranslation();
   const [isOpen, setIsOpen] = useState(false);
   const [mounted, setMounted] = useState(false);
+  const [activeCode, setActiveCode] = useState<SupportedLanguage>("en");
   const dropdownRef = useRef<HTMLDivElement>(null);
 
-  // Fix SSR hydration: zustand persist uses localStorage, must wait for client mount
+  // Fix SSR hydration & read active Google translation state
   useEffect(() => {
     setMounted(true);
-  }, []);
+    const googleLang = getActiveGoogleLanguage();
+    setActiveCode(googleLang || language || "en");
+  }, [language]);
 
   // Close dropdown on outside click
   useEffect(() => {
@@ -36,14 +40,16 @@ export default function LanguageSelector({
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, []);
 
-  const currentLangInfo = languages.find((l) => l.code === language) || languages[0];
+  const currentLangInfo = languages.find((l) => l.code === activeCode) || languages[0];
 
   const handleSelect = (code: SupportedLanguage) => {
+    setActiveCode(code);
     setLanguage(code);
     setIsOpen(false);
+    setGoogleTranslateLanguage(code);
   };
 
-  // Skeleton placeholder before hydration � preserves layout space
+  // Skeleton placeholder before hydration — preserves layout space
   if (!mounted) {
     return (
       <div
@@ -61,7 +67,7 @@ export default function LanguageSelector({
 
   if (variant === "footer") {
     return (
-      <div className={cn("flex items-center gap-2 text-xs", className)}>
+      <div className={cn("flex items-center gap-2 text-xs notranslate", className)} translate="no">
         <Globe size={15} className="text-gray-400 shrink-0" />
         <span className="text-gray-400 font-medium">Language:</span>
         <div className="flex items-center gap-1.5">
@@ -71,11 +77,12 @@ export default function LanguageSelector({
               type="button"
               onClick={() => handleSelect(l.code)}
               className={cn(
-                "px-2.5 py-1 rounded-md text-xs font-bold transition-all cursor-pointer",
-                language === l.code
+                "px-2.5 py-1 rounded-md text-xs font-bold transition-all cursor-pointer notranslate",
+                activeCode === l.code
                   ? "bg-[#F26522] text-white shadow-xs"
                   : "bg-gray-100 hover:bg-gray-200 text-gray-700"
               )}
+              translate="no"
             >
               {l.nativeName}
             </button>
@@ -86,13 +93,13 @@ export default function LanguageSelector({
   }
 
   return (
-    <div className={cn("relative inline-block text-left", className)} ref={dropdownRef}>
+    <div className={cn("relative inline-block text-left notranslate", className)} translate="no" ref={dropdownRef}>
       <button
         type="button"
         onClick={() => setIsOpen(!isOpen)}
         aria-label="Select Language"
         className={cn(
-          "flex items-center gap-1.5 rounded-xl transition-all cursor-pointer font-bold select-none",
+          "flex items-center gap-1.5 rounded-xl transition-all cursor-pointer font-bold select-none notranslate",
           variant === "header" &&
             "h-[40px] px-3 bg-gray-50 hover:bg-gray-100 border border-gray-200/80 text-xs text-[#052a51]",
           variant === "panel" &&
@@ -100,24 +107,25 @@ export default function LanguageSelector({
           variant === "minimal" &&
             "h-8 px-2 text-gray-600 hover:text-[#052a51] rounded-lg hover:bg-gray-100 border border-gray-200/60"
         )}
+        translate="no"
       >
         <Globe size={15} className="text-[#052a51] shrink-0" />
         {(variant === "header" || variant === "panel") && (
           <>
-            <span className="text-xs">{currentLangInfo.nativeName}</span>
+            <span className="text-xs notranslate" translate="no">{currentLangInfo.nativeName}</span>
             <ChevronDown size={13} className="text-gray-400" />
           </>
         )}
         {variant === "minimal" && (
           <>
-            <span className="text-[11px] font-black uppercase">{currentLangInfo.code}</span>
+            <span className="text-[11px] font-black uppercase notranslate" translate="no">{currentLangInfo.code}</span>
             <ChevronDown size={11} className="text-gray-400" />
           </>
         )}
       </button>
 
       {isOpen && (
-        <div className="absolute right-0 mt-2 w-44 rounded-2xl bg-white shadow-xl border border-gray-100 py-1.5 z-[999] animate-in fade-in zoom-in-95 duration-100">
+        <div className="absolute right-0 mt-2 w-44 rounded-2xl bg-white shadow-xl border border-gray-100 py-1.5 z-[999] animate-in fade-in zoom-in-95 duration-100 notranslate" translate="no">
           <div className="px-3 py-1.5 text-[10px] font-bold uppercase tracking-wider text-gray-400 border-b border-gray-100">
             Select Language
           </div>
@@ -127,17 +135,18 @@ export default function LanguageSelector({
               type="button"
               onClick={() => handleSelect(l.code)}
               className={cn(
-                "w-full flex items-center justify-between px-3 py-2 text-xs font-semibold transition-colors cursor-pointer text-left",
-                language === l.code
+                "w-full flex items-center justify-between px-3 py-2 text-xs font-semibold transition-colors cursor-pointer text-left notranslate",
+                activeCode === l.code
                   ? "bg-[#052a51]/5 text-[#052a51] font-bold"
                   : "text-gray-700 hover:bg-gray-50"
               )}
+              translate="no"
             >
-              <div className="flex flex-col">
-                <span className="font-bold text-[13px]">{l.nativeName}</span>
-                <span className="text-[10px] text-gray-400">{l.name}</span>
+              <div className="flex flex-col notranslate" translate="no">
+                <span className="font-bold text-[13px] notranslate" translate="no">{l.nativeName}</span>
+                <span className="text-[10px] text-gray-400 notranslate" translate="no">{l.name}</span>
               </div>
-              {language === l.code && <Check size={14} className="text-[#F26522] shrink-0" />}
+              {activeCode === l.code && <Check size={14} className="text-[#F26522] shrink-0" />}
             </button>
           ))}
         </div>
