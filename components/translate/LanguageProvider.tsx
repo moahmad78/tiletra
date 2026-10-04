@@ -91,7 +91,7 @@ export function LanguageProvider({ children }: { children: React.ReactNode }) {
         // Auto-apply saved language if not English (FR-5)
         const saved = getSavedLanguagePreference();
         if (saved && saved !== "en") {
-          applyLanguage(saved);
+          applyLanguage(saved, false);
         }
         return;
       }
@@ -118,13 +118,13 @@ export function LanguageProvider({ children }: { children: React.ReactNode }) {
     pollCombo();
   }, []);
 
-  // Switch Language (FR-3: Zero reload)
+  // Switch Language (FR-3: Zero reload or automatic refresh if required by browser)
   const setLanguage = useCallback(async (langCode: string) => {
     setIsTranslating(true);
     setCurrentLang(langCode);
 
     try {
-      await applyLanguage(langCode);
+      await applyLanguage(langCode, true);
     } finally {
       setTimeout(() => {
         setIsTranslating(false);
@@ -132,13 +132,13 @@ export function LanguageProvider({ children }: { children: React.ReactNode }) {
     }
   }, []);
 
-  // Restore Original English (FR-4: Zero reload)
+  // Restore Original English (FR-4: Zero reload or automatic refresh if required by browser)
   const restoreOriginal = useCallback(async () => {
     setIsTranslating(true);
     setCurrentLang("en");
 
     try {
-      await restoreOriginalEnglish();
+      await restoreOriginalEnglish(true);
     } finally {
       setTimeout(() => {
         setIsTranslating(false);

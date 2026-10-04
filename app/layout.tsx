@@ -256,6 +256,28 @@ j=d.createElement(s),dl=l!='dataLayer'?'&l='+l:'';j.async=true;j.src=
             `,
           }}
         />
+        {/* Google Website Translator Engine */}
+        <script
+          dangerouslySetInnerHTML={{
+            __html: `
+              window.googleTranslateElementInit = function() {
+                try {
+                  if (window.google && window.google.translate && window.google.translate.TranslateElement) {
+                    new window.google.translate.TranslateElement({
+                      pageLanguage: 'en',
+                      autoDisplay: false
+                    }, 'google_translate_element');
+                  }
+                } catch (e) {}
+              };
+            `,
+          }}
+        />
+        <Script
+          id="google-translate-script"
+          strategy="afterInteractive"
+          src="https://translate.google.com/translate_a/element.js?cb=googleTranslateElementInit"
+        />
       </head>
       <body className="min-h-full flex flex-col font-sans bg-white text-gray-900">
         {/* Google Tag Manager (noscript) */}

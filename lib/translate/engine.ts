@@ -51,16 +51,24 @@ function getRootDomain(): string {
 export function setGoogtransCookie(langCode: string): void {
   if (typeof document === "undefined") return;
   const cookieValue = `/en/${langCode}`;
-  const rootDomain = getRootDomain();
   const currentHost = window.location.hostname;
+  const isLocal = currentHost === "localhost" || currentHost.includes("127.0.0.1") || /^\d+\.\d+\.\d+\.\d+$/.test(currentHost);
+  const rootDomain = getRootDomain();
 
-  // Set on current host path=/
+  // Clear existing cookies first
+  clearGoogtransCookie();
+
+  // 1. Path=/ cookie without domain (universal, works on localhost & current host)
   document.cookie = `${GOOGTRANS_COOKIE}=${cookieValue}; path=/; max-age=31536000; SameSite=Lax`;
-  document.cookie = `${GOOGTRANS_COOKIE}=${cookieValue}; domain=${currentHost}; path=/; max-age=31536000; SameSite=Lax`;
+  document.cookie = `googtrans=/auto/${langCode}; path=/; max-age=31536000; SameSite=Lax`;
 
-  // Set on root domain (e.g. .intrihub.com) if not localhost
-  if (rootDomain && rootDomain !== currentHost) {
-    document.cookie = `${GOOGTRANS_COOKIE}=${cookieValue}; domain=${rootDomain}; path=/; max-age=31536000; SameSite=Lax`;
+  // 2. Set on current host and root domain if in production
+  if (!isLocal) {
+    document.cookie = `${GOOGTRANS_COOKIE}=${cookieValue}; domain=${currentHost}; path=/; max-age=31536000; SameSite=Lax`;
+    if (rootDomain && rootDomain !== currentHost) {
+      document.cookie = `${GOOGTRANS_COOKIE}=${cookieValue}; domain=${rootDomain}; path=/; max-age=31536000; SameSite=Lax`;
+      document.cookie = `googtrans=/auto/${langCode}; domain=${rootDomain}; path=/; max-age=31536000; SameSite=Lax`;
+    }
   }
 }
 
@@ -69,14 +77,21 @@ export function setGoogtransCookie(langCode: string): void {
  */
 export function clearGoogtransCookie(): void {
   if (typeof document === "undefined") return;
-  const rootDomain = getRootDomain();
   const currentHost = window.location.hostname;
+  const isLocal = currentHost === "localhost" || currentHost.includes("127.0.0.1") || /^\d+\.\d+\.\d+\.\d+$/.test(currentHost);
+  const rootDomain = getRootDomain();
   const expired = "expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;";
 
   document.cookie = `${GOOGTRANS_COOKIE}=; ${expired}`;
-  document.cookie = `${GOOGTRANS_COOKIE}=; domain=${currentHost}; ${expired}`;
-  if (rootDomain && rootDomain !== currentHost) {
-    document.cookie = `${GOOGTRANS_COOKIE}=; domain=${rootDomain}; ${expired}`;
+  document.cookie = `googtrans=; ${expired}`;
+
+  if (!isLocal) {
+    document.cookie = `${GOOGTRANS_COOKIE}=; domain=${currentHost}; ${expired}`;
+    document.cookie = `googtrans=; domain=${currentHost}; ${expired}`;
+    if (rootDomain && rootDomain !== currentHost) {
+      document.cookie = `${GOOGTRANS_COOKIE}=; domain=${rootDomain}; ${expired}`;
+      document.cookie = `googtrans=; domain=${rootDomain}; ${expired}`;
+    }
   }
 }
 
@@ -105,7 +120,7 @@ export function getSavedLanguagePreference(): string {
       if (saved && saved !== "en") return saved;
 
       // Fallback check from googtrans cookie (e.g. "/en/hi")
-      const match = document.cookie.match(/(?:^|;\s*)googtrans=\/en\/([a-zA-Z_-]+)/);
+      const match = document.cookie.match(/(?:^|;\s*)googtrans=\/(?:en|auto)\/([a-zA-Z_-]+)/);
       if (match && match[1] && match[1] !== "en") {
         return match[1];
       }
@@ -124,36 +139,55 @@ export function driveGoogleCombo(langCode: string, retries = 0): Promise<boolean
     const combo = document.querySelector<HTMLSelectElement>("select.goog-te-combo");
 
     if (!combo) {
-      if (retries < 30) {
-        // Retry every 250ms for up to ~7.5 seconds
+      if (retries < 6) {
+        // Fast retry: 100ms up to 6 times (~600ms)
         setTimeout(() => {
           driveGoogleCombo(langCode, retries + 1).then(resolve);
-        }, 250);
+        }, 100);
         return;
       }
       return resolve(false);
     }
 
     try {
-      combo.value = langCode === "en" ? "" : langCode;
+      const targetVal = langCode === "en" ? "" : langCode;
+      combo.value = targetVal;
 
-      // Dispatch standard Events
-      combo.dispatchEvent(new Event("change", { bubbles: true }));
-      combo.dispatchEvent(new Event("input", { bubbles: true }));
+      // Ensure matching option is selected
+      if (combo.options && combo.options.length > 0) {
+        for (let i = 0; i < combo.options.length; i++) {
+          if (combo.options[i].value.toLowerCase() === targetVal.toLowerCase()) {
+            combo.selectedIndex = i;
+            combo.value = combo.options[i].value;
+            break;
+          }
+        }
+      }
 
-      // Dispatch legacy HTMLEvents for older engines
+      // 1. Dispatch legacy HTMLEvents (for older Google Translate builds)
       try {
         const evt = document.createEvent("HTMLEvents");
         evt.initEvent("change", true, true);
         combo.dispatchEvent(evt);
       } catch {}
 
+      // 2. Dispatch standard Events
+      combo.dispatchEvent(new Event("change", { bubbles: true }));
+      combo.dispatchEvent(new Event("input", { bubbles: true }));
+
+      // 3. Direct function invocation if onchange property is bound
+      if (typeof (combo as any).onchange === "function") {
+        try {
+          (combo as any).onchange();
+        } catch {}
+      }
+
       // Update <html lang="..."> attribute (Accessibility FR-10)
       if (document.documentElement) {
         document.documentElement.lang = langCode;
       }
 
-      // Also notify any custom listeners (FR-7)
+      // Notify custom listeners (FR-7)
       if (typeof window !== "undefined") {
         window.dispatchEvent(new CustomEvent("intrihub-language-changed", { detail: { code: langCode } }));
       }
@@ -166,16 +200,15 @@ export function driveGoogleCombo(langCode: string, retries = 0): Promise<boolean
 }
 
 /**
- * Restore original English without page reload (FR-4).
+ * Restore original English without manual page reload (FR-4).
  */
-export function restoreOriginalEnglish(): Promise<boolean> {
+export function restoreOriginalEnglish(isUserAction = true): Promise<boolean> {
   clearGoogtransCookie();
   saveLanguagePreference("en");
 
   return new Promise((resolve) => {
-    // 1. Try setting the combo back to empty / en
     driveGoogleCombo("en").then((success) => {
-      // 2. Also try clicking the restore button inside Google's banner iframe if mounted
+      // Also try clicking the restore button inside Google's banner iframe if mounted
       try {
         const bannerIframe = document.querySelector<HTMLIFrameElement>("iframe.goog-te-banner-frame");
         if (bannerIframe && bannerIframe.contentDocument) {
@@ -186,10 +219,28 @@ export function restoreOriginalEnglish(): Promise<boolean> {
         }
       } catch {}
 
-      // Update HTML lang attribute
       if (typeof document !== "undefined" && document.documentElement) {
         document.documentElement.lang = "en";
       }
+
+      if (!isUserAction) {
+        return resolve(success);
+      }
+
+      // If page still has translated elements after 350ms, auto-reload cleanly
+      setTimeout(() => {
+        if (typeof document !== "undefined") {
+          const isStillTranslated =
+            document.documentElement.classList.contains("translated-ltr") ||
+            document.documentElement.classList.contains("translated-rtl") ||
+            document.body.classList.contains("translated-ltr") ||
+            document.querySelector("font") !== null;
+
+          if (isStillTranslated && typeof window !== "undefined") {
+            window.location.reload();
+          }
+        }
+      }, 350);
 
       resolve(success);
     });
@@ -197,15 +248,47 @@ export function restoreOriginalEnglish(): Promise<boolean> {
 }
 
 /**
- * Apply target language seamlessly with zero reload.
+ * Apply target language seamlessly.
+ * Attempts zero-reload in-place translation; if Google Translate widget in current
+ * browser session requires reload, automatically refreshes so user NEVER has to manually reload.
  */
-export async function applyLanguage(langCode: string): Promise<boolean> {
+export async function applyLanguage(langCode: string, isUserAction = true): Promise<boolean> {
   if (!langCode || langCode === "en") {
-    return restoreOriginalEnglish();
+    return restoreOriginalEnglish(isUserAction);
   }
 
   setGoogtransCookie(langCode);
   saveLanguagePreference(langCode);
 
-  return driveGoogleCombo(langCode);
+  const drove = await driveGoogleCombo(langCode);
+
+  if (!isUserAction) {
+    return drove;
+  }
+
+  // If combo wasn't found or failed to dispatch, reload automatically now that cookie is set
+  if (!drove) {
+    if (typeof window !== "undefined") {
+      window.location.reload();
+    }
+    return true;
+  }
+
+  // Verification guard: Check if DOM translated within 350ms
+  // If not, trigger seamless auto-reload so user never has to press refresh manually
+  setTimeout(() => {
+    if (typeof document !== "undefined") {
+      const isTranslated =
+        document.documentElement.classList.contains("translated-ltr") ||
+        document.documentElement.classList.contains("translated-rtl") ||
+        document.body.classList.contains("translated-ltr") ||
+        document.querySelector("font") !== null;
+
+      if (!isTranslated && typeof window !== "undefined") {
+        window.location.reload();
+      }
+    }
+  }, 400);
+
+  return true;
 }

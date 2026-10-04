@@ -172,12 +172,20 @@ body {
   }
 }
 
-/* 6. Google Website Translator Clean-Up & Suppression (PRD FR-9) */
+/* 6. Google Website Translator Clean-Up & Suppression */
 .goog-te-banner-frame,
-.skiptranslate iframe,
 #goog-gt-tt,
 .goog-te-balloon-frame {
   display: none !important;
+}
+
+/* Keep worker iframe running in background without display:none so translation events execute */
+.skiptranslate iframe {
+  visibility: hidden !important;
+  opacity: 0 !important;
+  position: absolute !important;
+  top: -9999px !important;
+  pointer-events: none !important;
 }
 
 body {
