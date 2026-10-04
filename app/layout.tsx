@@ -14,6 +14,8 @@ import AddToCartToast from "@/components/cart/AddToCartToast";
 import PwaInstallPrompt from "@/components/pwa/PwaInstallPrompt";
 import { Toaster } from "sonner";
 import { ScrollingTitle } from "@/components/ScrollingTitle";
+import { LanguageProvider } from "@/components/translate/LanguageProvider";
+import GoogleTranslateBootstrap from "@/components/translate/GoogleTranslateBootstrap";
 
 import Script from "next/script";
 
@@ -268,20 +270,23 @@ j=d.createElement(s),dl=l!='dataLayer'?'&l='+l:'';j.async=true;j.src=
         {/* End Google Tag Manager (noscript) */}
         {/* Unified Schema.org Structured Data @graph (Organization + LocalBusiness + WebSite) */}
         <JsonLd data={rootGraphSchema} id="root-entity-graph" />
-        <QuoteModalProvider>
-          {children}
-          <CartDrawer />
-          <AddToCartToast />
-          <BottomTabBar />
-          <LoginModal />
-          <PwaInstallPrompt />
-          <Toaster position="top-center" richColors />
-          <Suspense fallback={null}>
-            <GoogleSessionHydrator />
-            <GoogleAnalyticsTracker measurementId={gaMeasurementId} />
-            <ScrollingTitle />
-          </Suspense>
-        </QuoteModalProvider>
+        <LanguageProvider>
+          <QuoteModalProvider>
+            {children}
+            <CartDrawer />
+            <AddToCartToast />
+            <BottomTabBar />
+            <LoginModal />
+            <PwaInstallPrompt />
+            <Toaster position="top-center" richColors />
+            <Suspense fallback={null}>
+              <GoogleSessionHydrator />
+              <GoogleAnalyticsTracker measurementId={gaMeasurementId} />
+              <ScrollingTitle />
+            </Suspense>
+          </QuoteModalProvider>
+          <GoogleTranslateBootstrap />
+        </LanguageProvider>
       </body>
     </html>
   );

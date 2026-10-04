@@ -14,11 +14,8 @@ import NotificationCenter from "@/components/notifications/NotificationCenter";
 import CategoryNavBar from "@/components/CategoryNavBar";
 import RotatingHeaderContact from "@/components/RotatingHeaderContact";
 import UserAvatar from "@/components/ui/UserAvatar";
-import { useTranslation } from "@/lib/i18n/client";
-
+import LanguageSelector from "@/components/translate/LanguageSelector";
 export default function Header() {
-  const { t } = useTranslation();
-  const [isScrolled, setIsScrolled] = useState(false);
   const [searchOpen, setSearchOpen] = useState(false);
   const [mounted, setMounted] = useState(false);
 
@@ -232,6 +229,11 @@ export default function Header() {
                   <UserIcon size={18} />
                 </button>
               )}
+
+              {/* Language Selector (PRD FR-8 Desktop Navbar) */}
+              <div className="hidden sm:flex items-center">
+                <LanguageSelector variant="navbar" />
+              </div>
 
               <Link href="/vendor/apply" className="hidden sm:block">
                 <Button className="rounded-xl px-3.5 lg:px-4 h-[40px] font-bold text-white bg-[#F26522] hover:bg-[#d95a1e] active:scale-95 shadow-xs hover:shadow transition-all whitespace-nowrap text-xs md:text-sm flex items-center gap-1.5">

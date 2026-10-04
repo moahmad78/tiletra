@@ -20,6 +20,7 @@ import { useState, useEffect, useCallback } from "react";
 import { useSocket } from "@/lib/socket";
 import { useLiveSync } from "@/lib/live-sync";
 import { toast } from "sonner";
+import LanguageSelector from "@/components/translate/LanguageSelector";
 import {
   getAdminNotifications,
   getUnreadAdminNotificationCount,
@@ -168,6 +169,9 @@ export default function AdminHeader({
 
       {/* Right Actions */}
       <div className="flex items-center gap-2 sm:gap-3">
+        {/* Language Selector */}
+        <LanguageSelector variant="navbar" />
+
         {/* ── Notification Bell (Phase 5 PRD Section 4) ── */}
         <div className="relative">
           <button

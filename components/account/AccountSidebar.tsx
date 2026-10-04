@@ -17,6 +17,7 @@ import { useAuthStore, useAuthStatus } from "@/lib/auth-store";
 import { useWishlistStore } from "@/lib/wishlist-store";
 import { toast } from "sonner";
 import UserAvatar from "@/components/ui/UserAvatar";
+import LanguageSelector from "@/components/translate/LanguageSelector";
 
 export default function AccountSidebar() {
   const pathname = usePathname();
@@ -266,8 +267,13 @@ export default function AccountSidebar() {
           </Link>
         </div>
 
+        {/* Language Preference (PRD FR-8 Account Panel) */}
+        <div className="p-3 border-t border-gray-100">
+          <LanguageSelector variant="account" />
+        </div>
+
         {/* LOGOUT BUTTON */}
-        <div className="p-3">
+        <div className="p-3 border-t border-gray-100">
           {mounted && isAuthenticated ? (
             <button
               type="button"

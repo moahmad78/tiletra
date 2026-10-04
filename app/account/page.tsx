@@ -46,7 +46,7 @@ import { useWishlistStore } from "@/lib/wishlist-store";
 import { useAuthStore, useAuthStatus, type CustomerAddress } from "@/lib/auth-store";
 import { toast } from "sonner";
 import UserAvatar from "@/components/ui/UserAvatar";
-import { useTranslation } from "@/lib/i18n/store";
+import LanguageSelector from "@/components/translate/LanguageSelector";
 
 type TabType = "profile" | "addresses" | "gst" | "payments";
 
@@ -662,6 +662,9 @@ function AccountPageContent() {
               </div>
               <ChevronRight size={16} className="text-gray-400" />
             </button>
+
+            {/* Language Preference (PRD FR-8 Account Tab) */}
+            <LanguageSelector variant="account" />
           </div>
 
           {/* Sell on Intrihub / Become a Vendor Card */}
