@@ -488,6 +488,8 @@ export async function verifyEmailOtp(
     },
   });
 
+  const autoEmailAvatar = cleanEmail ? `https://unavatar.io/${encodeURIComponent(cleanEmail)}?fallback=false` : null;
+
   let user: any;
   if (existingUser) {
     user = await prisma.user.update({
@@ -495,8 +497,7 @@ export async function verifyEmailOtp(
       data: {
         emailVerified: true,
         email: cleanEmail,
-        // If existing avatar is broken unavatar, clean it
-        avatar: existingUser.avatar && !existingUser.avatar.includes("unavatar.io") ? undefined : null,
+        avatar: existingUser.avatar || autoEmailAvatar,
       },
       include: {
         addresses: {
@@ -514,7 +515,7 @@ export async function verifyEmailOtp(
         authProvider: "email",
         role: "customer",
         name: cleanEmail.split("@")[0],
-        avatar: null,
+        avatar: autoEmailAvatar,
       },
       include: {
         addresses: {
@@ -527,7 +528,7 @@ export async function verifyEmailOtp(
   console.log(`[OTP_VERIFY_SUCCESS] role=customer userId=${user.id}`);
 
   // Set persistent session cookie on server response for instant hydration
-  const cleanAvatar = user.avatar && !user.avatar.includes("unavatar.io") ? user.avatar : undefined;
+  const cleanAvatar = user.avatar || autoEmailAvatar || undefined;
   const sessionPayload = JSON.stringify({
     userId: user.id,
     name: user.name,

@@ -30,15 +30,16 @@ export default function UserAvatar({
   const [hasError, setHasError] = useState(false);
   const [isLoaded, setIsLoaded] = useState(false);
 
-  // Clean effective image src: ignore unavatar.io broken placeholders
-  const cleanSrc = src && !src.includes("unavatar.io") ? src.trim() : null;
   const cleanEmail = email?.trim().toLowerCase();
+  const directSrc = src && typeof src === "string" && src.trim().length > 0 ? src.trim() : null;
+  // If no direct avatar src, automatically resolve avatar from email (e.g. Google profile / Gravatar via unavatar)
+  const effectiveSrc = directSrc || (cleanEmail ? `https://unavatar.io/${encodeURIComponent(cleanEmail)}?fallback=false` : null);
 
-  // Reset states whenever cleanSrc changes
+  // Reset error & loaded states whenever effectiveSrc changes
   useEffect(() => {
     setHasError(false);
     setIsLoaded(false);
-  }, [cleanSrc]);
+  }, [effectiveSrc]);
 
   const initial = name?.trim()
     ? name.trim()[0].toUpperCase()
@@ -48,8 +49,8 @@ export default function UserAvatar({
   const iconSize = fallbackIconSize || Math.max(12, Math.round(size * 0.48));
   const fontSize = Math.max(10, Math.round(size * 0.4));
 
-  // If no image source at all, show fallback directly
-  if (!cleanSrc || hasError) {
+  // If no image source at all or image errored, show fallback initial letter/icon
+  if (!effectiveSrc || hasError) {
     return (
       <div
         className={cn(
@@ -88,12 +89,11 @@ export default function UserAvatar({
 
       {/* eslint-disable-next-line @next/next/no-img-element */}
       <img
-        src={cleanSrc}
+        src={effectiveSrc}
         alt={name || cleanEmail || "User Avatar"}
         width={size}
         height={size}
         referrerPolicy="no-referrer"
-        crossOrigin="anonymous"
         loading={priority ? "eager" : "lazy"}
         decoding="async"
         onLoad={() => {

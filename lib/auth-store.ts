@@ -192,9 +192,9 @@ export const useAuthStore = create<AuthState>()(
       googleSignIn: async (userData) => {
         const userId = userData.userId || "";
         const realPhone = userData.phone && !userData.phone.startsWith("google_") && !userData.phone.startsWith("email_") ? userData.phone.replace(/\D/g, "").slice(-10) : "";
-
-        const resolvedImmediateAvatar =
-          userData.avatar && !userData.avatar.includes("unavatar.io") ? userData.avatar : undefined;
+        const cleanEmail = userData.email?.trim().toLowerCase();
+        const autoEmailAvatar = cleanEmail ? `https://unavatar.io/${encodeURIComponent(cleanEmail)}?fallback=false` : undefined;
+        const resolvedImmediateAvatar = userData.avatar || autoEmailAvatar || undefined;
 
         // 1. Explicit clean session start: populate user state immediately
         const immediateUser: CustomerUser = {
@@ -263,8 +263,9 @@ export const useAuthStore = create<AuthState>()(
             }));
 
             const resolvedAvatar =
-              (userData.avatar && !userData.avatar.includes("unavatar.io") ? userData.avatar : undefined) ||
-              (dbUser.avatar && !dbUser.avatar.includes("unavatar.io") ? dbUser.avatar : undefined) ||
+              userData.avatar ||
+              dbUser.avatar ||
+              autoEmailAvatar ||
               undefined;
 
             set((state) => {
@@ -328,10 +329,8 @@ export const useAuthStore = create<AuthState>()(
               isDefault: Boolean(a.isDefault),
             }));
 
-            const resolvedAvatar =
-              rawUser.avatar && !rawUser.avatar.includes("unavatar.io")
-                ? rawUser.avatar
-                : undefined;
+            const autoAvatar = `https://unavatar.io/${encodeURIComponent(cleanEmail)}?fallback=false`;
+            const resolvedAvatar = rawUser.avatar || autoAvatar;
 
             const loggedUser: CustomerUser = {
               id: rawUser.id,
@@ -378,9 +377,7 @@ export const useAuthStore = create<AuthState>()(
                   if (dbUser) {
                     set((state) => {
                       if (!state.user || state.user.id !== dbUser.id) return state;
-                      const finalAvatar = (dbUser.avatar && !dbUser.avatar.includes("unavatar.io"))
-                        ? dbUser.avatar
-                        : state.user.avatar;
+                      const finalAvatar = dbUser.avatar || state.user.avatar || autoAvatar;
                       return {
                         user: {
                           ...state.user,
@@ -499,10 +496,9 @@ export const useAuthStore = create<AuthState>()(
                 dbUser.phone && !dbUser.phone.startsWith("google_") && !dbUser.phone.startsWith("email_")
                   ? dbUser.phone.replace(/\D/g, "").slice(-10)
                   : state.user.phone;
-              const resolvedAvatar =
-                (dbUser.avatar && !dbUser.avatar.includes("unavatar.io") ? dbUser.avatar : undefined) ||
-                (state.user.avatar && !state.user.avatar.includes("unavatar.io") ? state.user.avatar : undefined) ||
-                undefined;
+              const cleanEmail = (dbUser.email || state.user.email)?.trim().toLowerCase();
+              const autoAvatar = cleanEmail ? `https://unavatar.io/${encodeURIComponent(cleanEmail)}?fallback=false` : undefined;
+              const resolvedAvatar = dbUser.avatar || state.user.avatar || autoAvatar;
               return {
                 user: {
                   ...state.user,
