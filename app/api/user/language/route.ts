@@ -1,6 +1,12 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
-import { LANGUAGE_COOKIE, SUPPORTED_LANGUAGES, DEFAULT_LANGUAGE } from "@/lib/i18n/config";
+const LANGUAGE_COOKIE = "intrihub_lang";
+const SUPPORTED_LANGUAGES = [
+  { code: "en", name: "English" },
+  { code: "hi", name: "Hindi" },
+  { code: "kn", name: "Kannada" },
+];
+const DEFAULT_LANGUAGE = "en";
 
 export async function GET(req: NextRequest) {
   try {

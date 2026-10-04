@@ -11,13 +11,11 @@ import { useAuthStore, useAuthHydrated, useAuthStatus } from "@/lib/auth-store";
 import { useCartStore } from "@/lib/cart-store";
 import { toast } from "sonner";
 import AuthSupportWidget from "@/components/auth/AuthSupportWidget";
-import { useTranslation } from "@/lib/i18n/store";
 
 type LoginTab = "choose" | "email";
 type OtpStep = "input" | "otp";
 
 export default function LoginModal() {
-  const { t } = useTranslation();
   const router = useRouter();
   const {
     isLoginModalOpen, closeLoginModal,
@@ -199,16 +197,16 @@ export default function LoginModal() {
   // ─── UI ───────────────────────────────────────────────────────────────────
 
   const headerTitle =
-    tab === "choose" ? t("auth.loginTitle")
-    : step === "input" ? t("auth.enterEmail")
-    : t("auth.enterOtp");
+    tab === "choose" ? "Login to Continue"
+    : step === "input" ? "Enter Email Address"
+    : "Enter Verification Code";
 
   const headerSubtitle =
     tab === "choose"
-      ? t("auth.loginSubtitle")
+      ? "Choose how you'd like to continue. Your orders and saved addresses will be linked to your account."
       : step === "input"
-        ? t("auth.loginSubtitle")
-        : `${t("auth.otpSentTo")} ${email}`;
+        ? "Choose how you'd like to continue. Your orders and saved addresses will be linked to your account."
+        : `Code sent to ${email}`;
 
   return (
     <div className="fixed inset-0 z-50 flex items-end md:items-center justify-center p-0 md:p-4">
@@ -263,7 +261,7 @@ export default function LoginModal() {
               />
             </div>
             <span className="text-xs text-white/70 font-semibold flex items-center gap-1">
-              <ShieldCheck size={14} className="text-[#F26522]" /> {t("auth.secureLogin")}
+              <ShieldCheck size={14} className="text-[#F26522]" /> Secure Login
             </span>
           </div>
           <h2 className="text-2xl font-black text-white tracking-tight">{headerTitle}</h2>
@@ -297,7 +295,7 @@ export default function LoginModal() {
                       <path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.06H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.94l2.85-2.22.81-.63z" />
                       <path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.06l3.66 2.84c.87-2.6 3.3-4.52 6.16-4.52z" />
                     </svg>
-                    <span className="font-bold text-[#052a51] text-[14px]">{t("auth.continueWithGoogle")}</span>
+                    <span className="font-bold text-[#052a51] text-[14px]">Continue with Google</span>
                   </div>
                   <span className="absolute right-3.5 text-[9.5px] font-black uppercase bg-[#F26522] text-white px-2 py-0.5 rounded-md shadow-xs tracking-wider">
                     Fastest
@@ -306,7 +304,7 @@ export default function LoginModal() {
 
                 <div className="relative flex py-1 items-center">
                   <div className="flex-grow border-t border-gray-200" />
-                  <span className="flex-shrink mx-4 text-gray-400 text-[11px] font-bold uppercase tracking-wider">{t("common.or").toUpperCase()}</span>
+                  <span className="flex-shrink mx-4 text-gray-400 text-[11px] font-bold uppercase tracking-wider">OR</span>
                   <div className="flex-grow border-t border-gray-200" />
                 </div>
 
@@ -320,15 +318,14 @@ export default function LoginModal() {
                   <div className="w-8 h-8 rounded-xl bg-[#052a51]/10 flex items-center justify-center shrink-0">
                     <Mail size={16} className="text-[#052a51]" />
                   </div>
-                  <span className="text-[14px]">{t("auth.continueWithEmail")}</span>
+                  <span className="text-[14px]">Continue with Email</span>
                   <ArrowRight size={16} className="ml-auto text-gray-400" />
                 </button>
 
                 <p className="text-[10px] text-gray-400 text-center leading-relaxed mt-4">
-                  {t("auth.disclaimer")}{" "}
-                  <a href="/terms" className="text-[#052a51] underline font-semibold">{t("auth.terms")}</a>{" "}
-                  {t("common.or") === "या" ? "और" : t("common.or") === "ಅಥವಾ" ? "ಮತ್ತು" : "and"}{" "}
-                  <a href="/privacy-policy" className="text-[#052a51] underline font-semibold">{t("auth.privacy")}</a>.
+                  By continuing, you agree to IntriHub&apos;s{" "}
+                  <a href="/terms" className="text-[#052a51] underline font-semibold">Terms of Service</a> and{" "}
+                  <a href="/privacy-policy" className="text-[#052a51] underline font-semibold">Privacy Policy</a>.
                 </p>
               </div>
             )}
@@ -338,7 +335,7 @@ export default function LoginModal() {
               <form onSubmit={handleEmailSubmit} className="space-y-4">
                 <div>
                   <label className="block text-xs font-bold text-[#052a51] uppercase tracking-wider mb-2">
-                    {t("auth.enterEmail")}
+                    Enter Email Address
                   </label>
                   <input
                     id="login-email-input"
@@ -346,7 +343,7 @@ export default function LoginModal() {
                     inputMode="email"
                     value={email}
                     onChange={(e) => setEmail(e.target.value)}
-                    placeholder={t("auth.emailPlaceholder")}
+                    placeholder="Enter your email address"
                     autoFocus
                     className="w-full px-4 py-3.5 rounded-2xl border-2 border-gray-200 focus:border-[#F26522] bg-gray-50 focus:bg-white text-base font-bold text-[#052a51] placeholder-gray-400 focus:outline-none transition-colors"
                   />
@@ -358,7 +355,7 @@ export default function LoginModal() {
                   className="w-full h-12 bg-[#F26522] hover:bg-[#d95a1e] text-white font-black text-sm rounded-xl shadow-md transition-all flex items-center justify-center gap-2 active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed"
                 >
                   {loading ? <RotateCw size={18} className="animate-spin" /> : (
-                    <><Mail size={16} /><span>{t("auth.sendOtp")}</span></>
+                    <><Mail size={16} /><span>Send Verification Code</span></>
                   )}
                 </button>
 
@@ -373,7 +370,7 @@ export default function LoginModal() {
               <div className="space-y-5">
                 <div className="flex items-center justify-between">
                   <span className="text-xs font-bold text-[#052a51]">
-                    {t("auth.otpSentTo")} {email}
+                    Code sent to {email}
                   </span>
                   <button
                     type="button"
@@ -417,22 +414,22 @@ export default function LoginModal() {
                   {loading ? (
                     <RotateCw size={18} className="animate-spin" />
                   ) : (
-                    <><CheckCircle2 size={18} /><span>{t("auth.verifyOtp")}</span></>
+                    <><CheckCircle2 size={18} /><span>Verify & Continue</span></>
                   )}
                 </button>
 
                 <div className="flex items-center justify-between text-xs text-gray-500 font-medium">
-                  <span>{t("auth.notReceivedCode")}</span>
+                  <span>Didn't receive code?</span>
                   {canResend ? (
                     <button
                       type="button"
                       onClick={handleResend}
                       className="font-bold text-[#F26522] hover:underline"
                     >
-                      {t("auth.resendOtp")}
+                      Resend Code
                     </button>
                   ) : (
-                    <span className="text-gray-400">{t("auth.resendIn")} {timer}s</span>
+                    <span className="text-gray-400">Resend in {timer}s</span>
                   )}
                 </div>
               </div>
@@ -444,7 +441,7 @@ export default function LoginModal() {
         <div className="px-6 py-3 bg-gray-50 border-t border-gray-100 flex items-center justify-center gap-2 text-[11px] text-gray-500 text-center">
           <ShieldCheck size={14} className="text-[#1E9E6B] shrink-0" />
           <span>
-            {t("auth.antiPhishingNotice")}
+            Our official website is www.intrihub.com — please do not enter your details on any other site.
           </span>
         </div>
       </motion.div>

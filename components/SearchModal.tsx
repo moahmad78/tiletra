@@ -9,7 +9,6 @@ import { searchProducts } from "@/lib/actions/products";
 import { getLowestPrice } from "@/lib/data/products";
 import type { Product } from "@/lib/data/products";
 import { formatPrice, formatUnitLabel, getProductPriceInfo } from "@/lib/formatters";
-import { useTranslation } from "@/lib/i18n/client";
 
 export default function SearchModal({
   isOpen,
@@ -18,7 +17,6 @@ export default function SearchModal({
   isOpen: boolean;
   onClose: () => void;
 }) {
-  const { t } = useTranslation();
   const [query, setQuery] = useState("");
   const [results, setResults] = useState<Product[]>([]);
   const [loading, setLoading] = useState(false);
@@ -128,7 +126,7 @@ export default function SearchModal({
                 onClose();
               }
             }}
-            placeholder={t("search.placeholder", "Search tiles, wires, pipes, paints, plywood...")}
+            placeholder="Search tiles, wires, pipes, paints, plywood..."
             className="flex-1 text-sm sm:text-base font-semibold text-[#052a51] placeholder-gray-400 focus:outline-none bg-transparent"
           />
           {query && (
@@ -138,7 +136,7 @@ export default function SearchModal({
                 setQuery("");
                 inputRef.current?.focus();
               }}
-              title={t("common.delete", "Clear search")}
+              title="Clear search"
               className="p-1 rounded-full text-gray-400 hover:text-gray-600 transition-colors cursor-pointer"
             >
               <X size={18} />
@@ -149,7 +147,7 @@ export default function SearchModal({
             type="submit"
             className="px-3.5 py-1.5 bg-[#F26522] hover:bg-[#d95a1e] text-white text-xs font-bold rounded-xl transition-colors cursor-pointer shrink-0 shadow-xs"
           >
-            {t("common.search", "Search")}
+            Search
           </button>
           <button
             type="button"
@@ -166,7 +164,7 @@ export default function SearchModal({
           {!query.trim() ? (
             <div>
               <p className="text-xs font-bold text-gray-400 uppercase tracking-wider mb-3">
-                {t("search.trendingSearches", "Popular Searches")}
+                Popular Searches
               </p>
               <div className="flex flex-wrap gap-2">
                 {popularSearches.map((term) => (
@@ -185,15 +183,15 @@ export default function SearchModal({
           ) : loading ? (
             <div className="text-center py-10 text-gray-400 text-sm">
               <Loader2 className="animate-spin inline-block mr-2 text-[#F26522]" size={18} />
-              {t("search.searching", "Searching products...")}
+              Searching products...
             </div>
           ) : results.length === 0 ? (
             <div className="text-center py-10 text-gray-500">
               <p className="text-base font-bold text-[#052a51]">
-                {t("search.noResults", 'No matching products found for "{{query}}"', { query })}
+                No matching products found for &quot;{query}&quot;
               </p>
               <p className="text-xs text-gray-400 mt-1 max-w-md mx-auto">
-                {t("search.noResultsDesc", "Try searching with different keywords like 'wire', 'pipe', 'tile', 'plywood', 'switch', or view all in shop.")}
+                Try searching with different keywords like &apos;wire&apos;, &apos;pipe&apos;, &apos;tile&apos;, &apos;plywood&apos;, &apos;switch&apos;, or view all in shop.
               </p>
               <div className="mt-4">
                 <Link
@@ -201,7 +199,7 @@ export default function SearchModal({
                   onClick={onClose}
                   className="inline-flex items-center gap-1.5 text-xs font-bold text-[#F26522] hover:underline"
                 >
-                  <span>{t("categories.exploreAllCategories", "Explore Full Catalog")}</span>
+                  <span>Explore Full Catalog</span>
                   <ArrowRight size={13} />
                 </Link>
               </div>
@@ -210,14 +208,14 @@ export default function SearchModal({
             <div className="space-y-2">
               <div className="flex items-center justify-between mb-2">
                 <p className="text-xs font-bold text-gray-400 uppercase tracking-wider">
-                  {t("common.results", "Results")} ({results.length})
+                  Results ({results.length})
                 </p>
                 <Link
                   href={`/shop?search=${encodeURIComponent(query.trim())}`}
                   onClick={onClose}
                   className="text-xs font-bold text-[#F26522] hover:underline flex items-center gap-1"
                 >
-                  <span>{t("search.viewAllInShop", "View all in Shop")}</span>
+                  <span>View all in Shop</span>
                   <ArrowRight size={12} />
                 </Link>
               </div>
@@ -292,8 +290,8 @@ export default function SearchModal({
             className="text-xs font-bold text-[#F26522] hover:underline"
           >
             {query.trim()
-              ? t("search.viewAllResults", 'View all results for "{{query}}" in Shop →', { query })
-              : t("search.viewCatalogInShop", "View Full Catalog in Shop →")}
+              ? `View all results for "${query}" in Shop →`
+              : "View Full Catalog in Shop →"}
           </Link>
         </div>
       </div>

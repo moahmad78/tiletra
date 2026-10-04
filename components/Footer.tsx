@@ -3,7 +3,6 @@
 import Link from "next/link";
 import Image from "next/image";
 import { usePathname } from "next/navigation";
-import { useTranslation } from "@/lib/i18n/client";
 import {
   MapPin,
   Phone,
@@ -20,51 +19,51 @@ import {
 } from "lucide-react";
 
 const shopLinksConfig = [
-  { key: "categories.electrical", fallback: "Electrical", href: "/shop/electrical" },
-  { key: "categories.lighting", fallback: "Lighting", href: "/shop/lighting" },
-  { key: "categories.tilesStone", fallback: "Tiles & Stone", href: "/shop/tiles-stone" },
-  { key: "categories.paintFinishes", fallback: "Paint & Finishes", href: "/shop/paint-finishes" },
-  { key: "categories.falseCeiling", fallback: "False Ceiling", href: "/shop/false-ceiling" },
-  { key: "categories.flooring", fallback: "Flooring", href: "/shop/flooring" },
-  { key: "categories.doorsWindows", fallback: "Doors & Windows", href: "/shop/doors-windows" },
-  { key: "categories.glassMirror", fallback: "Glass & Mirror", href: "/shop/glass-mirror" },
-  { key: "categories.hardwareFittings", fallback: "Hardware & Fittings", href: "/shop/hardware-fittings" },
-  { key: "categories.furniturePlywood", fallback: "Furniture & Plywood", href: "/shop/furniture" },
-  { key: "categories.kitchenWardrobe", fallback: "Kitchen & Wardrobe", href: "/shop/kitchen-wardrobe" },
-  { key: "categories.plumbingSanitary", fallback: "Plumbing & Sanitary", href: "/shop/plumbing-sanitary" },
-  { key: "categories.wallSurface", fallback: "Wall & Surface", href: "/shop/wall-surface" },
-  { key: "categories.decorAccessories", fallback: "Decor & Accessories", href: "/shop/decor-accessories" },
-  { key: "categories.curtainsBlinds", fallback: "Curtains & Blinds", href: "/shop/curtains-blinds" },
-  { key: "categories.officeCommercial", fallback: "Office & Commercial", href: "/shop/office-commercial" },
-  { key: "categories.outdoorLandscape", fallback: "Outdoor & Landscape", href: "/shop/outdoor-landscape" },
-  { key: "categories.smartHome", fallback: "Smart Home", href: "/shop/smart-home" },
-  { key: "categories.safetyFire", fallback: "Safety & Fire", href: "/shop/safety-fire" },
-  { key: "categories.toolsConsumables", fallback: "Tools & Consumables", href: "/shop/tools-consumables" },
-  { key: "categories.exploreAllCategories", fallback: "Explore All Categories →", href: "/shop" },
+  { label: "Electrical", href: "/shop/electrical" },
+  { label: "Lighting", href: "/shop/lighting" },
+  { label: "Tiles & Stone", href: "/shop/tiles-stone" },
+  { label: "Paint & Finishes", href: "/shop/paint-finishes" },
+  { label: "False Ceiling", href: "/shop/false-ceiling" },
+  { label: "Flooring", href: "/shop/flooring" },
+  { label: "Doors & Windows", href: "/shop/doors-windows" },
+  { label: "Glass & Mirror", href: "/shop/glass-mirror" },
+  { label: "Hardware & Fittings", href: "/shop/hardware-fittings" },
+  { label: "Furniture & Plywood", href: "/shop/furniture" },
+  { label: "Kitchen & Wardrobe", href: "/shop/kitchen-wardrobe" },
+  { label: "Plumbing & Sanitary", href: "/shop/plumbing-sanitary" },
+  { label: "Wall & Surface", href: "/shop/wall-surface" },
+  { label: "Decor & Accessories", href: "/shop/decor-accessories" },
+  { label: "Curtains & Blinds", href: "/shop/curtains-blinds" },
+  { label: "Office & Commercial", href: "/shop/office-commercial" },
+  { label: "Outdoor & Landscape", href: "/shop/outdoor-landscape" },
+  { label: "Smart Home", href: "/shop/smart-home" },
+  { label: "Safety & Fire", href: "/shop/safety-fire" },
+  { label: "Tools & Consumables", href: "/shop/tools-consumables" },
+  { label: "Explore All Categories →", href: "/shop" },
 ];
 
 const helpLinksConfig = [
-  { key: "footer.buyingGuides", fallback: "Buying Guides & Calculators", href: "/guides" },
-  { key: "footer.vitrifiedGuide", fallback: "Vitrified Tiles Buying Guide (2026)", href: "/guides/vitrified-tiles-online-buying-guide" },
-  { key: "footer.bengaluruChecklist", fallback: "Bengaluru Construction Checklist", href: "/guides/building-material-list-for-house-construction-bengaluru" },
-  { key: "footer.contractorChecklist", fallback: "Contractor Material Checklist", href: "/guides/interior-material-checklist-contractors" },
-  { key: "footer.electricalGuide", fallback: "Electrical Material Selection Guide", href: "/guides/electrical-material-selection-guide-bengaluru" },
-  { key: "footer.designMoodBoards", fallback: "Design Mood Boards & Inspiration", href: "/inspiration" },
-  { key: "footer.buildingMaterialsOnline", fallback: "Building Materials Online", href: "/building-materials-online" },
-  { key: "footer.forArchitects", fallback: "For Architects", href: "/for-architects" },
-  { key: "footer.forInteriorDesigners", fallback: "For Interior Designers", href: "/for-interior-designers" },
-  { key: "footer.forContractors", fallback: "For Contractors", href: "/for-contractors" },
-  { key: "footer.whyIntriHub20", fallback: "Why IntriHub? (20 Reasons)", href: "/why-intrihub" },
-  { key: "footer.bulkProjectOrders", fallback: "Bulk Project Orders", href: "/bulk-orders" },
-  { key: "footer.panIndiaDelivery", fallback: "Pan-India Delivery", href: "/pan-india-delivery" },
-  { key: "footer.aboutUs", fallback: "About Us", href: "/about" },
-  { key: "footer.foundersVision", fallback: "Founder's Vision", href: "/founder" },
-  { key: "footer.contactUs", fallback: "Contact Us", href: "/contact" },
-  { key: "footer.faqs", fallback: "Frequently Asked Questions", href: "/faq" },
-  { key: "footer.shippingPolicy", fallback: "Shipping Policy", href: "/shipping-policy" },
-  { key: "footer.returnsReplacements", fallback: "Returns & Replacements", href: "/returns-policy" },
-  { key: "footer.termsConditions", fallback: "Terms & Conditions", href: "/terms" },
-  { key: "footer.privacyPolicy", fallback: "Privacy Policy", href: "/privacy-policy" },
+  { label: "Buying Guides & Calculators", href: "/guides" },
+  { label: "Vitrified Tiles Buying Guide (2026)", href: "/guides/vitrified-tiles-online-buying-guide" },
+  { label: "Bengaluru Construction Checklist", href: "/guides/building-material-list-for-house-construction-bengaluru" },
+  { label: "Contractor Material Checklist", href: "/guides/interior-material-checklist-contractors" },
+  { label: "Electrical Material Selection Guide", href: "/guides/electrical-material-selection-guide-bengaluru" },
+  { label: "Design Mood Boards & Inspiration", href: "/inspiration" },
+  { label: "Building Materials Online", href: "/building-materials-online" },
+  { label: "For Architects", href: "/for-architects" },
+  { label: "For Interior Designers", href: "/for-interior-designers" },
+  { label: "For Contractors", href: "/for-contractors" },
+  { label: "Why IntriHub? (20 Reasons)", href: "/why-intrihub" },
+  { label: "Bulk Project Orders", href: "/bulk-orders" },
+  { label: "Pan-India Delivery", href: "/pan-india-delivery" },
+  { label: "About Us", href: "/about" },
+  { label: "Founder's Vision", href: "/founder" },
+  { label: "Contact Us", href: "/contact" },
+  { label: "Frequently Asked Questions", href: "/faq" },
+  { label: "Shipping Policy", href: "/shipping-policy" },
+  { label: "Returns & Replacements", href: "/returns-policy" },
+  { label: "Terms & Conditions", href: "/terms" },
+  { label: "Privacy Policy", href: "/privacy-policy" },
 ];
 
 const categoryLandingLinks = [
@@ -170,7 +169,6 @@ const highIntentKeywordLinks = [
 
 export default function Footer() {
   const pathname = usePathname();
-  const { t } = useTranslation();
 
   // Hide footer on full-screen flows (checkout, login, scan camera)
   if (
@@ -202,12 +200,12 @@ export default function Footer() {
               </Link>
             </div>
             <p className="text-xs sm:text-sm leading-relaxed mb-4 text-white/80">
-              <strong className="text-white">{t("footer.buildBetter", "Build Better, We Deliver Faster.")}</strong> {t("footer.brandDescription", "India's complete interior & construction supply platform — tiles, electrical, plumbing, hardware, plywood, granite, aluminum doors & wallpaper delivered directly to your site.")}
+              <strong className="text-white">Build Better, We Deliver Faster.</strong> India&apos;s complete interior &amp; construction supply platform — tiles, electrical, plumbing, hardware, plywood, granite, aluminum doors &amp; wallpaper delivered directly to your site.
             </p>
             {/* Free delivery badge */}
             <div className="inline-flex items-center gap-2 px-3 py-1.5 bg-[#F26522]/20 border border-[#F26522]/30 rounded-full text-[#F26522] text-xs font-bold mb-3">
               <Truck size={14} />
-              <span>{t("footer.freeDeliveryBadge", "Free delivery above ₹15,000")}</span>
+              <span>Free delivery above ₹15,000</span>
             </div>
 
             {/* Socials */}
@@ -271,16 +269,16 @@ export default function Footer() {
 
           {/* Shop Categories */}
           <div>
-            <h3 className="text-white font-bold text-xs sm:text-sm uppercase tracking-[2px] mb-4">{t("footer.shopCategories", "Shop Categories")}</h3>
+            <h3 className="text-white font-bold text-xs sm:text-sm uppercase tracking-[2px] mb-4">Shop Categories</h3>
             <ul className="space-y-2">
-              {shopLinksConfig.map(({ key, fallback, href }) => (
+              {shopLinksConfig.map(({ label, href }) => (
                 <li key={href}>
                   <Link
                     href={href}
                     className="text-xs text-white/80 hover:text-[#F26522] transition-colors flex items-center gap-1.5 group"
                   >
                     <span className="w-1 h-1 rounded-full bg-[#F26522]/50 group-hover:bg-[#F26522] transition-colors" />
-                    {t(key, fallback)}
+                    {label}
                   </Link>
                 </li>
               ))}
@@ -289,16 +287,16 @@ export default function Footer() {
 
           {/* Help */}
           <div>
-            <h3 className="text-white font-bold text-xs sm:text-sm uppercase tracking-[2px] mb-4">{t("footer.helpSupport", "Help & Support")}</h3>
+            <h3 className="text-white font-bold text-xs sm:text-sm uppercase tracking-[2px] mb-4">Help &amp; Support</h3>
             <ul className="space-y-2">
-              {helpLinksConfig.map(({ key, fallback, href }) => (
+              {helpLinksConfig.map(({ label, href }) => (
                 <li key={href}>
                   <Link
                     href={href}
                     className="text-xs text-white/80 hover:text-[#F26522] transition-colors flex items-center gap-1.5 group"
                   >
                     <span className="w-1 h-1 rounded-full bg-[#F26522]/50 group-hover:bg-[#F26522] transition-colors" />
-                    {t(key, fallback)}
+                    {label}
                   </Link>
                 </li>
               ))}
@@ -307,14 +305,14 @@ export default function Footer() {
 
           {/* Contact */}
           <div>
-            <h3 className="text-white font-bold text-xs sm:text-sm uppercase tracking-[2px] mb-4">{t("footer.contactUs", "Contact Us")}</h3>
+            <h3 className="text-white font-bold text-xs sm:text-sm uppercase tracking-[2px] mb-4">Contact Us</h3>
             <ul className="space-y-3.5 text-xs sm:text-sm">
               <li className="flex items-center gap-3 select-none notranslate" translate="no">
                 <div className="w-8 h-8 rounded-full bg-[#F26522]/20 flex items-center justify-center text-[#F26522] shrink-0">
                   <Phone size={15} />
                 </div>
                 <div className="flex flex-col justify-center notranslate" translate="no">
-                  <span className="font-bold text-white block leading-tight text-xs notranslate" translate="no">{t("footer.intrihubSupport", "Intrihub Support")}</span>
+                  <span className="font-bold text-white block leading-tight text-xs notranslate" translate="no">Intrihub Support</span>
                   <a
                     href="tel:+917090120211"
                     aria-label="Call Intrihub Support at +91 70901 20211"
@@ -327,7 +325,7 @@ export default function Footer() {
               </li>
               <li className="flex items-center gap-2 text-white/90 text-xs font-semibold">
                 <Clock size={15} className="text-[#F26522] shrink-0" />
-                <span>{t("footer.support247", "24/7 Customer Support")}</span>
+                <span>24/7 Customer Support</span>
               </li>
             </ul>
 
@@ -335,20 +333,20 @@ export default function Footer() {
             <div className="mt-5 space-y-1.5">
               <div className="flex items-center gap-2 text-xs text-white/70">
                 <Lock size={13} className="text-[#1E9E6B] shrink-0" />
-                <span>{t("footer.securePayments", "Secure payments via Razorpay")}</span>
+                <span>Secure payments via Razorpay</span>
               </div>
               <div className="flex items-center gap-2 text-xs text-white/70">
                 <ShieldCheck size={13} className="text-[#1E9E6B] shrink-0" />
-                <span>{t("footer.genuineMaterials", "100% Genuine Project Materials")}</span>
+                <span>100% Genuine Project Materials</span>
               </div>
               <div className="flex items-center gap-2 text-xs text-white/70">
                 <Package size={13} className="text-[#F26522] shrink-0" />
-                <span>{t("footer.directDispatch", "Direct Site Dispatch & Tracking")}</span>
+                <span>Direct Site Dispatch &amp; Tracking</span>
               </div>
               <div className="flex items-center gap-2 text-xs text-[#FF9900] font-semibold pt-1">
                 <Truck size={13} className="shrink-0" />
                 <Link href="/pan-india-delivery" className="hover:underline flex items-center gap-1">
-                  <span>{t("footer.panIndiaAvailable", "Pan-India Delivery Available")}</span>
+                  <span>Pan-India Delivery Available</span>
                   <ArrowRight size={11} />
                 </Link>
               </div>
@@ -359,7 +357,7 @@ export default function Footer() {
         {/* SEO Landing Discovery: Browse by Material, Browse by Area & Popular Delivery Zones */}
         <div className="py-6 border-b border-white/10 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 text-xs text-white/70">
           <div>
-            <h4 className="text-white font-bold text-xs uppercase tracking-wider mb-2.5">{t("footer.browseMaterial", "Browse by Material")}</h4>
+            <h4 className="text-white font-bold text-xs uppercase tracking-wider mb-2.5">Browse by Material</h4>
             <div className="flex flex-wrap gap-x-3 gap-y-1.5">
               {categoryLandingLinks.map(({ label, href }) => (
                 <Link key={href} href={href} className="hover:text-[#F26522] transition-colors">
@@ -369,7 +367,7 @@ export default function Footer() {
             </div>
           </div>
           <div>
-            <h4 className="text-white font-bold text-xs uppercase tracking-wider mb-2.5">{t("footer.deliveryAreas", "Delivery Areas")}</h4>
+            <h4 className="text-white font-bold text-xs uppercase tracking-wider mb-2.5">Delivery Areas</h4>
             <div className="flex flex-wrap gap-x-3 gap-y-1.5">
               {localLandingLinks.map(({ label, href }) => (
                 <Link key={href} href={href} className="hover:text-[#F26522] transition-colors">
@@ -379,7 +377,7 @@ export default function Footer() {
             </div>
           </div>
           <div>
-            <h4 className="text-white font-bold text-xs uppercase tracking-wider mb-2.5">{t("footer.popularHubs", "Popular Hubs")}</h4>
+            <h4 className="text-white font-bold text-xs uppercase tracking-wider mb-2.5">Popular Hubs</h4>
             <div className="flex flex-wrap gap-x-3 gap-y-1.5">
               {popularAreaPages.map(({ label, href }) => (
                 <Link
@@ -397,7 +395,7 @@ export default function Footer() {
             </div>
           </div>
           <div>
-            <h4 className="text-white font-bold text-xs uppercase tracking-wider mb-2.5">{t("footer.sourcingMaterials", "Sourcing Materials")}</h4>
+            <h4 className="text-white font-bold text-xs uppercase tracking-wider mb-2.5">Sourcing Materials</h4>
             <div className="flex flex-wrap gap-x-3 gap-y-1.5">
               {highIntentKeywordLinks.slice(0, 10).map(({ label, href }) => (
                 <Link
@@ -419,34 +417,34 @@ export default function Footer() {
               href="/pan-india-delivery"
               className="text-white font-bold text-xs sm:text-sm uppercase tracking-wider hover:text-[#F26522] transition-colors inline-flex items-center gap-1.5 group"
             >
-              <span>{t("footer.deliverAcrossIndia", "We Deliver Across India")}</span>
+              <span>We Deliver Across India</span>
               <ArrowRight size={14} className="text-[#F26522] group-hover:translate-x-1 transition-transform" />
             </Link>
           </h4>
           <p className="text-white/80 leading-relaxed mb-2 text-xs sm:text-sm">
-            {t("footer.deliverAcrossIndiaDesc", "We deliver building & interior materials with guaranteed 60-minute delivery in Bengaluru; 3-7 days Pan-India (outside Bengaluru).")}
+            We deliver building &amp; interior materials with guaranteed 60-minute delivery in Bengaluru; 3-7 days Pan-India (outside Bengaluru).
           </p>
           <p className="text-white/50 leading-relaxed text-[11px] sm:text-xs">
-            {t("footer.statesList", "Andhra Pradesh, Arunachal Pradesh, Assam, Bihar, Chhattisgarh, Goa, Gujarat, Haryana, Himachal Pradesh, Jharkhand, Karnataka, Kerala, Madhya Pradesh, Maharashtra, Manipur, Meghalaya, Mizoram, Nagaland, Odisha, Punjab, Rajasthan, Sikkim, Tamil Nadu, Telangana, Tripura, Uttar Pradesh, Uttarakhand, West Bengal, Delhi (NCR), and other Union Territories.")}
+            Andhra Pradesh, Arunachal Pradesh, Assam, Bihar, Chhattisgarh, Goa, Gujarat, Haryana, Himachal Pradesh, Jharkhand, Karnataka, Kerala, Madhya Pradesh, Maharashtra, Manipur, Meghalaya, Mizoram, Nagaland, Odisha, Punjab, Rajasthan, Sikkim, Tamil Nadu, Telangana, Tripura, Uttar Pradesh, Uttarakhand, West Bengal, Delhi (NCR), and other Union Territories.
           </p>
         </div>
 
         {/* Bottom bar */}
         <div className="pt-6 flex flex-col md:flex-row justify-between items-center gap-4 text-xs text-white/50">
           <div className="flex flex-col sm:flex-row items-center gap-4">
-            <p>© {new Date().getFullYear()} IntriHub. {t("footer.allRightsReserved", "All Rights Reserved.")}</p>
+            <p>© {new Date().getFullYear()} IntriHub. All Rights Reserved.</p>
           </div>
           <div className="flex items-center gap-4 flex-wrap justify-center">
-            <Link href="/privacy-policy" className="hover:text-white transition-colors">{t("footer.privacyPolicy", "Privacy Policy")}</Link>
+            <Link href="/privacy-policy" className="hover:text-white transition-colors">Privacy Policy</Link>
             <span>·</span>
-            <Link href="/terms" className="hover:text-white transition-colors">{t("footer.terms", "Terms")}</Link>
+            <Link href="/terms" className="hover:text-white transition-colors">Terms</Link>
             <span>·</span>
-            <Link href="/returns-policy" className="hover:text-white transition-colors">{t("footer.returns", "Returns")}</Link>
+            <Link href="/returns-policy" className="hover:text-white transition-colors">Returns</Link>
             <span>·</span>
-            <Link href="/shipping-policy" className="hover:text-white transition-colors">{t("footer.shipping", "Shipping")}</Link>
+            <Link href="/shipping-policy" className="hover:text-white transition-colors">Shipping</Link>
           </div>
           <p className="flex items-center gap-1.5 flex-wrap justify-center">
-            <span>{t("footer.developedBy", "Founded & Developed by")}</span>
+            <span>Founded &amp; Developed by</span>
             <a
               href="https://www.instagram.com/sahil_sheikh78/"
               target="_blank"
@@ -463,7 +461,7 @@ export default function Footer() {
         {/* Official Website Disclaimer */}
         <div className="pt-4 border-t border-white/5 text-center text-[11px] text-white/50 mt-4">
           <p>
-            {t("footer.officialWebsiteNotice", "IntriHub's only official website is www.intrihub.com. We are not affiliated with any other website using a similar name.")}
+            IntriHub&apos;s only official website is www.intrihub.com. We are not affiliated with any other website using a similar name.
           </p>
         </div>
       </div>

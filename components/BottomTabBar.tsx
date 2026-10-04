@@ -7,11 +7,9 @@ import { Home, Grid3x3, ShoppingBag, User } from "lucide-react";
 import { useCartStore } from "@/lib/cart-store";
 import { useAuthStore } from "@/lib/auth-store";
 import UserAvatar from "@/components/ui/UserAvatar";
-import { useTranslation } from "@/lib/i18n/client";
 import { cn } from "@/lib/utils";
 
 export default function BottomTabBar() {
-  const { t } = useTranslation();
   const pathname = usePathname();
   const cartCount = useCartStore((state) => state.getTotalItems());
   const [mounted, setMounted] = useState(false);
@@ -57,7 +55,7 @@ export default function BottomTabBar() {
             fill={isHomeActive ? "currentColor" : "none"}
           />
           <span className={cn("text-[10px] font-semibold transition-colors", isHomeActive ? "text-[#052a51] font-bold" : "text-gray-400")}>
-            {t("nav.home")}
+            Home
           </span>
           {isHomeActive && <span className="absolute top-0 left-1/2 -translate-x-1/2 w-1 h-1 rounded-full bg-[#F26522]" />}
         </Link>
@@ -73,7 +71,7 @@ export default function BottomTabBar() {
             className={cn("transition-colors duration-200", isCategoriesActive ? "text-[#052a51]" : "text-gray-400")}
           />
           <span className={cn("text-[10px] font-semibold transition-colors", isCategoriesActive ? "text-[#052a51] font-bold" : "text-gray-400")}>
-            {t("nav.shop")}
+            Shop
           </span>
           {isCategoriesActive && <span className="absolute top-0 left-1/2 -translate-x-1/2 w-1 h-1 rounded-full bg-[#F26522]" />}
         </Link>
@@ -97,7 +95,7 @@ export default function BottomTabBar() {
             )}
           </div>
           <span className={cn("text-[10px] font-semibold transition-colors", isCartActive ? "text-[#052a51] font-bold" : "text-gray-400")}>
-            {t("nav.cart")}
+            Cart
           </span>
           {isCartActive && <span className="absolute top-0 left-1/2 -translate-x-1/2 w-1 h-1 rounded-full bg-[#F26522]" />}
         </Link>
@@ -124,7 +122,7 @@ export default function BottomTabBar() {
             />
           )}
           <span className={cn("text-[10px] font-semibold transition-colors", isAccountActive ? "text-[#052a51] font-bold" : "text-gray-400")}>
-            {t("nav.account")}
+            Account
           </span>
           {isAccountActive && <span className="absolute top-0 left-1/2 -translate-x-1/2 w-1 h-1 rounded-full bg-[#F26522]" />}
         </Link>

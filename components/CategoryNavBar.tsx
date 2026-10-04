@@ -12,32 +12,6 @@ import {
   ArrowUpRight,
 } from "lucide-react";
 import { categories, type Category } from "@/lib/data/categories";
-import { useTranslation } from "@/lib/i18n/client";
-
-const SLUG_TO_I18N_KEY: Record<string, string> = {
-  "electrical": "categories.electrical",
-  "lighting": "categories.lighting",
-  "tiles-stone": "categories.tilesStone",
-  "paint-finishes": "categories.paintFinishes",
-  "false-ceiling": "categories.falseCeiling",
-  "flooring": "categories.flooring",
-  "doors-windows": "categories.doorsWindows",
-  "glass-mirror": "categories.glassMirror",
-  "hardware-fittings": "categories.hardwareFittings",
-  "furniture": "categories.furniture",
-  "kitchen-wardrobe": "categories.kitchenWardrobe",
-  "plumbing-sanitary": "categories.plumbingSanitary",
-  "wall-surface": "categories.wallSurface",
-  "decor-accessories": "categories.decorAccessories",
-  "curtains-blinds": "categories.curtainsBlinds",
-  "office-commercial": "categories.officeCommercial",
-  "outdoor-landscape": "categories.outdoorLandscape",
-  "smart-home": "categories.smartHome",
-  "safety-fire": "categories.safetyFire",
-  "tools-consumables": "categories.toolsConsumables",
-  "plywood": "categories.plywood",
-  "adhesives-sealants-waterproofing": "categories.adhesivesSealants",
-};
 
 const TOP_CATEGORIES = categories.filter((c) => !c.parentId);
 
@@ -165,7 +139,6 @@ const CATEGORY_SUBCATS: Record<string, { name: string; slug: string; desc: strin
 };
 
 export default function CategoryNavBar() {
-  const { t } = useTranslation();
   const containerRef = useRef<HTMLDivElement>(null);
   const scrollRef = useRef<HTMLDivElement>(null);
   const [canScrollLeft, setCanScrollLeft] = useState(false);
@@ -280,7 +253,7 @@ export default function CategoryNavBar() {
                         : "text-[#052a51] hover:text-[#F26522] hover:bg-gray-50"
                     }`}
                   >
-                    <span>{SLUG_TO_I18N_KEY[cat.slug] ? t(SLUG_TO_I18N_KEY[cat.slug]) : cat.name}</span>
+                    <span>{cat.name}</span>
                     <ChevronDown
                       size={11}
                       className={`transition-transform ${
@@ -316,7 +289,7 @@ export default function CategoryNavBar() {
               className="flex items-center gap-1.5 px-3.5 py-1.5 rounded-full bg-[#052a51] hover:bg-[#F26522] text-white transition-all text-xs font-bold shadow-xs active:scale-95 cursor-pointer whitespace-nowrap shrink-0"
             >
               <Flame size={13} className="text-[#F26522] group-hover:text-white" />
-              <span>{t("nav.exploreSupplies")}</span>
+              <span>Explore All Supplies</span>
               <ArrowRight size={12} />
             </Link>
           </div>
@@ -336,11 +309,11 @@ export default function CategoryNavBar() {
             <div className="pr-3">
               <div className="flex items-center gap-2">
                 <h4 className="font-black text-[#052a51] text-sm">
-                  {SLUG_TO_I18N_KEY[activeCategory.slug] ? t(SLUG_TO_I18N_KEY[activeCategory.slug]) : activeCategory.name}
+                  {activeCategory.name}
                 </h4>
                 {activeCategory.productCount > 0 && (
                   <span className="bg-[#F26522]/10 text-[#F26522] text-[10px] font-bold px-1.5 py-0.5 rounded-md">
-                    {t("common.itemsCount", { count: activeCategory.productCount })}
+                    {activeCategory.productCount} Items
                   </span>
                 )}
               </div>
@@ -352,7 +325,7 @@ export default function CategoryNavBar() {
               href={`/shop/${activeCategory.slug}`}
               className="text-[11px] font-bold text-[#F26522] hover:underline flex items-center gap-1 shrink-0 bg-[#F26522]/5 px-2.5 py-1 rounded-lg hover:bg-[#F26522]/10 transition-colors"
             >
-              {t("common.browseAll")} <ArrowRight size={11} />
+              Browse All <ArrowRight size={11} />
             </Link>
           </div>
 
@@ -360,7 +333,7 @@ export default function CategoryNavBar() {
           {hasSubcats ? (
             <div className="space-y-1">
               <span className="text-[10px] font-black text-gray-400 uppercase tracking-wider block px-1 mb-1">
-                {t("categories.popularProducts")}
+                Popular Categories &amp; Products
               </span>
               <div className="grid grid-cols-1 gap-1">
                 {subcats.map((sub, idx) => (

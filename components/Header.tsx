@@ -59,7 +59,7 @@ export default function Header() {
             <div className="flex justify-between items-center text-xs font-medium">
               <div className="flex items-center gap-6">
                 <span className="flex items-center gap-1.5">
-                  <MapPin size={13} className="text-[#F26522]" /> {t("common.bangaloreKarnataka")}
+                  <MapPin size={13} className="text-[#F26522]" /> Bangalore, Karnataka
                 </span>
                 <a
                   href="mailto:support@intrihub.com"
@@ -71,7 +71,7 @@ export default function Header() {
               <div className="flex items-center gap-4">
                 <span className="text-[#F26522] font-bold inline-flex items-center gap-1.5">
                   <Truck size={13} className="text-[#F26522]" />
-                  <span>{t("common.buildBetterTagline")}</span>
+                  <span>Build Better, We Deliver Faster</span>
                 </span>
                 <span className="text-white/30">|</span>
                 <RotatingHeaderContact />
@@ -108,12 +108,12 @@ export default function Header() {
                 <button
                   type="button"
                   onClick={() => setSearchOpen(true)}
-                  aria-label={t("nav.searchProducts")}
+                  aria-label="Search products"
                   className="flex-1 flex items-center gap-2 min-w-0 text-left"
                 >
                   <Search size={14} className="text-[#F26522] shrink-0" />
                   <span className="text-xs text-gray-600 group-hover:text-gray-800 font-medium truncate">
-                    {t("nav.searchPlaceholderMobile")}
+                    Search tiles, wires, pipes...
                   </span>
                 </button>
               </div>
@@ -125,11 +125,11 @@ export default function Header() {
                 <button
                   type="button"
                   onClick={() => setSearchOpen(true)}
-                  aria-label={t("nav.searchCatalog")}
+                  aria-label="Search catalog"
                   className="flex-1 flex items-center gap-2.5 text-gray-600 group-hover:text-gray-800 text-xs font-semibold mr-2 overflow-hidden"
                 >
                   <Search size={16} className="text-gray-500 group-hover:text-[#F26522] transition-colors shrink-0" />
-                  <span className="truncate">{t("nav.searchPlaceholderDesktop")}</span>
+                  <span className="truncate">Search tiles, electrical, plumbing, hardware, plywood, granite...</span>
                 </button>
                 <div className="flex items-center gap-2 shrink-0">
                   <span className="text-[10px] font-bold text-gray-600 bg-white border border-gray-300 px-2 py-0.5 rounded-md shadow-2xs">
@@ -147,7 +147,7 @@ export default function Header() {
               {/* Wishlist Button (Desktop only - mobile uses BottomTabBar) */}
               <Link
                 href="/wishlist"
-                aria-label={t("common.viewWishlist")}
+                aria-label="View Wishlist"
                 className="hidden md:flex relative w-10 h-10 rounded-full items-center justify-center text-[#052a51] hover:bg-gray-100 active:scale-95 transition-all"
               >
                 <Heart size={20} />
@@ -162,7 +162,7 @@ export default function Header() {
               <button
                 id="cart-button"
                 onClick={toggleCart}
-                aria-label={t("common.openCart")}
+                aria-label="Open cart"
                 className="hidden md:flex relative w-10 h-10 rounded-full items-center justify-center text-[#052a51] hover:bg-gray-100 active:scale-95 transition-all"
               >
                 <ShoppingCart size={20} />
@@ -179,7 +179,7 @@ export default function Header() {
               ) : authStatus === "authenticated" && user ? (
                 <Link
                   href="/account"
-                  aria-label={t("nav.account")}
+                  aria-label="Account"
                   className="hidden md:flex items-center gap-2 px-2.5 h-[40px] rounded-xl text-xs font-bold text-[#052a51] hover:bg-gray-100 transition-colors"
                 >
                   <UserAvatar
@@ -190,17 +190,17 @@ export default function Header() {
                     priority
                     className="border border-[#052a51]/20 shadow-2xs"
                   />
-                  <span className="truncate max-w-[100px] notranslate" translate="no">{user.name?.split(" ")[0] || t("nav.account")}</span>
+                  <span className="truncate max-w-[100px] notranslate" translate="no">{user.name?.split(" ")[0] || "Account"}</span>
                 </Link>
               ) : (
                 <button
                   type="button"
                   onClick={() => openLoginModal()}
-                  aria-label={t("common.signIn")}
+                  aria-label="Sign in"
                   className="hidden md:flex items-center gap-1.5 px-3.5 h-[40px] rounded-xl text-xs font-bold text-[#052a51] hover:bg-gray-100 transition-colors"
                 >
                   <UserIcon size={16} />
-                  <span>{t("auth.login")}</span>
+                  <span>Login</span>
                 </button>
               )}
 
@@ -208,7 +208,7 @@ export default function Header() {
               {mounted && authStatus === "authenticated" && user ? (
                 <Link
                   href="/account"
-                  aria-label={t("nav.account")}
+                  aria-label="Account"
                   className="md:hidden flex items-center justify-center w-8 h-8 rounded-full shrink-0 active:scale-95 transition-transform"
                 >
                   <UserAvatar
@@ -224,7 +224,7 @@ export default function Header() {
                 <button
                   type="button"
                   onClick={() => openLoginModal()}
-                  aria-label={t("common.signIn")}
+                  aria-label="Sign in"
                   className="md:hidden flex items-center justify-center w-8 h-8 rounded-full text-[#052a51] hover:bg-gray-100 active:scale-95 transition-all"
                 >
                   <UserIcon size={18} />
@@ -239,7 +239,7 @@ export default function Header() {
               <Link href="/vendor/apply" className="hidden sm:block">
                 <Button className="rounded-xl px-3.5 lg:px-4 h-[40px] font-bold text-white bg-[#F26522] hover:bg-[#d95a1e] active:scale-95 shadow-xs hover:shadow transition-all whitespace-nowrap text-xs md:text-sm flex items-center gap-1.5">
                   <Store size={15} />
-                  <span>{t("nav.becomeVendor")}</span>
+                  <span>Become a Vendor</span>
                 </Button>
               </Link>
             </div>

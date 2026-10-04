@@ -4,11 +4,9 @@ import { useState, useEffect } from "react";
 import { usePathname } from "next/navigation";
 import Image from "next/image";
 import { Download, X, Smartphone, Share, PlusSquare, CheckCircle2 } from "lucide-react";
-import { useTranslation } from "@/lib/i18n/client";
 
 export default function PwaInstallPrompt() {
   const pathname = usePathname();
-  const { t } = useTranslation();
   const [deferredPrompt, setDeferredPrompt] = useState<any>(null);
   const [showPrompt, setShowPrompt] = useState(false);
   const [isIos, setIsIos] = useState(false);
@@ -177,15 +175,15 @@ export default function PwaInstallPrompt() {
             <div className="flex-1 min-w-0">
               <div className="flex items-center gap-1.5 mb-0.5">
                 <span className="text-[9px] font-black uppercase tracking-wider px-1.5 py-0.5 bg-[#F26522] rounded text-white shadow-2xs">
-                  {t("pwa.fastApp", "Fast App")}
+                  Fast App
                 </span>
                 <span className="text-[10px] text-white/70 font-semibold">★ 4.9 (10k+ users)</span>
               </div>
               <h4 className="text-sm font-black text-white leading-snug">
-                {t("pwa.installApp", "Install IntriHub App")}
+                Install IntriHub App
               </h4>
               <p className="text-[11px] text-white/75 leading-tight mt-0.5">
-                {t("pwa.installAppSubtitle", "Faster ordering, live truck tracking & exclusive app discounts")}
+                Faster ordering, live truck tracking &amp; exclusive app discounts
               </p>
             </div>
           </div>
@@ -197,7 +195,7 @@ export default function PwaInstallPrompt() {
               onClick={handleDismiss}
               className="px-3.5 py-2 rounded-xl text-xs font-bold text-white/70 hover:text-white hover:bg-white/10 transition-colors cursor-pointer"
             >
-              {t("pwa.notNow", "Not Now")}
+              Not Now
             </button>
 
             <button
@@ -206,7 +204,7 @@ export default function PwaInstallPrompt() {
               className="flex-1 py-2.5 px-4 bg-[#F26522] hover:bg-[#d95a1e] text-white text-xs font-black rounded-xl active:scale-95 transition-all shadow-md flex items-center justify-center gap-2 cursor-pointer"
             >
               <Download size={14} className="shrink-0" />
-              <span>{t("pwa.installNow", "Install Now")}</span>
+              <span>Install Now</span>
             </button>
           </div>
         </div>
@@ -228,8 +226,8 @@ export default function PwaInstallPrompt() {
               <div className="w-12 h-12 rounded-2xl bg-orange-50 text-[#F26522] flex items-center justify-center mx-auto mb-2">
                 <Smartphone size={24} />
               </div>
-              <h3 className="text-base font-black">{t("pwa.installApp", "Install IntriHub App")} (iPhone / iPad)</h3>
-              <p className="text-xs text-gray-500 mt-1">{t("pwa.installGuideIos", "Follow these 2 quick steps to add the app to your Home Screen:")}</p>
+              <h3 className="text-base font-black">Install IntriHub App (iPhone / iPad)</h3>
+              <p className="text-xs text-gray-500 mt-1">Follow these 2 quick steps to add the app to your Home Screen:</p>
             </div>
 
             <div className="space-y-3 bg-gray-50 p-4 rounded-2xl border border-gray-100 text-xs font-semibold text-gray-700">
@@ -238,7 +236,7 @@ export default function PwaInstallPrompt() {
                   1
                 </span>
                 <span className="flex-1">
-                  {t("pwa.tapShare", "Tap the Share button in Safari toolbar below")} <Share size={14} className="inline mx-1 text-blue-600" />
+                  Tap the Share button in Safari toolbar below <Share size={14} className="inline mx-1 text-blue-600" />
                 </span>
               </div>
 
@@ -247,7 +245,7 @@ export default function PwaInstallPrompt() {
                   2
                 </span>
                 <span className="flex-1">
-                  {t("pwa.scrollAndAdd", "Scroll down and tap 'Add to Home Screen'")} <PlusSquare size={14} className="inline mx-1 text-gray-800" />
+                  Scroll down and tap &apos;Add to Home Screen&apos; <PlusSquare size={14} className="inline mx-1 text-gray-800" />
                 </span>
               </div>
             </div>
@@ -257,7 +255,7 @@ export default function PwaInstallPrompt() {
               onClick={() => setShowIosGuide(false)}
               className="w-full mt-4 py-3 bg-[#052a51] text-white text-xs font-black rounded-xl hover:bg-[#041f3d] transition-all cursor-pointer"
             >
-              {t("pwa.gotIt", "Got it!")}
+              Got it!
             </button>
           </div>
         </div>
