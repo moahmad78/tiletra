@@ -54,6 +54,11 @@ self.addEventListener("fetch", (event) => {
 
   const url = new URL(event.request.url);
 
+  // Do NOT intercept cross-origin third-party requests (Google Translate, Google avatars, Razorpay, etc.)
+  if (url.origin !== self.location.origin) {
+    return;
+  }
+
   // 1. First-Party Images: Stale-While-Revalidate with Entry Cap
   if (url.pathname.startsWith("/images/") || url.pathname.startsWith("/api/uploads/")) {
     event.respondWith(

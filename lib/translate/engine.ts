@@ -60,14 +60,12 @@ export function setGoogtransCookie(langCode: string): void {
 
   // 1. Path=/ cookie without domain (universal, works on localhost & current host)
   document.cookie = `${GOOGTRANS_COOKIE}=${cookieValue}; path=/; max-age=31536000; SameSite=Lax`;
-  document.cookie = `googtrans=/auto/${langCode}; path=/; max-age=31536000; SameSite=Lax`;
 
   // 2. Set on current host and root domain if in production
   if (!isLocal) {
     document.cookie = `${GOOGTRANS_COOKIE}=${cookieValue}; domain=${currentHost}; path=/; max-age=31536000; SameSite=Lax`;
-    if (rootDomain && rootDomain !== currentHost) {
+    if (rootDomain && rootDomain !== currentHost && !rootDomain.endsWith(".vercel.app")) {
       document.cookie = `${GOOGTRANS_COOKIE}=${cookieValue}; domain=${rootDomain}; path=/; max-age=31536000; SameSite=Lax`;
-      document.cookie = `googtrans=/auto/${langCode}; domain=${rootDomain}; path=/; max-age=31536000; SameSite=Lax`;
     }
   }
 }
@@ -83,14 +81,11 @@ export function clearGoogtransCookie(): void {
   const expired = "expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;";
 
   document.cookie = `${GOOGTRANS_COOKIE}=; ${expired}`;
-  document.cookie = `googtrans=; ${expired}`;
 
   if (!isLocal) {
     document.cookie = `${GOOGTRANS_COOKIE}=; domain=${currentHost}; ${expired}`;
-    document.cookie = `googtrans=; domain=${currentHost}; ${expired}`;
-    if (rootDomain && rootDomain !== currentHost) {
+    if (rootDomain && rootDomain !== currentHost && !rootDomain.endsWith(".vercel.app")) {
       document.cookie = `${GOOGTRANS_COOKIE}=; domain=${rootDomain}; ${expired}`;
-      document.cookie = `googtrans=; domain=${rootDomain}; ${expired}`;
     }
   }
 }
@@ -227,7 +222,7 @@ export function restoreOriginalEnglish(isUserAction = true): Promise<boolean> {
         return resolve(success);
       }
 
-      // If page still has translated elements after 350ms, auto-reload cleanly
+      // If page still has translated elements after 800ms, auto-reload cleanly
       setTimeout(() => {
         if (typeof document !== "undefined") {
           const isStillTranslated =
@@ -240,7 +235,7 @@ export function restoreOriginalEnglish(isUserAction = true): Promise<boolean> {
             window.location.reload();
           }
         }
-      }, 350);
+      }, 800);
 
       resolve(success);
     });
@@ -262,33 +257,14 @@ export async function applyLanguage(langCode: string, isUserAction = true): Prom
 
   const drove = await driveGoogleCombo(langCode);
 
-  if (!isUserAction) {
-    return drove;
-  }
-
-  // If combo wasn't found or failed to dispatch, reload automatically now that cookie is set
-  if (!drove) {
-    if (typeof window !== "undefined") {
-      window.location.reload();
-    }
+  if (drove) {
     return true;
   }
 
-  // Verification guard: Check if DOM translated within 350ms
-  // If not, trigger seamless auto-reload so user never has to press refresh manually
-  setTimeout(() => {
-    if (typeof document !== "undefined") {
-      const isTranslated =
-        document.documentElement.classList.contains("translated-ltr") ||
-        document.documentElement.classList.contains("translated-rtl") ||
-        document.body.classList.contains("translated-ltr") ||
-        document.querySelector("font") !== null;
+  // Fallback: If combo wasn't found after all retries (e.g. adblocker), reload so widget picks up cookie
+  if (isUserAction && typeof window !== "undefined") {
+    window.location.reload();
+  }
 
-      if (!isTranslated && typeof window !== "undefined") {
-        window.location.reload();
-      }
-    }
-  }, 400);
-
-  return true;
+  return false;
 }

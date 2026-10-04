@@ -5,9 +5,9 @@ const cspHeader = `
   default-src 'self';
   script-src 'self' 'unsafe-eval' 'unsafe-inline' https://www.googletagmanager.com https://checkout.razorpay.com https://*.sentry.io https://translate.google.com https://translate.googleapis.com https://translate-pa.googleapis.com;
   style-src 'self' 'unsafe-inline' https://fonts.googleapis.com https://translate.googleapis.com;
-  img-src 'self' blob: data: https:;
+  img-src 'self' blob: data: https: https://*.googleusercontent.com https://lh3.googleusercontent.com https://unavatar.io https://translate.google.com https://translate.googleapis.com;
   font-src 'self' data: https://fonts.gstatic.com;
-  connect-src 'self' https://*.googletagmanager.com https://*.google-analytics.com https://*.analytics.google.com https://*.sentry.io https://api.razorpay.com https://lumberjack.razorpay.com https://*.intrihub.com wss://*.intrihub.com https://*.vercel.app https://*.koyeb.app wss://*.koyeb.app https://*.railway.app wss://*.railway.app http://localhost:* ws://localhost:* https://translate.googleapis.com https://translate-pa.googleapis.com;
+  connect-src 'self' https://*.googletagmanager.com https://*.google-analytics.com https://*.analytics.google.com https://*.sentry.io https://api.razorpay.com https://lumberjack.razorpay.com https://*.intrihub.com wss://*.intrihub.com https://*.vercel.app https://*.koyeb.app wss://*.koyeb.app https://*.railway.app wss://*.railway.app http://localhost:* ws://localhost:* https://translate.google.com https://translate.googleapis.com https://translate-pa.googleapis.com https://*.googleusercontent.com https://lh3.googleusercontent.com https://unavatar.io;
   frame-src 'self' https://www.googletagmanager.com https://api.razorpay.com https://translate.google.com;
   object-src 'none';
   base-uri 'self';
