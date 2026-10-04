@@ -304,7 +304,7 @@ export default function AdminHeader({
               {user?.name ? user.name[0] : "A"}
             </div>
             <div className="hidden lg:block">
-              <p className="text-xs font-bold text-[#052a51] leading-none">
+              <p className="text-xs font-bold text-[#052a51] leading-none notranslate" translate="no">
                 {user?.name || "Admin"}
               </p>
               <span className="text-[10px] text-gray-400 font-semibold uppercase">

@@ -406,10 +406,10 @@ function AccountPageContent() {
                 {/* Details */}
                 <div className="flex-1 min-w-0">
                   <p className="text-[11px] text-blue-200 font-semibold uppercase tracking-wider">Hello,</p>
-                  <h1 className="text-lg font-black truncate leading-tight">
+                  <h1 className="text-lg font-black truncate leading-tight notranslate" translate="no">
                     {isAuthenticated && user ? user.name || "Customer" : "Guest Customer"}
                   </h1>
-                  <p className="text-xs text-blue-100/90 mt-0.5 truncate">
+                  <p className="text-xs text-blue-100/90 mt-0.5 truncate notranslate" translate="no">
                     {isAuthenticated && user
                       ? (user.phone && !user.phone.startsWith("google_") && !user.phone.startsWith("email_") ? `+91 ${user.phone.replace(/\D/g, "").slice(-10)}` : user.email || "Customer")
                       : "Log in for orders & fast checkout"}
@@ -981,7 +981,7 @@ function AccountPageContent() {
                       <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
                         <div>
                           <span className="text-xs font-semibold text-gray-400 block mb-1">Full Name</span>
-                          <p className="text-sm font-black text-[#052a51]">
+                          <p className="text-sm font-black text-[#052a51] notranslate" translate="no">
                             {mounted && isAuthenticated && user ? user.name || "Customer" : "Not Set"}
                           </p>
                         </div>

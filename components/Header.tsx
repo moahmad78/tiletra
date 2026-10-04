@@ -214,7 +214,7 @@ export default function Header() {
                     priority
                     className="border border-[#052a51]/20 shadow-2xs"
                   />
-                  <span className="truncate max-w-[100px]">{user.name?.split(" ")[0] || t("nav.account")}</span>
+                  <span className="truncate max-w-[100px] notranslate" translate="no">{user.name?.split(" ")[0] || t("nav.account")}</span>
                 </Link>
               ) : (
                 <button
@@ -284,7 +284,7 @@ export default function Header() {
                   priority
                   className="border border-white shadow-xs shrink-0"
                 />
-                <div className="min-w-0 flex-1">
+                <div className="min-w-0 flex-1 notranslate" translate="no">
                   <p className="text-sm font-black text-[#052a51] truncate">{user.name || "Customer"}</p>
                   <p className="text-[11px] text-gray-500 truncate">{user.email || user.phone || ""}</p>
                 </div>

@@ -114,10 +114,10 @@ export default function AccountSidebar() {
 
             <div className="min-w-0 flex-1">
               <span className="text-[11px] text-gray-400 font-semibold uppercase">Hello,</span>
-              <h2 className="text-base font-black text-[#052a51] truncate">
+              <h2 className="text-base font-black text-[#052a51] truncate notranslate" translate="no">
                 {isAuthenticated && user ? user.name || "Customer" : "Guest Customer"}
               </h2>
-              <p className="text-xs text-gray-500 font-medium truncate">
+              <p className="text-xs text-gray-500 font-medium truncate notranslate" translate="no">
                 {isAuthenticated && user
                   ? (user.phone && !user.phone.startsWith("google_") ? `+91 ${user.phone}` : user.email || "Customer")
                   : "Not logged in"}
