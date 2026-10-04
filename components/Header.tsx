@@ -3,7 +3,7 @@
 import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/Button";
 import { cn } from "@/lib/utils";
-import { Menu, X, MapPin, Phone, Mail, ShoppingCart, Search, Heart, User as UserIcon, Store, Truck } from "lucide-react";
+import { MapPin, Phone, Mail, ShoppingCart, Search, Heart, User as UserIcon, Store, Truck } from "lucide-react";
 import Link from "next/link";
 import Image from "next/image";
 import { useCartStore } from "@/lib/cart-store";
@@ -20,7 +20,6 @@ import { useTranslation } from "@/lib/i18n/client";
 export default function Header() {
   const { t } = useTranslation();
   const [isScrolled, setIsScrolled] = useState(false);
-  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [searchOpen, setSearchOpen] = useState(false);
   const [mounted, setMounted] = useState(false);
 
@@ -48,16 +47,6 @@ export default function Header() {
       window.removeEventListener("keydown", handleKeyDown);
     };
   }, []);
-
-  const navLinks = [
-    { name: t("nav.home"), href: "/" },
-    { name: t("nav.shop"), href: "/shop" },
-    { name: t("nav.categories"), href: "/categories" },
-    { name: t("nav.whyIntriHub"), href: "/why-intrihub" },
-    { name: t("nav.about"), href: "/about" },
-    { name: t("nav.faq"), href: "/faq" },
-    { name: t("nav.contact"), href: "/contact" },
-  ];
 
   return (
     <>
@@ -158,16 +147,6 @@ export default function Header() {
               {/* Notification Center (Site-wide on mobile & desktop) */}
               <NotificationCenter />
 
-              {/* Mobile Hamburger Menu Toggle */}
-              <button
-                type="button"
-                onClick={() => setMobileMenuOpen((prev) => !prev)}
-                aria-label={t("nav.toggleMenu")}
-                className="md:hidden w-9 h-9 rounded-xl flex items-center justify-center text-[#052a51] hover:bg-gray-100 active:scale-95 transition-all cursor-pointer shrink-0"
-              >
-                {mobileMenuOpen ? <X size={20} /> : <Menu size={20} />}
-              </button>
-
               {/* Wishlist Button (Desktop only - mobile uses BottomTabBar) */}
               <Link
                 href="/wishlist"
@@ -228,8 +207,8 @@ export default function Header() {
                 </button>
               )}
 
-              {/* Mobile Header Account Avatar Button (Visible on mobile header when logged in) */}
-              {mounted && authStatus === "authenticated" && user && (
+              {/* Mobile Header Account Avatar / Sign In Button */}
+              {mounted && authStatus === "authenticated" && user ? (
                 <Link
                   href="/account"
                   aria-label={t("nav.account")}
@@ -244,10 +223,19 @@ export default function Header() {
                     className="border border-[#052a51]/20 shadow-xs"
                   />
                 </Link>
+              ) : mounted && (
+                <button
+                  type="button"
+                  onClick={() => openLoginModal()}
+                  aria-label={t("common.signIn")}
+                  className="md:hidden flex items-center justify-center w-8 h-8 rounded-full text-[#052a51] hover:bg-gray-100 active:scale-95 transition-all"
+                >
+                  <UserIcon size={18} />
+                </button>
               )}
 
-              {/* Language Selector — globe only on md, full on lg+ */}
-              <div className="hidden md:flex lg:hidden items-center">
+              {/* Language Selector — compact on mobile & tablet, full on desktop */}
+              <div className="flex lg:hidden items-center">
                 <LanguageSelector variant="minimal" />
               </div>
               <div className="hidden lg:flex items-center">
@@ -266,79 +254,6 @@ export default function Header() {
 
         {/* Desktop Category Nav Bar (Mega-Menu) */}
         <CategoryNavBar />
-
-        {/* Mobile Menu Dropdown */}
-        {mobileMenuOpen && (
-          <div className="md:hidden absolute top-full left-0 right-0 bg-white shadow-xl py-5 px-6 flex flex-col gap-1 border-t border-gray-100 animate-in slide-in-from-top duration-200">
-            {mounted && authStatus === "authenticated" && user ? (
-              <Link
-                href="/account"
-                onClick={() => setMobileMenuOpen(false)}
-                className="mb-2 p-3 bg-blue-50/80 rounded-2xl flex items-center gap-3 border border-blue-100 active:scale-[0.98] transition-transform"
-              >
-                <UserAvatar
-                  src={user.avatar}
-                  name={user.name}
-                  email={user.email}
-                  size={42}
-                  priority
-                  className="border border-white shadow-xs shrink-0"
-                />
-                <div className="min-w-0 flex-1 notranslate" translate="no">
-                  <p className="text-sm font-black text-[#052a51] truncate">{user.name || "Customer"}</p>
-                  <p className="text-[11px] text-gray-500 truncate">{user.email || user.phone || ""}</p>
-                </div>
-              </Link>
-            ) : mounted && (
-              <button
-                type="button"
-                onClick={() => {
-                  setMobileMenuOpen(false);
-                  openLoginModal();
-                }}
-                className="mb-2 p-3 bg-[#052a51] text-white rounded-2xl flex items-center justify-center gap-2 font-bold text-sm shadow-xs active:scale-[0.98] transition-transform cursor-pointer"
-              >
-                <UserIcon size={16} />
-                <span>{t("auth.login")} / {t("auth.register")}</span>
-              </button>
-            )}
-
-            {navLinks.map((link) => (
-              <Link
-                key={link.name}
-                href={link.href}
-                className="text-base font-bold px-3 py-2.5 rounded-xl text-[#052a51] hover:text-[#F26522] hover:bg-gray-50 transition-colors"
-                onClick={() => setMobileMenuOpen(false)}
-              >
-                {link.name}
-              </Link>
-            ))}
-            <div className="mt-3 pt-3 border-t border-gray-100 flex flex-col gap-2">
-              <Link href="/wishlist" onClick={() => setMobileMenuOpen(false)}>
-                <div className="flex items-center justify-between px-3 py-2.5 rounded-xl bg-gray-50 text-[#052a51] font-bold text-sm">
-                  <span className="flex items-center gap-2">
-                    <Heart size={16} className="text-red-500" /> {t("nav.myWishlist")}
-                  </span>
-                  {mounted && wishlistCount > 0 && (
-                    <span className="px-2 py-0.5 bg-red-500 text-white rounded-full text-xs">
-                      {wishlistCount}
-                    </span>
-                  )}
-                </div>
-              </Link>
-              <Link href="/shop" onClick={() => setMobileMenuOpen(false)}>
-                <Button className="w-full rounded-xl h-11 text-sm font-bold bg-[#F26522] text-white">
-                  {t("nav.exploreSupplies")}
-                </Button>
-              </Link>
-
-              {/* Mobile Drawer Language Selector */}
-              <div className="pt-3 mt-1 border-t border-gray-100 flex items-center justify-between">
-                <LanguageSelector variant="footer" />
-              </div>
-            </div>
-          </div>
-        )}
       </header>
 
       {/* Global Search Modal */}
