@@ -525,6 +525,33 @@ export async function verifyEmailOtp(
   }
 
   console.log(`[OTP_VERIFY_SUCCESS] role=customer userId=${user.id}`);
+
+  // Set persistent session cookie on server response for instant hydration
+  const cleanAvatar = user.avatar && !user.avatar.includes("unavatar.io") ? user.avatar : undefined;
+  const sessionPayload = JSON.stringify({
+    userId: user.id,
+    name: user.name,
+    email: user.email,
+    avatar: cleanAvatar,
+    phone: user.phone,
+    phoneVerified: user.phoneVerified,
+    createdAt: user.createdAt.toISOString(),
+  });
+  const encodedSession = Buffer.from(sessionPayload).toString("base64url");
+  try {
+    const { cookies } = await import("next/headers");
+    const cookieStore = await cookies();
+    cookieStore.set("intrihub_session", encodedSession, {
+      httpOnly: false,
+      secure: process.env.NODE_ENV === "production",
+      sameSite: "lax",
+      maxAge: 60 * 60 * 24 * 7, // 7 days
+      path: "/",
+    });
+  } catch (cookieErr) {
+    console.error("Failed to set session cookie in verifyEmailOtp:", cookieErr);
+  }
+
   return {
     success: true,
     message: "Email verified successfully!",
@@ -536,7 +563,7 @@ export async function verifyEmailOtp(
       email: user.email,
       phone: user.phone,
       role: user.role,
-      avatar: user.avatar && !user.avatar.includes("unavatar.io") ? user.avatar : null,
+      avatar: cleanAvatar || null,
       addresses: user.addresses,
       language: user.language || "en",
     },

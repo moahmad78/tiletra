@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { User } from "lucide-react";
 import { cn } from "@/lib/utils";
 
@@ -29,7 +29,7 @@ export default function UserAvatar({
 }: UserAvatarProps) {
   const [hasError, setHasError] = useState(false);
   const [retryAttempt, setRetryAttempt] = useState(0);
-  const [isLoaded, setIsLoaded] = useState(false);
+  const imgRef = useRef<HTMLImageElement | null>(null);
 
   // Clean effective image src: ignore unavatar.io broken placeholders
   const cleanSrc = src && !src.includes("unavatar.io") ? src.trim() : null;
@@ -39,8 +39,23 @@ export default function UserAvatar({
   useEffect(() => {
     setHasError(false);
     setRetryAttempt(0);
-    setIsLoaded(false);
   }, [cleanSrc]);
+
+  // If already complete in cache upon mount, clear error
+  useEffect(() => {
+    if (imgRef.current && imgRef.current.complete) {
+      if (imgRef.current.naturalWidth > 0) {
+        setHasError(false);
+      } else if (imgRef.current.naturalWidth === 0 && cleanSrc) {
+        // Natural width 0 means image failed to load
+        if (cleanSrc.includes("googleusercontent.com") && retryAttempt === 0) {
+          setRetryAttempt(1);
+        } else {
+          setHasError(true);
+        }
+      }
+    }
+  }, [cleanSrc, retryAttempt]);
 
   // Compute alternative URL if first attempt on Google avatar fails
   const getEffectiveSrc = () => {
@@ -77,6 +92,7 @@ export default function UserAvatar({
   const iconSize = fallbackIconSize || Math.max(12, Math.round(size * 0.48));
   const fontSize = Math.max(10, Math.round(size * 0.4));
 
+  // If no source or image errored out completely, display fallback circle
   if (!effectiveSrc || hasError) {
     return (
       <div
@@ -97,32 +113,20 @@ export default function UserAvatar({
       className={cn("relative shrink-0 rounded-full overflow-hidden select-none bg-gray-100", className)}
       style={{ width: size, height: size }}
     >
-      {/* Fallback initial visible beneath while image is loading */}
-      {!isLoaded && (
-        <div
-          className="absolute inset-0 bg-[#052a51] text-white flex items-center justify-center font-black select-none"
-          style={{ fontSize }}
-        >
-          {initial || <User size={iconSize} />}
-        </div>
-      )}
-
       {/* eslint-disable-next-line @next/next/no-img-element */}
       <img
+        ref={imgRef}
         key={`${effectiveSrc}-${retryAttempt}`}
         src={effectiveSrc}
         alt={name || cleanEmail || "User Avatar"}
         width={size}
         height={size}
-        crossOrigin="anonymous"
         referrerPolicy="no-referrer"
         loading={priority ? "eager" : "lazy"}
         decoding="async"
-        onLoad={() => setIsLoaded(true)}
         onError={handleImageError}
         className={cn(
-          "w-full h-full object-cover rounded-full transition-opacity duration-150",
-          isLoaded ? "opacity-100" : "opacity-0",
+          "w-full h-full object-cover rounded-full block",
           imageClassName
         )}
       />

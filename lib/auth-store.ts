@@ -215,6 +215,23 @@ export const useAuthStore = create<AuthState>()(
           isLoginModalOpen: false,
         });
 
+        // Set browser session cookie for instant cross-tab / SSR persistence
+        if (typeof document !== "undefined" && immediateUser.avatar) {
+          try {
+            const sessionPayload = {
+              userId: immediateUser.id,
+              name: immediateUser.name,
+              email: immediateUser.email,
+              avatar: immediateUser.avatar,
+              phone: immediateUser.phone,
+              phoneVerified: immediateUser.phoneVerified,
+              createdAt: immediateUser.createdAt,
+            };
+            const b64 = btoa(unescape(encodeURIComponent(JSON.stringify(sessionPayload))));
+            document.cookie = `intrihub_session=${b64}; max-age=${60 * 60 * 24 * 7}; path=/; SameSite=Lax`;
+          } catch {}
+        }
+
         // 2. Fetch real DB data (phone + addresses + avatar) for THIS specific user
         try {
           const { getDbUser, getDbUserByEmail } = await import("@/lib/actions/auth");
@@ -290,57 +307,94 @@ export const useAuthStore = create<AuthState>()(
         try {
           const { verifyEmailOtp } = await import("@/lib/actions/email-otp");
           const res = await verifyEmailOtp(email, otp);
-          if (res.success && res.userId) {
-            // Explicit clean session start
-            set({ user: null, isAuthenticated: false });
-
-            const { getDbUser } = await import("@/lib/actions/auth");
-            const dbUser = await getDbUser(res.userId);
+          if (res.success && res.userId && res.user) {
+            const rawUser = res.user;
             const cleanEmail = email.trim().toLowerCase();
-            const resolvedUser = dbUser || res.user;
+            const userPhone = rawUser.phone || "";
+            const realPhone = (userPhone && !userPhone.startsWith("email_") && !userPhone.startsWith("google_"))
+              ? userPhone.replace(/\D/g, "").slice(-10)
+              : "";
+            const addresses: CustomerAddress[] = (rawUser.addresses || []).map((a: any) => ({
+              id: a.id,
+              name: rawUser.name || "Customer",
+              phone: realPhone,
+              pincode: a.pincode || "",
+              line1: a.street || "",
+              line2: "",
+              city: a.city || "Bangalore",
+              state: a.state || "Karnataka",
+              landmark: a.landmark || "",
+              label: (a.label as any) || "Home",
+              isDefault: Boolean(a.isDefault),
+            }));
 
-            if (resolvedUser) {
-              const userPhone = resolvedUser.phone || "";
-              const realPhone = (userPhone && !userPhone.startsWith("email_") && !userPhone.startsWith("google_")) ? userPhone.replace(/\D/g, "").slice(-10) : "";
-              const addresses: CustomerAddress[] = (resolvedUser.addresses || []).map((a: any) => ({
-                id: a.id,
-                name: resolvedUser.name || "Customer",
-                phone: realPhone,
-                pincode: a.pincode || "",
-                line1: a.street || "",
-                line2: "",
-                city: a.city || "Bangalore",
-                state: a.state || "Karnataka",
-                landmark: a.landmark || "",
-                label: (a.label as any) || "Home",
-                isDefault: Boolean(a.isDefault),
-              }));
+            const resolvedAvatar =
+              rawUser.avatar && !rawUser.avatar.includes("unavatar.io")
+                ? rawUser.avatar
+                : undefined;
 
-              const resolvedAvatar =
-                resolvedUser.avatar && !resolvedUser.avatar.includes("unavatar.io")
-                  ? resolvedUser.avatar
-                  : undefined;
+            const loggedUser: CustomerUser = {
+              id: rawUser.id,
+              phone: realPhone,
+              name: rawUser.name || email.split("@")[0],
+              email: rawUser.email || cleanEmail,
+              avatar: resolvedAvatar,
+              addresses,
+              defaultAddressId: addresses.find((a) => a.isDefault)?.id || addresses[0]?.id,
+              phoneVerified: Boolean(rawUser.phoneVerified),
+              createdAt: rawUser.createdAt ? new Date(rawUser.createdAt).toISOString() : new Date().toISOString(),
+            };
 
-              const loggedUser: CustomerUser = {
-                id: resolvedUser.id,
-                phone: realPhone,
-                name: resolvedUser.name || email.split("@")[0],
-                email: resolvedUser.email || email,
-                avatar: resolvedAvatar,
-                addresses,
-                defaultAddressId: addresses.find((a) => a.isDefault)?.id || addresses[0]?.id,
-                phoneVerified: Boolean(resolvedUser.phoneVerified),
-                createdAt: resolvedUser.createdAt ? new Date(resolvedUser.createdAt).toISOString() : new Date().toISOString(),
-              };
+            // Set state instantly
+            set({
+              user: loggedUser,
+              isAuthenticated: true,
+              isLoginModalOpen: false,
+              emailOtpSentAt: null,
+            });
 
-              set({
-                user: loggedUser,
-                isAuthenticated: true,
-                isLoginModalOpen: false,
-                emailOtpSentAt: null,
-              });
-              return { success: true, message: "Logged in successfully!" };
+            // Set browser session cookie for instant cross-tab / SSR persistence
+            if (typeof document !== "undefined") {
+              try {
+                const sessionPayload = {
+                  userId: loggedUser.id,
+                  name: loggedUser.name,
+                  email: loggedUser.email,
+                  avatar: loggedUser.avatar,
+                  phone: loggedUser.phone,
+                  phoneVerified: loggedUser.phoneVerified,
+                  createdAt: loggedUser.createdAt,
+                };
+                const b64 = btoa(unescape(encodeURIComponent(JSON.stringify(sessionPayload))));
+                document.cookie = `intrihub_session=${b64}; max-age=${60 * 60 * 24 * 7}; path=/; SameSite=Lax`;
+              } catch {}
             }
+
+            // Background DB sync to fetch full addresses without blocking UI
+            const targetUserId = res.userId;
+            if (targetUserId) {
+              import("@/lib/actions/auth").then(({ getDbUser }) => {
+                getDbUser(targetUserId).then((dbUser) => {
+                  if (dbUser) {
+                    set((state) => {
+                      if (!state.user || state.user.id !== dbUser.id) return state;
+                      const finalAvatar = (dbUser.avatar && !dbUser.avatar.includes("unavatar.io"))
+                        ? dbUser.avatar
+                        : state.user.avatar;
+                      return {
+                        user: {
+                          ...state.user,
+                          name: dbUser.name || state.user.name,
+                          avatar: finalAvatar,
+                        },
+                      };
+                    });
+                  }
+                }).catch(() => {});
+              }).catch(() => {});
+            }
+
+            return { success: true, message: "Logged in successfully!" };
           }
           return { success: res.success, message: res.message };
         } catch (e) {
