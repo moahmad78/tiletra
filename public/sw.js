@@ -60,7 +60,7 @@ self.addEventListener("fetch", (event) => {
   }
 
   // 1. First-Party Images: Stale-While-Revalidate with Entry Cap
-  if (url.pathname.startsWith("/images/") || url.pathname.startsWith("/api/uploads/")) {
+  if (url.pathname.startsWith("/images/") || url.pathname.startsWith("/logo/") || url.pathname.startsWith("/api/uploads/")) {
     event.respondWith(
       caches.open(IMAGE_CACHE).then(async (cache) => {
         const cachedResponse = await cache.match(event.request);
@@ -80,20 +80,24 @@ self.addEventListener("fetch", (event) => {
     return;
   }
 
-  // 2. Do not intercept other API routes or Next.js internals
-  if (url.pathname.startsWith("/api/") || url.pathname.startsWith("/_next/")) {
+  // 2. Do not intercept API routes, static Next.js internals, or fonts/CSS/scripts/preloads
+  if (
+    url.pathname.startsWith("/api/") ||
+    url.pathname.startsWith("/_next/") ||
+    event.request.destination === "font" ||
+    event.request.destination === "style" ||
+    event.request.destination === "script"
+  ) {
     return;
   }
 
-  // 3. Static assets & pages: Network first with cache fallback
-  event.respondWith(
-    fetch(event.request).catch(() => {
-      return caches.match(event.request).then((res) => {
-        if (res) return res;
-        if (event.request.headers.get("accept")?.includes("text/html")) {
-          return caches.match("/");
-        }
-      });
-    })
-  );
+  // 3. Navigation requests (HTML pages): Network first with offline fallback
+  if (event.request.mode === "navigate" || event.request.headers.get("accept")?.includes("text/html")) {
+    event.respondWith(
+      fetch(event.request).catch(() => {
+        return caches.match("/").then((res) => res || Response.error());
+      })
+    );
+    return;
+  }
 });
