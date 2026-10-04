@@ -69,8 +69,6 @@ function AccountPageContent() {
     setDefaultAddress,
     syncUserWithDb,
   } = useAuthStore();
-  const { t } = useTranslation();
-
   const [activeTab, setActiveTab] = useState<TabType>("profile");
 
   useEffect(() => {
