@@ -1359,12 +1359,45 @@ export async function loginVendor(username: string, password?: string) {
         rejectionReason: vendor.rejectionReason,
         ownerName: vendor.owner?.name || vendor.businessName,
         ownerId: vendor.ownerId,
+        autoAcceptOrders: vendor.autoAcceptOrders ?? false,
         mustChangePassword: vendor.owner?.mustChangePassword ?? false,
       },
     };
   } catch (error: any) {
     console.error("loginVendor server action error:", error);
     return { success: false, error: error?.message || "Internal server error" };
+  }
+}
+
+export async function getVendorAutoAcceptStatus(vendorId: string) {
+  try {
+    if (!vendorId) return { success: false, autoAcceptOrders: false };
+    const vendor = await prisma.vendor.findUnique({
+      where: { id: vendorId },
+      select: { id: true, autoAcceptOrders: true },
+    });
+    return { success: true, autoAcceptOrders: Boolean(vendor?.autoAcceptOrders) };
+  } catch (error: any) {
+    console.error("getVendorAutoAcceptStatus error:", error);
+    return { success: false, autoAcceptOrders: false };
+  }
+}
+
+export async function toggleVendorAutoAcceptOrders(vendorId: string, autoAccept: boolean) {
+  try {
+    if (!vendorId) return { success: false, error: "Vendor ID required" };
+    const updated = await prisma.vendor.update({
+      where: { id: vendorId },
+      data: { autoAcceptOrders: autoAccept },
+      select: { id: true, autoAcceptOrders: true },
+    });
+    safeRevalidate("/vendor/orders");
+    safeRevalidate("/vendor/settings");
+    safeRevalidate("/admin/orders");
+    return { success: true, autoAcceptOrders: updated.autoAcceptOrders };
+  } catch (error: any) {
+    console.error("toggleVendorAutoAcceptOrders error:", error);
+    return { success: false, error: error?.message || "Failed to update vendor auto-accept setting" };
   }
 }
 

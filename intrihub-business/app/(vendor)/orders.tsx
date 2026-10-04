@@ -24,8 +24,14 @@ import {
   Package,
   X,
   Printer,
+  Zap,
 } from "lucide-react-native";
-import { fetchVendorOrders, updateVendorOrderStatus } from "../../src/api/vendor";
+import {
+  fetchVendorOrders,
+  updateVendorOrderStatus,
+  fetchVendorProfile,
+  updateVendorProfile,
+} from "../../src/api/vendor";
 import { VendorOrderSplit } from "../../src/types";
 import { COURIER_PARTNERS } from "../../src/constants/logistics";
 import { COLORS, SPACING, RADIUS, SHADOWS } from "../../src/constants/theme";
@@ -63,6 +69,35 @@ export default function VendorOrdersScreen() {
     queryKey: ["vendor-orders", statusFilter],
     queryFn: () => fetchVendorOrders(statusFilter),
   });
+
+  const { data: profileData } = useQuery({
+    queryKey: ["vendor-profile"],
+    queryFn: () => fetchVendorProfile(),
+  });
+
+  const isVendorAutoAccept = profileData?.vendor?.autoAcceptOrders === true;
+  const [isTogglingAutoAccept, setIsTogglingAutoAccept] = useState(false);
+
+  const handleToggleAutoAccept = async () => {
+    const nextVal = !isVendorAutoAccept;
+    setIsTogglingAutoAccept(true);
+    try {
+      const res = await updateVendorProfile({ autoAcceptOrders: nextVal });
+      if (res?.success) {
+        queryClient.invalidateQueries({ queryKey: ["vendor-profile"] });
+        Alert.alert(
+          "Auto-Accept Updated",
+          `Incoming orders will now be ${nextVal ? "automatically accepted (Confirmed)" : "manually reviewed (Pending)"}.`
+        );
+      } else {
+        Alert.alert("Error", res?.error || "Failed to update auto-accept settings");
+      }
+    } catch (err: any) {
+      Alert.alert("Error", err?.message || "Failed to update settings");
+    } finally {
+      setIsTogglingAutoAccept(false);
+    }
+  };
 
   const updateStatusMutation = useMutation({
     mutationFn: ({ splitId, status, extra }: any) =>
@@ -170,8 +205,41 @@ export default function VendorOrdersScreen() {
   return (
     <View style={styles.container}>
       <View style={styles.header}>
-        <Text style={styles.headerTitle}>Warehouse Orders</Text>
-        <Text style={styles.headerSubtitle}>{orders.length} order fulfillment tasks</Text>
+        <View style={{ flex: 1, paddingRight: 8 }}>
+          <Text style={styles.headerTitle}>Warehouse Orders</Text>
+          <Text style={styles.headerSubtitle}>{orders.length} order fulfillment tasks</Text>
+        </View>
+
+        {/* Quick Auto-Accept Toggle Button */}
+        <TouchableOpacity
+          onPress={handleToggleAutoAccept}
+          disabled={isTogglingAutoAccept}
+          activeOpacity={0.8}
+          style={[
+            styles.autoAcceptPill,
+            isVendorAutoAccept ? styles.autoAcceptPillActive : styles.autoAcceptPillInactive,
+          ]}
+        >
+          {isTogglingAutoAccept ? (
+            <ActivityIndicator size="small" color={isVendorAutoAccept ? "#166534" : "#FFFFFF"} />
+          ) : (
+            <>
+              <Zap
+                size={13}
+                color={isVendorAutoAccept ? "#166534" : "#FFFFFF"}
+                fill={isVendorAutoAccept ? "#166534" : "none"}
+              />
+              <Text
+                style={[
+                  styles.autoAcceptPillText,
+                  isVendorAutoAccept ? styles.autoAcceptPillTextActive : styles.autoAcceptPillTextInactive,
+                ]}
+              >
+                Auto: {isVendorAutoAccept ? "ON" : "OFF"}
+              </Text>
+            </>
+          )}
+        </TouchableOpacity>
       </View>
 
       {/* Status Filter Tabs */}
@@ -373,6 +441,36 @@ const styles = StyleSheet.create({
     paddingTop: 50,
     paddingBottom: SPACING.md,
     paddingHorizontal: SPACING.lg,
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+  },
+  autoAcceptPill: {
+    flexDirection: "row",
+    alignItems: "center",
+    paddingHorizontal: 10,
+    paddingVertical: 6,
+    borderRadius: RADIUS.full,
+    gap: 4,
+    borderWidth: 1,
+  },
+  autoAcceptPillActive: {
+    backgroundColor: "#DCFCE7",
+    borderColor: "#86EFAC",
+  },
+  autoAcceptPillInactive: {
+    backgroundColor: "rgba(255, 255, 255, 0.15)",
+    borderColor: "rgba(255, 255, 255, 0.3)",
+  },
+  autoAcceptPillText: {
+    fontSize: 11,
+    fontWeight: "800",
+  },
+  autoAcceptPillTextActive: {
+    color: "#166534",
+  },
+  autoAcceptPillTextInactive: {
+    color: "#FFFFFF",
   },
   headerTitle: {
     fontSize: 20,

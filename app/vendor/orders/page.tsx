@@ -21,12 +21,15 @@ import {
   Check,
   Loader2,
   Printer,
+  Zap,
 } from "lucide-react";
 import { useVendorAuth } from "@/lib/vendor-auth";
 import {
   getVendorOrders,
   updateVendorFulfillmentStatus,
   updateVendorFulfillmentBulk,
+  getVendorAutoAcceptStatus,
+  toggleVendorAutoAcceptOrders,
 } from "@/lib/actions/vendor";
 import { useLiveSync, broadcastLiveEvent } from "@/lib/live-sync";
 import InvoiceModal from "@/components/admin/InvoiceModal";
@@ -55,15 +58,51 @@ export default function VendorOrdersPage() {
   // Tax Invoice Modal State
   const [selectedInvoiceOrder, setSelectedInvoiceOrder] = useState<any | null>(null);
 
+  // Auto-Accept Orders State
+  const [autoAccept, setAutoAccept] = useState<boolean>(false);
+  const [togglingAutoAccept, setTogglingAutoAccept] = useState<boolean>(false);
+
   const loadOrders = async () => {
     if (!vendor?.id) return;
     try {
-      const data = await getVendorOrders(vendor.id);
+      const [data, autoStatus] = await Promise.all([
+        getVendorOrders(vendor.id),
+        getVendorAutoAcceptStatus(vendor.id).catch(() => ({ success: false, autoAcceptOrders: false })),
+      ]);
       setOrders(data);
+      if (autoStatus && typeof autoStatus.autoAcceptOrders === "boolean") {
+        setAutoAccept(autoStatus.autoAcceptOrders);
+      }
     } catch (e) {
       console.error("Error loading vendor orders:", e);
     } finally {
       setLoading(false);
+    }
+  };
+
+  const handleToggleAutoAccept = async () => {
+    if (!vendor?.id) return;
+    const nextState = !autoAccept;
+    setAutoAccept(nextState);
+    setTogglingAutoAccept(true);
+    try {
+      const res = await toggleVendorAutoAcceptOrders(vendor.id, nextState);
+      if (res?.success) {
+        toast.success(
+          nextState
+            ? "⚡ Auto-Accept ON: Orders assigned to your warehouse are automatically confirmed!"
+            : "Auto-Accept OFF: Orders will require manual acceptance."
+        );
+        broadcastLiveEvent("data:refresh");
+      } else {
+        setAutoAccept(!nextState);
+        toast.error("Failed to update auto-accept setting");
+      }
+    } catch (e: any) {
+      setAutoAccept(!nextState);
+      toast.error(e?.message || "Failed to update auto-accept");
+    } finally {
+      setTogglingAutoAccept(false);
     }
   };
 
@@ -186,9 +225,41 @@ export default function VendorOrdersPage() {
           </p>
         </div>
 
-        <div className="flex items-center gap-2 text-xs font-bold text-emerald-800 bg-emerald-50 px-3 py-1.5 rounded-full border border-emerald-200 self-start sm:self-auto">
-          <ShieldCheck size={14} />
-          <span>Vendor-Isolated Queue: Only your items shown</span>
+        <div className="flex items-center gap-2 flex-wrap">
+          {/* Quick Auto-Accept Toggle Button */}
+          <button
+            type="button"
+            onClick={handleToggleAutoAccept}
+            disabled={togglingAutoAccept}
+            className={`inline-flex items-center gap-2 px-3 py-1.5 rounded-xl border text-xs font-bold transition-all shadow-xs active:scale-95 cursor-pointer ${
+              autoAccept
+                ? "bg-emerald-50 text-emerald-900 border-emerald-300 hover:bg-emerald-100"
+                : "bg-gray-50 text-gray-700 border-gray-300 hover:bg-gray-100"
+            }`}
+            title={
+              autoAccept
+                ? "Auto-Accept is ON: New orders for your warehouse are confirmed instantly without manual action"
+                : "Auto-Accept is OFF: You must manually accept incoming orders"
+            }
+          >
+            <Zap
+              size={14}
+              className={autoAccept ? "text-emerald-600 fill-emerald-600" : "text-gray-400"}
+            />
+            <span>
+              Auto-Accept: <b>{autoAccept ? "ON" : "OFF"}</b>
+            </span>
+            <span
+              className={`w-2 h-2 rounded-full ${
+                autoAccept ? "bg-emerald-500 animate-pulse" : "bg-gray-400"
+              }`}
+            />
+          </button>
+
+          <div className="flex items-center gap-2 text-xs font-bold text-emerald-800 bg-emerald-50 px-3 py-1.5 rounded-full border border-emerald-200 self-start sm:self-auto">
+            <ShieldCheck size={14} />
+            <span>Vendor-Isolated Queue</span>
+          </div>
         </div>
       </div>
 

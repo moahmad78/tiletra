@@ -169,6 +169,10 @@ export async function PATCH(req: NextRequest) {
       updateData.estimatedDelivery = String(body.estimatedDelivery).trim();
     }
 
+    if (body.autoAcceptOrders !== undefined) {
+      updateData.autoAcceptOrders = Boolean(body.autoAcceptOrders);
+    }
+
     const res = await updateStoreSettings(updateData);
 
     // Save extra policies/timings/units

@@ -18,6 +18,7 @@ import {
   Truck,
   PackageCheck,
   FileText,
+  Zap,
 } from "lucide-react";
 import {
   getOrders,
@@ -26,6 +27,7 @@ import {
   deleteOrder,
   deleteOrdersBulk,
 } from "@/lib/actions/orders";
+import { getStoreSettings, toggleAdminAutoAcceptOrders } from "@/lib/actions/settings";
 import { useSocket } from "@/lib/socket";
 import { useLiveSync, broadcastLiveEvent } from "@/lib/live-sync";
 import { toast } from "sonner";
@@ -61,16 +63,51 @@ export default function AdminOrdersPage() {
   const [showBulkDeleteModal, setShowBulkDeleteModal] = useState(false);
   const [isBulkDeleting, setIsBulkDeleting] = useState(false);
 
+  // Auto-Accept Orders Setting State
+  const [autoAcceptOrders, setAutoAcceptOrders] = useState<boolean>(true);
+  const [togglingAutoAccept, setTogglingAutoAccept] = useState<boolean>(false);
+
   const loadOrders = useCallback(async () => {
     try {
-      const data = await getOrders();
+      const [data, settings] = await Promise.all([
+        getOrders(),
+        getStoreSettings().catch(() => null),
+      ]);
       setOrders(data);
+      if (settings && typeof settings.autoAcceptOrders === "boolean") {
+        setAutoAcceptOrders(settings.autoAcceptOrders);
+      }
     } catch (err) {
       console.error("Error fetching orders:", err);
     } finally {
       setLoading(false);
     }
   }, []);
+
+  const handleToggleAutoAccept = async () => {
+    const nextState = !autoAcceptOrders;
+    setAutoAcceptOrders(nextState);
+    setTogglingAutoAccept(true);
+    try {
+      const res = await toggleAdminAutoAcceptOrders(nextState);
+      if (res?.success) {
+        toast.success(
+          nextState
+            ? "⚡ Auto-Accept ON: New orders will automatically confirm upon checkout!"
+            : "Auto-Accept OFF: New orders will require manual confirmation."
+        );
+        broadcastLiveEvent("data:refresh");
+      } else {
+        setAutoAcceptOrders(!nextState);
+        toast.error("Failed to update auto-accept setting");
+      }
+    } catch (e: any) {
+      setAutoAcceptOrders(!nextState);
+      toast.error(e?.message || "Failed to update auto-accept");
+    } finally {
+      setTogglingAutoAccept(false);
+    }
+  };
 
   // ── Universal Live Sync Hook (Cross-tab broadcast + Tab Focus + 3.5s Auto-Poll) ──
   useLiveSync({
@@ -284,6 +321,36 @@ export default function AdminOrdersPage() {
         </div>
 
         <div className="flex flex-wrap items-center gap-2 text-xs font-bold">
+          {/* Quick Auto-Accept Toggle Button */}
+          <button
+            type="button"
+            onClick={handleToggleAutoAccept}
+            disabled={togglingAutoAccept}
+            className={`inline-flex items-center gap-2 px-3 py-2 rounded-xl border text-xs font-bold transition-all shadow-xs active:scale-95 cursor-pointer ${
+              autoAcceptOrders
+                ? "bg-emerald-50 text-emerald-900 border-emerald-300 hover:bg-emerald-100"
+                : "bg-gray-50 text-gray-700 border-gray-300 hover:bg-gray-100"
+            }`}
+            title={
+              autoAcceptOrders
+                ? "Auto-Accept is ON: New orders automatically skip pending state and confirm instantly"
+                : "Auto-Accept is OFF: New orders require manual review and confirmation"
+            }
+          >
+            <Zap
+              size={14}
+              className={autoAcceptOrders ? "text-emerald-600 fill-emerald-600" : "text-gray-400"}
+            />
+            <span>
+              Auto-Accept: <b>{autoAcceptOrders ? "ON" : "OFF"}</b>
+            </span>
+            <span
+              className={`w-2 h-2 rounded-full ${
+                autoAcceptOrders ? "bg-emerald-500 animate-pulse" : "bg-gray-400"
+              }`}
+            />
+          </button>
+
           <Link
             href="/admin/invoices"
             className="inline-flex items-center gap-1.5 px-3.5 py-2 bg-[#F26522] hover:bg-[#d95a1e] text-white text-xs font-bold rounded-xl shadow-xs transition-all active:scale-95"

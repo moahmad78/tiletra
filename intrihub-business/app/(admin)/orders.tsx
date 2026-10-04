@@ -44,6 +44,7 @@ import {
   PlayCircle,
   Printer,
   Share2,
+  Zap,
 } from "lucide-react-native";
 import {
   fetchAdminOrders,
@@ -268,6 +269,30 @@ export default function AdminOrdersHubScreen() {
     queryKey: ["admin-store-settings"],
     queryFn: () => fetchAdminStoreSettings(),
   });
+
+  const [isTogglingAutoAccept, setIsTogglingAutoAccept] = useState(false);
+  const isAdminAutoAccept = settingsData?.settings?.autoAcceptOrders !== false;
+
+  const handleToggleAutoAccept = async () => {
+    const nextVal = !isAdminAutoAccept;
+    setIsTogglingAutoAccept(true);
+    try {
+      const res = await updateAdminStoreSettings({ autoAcceptOrders: nextVal });
+      if (res?.success) {
+        queryClient.invalidateQueries({ queryKey: ["admin-store-settings"] });
+        Alert.alert(
+          "Auto-Accept Updated",
+          `Incoming orders will now be ${nextVal ? "automatically accepted (Confirmed)" : "manually reviewed (Processing)"}.`
+        );
+      } else {
+        Alert.alert("Error", res?.error || "Failed to update auto-accept settings");
+      }
+    } catch (err: any) {
+      Alert.alert("Error", err?.message || "Failed to update settings");
+    } finally {
+      setIsTogglingAutoAccept(false);
+    }
+  };
 
   const orders = ordersData?.orders || [];
   const splits = deliveriesData?.splits || [];
@@ -643,6 +668,37 @@ export default function AdminOrdersHubScreen() {
             {orders.length} total orders • {splits.length} delivery splits
           </Text>
         </View>
+
+        {/* Quick Auto-Accept Toggle Button */}
+        <TouchableOpacity
+          onPress={handleToggleAutoAccept}
+          disabled={isTogglingAutoAccept}
+          activeOpacity={0.8}
+          style={[
+            styles.autoAcceptPill,
+            isAdminAutoAccept ? styles.autoAcceptPillActive : styles.autoAcceptPillInactive,
+          ]}
+        >
+          {isTogglingAutoAccept ? (
+            <ActivityIndicator size="small" color={isAdminAutoAccept ? "#166534" : "#FFFFFF"} />
+          ) : (
+            <>
+              <Zap
+                size={13}
+                color={isAdminAutoAccept ? "#166534" : "#FFFFFF"}
+                fill={isAdminAutoAccept ? "#166534" : "none"}
+              />
+              <Text
+                style={[
+                  styles.autoAcceptPillText,
+                  isAdminAutoAccept ? styles.autoAcceptPillTextActive : styles.autoAcceptPillTextInactive,
+                ]}
+              >
+                Auto: {isAdminAutoAccept ? "ON" : "OFF"}
+              </Text>
+            </>
+          )}
+        </TouchableOpacity>
 
         <Image
           source={require("../../assets/intri-icon.png")}
@@ -1134,6 +1190,34 @@ const styles = StyleSheet.create({
     height: 36,
     borderRadius: 8,
     backgroundColor: "#FFFFFF",
+  },
+  autoAcceptPill: {
+    flexDirection: "row",
+    alignItems: "center",
+    paddingHorizontal: 10,
+    paddingVertical: 5,
+    borderRadius: RADIUS.full,
+    gap: 4,
+    marginRight: 8,
+    borderWidth: 1,
+  },
+  autoAcceptPillActive: {
+    backgroundColor: "#DCFCE7",
+    borderColor: "#86EFAC",
+  },
+  autoAcceptPillInactive: {
+    backgroundColor: "rgba(255, 255, 255, 0.15)",
+    borderColor: "rgba(255, 255, 255, 0.3)",
+  },
+  autoAcceptPillText: {
+    fontSize: 11,
+    fontWeight: "800",
+  },
+  autoAcceptPillTextActive: {
+    color: "#166534",
+  },
+  autoAcceptPillTextInactive: {
+    color: "#FFFFFF",
   },
   segmentContainer: {
     flexDirection: "row",

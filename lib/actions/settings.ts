@@ -55,6 +55,7 @@ export async function updateStoreSettings(data: {
   codMaxLimit?: number;
   codBlockedPincodes?: string[];
   estimatedDelivery?: string;
+  autoAcceptOrders?: boolean;
 }) {
   try {
     let settings = await prisma.storeSettings.findFirst();
@@ -87,6 +88,13 @@ export async function updateStoreSettings(data: {
     console.error("Error updating store settings:", error);
     return { success: false, error: error?.message || "Failed to update settings" };
   }
+}
+
+export async function toggleAdminAutoAcceptOrders(enabled: boolean) {
+  const res = await updateStoreSettings({ autoAcceptOrders: enabled });
+  safeRevalidate("/admin/orders");
+  safeRevalidate("/admin/settings");
+  return res;
 }
 
 let cachedBanners: { data: any[]; timestamp: number } | null = null;
