@@ -29,6 +29,8 @@ import {
   Camera,
   Star,
   Globe,
+  X,
+  Check,
 } from "lucide-react-native";
 import { useAuthStore } from "../../src/store/authStore";
 import { getProfile, updateProfile, uploadAvatarImage } from "../../src/api/auth";

@@ -12,11 +12,13 @@ import {
   LogOut,
   LogIn,
   MessageCircle,
+  Globe,
 } from "lucide-react";
 import { useAuthStore, useAuthStatus } from "@/lib/auth-store";
 import { useWishlistStore } from "@/lib/wishlist-store";
 import { toast } from "sonner";
 import UserAvatar from "@/components/ui/UserAvatar";
+import LanguageSelector from "@/components/i18n/LanguageSelector";
 
 export default function AccountSidebar() {
   const pathname = usePathname();
@@ -266,8 +268,17 @@ export default function AccountSidebar() {
           </Link>
         </div>
 
+        {/* Language Preference */}
+        <div className="px-4 py-2.5 border-t border-gray-100 flex items-center justify-between">
+          <div className="flex items-center gap-2">
+            <Globe size={15} className="text-[#052a51]" />
+            <span className="text-xs font-bold text-gray-700">Language</span>
+          </div>
+          <LanguageSelector variant="panel" />
+        </div>
+
         {/* LOGOUT BUTTON */}
-        <div className="p-3">
+        <div className="p-3 border-t border-gray-100">
           {mounted && isAuthenticated ? (
             <button
               type="button"
