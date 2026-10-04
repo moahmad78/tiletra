@@ -201,7 +201,14 @@ export default function ManualInvoiceGeneratorPage() {
     try {
       const saved = localStorage.getItem("intrihub_manual_invoice_draft");
       if (saved) {
-        setInvoice(JSON.parse(saved));
+        const parsed = JSON.parse(saved);
+        if (parsed && typeof parsed === "object") {
+          setInvoice((prev) => ({
+            ...prev,
+            ...parsed,
+            items: Array.isArray(parsed.items) && parsed.items.length > 0 ? parsed.items : prev.items,
+          }));
+        }
       }
     } catch {
       // Ignore
@@ -218,30 +225,32 @@ export default function ManualInvoiceGeneratorPage() {
     }
   }, [invoice, mounted]);
 
+  const items = Array.isArray(invoice?.items) ? invoice.items : INITIAL_INVOICE.items;
+
   // Calculations
-  const rawSubtotal = invoice.items.reduce((acc, item) => {
-    return acc + (Number(item.quantity) || 0) * (Number(item.rate) || 0);
+  const rawSubtotal = items.reduce((acc, item) => {
+    return acc + (Number(item?.quantity) || 0) * (Number(item?.rate) || 0);
   }, 0);
 
   // Calculate tax depending on exclusive vs inclusive
   let calculatedTax = 0;
-  if (invoice.taxMode === "exclusive") {
-    calculatedTax = invoice.items.reduce((acc, item) => {
-      const taxable = (Number(item.quantity) || 0) * (Number(item.rate) || 0);
-      const taxAmount = (taxable * (Number(item.taxRate) || 0)) / 100;
+  if (invoice?.taxMode === "exclusive") {
+    calculatedTax = items.reduce((acc, item) => {
+      const taxable = (Number(item?.quantity) || 0) * (Number(item?.rate) || 0);
+      const taxAmount = (taxable * (Number(item?.taxRate) || 0)) / 100;
       return acc + taxAmount;
     }, 0);
   } else {
     // Inclusive: Tax is already part of the unit rate
-    calculatedTax = invoice.items.reduce((acc, item) => {
-      const total = (Number(item.quantity) || 0) * (Number(item.rate) || 0);
-      const rate = Number(item.taxRate) || 0;
+    calculatedTax = items.reduce((acc, item) => {
+      const total = (Number(item?.quantity) || 0) * (Number(item?.rate) || 0);
+      const rate = Number(item?.taxRate) || 0;
       const base = total / (1 + rate / 100);
       return acc + (total - base);
     }, 0);
   }
 
-  const taxableAmount = invoice.taxMode === "exclusive" ? rawSubtotal : rawSubtotal - calculatedTax;
+  const taxableAmount = invoice?.taxMode === "exclusive" ? rawSubtotal : rawSubtotal - calculatedTax;
   const deliveryFee = Number(invoice.deliveryFee) || 0;
   const discount = Number(invoice.discount) || 0;
   const grandTotal = Math.max(0, rawSubtotal + (invoice.taxMode === "exclusive" ? calculatedTax : 0) + deliveryFee - discount);
@@ -397,55 +406,59 @@ Everything, Every Place • www.intrihub.com`;
   return (
     <div className="space-y-6">
       {/* ── Print Stylesheet: Ensures ONLY the clean invoice is printed on A4 ── */}
-      <style jsx global>{`
-        @media print {
-          @page {
-            size: A4 portrait;
-            margin: 10mm;
-          }
+      <style
+        dangerouslySetInnerHTML={{
+          __html: `
+            @media print {
+              @page {
+                size: A4 portrait;
+                margin: 10mm;
+              }
 
-          html, body {
-            margin: 0 !important;
-            padding: 0 !important;
-            background: #ffffff !important;
-            color: #0f172a !important;
-            font-size: 11px !important;
-            -webkit-print-color-adjust: exact !important;
-            print-color-adjust: exact !important;
-          }
+              html, body {
+                margin: 0 !important;
+                padding: 0 !important;
+                background: #ffffff !important;
+                color: #0f172a !important;
+                font-size: 11px !important;
+                -webkit-print-color-adjust: exact !important;
+                print-color-adjust: exact !important;
+              }
 
-          /* Hide header, sidebars, controls, editor, breadcrumbs */
-          header, footer, nav, aside, .no-print, [role="navigation"], [role="banner"], [role="complementary"], .editor-panel {
-            display: none !important;
-          }
+              /* Hide header, sidebars, controls, editor, breadcrumbs */
+              header, footer, nav, aside, .no-print, [role="navigation"], [role="banner"], [role="complementary"], .editor-panel {
+                display: none !important;
+              }
 
-          .manual-invoice-page-container {
-            margin: 0 !important;
-            padding: 0 !important;
-          }
+              .manual-invoice-page-container {
+                margin: 0 !important;
+                padding: 0 !important;
+              }
 
-          .invoice-printable-wrapper {
-            display: block !important;
-            width: 100% !important;
-            margin: 0 !important;
-            padding: 0 !important;
-          }
+              .invoice-printable-wrapper {
+                display: block !important;
+                width: 100% !important;
+                margin: 0 !important;
+                padding: 0 !important;
+              }
 
-          .invoice-paper-card {
-            box-shadow: none !important;
-            border: none !important;
-            padding: 0 !important;
-            margin: 0 !important;
-            width: 100% !important;
-            max-width: 100% !important;
-          }
+              .invoice-paper-card {
+                box-shadow: none !important;
+                border: none !important;
+                padding: 0 !important;
+                margin: 0 !important;
+                width: 100% !important;
+                max-width: 100% !important;
+              }
 
-          .invoice-avoid-break {
-            break-inside: avoid !important;
-            page-break-inside: avoid !important;
-          }
-        }
-      `}</style>
+              .invoice-avoid-break {
+                break-inside: avoid !important;
+                page-break-inside: avoid !important;
+              }
+            }
+          `,
+        }}
+      />
 
       {/* ── Top Bar / Header Controls (No-Print) ── */}
       <div className="no-print bg-white p-5 md:p-6 rounded-2xl border border-gray-200/80 shadow-2xs flex flex-col lg:flex-row lg:items-center justify-between gap-4">

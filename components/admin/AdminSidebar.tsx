@@ -52,9 +52,11 @@ const navItems = [
 export default function AdminSidebar({
   collapsed,
   setCollapsed,
+  onItemClick,
 }: {
   collapsed: boolean;
   setCollapsed: (v: boolean) => void;
+  onItemClick?: () => void;
 }) {
   const pathname = usePathname();
   const orders = useAdminStore((s) => s.orders);
@@ -154,6 +156,7 @@ export default function AdminSidebar({
             <Link
               key={item.name}
               href={item.href}
+              onClick={() => onItemClick?.()}
               className={`flex items-center gap-3 px-3 py-2.5 rounded-xl text-xs font-bold transition-all group relative ${
                 isActive
                   ? "bg-[#F26522] text-white shadow-sm"

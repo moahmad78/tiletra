@@ -72,7 +72,11 @@ export default function AdminLayout({
             onClick={() => setMobileOpen(false)}
           />
           <div className="relative z-50 w-[260px] h-full animate-in slide-in-from-left duration-200">
-            <AdminSidebar collapsed={false} setCollapsed={() => setMobileOpen(false)} />
+            <AdminSidebar
+              collapsed={false}
+              setCollapsed={() => setMobileOpen(false)}
+              onItemClick={() => setMobileOpen(false)}
+            />
           </div>
         </div>
       )}

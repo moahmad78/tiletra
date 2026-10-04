@@ -87,63 +87,67 @@ export default function InvoiceModal({
 
   return (
     <div className="invoice-print-backdrop fixed inset-0 z-50 flex items-center justify-center p-4 sm:p-6 md:p-10 bg-black/60 backdrop-blur-xs">
-      <style jsx global>{`
-        @media print {
-          @page {
-            size: A4 portrait;
-            margin: 10mm;
-          }
+      <style
+        dangerouslySetInnerHTML={{
+          __html: `
+            @media print {
+              @page {
+                size: A4 portrait;
+                margin: 10mm;
+              }
 
-          html, body {
-            margin: 0 !important;
-            padding: 0 !important;
-            background: #ffffff !important;
-            color: #0f172a !important;
-            font-size: 11px !important;
-            -webkit-print-color-adjust: exact !important;
-            print-color-adjust: exact !important;
-          }
+              html, body {
+                margin: 0 !important;
+                padding: 0 !important;
+                background: #ffffff !important;
+                color: #0f172a !important;
+                font-size: 11px !important;
+                -webkit-print-color-adjust: exact !important;
+                print-color-adjust: exact !important;
+              }
 
-          header, footer, nav, aside, .no-print, [role="navigation"], [role="banner"], [role="complementary"] {
-            display: none !important;
-          }
+              header, footer, nav, aside, .no-print, [role="navigation"], [role="banner"], [role="complementary"] {
+                display: none !important;
+              }
 
-          .invoice-print-backdrop {
-            position: static !important;
-            display: block !important;
-            padding: 0 !important;
-            margin: 0 !important;
-            background: transparent !important;
-            box-shadow: none !important;
-            border: none !important;
-          }
+              .invoice-print-backdrop {
+                position: static !important;
+                display: block !important;
+                padding: 0 !important;
+                margin: 0 !important;
+                background: transparent !important;
+                box-shadow: none !important;
+                border: none !important;
+              }
 
-          .invoice-print-card {
-            position: static !important;
-            display: block !important;
-            width: 100% !important;
-            max-width: 100% !important;
-            border: none !important;
-            box-shadow: none !important;
-            padding: 0 !important;
-            margin: 0 !important;
-            background: #ffffff !important;
-          }
+              .invoice-print-card {
+                position: static !important;
+                display: block !important;
+                width: 100% !important;
+                max-width: 100% !important;
+                border: none !important;
+                box-shadow: none !important;
+                padding: 0 !important;
+                margin: 0 !important;
+                background: #ffffff !important;
+              }
 
-          .invoice-print-body {
-            position: static !important;
-            display: block !important;
-            width: 100% !important;
-            padding: 0 !important;
-            margin: 0 !important;
-          }
+              .invoice-print-body {
+                position: static !important;
+                display: block !important;
+                width: 100% !important;
+                padding: 0 !important;
+                margin: 0 !important;
+              }
 
-          .invoice-avoid-break {
-            break-inside: avoid !important;
-            page-break-inside: avoid !important;
-          }
-        }
-      `}</style>
+              .invoice-avoid-break {
+                break-inside: avoid !important;
+                page-break-inside: avoid !important;
+              }
+            }
+          `,
+        }}
+      />
 
       <div className="invoice-print-card bg-white w-full max-w-3xl rounded-3xl shadow-2xl border border-gray-100 flex flex-col max-h-[90vh] overflow-hidden animate-in fade-in zoom-in-95 duration-200">
         {/* Top Modal Controls (Hidden in Print) */}
