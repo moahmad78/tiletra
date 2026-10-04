@@ -331,6 +331,11 @@ export default function Header() {
                   {t("nav.exploreSupplies")}
                 </Button>
               </Link>
+
+              {/* Mobile Drawer Language Selector */}
+              <div className="pt-3 mt-1 border-t border-gray-100 flex items-center justify-between">
+                <LanguageSelector variant="footer" />
+              </div>
             </div>
           </div>
         )}
