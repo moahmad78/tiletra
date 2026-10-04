@@ -29,24 +29,63 @@ export function setGoogleTranslateLanguage(lang: SupportedLanguage) {
     if (rootDomain !== hostname) {
       document.cookie = `googtrans=; expires=Thu, 01 Jan 1970 00:00:00 UTC; domain=${rootDomain}; path=/;`;
     }
-  } else {
-    // Set translation cookie e.g. /en/hi or /en/kn
-    const cookieVal = `/en/${lang}`;
-    document.cookie = `googtrans=${cookieVal}; path=/;`;
-    document.cookie = `googtrans=${cookieVal}; domain=${hostname}; path=/;`;
-    if (rootDomain !== hostname) {
-      document.cookie = `googtrans=${cookieVal}; domain=${rootDomain}; path=/;`;
+
+    const combo = document.querySelector<HTMLSelectElement>("select.goog-te-combo");
+    if (combo) {
+      combo.value = "";
+      combo.dispatchEvent(new Event("change", { bubbles: true }));
     }
+
+    // A clean reload is required for Google Translate to restore original English DOM nodes
+    setTimeout(() => {
+      window.location.reload();
+    }, 120);
+    return;
   }
 
-  // 3. Trigger Google Translate combo dropdown if already mounted in DOM
-  const combo = document.querySelector<HTMLSelectElement>("select.goog-te-combo");
-  if (combo) {
+  // Non-English (Hindi or Kannada)
+  const cookieVal = `/en/${lang}`;
+  document.cookie = `googtrans=${cookieVal}; path=/;`;
+  document.cookie = `googtrans=${cookieVal}; domain=${hostname}; path=/;`;
+  if (rootDomain !== hostname) {
+    document.cookie = `googtrans=${cookieVal}; domain=${rootDomain}; path=/;`;
+  }
+
+  // 3. Trigger Google Translate combo dropdown in DOM
+  const triggerCombo = (): boolean => {
+    const combo = document.querySelector<HTMLSelectElement>("select.goog-te-combo");
+    if (!combo) return false;
+
     combo.value = lang;
     combo.dispatchEvent(new Event("change", { bubbles: true }));
+    combo.dispatchEvent(new Event("input", { bubbles: true }));
+
+    try {
+      const evt = document.createEvent("HTMLEvents");
+      evt.initEvent("change", true, true);
+      combo.dispatchEvent(evt);
+    } catch {}
+
+    return true;
+  };
+
+  const triggered = triggerCombo();
+
+  // If combo was triggered, verify if translation took effect within 250ms. If not, auto-reload cleanly!
+  if (triggered) {
+    setTimeout(() => {
+      const isTranslated =
+        document.documentElement.classList.contains("translated-ltr") ||
+        document.documentElement.classList.contains("translated-rtl");
+      if (!isTranslated) {
+        window.location.reload();
+      }
+    }, 250);
   } else {
-    // If the widget is not yet initialized or for full English reset, reload cleanly
-    window.location.reload();
+    // If widget combo wasn't mounted in DOM yet, reload with newly set cookie
+    setTimeout(() => {
+      window.location.reload();
+    }, 120);
   }
 }
 

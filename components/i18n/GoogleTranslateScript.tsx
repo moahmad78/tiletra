@@ -96,14 +96,16 @@ export default function GoogleTranslateScript() {
       <div
         id="google_translate_element"
         style={{
-          display: "none",
+          display: "block",
           position: "fixed",
           top: "-9999px",
           left: "-9999px",
-          width: 0,
-          height: 0,
-          opacity: 0,
+          width: "1px",
+          height: "1px",
+          overflow: "hidden",
+          opacity: 0.01,
           pointerEvents: "none",
+          zIndex: -9999,
         }}
         aria-hidden="true"
       />

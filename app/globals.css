@@ -178,8 +178,6 @@ body {
 #goog-gt-tt,
 .goog-te-balloon-frame,
 .goog-te-menu-frame,
-.goog-te-gadget,
-.goog-te-gadget-simple,
 .VIpgJd-ZVi9od-ORHb-OEVmcd,
 .VIpgJd-ZVi9od-xl07Ob-OEVmcd,
 .VIpgJd-ZVi9od-SmfZ-OEVmcd,
@@ -187,7 +185,6 @@ body {
 .VIpgJd-ZVi9od-aZ2wEe-wOHMyf,
 .VIpgJd-ZVi9od-l9xktf,
 .VIpgJd-yAWNEb-L7lbkb,
-#google_translate_element,
 iframe[class*="VIpgJd"],
 iframe[id*=":"] {
   display: none !important;
@@ -202,6 +199,23 @@ iframe[id*=":"] {
   margin: 0 !important;
   padding: 0 !important;
   border: none !important;
+}
+
+/* Keep Google Translate container active for JS events but invisibly offscreen */
+#google_translate_element,
+.goog-te-gadget,
+.goog-te-gadget-simple {
+  position: fixed !important;
+  top: -9999px !important;
+  left: -9999px !important;
+  width: 1px !important;
+  height: 1px !important;
+  overflow: hidden !important;
+  opacity: 0.01 !important;
+  pointer-events: none !important;
+  z-index: -9999 !important;
+  display: block !important;
+  visibility: visible !important;
 }
 
 html {
