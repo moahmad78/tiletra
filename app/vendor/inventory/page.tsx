@@ -1,13 +1,13 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { useVendorAuth } from "@/lib/vendor-auth";
+import { useEffectiveVendor } from "@/hooks/useEffectiveVendor";
 import { getVendorProducts } from "@/lib/actions/vendor";
 import type { Product } from "@/lib/data/products";
 import { Boxes, AlertTriangle, CheckCircle2, Search } from "lucide-react";
 
 export default function VendorInventoryPage() {
-  const { vendor } = useVendorAuth();
+  const { vendor } = useEffectiveVendor();
   const [products, setProducts] = useState<Product[]>([]);
   const [search, setSearch] = useState("");
 

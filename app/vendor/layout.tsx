@@ -4,7 +4,8 @@ import { useState, useEffect } from "react";
 import { usePathname, useRouter } from "next/navigation";
 import VendorSidebar from "@/components/vendor/VendorSidebar";
 import VendorHeader from "@/components/vendor/VendorHeader";
-import { useVendorAuth } from "@/lib/vendor-auth";
+import { useEffectiveVendor } from "@/hooks/useEffectiveVendor";
+import VendorWorkspaceBanner from "@/components/admin/VendorWorkspaceBanner";
 import { AlertCircle, Clock, AlertTriangle, Loader2 } from "lucide-react";
 
 export default function VendorLayout({
@@ -14,7 +15,7 @@ export default function VendorLayout({
 }) {
   const pathname = usePathname();
   const router = useRouter();
-  const { isAuthenticated, vendor } = useVendorAuth();
+  const { isAuthenticated, vendor, isWorkspace, loading } = useEffectiveVendor();
   const [collapsed, setCollapsed] = useState(false);
   const [mobileOpen, setMobileOpen] = useState(false);
   const [mounted, setMounted] = useState(false);
@@ -23,12 +24,21 @@ export default function VendorLayout({
 
   useEffect(() => {
     setMounted(true);
-    if (!isAuthenticated && !isAuthPage) {
+    if (!loading && !isAuthenticated && !isAuthPage) {
       router.push("/vendor/login");
     }
-  }, [isAuthenticated, isAuthPage, router]);
+  }, [isAuthenticated, isAuthPage, router, loading]);
 
-  if (!mounted) return null;
+  if (!mounted || loading) {
+    return (
+      <div className="min-h-screen bg-[#052a51] flex items-center justify-center p-4">
+        <div className="flex flex-col items-center gap-3 text-white">
+          <Loader2 className="animate-spin text-[#F26522]" size={32} />
+          <p className="text-sm font-bold">Loading Store Workspace...</p>
+        </div>
+      </div>
+    );
+  }
 
   if (isAuthPage) {
     return <div className="min-h-screen bg-[#F3F4F5]">{children}</div>;
@@ -149,36 +159,41 @@ export default function VendorLayout({
   }
 
   return (
-    <div className="min-h-screen bg-[#F3F4F5] flex">
-      {/* Desktop Sidebar */}
-      <div className="hidden md:block">
-        <VendorSidebar collapsed={collapsed} setCollapsed={setCollapsed} />
-      </div>
+    <div className={`min-h-screen bg-[#F3F4F5] flex flex-col ${isWorkspace ? "border-t-4 border-orange-500 ring-4 ring-orange-500/20" : ""}`}>
+      {/* Persistent Admin Workspace Banner */}
+      <VendorWorkspaceBanner />
 
-      {/* Mobile Drawer Sidebar */}
-      {mobileOpen && (
-        <div className="md:hidden fixed inset-0 z-50 flex">
-          <div
-            className="fixed inset-0 bg-black/60 backdrop-blur-xs transition-opacity"
-            onClick={() => setMobileOpen(false)}
-          />
-          <div className="relative z-50 w-[260px] h-full animate-in slide-in-from-left duration-200">
-            <VendorSidebar collapsed={false} setCollapsed={() => setMobileOpen(false)} />
-          </div>
+      <div className="flex-1 flex">
+        {/* Desktop Sidebar */}
+        <div className="hidden md:block">
+          <VendorSidebar collapsed={collapsed} setCollapsed={setCollapsed} />
         </div>
-      )}
 
-      {/* Main Content Area */}
-      <div
-        className={`flex-1 flex flex-col min-w-0 transition-all duration-300 ${
-          collapsed ? "md:ml-[72px]" : "md:ml-[260px]"
-        }`}
-      >
-        <VendorHeader onMobileMenuToggle={() => setMobileOpen(true)} />
+        {/* Mobile Drawer Sidebar */}
+        {mobileOpen && (
+          <div className="md:hidden fixed inset-0 z-50 flex">
+            <div
+              className="fixed inset-0 bg-black/60 backdrop-blur-xs transition-opacity"
+              onClick={() => setMobileOpen(false)}
+            />
+            <div className="relative z-50 w-[260px] h-full animate-in slide-in-from-left duration-200">
+              <VendorSidebar collapsed={false} setCollapsed={() => setMobileOpen(false)} />
+            </div>
+          </div>
+        )}
 
-        <main className="flex-1 p-4 md:p-8 max-w-[1600px] w-full mx-auto">
-          {children}
-        </main>
+        {/* Main Content Area */}
+        <div
+          className={`flex-1 flex flex-col min-w-0 transition-all duration-300 ${
+            collapsed ? "md:ml-[72px]" : "md:ml-[260px]"
+          }`}
+        >
+          <VendorHeader onMobileMenuToggle={() => setMobileOpen(true)} />
+
+          <main className="flex-1 p-4 md:p-8 max-w-[1600px] w-full mx-auto">
+            {children}
+          </main>
+        </div>
       </div>
     </div>
   );

@@ -23,7 +23,7 @@ import {
   Printer,
   Zap,
 } from "lucide-react";
-import { useVendorAuth } from "@/lib/vendor-auth";
+import { useEffectiveVendor } from "@/hooks/useEffectiveVendor";
 import {
   getVendorOrders,
   updateVendorFulfillmentStatus,
@@ -37,7 +37,7 @@ import { formatPrice } from "@/lib/formatters";
 import { toast } from "sonner";
 
 export default function VendorOrdersPage() {
-  const { vendor } = useVendorAuth();
+  const { vendor } = useEffectiveVendor();
   const [orders, setOrders] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [statusFilter, setStatusFilter] = useState<string>("all");

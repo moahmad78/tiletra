@@ -13,14 +13,15 @@ import {
   Building,
   AlertCircle,
   ExternalLink,
+  Lock,
 } from "lucide-react";
-import { useVendorAuth } from "@/lib/vendor-auth";
+import { useEffectiveVendor } from "@/hooks/useEffectiveVendor";
 import { getVendorProfile, getVendorDashboardStats } from "@/lib/actions/vendor";
 import { getVendorPayoutSummary } from "@/lib/actions/payouts";
 import { formatPrice } from "@/lib/formatters";
 
 export default function VendorPayoutsPage() {
-  const { vendor } = useVendorAuth();
+  const { vendor, isWorkspace } = useEffectiveVendor();
   const [profile, setProfile] = useState<any | null>(null);
   const [stats, setStats] = useState<any | null>(null);
   const [payoutSummary, setPayoutSummary] = useState<any | null>(null);
@@ -43,6 +44,22 @@ export default function VendorPayoutsPage() {
 
   return (
     <div className="space-y-6 max-w-6xl mx-auto pb-12">
+      {isWorkspace && (
+        <div className="p-4 rounded-2xl bg-amber-50 border-2 border-amber-300 text-amber-950 flex items-start gap-3.5 shadow-xs">
+          <div className="w-10 h-10 rounded-xl bg-amber-200 text-amber-900 flex items-center justify-center shrink-0">
+            <Lock size={20} className="text-amber-800" />
+          </div>
+          <div className="space-y-0.5">
+            <h3 className="font-extrabold text-sm flex items-center gap-1.5">
+              Financial Actions Blocked in Admin Workspace Mode (403)
+            </h3>
+            <p className="text-xs text-amber-800">
+              Bank account modifications, manual payout requests, and financial withdrawals cannot be performed on behalf of the vendor.
+            </p>
+          </div>
+        </div>
+      )}
+
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
           <h1 className="text-xl md:text-2xl font-black text-gray-900 tracking-tight">
@@ -53,12 +70,18 @@ export default function VendorPayoutsPage() {
           </p>
         </div>
 
-        <Link
-          href="/vendor/settings"
-          className="inline-flex items-center gap-1.5 px-4 py-2 bg-emerald-50 hover:bg-emerald-100 text-emerald-800 text-xs font-bold rounded-xl border border-emerald-200 transition-colors self-start sm:self-auto"
-        >
-          <Landmark size={14} /> Update Bank Details
-        </Link>
+        {isWorkspace ? (
+          <span className="inline-flex items-center gap-1.5 px-4 py-2 bg-gray-100 text-gray-500 text-xs font-bold rounded-xl border border-gray-200 self-start sm:self-auto cursor-not-allowed">
+            <Lock size={14} /> Bank Updates Blocked
+          </span>
+        ) : (
+          <Link
+            href="/vendor/settings?tab=bank"
+            className="inline-flex items-center gap-1.5 px-4 py-2 bg-emerald-50 hover:bg-emerald-100 text-emerald-800 text-xs font-bold rounded-xl border border-emerald-200 transition-colors self-start sm:self-auto"
+          >
+            <Landmark size={14} /> Update Bank Details
+          </Link>
+        )}
       </div>
 
       {/* Top 3 Stat Cards */}

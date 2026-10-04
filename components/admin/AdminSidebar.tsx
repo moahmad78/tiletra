@@ -24,6 +24,7 @@ import {
   Headphones,
   BookOpen,
   FileText,
+  Activity,
 } from "lucide-react";
 import { useAdminStore } from "@/lib/admin-store";
 import { useState, useCallback } from "react";
@@ -46,6 +47,7 @@ const navItems = [
   { name: "Coupons", href: "/admin/coupons", icon: Tag },
   { name: "Guides & Blog", href: "/admin/guides", icon: BookOpen },
   { name: "Homepage CMS", href: "/admin/content", icon: Palette },
+  { name: "Workspace Activity", href: "/admin/workspace-activity", icon: Activity },
   { name: "Settings", href: "/admin/settings", icon: Settings },
 ];
 

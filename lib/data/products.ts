@@ -99,6 +99,8 @@ export type Product = {
   status?: "active" | "paused" | "draft" | "archived" | "discontinued" | "out_of_stock";
   approvalStatus?: "pending" | "approved" | "rejected";
   rejectionReason?: string | null;
+  createdByAdminId?: string | null;
+  updatedByAdminId?: string | null;
   coverageRate?: number | null;
   piecesPerBox?: number | null;
   wastageFactor?: number | null;

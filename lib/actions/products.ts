@@ -75,6 +75,8 @@ export type CreateProductInput = {
   coverageRate?: number | null;
   piecesPerBox?: number | null;
   wastageFactor?: number | null;
+  createdByAdminId?: string | null;
+  updatedByAdminId?: string | null;
 };
 
 import { products as defaultProducts } from "@/lib/data/products";
@@ -443,6 +445,26 @@ export async function searchProducts(query: string): Promise<Product[]> {
 
 export async function createProduct(input: CreateProductInput) {
   try {
+    // Resolve vendor workspace context if present
+    let workspaceContext: any = null;
+    try {
+      const { resolveVendorContext } = await import("@/lib/vendor-workspace-auth");
+      workspaceContext = await resolveVendorContext();
+      if (workspaceContext && (workspaceContext.actor.type === "ADMIN" || workspaceContext.actor.type === "CPO")) {
+        input.vendorId = workspaceContext.vendorId;
+        if (workspaceContext.actor.type === "ADMIN") {
+          input.createdByAdminId = workspaceContext.actor.adminId;
+          input.updatedByAdminId = workspaceContext.actor.adminId;
+        } else if (workspaceContext.actor.type === "CPO") {
+          (input as any).createdByCpoId = workspaceContext.actor.cpoId;
+          (input as any).updatedByCpoId = workspaceContext.actor.cpoId;
+        }
+        input.approvalStatus = "approved";
+      }
+    } catch {
+      // outside web request context
+    }
+
     const slug =
       input.name
         .toLowerCase()
@@ -529,6 +551,11 @@ export async function createProduct(input: CreateProductInput) {
         coverageRate: input.coverageRate !== undefined && input.coverageRate !== null ? Number(input.coverageRate) : (primaryVariant.sqftPerBox ? Number(primaryVariant.sqftPerBox) : null),
         piecesPerBox: input.piecesPerBox !== undefined && input.piecesPerBox !== null ? Number(input.piecesPerBox) : (primaryVariant.piecesPerBox ? Number(primaryVariant.piecesPerBox) : null),
         wastageFactor: input.wastageFactor !== undefined && input.wastageFactor !== null ? Number(input.wastageFactor) : 1.1,
+        createdByAdminId: input.createdByAdminId || null,
+        updatedByAdminId: input.updatedByAdminId || null,
+        createdByCpoId: (input as any).createdByCpoId || null,
+        updatedByCpoId: (input as any).updatedByCpoId || null,
+        actorRole: (input as any).actorRole || (input.createdByAdminId ? "ADMIN" : (input as any).createdByCpoId ? "CPO" : null),
         variants: {
           create: (input.variants && input.variants.length > 0 ? input.variants : [primaryVariant]).map((v: any) => ({
             sku: v.sku || null,
@@ -589,6 +616,32 @@ export async function createProduct(input: CreateProductInput) {
     safeRevalidate("/vendor/products");
     safeRevalidate("/");
 
+    if (workspaceContext && workspaceContext.actor.type === "ADMIN") {
+      try {
+        const { logAdminAuditAction } = await import("@/lib/vendor-workspace-auth");
+        const { notifyVendorOfAdminChanges } = await import("@/lib/notifications/vendor-workspace-notify");
+        await logAdminAuditAction({
+          sessionId: workspaceContext.sessionId,
+          adminId: workspaceContext.actor.adminId!,
+          vendorId: workspaceContext.vendorId,
+          action: "ITEM_CREATED",
+          entity: "Product",
+          entityId: newProduct.id,
+          after: {
+            name: newProduct.name,
+            categorySlug: newProduct.categorySlug,
+            pricePerBox: primaryVariant.pricePerBox,
+          },
+        });
+        await notifyVendorOfAdminChanges(
+          workspaceContext.vendorId,
+          `IntriHub admin added a new product "${newProduct.name}" to your store.`
+        );
+      } catch (auditErr) {
+        console.error("Workspace audit error:", auditErr);
+      }
+    }
+
     return { success: true, product: formatProduct(newProduct) };
   } catch (error: any) {
     console.error("Error creating product:", error);
@@ -600,6 +653,14 @@ export async function createProductsBulk(inputs: CreateProductInput[]) {
   try {
     if (!inputs || inputs.length === 0) {
       return { success: false, error: "No products provided for bulk creation" };
+    }
+
+    let workspaceContext: any = null;
+    try {
+      const { resolveVendorContext } = await import("@/lib/vendor-workspace-auth");
+      workspaceContext = await resolveVendorContext();
+    } catch {
+      // outside web context
     }
 
     const createdList: any[] = [];
@@ -662,9 +723,14 @@ export async function createProductsBulk(inputs: CreateProductInput[]) {
             rating: 0,
             reviewCount: 0,
             specs: input.specs || null,
-            vendorId: input.vendorId || null,
+            vendorId: workspaceContext && (workspaceContext.actor.type === "ADMIN" || workspaceContext.actor.type === "CPO") ? workspaceContext.vendorId : (input.vendorId || null),
+            createdByAdminId: workspaceContext && workspaceContext.actor.type === "ADMIN" ? workspaceContext.actor.adminId : (input.createdByAdminId || null),
+            updatedByAdminId: workspaceContext && workspaceContext.actor.type === "ADMIN" ? workspaceContext.actor.adminId : (input.updatedByAdminId || null),
+            createdByCpoId: workspaceContext && workspaceContext.actor.type === "CPO" ? workspaceContext.actor.cpoId : null,
+            updatedByCpoId: workspaceContext && workspaceContext.actor.type === "CPO" ? workspaceContext.actor.cpoId : null,
+            actorRole: workspaceContext?.actor?.type || null,
             status: input.status || "active",
-            approvalStatus: input.approvalStatus || (input.vendorId ? "pending" : "approved"),
+            approvalStatus: workspaceContext && (workspaceContext.actor.type === "ADMIN" || workspaceContext.actor.type === "CPO") ? "approved" : (input.approvalStatus || (input.vendorId ? "pending" : "approved")),
             variants: {
               create: input.variants && input.variants.length > 0 ? input.variants.map((v) => ({
                 sku: v.sku || null,
@@ -723,6 +789,27 @@ export async function createProductsBulk(inputs: CreateProductInput[]) {
     safeRevalidate("/vendor/products");
     safeRevalidate("/");
 
+    if (workspaceContext && workspaceContext.actor.type === "ADMIN" && createdList.length > 0) {
+      try {
+        const { logAdminAuditAction } = await import("@/lib/vendor-workspace-auth");
+        const { notifyVendorOfAdminChanges } = await import("@/lib/notifications/vendor-workspace-notify");
+        await logAdminAuditAction({
+          sessionId: workspaceContext.sessionId,
+          adminId: workspaceContext.actor.adminId!,
+          vendorId: workspaceContext.vendorId,
+          action: "ITEM_BULK_UPLOAD",
+          entity: "Product",
+          after: { count: createdList.length, totalRequested: inputs.length },
+        });
+        await notifyVendorOfAdminChanges(
+          workspaceContext.vendorId,
+          `IntriHub admin uploaded ${createdList.length} items to your store today.`
+        );
+      } catch (auditErr) {
+        console.error("Workspace bulk audit error:", auditErr);
+      }
+    }
+
     return {
       success: createdList.length > 0,
       count: createdList.length,
@@ -736,16 +823,33 @@ export async function createProductsBulk(inputs: CreateProductInput[]) {
   }
 }
 
+export async function bulkCreateProducts(inputs: CreateProductInput[]) {
+  return createProductsBulk(inputs);
+}
+
 export async function updateProduct(id: string, input: Partial<CreateProductInput>) {
   try {
     const existing = await prisma.product.findUnique({ where: { id } });
     if (!existing) return { success: false, error: "Product not found" };
 
+    let workspaceContext: any = null;
+    try {
+      const { resolveVendorContext } = await import("@/lib/vendor-workspace-auth");
+      workspaceContext = await resolveVendorContext();
+      if (workspaceContext && (workspaceContext.actor.type === "ADMIN" || workspaceContext.actor.type === "CPO")) {
+        if (existing.vendorId && existing.vendorId !== workspaceContext.vendorId) {
+          return { success: false, error: "Forbidden: You cannot modify products belonging to another vendor in this workspace." };
+        }
+      }
+    } catch {
+      // Outside request context
+    }
+
     if (process.env.NODE_ENV !== "test" && process.env.INTRIHUB_TEST_RUNNER !== "true") {
       try {
         const { checkIsAdmin, getAuthenticatedVendor } = await import("@/lib/server-auth");
         const isAdmin = await checkIsAdmin();
-        if (!isAdmin) {
+        if (!isAdmin && (!workspaceContext || (workspaceContext.actor.type !== "ADMIN" && workspaceContext.actor.type !== "CPO"))) {
           const session = await getAuthenticatedVendor();
           if (!session) {
             return { success: false, error: "Unauthorized. Please log in." };
@@ -760,6 +864,14 @@ export async function updateProduct(id: string, input: Partial<CreateProductInpu
     }
 
     const updateData: any = {};
+    if (workspaceContext && workspaceContext.actor.type === "ADMIN") {
+      updateData.updatedByAdminId = workspaceContext.actor.adminId;
+    } else if (workspaceContext && workspaceContext.actor.type === "CPO") {
+      updateData.updatedByCpoId = workspaceContext.actor.cpoId;
+      updateData.actorRole = "CPO";
+    } else if (input.updatedByAdminId) {
+      updateData.updatedByAdminId = input.updatedByAdminId;
+    }
     if (input.name) updateData.name = input.name;
     if (input.brand !== undefined) updateData.brand = input.brand;
     if (input.modelNumber !== undefined) updateData.modelNumber = input.modelNumber;
@@ -815,6 +927,7 @@ export async function updateProduct(id: string, input: Partial<CreateProductInpu
     if (input.coverageRate !== undefined) updateData.coverageRate = input.coverageRate !== null ? Number(input.coverageRate) : null;
     if (input.piecesPerBox !== undefined) updateData.piecesPerBox = input.piecesPerBox !== null ? Number(input.piecesPerBox) : null;
     if (input.wastageFactor !== undefined) updateData.wastageFactor = input.wastageFactor !== null ? Number(input.wastageFactor) : 1.1;
+    if (input.updatedByAdminId !== undefined) updateData.updatedByAdminId = input.updatedByAdminId;
 
     if (input.variants && input.variants.length > 0) {
       await prisma.productVariant.deleteMany({ where: { productId: id } });
@@ -898,6 +1011,29 @@ export async function updateProduct(id: string, input: Partial<CreateProductInpu
     safeRevalidate("/vendor/products");
     safeRevalidate("/");
 
+    if (workspaceContext && workspaceContext.actor.type === "ADMIN") {
+      try {
+        const { logAdminAuditAction } = await import("@/lib/vendor-workspace-auth");
+        const { notifyVendorOfAdminChanges } = await import("@/lib/notifications/vendor-workspace-notify");
+        await logAdminAuditAction({
+          sessionId: workspaceContext.sessionId,
+          adminId: workspaceContext.actor.adminId!,
+          vendorId: workspaceContext.vendorId,
+          action: "ITEM_UPDATED",
+          entity: "Product",
+          entityId: updated.id,
+          before: { name: existing.name, status: existing.status, pricePerBox: (existing as any).variants?.[0]?.pricePerBox },
+          after: { name: updated.name, status: updated.status, pricePerBox: (updated as any).variants?.[0]?.pricePerBox },
+        });
+        await notifyVendorOfAdminChanges(
+          workspaceContext.vendorId,
+          `IntriHub admin updated product "${updated.name}" in your store.`
+        );
+      } catch (auditErr) {
+        console.error("Workspace update audit error:", auditErr);
+      }
+    }
+
     return { success: true, product: formatProduct(updated) };
   } catch (error: any) {
     console.error("Error updating product:", error);
@@ -910,11 +1046,24 @@ export async function deleteProduct(id: string, options?: { hardDelete?: boolean
     const existing = await prisma.product.findUnique({ where: { id } });
     if (!existing) return { success: false, error: "Product not found" };
 
+    let workspaceContext: any = null;
+    try {
+      const { resolveVendorContext } = await import("@/lib/vendor-workspace-auth");
+      workspaceContext = await resolveVendorContext();
+      if (workspaceContext && (workspaceContext.actor.type === "ADMIN" || workspaceContext.actor.type === "CPO")) {
+        if (existing.vendorId && existing.vendorId !== workspaceContext.vendorId) {
+          return { success: false, error: "Forbidden: You cannot delete products belonging to another vendor in this workspace." };
+        }
+      }
+    } catch {
+      // Outside request context
+    }
+
     if (process.env.NODE_ENV !== "test" && process.env.INTRIHUB_TEST_RUNNER !== "true") {
       try {
         const { checkIsAdmin, getAuthenticatedVendor } = await import("@/lib/server-auth");
         const isAdmin = await checkIsAdmin();
-        if (!isAdmin) {
+        if (!isAdmin && (!workspaceContext || (workspaceContext.actor.type !== "ADMIN" && workspaceContext.actor.type !== "CPO"))) {
           const session = await getAuthenticatedVendor();
           if (!session) {
             return { success: false, error: "Unauthorized. Please log in." };
@@ -952,6 +1101,28 @@ export async function deleteProduct(id: string, options?: { hardDelete?: boolean
     safeRevalidate("/admin/products");
     safeRevalidate("/vendor/products");
     safeRevalidate("/");
+
+    if (workspaceContext && workspaceContext.actor.type === "ADMIN") {
+      try {
+        const { logAdminAuditAction } = await import("@/lib/vendor-workspace-auth");
+        const { notifyVendorOfAdminChanges } = await import("@/lib/notifications/vendor-workspace-notify");
+        await logAdminAuditAction({
+          sessionId: workspaceContext.sessionId,
+          adminId: workspaceContext.actor.adminId!,
+          vendorId: workspaceContext.vendorId,
+          action: "ITEM_DELETED",
+          entity: "Product",
+          entityId: existing.id,
+          before: { name: existing.name, slug: existing.slug },
+        });
+        await notifyVendorOfAdminChanges(
+          workspaceContext.vendorId,
+          `IntriHub admin removed product "${existing.name}" from your store.`
+        );
+      } catch (auditErr) {
+        console.error("Workspace delete audit error:", auditErr);
+      }
+    }
 
     return { success: true };
   } catch (error: any) {

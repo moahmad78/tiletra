@@ -299,10 +299,18 @@ export default function VendorLoginPage() {
     try {
       const res = await verifyVendorWebOtp(email.trim().toLowerCase(), fullOtp);
 
-      if (res.success && res.vendor) {
-        toast.success("Welcome to your Vendor Panel!");
-        setVendor(res.vendor);
-        router.push("/vendor");
+      if (res.success) {
+        if ((res as any).redirectTo === "/cpo" || (res as any).role === "cpo") {
+          toast.success("Welcome back, Chief Product Officer!");
+          router.push("/cpo");
+          return;
+        }
+        if (res.vendor) {
+          toast.success("Welcome to your Vendor Panel!");
+          setVendor(res.vendor);
+          router.push("/vendor");
+          return;
+        }
       } else {
         if (res.locked) {
           setIsLockedOut(true);

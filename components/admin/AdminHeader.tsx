@@ -27,6 +27,9 @@ import {
   markAdminNotificationAsRead,
   markAllAdminNotificationsAsRead,
 } from "@/lib/actions/notifications";
+import VendorWorkspaceSwitcher from "@/components/admin/VendorWorkspaceSwitcher";
+import VendorWorkspaceModal from "@/components/admin/VendorWorkspaceModal";
+import { getAdminVendors } from "@/lib/actions/admin-vendor";
 
 export default function AdminHeader({
   onMobileMenuToggle,
@@ -41,6 +44,23 @@ export default function AdminHeader({
   const [notificationsOpen, setNotificationsOpen] = useState(false);
   const [notifications, setNotifications] = useState<any[]>([]);
   const [unreadCount, setUnreadCount] = useState(0);
+
+  // Vendor Workspace Modal State
+  const [workspaceModalOpen, setWorkspaceModalOpen] = useState(false);
+  const [vendorsList, setVendorsList] = useState<any[]>([]);
+
+  const handleOpenWorkspaceModal = async () => {
+    try {
+      if (vendorsList.length === 0) {
+        const vList = await getAdminVendors();
+        setVendorsList(vList || []);
+      }
+      setWorkspaceModalOpen(true);
+    } catch (e) {
+      console.error("Failed to load vendors for workspace:", e);
+      setWorkspaceModalOpen(true);
+    }
+  };
 
   // Fetch real database notifications
   const fetchNotifications = useCallback(async () => {
@@ -170,6 +190,9 @@ export default function AdminHeader({
 
       {/* Right Actions */}
       <div className="flex items-center gap-2 sm:gap-3">
+        {/* Vendor Workspace Switcher */}
+        <VendorWorkspaceSwitcher onOpenNewWorkspace={handleOpenWorkspaceModal} />
+
         {/* Language Selector */}
         <LanguageSelector variant="navbar" />
 
@@ -357,6 +380,15 @@ export default function AdminHeader({
           )}
         </div>
       </div>
+
+      {/* Vendor Workspace Step-Up Modal */}
+      {workspaceModalOpen && (
+        <VendorWorkspaceModal
+          isOpen={workspaceModalOpen}
+          onClose={() => setWorkspaceModalOpen(false)}
+          vendors={vendorsList}
+        />
+      )}
     </header>
   );
 }

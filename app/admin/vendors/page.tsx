@@ -44,6 +44,7 @@ import {
 } from "lucide-react";
 import { toast } from "sonner";
 import { generateNotificationMessage, buildWhatsAppShareUrl } from "@/lib/notifications/whatsapp-templates";
+import VendorWorkspaceModal from "@/components/admin/VendorWorkspaceModal";
 
 const CATEGORIES = [
   "Tiles & Natural Stone",
@@ -98,6 +99,17 @@ export default function AdminVendorsPage() {
     commissionRate: number;
   } | null>(null);
   const [copied, setCopied] = useState(false);
+
+  // Vendor Workspace Modal State
+  const [workspaceModalOpen, setWorkspaceModalOpen] = useState(false);
+  const [workspaceTargetVendor, setWorkspaceTargetVendor] = useState<any | null>(null);
+  const [workspaceDirectTo, setWorkspaceDirectTo] = useState<string | undefined>(undefined);
+
+  const handleOpenWorkspace = (vendor: any, directTo?: string) => {
+    setWorkspaceTargetVendor(vendor);
+    setWorkspaceDirectTo(directTo);
+    setWorkspaceModalOpen(true);
+  };
 
   const loadVendors = async () => {
     try {
@@ -549,7 +561,21 @@ export default function AdminVendorsPage() {
 
                       {/* Actions */}
                       <td className="py-3.5 px-4 text-right">
-                        <div className="flex items-center justify-end gap-1.5">
+                        <div className="flex items-center justify-end gap-1.5 flex-wrap">
+                          <button
+                            onClick={() => handleOpenWorkspace(v)}
+                            className="px-2.5 py-1.5 rounded-xl bg-amber-50 hover:bg-amber-100 text-amber-900 text-xs font-bold transition-colors flex items-center gap-1 border border-amber-200/80 cursor-pointer"
+                            title="Open Vendor Workspace (Work on vendor's behalf with step-up verification)"
+                          >
+                            <ShieldCheck size={13} className="text-amber-600" /> Workspace
+                          </button>
+                          <button
+                            onClick={() => handleOpenWorkspace(v, "products/new")}
+                            className="px-2 py-1.5 rounded-xl bg-emerald-50 hover:bg-emerald-100 text-emerald-800 text-xs font-bold transition-colors flex items-center gap-1 border border-emerald-200/80 cursor-pointer"
+                            title="Direct Shortcut: Open workspace straight to Add Item form"
+                          >
+                            <PlusCircle size={13} className="text-emerald-600" /> Add Item
+                          </button>
                           <Link
                             href={`/admin/vendors/${v.id}`}
                             className="px-2.5 py-1.5 rounded-xl bg-blue-50 hover:bg-blue-100 text-[#052a51] text-xs font-bold transition-colors flex items-center gap-1"
@@ -562,13 +588,13 @@ export default function AdminVendorsPage() {
                               setSelectedVendor(v);
                               setCommissionInput(v.commissionRate || 15.0);
                             }}
-                            className="px-2.5 py-1.5 rounded-xl bg-gray-100 hover:bg-gray-200 text-gray-700 text-xs font-bold transition-colors"
+                            className="px-2.5 py-1.5 rounded-xl bg-gray-100 hover:bg-gray-200 text-gray-700 text-xs font-bold transition-colors cursor-pointer"
                           >
                             Inspect
                           </button>
                           <button
                             onClick={() => setVendorToDelete(v)}
-                            className="p-1.5 rounded-xl bg-red-50 hover:bg-red-100 text-red-600 transition-colors"
+                            className="p-1.5 rounded-xl bg-red-50 hover:bg-red-100 text-red-600 transition-colors cursor-pointer"
                             title="Delete Vendor"
                           >
                             <Trash2 size={14} />
@@ -964,6 +990,17 @@ export default function AdminVendorsPage() {
             {/* Action Buttons */}
             <div className="pt-4 border-t border-gray-100 flex flex-wrap items-center justify-between gap-2.5">
               <div className="flex items-center gap-2">
+                <button
+                  type="button"
+                  onClick={() => {
+                    const target = selectedVendor;
+                    setSelectedVendor(null);
+                    handleOpenWorkspace(target);
+                  }}
+                  className="px-3.5 py-2 bg-amber-500 hover:bg-amber-600 text-white rounded-xl text-xs font-black shadow-xs flex items-center gap-1.5 transition-colors cursor-pointer"
+                >
+                  <ShieldCheck size={14} /> Open Workspace
+                </button>
                 <Link
                   href={`/admin/vendors/${selectedVendor.id}`}
                   className="px-4 py-2 bg-blue-50 text-[#052a51] rounded-xl text-xs font-bold hover:bg-blue-100 flex items-center gap-1"
@@ -1096,6 +1133,21 @@ export default function AdminVendorsPage() {
             </div>
           </div>
         </div>
+      )}
+
+      {/* ── VENDOR WORKSPACE STEP-UP MODAL ── */}
+      {workspaceModalOpen && (
+        <VendorWorkspaceModal
+          isOpen={workspaceModalOpen}
+          onClose={() => {
+            setWorkspaceModalOpen(false);
+            setWorkspaceTargetVendor(null);
+            setWorkspaceDirectTo(undefined);
+          }}
+          vendors={vendors}
+          preSelectedVendor={workspaceTargetVendor}
+          directTo={workspaceDirectTo}
+        />
       )}
     </div>
   );

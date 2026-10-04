@@ -2,7 +2,8 @@
 
 import { useState, useEffect } from "react";
 import Link from "next/link";
-import { useVendorAuth } from "@/lib/vendor-auth";
+import { useEffectiveVendor } from "@/hooks/useEffectiveVendor";
+import AdminActivitySection from "@/components/vendor/AdminActivitySection";
 import {
   getVendorProducts,
   toggleVendorProductStatus,
@@ -33,11 +34,12 @@ import {
   Layers,
   X,
   Upload,
+  ShieldCheck,
 } from "lucide-react";
 import { toast } from "sonner";
 
 export default function VendorProductsPage() {
-  const { vendor } = useVendorAuth();
+  const { vendor } = useEffectiveVendor();
   const [products, setProducts] = useState<Product[]>([]);
   const [categories, setCategories] = useState<Category[]>([]);
   const [loading, setLoading] = useState(true);
@@ -355,6 +357,17 @@ export default function VendorProductsPage() {
                           <div className="min-w-0 max-w-[240px]">
                             <p className="font-bold text-gray-900 truncate">{p.name}</p>
                             <p className="text-[10px] text-gray-400 font-mono truncate">{p.slug}</p>
+                            {p.createdByAdminId ? (
+                              <span className="inline-flex items-center gap-1 mt-1 px-1.5 py-0.5 rounded-md text-[10px] font-bold bg-blue-50 text-blue-700 border border-blue-200">
+                                <ShieldCheck size={11} className="text-blue-600" />
+                                Added by IntriHub Admin
+                              </span>
+                            ) : p.updatedByAdminId ? (
+                              <span className="inline-flex items-center gap-1 mt-1 px-1.5 py-0.5 rounded-md text-[10px] font-bold bg-indigo-50 text-indigo-700 border border-indigo-200">
+                                <ShieldCheck size={11} className="text-indigo-600" />
+                                Edited by IntriHub Admin
+                              </span>
+                            ) : null}
                             {isRejected && p.rejectionReason && (
                               <div className="mt-1 p-1.5 rounded-lg bg-rose-50 border border-rose-200 text-rose-800 text-[10px] flex items-start gap-1">
                                 <AlertCircle size={12} className="shrink-0 mt-0.5" />
@@ -462,6 +475,9 @@ export default function VendorProductsPage() {
           </div>
         )}
       </div>
+
+      {/* Admin Transparency & Activity Section */}
+      {vendor?.id && <AdminActivitySection vendorId={vendor.id} />}
 
       {/* Edit Product Modal */}
       {editingProduct && (

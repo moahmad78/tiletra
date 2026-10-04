@@ -1,10 +1,10 @@
 "use client";
 
 import { MessageSquare, Star, ShieldCheck } from "lucide-react";
-import { useVendorAuth } from "@/lib/vendor-auth";
+import { useEffectiveVendor } from "@/hooks/useEffectiveVendor";
 
 export default function VendorReviewsPage() {
-  const { vendor } = useVendorAuth();
+  const { vendor } = useEffectiveVendor();
 
   return (
     <div className="space-y-6">

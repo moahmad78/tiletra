@@ -268,6 +268,8 @@ export function formatProduct(dbProduct: any): Product {
     status: dbProduct.status || "active",
     approvalStatus: dbProduct.approvalStatus || "approved",
     rejectionReason: dbProduct.rejectionReason || null,
+    createdByAdminId: dbProduct.createdByAdminId || null,
+    updatedByAdminId: dbProduct.updatedByAdminId || null,
     coverageRate: dbProduct.coverageRate !== undefined && dbProduct.coverageRate !== null ? Number(dbProduct.coverageRate) : null,
     piecesPerBox: dbProduct.piecesPerBox !== undefined && dbProduct.piecesPerBox !== null ? Number(dbProduct.piecesPerBox) : null,
     wastageFactor: dbProduct.wastageFactor !== undefined && dbProduct.wastageFactor !== null ? Number(dbProduct.wastageFactor) : 1.1,

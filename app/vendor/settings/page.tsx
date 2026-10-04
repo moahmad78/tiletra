@@ -3,6 +3,7 @@
 import { useState, useEffect } from "react";
 import { useSearchParams } from "next/navigation";
 import { useVendorAuth } from "@/lib/vendor-auth";
+import { useEffectiveVendor } from "@/hooks/useEffectiveVendor";
 import {
   getVendorProfile,
   updateVendorProfile,
@@ -47,11 +48,13 @@ import {
   RotateCcw,
   Save,
   Plus,
+  Lock,
 } from "lucide-react";
 import { toast } from "sonner";
 
 export default function VendorSettingsPage() {
-  const { vendor, setVendor } = useVendorAuth();
+  const { setVendor } = useVendorAuth();
+  const { vendor, isWorkspace } = useEffectiveVendor();
   const searchParams = useSearchParams();
   const initialTab = searchParams.get("tab") || "shop";
 
@@ -215,13 +218,16 @@ export default function VendorSettingsPage() {
 
     if (res.success && res.vendor) {
       toast.success("Shop information & storefront photo saved!");
-      setVendor({
-        ...vendor,
-        businessName: res.vendor.businessName,
-        contactEmail: res.vendor.contactEmail,
-        contactPhone: res.vendor.contactPhone,
-        category: (res.vendor as any).category,
-      });
+      if (vendor?.id && setVendor) {
+        setVendor({
+          ...(vendor as any),
+          id: vendor.id,
+          businessName: res.vendor.businessName,
+          contactEmail: res.vendor.contactEmail,
+          contactPhone: res.vendor.contactPhone,
+          category: (res.vendor as any).category,
+        });
+      }
     } else {
       toast.error(res.error || "Failed to update shop details");
     }
@@ -519,8 +525,13 @@ export default function VendorSettingsPage() {
               : "border-transparent text-gray-500 hover:text-gray-900"
           }`}
         >
-          <Landmark size={16} />
+          {isWorkspace ? <Lock size={15} className="text-amber-600" /> : <Landmark size={16} />}
           <span>Bank & Payouts</span>
+          {isWorkspace && (
+            <span className="text-[10px] font-black uppercase px-1.5 py-0.5 rounded bg-amber-100 text-amber-800 border border-amber-300">
+              Blocked
+            </span>
+          )}
         </button>
 
         <button
@@ -531,14 +542,28 @@ export default function VendorSettingsPage() {
               : "border-transparent text-gray-500 hover:text-gray-900"
           }`}
         >
-          <KeyRound size={16} />
+          {isWorkspace ? <Lock size={15} className="text-amber-600" /> : <KeyRound size={16} />}
           <span>Password & Security</span>
+          {isWorkspace && (
+            <span className="text-[10px] font-black uppercase px-1.5 py-0.5 rounded bg-amber-100 text-amber-800 border border-amber-300">
+              Blocked
+            </span>
+          )}
         </button>
       </div>
 
       {/* ── TAB 1: SHOP PROFILE & STOREFRONT PHOTOS ── */}
       {activeTab === "shop" && (
         <form onSubmit={handleShopSubmit} className="bg-white rounded-3xl p-6 sm:p-8 border border-gray-200/90 shadow-2xs space-y-6">
+          {isWorkspace && (
+            <div className="p-4 rounded-2xl bg-blue-50 border border-blue-200 text-blue-900 text-xs flex items-center gap-2.5">
+              <Info size={16} className="text-blue-600 shrink-0" />
+              <span>
+                <strong>View-Only in Admin Workspace:</strong> Storefront profile and contact information can be inspected, but cannot be modified while acting on behalf of the vendor.
+              </span>
+            </div>
+          )}
+
           <div>
             <h2 className="text-lg font-black text-gray-900">Storefront & Contact Details</h2>
             <p className="text-xs text-gray-500 mt-0.5">
@@ -700,11 +725,15 @@ export default function VendorSettingsPage() {
           <div className="flex justify-end pt-4 border-t border-gray-100">
             <button
               type="submit"
-              disabled={loading}
-              className="px-6 py-3 bg-emerald-600 hover:bg-emerald-700 active:scale-95 text-white font-bold text-xs rounded-xl shadow-md transition-all flex items-center gap-2 cursor-pointer disabled:opacity-50"
+              disabled={loading || isWorkspace}
+              className={`px-6 py-3 text-white font-bold text-xs rounded-xl shadow-md transition-all flex items-center gap-2 ${
+                isWorkspace
+                  ? "bg-gray-400 cursor-not-allowed opacity-60"
+                  : "bg-emerald-600 hover:bg-emerald-700 active:scale-95 cursor-pointer disabled:opacity-50"
+              }`}
             >
               {loading ? <Loader2 size={16} className="animate-spin" /> : <Check size={16} />}
-              <span>Save Shop Details</span>
+              <span>{isWorkspace ? "View Only (Locked in Admin Mode)" : "Save Shop Details"}</span>
             </button>
           </div>
         </form>
@@ -1127,6 +1156,15 @@ export default function VendorSettingsPage() {
       {/* ── TAB 2: MANDATORY LEGAL KYC DOCUMENTS ── */}
       {activeTab === "kyc" && (
         <form onSubmit={handleKycSubmit} className="bg-white rounded-3xl p-6 sm:p-8 border border-gray-200/90 shadow-2xs space-y-6">
+          {isWorkspace && (
+            <div className="p-4 rounded-2xl bg-blue-50 border border-blue-200 text-blue-900 text-xs flex items-center gap-2.5">
+              <Info size={16} className="text-blue-600 shrink-0" />
+              <span>
+                <strong>View-Only in Admin Workspace:</strong> Vendor KYC documents and legal verification records are view-only. Modifications can only be submitted by the verified vendor owner.
+              </span>
+            </div>
+          )}
+
           <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-4 border-b border-gray-100">
             <div>
               <div className="flex items-center gap-2">
@@ -1390,11 +1428,15 @@ export default function VendorSettingsPage() {
             </p>
             <button
               type="submit"
-              disabled={loading}
-              className="px-6 py-3 bg-emerald-600 hover:bg-emerald-700 active:scale-95 text-white font-bold text-xs rounded-xl shadow-md transition-all flex items-center gap-2 cursor-pointer disabled:opacity-50"
+              disabled={loading || isWorkspace}
+              className={`px-6 py-3 text-white font-bold text-xs rounded-xl shadow-md transition-all flex items-center gap-2 ${
+                isWorkspace
+                  ? "bg-gray-400 cursor-not-allowed opacity-60"
+                  : "bg-emerald-600 hover:bg-emerald-700 active:scale-95 cursor-pointer disabled:opacity-50"
+              }`}
             >
               {loading ? <Loader2 size={16} className="animate-spin" /> : <ShieldCheck size={16} />}
-              <span>Submit KYC for Verification</span>
+              <span>{isWorkspace ? "View Only (Locked in Admin Mode)" : "Submit KYC for Verification"}</span>
             </button>
           </div>
         </form>
@@ -1403,6 +1445,22 @@ export default function VendorSettingsPage() {
       {/* ── TAB 3: BANK ACCOUNT & PAYOUTS ── */}
       {activeTab === "bank" && (
         <form onSubmit={handleBankSubmit} className="bg-white rounded-3xl p-6 sm:p-8 border border-gray-200/90 shadow-2xs space-y-6">
+          {isWorkspace && (
+            <div className="p-5 rounded-2xl bg-amber-50 border-2 border-amber-300 text-amber-950 flex items-start gap-3.5">
+              <div className="w-10 h-10 rounded-xl bg-amber-200 text-amber-900 flex items-center justify-center shrink-0">
+                <Lock size={20} className="text-amber-800" />
+              </div>
+              <div className="space-y-1">
+                <h3 className="font-extrabold text-sm flex items-center gap-1.5">
+                  Not allowed in admin mode (403 Forbidden)
+                </h3>
+                <p className="text-xs text-amber-800 leading-relaxed">
+                  Bank account details, settlement routing, and payout accounts cannot be modified while operating in Vendor Workspace mode to protect vendor funds.
+                </p>
+              </div>
+            </div>
+          )}
+
           <div className="flex items-start justify-between">
             <div className="space-y-1">
               <h2 className="text-base sm:text-lg font-black text-[#052a51] flex items-center gap-2">
@@ -1431,9 +1489,10 @@ export default function VendorSettingsPage() {
               <input
                 type="text"
                 placeholder="Enter registered business name"
+                disabled={isWorkspace}
                 value={bankData.bankAccountHolder}
                 onChange={(e) => setBankData({ ...bankData, bankAccountHolder: e.target.value })}
-                className="w-full bg-gray-50 border border-gray-200 rounded-xl px-4 py-3 text-sm font-semibold text-gray-800 focus:bg-white focus:border-emerald-500 focus:outline-hidden"
+                className="w-full bg-gray-50 border border-gray-200 rounded-xl px-4 py-3 text-sm font-semibold text-gray-800 focus:bg-white focus:border-emerald-500 focus:outline-hidden disabled:opacity-50 disabled:cursor-not-allowed"
               />
             </div>
 
@@ -1444,9 +1503,10 @@ export default function VendorSettingsPage() {
               <input
                 type="text"
                 placeholder="Enter bank name"
+                disabled={isWorkspace}
                 value={bankData.bankName}
                 onChange={(e) => setBankData({ ...bankData, bankName: e.target.value })}
-                className="w-full bg-gray-50 border border-gray-200 rounded-xl px-4 py-3 text-sm font-semibold text-gray-800 focus:bg-white focus:border-emerald-500 focus:outline-hidden"
+                className="w-full bg-gray-50 border border-gray-200 rounded-xl px-4 py-3 text-sm font-semibold text-gray-800 focus:bg-white focus:border-emerald-500 focus:outline-hidden disabled:opacity-50 disabled:cursor-not-allowed"
               />
             </div>
 
@@ -1457,9 +1517,10 @@ export default function VendorSettingsPage() {
               <input
                 type="text"
                 placeholder="Enter bank account number"
+                disabled={isWorkspace}
                 value={bankData.bankAccountNumber}
                 onChange={(e) => setBankData({ ...bankData, bankAccountNumber: e.target.value })}
-                className="w-full bg-gray-50 border border-gray-200 rounded-xl px-4 py-3 text-sm font-mono font-bold text-gray-800 focus:bg-white focus:border-emerald-500 focus:outline-hidden"
+                className="w-full bg-gray-50 border border-gray-200 rounded-xl px-4 py-3 text-sm font-mono font-bold text-gray-800 focus:bg-white focus:border-emerald-500 focus:outline-hidden disabled:opacity-50 disabled:cursor-not-allowed"
               />
             </div>
 
@@ -1471,9 +1532,10 @@ export default function VendorSettingsPage() {
                 type="text"
                 placeholder="Enter 11-character IFSC code"
                 maxLength={11}
+                disabled={isWorkspace}
                 value={bankData.bankIfscCode}
                 onChange={(e) => setBankData({ ...bankData, bankIfscCode: e.target.value.toUpperCase() })}
-                className="w-full bg-gray-50 border border-gray-200 rounded-xl px-4 py-3 text-sm font-mono font-bold text-gray-800 uppercase focus:bg-white focus:border-emerald-500 focus:outline-hidden"
+                className="w-full bg-gray-50 border border-gray-200 rounded-xl px-4 py-3 text-sm font-mono font-bold text-gray-800 uppercase focus:bg-white focus:border-emerald-500 focus:outline-hidden disabled:opacity-50 disabled:cursor-not-allowed"
               />
             </div>
 
@@ -1484,9 +1546,10 @@ export default function VendorSettingsPage() {
               <input
                 type="text"
                 placeholder="Enter your UPI ID or VPA"
+                disabled={isWorkspace}
                 value={bankData.bankUpiId}
                 onChange={(e) => setBankData({ ...bankData, bankUpiId: e.target.value })}
-                className="w-full bg-gray-50 border border-gray-200 rounded-xl px-4 py-3 text-sm font-mono text-gray-800 focus:bg-white focus:border-emerald-500 focus:outline-hidden"
+                className="w-full bg-gray-50 border border-gray-200 rounded-xl px-4 py-3 text-sm font-mono text-gray-800 focus:bg-white focus:border-emerald-500 focus:outline-hidden disabled:opacity-50 disabled:cursor-not-allowed"
               />
             </div>
           </div>
@@ -1494,11 +1557,15 @@ export default function VendorSettingsPage() {
           <div className="flex justify-end pt-4 border-t border-gray-100">
             <button
               type="submit"
-              disabled={loading}
-              className="px-6 py-3 bg-emerald-600 hover:bg-emerald-700 active:scale-95 text-white font-bold text-xs rounded-xl shadow-md transition-all flex items-center gap-2 cursor-pointer disabled:opacity-50"
+              disabled={loading || isWorkspace}
+              className={`px-6 py-3 text-white font-bold text-xs rounded-xl shadow-md transition-all flex items-center gap-2 ${
+                isWorkspace
+                  ? "bg-gray-400 cursor-not-allowed opacity-60"
+                  : "bg-emerald-600 hover:bg-emerald-700 active:scale-95 cursor-pointer disabled:opacity-50"
+              }`}
             >
-              {loading ? <Loader2 size={16} className="animate-spin" /> : <Check size={16} />}
-              <span>Save Bank Details</span>
+              {loading ? <Loader2 size={16} className="animate-spin" /> : isWorkspace ? <Lock size={15} /> : <Check size={16} />}
+              <span>{isWorkspace ? "Not Allowed in Admin Mode (Blocked)" : "Save Bank Details"}</span>
             </button>
           </div>
         </form>
@@ -1507,6 +1574,22 @@ export default function VendorSettingsPage() {
       {/* ── TAB 4: PASSWORD & SECURITY ── */}
       {activeTab === "security" && (
         <form onSubmit={handlePasswordSubmit} className="bg-white rounded-3xl p-6 sm:p-8 border border-gray-200/90 shadow-2xs space-y-6 max-w-xl">
+          {isWorkspace && (
+            <div className="p-5 rounded-2xl bg-amber-50 border-2 border-amber-300 text-amber-950 flex items-start gap-3.5">
+              <div className="w-10 h-10 rounded-xl bg-amber-200 text-amber-900 flex items-center justify-center shrink-0">
+                <Lock size={20} className="text-amber-800" />
+              </div>
+              <div className="space-y-1">
+                <h3 className="font-extrabold text-sm flex items-center gap-1.5">
+                  Not allowed in admin mode (403 Forbidden)
+                </h3>
+                <p className="text-xs text-amber-800 leading-relaxed">
+                  Vendor account credentials, passwords, and authentication settings cannot be altered while acting in Vendor Workspace mode.
+                </p>
+              </div>
+            </div>
+          )}
+
           <div>
             <h2 className="text-lg font-black text-gray-900">Change Account Password</h2>
             <p className="text-xs text-gray-500 mt-0.5">
@@ -1523,9 +1606,10 @@ export default function VendorSettingsPage() {
                 type="password"
                 required
                 minLength={6}
+                disabled={isWorkspace}
                 value={passwordData.newPassword}
                 onChange={(e) => setPasswordData({ ...passwordData, newPassword: e.target.value })}
-                className="w-full bg-gray-50 border border-gray-200 rounded-xl px-4 py-3 text-sm font-medium text-gray-800 focus:bg-white focus:border-emerald-500 focus:outline-hidden"
+                className="w-full bg-gray-50 border border-gray-200 rounded-xl px-4 py-3 text-sm font-medium text-gray-800 focus:bg-white focus:border-emerald-500 focus:outline-hidden disabled:opacity-50 disabled:cursor-not-allowed"
               />
             </div>
 
@@ -1537,9 +1621,10 @@ export default function VendorSettingsPage() {
                 type="password"
                 required
                 minLength={6}
+                disabled={isWorkspace}
                 value={passwordData.confirmPassword}
                 onChange={(e) => setPasswordData({ ...passwordData, confirmPassword: e.target.value })}
-                className="w-full bg-gray-50 border border-gray-200 rounded-xl px-4 py-3 text-sm font-medium text-gray-800 focus:bg-white focus:border-emerald-500 focus:outline-hidden"
+                className="w-full bg-gray-50 border border-gray-200 rounded-xl px-4 py-3 text-sm font-medium text-gray-800 focus:bg-white focus:border-emerald-500 focus:outline-hidden disabled:opacity-50 disabled:cursor-not-allowed"
               />
             </div>
           </div>
@@ -1547,11 +1632,15 @@ export default function VendorSettingsPage() {
           <div className="flex justify-end pt-4 border-t border-gray-100">
             <button
               type="submit"
-              disabled={loading}
-              className="px-6 py-3 bg-[#052a51] hover:bg-[#0a3e74] active:scale-95 text-white font-bold text-xs rounded-xl shadow-md transition-all flex items-center gap-2 cursor-pointer disabled:opacity-50"
+              disabled={loading || isWorkspace}
+              className={`px-6 py-3 text-white font-bold text-xs rounded-xl shadow-md transition-all flex items-center gap-2 ${
+                isWorkspace
+                  ? "bg-gray-400 cursor-not-allowed opacity-60"
+                  : "bg-[#052a51] hover:bg-[#0a3e74] active:scale-95 cursor-pointer disabled:opacity-50"
+              }`}
             >
-              {loading ? <Loader2 size={16} className="animate-spin" /> : <KeyRound size={16} />}
-              <span>Update Password</span>
+              {loading ? <Loader2 size={16} className="animate-spin" /> : isWorkspace ? <Lock size={15} /> : <KeyRound size={16} />}
+              <span>{isWorkspace ? "Not Allowed in Admin Mode (Blocked)" : "Update Password"}</span>
             </button>
           </div>
         </form>

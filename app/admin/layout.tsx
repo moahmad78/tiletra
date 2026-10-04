@@ -5,6 +5,7 @@ import { usePathname, useRouter } from "next/navigation";
 import AdminSidebar from "@/components/admin/AdminSidebar";
 import AdminHeader from "@/components/admin/AdminHeader";
 import AdminInactivityGuard from "@/components/admin/AdminInactivityGuard";
+import VendorWorkspaceBanner from "@/components/admin/VendorWorkspaceBanner";
 import { useAdminAuth } from "@/lib/admin-auth";
 
 export default function AdminLayout({
@@ -94,6 +95,9 @@ export default function AdminLayout({
         }`}
         translate="no"
       >
+        {/* Persistent Vendor Workspace Banner in Admin Mode */}
+        <VendorWorkspaceBanner />
+
         <AdminHeader onMobileMenuToggle={() => setMobileOpen(true)} />
 
         <main className="flex-1 p-4 md:p-8 max-w-[1600px] w-full mx-auto notranslate" translate="no">

@@ -11,6 +11,8 @@ import {
   type DeliverySlotDefinition,
 } from "@/lib/delivery-slots";
 import { getStoreDeliverySlotsConfig } from "./settings";
+import { resolveVendorContext, logAdminAuditAction } from "@/lib/vendor-workspace-auth";
+import { notifyVendorOfAdminChanges } from "@/lib/notifications/vendor-workspace-notify";
 
 export type VendorApplicationInput = {
   businessName: string;
@@ -122,11 +124,13 @@ export async function registerVendor(input: VendorApplicationInput) {
 }
 
 // 2. Fetch Vendor Profile
-export async function getVendorProfile(vendorId: string) {
+export async function getVendorProfile(vendorId?: string) {
   try {
-    if (!vendorId) return null;
+    const context = await resolveVendorContext();
+    const effectiveVendorId = context ? context.vendorId : vendorId;
+    if (!effectiveVendorId) return null;
     const vendor = await prisma.vendor.findUnique({
-      where: { id: vendorId },
+      where: { id: effectiveVendorId },
       include: {
         owner: {
           select: {
@@ -166,6 +170,14 @@ export async function updateVendorProfile(
   }
 ) {
   try {
+    const context = await resolveVendorContext();
+    if (context?.actor.type === "ADMIN") {
+      return {
+        success: false,
+        error: "Forbidden (403): Vendor profile and business details are view-only while acting in Vendor Workspace mode.",
+      };
+    }
+
     if (!vendorId) return { success: false, error: "Vendor ID required" };
 
     const updated = await prisma.vendor.update({
@@ -210,7 +222,9 @@ export async function updateVendorDeliverySettings(
   }
 ) {
   try {
-    if (!vendorId) return { success: false, error: "Vendor ID required" };
+    const context = await resolveVendorContext();
+    const effectiveVendorId = context ? context.vendorId : vendorId;
+    if (!effectiveVendorId) return { success: false, error: "Vendor ID required" };
 
     const updateData: any = {
       deliveryFeeEnabled: input.deliveryFeeEnabled,
@@ -223,9 +237,25 @@ export async function updateVendorDeliverySettings(
     }
 
     const updated = await prisma.vendor.update({
-      where: { id: vendorId },
+      where: { id: effectiveVendorId },
       data: updateData,
     });
+
+    if (context?.actor.type === "ADMIN") {
+      await logAdminAuditAction({
+        sessionId: context.sessionId,
+        adminId: context.actor.adminId!,
+        vendorId: effectiveVendorId,
+        action: "DELIVERY_SETTINGS_UPDATED",
+        entity: "Vendor",
+        entityId: effectiveVendorId,
+        after: updateData,
+      });
+      await notifyVendorOfAdminChanges(
+        effectiveVendorId,
+        "IntriHub admin updated delivery and shipping settings on your store."
+      );
+    }
 
     safeRevalidate("/vendor/settings");
     safeRevalidate("/vendor");
@@ -248,7 +278,7 @@ export async function updateVendorDeliverySettings(
 
 // 4. Get Vendor Products (Strictly Scoped by vendorId)
 export async function getVendorProducts(
-  vendorId: string,
+  vendorId?: string,
   options?: {
     search?: string;
     status?: string; // all | active | paused | draft
@@ -256,9 +286,11 @@ export async function getVendorProducts(
   }
 ): Promise<Product[]> {
   try {
-    if (!vendorId) return [];
+    const context = await resolveVendorContext();
+    const effectiveVendorId = context ? context.vendorId : vendorId;
+    if (!effectiveVendorId) return [];
 
-    const where: any = { vendorId };
+    const where: any = { vendorId: effectiveVendorId };
 
     if (options?.status && options.status !== "all") {
       where.status = options.status;
@@ -380,9 +412,11 @@ async function ensureVendorRecord(vendorId: string) {
 // 5. Vendor Create Product (Submits with approvalStatus: "pending")
 export async function createVendorProduct(vendorId: string, input: CreateProductInput) {
   try {
-    if (!vendorId) return { success: false, error: "Vendor ID required" };
+    const context = await resolveVendorContext();
+    const effectiveVendorId = context ? context.vendorId : vendorId;
+    if (!effectiveVendorId) return { success: false, error: "Vendor ID required" };
 
-    const vendor = await ensureVendorRecord(vendorId);
+    const vendor = await ensureVendorRecord(effectiveVendorId);
     if (!vendor) return { success: false, error: "Vendor not found. Please refresh and try again." };
 
     if (vendor.status === "suspended") {
@@ -393,6 +427,9 @@ export async function createVendorProduct(vendorId: string, input: CreateProduct
     const isAutoPublish = Boolean(vendor.autoPublishEnabled);
     const approvalStatus = isAutoPublish ? "approved" : (input.approvalStatus || "pending");
 
+    const createdByAdminId = context?.actor.type === "ADMIN" ? context.actor.adminId : undefined;
+    const updatedByAdminId = context?.actor.type === "ADMIN" ? context.actor.adminId : undefined;
+
     // Force vendorId and status for vendor submissions
     const res = await createProduct({
       ...input,
@@ -400,7 +437,25 @@ export async function createVendorProduct(vendorId: string, input: CreateProduct
       status: input.status || "active",
       approvalStatus,
       rejectionReason: null,
+      createdByAdminId,
+      updatedByAdminId,
     });
+
+    if (res.success && res.product && context?.actor.type === "ADMIN") {
+      await logAdminAuditAction({
+        sessionId: context.sessionId,
+        adminId: context.actor.adminId!,
+        vendorId: vendor.id,
+        action: "ITEM_CREATED",
+        entity: "Product",
+        entityId: res.product.id,
+        after: {
+          name: res.product.name,
+          categorySlug: res.product.categorySlug,
+          pricePerBox: res.product.variants?.[0]?.pricePerBox || 0,
+        },
+      });
+    }
 
     if (res.success && res.product) {
       try {
@@ -452,9 +507,11 @@ export async function updateVendorProduct(
   input: Partial<CreateProductInput>
 ) {
   try {
-    if (!vendorId) return { success: false, error: "Vendor ID required" };
+    const context = await resolveVendorContext();
+    const effectiveVendorId = context ? context.vendorId : vendorId;
+    if (!effectiveVendorId) return { success: false, error: "Vendor ID required" };
 
-    const vendor = await ensureVendorRecord(vendorId);
+    const vendor = await ensureVendorRecord(effectiveVendorId);
     if (!vendor) return { success: false, error: "Vendor not found" };
 
     const existing = await prisma.product.findUnique({
@@ -467,6 +524,7 @@ export async function updateVendorProduct(
 
     const isAutoPublish = Boolean(vendor.autoPublishEnabled);
     const approvalStatus = isAutoPublish ? "approved" : "pending";
+    const updatedByAdminId = context?.actor.type === "ADMIN" ? context.actor.adminId : undefined;
 
     // Resubmit for approval upon modifications if auto-publish is false
     const res = await updateProduct(productId, {
@@ -474,7 +532,25 @@ export async function updateVendorProduct(
       vendorId: vendor.id,
       approvalStatus,
       rejectionReason: null,
+      updatedByAdminId,
     });
+
+    if (res.success && context?.actor.type === "ADMIN") {
+      await logAdminAuditAction({
+        sessionId: context.sessionId,
+        adminId: context.actor.adminId!,
+        vendorId: vendor.id,
+        action: "ITEM_UPDATED",
+        entity: "Product",
+        entityId: productId,
+        before: {
+          name: existing.name,
+          status: existing.status,
+          pricePerSqft: existing.pricePerSqft,
+        },
+        after: input,
+      });
+    }
 
     if (res.success && res.product && !isAutoPublish) {
       try {
@@ -560,21 +636,39 @@ export async function toggleVendorProductStatus(
   newStatus: "active" | "paused"
 ) {
   try {
-    if (!vendorId) return { success: false, error: "Vendor ID required" };
+    const context = await resolveVendorContext();
+    const effectiveVendorId = context ? context.vendorId : vendorId;
+    if (!effectiveVendorId) return { success: false, error: "Vendor ID required" };
 
     const existing = await prisma.product.findUnique({
       where: { id: productId },
     });
 
-    if (!existing || existing.vendorId !== vendorId) {
+    if (!existing || existing.vendorId !== effectiveVendorId) {
       return { success: false, error: "Unauthorized: You do not own this product" };
     }
 
     const updated = await prisma.product.update({
       where: { id: productId },
-      data: { status: newStatus },
+      data: {
+        status: newStatus,
+        ...(context?.actor.type === "ADMIN" ? { updatedByAdminId: context.actor.adminId } : {}),
+      },
       include: { variants: true, attributes: true },
     });
+
+    if (context?.actor.type === "ADMIN") {
+      await logAdminAuditAction({
+        sessionId: context.sessionId,
+        adminId: context.actor.adminId!,
+        vendorId: effectiveVendorId,
+        action: "ITEM_STATUS_TOGGLED",
+        entity: "Product",
+        entityId: productId,
+        before: { status: existing.status },
+        after: { status: newStatus },
+      });
+    }
 
     safeRevalidate("/shop");
     safeRevalidate(`/shop/${updated.categorySlug}`);
@@ -597,9 +691,11 @@ export async function toggleVendorProductStatus(
 // 8. Delete Vendor Product (Ownership check)
 export async function deleteVendorProduct(vendorId: string, productId: string) {
   try {
-    if (!vendorId) return { success: false, error: "Vendor ID required" };
+    const context = await resolveVendorContext();
+    const effectiveVendorId = context ? context.vendorId : vendorId;
+    if (!effectiveVendorId) return { success: false, error: "Vendor ID required" };
 
-    const authCheck = await verifyVendorAuth(vendorId, undefined);
+    const authCheck = await verifyVendorAuth(effectiveVendorId, undefined);
     if (!authCheck.authorized) {
       return { success: false, error: authCheck.error || "Unauthorized" };
     }
@@ -608,12 +704,25 @@ export async function deleteVendorProduct(vendorId: string, productId: string) {
       where: { id: productId },
     });
 
-    if (!existing || existing.vendorId !== vendorId) {
+    if (!existing || existing.vendorId !== effectiveVendorId) {
       return { success: false, error: "Unauthorized: You do not own this product" };
     }
 
     const res = await deleteProduct(productId);
     safeRevalidate("/vendor/products");
+
+    if (res.success && context?.actor.type === "ADMIN") {
+      await logAdminAuditAction({
+        sessionId: context.sessionId,
+        adminId: context.actor.adminId!,
+        vendorId: effectiveVendorId,
+        action: "ITEM_DELETED",
+        entity: "Product",
+        entityId: productId,
+        before: { name: existing.name, slug: existing.slug },
+        after: null,
+      });
+    }
     return res;
   } catch (error: any) {
     console.error("Error deleting vendor product:", error);
@@ -622,9 +731,11 @@ export async function deleteVendorProduct(vendorId: string, productId: string) {
 }
 
 // 9. Vendor Dashboard Stats
-export async function getVendorDashboardStats(vendorId: string) {
+export async function getVendorDashboardStats(vendorId?: string) {
   try {
-    if (!vendorId) {
+    const context = await resolveVendorContext();
+    const effectiveVendorId = context ? context.vendorId : vendorId;
+    if (!effectiveVendorId) {
       return {
         totalProducts: 0,
         activeProducts: 0,
@@ -639,7 +750,7 @@ export async function getVendorDashboardStats(vendorId: string) {
 
     const [allProducts, lowStockVariants, splits] = await Promise.all([
       prisma.product.findMany({
-        where: { vendorId },
+        where: { vendorId: effectiveVendorId },
         select: {
           id: true,
           status: true,
@@ -705,6 +816,20 @@ async function verifyVendorAuth(vendorId?: string, ownerId?: string): Promise<{ 
   }
 
   try {
+    const context = await resolveVendorContext();
+    if (context) {
+      if (context.actor.type === "ADMIN") {
+        if (vendorId && context.vendorId !== vendorId) {
+          return { authorized: false, error: "Forbidden: You are not authorized for this vendor store." };
+        }
+        return { authorized: true };
+      }
+      if (vendorId && context.vendorId !== vendorId) {
+        return { authorized: false, error: "Forbidden: You cannot modify another vendor store." };
+      }
+      return { authorized: true };
+    }
+
     const { checkIsAdmin, getAuthenticatedVendor } = await import("@/lib/server-auth");
     const isAdmin = await checkIsAdmin();
     if (isAdmin) return { authorized: true };
@@ -732,6 +857,14 @@ async function verifyVendorAuth(vendorId?: string, ownerId?: string): Promise<{ 
 // 10. Change Vendor Password (First-Login Reset or Settings Update)
 export async function changeVendorPassword(ownerId: string, newPassword: string) {
   try {
+    const context = await resolveVendorContext();
+    if (context?.actor.type === "ADMIN") {
+      return {
+        success: false,
+        error: "Forbidden (403): Password changes are blocked while acting in Vendor Workspace mode.",
+      };
+    }
+
     if (!ownerId) return { success: false, error: "User ID required" };
 
     const authCheck = await verifyVendorAuth(undefined, ownerId);
@@ -775,6 +908,14 @@ export async function updateVendorBankDetails(
   }
 ) {
   try {
+    const context = await resolveVendorContext();
+    if (context?.actor.type === "ADMIN") {
+      return {
+        success: false,
+        error: "Forbidden (403): Bank and payout details cannot be modified while acting in Vendor Workspace mode.",
+      };
+    }
+
     if (!vendorId) return { success: false, error: "Vendor ID required" };
 
     const authCheck = await verifyVendorAuth(vendorId, undefined);
@@ -824,6 +965,14 @@ export async function updateVendorKycDocuments(
   }
 ) {
   try {
+    const context = await resolveVendorContext();
+    if (context?.actor.type === "ADMIN") {
+      return {
+        success: false,
+        error: "Forbidden (403): Vendor KYC documents are view-only while acting in Vendor Workspace mode.",
+      };
+    }
+
     if (!vendorId) return { success: false, error: "Vendor ID required" };
 
     const authCheck = await verifyVendorAuth(vendorId, undefined);
@@ -867,12 +1016,14 @@ export async function updateVendorKycDocuments(
 }
 
 // 12. Vendor Orders Query (Strictly Scoped by vendorId)
-export async function getVendorOrders(vendorId: string) {
+export async function getVendorOrders(vendorId?: string) {
   try {
-    if (!vendorId) return [];
+    const context = await resolveVendorContext();
+    const effectiveVendorId = context ? context.vendorId : vendorId;
+    if (!effectiveVendorId) return [];
 
     const splits = await prisma.vendorOrderSplit.findMany({
-      where: { vendorId },
+      where: { vendorId: effectiveVendorId },
       orderBy: { createdAt: "desc" },
     });
 
@@ -963,12 +1114,14 @@ export async function updateVendorFulfillmentStatus(
   paymentCollected?: boolean
 ) {
   try {
-    if (!splitId || !vendorId) {
+    const context = await resolveVendorContext();
+    const effectiveVendorId = context ? context.vendorId : vendorId;
+    if (!splitId || !effectiveVendorId) {
       return { success: false, error: "Split ID and Vendor ID are required" };
     }
 
     const existing = await prisma.vendorOrderSplit.findFirst({
-      where: { id: splitId, vendorId },
+      where: { id: splitId, vendorId: effectiveVendorId },
     });
 
     if (!existing) {
@@ -984,6 +1137,7 @@ export async function updateVendorFulfillmentStatus(
       fulfillmentStatus: normalizedStatus,
       trackingNumber: trackingNumber !== undefined ? trackingNumber.trim() : existing.trackingNumber,
       courierName: courierName !== undefined ? courierName.trim() : existing.courierName,
+      ...(context?.actor.type === "ADMIN" ? { updatedByAdminId: context.actor.adminId } : {}),
     };
 
     if (paymentCollected !== undefined) {
@@ -1019,6 +1173,19 @@ export async function updateVendorFulfillmentStatus(
       where: { id: splitId },
       data: updateData,
     });
+
+    if (context?.actor.type === "ADMIN") {
+      await logAdminAuditAction({
+        sessionId: context.sessionId,
+        adminId: context.actor.adminId!,
+        vendorId: effectiveVendorId,
+        action: "ORDER_FULFILLMENT_UPDATED",
+        entity: "VendorOrderSplit",
+        entityId: splitId,
+        before: { fulfillmentStatus: existing.fulfillmentStatus, trackingNumber: existing.trackingNumber },
+        after: { fulfillmentStatus: normalizedStatus, trackingNumber: updateData.trackingNumber },
+      });
+    }
 
     // Sync tracking & courier to parent Order record so Admin Console & Customer App reflect it instantly
     try {
@@ -1089,6 +1256,23 @@ export async function updateVendorFulfillmentStatus(
       });
     }
 
+    if (context?.actor.type === "ADMIN") {
+      await logAdminAuditAction({
+        sessionId: context.sessionId,
+        adminId: context.actor.adminId!,
+        vendorId: effectiveVendorId,
+        action: "ORDER_STATUS_CHANGED",
+        entity: "VendorOrderSplit",
+        entityId: splitId,
+        before: { fulfillmentStatus: existing.fulfillmentStatus, trackingNumber: existing.trackingNumber },
+        after: { fulfillmentStatus: updated.fulfillmentStatus, trackingNumber: updated.trackingNumber },
+      });
+      await notifyVendorOfAdminChanges(
+        effectiveVendorId,
+        `IntriHub admin updated order fulfillment status to "${status}".`
+      );
+    }
+
     safeRevalidate("/vendor/orders");
     safeRevalidate("/vendor/payouts");
     safeRevalidate("/admin/orders");
@@ -1113,7 +1297,9 @@ export async function updateVendorFulfillmentBulk(
   status: string
 ) {
   try {
-    if (!splitIds || splitIds.length === 0 || !vendorId) {
+    const context = await resolveVendorContext();
+    const effectiveVendorId = context ? context.vendorId : vendorId;
+    if (!splitIds || splitIds.length === 0 || !effectiveVendorId) {
       return { success: false, error: "Split IDs and Vendor ID are required" };
     }
 
@@ -1121,7 +1307,7 @@ export async function updateVendorFulfillmentBulk(
     const isDelivered = normalizedStatus === "delivered";
 
     const splits = await prisma.vendorOrderSplit.findMany({
-      where: { id: { in: splitIds }, vendorId },
+      where: { id: { in: splitIds }, vendorId: effectiveVendorId },
     });
 
     if (splits.length === 0) {
@@ -1132,6 +1318,7 @@ export async function updateVendorFulfillmentBulk(
     for (const split of splits) {
       const updateData: any = {
         fulfillmentStatus: normalizedStatus,
+        ...(context?.actor.type === "ADMIN" ? { updatedByAdminId: context.actor.adminId } : {}),
       };
 
       if (isDelivered) {
@@ -1148,6 +1335,17 @@ export async function updateVendorFulfillmentBulk(
         data: updateData,
       });
       updatedCount++;
+    }
+
+    if (context?.actor.type === "ADMIN") {
+      await logAdminAuditAction({
+        sessionId: context.sessionId,
+        adminId: context.actor.adminId!,
+        vendorId: effectiveVendorId,
+        action: "ORDER_BULK_FULFILLMENT_UPDATED",
+        entity: "VendorOrderSplit",
+        after: { splitIds, status: normalizedStatus, count: updatedCount },
+      });
     }
 
     safeRevalidate("/vendor/orders");
@@ -1469,14 +1667,28 @@ export async function updateVendorDeliverySlotsConfig(
   error?: string;
 }> {
   try {
-    if (!vendorId) return { success: false, isCustom: false, error: "Vendor ID is required" };
+    const context = await resolveVendorContext();
+    const effectiveVendorId = context ? context.vendorId : vendorId;
+    if (!effectiveVendorId) return { success: false, isCustom: false, error: "Vendor ID is required" };
 
     const sanitized = slots ? sanitizeDeliverySlots(slots) : null;
 
     await prisma.vendor.update({
-      where: { id: vendorId },
+      where: { id: effectiveVendorId },
       data: { deliverySlots: sanitized as any },
     });
+
+    if (context?.actor.type === "ADMIN") {
+      await logAdminAuditAction({
+        sessionId: context.sessionId,
+        adminId: context.actor.adminId!,
+        vendorId: effectiveVendorId,
+        action: "DELIVERY_SLOTS_UPDATED",
+        entity: "Vendor",
+        entityId: effectiveVendorId,
+        after: { slotsCount: sanitized?.length || 0, isCustom: Boolean(sanitized) },
+      });
+    }
 
     safeRevalidate("/vendor/settings");
     safeRevalidate("/checkout");

@@ -2,7 +2,8 @@
 
 import { useState, useEffect } from "react";
 import Link from "next/link";
-import { useVendorAuth } from "@/lib/vendor-auth";
+import { useEffectiveVendor } from "@/hooks/useEffectiveVendor";
+import AdminActivitySection from "@/components/vendor/AdminActivitySection";
 import {
   getVendorDashboardStats,
   getVendorProducts,
@@ -34,7 +35,7 @@ import { getVendorOnboardingProgress } from "@/lib/actions/vendor-onboarding";
 import type { OnboardingProgress } from "@/lib/actions/vendor-onboarding";
 
 export default function VendorDashboardPage() {
-  const { vendor } = useVendorAuth();
+  const { vendor } = useEffectiveVendor();
   const [stats, setStats] = useState({
     totalProducts: 0,
     activeProducts: 0,
@@ -331,6 +332,9 @@ export default function VendorDashboardPage() {
           </div>
         )}
       </div>
+
+      {/* Admin Transparency & Activity Section */}
+      {vendor?.id && <AdminActivitySection vendorId={vendor.id} />}
     </div>
   );
 }

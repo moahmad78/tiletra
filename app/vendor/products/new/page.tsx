@@ -1,10 +1,10 @@
 "use client";
 
 import DynamicProductUploadForm from "@/components/admin/DynamicProductUploadForm";
-import { useVendorAuth } from "@/lib/vendor-auth";
+import { useEffectiveVendor } from "@/hooks/useEffectiveVendor";
 
 export default function VendorNewProductPage() {
-  const { vendor } = useVendorAuth();
+  const { vendor } = useEffectiveVendor();
 
   return (
     <div className="max-w-5xl mx-auto space-y-6">

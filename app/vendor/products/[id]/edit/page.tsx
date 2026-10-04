@@ -3,7 +3,7 @@
 import { useState, useEffect } from "react";
 import { useRouter, useParams } from "next/navigation";
 import Link from "next/link";
-import { useVendorAuth } from "@/lib/vendor-auth";
+import { useEffectiveVendor } from "@/hooks/useEffectiveVendor";
 import { getProductById } from "@/lib/actions/products";
 import { updateVendorProduct, getVendorProfile } from "@/lib/actions/vendor";
 import { getCategories } from "@/lib/actions/categories";
@@ -30,7 +30,7 @@ export default function VendorEditProductPage() {
   const router = useRouter();
   const params = useParams();
   const productId = params.id as string;
-  const { vendor } = useVendorAuth();
+  const { vendor } = useEffectiveVendor();
 
   const [categories, setCategories] = useState<Category[]>([]);
   const [loading, setLoading] = useState(true);

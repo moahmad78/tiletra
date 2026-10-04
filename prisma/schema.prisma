@@ -18,7 +18,7 @@ model User {
   phone                 String                  @unique
   phoneVerified         Boolean                 @default(false)
   emailVerified         Boolean                 @default(false)
-  role                  String                  @default("customer") // customer | vendor | admin | staff
+  role                  String                  @default("customer") // customer | vendor | admin | staff | cpo
   authProvider          String?                 // "google" | "email" | "phone" | "credentials"
   passwordHash          String?
   mustChangePassword    Boolean                 @default(false)
@@ -40,6 +40,8 @@ model User {
   complaints            ComplaintNote[]
   auditLogs             AuditLog[]
   staffPermissions      StaffPermission[]
+  impersonationSessions ImpersonationSession[]  @relation("AdminImpersonationSessions")
+  adminAuditLogs        AdminAuditLog[]         @relation("AdminAuditLogs")
   vendor                Vendor?                 @relation("VendorOwner")
 
   @@index([phone])
@@ -190,6 +192,11 @@ model Product {
   status            String             @default("active") // active | paused | draft | archived
   approvalStatus    String             @default("approved") // pending | approved | rejected
   rejectionReason   String?
+  createdByAdminId  String?
+  updatedByAdminId  String?
+  createdByCpoId    String?
+  updatedByCpoId    String?
+  actorRole         String?
 
   createdAt         DateTime           @default(now())
   updatedAt         DateTime           @updatedAt
@@ -784,6 +791,53 @@ model AuditLog {
 }
 
 // ----------------------------------------------------
+// 12b. Vendor Workspace & Impersonation Sessions
+// ----------------------------------------------------
+model ImpersonationSession {
+  id           String    @id @default(cuid())
+  adminId      String
+  vendorId     String
+  reason       String    // Vendor onboarding | Vendor needs help | OTP/login issue | Bulk catalog upload | Other
+  actorRole    String    @default("ADMIN") // ADMIN | CPO
+  startedAt    DateTime  @default(now())
+  expiresAt    DateTime  // 60-minute absolute expiry
+  lastActiveAt DateTime  @default(now()) // 20-minute idle timeout
+  endedAt      DateTime?
+  ip           String?
+  userAgent    String?
+
+  admin        User      @relation("AdminImpersonationSessions", fields: [adminId], references: [id], onDelete: Cascade)
+  vendor       Vendor    @relation("VendorImpersonationSessions", fields: [vendorId], references: [id], onDelete: Cascade)
+
+  @@index([adminId, endedAt])
+  @@index([vendorId, endedAt])
+  @@index([expiresAt])
+  @@index([lastActiveAt])
+}
+
+model AdminAuditLog {
+  id        String   @id @default(cuid())
+  adminId   String
+  vendorId  String?
+  sessionId String?
+  action    String
+  entity    String
+  entityId  String?
+  actorRole String?  @default("ADMIN") // ADMIN | CPO
+  before    Json?
+  after     Json?
+  ip        String?
+  createdAt DateTime @default(now())
+
+  admin     User     @relation("AdminAuditLogs", fields: [adminId], references: [id], onDelete: Cascade)
+  vendor    Vendor?  @relation("VendorAuditLogs", fields: [vendorId], references: [id], onDelete: SetNull)
+
+  @@index([adminId, createdAt])
+  @@index([vendorId, createdAt])
+  @@index([sessionId])
+}
+
+// ----------------------------------------------------
 // 13. Multi-Vendor Marketplace
 // ----------------------------------------------------
 model Vendor {
@@ -803,6 +857,7 @@ model Vendor {
   ownerId         String             @unique
   applicationId   String?
   onboardingPath  String             @default("admin_created") // self_apply | admin_created
+  internalNotes   String?
 
   // Bank & Payout Details
   bankAccountHolder String?
@@ -849,11 +904,13 @@ model Vendor {
   createdAt       DateTime           @default(now())
   updatedAt       DateTime           @updatedAt
 
-  owner           User               @relation("VendorOwner", fields: [ownerId], references: [id], onDelete: Cascade)
-  products        Product[]
-  splits          VendorOrderSplit[]
-  payouts         Payout[]
-  coupons         VendorCoupon[]
+  owner                 User                   @relation("VendorOwner", fields: [ownerId], references: [id], onDelete: Cascade)
+  products              Product[]
+  splits                VendorOrderSplit[]
+  payouts               Payout[]
+  coupons               VendorCoupon[]
+  impersonationSessions ImpersonationSession[] @relation("VendorImpersonationSessions")
+  auditLogs             AdminAuditLog[]        @relation("VendorAuditLogs")
 
   @@index([status])
   @@index([ownerId])
@@ -912,6 +969,7 @@ model VendorOrderSplit {
   vehicleType          String?   // "bike" | "3-wheeler" | "tata-ace" | "truck"
   totalWeightKg        Float?    // Total sum weight of items in split (kg)
   isBulky              Boolean   @default(false) // True if any item in split is bulky
+  updatedByAdminId     String?
 
   createdAt            DateTime  @default(now())
   updatedAt            DateTime  @updatedAt

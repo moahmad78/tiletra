@@ -234,6 +234,7 @@ export async function checkVendorLoginMethod(email: string): Promise<{
   reason?: VendorWebLoginReason;
   rejectionReason?: string | null;
   vendorName?: string;
+  isCpo?: boolean;
   locked?: boolean;
   remainingAttempts?: number;
   retryAfterSeconds?: number;
@@ -269,6 +270,23 @@ export async function checkVendorLoginMethod(email: string): Promise<{
       success: true,
       loginMethod: "otp",
       vendorName: "Super Admin",
+    };
+  }
+
+  // 1b. Check if CPO User in DB
+  const cpoUser = await prisma.user.findFirst({
+    where: {
+      email: { equals: cleanEmail, mode: "insensitive" },
+      role: { equals: "cpo", mode: "insensitive" },
+    },
+  });
+
+  if (cpoUser) {
+    return {
+      success: true,
+      loginMethod: "otp",
+      vendorName: cpoUser.name || "Chief Product Officer",
+      isCpo: true,
     };
   }
 
@@ -413,7 +431,16 @@ export async function sendVendorWebOtp(email: string): Promise<{
         })
       : null;
 
-    if (!vendor && !vendorUser) {
+    const cpoUser = (!vendor && !vendorUser)
+      ? await prisma.user.findFirst({
+          where: {
+            email: { equals: cleanEmail, mode: "insensitive" },
+            role: { equals: "cpo", mode: "insensitive" },
+          },
+        })
+      : null;
+
+    if (!vendor && !vendorUser && !cpoUser) {
       const failCheck = recordVendorLoginFailure(clientIp);
       if (failCheck.locked) {
         return {
@@ -487,6 +514,9 @@ export async function verifyVendorWebOtp(email: string, otp: string): Promise<{
   remainingAttempts?: number;
   retryAfterSeconds?: number;
   vendor?: any;
+  redirectTo?: string;
+  role?: string;
+  user?: any;
 }> {
   const clientIp = await getClientIp();
 
@@ -535,6 +565,46 @@ export async function verifyVendorWebOtp(email: string, otp: string): Promise<{
     ip: clientIp,
     role: "vendor",
   });
+
+  // 3b. Check if account is CPO in DB
+  const cpoUser = await prisma.user.findFirst({
+    where: {
+      email: { equals: cleanEmail, mode: "insensitive" },
+      role: { equals: "cpo", mode: "insensitive" },
+    },
+  });
+
+  if (cpoUser) {
+    const { generateCpoSessionToken, sendCpoNewDeviceAlert } = await import("@/lib/cpo/auth");
+    const { CPO_SESSION_COOKIE } = await import("@/lib/config/cpo-permissions");
+    const cpoToken = await generateCpoSessionToken(cpoUser.id, cpoUser.email || cleanEmail);
+
+    const cookieStore = await cookies();
+    cookieStore.set(CPO_SESSION_COOKIE, cpoToken, {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === "production",
+      sameSite: "lax",
+      path: "/",
+      maxAge: 60 * 60 * 24 * 7, // 7 days
+    });
+
+    const headerList = await headers();
+    const userAgent = headerList.get("user-agent") || undefined;
+    await sendCpoNewDeviceAlert(cpoUser.email || cleanEmail, clientIp, userAgent);
+
+    return {
+      success: true,
+      message: "CPO authentication verified. Redirecting to CPO Panel.",
+      redirectTo: "/cpo",
+      role: "cpo",
+      user: {
+        id: cpoUser.id,
+        email: cpoUser.email,
+        name: cpoUser.name || "Chief Product Officer",
+        role: "cpo",
+      },
+    };
+  }
 
   // 4. Fetch full vendor profile for session
   let vendorRecord = await prisma.vendor.findFirst({
