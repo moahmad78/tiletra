@@ -72,9 +72,41 @@ export default function GoogleTranslateScript() {
     }
   }, [pathname]);
 
+  // 4. Suppress Google Translate from setting body.style.top = '40px' or creating top/bottom blank space
+  useEffect(() => {
+    const resetBodyShift = () => {
+      if (typeof document === "undefined") return;
+      if (document.body.style.top && document.body.style.top !== "0px") {
+        document.body.style.top = "0px";
+      }
+      if (document.body.style.position === "relative") {
+        document.body.style.position = "";
+      }
+    };
+
+    resetBodyShift();
+    const observer = new MutationObserver(resetBodyShift);
+    observer.observe(document.body, { attributes: true, attributeFilter: ["style", "class"] });
+
+    return () => observer.disconnect();
+  }, []);
+
   return (
     <>
-      <div id="google_translate_element" style={{ display: "none" }} aria-hidden="true" />
+      <div
+        id="google_translate_element"
+        style={{
+          display: "none",
+          position: "fixed",
+          top: "-9999px",
+          left: "-9999px",
+          width: 0,
+          height: 0,
+          opacity: 0,
+          pointerEvents: "none",
+        }}
+        aria-hidden="true"
+      />
       <Script
         id="google-translate-script"
         strategy="afterInteractive"

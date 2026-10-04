@@ -184,7 +184,7 @@ export default function Footer() {
   }
 
   return (
-    <footer className="bg-[#052a51] text-white pt-12 md:pt-16 pb-8 border-t border-white/10">
+    <footer className="bg-[#052a51] text-white pt-12 md:pt-16 pb-24 md:pb-8 border-t border-white/10">
       <div className="w-full max-w-[1400px] mx-auto px-[16px] sm:px-[20px] md:px-[24px] lg:px-[32px]">
         {/* Main Grid */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-8 pb-10 border-b border-white/10">

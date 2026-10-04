@@ -176,8 +176,36 @@ body {
 .goog-te-banner-frame,
 .skiptranslate,
 #goog-gt-tt,
-.goog-te-balloon-frame {
+.goog-te-balloon-frame,
+.goog-te-menu-frame,
+.goog-te-gadget,
+.goog-te-gadget-simple,
+.VIpgJd-ZVi9od-ORHb-OEVmcd,
+.VIpgJd-ZVi9od-xl07Ob-OEVmcd,
+.VIpgJd-ZVi9od-SmfZ-OEVmcd,
+.VIpgJd-ZVi9od-aZ2wEe,
+.VIpgJd-ZVi9od-aZ2wEe-wOHMyf,
+.VIpgJd-ZVi9od-l9xktf,
+.VIpgJd-yAWNEb-L7lbkb,
+#google_translate_element,
+iframe[class*="VIpgJd"],
+iframe[id*=":"] {
   display: none !important;
+  visibility: hidden !important;
+  opacity: 0 !important;
+  width: 0 !important;
+  height: 0 !important;
+  pointer-events: none !important;
+  position: fixed !important;
+  top: -9999px !important;
+  left: -9999px !important;
+  margin: 0 !important;
+  padding: 0 !important;
+  border: none !important;
+}
+
+html {
+  height: auto !important;
 }
 
 body {
