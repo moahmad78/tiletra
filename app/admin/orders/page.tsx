@@ -17,6 +17,7 @@ import {
   Check,
   Truck,
   PackageCheck,
+  FileText,
 } from "lucide-react";
 import {
   getOrders,
@@ -282,7 +283,14 @@ export default function AdminOrdersPage() {
           </p>
         </div>
 
-        <div className="flex items-center gap-2 text-xs font-bold">
+        <div className="flex flex-wrap items-center gap-2 text-xs font-bold">
+          <Link
+            href="/admin/invoices"
+            className="inline-flex items-center gap-1.5 px-3.5 py-2 bg-[#F26522] hover:bg-[#d95a1e] text-white text-xs font-bold rounded-xl shadow-xs transition-all active:scale-95"
+          >
+            <FileText size={14} />
+            <span>Create Manual Invoice</span>
+          </Link>
           <span className="px-3 py-1.5 bg-emerald-50 text-emerald-800 border border-emerald-200 rounded-xl">
             {orders.filter((o) => o.orderStatus === "Delivered").length} Delivered
           </span>

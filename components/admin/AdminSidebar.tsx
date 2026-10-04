@@ -23,6 +23,7 @@ import {
   Truck,
   Headphones,
   BookOpen,
+  FileText,
 } from "lucide-react";
 import { useAdminStore } from "@/lib/admin-store";
 import { useState, useCallback } from "react";
@@ -38,6 +39,7 @@ const navItems = [
   { name: "Products", href: "/admin/products", icon: Package, badgeKey: "lowStock" },
   { name: "Categories", href: "/admin/categories", icon: Layers },
   { name: "Orders", href: "/admin/orders", icon: ShoppingBag, badgeKey: "pendingOrders" },
+  { name: "Invoice Generator", href: "/admin/invoices", icon: FileText },
   { name: "Logistics & Deliveries", href: "/admin/deliveries", icon: Truck },
   { name: "Customers", href: "/admin/customers", icon: Users },
   { name: "Reviews", href: "/admin/reviews", icon: MessageSquare, badgeKey: "pendingReviews" },

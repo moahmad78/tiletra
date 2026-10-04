@@ -129,6 +129,7 @@ export default function AdminHeader({
     if (pathname === "/admin/categories") return "Category Management";
     if (pathname === "/admin/orders") return "Order Management";
     if (pathname.startsWith("/admin/orders/")) return "Order Details";
+    if (pathname === "/admin/invoices") return "Tax Invoice Generator";
     if (pathname === "/admin/customers") return "Customer Directory";
     if (pathname === "/admin/reviews") return "Review Moderation";
     if (pathname === "/admin/coupons") return "Discount Coupons";
