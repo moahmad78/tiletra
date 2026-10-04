@@ -16,6 +16,7 @@ import RotatingHeaderContact from "@/components/RotatingHeaderContact";
 import UserAvatar from "@/components/ui/UserAvatar";
 import LanguageSelector from "@/components/translate/LanguageSelector";
 export default function Header() {
+  const [isScrolled, setIsScrolled] = useState(false);
   const [searchOpen, setSearchOpen] = useState(false);
   const [mounted, setMounted] = useState(false);
 
