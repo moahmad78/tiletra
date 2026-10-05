@@ -357,15 +357,25 @@ export default function VendorProductsPage() {
                           <div className="min-w-0 max-w-[240px]">
                             <p className="font-bold text-gray-900 truncate">{p.name}</p>
                             <p className="text-[10px] text-gray-400 font-mono truncate">{p.slug}</p>
-                            {p.createdByAdminId ? (
+                            {p.createdByCpoId || p.actorRole === "CPO" ? (
+                              <span className="inline-flex items-center gap-1 mt-1 px-1.5 py-0.5 rounded-md text-[10px] font-bold bg-purple-50 text-purple-700 border border-purple-200">
+                                <ShieldCheck size={11} className="text-purple-600" />
+                                Added by IntriHub
+                              </span>
+                            ) : p.createdByAdminId ? (
                               <span className="inline-flex items-center gap-1 mt-1 px-1.5 py-0.5 rounded-md text-[10px] font-bold bg-blue-50 text-blue-700 border border-blue-200">
                                 <ShieldCheck size={11} className="text-blue-600" />
-                                Added by IntriHub Admin
+                                Added by IntriHub
+                              </span>
+                            ) : p.updatedByCpoId ? (
+                              <span className="inline-flex items-center gap-1 mt-1 px-1.5 py-0.5 rounded-md text-[10px] font-bold bg-purple-50 text-purple-700 border border-purple-200">
+                                <ShieldCheck size={11} className="text-purple-600" />
+                                Edited by IntriHub
                               </span>
                             ) : p.updatedByAdminId ? (
                               <span className="inline-flex items-center gap-1 mt-1 px-1.5 py-0.5 rounded-md text-[10px] font-bold bg-indigo-50 text-indigo-700 border border-indigo-200">
                                 <ShieldCheck size={11} className="text-indigo-600" />
-                                Edited by IntriHub Admin
+                                Edited by IntriHub
                               </span>
                             ) : null}
                             {isRejected && p.rejectionReason && (

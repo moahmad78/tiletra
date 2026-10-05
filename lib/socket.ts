@@ -13,10 +13,10 @@ export function getSocket(): Socket {
       path: "/socket.io",
       autoConnect: true,
       reconnection: true,
-      reconnectionAttempts: 5,
-      reconnectionDelay: 3000,
-      transports: ["websocket", "polling"],
-      timeout: 10000,
+      reconnectionAttempts: 2,
+      reconnectionDelay: 5000,
+      transports: ["polling", "websocket"],
+      timeout: 5000,
     });
 
     socketInstance.on("connect", () => {

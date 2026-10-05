@@ -306,11 +306,56 @@ export async function exitCpoVendor(): Promise<{ success: boolean; error?: strin
 
     if (sessionId) {
       const now = new Date();
+      const session = await prisma.impersonationSession.findUnique({
+        where: { id: sessionId },
+        include: { admin: { select: { email: true } }, vendor: { select: { id: true, businessName: true } } },
+      });
+
       await prisma.impersonationSession.updateMany({
         where: { id: sessionId, endedAt: null },
         data: { endedAt: now },
       });
       cookieStore.delete(CPO_WORKSPACE_COOKIE);
+
+      if (session) {
+        // Query actions performed during this CPO session
+        const sessionLogs = await prisma.adminAuditLog.findMany({
+          where: { sessionId: session.id },
+          select: { action: true },
+        });
+
+        let itemsCreated = 0;
+        let itemsUpdated = 0;
+        let itemsDeleted = 0;
+        let slotsUpdated = false;
+
+        for (const l of sessionLogs) {
+          if (l.action.includes("ITEM_CREATED") || l.action.includes("CREATE")) itemsCreated++;
+          else if (l.action.includes("ITEM_DELETED") || l.action.includes("DELETE")) itemsDeleted++;
+          else if (l.action.includes("ITEM_UPDATED") || l.action.includes("EDIT") || l.action.includes("TOGGLED")) itemsUpdated++;
+          else if (l.action.includes("DELIVERY") || l.action.includes("SLOT")) slotsUpdated = true;
+        }
+
+        if (itemsCreated > 0 || itemsUpdated > 0 || itemsDeleted > 0 || slotsUpdated) {
+          try {
+            const { notifyVendorOfAdminChanges } = await import("@/lib/notifications/vendor-workspace-notify");
+            await notifyVendorOfAdminChanges({
+              vendorId: session.vendorId,
+              adminEmail: session.admin.email || "cpo@intrihub.com",
+              reason: session.reason || "CPO catalog management & optimization",
+              summary: {
+                itemsCreated,
+                itemsUpdated,
+                itemsDeleted,
+                ordersUpdated: 0,
+                slotsUpdated,
+              },
+            });
+          } catch (notifErr) {
+            console.error("Failed to dispatch batched CPO exit notification:", notifErr);
+          }
+        }
+      }
     }
 
     return { success: true };

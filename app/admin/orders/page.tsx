@@ -618,6 +618,14 @@ export default function AdminOrdersPage() {
                       <td className="py-3.5 px-4 text-right">
                         <div className="flex items-center justify-end gap-2">
                           <Link
+                            href={`/admin/invoices?orderId=${order.id}`}
+                            className="inline-flex items-center gap-1 px-2.5 py-1.5 bg-orange-50 text-[#F26522] hover:bg-[#F26522] hover:text-white border border-orange-200 text-xs font-bold rounded-xl shadow-2xs active:scale-95 transition-all"
+                            title="Generate Sequential GST Tax Invoice"
+                          >
+                            <FileText size={13} />
+                            <span className="hidden sm:inline">Bill</span>
+                          </Link>
+                          <Link
                             href={`/admin/orders/${order.id}`}
                             className="inline-flex items-center gap-1 px-3 py-1.5 bg-[#052a51] text-white hover:bg-[#041f3d] text-xs font-bold rounded-xl shadow-2xs active:scale-95 transition-all"
                           >

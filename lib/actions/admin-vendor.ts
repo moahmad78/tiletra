@@ -843,6 +843,11 @@ export async function updateVendorLoginMethod(
   optionalPassword?: string
 ) {
   try {
+    const auth = await requireAdminAction("vendor:login_method");
+    if (!auth.authorized) {
+      return { success: false, error: "Forbidden (403): Only Super Admin can modify vendor authentication and login methods." };
+    }
+
     if (!vendorId) return { success: false, error: "Vendor ID required" };
 
     const data =

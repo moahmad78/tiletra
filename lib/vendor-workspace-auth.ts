@@ -662,6 +662,7 @@ export async function logAdminAuditAction(params: {
   action: string;
   entity: string;
   entityId?: string;
+  actorRole?: string;
   before?: any;
   after?: any;
 }) {
@@ -675,6 +676,7 @@ export async function logAdminAuditAction(params: {
         action: params.action,
         entity: params.entity,
         entityId: params.entityId || null,
+        actorRole: params.actorRole || "ADMIN",
         before: params.before ? JSON.parse(JSON.stringify(params.before)) : undefined,
         after: params.after ? JSON.parse(JSON.stringify(params.after)) : undefined,
         ip: ip || null,

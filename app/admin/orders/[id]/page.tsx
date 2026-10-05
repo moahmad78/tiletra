@@ -18,6 +18,7 @@ import {
   AlertTriangle,
   X,
   Clock,
+  FileText,
 } from "lucide-react";
 import {
   getOrderById,
@@ -228,12 +229,21 @@ export default function OrderDetailPage({
             <span>WhatsApp Customer</span>
           </a>
 
+          <Link
+            href={`/admin/invoices?orderId=${order.id}`}
+            className="inline-flex items-center gap-1.5 px-3.5 py-2 bg-orange-50 hover:bg-[#F26522] text-[#F26522] hover:text-white border border-orange-200 text-xs font-bold rounded-xl transition-all shadow-2xs active:scale-95"
+            title="Open in Official GST Tax Invoice Generator with Auto-Sequential Serial"
+          >
+            <FileText size={14} />
+            <span>Generate GST Bill</span>
+          </Link>
+
           <button
             onClick={() => setInvoiceOpen(true)}
             className="inline-flex items-center gap-1.5 px-3.5 py-2 bg-[#052a51] hover:bg-[#041f3d] text-white text-xs font-bold rounded-xl transition-colors shadow-2xs cursor-pointer"
           >
             <Printer size={14} />
-            <span>Tax Invoice</span>
+            <span>Quick Slip</span>
           </button>
 
           <button

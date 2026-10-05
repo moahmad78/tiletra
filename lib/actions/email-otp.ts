@@ -152,7 +152,16 @@ export async function sendEmailOtp(
           })
         : null;
 
-      if (!vendorRecord && !vendorUser) {
+      const cpoUser = (!vendorRecord && !vendorUser)
+        ? await prisma.user.findFirst({
+            where: {
+              email: { equals: cleanEmail, mode: "insensitive" },
+              role: { equals: "cpo", mode: "insensitive" },
+            },
+          })
+        : null;
+
+      if (!vendorRecord && !vendorUser && !cpoUser) {
         return { success: false, message: "This email isn't registered as an approved vendor partner." };
       }
 
@@ -440,6 +449,30 @@ export async function verifyEmailOtp(
 
   // Vendor authentication flow
   if (purpose === "vendor") {
+    // 1. Check if user has CPO role in DB
+    const cpoUser = await prisma.user.findFirst({
+      where: {
+        email: { equals: cleanEmail, mode: "insensitive" },
+        role: { equals: "cpo", mode: "insensitive" },
+      },
+    });
+
+    if (cpoUser) {
+      console.log(`[OTP_VERIFY_SUCCESS] role=cpo userId=${cpoUser.id}`);
+      return {
+        success: true,
+        message: "CPO authenticated successfully!",
+        userId: cpoUser.id,
+        role: "cpo",
+        user: {
+          id: cpoUser.id,
+          name: cpoUser.name || "Chief Product Officer",
+          email: cpoUser.email,
+          role: "cpo",
+        },
+      };
+    }
+
     const vendorRecord = await prisma.vendor.findFirst({
       where: {
         OR: [

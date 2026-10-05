@@ -101,6 +101,9 @@ export type Product = {
   rejectionReason?: string | null;
   createdByAdminId?: string | null;
   updatedByAdminId?: string | null;
+  createdByCpoId?: string | null;
+  updatedByCpoId?: string | null;
+  actorRole?: string | null;
   coverageRate?: number | null;
   piecesPerBox?: number | null;
   wastageFactor?: number | null;

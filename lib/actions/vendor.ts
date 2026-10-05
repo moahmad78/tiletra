@@ -171,7 +171,7 @@ export async function updateVendorProfile(
 ) {
   try {
     const context = await resolveVendorContext();
-    if (context?.actor.type === "ADMIN") {
+    if (context?.actor.type === "ADMIN" || context?.actor.type === "CPO") {
       return {
         success: false,
         error: "Forbidden (403): Vendor profile and business details are view-only while acting in Vendor Workspace mode.",
@@ -241,19 +241,21 @@ export async function updateVendorDeliverySettings(
       data: updateData,
     });
 
-    if (context?.actor.type === "ADMIN") {
+    if (context?.actor.type === "ADMIN" || context?.actor.type === "CPO") {
       await logAdminAuditAction({
         sessionId: context.sessionId,
-        adminId: context.actor.adminId!,
+        adminId: (context.actor.type === "CPO" ? context.actor.cpoId : context.actor.adminId)!,
         vendorId: effectiveVendorId,
+        actorRole: context.actor.type,
         action: "DELIVERY_SETTINGS_UPDATED",
         entity: "Vendor",
         entityId: effectiveVendorId,
+        before: { deliveryMethod: (updated as any).deliveryMethod },
         after: updateData,
       });
       await notifyVendorOfAdminChanges(
         effectiveVendorId,
-        "IntriHub admin updated delivery and shipping settings on your store."
+        "IntriHub team updated delivery and shipping settings on your store."
       );
     }
 
@@ -429,6 +431,8 @@ export async function createVendorProduct(vendorId: string, input: CreateProduct
 
     const createdByAdminId = context?.actor.type === "ADMIN" ? context.actor.adminId : undefined;
     const updatedByAdminId = context?.actor.type === "ADMIN" ? context.actor.adminId : undefined;
+    const createdByCpoId = context?.actor.type === "CPO" ? context.actor.cpoId : undefined;
+    const updatedByCpoId = context?.actor.type === "CPO" ? context.actor.cpoId : undefined;
 
     // Force vendorId and status for vendor submissions
     const res = await createProduct({
@@ -439,13 +443,17 @@ export async function createVendorProduct(vendorId: string, input: CreateProduct
       rejectionReason: null,
       createdByAdminId,
       updatedByAdminId,
-    });
+      createdByCpoId,
+      updatedByCpoId,
+      actorRole: context?.actor.type || undefined,
+    } as any);
 
-    if (res.success && res.product && context?.actor.type === "ADMIN") {
+    if (res.success && res.product && (context?.actor.type === "ADMIN" || context?.actor.type === "CPO")) {
       await logAdminAuditAction({
         sessionId: context.sessionId,
-        adminId: context.actor.adminId!,
+        adminId: (context.actor.type === "CPO" ? context.actor.cpoId : context.actor.adminId)!,
         vendorId: vendor.id,
+        actorRole: context.actor.type,
         action: "ITEM_CREATED",
         entity: "Product",
         entityId: res.product.id,
@@ -523,8 +531,9 @@ export async function updateVendorProduct(
     }
 
     const isAutoPublish = Boolean(vendor.autoPublishEnabled);
-    const approvalStatus = isAutoPublish ? "approved" : "pending";
+    const approvalStatus = (context?.actor.type === "ADMIN" || context?.actor.type === "CPO") ? "approved" : (isAutoPublish ? "approved" : "pending");
     const updatedByAdminId = context?.actor.type === "ADMIN" ? context.actor.adminId : undefined;
+    const updatedByCpoId = context?.actor.type === "CPO" ? context.actor.cpoId : undefined;
 
     // Resubmit for approval upon modifications if auto-publish is false
     const res = await updateProduct(productId, {
@@ -533,13 +542,16 @@ export async function updateVendorProduct(
       approvalStatus,
       rejectionReason: null,
       updatedByAdminId,
-    });
+      updatedByCpoId,
+      actorRole: context?.actor.type || undefined,
+    } as any);
 
-    if (res.success && context?.actor.type === "ADMIN") {
+    if (res.success && (context?.actor.type === "ADMIN" || context?.actor.type === "CPO")) {
       await logAdminAuditAction({
         sessionId: context.sessionId,
-        adminId: context.actor.adminId!,
+        adminId: (context.actor.type === "CPO" ? context.actor.cpoId : context.actor.adminId)!,
         vendorId: vendor.id,
+        actorRole: context.actor.type,
         action: "ITEM_UPDATED",
         entity: "Product",
         entityId: productId,
@@ -652,16 +664,18 @@ export async function toggleVendorProductStatus(
       where: { id: productId },
       data: {
         status: newStatus,
-        ...(context?.actor.type === "ADMIN" ? { updatedByAdminId: context.actor.adminId } : {}),
+        ...(context?.actor.type === "ADMIN" ? { updatedByAdminId: context.actor.adminId, actorRole: "ADMIN" } : {}),
+        ...(context?.actor.type === "CPO" ? { updatedByCpoId: context.actor.cpoId, actorRole: "CPO" } : {}),
       },
       include: { variants: true, attributes: true },
     });
 
-    if (context?.actor.type === "ADMIN") {
+    if (context?.actor.type === "ADMIN" || context?.actor.type === "CPO") {
       await logAdminAuditAction({
         sessionId: context.sessionId,
-        adminId: context.actor.adminId!,
+        adminId: (context.actor.type === "CPO" ? context.actor.cpoId : context.actor.adminId)!,
         vendorId: effectiveVendorId,
+        actorRole: context.actor.type,
         action: "ITEM_STATUS_TOGGLED",
         entity: "Product",
         entityId: productId,
@@ -711,11 +725,12 @@ export async function deleteVendorProduct(vendorId: string, productId: string) {
     const res = await deleteProduct(productId);
     safeRevalidate("/vendor/products");
 
-    if (res.success && context?.actor.type === "ADMIN") {
+    if (res.success && (context?.actor.type === "ADMIN" || context?.actor.type === "CPO")) {
       await logAdminAuditAction({
         sessionId: context.sessionId,
-        adminId: context.actor.adminId!,
+        adminId: (context.actor.type === "CPO" ? context.actor.cpoId : context.actor.adminId)!,
         vendorId: effectiveVendorId,
+        actorRole: context.actor.type,
         action: "ITEM_DELETED",
         entity: "Product",
         entityId: productId,
@@ -818,7 +833,7 @@ async function verifyVendorAuth(vendorId?: string, ownerId?: string): Promise<{ 
   try {
     const context = await resolveVendorContext();
     if (context) {
-      if (context.actor.type === "ADMIN") {
+      if (context.actor.type === "ADMIN" || context.actor.type === "CPO") {
         if (vendorId && context.vendorId !== vendorId) {
           return { authorized: false, error: "Forbidden: You are not authorized for this vendor store." };
         }
@@ -858,7 +873,7 @@ async function verifyVendorAuth(vendorId?: string, ownerId?: string): Promise<{ 
 export async function changeVendorPassword(ownerId: string, newPassword: string) {
   try {
     const context = await resolveVendorContext();
-    if (context?.actor.type === "ADMIN") {
+    if (context?.actor.type === "ADMIN" || context?.actor.type === "CPO") {
       return {
         success: false,
         error: "Forbidden (403): Password changes are blocked while acting in Vendor Workspace mode.",
@@ -909,7 +924,7 @@ export async function updateVendorBankDetails(
 ) {
   try {
     const context = await resolveVendorContext();
-    if (context?.actor.type === "ADMIN") {
+    if (context?.actor.type === "ADMIN" || context?.actor.type === "CPO") {
       return {
         success: false,
         error: "Forbidden (403): Bank and payout details cannot be modified while acting in Vendor Workspace mode.",
@@ -966,7 +981,7 @@ export async function updateVendorKycDocuments(
 ) {
   try {
     const context = await resolveVendorContext();
-    if (context?.actor.type === "ADMIN") {
+    if (context?.actor.type === "ADMIN" || context?.actor.type === "CPO") {
       return {
         success: false,
         error: "Forbidden (403): Vendor KYC documents are view-only while acting in Vendor Workspace mode.",
@@ -1678,11 +1693,12 @@ export async function updateVendorDeliverySlotsConfig(
       data: { deliverySlots: sanitized as any },
     });
 
-    if (context?.actor.type === "ADMIN") {
+    if (context?.actor.type === "ADMIN" || context?.actor.type === "CPO") {
       await logAdminAuditAction({
         sessionId: context.sessionId,
-        adminId: context.actor.adminId!,
+        adminId: (context.actor.type === "CPO" ? context.actor.cpoId : context.actor.adminId)!,
         vendorId: effectiveVendorId,
+        actorRole: context.actor.type,
         action: "DELIVERY_SLOTS_UPDATED",
         entity: "Vendor",
         entityId: effectiveVendorId,

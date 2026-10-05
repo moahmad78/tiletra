@@ -33,15 +33,15 @@ export async function notifyVendorOfAdminChanges(
   try {
     let vendorId: string;
     let message: string;
-    let title = "Store Activity: IntriHub Admin Support";
+    let title = "Store Activity: IntriHub Team Support";
 
     if (typeof paramsOrVendorId === "string") {
       // Simple signature: notifyVendorOfAdminChanges(vendorId, message)
       vendorId = paramsOrVendorId;
-      message = simpleMessage || "IntriHub admin made changes to your store.";
+      message = simpleMessage || "IntriHub team made changes to your store.";
     } else {
       // Object signature
-      const { vendorId: vid, summary, reason } = paramsOrVendorId;
+      const { vendorId: vid, summary, reason, adminEmail } = paramsOrVendorId as any;
       vendorId = vid;
 
       const changeParts: string[] = [];
@@ -66,7 +66,11 @@ export async function notifyVendorOfAdminChanges(
         return { success: true, skipped: true };
       }
 
-      message = `IntriHub Platform Admin ${changeParts.join(", ")} on your store (${reason}).`;
+      const actorLabel = (adminEmail?.toLowerCase().includes("cpo") || reason?.toLowerCase().includes("cpo"))
+        ? "IntriHub CPO"
+        : "IntriHub Team";
+
+      message = `${actorLabel} ${changeParts.join(", ")} on your store (${reason}).`;
     }
 
     const vendor = await prisma.vendor.findUnique({

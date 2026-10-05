@@ -1,7 +1,8 @@
 "use client";
 
 import React from "react";
-import { X, Printer, Package } from "lucide-react";
+import Link from "next/link";
+import { X, Printer, Package, FileText } from "lucide-react";
 import type { AdminOrder } from "@/lib/admin-store";
 
 function formatPrice(n: number) {
@@ -157,6 +158,14 @@ export default function InvoiceModal({
             <h3 className="font-black text-[#052a51] text-sm">Tax Invoice: #{orderId}</h3>
           </div>
           <div className="flex items-center gap-2">
+            <Link
+              href={`/admin/invoices?orderId=${order.id}`}
+              className="inline-flex items-center gap-1.5 px-3 py-2 bg-orange-50 text-[#F26522] hover:bg-[#F26522] hover:text-white border border-orange-200 text-xs font-bold rounded-xl transition-all shadow-2xs active:scale-95"
+              title="Open in Official GST Tax Invoice Generator"
+            >
+              <FileText size={14} />
+              <span>Full GST Generator</span>
+            </Link>
             <button
               type="button"
               onClick={handlePrint}
