@@ -105,12 +105,12 @@ export default function AdminHeader({
     },
   });
 
-  // ── Universal Live Sync Hook (Cross-tab broadcast + Tab Focus + 4s Auto-Poll) ──
+  // ── Universal Live Sync Hook (Cross-tab broadcast + Tab Focus + 12s Auto-Poll) ──
   useLiveSync({
     eventTypes: ["order:new", "data:refresh"],
     onSync: fetchNotifications,
-    pollIntervalMs: 4000,
-    enableFocusRefresh: true,
+    pollIntervalMs: 12000,
+    enableFocusRefresh: false,
   });
 
   const handleLogout = () => {

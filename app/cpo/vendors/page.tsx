@@ -14,8 +14,6 @@ import {
   PlusCircle,
   Briefcase,
   Edit,
-  Eye,
-  Lock,
   Phone,
   Mail,
   Percent,
@@ -24,8 +22,8 @@ import {
   Clock,
   X,
   Loader2,
-  Shield,
   FileText,
+  Package,
   ExternalLink,
 } from "lucide-react";
 import { toast } from "sonner";
@@ -106,16 +104,17 @@ export default function CpoVendorsPage() {
     loadData();
   };
 
-  const handleSelectWorkspace = async (vendor: any) => {
+  const handleSelectWorkspace = async (v: any) => {
     try {
       const res = await selectCpoVendor({
-        vendorId: vendor.id,
-        reason: "CPO Operational Review & Catalog Management",
+        vendorId: v.id,
+        reason: `CPO Vendor Catalog Management`,
       });
+
       if (res.success) {
-        toast.success(`Active workspace opened for ${vendor.businessName}`);
-        setActiveWorkspaceId(vendor.id);
-        router.refresh();
+        toast.success(`Active workspace opened for ${v.businessName}`);
+        setActiveWorkspaceId(v.id);
+        router.push(`/cpo/catalog?vendorId=${v.id}`);
       } else {
         toast.error(res.error || "Failed to start workspace");
       }
@@ -194,31 +193,31 @@ export default function CpoVendorsPage() {
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
-          <h1 className="text-2xl font-bold text-white tracking-tight">Marketplace Vendors</h1>
-          <p className="text-xs text-slate-400 mt-1">
-            Search, onboard, manage commission rates, and launch dedicated workspaces for suppliers.
+          <h1 className="text-2xl font-black text-gray-900 tracking-tight">Marketplace Vendors &amp; Stores</h1>
+          <p className="text-xs text-gray-500 mt-1 font-medium">
+            Select any vendor to manage their product catalog, upload new items with all options, or generate tax invoices.
           </p>
         </div>
 
         <button
           onClick={() => setShowAddModal(true)}
-          className="inline-flex items-center gap-2 px-4 py-2 bg-purple-600 hover:bg-purple-500 text-white text-xs font-semibold rounded-xl shadow-md transition-colors"
+          className="inline-flex items-center gap-2 px-4 py-2.5 bg-[#F26522] hover:bg-[#d95517] text-white text-xs font-bold rounded-xl shadow-xs transition-colors cursor-pointer"
         >
           <PlusCircle className="w-4 h-4" />
-          <span>Add New Vendor</span>
+          <span>+ Add New Vendor</span>
         </button>
       </div>
 
       {/* Filter / Search Bar */}
-      <div className="bg-slate-900 border border-slate-800 rounded-xl p-4 flex flex-col md:flex-row items-center justify-between gap-4">
+      <div className="bg-white border border-gray-200/90 rounded-2xl p-4 flex flex-col md:flex-row items-center justify-between gap-4 shadow-xs">
         <form onSubmit={handleSearchSubmit} className="flex-1 w-full relative">
-          <Search className="w-4 h-4 text-slate-400 absolute left-3 top-2.5" />
+          <Search className="w-4 h-4 text-gray-400 absolute left-3.5 top-3" />
           <input
             type="text"
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
-            placeholder="Search by vendor name, shop name, ID, phone, or GST..."
-            className="w-full bg-slate-800 border border-slate-700 rounded-lg pl-9 pr-4 py-2 text-xs text-white placeholder-slate-400 focus:outline-none focus:ring-1 focus:ring-purple-500"
+            placeholder="Search by vendor name, shop name, phone, or GST..."
+            className="w-full bg-gray-50 border border-gray-200 rounded-xl pl-10 pr-4 py-2.5 text-xs text-gray-900 placeholder-gray-400 focus:outline-none focus:border-[#F26522] focus:bg-white transition-all font-medium"
           />
         </form>
 
@@ -227,10 +226,10 @@ export default function CpoVendorsPage() {
             <button
               key={st}
               onClick={() => setStatusFilter(st)}
-              className={`px-3 py-1.5 rounded-lg text-xs font-medium capitalize whitespace-nowrap transition-colors ${
+              className={`px-3 py-1.5 rounded-xl text-xs font-bold capitalize whitespace-nowrap transition-colors cursor-pointer ${
                 statusFilter === st
-                  ? "bg-purple-600 text-white"
-                  : "bg-slate-800 text-slate-400 hover:text-white"
+                  ? "bg-[#052a51] text-white shadow-xs"
+                  : "bg-gray-100 text-gray-600 hover:bg-gray-200"
               }`}
             >
               {st}
@@ -240,125 +239,142 @@ export default function CpoVendorsPage() {
       </div>
 
       {/* Vendors Table */}
-      <div className="bg-slate-900 border border-slate-800 rounded-xl overflow-hidden shadow-sm">
+      <div className="bg-white border border-gray-200/90 rounded-2xl overflow-hidden shadow-xs">
         {loading ? (
-          <div className="py-20 flex flex-col items-center justify-center text-slate-400 gap-3">
-            <Loader2 className="w-6 h-6 animate-spin text-purple-400" />
-            <span className="text-xs">Loading marketplace vendors...</span>
+          <div className="py-20 flex flex-col items-center justify-center text-gray-400 gap-3">
+            <Loader2 className="w-7 h-7 animate-spin text-[#F26522]" />
+            <span className="text-xs font-medium">Loading marketplace vendors...</span>
           </div>
         ) : vendors.length === 0 ? (
-          <div className="py-16 text-center text-slate-400 text-xs">
+          <div className="py-16 text-center text-gray-500 text-xs">
             No vendors found matching your filter criteria.
           </div>
         ) : (
           <div className="overflow-x-auto">
             <table className="w-full text-left border-collapse text-xs">
               <thead>
-                <tr className="border-b border-slate-800 bg-slate-950/60 text-slate-400 uppercase tracking-wider text-[10px]">
-                  <th className="py-3 px-4">Vendor &amp; Store</th>
-                  <th className="py-3 px-4">Category</th>
-                  <th className="py-3 px-4">Commission</th>
-                  <th className="py-3 px-4">Products</th>
-                  <th className="py-3 px-4">Status</th>
-                  <th className="py-3 px-4">Contact</th>
-                  <th className="py-3 px-4 text-right">Actions</th>
+                <tr className="border-b border-gray-200 bg-gray-50 text-gray-500 uppercase tracking-wider text-[10px] font-bold">
+                  <th className="py-3.5 px-4">Vendor &amp; Store</th>
+                  <th className="py-3.5 px-4">Category</th>
+                  <th className="py-3.5 px-4">Commission</th>
+                  <th className="py-3.5 px-4">Products</th>
+                  <th className="py-3.5 px-4">Status</th>
+                  <th className="py-3.5 px-4">Contact</th>
+                  <th className="py-3.5 px-4 text-right">Actions</th>
                 </tr>
               </thead>
-              <tbody className="divide-y divide-slate-800">
+              <tbody className="divide-y divide-gray-100">
                 {vendors.map((v) => {
-                  const isActiveWorkspace = activeWorkspaceId === v.id;
+                  const isActiveWorkspace = v.id === activeWorkspaceId;
                   return (
                     <tr
                       key={v.id}
-                      className={`hover:bg-slate-800/40 transition-colors ${
-                        isActiveWorkspace ? "bg-purple-950/20" : ""
+                      className={`hover:bg-gray-50/80 transition-colors ${
+                        isActiveWorkspace ? "bg-[#052a51]/5" : ""
                       }`}
                     >
                       <td className="py-3.5 px-4">
-                        <div className="font-semibold text-white flex items-center gap-2">
-                          <span>{v.businessName}</span>
+                        <div className="flex items-center gap-2">
+                          <span className="font-bold text-gray-900 text-sm">{v.businessName}</span>
                           {isActiveWorkspace && (
-                            <span className="px-1.5 py-0.5 rounded text-[10px] bg-purple-500 text-white font-mono uppercase font-bold">
+                            <span className="px-2 py-0.5 rounded text-[9px] font-black uppercase tracking-wider bg-[#F26522] text-white">
                               Active
                             </span>
                           )}
                         </div>
-                        <div className="text-[11px] text-slate-400 font-mono mt-0.5">
-                          ID: {v.id}
+                        <div className="text-[11px] text-gray-400 font-mono mt-0.5">
+                          ID: {v.id} {v.gstNumber && `• GST: ${v.gstNumber}`}
                         </div>
-                        {v.internalNotes && (
-                          <div className="text-[10px] text-amber-300 italic mt-0.5 max-w-xs truncate">
-                            Note: {v.internalNotes}
-                          </div>
-                        )}
                       </td>
-                      <td className="py-3.5 px-4 text-slate-300">
-                        {v.category || "General"}
-                      </td>
-                      <td className="py-3.5 px-4 font-mono font-medium text-purple-300">
-                        {v.commissionRate}%
-                      </td>
-                      <td className="py-3.5 px-4 font-mono text-slate-300">
-                        {v._count?.products || 0}
-                      </td>
+
                       <td className="py-3.5 px-4">
-                        <span
-                          className={`inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-semibold uppercase tracking-wider ${
-                            v.status === "approved"
-                              ? "bg-emerald-950/80 text-emerald-400 border border-emerald-800"
-                              : v.status === "paused"
-                              ? "bg-amber-950/80 text-amber-400 border border-amber-800"
-                              : v.status === "suspended"
-                              ? "bg-red-950/80 text-red-400 border border-red-800"
-                              : "bg-slate-800 text-slate-300 border border-slate-700"
-                          }`}
-                        >
-                          {v.status}
+                        <span className="inline-block px-2.5 py-1 rounded-lg bg-gray-100 text-gray-700 font-medium text-[11px]">
+                          {v.category || "General"}
                         </span>
                       </td>
-                      <td className="py-3.5 px-4 text-slate-400">
-                        <div className="flex items-center gap-1.5">
-                          <Phone className="w-3 h-3 text-slate-400" />
-                          <span>{v.contactPhone}</span>
+
+                      <td className="py-3.5 px-4 font-bold text-gray-900 font-mono">
+                        {v.commissionRate ?? 15}%
+                      </td>
+
+                      <td className="py-3.5 px-4">
+                        <span className="inline-flex items-center gap-1 font-bold text-gray-900 bg-gray-100 px-2.5 py-1 rounded-lg">
+                          <Package className="w-3.5 h-3.5 text-gray-500" />
+                          {v._count?.products ?? 0}
+                        </span>
+                      </td>
+
+                      <td className="py-3.5 px-4">
+                        {v.status === "approved" ? (
+                          <span className="inline-flex items-center gap-1 text-[11px] font-bold text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded-full border border-emerald-200">
+                            <CheckCircle2 className="w-3 h-3" /> Approved
+                          </span>
+                        ) : v.status === "pending" ? (
+                          <span className="inline-flex items-center gap-1 text-[11px] font-bold text-amber-700 bg-amber-50 px-2 py-0.5 rounded-full border border-amber-200">
+                            <Clock className="w-3 h-3" /> Pending
+                          </span>
+                        ) : (
+                          <span className="inline-flex items-center gap-1 text-[11px] font-bold text-rose-700 bg-rose-50 px-2 py-0.5 rounded-full border border-rose-200 capitalize">
+                            <AlertTriangle className="w-3 h-3" /> {v.status}
+                          </span>
+                        )}
+                      </td>
+
+                      <td className="py-3.5 px-4">
+                        <div className="text-gray-700 font-medium flex items-center gap-1">
+                          <Phone className="w-3 h-3 text-gray-400" />
+                          {v.contactPhone || "N/A"}
                         </div>
-                        <div className="flex items-center gap-1.5 text-[11px] mt-0.5">
-                          <Mail className="w-3 h-3 text-slate-400" />
-                          <span className="truncate max-w-[140px]">{v.contactEmail}</span>
+                        <div className="text-[11px] text-gray-400 truncate max-w-[180px] flex items-center gap-1 mt-0.5">
+                          <Mail className="w-3 h-3 text-gray-400" />
+                          {v.contactEmail}
                         </div>
                       </td>
+
                       <td className="py-3.5 px-4 text-right">
-                        <div className="flex items-center justify-end gap-2">
+                        <div className="flex items-center justify-end gap-1.5 flex-wrap">
+                          {/* Manage Items / Workspace */}
                           <button
                             onClick={() => handleSelectWorkspace(v)}
-                            className={`px-2.5 py-1 rounded-md text-xs font-medium flex items-center gap-1.5 transition-colors ${
+                            className={`px-3 py-1.5 rounded-xl font-bold text-xs inline-flex items-center gap-1 transition-all cursor-pointer ${
                               isActiveWorkspace
-                                ? "bg-purple-600 text-white"
-                                : "bg-purple-950/80 hover:bg-purple-900 text-purple-300 border border-purple-700/60"
+                                ? "bg-[#F26522] text-white shadow-xs"
+                                : "bg-[#052a51] hover:bg-[#04203e] text-white"
                             }`}
-                            title="Open Vendor Workspace"
+                            title="Manage products for this vendor"
                           >
-                            <Briefcase className="w-3 h-3" />
-                            <span>{isActiveWorkspace ? "Active" : "Workspace"}</span>
+                            <Package className="w-3.5 h-3.5" />
+                            <span>{isActiveWorkspace ? "Managing" : "Items"}</span>
                           </button>
 
+                          {/* Add Item direct link */}
+                          <Link
+                            href={`/cpo/catalog/new?vendorId=${v.id}`}
+                            className="px-2.5 py-1.5 rounded-xl font-bold text-xs bg-emerald-600 hover:bg-emerald-700 text-white inline-flex items-center gap-1 shadow-xs transition-colors"
+                            title="Add new item with all options"
+                          >
+                            <PlusCircle className="w-3.5 h-3.5" />
+                            <span>+ Item</span>
+                          </Link>
+
+                          {/* Invoice direct link */}
+                          <Link
+                            href={`/cpo/invoices?vendorId=${v.id}`}
+                            className="px-2.5 py-1.5 rounded-xl font-bold text-xs bg-gray-100 hover:bg-gray-200 text-gray-700 inline-flex items-center gap-1 transition-colors"
+                            title="Generate Tax Invoice"
+                          >
+                            <FileText className="w-3.5 h-3.5 text-blue-600" />
+                            <span>Bill</span>
+                          </Link>
+
+                          {/* Edit Settings */}
                           <button
                             onClick={() => handleOpenEdit(v)}
-                            className="p-1 rounded-md bg-slate-800 hover:bg-slate-700 text-slate-300 transition-colors"
-                            title="Edit Settings"
+                            className="p-1.5 text-gray-400 hover:text-gray-700 rounded-lg hover:bg-gray-100 transition-colors"
+                            title="Edit commission & status"
                           >
                             <Edit className="w-3.5 h-3.5" />
                           </button>
-
-                          {v.slug && (
-                            <Link
-                              href={`/shop/vendor/${v.slug}`}
-                              target="_blank"
-                              className="p-1 rounded-md bg-slate-800 hover:bg-slate-700 text-slate-300 transition-colors"
-                              title="View Storefront"
-                            >
-                              <ExternalLink className="w-3.5 h-3.5" />
-                            </Link>
-                          )}
                         </div>
                       </td>
                     </tr>
@@ -370,242 +386,231 @@ export default function CpoVendorsPage() {
         )}
       </div>
 
-      {/* Edit Vendor Settings Modal */}
+      {/* Edit Settings Modal */}
       {editingVendor && (
-        <div className="fixed inset-0 z-50 bg-black/70 backdrop-blur-sm flex items-center justify-center p-4">
-          <div className="bg-slate-900 border border-slate-800 rounded-2xl w-full max-w-lg overflow-hidden shadow-2xl">
-            <div className="p-5 border-b border-slate-800 flex items-center justify-between">
+        <div className="fixed inset-0 z-50 bg-black/50 backdrop-blur-xs flex items-center justify-center p-4">
+          <div className="bg-white rounded-3xl border border-gray-200 shadow-2xl max-w-md w-full p-6 space-y-4 animate-in fade-in zoom-in-95">
+            <div className="flex items-center justify-between pb-3 border-b border-gray-100">
               <div>
-                <h3 className="text-base font-bold text-white">Vendor Configuration</h3>
-                <p className="text-xs text-slate-400">{editingVendor.businessName} (ID: {editingVendor.id.slice(-6)})</p>
+                <h3 className="text-base font-black text-gray-900">Edit Vendor Settings</h3>
+                <p className="text-xs text-gray-500 font-medium">{editingVendor.businessName}</p>
               </div>
               <button
                 onClick={() => setEditingVendor(null)}
-                className="text-slate-400 hover:text-white"
+                className="text-gray-400 hover:text-gray-600 p-1 rounded-lg"
               >
                 <X className="w-5 h-5" />
               </button>
             </div>
 
-            <div className="p-5 space-y-4 text-xs">
+            <div className="space-y-3 text-xs">
               <div>
-                <label className="block font-medium text-slate-300 mb-1">Primary Category</label>
+                <label className="block font-bold text-gray-700 mb-1">Assigned Category</label>
                 <select
                   value={editCategory}
                   onChange={(e) => setEditCategory(e.target.value)}
-                  className="w-full bg-slate-800 border border-slate-700 rounded-lg px-3 py-2 text-white focus:outline-none focus:ring-1 focus:ring-purple-500"
+                  className="w-full bg-gray-50 border border-gray-200 rounded-xl px-3 py-2 text-xs text-gray-900 focus:outline-none focus:border-[#F26522]"
                 >
-                  {CATEGORIES.map((cat) => (
-                    <option key={cat} value={cat}>{cat}</option>
+                  {CATEGORIES.map((c) => (
+                    <option key={c} value={c}>
+                      {c}
+                    </option>
                   ))}
                 </select>
               </div>
 
               <div>
-                <label className="block font-medium text-slate-300 mb-1">Platform Commission Rate (%)</label>
-                <div className="relative">
-                  <input
-                    type="number"
-                    step="0.1"
-                    min="0"
-                    max="100"
-                    value={editCommission}
-                    onChange={(e) => setEditCommission(parseFloat(e.target.value) || 0)}
-                    className="w-full bg-slate-800 border border-slate-700 rounded-lg px-3 py-2 text-white focus:outline-none focus:ring-1 focus:ring-purple-500"
-                  />
-                  <Percent className="w-3.5 h-3.5 text-slate-400 absolute right-3 top-2.5" />
-                </div>
+                <label className="block font-bold text-gray-700 mb-1">Marketplace Commission (%)</label>
+                <input
+                  type="number"
+                  step="0.5"
+                  min="0"
+                  max="50"
+                  value={editCommission}
+                  onChange={(e) => setEditCommission(parseFloat(e.target.value) || 0)}
+                  className="w-full bg-gray-50 border border-gray-200 rounded-xl px-3 py-2 text-xs text-gray-900 focus:outline-none focus:border-[#F26522]"
+                />
               </div>
 
               <div>
-                <label className="block font-medium text-slate-300 mb-1">Store Status</label>
+                <label className="block font-bold text-gray-700 mb-1">Account Status</label>
                 <select
                   value={editStatus}
                   onChange={(e) => setEditStatus(e.target.value)}
-                  className="w-full bg-slate-800 border border-slate-700 rounded-lg px-3 py-2 text-white focus:outline-none focus:ring-1 focus:ring-purple-500"
+                  className="w-full bg-gray-50 border border-gray-200 rounded-xl px-3 py-2 text-xs text-gray-900 focus:outline-none focus:border-[#F26522]"
                 >
-                  <option value="approved">Approved &amp; Active</option>
-                  <option value="paused">Paused (Catalog hidden from search)</option>
+                  <option value="approved">Approved</option>
+                  <option value="pending">Pending Review</option>
+                  <option value="paused">Paused</option>
                   <option value="suspended">Suspended</option>
-                  <option value="pending">Pending Application</option>
                 </select>
               </div>
 
               <div>
-                <label className="block font-medium text-slate-300 mb-1">Internal CPO Operational Notes</label>
+                <label className="block font-bold text-gray-700 mb-1">Internal Notes</label>
                 <textarea
-                  rows={3}
                   value={editNotes}
                   onChange={(e) => setEditNotes(e.target.value)}
-                  placeholder="Private internal observations, priority category supplier notes, SLA commitments..."
-                  className="w-full bg-slate-800 border border-slate-700 rounded-lg p-3 text-white placeholder-slate-400 focus:outline-none focus:ring-1 focus:ring-purple-500"
+                  rows={3}
+                  placeholder="Private notes on performance, supplier agreements..."
+                  className="w-full bg-gray-50 border border-gray-200 rounded-xl p-3 text-xs text-gray-900 focus:outline-none focus:border-[#F26522]"
                 />
-              </div>
-
-              {/* Security policy notice */}
-              <div className="p-3 rounded-lg bg-slate-950 border border-slate-800 text-[11px] text-slate-400 flex items-start gap-2">
-                <Lock className="w-3.5 h-3.5 text-purple-400 shrink-0 mt-0.5" />
-                <span>
-                  Financial settlements, bank accounts, and credentials are locked (403 Forbidden for CPO) and can only be altered by Super Admin.
-                </span>
               </div>
             </div>
 
-            <div className="p-4 bg-slate-950/60 border-t border-slate-800 flex items-center justify-end gap-3">
+            <div className="flex items-center justify-end gap-2.5 pt-3 border-t border-gray-100">
               <button
-                type="button"
                 onClick={() => setEditingVendor(null)}
-                className="px-4 py-2 rounded-lg text-xs font-semibold text-slate-300 hover:text-white"
+                className="px-4 py-2 rounded-xl text-xs font-bold text-gray-600 hover:bg-gray-100"
               >
                 Cancel
               </button>
               <button
-                type="button"
                 onClick={handleSaveSettings}
                 disabled={savingSettings}
-                className="px-4 py-2 bg-purple-600 hover:bg-purple-500 text-white text-xs font-semibold rounded-lg disabled:opacity-50 flex items-center gap-1.5"
+                className="px-5 py-2 bg-[#F26522] hover:bg-[#d95517] text-white text-xs font-bold rounded-xl shadow-xs transition-colors disabled:opacity-50 inline-flex items-center gap-1.5"
               >
                 {savingSettings && <Loader2 className="w-3.5 h-3.5 animate-spin" />}
-                <span>{savingSettings ? "Saving..." : "Save Settings"}</span>
+                <span>Save Settings</span>
               </button>
             </div>
           </div>
         </div>
       )}
 
-      {/* Add New Vendor Modal */}
+      {/* Add Vendor Modal */}
       {showAddModal && (
-        <div className="fixed inset-0 z-50 bg-black/70 backdrop-blur-sm flex items-center justify-center p-4">
-          <div className="bg-slate-900 border border-slate-800 rounded-2xl w-full max-w-xl max-h-[90vh] overflow-y-auto shadow-2xl">
-            <div className="p-5 border-b border-slate-800 flex items-center justify-between sticky top-0 bg-slate-900 z-10">
+        <div className="fixed inset-0 z-50 bg-black/50 backdrop-blur-xs flex items-center justify-center p-4">
+          <div className="bg-white rounded-3xl border border-gray-200 shadow-2xl max-w-lg w-full p-6 space-y-4 max-h-[90vh] overflow-y-auto animate-in fade-in zoom-in-95">
+            <div className="flex items-center justify-between pb-3 border-b border-gray-100">
               <div>
-                <h3 className="text-base font-bold text-white">Onboard New Supplier</h3>
-                <p className="text-xs text-slate-400">Direct supplier setup for IntriHub catalog</p>
+                <h3 className="text-base font-black text-gray-900">Add New Marketplace Vendor</h3>
+                <p className="text-xs text-gray-500 font-medium">Onboard a supplier to manage their items.</p>
               </div>
               <button
                 onClick={() => setShowAddModal(false)}
-                className="text-slate-400 hover:text-white"
+                className="text-gray-400 hover:text-gray-600 p-1 rounded-lg"
               >
                 <X className="w-5 h-5" />
               </button>
             </div>
 
-            <form onSubmit={handleCreateVendor} className="p-5 space-y-4 text-xs">
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <form onSubmit={handleCreateVendor} className="space-y-3 text-xs">
+              <div>
+                <label className="block font-bold text-gray-700 mb-1">Business / Store Name *</label>
+                <input
+                  type="text"
+                  required
+                  value={newVendor.businessName}
+                  onChange={(e) => setNewVendor({ ...newVendor, businessName: e.target.value })}
+                  placeholder="e.g. Apex Tile Studio"
+                  className="w-full bg-gray-50 border border-gray-200 rounded-xl px-3 py-2 text-xs text-gray-900 focus:outline-none focus:border-[#F26522]"
+                />
+              </div>
+
+              <div className="grid grid-cols-2 gap-3">
                 <div>
-                  <label className="block font-medium text-slate-300 mb-1">Business / Shop Name *</label>
+                  <label className="block font-bold text-gray-700 mb-1">Owner / Contact Name</label>
                   <input
                     type="text"
-                    required
-                    value={newVendor.businessName}
-                    onChange={(e) => setNewVendor({ ...newVendor, businessName: e.target.value })}
-                    placeholder="e.g. Royal Ceramica Supplies"
-                    className="w-full bg-slate-800 border border-slate-700 rounded-lg px-3 py-2 text-white focus:outline-none focus:ring-1 focus:ring-purple-500"
+                    value={newVendor.ownerName}
+                    onChange={(e) => setNewVendor({ ...newVendor, ownerName: e.target.value })}
+                    placeholder="Owner name"
+                    className="w-full bg-gray-50 border border-gray-200 rounded-xl px-3 py-2 text-xs text-gray-900 focus:outline-none focus:border-[#F26522]"
                   />
                 </div>
                 <div>
-                  <label className="block font-medium text-slate-300 mb-1">Owner Contact Name *</label>
-                  <input
-                    type="text"
-                    required
-                    value={newVendor.ownerName}
-                    onChange={(e) => setNewVendor({ ...newVendor, ownerName: e.target.value })}
-                    placeholder="e.g. Ramesh Patel"
-                    className="w-full bg-slate-800 border border-slate-700 rounded-lg px-3 py-2 text-white focus:outline-none focus:ring-1 focus:ring-purple-500"
-                  />
+                  <label className="block font-bold text-gray-700 mb-1">Category *</label>
+                  <select
+                    value={newVendor.category}
+                    onChange={(e) => setNewVendor({ ...newVendor, category: e.target.value })}
+                    className="w-full bg-gray-50 border border-gray-200 rounded-xl px-3 py-2 text-xs text-gray-900 focus:outline-none focus:border-[#F26522]"
+                  >
+                    {CATEGORIES.map((c) => (
+                      <option key={c} value={c}>
+                        {c}
+                      </option>
+                    ))}
+                  </select>
                 </div>
               </div>
 
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <div className="grid grid-cols-2 gap-3">
                 <div>
-                  <label className="block font-medium text-slate-300 mb-1">Email Address *</label>
+                  <label className="block font-bold text-gray-700 mb-1">Contact Email *</label>
                   <input
                     type="email"
                     required
                     value={newVendor.contactEmail}
                     onChange={(e) => setNewVendor({ ...newVendor, contactEmail: e.target.value })}
-                    placeholder="supplier@example.com"
-                    className="w-full bg-slate-800 border border-slate-700 rounded-lg px-3 py-2 text-white focus:outline-none focus:ring-1 focus:ring-purple-500"
+                    placeholder="vendor@company.com"
+                    className="w-full bg-gray-50 border border-gray-200 rounded-xl px-3 py-2 text-xs text-gray-900 focus:outline-none focus:border-[#F26522]"
                   />
                 </div>
                 <div>
-                  <label className="block font-medium text-slate-300 mb-1">Phone Number (10 digits) *</label>
+                  <label className="block font-bold text-gray-700 mb-1">Contact Phone *</label>
                   <input
                     type="tel"
                     required
-                    maxLength={10}
                     value={newVendor.contactPhone}
                     onChange={(e) => setNewVendor({ ...newVendor, contactPhone: e.target.value })}
-                    placeholder="9876543210"
-                    className="w-full bg-slate-800 border border-slate-700 rounded-lg px-3 py-2 text-white focus:outline-none focus:ring-1 focus:ring-purple-500"
+                    placeholder="10-digit mobile"
+                    className="w-full bg-gray-50 border border-gray-200 rounded-xl px-3 py-2 text-xs text-gray-900 focus:outline-none focus:border-[#F26522]"
                   />
                 </div>
               </div>
 
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <div className="grid grid-cols-2 gap-3">
                 <div>
-                  <label className="block font-medium text-slate-300 mb-1">Primary Category</label>
-                  <select
-                    value={newVendor.category}
-                    onChange={(e) => setNewVendor({ ...newVendor, category: e.target.value })}
-                    className="w-full bg-slate-800 border border-slate-700 rounded-lg px-3 py-2 text-white focus:outline-none focus:ring-1 focus:ring-purple-500"
-                  >
-                    {CATEGORIES.map((cat) => (
-                      <option key={cat} value={cat}>{cat}</option>
-                    ))}
-                  </select>
+                  <label className="block font-bold text-gray-700 mb-1">GST Number</label>
+                  <input
+                    type="text"
+                    value={newVendor.gstNumber}
+                    onChange={(e) => setNewVendor({ ...newVendor, gstNumber: e.target.value })}
+                    placeholder="22AAAAA0000A1Z5"
+                    className="w-full bg-gray-50 border border-gray-200 rounded-xl px-3 py-2 text-xs text-gray-900 focus:outline-none focus:border-[#F26522]"
+                  />
                 </div>
                 <div>
-                  <label className="block font-medium text-slate-300 mb-1">Initial Commission (%)</label>
+                  <label className="block font-bold text-gray-700 mb-1">Commission Rate (%)</label>
                   <input
                     type="number"
                     step="0.5"
                     min="0"
-                    max="100"
+                    max="50"
                     value={newVendor.commissionRate}
-                    onChange={(e) => setNewVendor({ ...newVendor, commissionRate: parseFloat(e.target.value) || 0 })}
-                    className="w-full bg-slate-800 border border-slate-700 rounded-lg px-3 py-2 text-white focus:outline-none focus:ring-1 focus:ring-purple-500"
+                    onChange={(e) => setNewVendor({ ...newVendor, commissionRate: parseFloat(e.target.value) || 15 })}
+                    className="w-full bg-gray-50 border border-gray-200 rounded-xl px-3 py-2 text-xs text-gray-900 focus:outline-none focus:border-[#F26522]"
                   />
                 </div>
               </div>
 
               <div>
-                <label className="block font-medium text-slate-300 mb-1">Business Address</label>
-                <input
-                  type="text"
+                <label className="block font-bold text-gray-700 mb-1">Warehouse / Shop Address</label>
+                <textarea
                   value={newVendor.businessAddress}
                   onChange={(e) => setNewVendor({ ...newVendor, businessAddress: e.target.value })}
-                  placeholder="Plot No. 42, Industrial Area, Bangalore"
-                  className="w-full bg-slate-800 border border-slate-700 rounded-lg px-3 py-2 text-white focus:outline-none focus:ring-1 focus:ring-purple-500"
+                  rows={2}
+                  placeholder="Full physical address..."
+                  className="w-full bg-gray-50 border border-gray-200 rounded-xl p-3 text-xs text-gray-900 focus:outline-none focus:border-[#F26522]"
                 />
               </div>
 
-              <div>
-                <label className="block font-medium text-slate-300 mb-1">GST Number (Optional)</label>
-                <input
-                  type="text"
-                  value={newVendor.gstNumber}
-                  onChange={(e) => setNewVendor({ ...newVendor, gstNumber: e.target.value.toUpperCase() })}
-                  placeholder="29AAAAA0000A1Z5"
-                  className="w-full bg-slate-800 border border-slate-700 rounded-lg px-3 py-2 text-white focus:outline-none focus:ring-1 focus:ring-purple-500 uppercase font-mono"
-                />
-              </div>
-
-              <div className="p-4 bg-slate-950/60 border-t border-slate-800 flex items-center justify-end gap-3 sticky bottom-0">
+              <div className="flex items-center justify-end gap-2.5 pt-3 border-t border-gray-100">
                 <button
                   type="button"
                   onClick={() => setShowAddModal(false)}
-                  className="px-4 py-2 rounded-lg text-xs font-semibold text-slate-300 hover:text-white"
+                  className="px-4 py-2 rounded-xl text-xs font-bold text-gray-600 hover:bg-gray-100"
                 >
                   Cancel
                 </button>
                 <button
                   type="submit"
                   disabled={creatingVendor}
-                  className="px-4 py-2 bg-purple-600 hover:bg-purple-500 text-white text-xs font-semibold rounded-lg disabled:opacity-50 flex items-center gap-1.5"
+                  className="px-5 py-2 bg-[#F26522] hover:bg-[#d95517] text-white text-xs font-bold rounded-xl shadow-xs transition-colors disabled:opacity-50 inline-flex items-center gap-1.5"
                 >
                   {creatingVendor && <Loader2 className="w-3.5 h-3.5 animate-spin" />}
-                  <span>{creatingVendor ? "Creating Vendor..." : "Create Vendor"}</span>
+                  <span>Create Vendor</span>
                 </button>
               </div>
             </form>

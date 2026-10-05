@@ -14,8 +14,10 @@ import {
   Loader2,
   Briefcase,
   X,
+  PlusCircle,
 } from "lucide-react";
 import { toast } from "sonner";
+import Link from "next/link";
 
 export default function CpoHeader({ userEmail }: { userEmail?: string }) {
   const router = useRouter();
@@ -28,13 +30,16 @@ export default function CpoHeader({ userEmail }: { userEmail?: string }) {
   const [searchQuery, setSearchQuery] = useState("");
   const [switching, setSwitching] = useState(false);
   const [activeVendorId, setActiveVendorId] = useState<string | null>(null);
+  const [activeVendorName, setActiveVendorName] = useState<string | null>(null);
 
   useEffect(() => {
     getActiveCpoWorkspaceStatus().then((res) => {
       if (res.active && res.vendorId) {
         setActiveVendorId(res.vendorId);
+        setActiveVendorName(res.vendorName || null);
       } else {
         setActiveVendorId(null);
+        setActiveVendorName(null);
       }
     });
   }, []);
@@ -66,6 +71,7 @@ export default function CpoHeader({ userEmail }: { userEmail?: string }) {
       if (res.success) {
         toast.success(`Active workspace switched to ${res.vendor?.businessName}`);
         setActiveVendorId(vendorId);
+        setActiveVendorName(res.vendor?.businessName || null);
         setShowSwitcher(false);
         router.refresh();
       } else {
@@ -82,6 +88,7 @@ export default function CpoHeader({ userEmail }: { userEmail?: string }) {
     try {
       await exitCpoVendor();
       setActiveVendorId(null);
+      setActiveVendorName(null);
       setShowSwitcher(false);
       toast.success("Exited active workspace");
       router.refresh();
@@ -104,94 +111,104 @@ export default function CpoHeader({ userEmail }: { userEmail?: string }) {
   };
 
   const filteredVendors = vendors.filter((v) => {
-    if (!searchQuery.trim()) return true;
-    const q = searchQuery.toLowerCase();
+    if (!searchQuery) return true;
+    const term = searchQuery.toLowerCase();
     return (
-      v.businessName?.toLowerCase().includes(q) ||
-      v.contactEmail?.toLowerCase().includes(q) ||
-      v.contactPhone?.includes(q) ||
-      v.id?.includes(q)
+      v.businessName?.toLowerCase().includes(term) ||
+      v.category?.toLowerCase().includes(term) ||
+      v.contactPhone?.includes(term)
     );
   });
 
   return (
-    <header className="h-16 bg-slate-900/95 backdrop-blur border-b border-slate-800 px-6 flex items-center justify-between z-30 sticky top-0">
-      {/* Left: Search / Global Switcher */}
+    <header className="h-16 bg-white border-b border-gray-200/90 px-4 md:px-6 flex items-center justify-between gap-4 z-30 shrink-0 shadow-2xs notranslate" translate="no">
+      {/* Left: Quick Vendor Switcher */}
       <div className="relative">
         <button
           onClick={handleOpenSwitcher}
-          className="flex items-center gap-2.5 px-3 py-1.5 rounded-lg bg-slate-800 hover:bg-slate-700/80 border border-slate-700 text-xs text-slate-200 transition-colors shadow-sm"
+          className={`flex items-center gap-2.5 px-3 py-2 rounded-xl text-xs font-semibold border transition-all ${
+            activeVendorId
+              ? "bg-[#052a51]/5 border-[#052a51]/20 text-[#052a51] hover:bg-[#052a51]/10"
+              : "bg-gray-50 border-gray-200 text-gray-700 hover:bg-gray-100"
+          }`}
         >
-          <Store className="w-4 h-4 text-purple-400" />
-          <span className="font-medium">
-            {activeVendorId
-              ? `Working as: ${vendors.find((v) => v.id === activeVendorId)?.businessName || "Active Vendor"}`
-              : "Select Vendor to Manage"}
+          <Store className="w-4 h-4 text-[#F26522]" />
+          <span className="font-bold">
+            {activeVendorName ? `Working as: ${activeVendorName}` : "Select Vendor to Manage"}
           </span>
-          <ChevronDown className="w-3.5 h-3.5 text-slate-400" />
+          <ChevronDown className="w-3.5 h-3.5 text-gray-400" />
         </button>
 
-        {/* Global Switcher Dropdown Modal */}
+        {/* Vendor Switcher Dropdown */}
         {showSwitcher && (
-          <div className="absolute left-0 mt-2 w-80 bg-slate-900 border border-slate-700 rounded-xl shadow-2xl p-3 z-50 text-slate-200">
-            <div className="flex items-center justify-between pb-2 border-b border-slate-800 mb-2">
-              <span className="text-xs font-semibold text-purple-300 uppercase tracking-wider flex items-center gap-1.5">
-                <Briefcase className="w-3.5 h-3.5" />
-                Switch Vendor Workspace
+          <div className="absolute left-0 top-full mt-2 w-80 sm:w-96 bg-white rounded-2xl border border-gray-200 shadow-xl p-3 z-50 animate-in fade-in zoom-in-95 duration-150">
+            <div className="flex items-center justify-between pb-2 border-b border-gray-100 mb-2">
+              <span className="text-xs font-black text-gray-900 uppercase tracking-wider">
+                Select Active Vendor
               </span>
               <button
                 onClick={() => setShowSwitcher(false)}
-                className="text-slate-400 hover:text-white"
+                className="text-gray-400 hover:text-gray-600 p-1 rounded-md"
               >
                 <X className="w-4 h-4" />
               </button>
             </div>
 
+            {/* Search Input */}
             <div className="relative mb-2">
-              <Search className="w-3.5 h-3.5 text-slate-400 absolute left-2.5 top-2.5" />
+              <Search className="w-3.5 h-3.5 text-gray-400 absolute left-2.5 top-2.5" />
               <input
                 type="text"
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
-                placeholder="Search vendor name, ID, phone..."
-                className="w-full bg-slate-800 border border-slate-700 rounded-lg pl-8 pr-3 py-1.5 text-xs text-white placeholder-slate-400 focus:outline-none focus:ring-1 focus:ring-purple-500"
+                placeholder="Search vendor name, category..."
+                className="w-full bg-gray-50 border border-gray-200 rounded-xl pl-8 pr-3 py-1.5 text-xs text-gray-900 placeholder-gray-400 focus:outline-none focus:border-[#F26522] focus:bg-white"
+                autoFocus
               />
             </div>
 
-            <div className="max-h-52 overflow-y-auto space-y-1">
+            {/* Vendor List */}
+            <div className="max-h-60 overflow-y-auto space-y-1">
               {loadingVendors ? (
-                <div className="flex items-center justify-center py-6 text-xs text-slate-400 gap-2">
-                  <Loader2 className="w-4 h-4 animate-spin text-purple-400" />
+                <div className="py-6 flex items-center justify-center text-xs text-gray-400 gap-2">
+                  <Loader2 className="w-4 h-4 animate-spin text-[#F26522]" />
                   <span>Loading vendors...</span>
                 </div>
               ) : filteredVendors.length === 0 ? (
-                <div className="py-6 text-center text-xs text-slate-400">
-                  No vendors found.
+                <div className="py-4 text-center text-xs text-gray-500">
+                  No vendors found
                 </div>
               ) : (
                 filteredVendors.map((v) => {
-                  const isSelected = activeVendorId === v.id;
+                  const isSelected = v.id === activeVendorId;
                   return (
                     <button
                       key={v.id}
                       onClick={() => handleSelectVendor(v.id)}
                       disabled={switching}
-                      className={`w-full flex items-center justify-between px-2.5 py-1.5 rounded-md text-left text-xs transition-colors ${
+                      className={`w-full text-left p-2.5 rounded-xl text-xs flex items-center justify-between transition-colors ${
                         isSelected
-                          ? "bg-purple-600/30 text-purple-200 border border-purple-500/50"
-                          : "hover:bg-slate-800 text-slate-300"
+                          ? "bg-[#052a51]/5 border border-[#052a51]/20 font-bold text-[#052a51]"
+                          : "hover:bg-gray-50 text-gray-700"
                       }`}
                     >
-                      <div className="truncate pr-2">
-                        <div className="font-medium text-white truncate">{v.businessName}</div>
-                        <div className="text-[10px] text-slate-400 truncate font-mono">
-                          ID: {v.id.slice(-6)} • {v.category || "General"}
+                      <div className="min-w-0 pr-2">
+                        <div className="font-bold truncate text-gray-900 flex items-center gap-1.5">
+                          <span>{v.businessName}</span>
+                          {isSelected && (
+                            <span className="text-[10px] bg-[#F26522] text-white px-1.5 py-0.2 rounded font-bold">
+                              ACTIVE
+                            </span>
+                          )}
+                        </div>
+                        <div className="text-[11px] text-gray-500 truncate">
+                          {v.category || "General"} • {v.contactPhone || v.contactEmail}
                         </div>
                       </div>
                       {isSelected ? (
-                        <Check className="w-4 h-4 text-purple-400 shrink-0" />
+                        <Check className="w-4 h-4 text-[#F26522] shrink-0" />
                       ) : (
-                        <span className="text-[10px] text-purple-400 shrink-0 hover:underline">Select</span>
+                        <span className="text-[10px] font-bold text-gray-400 shrink-0">Select</span>
                       )}
                     </button>
                   );
@@ -199,42 +216,56 @@ export default function CpoHeader({ userEmail }: { userEmail?: string }) {
               )}
             </div>
 
+            {/* Exit Current Workspace Option */}
             {activeVendorId && (
-              <div className="pt-2 mt-2 border-t border-slate-800">
+              <div className="pt-2 mt-2 border-t border-gray-100 flex items-center justify-between">
                 <button
                   onClick={handleExitCurrent}
-                  className="w-full py-1 text-center text-xs text-red-400 hover:text-red-300 font-medium"
+                  className="text-xs text-rose-600 hover:text-rose-700 font-bold px-2 py-1 rounded-lg hover:bg-rose-50 transition-colors"
                 >
-                  Exit Current Workspace
+                  Exit Active Workspace
                 </button>
+                <Link
+                  href="/cpo/vendors"
+                  onClick={() => setShowSwitcher(false)}
+                  className="text-xs text-[#052a51] hover:underline font-semibold"
+                >
+                  View All Vendors →
+                </Link>
               </div>
             )}
           </div>
         )}
       </div>
 
-      {/* Right: Identity & Logout */}
-      <div className="flex items-center gap-4">
-        <div className="flex items-center gap-2.5">
-          <div className="w-8 h-8 rounded-full bg-purple-600/20 border border-purple-500/40 flex items-center justify-center text-purple-300">
+      {/* Right: Quick Action & User Menu */}
+      <div className="flex items-center gap-3">
+        <Link
+          href="/cpo/catalog/new"
+          className="hidden sm:inline-flex items-center gap-1.5 px-3 py-1.5 bg-[#F26522] hover:bg-[#d95517] text-white text-xs font-bold rounded-xl shadow-xs transition-colors"
+        >
+          <PlusCircle className="w-3.5 h-3.5" />
+          <span>+ Add Item</span>
+        </Link>
+
+        <div className="flex items-center gap-2 pl-3 border-l border-gray-200 text-xs">
+          <div className="w-8 h-8 rounded-full bg-[#052a51]/10 text-[#052a51] flex items-center justify-center font-bold">
             <User className="w-4 h-4" />
           </div>
-          <div className="hidden sm:block text-right">
-            <div className="text-xs font-semibold text-white">Chief Product Officer</div>
-            <div className="text-[11px] text-purple-300 font-mono">
-              {userEmail || "cpo@intrihub.com"}
-            </div>
+          <div className="hidden md:block text-left leading-tight">
+            <div className="text-xs font-bold text-gray-900">Chief Product Officer</div>
+            <div className="text-[11px] text-gray-500 font-mono">{userEmail || "cpo@intrihub.com"}</div>
           </div>
         </div>
 
         <button
           onClick={handleLogout}
           disabled={loggingOut}
-          className="flex items-center gap-1.5 px-3 py-1.5 bg-slate-800 hover:bg-red-950/60 hover:text-red-300 hover:border-red-800 border border-slate-700 text-slate-300 text-xs rounded-lg transition-colors disabled:opacity-50"
-          title="Sign out of CPO Panel"
+          className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-gray-100 hover:bg-gray-200 text-gray-700 text-xs font-semibold rounded-xl transition-colors disabled:opacity-50"
+          title="Sign Out"
         >
           <LogOut className="w-3.5 h-3.5" />
-          <span className="hidden md:inline">{loggingOut ? "Signing out..." : "Sign Out"}</span>
+          <span className="hidden sm:inline">Sign Out</span>
         </button>
       </div>
     </header>

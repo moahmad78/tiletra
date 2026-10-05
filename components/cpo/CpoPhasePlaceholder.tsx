@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { Sparkles, ArrowRight, ShieldCheck, Layers } from "lucide-react";
+import { Sparkles, ArrowRight, Layers } from "lucide-react";
 
 export default function CpoPhasePlaceholder({
   title,
@@ -13,46 +13,46 @@ export default function CpoPhasePlaceholder({
   features: string[];
 }) {
   return (
-    <div className="max-w-3xl mx-auto py-12 space-y-6">
-      <div className="bg-gradient-to-br from-slate-900 via-purple-950/20 to-slate-900 border border-slate-800 rounded-2xl p-8 text-center shadow-xl">
-        <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold uppercase tracking-wider bg-purple-500/20 text-purple-300 border border-purple-500/30 mb-4 font-mono">
+    <div className="max-w-3xl mx-auto py-8 space-y-6">
+      <div className="bg-white border border-gray-200/90 rounded-3xl p-8 text-center shadow-xs">
+        <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold uppercase tracking-wider bg-orange-50 text-[#F26522] border border-orange-200 mb-4 font-mono">
           <Sparkles className="w-3.5 h-3.5" />
-          Scheduled for Phase {phase}
+          Planned for Phase {phase}
         </div>
 
-        <h1 className="text-2xl md:text-3xl font-bold text-white tracking-tight">
+        <h1 className="text-2xl md:text-3xl font-black text-gray-900 tracking-tight">
           {title}
         </h1>
-        <p className="text-sm text-slate-400 mt-2 max-w-xl mx-auto">
+        <p className="text-sm text-gray-600 mt-2 max-w-xl mx-auto font-medium">
           {description}
         </p>
 
-        <div className="mt-8 bg-slate-950/60 border border-slate-800 rounded-xl p-5 text-left">
-          <div className="text-xs font-semibold uppercase tracking-wider text-purple-400 mb-3 flex items-center gap-1.5">
-            <Layers className="w-4 h-4" />
-            Planned Capabilities for this Module
+        <div className="mt-8 bg-gray-50 border border-gray-200/80 rounded-2xl p-5 text-left">
+          <div className="text-xs font-black uppercase tracking-wider text-[#052a51] mb-3 flex items-center gap-1.5">
+            <Layers className="w-4 h-4 text-[#F26522]" />
+            Upcoming Features in this Module
           </div>
           <ul className="space-y-2">
             {features.map((feat, idx) => (
-              <li key={idx} className="flex items-start gap-2.5 text-xs text-slate-300">
-                <span className="w-1.5 h-1.5 rounded-full bg-purple-400 mt-1.5 shrink-0" />
+              <li key={idx} className="flex items-start gap-2.5 text-xs text-gray-700 font-medium">
+                <span className="w-1.5 h-1.5 rounded-full bg-[#F26522] mt-1.5 shrink-0" />
                 <span>{feat}</span>
               </li>
             ))}
           </ul>
         </div>
 
-        <div className="mt-8 flex items-center justify-center gap-4">
+        <div className="mt-8 flex items-center justify-center gap-3">
           <Link
             href="/cpo/vendors"
-            className="inline-flex items-center gap-2 px-4 py-2 bg-purple-600 hover:bg-purple-500 text-white text-xs font-semibold rounded-xl shadow-md transition-colors"
+            className="inline-flex items-center gap-2 px-5 py-2.5 bg-[#052a51] hover:bg-[#04203e] text-white text-xs font-bold rounded-xl shadow-xs transition-colors"
           >
             <span>Manage Vendors</span>
             <ArrowRight className="w-3.5 h-3.5" />
           </Link>
           <Link
             href="/cpo/catalog"
-            className="inline-flex items-center gap-2 px-4 py-2 bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-semibold rounded-xl border border-slate-700 transition-colors"
+            className="inline-flex items-center gap-2 px-5 py-2.5 bg-[#F26522] hover:bg-[#d95517] text-white text-xs font-bold rounded-xl shadow-xs transition-colors"
           >
             <span>Browse Catalog</span>
           </Link>

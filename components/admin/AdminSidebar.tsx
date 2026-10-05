@@ -26,8 +26,7 @@ import {
   FileText,
   Activity,
 } from "lucide-react";
-import { useAdminStore } from "@/lib/admin-store";
-import { useState, useCallback } from "react";
+import { useState, useCallback, useEffect } from "react";
 import { getAdminMarketplaceStats } from "@/lib/actions/admin-vendor";
 import { useLiveSync } from "@/lib/live-sync";
 
@@ -61,9 +60,11 @@ export default function AdminSidebar({
   onItemClick?: () => void;
 }) {
   const pathname = usePathname();
-  const orders = useAdminStore((s) => s.orders);
-  const products = useAdminStore((s) => s.products);
-  const reviews = useAdminStore((s) => s.reviews);
+  const [navigatingHref, setNavigatingHref] = useState<string | null>(null);
+
+  useEffect(() => {
+    setNavigatingHref(null);
+  }, [pathname]);
 
   const [marketplaceStats, setMarketplaceStats] = useState({
     pendingVendors: 0,
@@ -92,8 +93,8 @@ export default function AdminSidebar({
 
   useLiveSync({
     onSync: fetchStats,
-    pollIntervalMs: 5000,
-    enableFocusRefresh: true,
+    pollIntervalMs: 15000,
+    enableFocusRefresh: false,
   });
 
   const badges: Record<string, number> = {
@@ -149,9 +150,10 @@ export default function AdminSidebar({
       {/* Navigation List */}
       <nav className="flex-1 overflow-y-auto py-4 px-3 space-y-1.5 scrollbar-none notranslate" translate="no">
         {navItems.map((item) => {
-          const isActive = item.exact
+          const isCurrent = item.exact
             ? pathname === item.href
             : pathname.startsWith(item.href);
+          const isActive = navigatingHref ? navigatingHref === item.href : isCurrent;
           const Icon = item.icon;
           const badgeValue = item.badgeKey ? badges[item.badgeKey] : 0;
 
@@ -159,34 +161,31 @@ export default function AdminSidebar({
             <Link
               key={item.name}
               href={item.href}
-              prefetch={false}
               onClick={() => {
+                setNavigatingHref(item.href);
                 if (onItemClick) {
-                  // Defer drawer close so the client navigation event is not cancelled by premature unmount
-                  setTimeout(() => {
-                    onItemClick();
-                  }, 120);
+                  onItemClick();
                 }
               }}
               className={`flex items-center gap-3 px-3 py-2.5 rounded-xl text-xs font-bold transition-all group relative cursor-pointer notranslate ${
                 isActive
                   ? "bg-[#F26522] text-white shadow-sm"
-                  : "text-white/75 hover:bg-white/10 hover:text-white"
+                  : "text-white/75 hover:bg-white/10 hover:text-white active:bg-white/20"
               }`}
               translate="no"
               title={collapsed ? item.name : undefined}
             >
-              <Icon size={18} className="shrink-0" />
+              <Icon size={18} className="shrink-0 pointer-events-none" />
 
               {!collapsed && (
-                <span className="truncate flex-1 notranslate" translate="no">
+                <span className="truncate flex-1 notranslate pointer-events-none" translate="no">
                   {item.name}
                 </span>
               )}
 
               {!collapsed && badgeValue > 0 && (
                 <span
-                  className={`px-1.5 py-0.5 rounded-full text-[10px] font-black notranslate ${
+                  className={`px-1.5 py-0.5 rounded-full text-[10px] font-black notranslate pointer-events-none ${
                     isActive ? "bg-white text-[#F26522]" : "bg-[#F26522] text-white"
                   }`}
                   translate="no"
@@ -196,7 +195,7 @@ export default function AdminSidebar({
               )}
 
               {collapsed && badgeValue > 0 && (
-                <span className="absolute top-1.5 right-1.5 w-2 h-2 rounded-full bg-[#F26522] ring-2 ring-[#052a51]" />
+                <span className="absolute top-1.5 right-1.5 w-2 h-2 rounded-full bg-[#F26522] ring-2 ring-[#052a51] pointer-events-none" />
               )}
             </Link>
           );

@@ -120,6 +120,7 @@ export function useLiveSync({
   syncCallbackRef.current = onSync;
 
   const isSyncingRef = useRef(false);
+  const eventTypesKey = eventTypes ? eventTypes.slice().sort().join(",") : "";
 
   const triggerSync = useCallback(async () => {
     if (isSyncingRef.current) return;
@@ -145,8 +146,8 @@ export function useLiveSync({
       const data = event.data;
       if (!data || !data.type) return;
 
-      if (!eventTypes || eventTypes.length === 0 || eventTypes.includes(data.type) || data.type === "data:refresh") {
-        console.log(`[LiveSync ⚡] Cross-tab event: ${data.type}`);
+      const types = eventTypesKey ? eventTypesKey.split(",") : [];
+      if (types.length === 0 || types.includes(data.type) || data.type === "data:refresh") {
         triggerSync();
       }
     };
@@ -159,7 +160,8 @@ export function useLiveSync({
     const handleLocalEvent = (e: Event) => {
       const customEvent = e as CustomEvent;
       const data = customEvent.detail;
-      if (!eventTypes || eventTypes.length === 0 || eventTypes.includes(data?.type) || data?.type === "data:refresh") {
+      const types = eventTypesKey ? eventTypesKey.split(",") : [];
+      if (types.length === 0 || types.includes(data?.type) || data?.type === "data:refresh") {
         triggerSync();
       }
     };
@@ -211,5 +213,5 @@ export function useLiveSync({
         clearInterval(intervalId);
       }
     };
-  }, [triggerSync, eventTypes, pollIntervalMs, enableFocusRefresh]);
+  }, [triggerSync, eventTypesKey, pollIntervalMs, enableFocusRefresh]);
 }
