@@ -120,6 +120,7 @@ function CpoNewProductContent() {
       <DynamicProductUploadForm
         vendorId={selectedVendorId}
         onSuccessRedirectUrl="/cpo/catalog"
+        isAdminOrCpo={true}
       />
     </div>
   );

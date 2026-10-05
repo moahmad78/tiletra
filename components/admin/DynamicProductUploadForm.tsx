@@ -210,15 +210,18 @@ interface DynamicProductUploadFormProps {
   onSuccessRedirectUrl?: string;
   vendorId?: string | null;
   initialCategory?: CategoryKey;
+  isAdminOrCpo?: boolean;
 }
 
 export default function DynamicProductUploadForm({
   onSuccessRedirectUrl = "/admin/products",
   vendorId = null,
   initialCategory = "electrical",
+  isAdminOrCpo = false,
 }: DynamicProductUploadFormProps) {
   const router = useRouter();
   const [loading, setLoading] = useState(false);
+  const [submitAction, setSubmitAction] = useState<"draft" | "publish">("publish");
 
   // ── 1. Category Selection State ──
   const [selectedCategoryKey, setSelectedCategoryKey] = useState<CategoryKey>(initialCategory);
@@ -264,6 +267,18 @@ export default function DynamicProductUploadForm({
       getVendorProfile(vendorId).then((v) => setVendorProfile(v));
     }
   }, [vendorId]);
+
+  // ── Warn on unsaved changes ──
+  useEffect(() => {
+    const handleBeforeUnload = (e: BeforeUnloadEvent) => {
+      if (productName.trim() || mrpPrice || sellingPrice) {
+        e.preventDefault();
+        e.returnValue = "";
+      }
+    };
+    window.addEventListener("beforeunload", handleBeforeUnload);
+    return () => window.removeEventListener("beforeunload", handleBeforeUnload);
+  }, [productName, mrpPrice, sellingPrice]);
 
   const handleDbCategoryChange = (catId: string) => {
     setSelectedDbCategoryId(catId);
@@ -504,6 +519,8 @@ export default function DynamicProductUploadForm({
       specs: finalSpecs,
       attributes: finalAttributes,
       variants: formattedVariants,
+      status: submitAction === "draft" ? "draft" : (isAdminOrCpo ? "active" : undefined),
+      approvalStatus: submitAction === "draft" ? "pending" : (isAdminOrCpo ? "approved" : undefined),
     });
 
     setLoading(false);
@@ -545,11 +562,22 @@ export default function DynamicProductUploadForm({
         <div className="flex items-center gap-3">
           <button
             type="submit"
+            onClick={() => setSubmitAction("draft")}
+            disabled={loading}
+            className="px-5 py-2.5 bg-white border border-gray-300 hover:bg-gray-50 text-gray-700 text-xs font-bold rounded-2xl shadow-xs active:scale-95 transition-all flex items-center gap-2 cursor-pointer disabled:opacity-50"
+          >
+            {loading && submitAction === "draft" ? <Loader2 size={16} className="animate-spin" /> : <Save size={16} />}
+            <span>{loading && submitAction === "draft" ? "Saving..." : "Save Draft"}</span>
+          </button>
+          
+          <button
+            type="submit"
+            onClick={() => setSubmitAction("publish")}
             disabled={loading}
             className="px-6 py-3 bg-[#F26522] hover:bg-[#d95a1e] text-white text-xs font-bold rounded-2xl shadow-md active:scale-95 transition-all flex items-center gap-2 cursor-pointer disabled:opacity-50"
           >
-            {loading ? <Loader2 size={16} className="animate-spin" /> : <Save size={16} />}
-            <span>{loading ? "Publishing..." : "Publish Product"}</span>
+            {loading && submitAction === "publish" ? <Loader2 size={16} className="animate-spin" /> : <Zap size={16} />}
+            <span>{loading && submitAction === "publish" ? "Publishing..." : "Publish Live"}</span>
           </button>
         </div>
       </div>

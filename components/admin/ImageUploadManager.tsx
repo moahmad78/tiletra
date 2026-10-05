@@ -1,8 +1,8 @@
 "use client";
 
-import { useState, useRef } from "react";
+import { useState, useRef, useEffect } from "react";
 import Image from "next/image";
-import { Upload, X, Star, Link as LinkIcon, Loader2, AlertCircle } from "lucide-react";
+import { Upload, X, Star, Link as LinkIcon, Loader2, AlertCircle, Image as ImageIcon } from "lucide-react";
 import { toast } from "sonner";
 
 interface ImageUploadManagerProps {
@@ -23,6 +23,7 @@ export default function ImageUploadManager({
   const isValidUrl = (url: string) => {
     try {
       if (url.startsWith("/")) return true; // Local path
+      if (url.startsWith("data:image")) return true; // Base64 image
       const parsed = new URL(url);
       return parsed.protocol === "http:" || parsed.protocol === "https:";
     } catch {
@@ -30,13 +31,9 @@ export default function ImageUploadManager({
     }
   };
 
-  const handleAddUrl = (e: React.FormEvent) => {
-    e.preventDefault();
-    const cleanUrl = urlInput.trim();
-    if (!cleanUrl) return;
-
+  const addImageUrl = (cleanUrl: string) => {
     if (!isValidUrl(cleanUrl)) {
-      toast.error("Please enter a valid HTTP/HTTPS image URL");
+      toast.error("Please enter a valid HTTP/HTTPS or Base64 image URL");
       return;
     }
 
@@ -46,9 +43,17 @@ export default function ImageUploadManager({
     }
 
     onChange([...images.filter((img) => img !== "/placeholders/product.svg"), cleanUrl]);
+    toast.success("Image added!");
+  };
+
+  const handleAddUrl = (e: React.FormEvent) => {
+    e.preventDefault();
+    const cleanUrl = urlInput.trim();
+    if (!cleanUrl) return;
+
+    addImageUrl(cleanUrl);
     setUrlInput("");
     setIsAddingUrl(false);
-    toast.success("Image URL added!");
   };
 
   const uploadFiles = async (files: FileList | File[]) => {
@@ -119,98 +124,183 @@ export default function ImageUploadManager({
     toast.success("Set as primary cover photo");
   };
 
+  // Add paste event listener to support Ctrl+V anywhere in this component
+  useEffect(() => {
+    const handlePaste = (e: ClipboardEvent) => {
+      const activeTag = document.activeElement?.tagName.toLowerCase();
+      if (activeTag === "input" || activeTag === "textarea") return;
+
+      if (e.clipboardData && e.clipboardData.files.length > 0) {
+        e.preventDefault();
+        uploadFiles(e.clipboardData.files);
+        return;
+      }
+
+      const text = e.clipboardData?.getData("text");
+      if (text && isValidUrl(text)) {
+        e.preventDefault();
+        addImageUrl(text);
+      }
+    };
+
+    document.addEventListener("paste", handlePaste);
+    return () => document.removeEventListener("paste", handlePaste);
+  }, [images]); // Depend on images so we have latest state
+
   const displayImages = images.filter((img) => img.trim().length > 0);
+  const primaryImage = displayImages.length > 0 && displayImages[0] !== "/placeholders/product.svg" ? displayImages[0] : null;
+  const galleryImages = displayImages.length > 1 ? displayImages.slice(1) : [];
 
   return (
-    <div className="space-y-4">
-      {/* Existing Images Grid */}
-      <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3 sm:gap-4">
-        {displayImages.map((img, idx) => (
-          <div
-            key={`${img}-${idx}`}
-            className="relative aspect-square rounded-2xl overflow-hidden border-2 border-gray-200 bg-gray-50 group shadow-2xs"
-          >
-            {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img
-              src={img}
-              alt={`Product preview ${idx + 1}`}
-              className="w-full h-full object-cover"
-              onError={(e) => {
-                (e.target as HTMLImageElement).src = "/placeholders/product.svg";
-              }}
-            />
-
-            {/* Primary Image Badge */}
-            {idx === 0 && (
-              <span className="absolute top-2 left-2 px-2 py-0.5 bg-[#F26522] text-white text-[9px] font-black rounded-md uppercase tracking-wider shadow-xs z-10">
-                Primary Cover
-              </span>
+    <div className="space-y-6">
+      
+      <div className="grid grid-cols-1 sm:grid-cols-12 gap-6">
+        {/* Primary Image Section */}
+        <div className="sm:col-span-4 flex flex-col space-y-3">
+          <label className="text-sm font-bold text-gray-900 flex items-center gap-2">
+            <ImageIcon className="text-[#F26522]" size={18} />
+            Primary Image
+          </label>
+          <div className="relative aspect-square rounded-2xl overflow-hidden border-2 border-dashed border-gray-300 bg-gray-50 flex items-center justify-center group shadow-sm transition-all hover:border-[#F26522]">
+            {primaryImage ? (
+              <>
+                {/* eslint-disable-next-line @next/next/no-img-element */}
+                <img
+                  src={primaryImage}
+                  alt="Primary preview"
+                  className="w-full h-full object-cover"
+                  onError={(e) => {
+                    (e.target as HTMLImageElement).src = "/placeholders/product.svg";
+                  }}
+                />
+                <span className="absolute top-3 left-3 px-2.5 py-1 bg-[#F26522] text-white text-[10px] font-black rounded-lg uppercase tracking-wider shadow-md z-10">
+                  Primary Cover
+                </span>
+                <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center p-2 z-20">
+                  <button
+                    type="button"
+                    onClick={() => handleRemove(0)}
+                    className="p-2.5 bg-red-600 text-white rounded-xl hover:bg-red-700 shadow-lg cursor-pointer transition-transform active:scale-95"
+                    title="Remove primary photo"
+                  >
+                    <X size={18} />
+                  </button>
+                </div>
+              </>
+            ) : (
+              <label className="flex flex-col items-center justify-center p-4 cursor-pointer text-center w-full h-full group">
+                {isUploading ? (
+                  <Loader2 size={28} className="text-[#F26522] animate-spin" />
+                ) : (
+                  <>
+                    <Upload size={28} className="text-gray-400 group-hover:text-[#F26522] transition-colors mb-2" />
+                    <span className="text-sm font-bold text-[#052a51] group-hover:text-[#F26522]">
+                      Upload Primary
+                    </span>
+                    <span className="text-xs text-gray-400 mt-1">Required</span>
+                  </>
+                )}
+                <input
+                  type="file"
+                  multiple
+                  accept="image/*"
+                  disabled={isUploading}
+                  onChange={handleFileChange}
+                  className="hidden"
+                />
+              </label>
             )}
-
-            {/* Hover Actions */}
-            <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center gap-2 p-2 z-20">
-              {idx !== 0 && (
-                <button
-                  type="button"
-                  onClick={() => handleSetPrimary(idx)}
-                  className="p-2 bg-white/90 text-[#052a51] rounded-xl hover:bg-white text-xs font-bold flex items-center gap-1 shadow-md cursor-pointer transition-transform active:scale-95"
-                  title="Make primary photo"
-                >
-                  <Star size={14} className="text-amber-500 fill-amber-500" />
-                </button>
-              )}
-              <button
-                type="button"
-                onClick={() => handleRemove(idx)}
-                className="p-2 bg-red-600 text-white rounded-xl hover:bg-red-700 shadow-md cursor-pointer transition-transform active:scale-95"
-                title="Remove photo"
-              >
-                <X size={14} />
-              </button>
-            </div>
           </div>
-        ))}
+        </div>
 
-        {/* Upload Trigger Box with Drag-and-Drop */}
-        <label
-          onDrop={handleDrop}
-          onDragOver={handleDragOver}
-          onDragLeave={handleDragLeave}
-          className={`border-2 border-dashed rounded-2xl aspect-square flex flex-col items-center justify-center p-4 cursor-pointer text-center transition-all group ${
-            isDragging
-              ? "border-[#F26522] bg-[#F26522]/10 scale-98"
-              : "border-gray-300 hover:border-[#F26522] bg-gray-50 hover:bg-[#F26522]/5"
-          }`}
-        >
-          {isUploading ? (
-            <>
-              <Loader2 size={24} className="text-[#F26522] animate-spin" />
-              <span className="text-xs font-bold text-[#052a51] mt-2">Uploading...</span>
-            </>
-          ) : (
-            <>
-              <Upload size={22} className="text-gray-400 group-hover:text-[#F26522] transition-colors" />
-              <span className="text-xs font-bold text-[#052a51] mt-2 group-hover:text-[#F26522]">
-                Upload Photos
-              </span>
-              <span className="text-[10px] text-gray-400 mt-0.5">Drag & drop or browse</span>
-              <span className="text-[9px] text-gray-400 font-medium">PNG, JPG, WebP</span>
-            </>
-          )}
-          <input
-            ref={fileInputRef}
-            type="file"
-            multiple
-            accept="image/*"
-            disabled={isUploading}
-            onChange={handleFileChange}
-            className="hidden"
-          />
-        </label>
+        {/* Gallery Images Section */}
+        <div className="sm:col-span-8 flex flex-col space-y-3">
+          <label className="text-sm font-bold text-gray-900 flex items-center gap-2">
+            <Star className="text-amber-500 fill-amber-500" size={18} />
+            Gallery Images <span className="text-xs font-normal text-gray-500">(Optional)</span>
+          </label>
+          <div className="grid grid-cols-2 md:grid-cols-3 xl:grid-cols-4 gap-3 sm:gap-4">
+            {galleryImages.map((img, idx) => {
+              const originalIndex = idx + 1; // since it's sliced from 1
+              return (
+                <div
+                  key={`${img}-${originalIndex}`}
+                  className="relative aspect-square rounded-2xl overflow-hidden border-2 border-gray-200 bg-gray-50 group shadow-sm"
+                >
+                  {/* eslint-disable-next-line @next/next/no-img-element */}
+                  <img
+                    src={img}
+                    alt={`Gallery preview ${idx + 1}`}
+                    className="w-full h-full object-cover"
+                    onError={(e) => {
+                      (e.target as HTMLImageElement).src = "/placeholders/product.svg";
+                    }}
+                  />
+
+                  {/* Hover Actions */}
+                  <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center gap-2 p-2 z-20">
+                    <button
+                      type="button"
+                      onClick={() => handleSetPrimary(originalIndex)}
+                      className="p-2 bg-white/95 text-[#052a51] rounded-xl hover:bg-white text-xs font-bold flex items-center gap-1 shadow-md cursor-pointer transition-transform active:scale-95"
+                      title="Make primary photo"
+                    >
+                      <Star size={14} className="text-amber-500 fill-amber-500" />
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => handleRemove(originalIndex)}
+                      className="p-2 bg-red-600 text-white rounded-xl hover:bg-red-700 shadow-md cursor-pointer transition-transform active:scale-95"
+                      title="Remove photo"
+                    >
+                      <X size={14} />
+                    </button>
+                  </div>
+                </div>
+              );
+            })}
+
+            {/* Upload Trigger Box for Gallery */}
+            <label
+              onDrop={handleDrop}
+              onDragOver={handleDragOver}
+              onDragLeave={handleDragLeave}
+              className={`border-2 border-dashed rounded-2xl aspect-square flex flex-col items-center justify-center p-4 cursor-pointer text-center transition-all group ${
+                isDragging
+                  ? "border-[#F26522] bg-[#F26522]/10 scale-98"
+                  : "border-gray-300 hover:border-[#F26522] bg-gray-50 hover:bg-[#F26522]/5"
+              }`}
+            >
+              {isUploading ? (
+                <>
+                  <Loader2 size={24} className="text-[#F26522] animate-spin" />
+                  <span className="text-xs font-bold text-[#052a51] mt-2">Uploading...</span>
+                </>
+              ) : (
+                <>
+                  <Upload size={22} className="text-gray-400 group-hover:text-[#F26522] transition-colors" />
+                  <span className="text-xs font-bold text-[#052a51] mt-2 group-hover:text-[#F26522]">
+                    Add Gallery
+                  </span>
+                  <span className="text-[10px] text-gray-400 mt-0.5">Drag & drop</span>
+                </>
+              )}
+              <input
+                ref={fileInputRef}
+                type="file"
+                multiple
+                accept="image/*"
+                disabled={isUploading}
+                onChange={handleFileChange}
+                className="hidden"
+              />
+            </label>
+          </div>
+        </div>
       </div>
 
       {/* URL Add and Presets Bar */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pt-1 border-t border-gray-100">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pt-4 border-t border-gray-100">
         {!isAddingUrl ? (
           <div className="flex items-center gap-2 flex-wrap">
             <button
@@ -222,16 +312,16 @@ export default function ImageUploadManager({
               <span>Paste Image URL</span>
             </button>
             <span className="text-xs text-gray-400">
-              Host photos elsewhere? Paste direct links (CDN, Imgur, S3)
+              You can also directly Ctrl+V / Paste image links or files anywhere here.
             </span>
           </div>
         ) : (
           <form onSubmit={handleAddUrl} className="flex items-center gap-2 w-full max-w-lg">
             <input
-              type="url"
+              type="text"
               value={urlInput}
               onChange={(e) => setUrlInput(e.target.value)}
-              placeholder="Enter valid image web URL"
+              placeholder="Paste image web URL or Base64 here..."
               className="flex-1 px-3.5 py-2 text-xs border border-gray-300 rounded-xl focus:outline-hidden focus:border-[#F26522] font-medium bg-white"
               autoFocus
             />
