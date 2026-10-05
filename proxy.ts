@@ -18,7 +18,7 @@ const SUSPICIOUS_PROBE_REGEX =
 const SCRAPER_BOT_REGEX =
   /(python-requests|scrapy|bytespider|go-http-client|curl\/|wget\/|httpx|aiohttp|headlesschrome|zgrab|masscan|sqlmap)/i;
 
-export function middleware(request: NextRequest) {
+export function proxy(request: NextRequest) {
   const hostHeader = request.headers.get("x-forwarded-host") || request.headers.get("host") || "";
   const host = hostHeader.split(",")[0].trim().toLowerCase().split(":")[0];
   const pathname = request.nextUrl.pathname;
@@ -241,3 +241,6 @@ export const config = {
     "/((?!_next/static|_next/image|sitemap.xml|robots.txt).*)",
   ],
 };
+
+export const middleware = proxy;
+

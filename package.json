@@ -11,6 +11,15 @@
     "lint": "eslint",
     "seo:check": "tsx scripts/seo-check.ts"
   },
+  "allowScripts": {
+    "@prisma/client": true,
+    "@prisma/engines": true,
+    "@sentry/cli": true,
+    "esbuild": true,
+    "sharp": true,
+    "prisma": true,
+    "unrs-resolver": true
+  },
   "dependencies": {
     "@google/generative-ai": "^0.24.1",
     "@prisma/client": "^6.19.3",

@@ -103,8 +103,11 @@ const nextConfig: NextConfig = {
 export default withSentryConfig(nextConfig, {
   org: "intrihub",
   project: "javascript-nextjs",
-  silent: !process.env.CI,
+  silent: true,
+  authToken: process.env.SENTRY_AUTH_TOKEN,
+  telemetry: false,
   sourcemaps: {
+    disable: !process.env.SENTRY_AUTH_TOKEN,
     deleteSourcemapsAfterUpload: true,
   },
 });
