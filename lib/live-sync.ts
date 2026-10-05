@@ -174,7 +174,7 @@ export function useLiveSync({
         triggerSync();
       }
     };
-    window.addEventListener("storage", handleStorage);
+    window.addEventListener("storage", handleStorage, { passive: true });
 
     // 4. Focus & Visibility Change Listener
     const handleFocus = () => {
@@ -184,8 +184,8 @@ export function useLiveSync({
     };
 
     if (enableFocusRefresh) {
-      window.addEventListener("focus", handleFocus);
-      document.addEventListener("visibilitychange", handleFocus);
+      window.addEventListener("focus", handleFocus, { passive: true });
+      document.addEventListener("visibilitychange", handleFocus, { passive: true });
     }
 
     // 5. Silent Background Polling Timer

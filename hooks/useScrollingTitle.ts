@@ -7,13 +7,21 @@ import { usePathname } from 'next/navigation';
  * Scrolls document.title as a smooth marquee ticker using the page's title.
  * Operates purely on the client with zero state updates to prevent re-renders.
  */
-export function useScrollingTitle(intervalMs = 220) {
+export function useScrollingTitle(intervalMs = 450) {
   const pathname = usePathname();
   const originalTitleRef = useRef<string>('');
 
   useEffect(() => {
-    // Ensure we run only in browser
+    // Ensure we run only in browser, and NEVER on administrative/vendor portals
     if (typeof window === 'undefined' || typeof document === 'undefined') return;
+    if (
+      pathname?.startsWith('/admin') ||
+      pathname?.startsWith('/cpo') ||
+      pathname?.startsWith('/vendor') ||
+      pathname?.startsWith('/help')
+    ) {
+      return;
+    }
 
     let intervalId: ReturnType<typeof setInterval> | null = null;
     let index = 0;

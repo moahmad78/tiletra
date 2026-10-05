@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef } from "react";
+import { useEffect, useRef, useMemo } from "react";
 import { X, Minus, Plus, ShoppingBag, ArrowRight, Trash2 } from "lucide-react";
 import Link from "next/link";
 import Image from "next/image";
@@ -15,9 +15,20 @@ function formatPrice(n: number) {
 export default function CartDrawer() {
   const router = useRouter();
   const { isAuthenticated, openLoginModal } = useAuthStore();
-  const { items, isOpen, closeCart, removeItem, updateQuantity, getSubtotal, getTotalSqft } = useCartStore();
-  const subtotal = useCartStore((s) => s.getSubtotal());
-  const totalSqft = useCartStore((s) => s.getTotalSqft());
+  const isOpen = useCartStore((s) => s.isOpen);
+  const items = useCartStore((s) => s.items);
+  const closeCart = useCartStore((s) => s.closeCart);
+  const removeItem = useCartStore((s) => s.removeItem);
+  const updateQuantity = useCartStore((s) => s.updateQuantity);
+
+  const subtotal = useMemo(
+    () => items.reduce((sum, i) => sum + i.variant.pricePerBox * i.quantity, 0),
+    [items]
+  );
+  const totalSqft = useMemo(
+    () => items.reduce((sum, i) => sum + i.variant.sqftPerBox * i.quantity, 0),
+    [items]
+  );
   const drawerRef = useRef<HTMLDivElement>(null);
 
   // Close on outside click
@@ -28,7 +39,7 @@ export default function CartDrawer() {
       }
     }
     if (isOpen) {
-      document.addEventListener("mousedown", handleClick);
+      document.addEventListener("mousedown", handleClick, { passive: true });
       document.body.style.overflow = "hidden";
     }
     return () => {
@@ -39,12 +50,13 @@ export default function CartDrawer() {
 
   // Close on Escape
   useEffect(() => {
+    if (!isOpen) return;
     function handleKey(e: KeyboardEvent) {
       if (e.key === "Escape") closeCart();
     }
     window.addEventListener("keydown", handleKey);
     return () => window.removeEventListener("keydown", handleKey);
-  }, [closeCart]);
+  }, [isOpen, closeCart]);
 
   if (!isOpen) return null;
 

@@ -57,8 +57,9 @@ export default function FloatingCustomerSupport() {
 
   // Close modal on escape key
   useEffect(() => {
+    if (!isOpen) return;
     const handleKeyDown = (e: KeyboardEvent) => {
-      if (e.key === "Escape" && isOpen) {
+      if (e.key === "Escape") {
         setIsOpen(false);
       }
     };

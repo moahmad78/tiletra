@@ -204,24 +204,19 @@ export default async function RootLayout({
           dangerouslySetInnerHTML={{
             __html: `
               (function() {
-                if (typeof Node === 'function' && Node.prototype) {
+                if (typeof Node === 'function' && Node.prototype && !Node.prototype.__intrihub_dom_safe) {
+                  Node.prototype.__intrihub_dom_safe = true;
                   var origRemoveChild = Node.prototype.removeChild;
                   Node.prototype.removeChild = function(child) {
-                    if (child.parentNode !== this) {
-                      if (console && console.warn) {
-                        console.warn('[IntriHub DOM Safety] removeChild prevented from wrong parent:', child, this);
-                      }
-                      return child;
+                    if (child && child.parentNode && child.parentNode !== this) {
+                      return origRemoveChild.call(child.parentNode, child);
                     }
                     return origRemoveChild.apply(this, arguments);
                   };
                   var origInsertBefore = Node.prototype.insertBefore;
                   Node.prototype.insertBefore = function(newNode, refNode) {
-                    if (refNode && refNode.parentNode !== this) {
-                      if (console && console.warn) {
-                        console.warn('[IntriHub DOM Safety] insertBefore prevented from wrong parent:', refNode, this);
-                      }
-                      return newNode;
+                    if (refNode && refNode.parentNode && refNode.parentNode !== this) {
+                      return origInsertBefore.call(refNode.parentNode, newNode, refNode);
                     }
                     return origInsertBefore.apply(this, arguments);
                   };

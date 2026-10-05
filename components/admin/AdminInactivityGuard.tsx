@@ -14,20 +14,8 @@ export default function AdminInactivityGuard() {
   const router = useRouter();
   const pathname = usePathname();
   const { isAuthenticated, logout } = useAdminAuth();
-  const lastThrottleRef = useRef<number>(0);
+  const lastActiveTimeRef = useRef<number>(Date.now());
   const warnedRef = useRef<boolean>(false);
-
-  // Update last active timestamp (throttled to once every 2 seconds)
-  const recordActivity = useCallback(() => {
-    const now = Date.now();
-    if (now - lastThrottleRef.current > 2000) {
-      lastThrottleRef.current = now;
-      try {
-        sessionStorage.setItem(STORAGE_KEY, now.toString());
-      } catch {}
-      warnedRef.current = false;
-    }
-  }, []);
 
   const handleAutoLogout = useCallback(() => {
     logout();
@@ -46,36 +34,44 @@ export default function AdminInactivityGuard() {
       return;
     }
 
-    // Initialize last active timestamp if not already set
-    const stored = typeof window !== "undefined" ? sessionStorage.getItem(STORAGE_KEY) : null;
-    if (!stored) {
-      try {
-        sessionStorage.setItem(STORAGE_KEY, Date.now().toString());
-      } catch {}
+    // Initialize last active timestamp from storage if valid and recent, else now
+    try {
+      const stored = sessionStorage.getItem(STORAGE_KEY);
+      if (stored) {
+        const parsed = parseInt(stored, 10);
+        if (!isNaN(parsed) && Date.now() - parsed < INACTIVITY_LIMIT_MS) {
+          lastActiveTimeRef.current = parsed;
+        } else {
+          lastActiveTimeRef.current = Date.now();
+          sessionStorage.setItem(STORAGE_KEY, lastActiveTimeRef.current.toString());
+        }
+      } else {
+        lastActiveTimeRef.current = Date.now();
+        sessionStorage.setItem(STORAGE_KEY, lastActiveTimeRef.current.toString());
+      }
+    } catch {
+      lastActiveTimeRef.current = Date.now();
     }
 
-    // Activity event listeners
-    const events: (keyof WindowEventMap)[] = [
-      "mousedown",
-      "mousemove",
-      "keydown",
-      "touchstart",
-      "scroll",
-      "click",
-      "wheel",
-    ];
+    // Non-blocking in-memory activity tracking (zero storage writes on click/tap path)
+    const onActivity = () => {
+      lastActiveTimeRef.current = Date.now();
+      warnedRef.current = false;
+    };
 
-    const onActivity = () => recordActivity();
+    // Use only low-overhead pointerdown and keydown; never scroll, mousemove, or wheel
+    window.addEventListener("pointerdown", onActivity, { passive: true });
+    window.addEventListener("keydown", onActivity, { passive: true });
 
-    events.forEach((ev) => {
-      window.addEventListener(ev, onActivity, { passive: true });
-    });
-
-    // Check inactivity periodically
+    // Background timer to check inactivity and lazily sync to storage
     const interval = setInterval(() => {
-      const lastActiveStr = typeof window !== "undefined" ? sessionStorage.getItem(STORAGE_KEY) : null;
-      const lastActive = lastActiveStr ? parseInt(lastActiveStr, 10) : Date.now();
-      const idleTime = Date.now() - lastActive;
+      const now = Date.now();
+      const idleTime = now - lastActiveTimeRef.current;
+
+      // Lazy background persistence without blocking user interactions
+      try {
+        sessionStorage.setItem(STORAGE_KEY, lastActiveTimeRef.current.toString());
+      } catch {}
 
       // 9-minute gentle warning (1 minute left)
       if (idleTime >= 9 * 60 * 1000 && idleTime < INACTIVITY_LIMIT_MS && !warnedRef.current) {
@@ -92,12 +88,11 @@ export default function AdminInactivityGuard() {
     }, CHECK_INTERVAL_MS);
 
     return () => {
-      events.forEach((ev) => {
-        window.removeEventListener(ev, onActivity);
-      });
+      window.removeEventListener("pointerdown", onActivity);
+      window.removeEventListener("keydown", onActivity);
       clearInterval(interval);
     };
-  }, [isAuthenticated, pathname, recordActivity, handleAutoLogout]);
+  }, [isAuthenticated, pathname, handleAutoLogout]);
 
   return null;
 }

@@ -104,14 +104,15 @@ export default function WebMapPickerModal({
 
   // Close search dropdown on click outside
   useEffect(() => {
+    if (!showPredictions) return;
     const handleOutsideClick = (e: MouseEvent) => {
       if (searchContainerRef.current && !searchContainerRef.current.contains(e.target as Node)) {
         setShowPredictions(false);
       }
     };
-    document.addEventListener("mousedown", handleOutsideClick);
+    document.addEventListener("mousedown", handleOutsideClick, { passive: true });
     return () => document.removeEventListener("mousedown", handleOutsideClick);
-  }, []);
+  }, [showPredictions]);
 
   // Live address search typing with debouncing
   const handleSearchChange = (text: string) => {

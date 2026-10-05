@@ -111,7 +111,7 @@ export default function DesktopCategoryRow({ categories }: DesktopCategoryRowPro
   useEffect(() => {
     measureWidth();
     const timer = setTimeout(measureWidth, 200);
-    window.addEventListener("resize", measureWidth);
+    window.addEventListener("resize", measureWidth, { passive: true });
     return () => {
       clearTimeout(timer);
       window.removeEventListener("resize", measureWidth);

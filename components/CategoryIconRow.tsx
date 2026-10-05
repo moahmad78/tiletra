@@ -119,7 +119,7 @@ export default function CategoryIconRow({ categories }: { categories?: Category[
   useEffect(() => {
     measureWidth();
     const timer = setTimeout(measureWidth, 200);
-    window.addEventListener("resize", measureWidth);
+    window.addEventListener("resize", measureWidth, { passive: true });
     return () => {
       clearTimeout(timer);
       window.removeEventListener("resize", measureWidth);

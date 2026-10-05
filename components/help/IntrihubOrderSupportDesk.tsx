@@ -89,14 +89,15 @@ export default function IntrihubOrderSupportDesk({
 
   // Close suggestions when clicking outside
   useEffect(() => {
+    if (!showSuggestions) return;
     const handleClickOutside = (e: MouseEvent) => {
       if (searchContainerRef.current && !searchContainerRef.current.contains(e.target as Node)) {
         setShowSuggestions(false);
       }
     };
-    document.addEventListener("mousedown", handleClickOutside);
+    document.addEventListener("mousedown", handleClickOutside, { passive: true });
     return () => document.removeEventListener("mousedown", handleClickOutside);
-  }, []);
+  }, [showSuggestions]);
 
   // Debounced live search
   useEffect(() => {

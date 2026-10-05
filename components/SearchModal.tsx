@@ -37,17 +37,18 @@ export default function SearchModal({
     };
   }, [isOpen]);
 
-  // Handle escape key globally with capture phase
+  // Handle escape key when modal is open
   useEffect(() => {
+    if (!isOpen) return;
     const handleKeyDown = (e: KeyboardEvent) => {
       if (e.key === "Escape") {
         e.preventDefault();
         onClose();
       }
     };
-    window.addEventListener("keydown", handleKeyDown, true);
-    return () => window.removeEventListener("keydown", handleKeyDown, true);
-  }, [onClose]);
+    window.addEventListener("keydown", handleKeyDown);
+    return () => window.removeEventListener("keydown", handleKeyDown);
+  }, [isOpen, onClose]);
 
   // Search when query changes
   useEffect(() => {

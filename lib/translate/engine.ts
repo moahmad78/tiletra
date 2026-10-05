@@ -11,25 +11,20 @@ const GOOGTRANS_COOKIE = "googtrans";
 // remove or insert nodes during re-render, it throws:
 // "NotFoundError: Failed to execute 'removeChild' / 'insertBefore' on 'Node'".
 // This safety guard intercepts and prevents the crash.
-if (typeof window !== "undefined") {
+if (typeof window !== "undefined" && typeof Node === "function" && Node.prototype && !(Node.prototype as any).__intrihub_dom_safe) {
+  (Node.prototype as any).__intrihub_dom_safe = true;
   const originalRemoveChild = Node.prototype.removeChild;
   Node.prototype.removeChild = function <T extends Node>(child: T): T {
-    if (child.parentNode !== this) {
-      if (child.parentNode) {
-        return originalRemoveChild.call(child.parentNode, child) as T;
-      }
-      return child;
+    if (child && child.parentNode && child.parentNode !== this) {
+      return originalRemoveChild.call(child.parentNode, child) as T;
     }
     return originalRemoveChild.call(this, child) as T;
   };
 
   const originalInsertBefore = Node.prototype.insertBefore;
   Node.prototype.insertBefore = function <T extends Node>(newNode: T, referenceNode: Node | null): T {
-    if (referenceNode && referenceNode.parentNode !== this) {
-      if (referenceNode.parentNode) {
-        return originalInsertBefore.call(referenceNode.parentNode, newNode, referenceNode) as T;
-      }
-      return originalInsertBefore.call(this, newNode, null) as T;
+    if (referenceNode && referenceNode.parentNode && referenceNode.parentNode !== this) {
+      return originalInsertBefore.call(referenceNode.parentNode, newNode, referenceNode) as T;
     }
     return originalInsertBefore.call(this, newNode, referenceNode) as T;
   };

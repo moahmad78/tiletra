@@ -37,7 +37,7 @@ export default function LanguageSelector({
       }
     }
     if (isOpen) {
-      document.addEventListener("mousedown", handleClickOutside);
+      document.addEventListener("mousedown", handleClickOutside, { passive: true });
       // Auto-focus search input when opening
       setTimeout(() => {
         searchInputRef.current?.focus();
@@ -50,8 +50,9 @@ export default function LanguageSelector({
 
   // Close on Escape key
   useEffect(() => {
+    if (!isOpen) return;
     function handleKeyDown(e: KeyboardEvent) {
-      if (e.key === "Escape" && isOpen) {
+      if (e.key === "Escape") {
         setIsOpen(false);
       }
     }

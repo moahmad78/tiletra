@@ -1,6 +1,6 @@
 "use client";
 
-import React, { createContext, useContext, useEffect, useState, useMemo, useCallback } from "react";
+import React, { createContext, useContext, useEffect, useState, useMemo, useCallback, startTransition } from "react";
 import { LanguageOption, LanguageContextValue } from "@/lib/translate/types";
 import { PINNED_LANGUAGE_CODES, resolveLanguageNames } from "@/lib/translate/constants";
 import {
@@ -61,47 +61,56 @@ export function LanguageProvider({ children }: { children: React.ReactNode }) {
           }
         }
 
-        // Build LanguageOption list with native + English names
-        const builtList: LanguageOption[] = [DEFAULT_ENGLISH];
-
-        // 1. Pinned languages in exact order specified in FR-2
-        for (const pinnedCode of PINNED_LANGUAGE_CODES) {
-          if (pinnedCode === "en") continue;
-          const found = rawOptions.find((o) => o.code.toLowerCase() === pinnedCode.toLowerCase());
-          const names = resolveLanguageNames(pinnedCode, found?.text);
-          builtList.push({
-            code: pinnedCode,
-            name: names.name,
-            nativeName: names.nativeName,
-            isPinned: true,
-          });
-        }
-
-        // 2. All other world languages sorted alphabetically by English name
-        const otherOptions = rawOptions.filter(
-          (o) => !PINNED_LANGUAGE_CODES.some((p) => p.toLowerCase() === o.code.toLowerCase())
-        );
-
-        const otherBuilt: LanguageOption[] = otherOptions.map((o) => {
-          const names = resolveLanguageNames(o.code, o.text);
-          return {
-            code: o.code,
-            name: names.name,
-            nativeName: names.nativeName,
-            isPinned: false,
-          };
-        });
-
-        otherBuilt.sort((a, b) => a.name.localeCompare(b.name));
-
-        const finalList = [...builtList, ...otherBuilt];
-        setLanguages(finalList);
-        setIsReady(true);
-
-        // Auto-apply saved language if not English (FR-5)
+        // Auto-apply saved language immediately if not English (FR-5)
         const saved = getSavedLanguagePreference();
         if (saved && saved !== "en") {
           applyLanguage(saved, false);
+        }
+
+        // Defer 100+ language list compilation to idle callback so it never blocks user interactions (INP)
+        const buildLanguagesAsync = () => {
+          // 1. Pinned languages in exact order specified in FR-2
+          const builtList: LanguageOption[] = [DEFAULT_ENGLISH];
+          for (const pinnedCode of PINNED_LANGUAGE_CODES) {
+            if (pinnedCode === "en") continue;
+            const found = rawOptions.find((o) => o.code.toLowerCase() === pinnedCode.toLowerCase());
+            const names = resolveLanguageNames(pinnedCode, found?.text);
+            builtList.push({
+              code: pinnedCode,
+              name: names.name,
+              nativeName: names.nativeName,
+              isPinned: true,
+            });
+          }
+
+          // 2. All other world languages sorted alphabetically by English name
+          const otherOptions = rawOptions.filter(
+            (o) => !PINNED_LANGUAGE_CODES.some((p) => p.toLowerCase() === o.code.toLowerCase())
+          );
+
+          const otherBuilt: LanguageOption[] = otherOptions.map((o) => {
+            const names = resolveLanguageNames(o.code, o.text);
+            return {
+              code: o.code,
+              name: names.name,
+              nativeName: names.nativeName,
+              isPinned: false,
+            };
+          });
+
+          otherBuilt.sort((a, b) => a.name.localeCompare(b.name));
+
+          const finalList = [...builtList, ...otherBuilt];
+          startTransition(() => {
+            setLanguages(finalList);
+            setIsReady(true);
+          });
+        };
+
+        if (typeof window !== "undefined" && "requestIdleCallback" in window) {
+          (window as any).requestIdleCallback(buildLanguagesAsync, { timeout: 1500 });
+        } else {
+          setTimeout(buildLanguagesAsync, 60);
         }
         return;
       }

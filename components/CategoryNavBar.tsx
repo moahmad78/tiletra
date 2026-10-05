@@ -158,7 +158,7 @@ export default function CategoryNavBar() {
 
   useEffect(() => {
     checkScroll();
-    window.addEventListener("resize", checkScroll);
+    window.addEventListener("resize", checkScroll, { passive: true });
     return () => window.removeEventListener("resize", checkScroll);
   }, [checkScroll]);
 
