@@ -114,6 +114,9 @@ export default function VariantSelector({
     const unit = product.unitOfSale?.toLowerCase() || "";
     const cat = product.categorySlug?.toLowerCase() || "";
 
+    if (unit === "kg" || unit === "gram" || cat.includes("adhesive") || cat.includes("cement") || cat.includes("putty") || cat.includes("chemical") || cat.includes("grout")) {
+      return "Weight / Pack Size";
+    }
     if (unit === "litre" || unit === "liter" || unit === "can" || cat.includes("paint")) {
       return "Volume / Pack Size";
     }

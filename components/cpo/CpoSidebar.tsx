@@ -10,11 +10,13 @@ import {
   ExternalLink,
   Shield,
   LayoutDashboard,
+  Layers,
 } from "lucide-react";
 
 const NAV_ITEMS = [
   { href: "/cpo", label: "Dashboard", icon: LayoutDashboard, exact: true },
   { href: "/cpo/vendors", label: "Vendors & Stores", icon: Store },
+  { href: "/cpo/categories", label: "Categories & Taxonomy", icon: Layers },
   { href: "/cpo/catalog", label: "Catalog & Items", icon: Package },
   { href: "/cpo/catalog/new", label: "Add Item (All Options)", icon: PlusCircle },
   { href: "/cpo/invoices", label: "Tax Invoice Generator", icon: FileText },

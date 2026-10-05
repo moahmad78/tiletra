@@ -1,4 +1,6 @@
 import { checkIsAdmin, getAdminSession } from "@/lib/server-auth";
+import { getCpoSession } from "@/lib/cpo/auth";
+import { evaluateCpoAction } from "@/lib/config/cpo-permissions";
 import { securityLogger } from "@/lib/security-logger";
 
 /**
@@ -19,22 +21,45 @@ export async function requireAdminAction(actionName?: string): Promise<{
 
   try {
     const isAdmin = await checkIsAdmin();
-    if (!isAdmin) {
-      securityLogger.logUnauthorizedAccess({
-        path: actionName || "admin_server_action",
-        reason: "Unauthorized: Administrator privileges required.",
-      });
+    if (isAdmin) {
+      const session = await getAdminSession();
       return {
-        authorized: false,
-        error: "Unauthorized: Administrator privileges required.",
+        authorized: true,
+        adminId: session?.adminId || "admin",
+        email: session?.email || "admin@intrihub.com",
       };
     }
 
-    const session = await getAdminSession();
+    // Check CPO Session
+    const cpo = await getCpoSession();
+    if (cpo) {
+      const checkAction = actionName || "categories:manage";
+      const evalResult = evaluateCpoAction(checkAction);
+      if (evalResult.allowed) {
+        return {
+          authorized: true,
+          adminId: cpo.userId,
+          email: cpo.email,
+        };
+      } else {
+        securityLogger.logUnauthorizedAccess({
+          path: actionName || "cpo_action_blocked",
+          reason: evalResult.reason || "Action blocked for CPO role.",
+        });
+        return {
+          authorized: false,
+          error: evalResult.reason || "Forbidden: Action not permitted for CPO role.",
+        };
+      }
+    }
+
+    securityLogger.logUnauthorizedAccess({
+      path: actionName || "admin_server_action",
+      reason: "Unauthorized: Administrator or CPO privileges required.",
+    });
     return {
-      authorized: true,
-      adminId: session?.adminId || "admin",
-      email: session?.email || "admin@intrihub.com",
+      authorized: false,
+      error: "Unauthorized: Administrator or CPO privileges required.",
     };
   } catch (err: any) {
     securityLogger.logUnauthorizedAccess({

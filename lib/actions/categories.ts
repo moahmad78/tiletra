@@ -127,7 +127,7 @@ export async function createCategory(data: {
   calculatorInputType?: "area" | "length" | "none";
 }) {
   try {
-    const auth = await requireAdminAction();
+    const auth = await requireAdminAction("categories:manage");
     if (!auth.authorized) return { success: false, error: auth.error || "Unauthorized" };
     const slug = data.slug || data.name.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-+|-+$/g, "");
     const count = await prisma.category.count();
@@ -166,7 +166,7 @@ export async function updateCategory(id: string, data: {
   calculatorInputType?: "area" | "length" | "none";
 }) {
   try {
-    const auth = await requireAdminAction();
+    const auth = await requireAdminAction("categories:manage");
     if (!auth.authorized) return { success: false, error: auth.error || "Unauthorized" };
     const category = await prisma.category.update({
       where: { id },
@@ -188,7 +188,7 @@ export async function updateCategory(id: string, data: {
 
 export async function deleteCategory(id: string) {
   try {
-    const auth = await requireAdminAction();
+    const auth = await requireAdminAction("categories:manage");
     if (!auth.authorized) return { success: false, error: auth.error || "Unauthorized" };
     await prisma.category.delete({ where: { id } });
 

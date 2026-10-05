@@ -29,6 +29,8 @@ import VariantEditor from "@/components/admin/VariantEditor";
 import ColorPalettePickerModal from "@/components/admin/ColorPalettePickerModal";
 import { createProduct } from "@/lib/actions/products";
 import { getVendorProfile } from "@/lib/actions/vendor";
+import { getCategories } from "@/lib/actions/categories";
+import type { Category } from "@/lib/data/categories";
 import type { ProductVariant } from "@/lib/data/products";
 import { UNIT_OF_SALE_OPTIONS, getDefaultUnitOfSale } from "@/lib/units";
 import {
@@ -246,6 +248,14 @@ export default function DynamicProductUploadForm({
   const [hasMultipleVariants, setHasMultipleVariants] = useState(false);
   const [customVariants, setCustomVariants] = useState<ProductVariant[]>([]);
 
+  // ── Database Categories State ──
+  const [dbCategories, setDbCategories] = useState<Category[]>([]);
+  const [selectedDbCategoryId, setSelectedDbCategoryId] = useState<string>("");
+
+  useEffect(() => {
+    getCategories().then((cats) => setDbCategories(cats));
+  }, []);
+
   // ── Vendor Auto-Publish & Privilege State ──
   const [vendorProfile, setVendorProfile] = useState<any | null>(null);
 
@@ -254,6 +264,29 @@ export default function DynamicProductUploadForm({
       getVendorProfile(vendorId).then((v) => setVendorProfile(v));
     }
   }, [vendorId]);
+
+  const handleDbCategoryChange = (catId: string) => {
+    setSelectedDbCategoryId(catId);
+    if (!catId) return;
+    const cat = dbCategories.find((c) => c.id === catId);
+    if (!cat) return;
+
+    const slug = cat.slug.toLowerCase();
+    const recommendedUnit = getDefaultUnitOfSale(slug);
+    setUnitOfSale(recommendedUnit);
+
+    if (slug.includes("paint") || slug.includes("finish") || slug.includes("emulsion")) {
+      setSelectedCategoryKey("paints");
+    } else if (slug.includes("wire") || slug.includes("cable")) {
+      setSelectedCategoryKey("electrical-wires");
+    } else if (slug.includes("plywood") || slug.includes("board") || slug.includes("laminate")) {
+      setSelectedCategoryKey("plywood");
+    } else if (slug.includes("tile") || slug.includes("stone") || slug.includes("granite")) {
+      setSelectedCategoryKey("tiles-granite");
+    } else {
+      setSelectedCategoryKey("electrical");
+    }
+  };
 
   // ── Smart Calculator Estimations ──
   const [coverageRate, setCoverageRate] = useState<string>("");
@@ -446,10 +479,16 @@ export default function DynamicProductUploadForm({
     const piecesPerBoxNum = parseInt(piecesPerBox, 10);
     const wastageNum = (parseFloat(wastagePercent) || 10) / 100 + 1.0;
 
+    const chosenDbCat = dbCategories.find((c) => c.id === selectedDbCategoryId);
+    const finalCategorySlug = chosenDbCat ? chosenDbCat.slug : currentCategoryConfig.slug;
+    const finalCategoryName = chosenDbCat ? chosenDbCat.name : currentCategoryConfig.label;
+    const finalCategoryId = chosenDbCat ? chosenDbCat.id : null;
+
     const res = await createProduct({
       name: productName.trim(),
-      categorySlug: currentCategoryConfig.slug,
-      categoryName: currentCategoryConfig.label,
+      categoryId: finalCategoryId,
+      categorySlug: finalCategorySlug,
+      categoryName: finalCategoryName,
       material: material || currentCategoryConfig.defaultMaterial,
       description: fullDescription || `${productName} — High quality certified material available with expedited delivery.`,
       images: images.length > 0 ? images : ["/placeholders/product.svg"],
@@ -628,6 +667,32 @@ export default function DynamicProductUploadForm({
             );
           })}
         </div>
+
+        {/* Dynamic Marketplace Categories (including CPO / Admin custom created categories) */}
+        {dbCategories.length > 0 && (
+          <div className="pt-3 border-t border-gray-100 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+            <div>
+              <span className="text-xs font-bold text-gray-700 block">
+                Or Assign to Specific Marketplace Category:
+              </span>
+              <span className="text-[10px] text-gray-400">
+                Choose any category created via Admin or CPO Category Manager
+              </span>
+            </div>
+            <select
+              value={selectedDbCategoryId}
+              onChange={(e) => handleDbCategoryChange(e.target.value)}
+              className="px-3.5 py-2 bg-gray-50 border border-gray-200 rounded-xl text-xs font-bold text-[#052a51] focus:bg-white focus:outline-none focus:border-[#F26522] min-w-[260px] cursor-pointer"
+            >
+              <option value="">Default Form Template ({currentCategoryConfig.label.split("(")[0].trim()})</option>
+              {dbCategories.map((c) => (
+                <option key={c.id} value={c.id}>
+                  {c.name} ({c.slug})
+                </option>
+              ))}
+            </select>
+          </div>
+        )}
       </div>
 
       {/* ── Section 2: General & Common Fields ── */}
@@ -1257,64 +1322,117 @@ export default function DynamicProductUploadForm({
             <span className="text-xs font-bold text-gray-700">Feature on Trending Carousel 🚀</span>
           </label>
         </div>
+      </div>
 
-        {/* ── Multi-Variants (Volume / Litre / Dimension / Colors) Switcher ── */}
-        <div className="pt-4 border-t border-gray-100 space-y-4">
-          <div className="flex items-center justify-between">
+      {/* ── Section 4.5: Multi-Option Packaging & Size Variants (Kg / Litres / Sizes / Colors) ── */}
+      <div className="bg-white p-6 sm:p-8 rounded-3xl border border-gray-200/80 shadow-2xs space-y-4">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-4 border-b border-gray-100">
+          <div className="flex items-start gap-3">
+            <div className="w-10 h-10 rounded-2xl bg-orange-50 text-[#F26522] flex items-center justify-center font-bold shrink-0 border border-orange-100">
+              <Layers3 size={20} />
+            </div>
             <div>
-              <h3 className="text-xs font-black text-[#052a51] uppercase tracking-wider">
-                Multiple Sizes / Packs / Litres / Colors
-              </h3>
-              <p className="text-[11px] text-gray-400">
-                Enable if this product has multiple options (e.g., 1L / 4L / 10L / 20L paint or 6mm / 12mm / 19mm plywood)
+              <h2 className="text-base font-black text-[#052a51] flex items-center gap-2">
+                <span>Multi-Option Packaging & Size Variants</span>
+                {hasMultipleVariants && (
+                  <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-emerald-100 text-emerald-800">
+                    Active ({customVariants.length} Options)
+                  </span>
+                )}
+              </h2>
+              <p className="text-xs text-gray-500 mt-0.5">
+                Enable if this model item is available in multiple <strong>Kg weights (1kg, 2kg, 5kg, 20kg, 50kg)</strong>, <strong>Litres (1L, 4L, 10L, 20L)</strong>, pack sizes, or dimensions.
+              </p>
+            </div>
+          </div>
+
+          <button
+            type="button"
+            onClick={() => {
+              const nextState = !hasMultipleVariants;
+              setHasMultipleVariants(nextState);
+              if (nextState && customVariants.length === 0) {
+                const defaultVariantSize = dimensions.lengthSize || (dimensions.height && dimensions.width ? `${dimensions.height}x${dimensions.width}` : "Standard");
+                setCustomVariants([
+                  {
+                    id: "v-1",
+                    size: defaultVariantSize,
+                    finish: finish || "Glossy",
+                    color: primaryColor || "White",
+                    colorHex: primaryColorHex,
+                    image: images[0] || null,
+                    unit: unitOfSale,
+                    attributeLabel: unitOfSale === "kg" ? "Weight" : unitOfSale === "litre" ? "Volume" : "Size",
+                    attributeValue: defaultVariantSize,
+                    weightKg: 2.5,
+                    pricePerBox: sellNum || 1000,
+                    pricePerSqft: sellNum || 1000,
+                    sqftPerBox: 1,
+                    stockBoxes: parseInt(stockQty, 10) || 50,
+                    inStock: true,
+                  },
+                ]);
+              }
+            }}
+            className={`px-4 py-2.5 rounded-2xl text-xs font-black transition-all cursor-pointer flex items-center gap-2 ${
+              hasMultipleVariants
+                ? "bg-[#052a51] text-white shadow-md shadow-[#052a51]/20"
+                : "bg-orange-50 text-[#F26522] border border-[#F26522]/30 hover:bg-orange-100"
+            }`}
+          >
+            <span>{hasMultipleVariants ? "✓ Multi-Variants Enabled" : "+ Enable Multi-Option Variants"}</span>
+          </button>
+        </div>
+
+        {hasMultipleVariants ? (
+          <div className="pt-2">
+            <VariantEditor
+              variants={customVariants}
+              onChange={setCustomVariants}
+              unitOfSale={unitOfSale}
+            />
+          </div>
+        ) : (
+          <div className="p-5 rounded-2xl bg-gray-50 border border-gray-200/80 flex flex-col sm:flex-row items-center justify-between gap-3 text-center sm:text-left">
+            <div>
+              <p className="text-xs font-bold text-gray-800">
+                Single Option Mode (Standard)
+              </p>
+              <p className="text-[11px] text-gray-400 mt-0.5">
+                Product will be published with the single price (₹{sellNum || 0}) and stock ({stockQty || 0} {unitOfSale}s) configured in Section 4 above.
               </p>
             </div>
             <button
               type="button"
               onClick={() => {
-                const nextState = !hasMultipleVariants;
-                setHasMultipleVariants(nextState);
-                if (nextState && customVariants.length === 0) {
-                  const defaultVariantSize = dimensions.lengthSize || (dimensions.height && dimensions.width ? `${dimensions.height}x${dimensions.width}` : "Standard");
-                  setCustomVariants([
-                    {
-                      id: "v-1",
-                      size: defaultVariantSize,
-                      finish: selectedTags[0] || "Standard",
-                      color: "Standard",
-                      image: images[0] || null,
-                      unit: unitOfSale,
-                      attributeLabel: "Size",
-                      attributeValue: defaultVariantSize,
-                      pricePerBox: sellNum || 1000,
-                      pricePerSqft: sellNum || 1000,
-                      sqftPerBox: 1,
-                      stockBoxes: parseInt(stockQty, 10) || 50,
-                      inStock: true,
-                    },
-                  ]);
-                }
+                setHasMultipleVariants(true);
+                const defaultVariantSize = dimensions.lengthSize || (dimensions.height && dimensions.width ? `${dimensions.height}x${dimensions.width}` : "Standard");
+                setCustomVariants([
+                  {
+                    id: "v-1",
+                    size: defaultVariantSize,
+                    finish: finish || "Glossy",
+                    color: primaryColor || "White",
+                    colorHex: primaryColorHex,
+                    image: images[0] || null,
+                    unit: unitOfSale,
+                    attributeLabel: unitOfSale === "kg" ? "Weight" : unitOfSale === "litre" ? "Volume" : "Size",
+                    attributeValue: defaultVariantSize,
+                    weightKg: 2.5,
+                    pricePerBox: sellNum || 1000,
+                    pricePerSqft: sellNum || 1000,
+                    sqftPerBox: 1,
+                    stockBoxes: parseInt(stockQty, 10) || 50,
+                    inStock: true,
+                  },
+                ]);
               }}
-              className={`px-3.5 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer ${
-                hasMultipleVariants
-                  ? "bg-[#F26522] text-white shadow-xs"
-                  : "bg-gray-100 text-gray-600 hover:bg-gray-200"
-              }`}
+              className="px-4 py-2 bg-white border border-gray-300 rounded-xl text-xs font-bold text-gray-700 hover:border-[#F26522] hover:text-[#F26522] transition-colors cursor-pointer shrink-0 shadow-2xs"
             >
-              {hasMultipleVariants ? "✓ Multi-Variants Enabled" : "+ Enable Multi-Variants"}
+              + Switch to Multi-Option (Kg / Litres / Sizes)
             </button>
           </div>
-
-          {hasMultipleVariants && (
-            <div className="pt-2">
-              <VariantEditor
-                variants={customVariants}
-                onChange={setCustomVariants}
-                unitOfSale={unitOfSale}
-              />
-            </div>
-          )}
-        </div>
+        )}
       </div>
 
       {/* ── Section 5: Image Media Assets ── */}
