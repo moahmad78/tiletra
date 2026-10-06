@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useState, useEffect, useRef } from "react";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
 import {
   MapPin,
@@ -27,10 +27,14 @@ import InAppBrowserBanner from "@/components/InAppBrowserBanner";
 import { detectInAppBrowser, openInSystemBrowser } from "@/lib/in-app-browser";
 import { toast } from "sonner";
 
-export default function CheckoutPage() {
+function CheckoutContent() {
   const router = useRouter();
+  const searchParams = useSearchParams();
   const { user, isAuthenticated, openLoginModal } = useAuthStore();
-  const { items, clearCart, getSubtotal, getTotalWeightKg } = useCartStore();
+  const { items, buyNowItem, clearCart, clearBuyNowItem, getSubtotal, getTotalWeightKg } = useCartStore();
+
+  const isDirectCheckout = searchParams.get("mode") === "direct" && Boolean(buyNowItem);
+  const activeItems = isDirectCheckout && buyNowItem ? [buyNowItem] : items;
 
   const [currentStep, setCurrentStep] = useState<1 | 2 | 3>(1);
   const [selectedAddress, setSelectedAddress] = useState<CustomerAddress | null>(null);
@@ -111,8 +115,13 @@ export default function CheckoutPage() {
   }, [addresses, selectedAddress]);
 
   // 4. Cart calculations
-  const subtotal = getSubtotal();
-  const totalWeightKg = getTotalWeightKg();
+  const subtotal = isDirectCheckout && buyNowItem
+    ? (buyNowItem.variant.price ?? buyNowItem.variant.pricePerBox) * buyNowItem.quantity
+    : getSubtotal();
+
+  const totalWeightKg = isDirectCheckout && buyNowItem
+    ? (((buyNowItem.variant as any)?.weightKg ?? (buyNowItem.product as any)?.weightKg ?? 2.0) * buyNowItem.quantity)
+    : getTotalWeightKg();
 
   const isFreeDelivery = subtotal >= storeSettings.freeDeliveryThreshold;
   const isBikeDelivery = !isFreeDelivery && totalWeightKg <= storeSettings.weightThresholdKg;
@@ -131,7 +140,7 @@ export default function CheckoutPage() {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          items: items.map((i) => ({
+          items: activeItems.map((i) => ({
             productId: i.product.id,
             variantId: i.variant.id,
             quantity: i.quantity,
@@ -230,7 +239,7 @@ export default function CheckoutPage() {
         pincode: selectedAddress.pincode,
         landmark: selectedAddress.landmark,
       },
-      items: items.map((i) => ({
+      items: activeItems.map((i) => ({
         productId: i.product.id,
         productName: i.product.name,
         variantId: i.variant.id,
@@ -271,7 +280,11 @@ export default function CheckoutPage() {
       throw new Error(res.error || "Failed to create order");
     }
 
-    clearCart();
+    if (isDirectCheckout) {
+      clearBuyNowItem();
+    } else {
+      clearCart();
+    }
     const scheduledQuery = scheduledDelivery.isScheduled
       ? `&isScheduled=true&slot=${encodeURIComponent(scheduledDelivery.deliverySlot || "")}`
       : "";
@@ -329,7 +342,7 @@ export default function CheckoutPage() {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          items: items.map((i) => ({
+          items: activeItems.map((i) => ({
             productId: i.product.id,
             variantId: i.variant.id,
             quantity: i.quantity,
@@ -496,7 +509,7 @@ export default function CheckoutPage() {
   };
 
   // If cart is empty, show empty state
-  if (items.length === 0) {
+  if (activeItems.length === 0) {
     return (
       <main className="min-h-screen flex flex-col bg-[#F3F4F5] pt-[56px] md:pt-[124px]">
         <Header />
@@ -653,7 +666,7 @@ export default function CheckoutPage() {
           {/* Right Column: Sticky Order Summary (4 cols) */}
           <div className="lg:col-span-4">
             <OrderSummaryV2
-              items={items}
+              items={activeItems}
               subtotal={subtotal}
               deliveryFee={calculatedDeliveryFee}
               deliveryType={
@@ -677,5 +690,19 @@ export default function CheckoutPage() {
       </div>
       <Footer />
     </main>
+  );
+}
+
+export default function CheckoutPage() {
+  return (
+    <React.Suspense
+      fallback={
+        <div className="min-h-screen flex items-center justify-center bg-[#F3F4F5]">
+          <div className="w-8 h-8 border-4 border-[#052a51] border-t-transparent rounded-full animate-spin" />
+        </div>
+      }
+    >
+      <CheckoutContent />
+    </React.Suspense>
   );
 }

@@ -8,7 +8,7 @@ import { getCategories } from "@/lib/actions/categories";
 import type { Category } from "@/lib/data/categories";
 import { UNIT_OF_SALE_OPTIONS } from "@/lib/units";
 import ImageUploadManager from "@/components/admin/ImageUploadManager";
-import VariantEditor from "@/components/admin/VariantEditor";
+import UnifiedVariantManager from "@/components/shared/UnifiedVariantManager";
 import {
   ArrowLeft,
   Plus,
@@ -29,7 +29,10 @@ export default function CpoEditProductPage() {
   const [categories, setCategories] = useState<Category[]>([]);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
+  const [isImageUploading, setIsImageUploading] = useState(false);
   const [vendorName, setVendorName] = useState<string | null>(null);
+  const [vendorId, setVendorId] = useState<string | null>(null);
+  const [hasVariants, setHasVariants] = useState(false);
 
   // Form State
   const [name, setName] = useState("");
@@ -38,7 +41,7 @@ export default function CpoEditProductPage() {
   const [material, setMaterial] = useState("Vitrified");
   const [unitOfSale, setUnitOfSale] = useState("box");
   const [description, setDescription] = useState("");
-  const [images, setImages] = useState<string[]>(["/placeholders/product.svg"]);
+  const [images, setImages] = useState<string[]>([]);
 
   // Dynamic Attributes
   const [attributes, setAttributes] = useState<{ key: string; value: string }[]>([]);
@@ -47,15 +50,20 @@ export default function CpoEditProductPage() {
   const [wastagePercent, setWastagePercent] = useState<string>("10");
 
   // Variants
-  const [variants, setVariants] = useState([
+  const [variants, setVariants] = useState<any[]>([
     {
+      id: "v-default-1",
+      variantName: "Standard",
       size: "600x600mm",
       finish: "Glossy",
       color: "Standard",
+      price: 1200,
       pricePerBox: 1200,
       pricePerSqft: 60,
       sqftPerBox: 20,
       stockBoxes: 50,
+      active: true,
+      isDefault: true,
     },
   ]);
 
@@ -76,29 +84,47 @@ export default function CpoEditProductPage() {
           setMaterial(prod.material || "Vitrified");
           setUnitOfSale(prod.unitOfSale || "box");
           setDescription(prod.description || "");
-          setImages(prod.images && prod.images.length > 0 ? prod.images : ["/placeholders/product.svg"]);
+          setImages(prod.images && prod.images.length > 0 ? prod.images.filter((img) => img !== "/placeholders/product.svg") : []);
           setCoverageRate(prod.coverageRate ? String(prod.coverageRate) : "");
           setPiecesPerBox(prod.piecesPerBox ? String(prod.piecesPerBox) : "");
           setWastagePercent(prod.wastageFactor ? String(Math.round((prod.wastageFactor - 1) * 100)) : "10");
+          if (prod.vendorId) {
+            setVendorId(prod.vendorId);
+          }
           if (prod.vendor?.businessName) {
             setVendorName(prod.vendor.businessName);
           }
+          setHasVariants(Boolean(prod.hasVariants) || (prod.variants && prod.variants.length > 1));
           if (prod.variants && prod.variants.length > 0) {
             setVariants(
               prod.variants.map((v) => ({
-                size: v.size,
-                finish: v.finish,
-                color: v.color,
+                id: v.id,
+                sku: v.sku || null,
+                variantName: v.variantName || v.attributeValue || v.size || "Standard",
+                size: v.size || "Standard",
+                finish: v.finish || "Glossy",
+                color: v.color || "Standard",
+                colorHex: v.colorHex || null,
+                swatchImage: v.swatchImage || null,
                 image: v.image || null,
+                images: Array.isArray(v.images) ? v.images : (v.image ? [v.image] : []),
                 unit: v.unit || null,
                 attributeLabel: v.attributeLabel || null,
                 attributeValue: v.attributeValue || null,
+                attributes: (v as any).attributes || null,
                 mrp: v.mrp ? Number(v.mrp) : null,
                 weightKg: v.weightKg ? Number(v.weightKg) : 2.5,
+                price: v.price !== null && v.price !== undefined ? Number(v.price) : Number(v.pricePerBox),
                 pricePerBox: v.pricePerBox,
                 pricePerSqft: v.pricePerSqft,
                 sqftPerBox: v.sqftPerBox,
                 stockBoxes: v.stockBoxes ?? 50,
+                active: v.active !== false,
+                lowStockAlert: v.lowStockAlert ?? 10,
+                minOrderQuantity: v.minOrderQuantity ?? 1,
+                maxOrderQuantity: v.maxOrderQuantity ?? null,
+                isDefault: Boolean(v.isDefault),
+                barcode: v.barcode || null,
               }))
             );
           }
@@ -151,6 +177,19 @@ export default function CpoEditProductPage() {
       return;
     }
 
+    if (isImageUploading) {
+      toast.error("Images are currently uploading. Please wait for upload to complete before saving.");
+      return;
+    }
+
+    const validImages = images.filter(
+      (img) => img && img.trim() && img !== "/placeholders/product.svg" && !img.includes("placeholder")
+    );
+    if (validImages.length === 0) {
+      toast.error("Please upload or add at least one valid product photo. Products cannot be saved without images.");
+      return;
+    }
+
     const cleanAttributes = attributes.filter((a) => a.key.trim() && a.value.trim());
 
     setSaving(true);
@@ -162,12 +201,40 @@ export default function CpoEditProductPage() {
         material,
         unitOfSale,
         description: description.trim(),
-        images: images.filter((img) => img.trim().length > 0),
+        images: validImages,
         attributes: cleanAttributes,
+        hasVariants,
         coverageRate: !isNaN(parseFloat(coverageRate)) && parseFloat(coverageRate) > 0 ? parseFloat(coverageRate) : null,
         piecesPerBox: !isNaN(parseInt(piecesPerBox, 10)) && parseInt(piecesPerBox, 10) > 0 ? parseInt(piecesPerBox, 10) : null,
         wastageFactor: (parseFloat(wastagePercent) || 10) / 100 + 1.0,
-        variants: variants as any,
+        variants: variants.map((v) => ({
+          sku: v.sku || null,
+          variantName: v.variantName || v.attributeValue || v.size || "Standard",
+          size: v.size || "Standard",
+          finish: v.finish || "Glossy",
+          color: v.color || "Standard",
+          colorHex: v.colorHex || null,
+          swatchImage: v.swatchImage || null,
+          image: v.image || images[0] || null,
+          images: Array.isArray(v.images) && v.images.length > 0 ? v.images : (v.image ? [v.image] : (images[0] ? [images[0]] : [])),
+          unit: v.unit || unitOfSale,
+          attributeLabel: v.attributeLabel || null,
+          attributeValue: v.attributeValue || null,
+          attributes: v.attributes || null,
+          mrp: v.mrp ? Number(v.mrp) : null,
+          weightKg: v.weightKg ? Number(v.weightKg) : 2.5,
+          price: Number(v.price || v.pricePerBox || 1000),
+          pricePerBox: Number(v.pricePerBox || v.price || 1000),
+          pricePerSqft: Number(v.pricePerSqft || v.price || 1000),
+          sqftPerBox: Number(v.sqftPerBox || 1),
+          stockBoxes: Number(v.stockBoxes ?? 50),
+          active: v.active !== false,
+          lowStockAlert: v.lowStockAlert ?? 10,
+          minOrderQuantity: v.minOrderQuantity ?? 1,
+          maxOrderQuantity: v.maxOrderQuantity ?? null,
+          isDefault: Boolean(v.isDefault),
+          barcode: v.barcode || null,
+        })),
         status: "active",
         approvalStatus: "approved",
       });
@@ -323,7 +390,12 @@ export default function CpoEditProductPage() {
               {images.filter((img) => img !== "/placeholders/product.svg").length} photo(s)
             </span>
           </div>
-          <ImageUploadManager images={images} onChange={setImages} />
+          <ImageUploadManager
+            images={images}
+            onChange={setImages}
+            onUploadingChange={setIsImageUploading}
+            vendorId={vendorId}
+          />
         </div>
 
         {/* 3. Technical Attributes */}
@@ -376,15 +448,25 @@ export default function CpoEditProductPage() {
         </div>
 
         {/* 4. Multiple Variants & Pricing */}
-        <div className="bg-white rounded-3xl p-6 border border-gray-200/90 shadow-xs space-y-4">
-          <VariantEditor
-            variants={variants as any}
-            onChange={setVariants as any}
-            unitOfSale={unitOfSale}
-          />
+        <UnifiedVariantManager
+          hasVariants={hasVariants}
+          onHasVariantsChange={setHasVariants}
+          variants={variants as any}
+          onChange={setVariants as any}
+          vendorId={vendorId}
+          baseImages={images}
+          defaultSellingPrice={variants[0]?.pricePerBox || 1000}
+          defaultMrp={variants[0]?.mrp || 1200}
+          defaultStock={variants[0]?.stockBoxes || 50}
+          unitOfSale={unitOfSale}
+        />
 
-          {/* Calculator Settings */}
-          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 pt-4 border-t border-gray-100">
+        {/* 4b. Calculator Settings */}
+        <div className="bg-white rounded-3xl p-6 border border-gray-200/90 shadow-xs space-y-4">
+          <h4 className="text-xs font-bold text-gray-700 uppercase tracking-wider">
+            Calculator &amp; Coverage Settings
+          </h4>
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 pt-1">
             <div>
               <label className="text-xs font-bold text-gray-800 uppercase tracking-wider block mb-1.5">
                 Coverage Rate (per unit)
@@ -442,13 +524,18 @@ export default function CpoEditProductPage() {
           </Link>
           <button
             type="submit"
-            disabled={saving}
+            disabled={saving || isImageUploading}
             className="px-8 py-2.5 rounded-xl bg-[#F26522] hover:bg-[#d95517] text-white text-xs font-bold shadow-sm transition-all flex items-center gap-2 cursor-pointer disabled:opacity-50"
           >
             {saving ? (
               <>
                 <Loader2 size={16} className="animate-spin" />
                 <span>Saving Changes...</span>
+              </>
+            ) : isImageUploading ? (
+              <>
+                <Loader2 size={16} className="animate-spin" />
+                <span>Uploading Images...</span>
               </>
             ) : (
               <>

@@ -60,14 +60,44 @@ export async function POST(request: NextRequest) {
         });
 
         if (variant) {
+          if (variant.active === false) {
+            return NextResponse.json(
+              { error: `The selected variant for "${variant.product?.name || "item"}" is no longer available.`, unavailable: true },
+              { status: 400 }
+            );
+          }
+
+          if (variant.stockBoxes < quantity && !variant.allowBackorders && !variant.product?.allowBackorders) {
+            return NextResponse.json(
+              {
+                error: `Insufficient stock for "${variant.product?.name || "item"}". Only ${variant.stockBoxes} left in stock (requested ${quantity}).`,
+                stockError: true,
+                availableStock: variant.stockBoxes,
+              },
+              { status: 400 }
+            );
+          }
+
           unitPrice =
-            variant.pricePerBox ||
+            Number((variant as any).price || variant.pricePerBox || 0) ||
             (variant.pricePerSqft ? variant.pricePerSqft * (variant.sqftPerBox || 1) : 0) ||
             variant.product?.pricePerSqft ||
             0;
           unitWeight = variant.weightKg || (variant.sqftPerBox ? (variant.sqftPerBox || 1) * 2 : 2.0);
           title = `${variant.product?.name || "Product"} - ${variant.attributeValue || variant.color || "Standard"}`;
           sku = variant.id;
+
+          if (item.pricePerBox && Math.abs(Number(item.pricePerBox) - unitPrice) > 0.01) {
+            return NextResponse.json(
+              {
+                error: `Price has changed for "${variant.product?.name || "item"}". Please review your updated order total.`,
+                priceUpdated: true,
+                oldPrice: Number(item.pricePerBox),
+                newPrice: unitPrice,
+              },
+              { status: 409 }
+            );
+          }
         }
       } else if (item.productId) {
         const product = await prisma.product.findUnique({

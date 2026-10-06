@@ -105,13 +105,15 @@ export default function CompactProductCard({
             </h3>
           </Link>
           <p className="text-[10px] text-gray-400 mt-0.5 truncate">
-            {defaultVariant?.size || "Standard"} · {defaultVariant?.finish || "Matte"}
+            {Boolean(product.hasVariants) || (product.variants && product.variants.length > 1)
+              ? `${(product.variants || []).filter((v) => v.active !== false).length} options available`
+              : `${defaultVariant?.size || "Standard"} · ${defaultVariant?.finish || "Matte"}`}
           </p>
         </div>
 
         <div className="flex items-center justify-between mt-2 pt-1.5 border-t border-gray-50 gap-1.5">
           {(() => {
-            const priceInfo = getProductPriceInfo(product, defaultVariant);
+            const priceInfo = getProductPriceInfo(product, null);
             return (
               <div className="flex items-baseline gap-1.5 flex-wrap min-w-0">
                 <div className="flex items-baseline">

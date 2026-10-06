@@ -100,20 +100,26 @@ export async function createOrder(input: CreateOrderInput) {
         pricePerBox: number;
         totalPrice: number;
         image: string;
+        vendorId?: string | null;
       }> = [];
 
       for (const item of input.items) {
         const boxQty = Math.max(1, parseInt(String(item.boxQuantity || (item as any).quantity || (item as any).boxes || 1), 10));
         let pricePerBox = item.pricePerBox || (item as any).unitPrice || 0;
         let productName = item.productName || "Product";
+        let variantDetails = item.variantDetails || "Standard";
+        let itemImage = item.image || "";
+
+        let itemVendorId: string | null = null;
 
         if (item.variantId && item.variantId !== "default") {
           const variant = await tx.productVariant.findUnique({
             where: { id: item.variantId },
-            include: { product: { select: { name: true, id: true, images: true } } },
+            include: { product: { select: { name: true, id: true, images: true, vendorId: true } } },
           });
 
           if (variant) {
+            itemVendorId = variant.product?.vendorId || null;
             if (variant.stockBoxes < boxQty) {
               const pName = variant.product?.name || item.productName;
               throw new Error(
@@ -123,9 +129,16 @@ export async function createOrder(input: CreateOrderInput) {
 
             // Server-derived price (cannot be manipulated by client)
             pricePerBox =
-              variant.pricePerBox ||
+              Number((variant as any).price || variant.pricePerBox || 0) ||
               (variant.pricePerSqft ? variant.pricePerSqft * (variant.sqftPerBox || 1) : pricePerBox);
             if (variant.product?.name) productName = variant.product.name;
+            variantDetails =
+              (variant as any).variantName ||
+              (variant as any).attributeValue ||
+              item.variantDetails ||
+              variant.size ||
+              "Standard";
+            if (!itemImage && variant.image) itemImage = variant.image;
 
             const updatedVariant = await tx.productVariant.update({
               where: { id: item.variantId },
@@ -149,8 +162,12 @@ export async function createOrder(input: CreateOrderInput) {
             }
           }
         } else if (item.productId) {
-          const product = await tx.product.findUnique({ where: { id: item.productId } });
+          const product = await tx.product.findUnique({
+            where: { id: item.productId },
+            select: { name: true, pricePerSqft: true, vendorId: true },
+          });
           if (product) {
+            itemVendorId = product.vendorId || null;
             pricePerBox = product.pricePerSqft || pricePerBox;
             productName = product.name;
           }
@@ -163,11 +180,12 @@ export async function createOrder(input: CreateOrderInput) {
           productId: item.productId,
           productName,
           variantId: item.variantId || "default",
-          variantDetails: item.variantDetails || "Standard",
+          variantDetails,
           boxQuantity: boxQty,
           pricePerBox,
           totalPrice: itemTotal,
-          image: item.image || "",
+          image: itemImage,
+          vendorId: itemVendorId,
         });
       }
 
@@ -415,6 +433,7 @@ export async function createOrder(input: CreateOrderInput) {
               pricePerBox: item.pricePerBox,
               totalPrice: item.totalPrice,
               image: item.image || "",
+              vendorId: item.vendorId || null,
             })),
           },
         },

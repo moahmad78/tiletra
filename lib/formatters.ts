@@ -52,13 +52,24 @@ export function getPriceUnitSuffix(
 }
 
 export function getProductPriceInfo(product: Product, variant?: ProductVariant | null) {
-  const v = variant || (product?.variants && product.variants.length > 0 ? product.variants[0] : null);
-  const price =
+  const activeVariants = (product?.variants || []).filter((vr) => vr.active !== false);
+  const isMultiVariant = Boolean(product?.hasVariants) || activeVariants.length > 1;
+  const variantPrices = activeVariants
+    .map((vr) => Number(vr.price || vr.pricePerBox || 0))
+    .filter((p) => p > 0);
+  const minPrice = variantPrices.length > 0 ? Math.min(...variantPrices) : null;
+  const maxPrice = variantPrices.length > 0 ? Math.max(...variantPrices) : null;
+
+  const v = variant || (activeVariants.length > 0 ? activeVariants[0] : null);
+  const basePrice =
+    (v?.price !== undefined && v?.price !== null && Number(v.price) > 0 ? Number(v.price) : null) ||
     v?.pricePerBox ||
     v?.pricePerSqft ||
     (product as any)?.price ||
     (product as any)?.pricePerSqft ||
     499;
+
+  const price = (!variant && isMultiVariant && minPrice) ? minPrice : basePrice;
 
   const existingMrp =
     (v as any)?.mrp ??
@@ -79,12 +90,20 @@ export function getProductPriceInfo(product: Product, variant?: ProductVariant |
   const discountPercent = hasDiscount && mrp ? Math.round(((mrp - price) / mrp) * 100) : 0;
   const unitSuffix = getPriceUnitSuffix(product);
 
+  const formattedPrice =
+    !variant && isMultiVariant && minPrice
+      ? `From ${formatPrice(minPrice)}`
+      : formatPrice(price);
+
   return {
     price,
     mrp,
+    minPrice,
+    maxPrice,
+    isMultiVariant,
     discountPercent,
     unitSuffix,
-    formattedPrice: formatPrice(price),
+    formattedPrice,
     formattedMrp: mrp ? formatPrice(mrp) : null,
   };
 }
@@ -176,24 +195,34 @@ export function formatProduct(dbProduct: any): Product {
   const variants: ProductVariant[] = (dbProduct.variants || []).map((v: any) => ({
     id: v.id,
     sku: v.sku || null,
-    size: v.size,
+    variantName: v.variantName || null,
+    size: v.size || "Standard",
     finish: (v.finish as Finish) || "Glossy",
     color: v.color || "Standard",
     colorHex: v.colorHex || null,
     swatchImage: v.swatchImage || null,
-    image: v.image || null,
+    image: v.image || (Array.isArray(v.images) && v.images.length > 0 ? v.images[0] : null),
+    images: Array.isArray(v.images) && v.images.length > 0 ? v.images : (v.image ? [v.image] : []),
     unit: v.unit || null,
     attributeLabel: v.attributeLabel || null,
     attributeValue: v.attributeValue || null,
+    attributes: v.attributes || null,
     variantSpecs: v.variantSpecs || null,
     weightKg: v.weightKg ? Number(v.weightKg) : null,
     mrp: v.mrp ? Number(v.mrp) : null,
-    pricePerBox: Number(v.pricePerBox),
-    pricePerSqft: Number(v.pricePerSqft),
-    sqftPerBox: Number(v.sqftPerBox),
+    price: v.price !== null && v.price !== undefined ? Number(v.price) : Number(v.pricePerBox || 0),
+    pricePerBox: Number(v.pricePerBox || v.price || 0),
+    pricePerSqft: Number(v.pricePerSqft || 0),
+    sqftPerBox: Number(v.sqftPerBox || 1),
     piecesPerBox: v.piecesPerBox ? Number(v.piecesPerBox) : 4,
     stockBoxes: Number(v.stockBoxes ?? 50),
     inStock: v.inStock ?? true,
+    active: v.active !== undefined ? Boolean(v.active) : true,
+    lowStockAlert: v.lowStockAlert !== undefined && v.lowStockAlert !== null ? Number(v.lowStockAlert) : 10,
+    minOrderQuantity: v.minOrderQuantity !== undefined && v.minOrderQuantity !== null ? Number(v.minOrderQuantity) : 1,
+    maxOrderQuantity: v.maxOrderQuantity !== undefined && v.maxOrderQuantity !== null ? Number(v.maxOrderQuantity) : null,
+    isDefault: Boolean(v.isDefault),
+    barcode: v.barcode || null,
     priceTiers: v.priceTiers || [],
   }));
 
@@ -202,14 +231,18 @@ export function formatProduct(dbProduct: any): Product {
     const pSqft = Number(dbProduct.pricePerSqft || 45);
     variants.push({
       id: `${dbProduct.id}-var-default`,
+      variantName: "Standard",
       size: dbProduct.size || "Standard",
       finish: (dbProduct.finish as Finish) || "Glossy",
       color: "Standard",
+      price: pSqft * 40,
       pricePerBox: pSqft * 40,
       pricePerSqft: pSqft,
       sqftPerBox: dbProduct.unitOfSale === "sqft" || dbProduct.unitOfSale === "box" ? 16 : 1,
       stockBoxes: dbProduct.inStock ? 50 : 0,
       inStock: dbProduct.inStock ?? true,
+      active: true,
+      isDefault: true,
     });
   }
 
@@ -236,11 +269,15 @@ export function formatProduct(dbProduct: any): Product {
     id: dbProduct.id,
     name: dbProduct.name,
     slug: dbProduct.slug,
+    brand: dbProduct.brand || "Intrihub",
+    sku: dbProduct.sku || null,
     categorySlug: dbProduct.categorySlug,
     categoryName: dbProduct.categoryName,
     description: dbProduct.description || "",
     material: (dbProduct.material as Material) || "Vitrified",
     unitOfSale: (dbProduct.unitOfSale as any) || "box",
+    hasVariants: Boolean(dbProduct.hasVariants),
+    gstRate: dbProduct.gstRate !== undefined && dbProduct.gstRate !== null ? Number(dbProduct.gstRate) : (dbProduct.gstPercent ? Number(dbProduct.gstPercent) : 18),
     mrp: dbProduct.mrp ? Number(dbProduct.mrp) : null,
     pricePerSqft: dbProduct.pricePerSqft ? Number(dbProduct.pricePerSqft) : undefined,
     attributes,
@@ -277,5 +314,34 @@ export function formatProduct(dbProduct: any): Product {
     piecesPerBox: dbProduct.piecesPerBox !== undefined && dbProduct.piecesPerBox !== null ? Number(dbProduct.piecesPerBox) : null,
     wastageFactor: dbProduct.wastageFactor !== undefined && dbProduct.wastageFactor !== null ? Number(dbProduct.wastageFactor) : 1.1,
     specs,
+    dimensions: dbProduct.dimensions || null,
+    inTheBox: dbProduct.inTheBox || null,
+    manufactureDate: dbProduct.manufactureDate || null,
+    expiryDate: dbProduct.expiryDate || null,
+    shippingMode: dbProduct.shippingMode || "standard",
+    dispatchTimeDays: dbProduct.dispatchTimeDays ?? 2,
+    pincodesServed: Array.isArray(dbProduct.pincodesServed) ? dbProduct.pincodesServed : [],
+    freeDeliveryAbove: dbProduct.freeDeliveryAbove !== null && dbProduct.freeDeliveryAbove !== undefined ? Number(dbProduct.freeDeliveryAbove) : null,
+    deliveryCharge: dbProduct.deliveryCharge !== null && dbProduct.deliveryCharge !== undefined ? Number(dbProduct.deliveryCharge) : null,
+    allowScheduledDelivery: dbProduct.allowScheduledDelivery ?? true,
+    allowCod: dbProduct.allowCod ?? true,
+    isFragile: Boolean(dbProduct.isFragile),
+    isPerishable: Boolean(dbProduct.isPerishable),
+    returnPolicyDays: dbProduct.returnPolicyDays ?? 7,
+    replacementAllowed: dbProduct.replacementAllowed ?? true,
+    warrantyType: dbProduct.warrantyType || "brand",
+    warrantyDuration: dbProduct.warrantyDuration || "1 Year",
+    returnConditions: dbProduct.returnConditions || null,
+    complianceDeclarations: dbProduct.complianceDeclarations || null,
+    certificates: Array.isArray(dbProduct.certificates) ? dbProduct.certificates : [],
+    vendorDeclaration: dbProduct.vendorDeclaration ?? true,
+    countryOfOrigin: dbProduct.countryOfOrigin || "India",
+    condition: dbProduct.condition || "New",
+    highlights: Array.isArray(dbProduct.highlights) ? dbProduct.highlights : [],
+    keywords: Array.isArray(dbProduct.keywords) ? dbProduct.keywords : [],
+    metaTitle: dbProduct.metaTitle || null,
+    metaDescription: dbProduct.metaDescription || null,
+    isFeatured: Boolean(dbProduct.isFeatured),
+    scheduledPublishDate: dbProduct.scheduledPublishDate || null,
   };
 }

@@ -6,9 +6,11 @@ import { useSearchParams, useRouter } from "next/navigation";
 import {
   getCpoCatalog,
   getCpoVendors,
+  cpoReuploadProductImage,
 } from "@/lib/actions/cpo";
 import { deleteProduct, updateProduct } from "@/lib/actions/products";
 import { getActiveCpoWorkspaceStatus, selectCpoVendor } from "@/lib/cpo/auth";
+import ImageUploadManager from "@/components/admin/ImageUploadManager";
 import {
   Package,
   Search,
@@ -26,6 +28,10 @@ import {
   ExternalLink,
   ChevronLeft,
   ChevronRight,
+  AlertCircle,
+  Upload,
+  Image as ImageIcon,
+  X,
 } from "lucide-react";
 import { toast } from "sonner";
 
@@ -45,6 +51,13 @@ function CpoCatalogContent() {
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedVendorFilter, setSelectedVendorFilter] = useState(vendorIdFromQuery || "all");
   const [selectedStatusFilter, setSelectedStatusFilter] = useState("all");
+  const [selectedImageFilter, setSelectedImageFilter] = useState<"all" | "missing" | "with_image">("all");
+
+  // Re-upload Modal State
+  const [reuploadProduct, setReuploadProduct] = useState<any | null>(null);
+  const [reuploadImages, setReuploadImages] = useState<string[]>([]);
+  const [isReuploading, setIsReuploading] = useState(false);
+  const [isSavingReupload, setIsSavingReupload] = useState(false);
 
   // Active Workspace
   const [workspace, setWorkspace] = useState<{
@@ -61,6 +74,7 @@ function CpoCatalogContent() {
           search: searchQuery,
           vendorId: selectedVendorFilter,
           status: selectedStatusFilter,
+          imageFilter: selectedImageFilter,
           page,
           limit: 20,
         }),
@@ -89,7 +103,37 @@ function CpoCatalogContent() {
 
   useEffect(() => {
     loadData();
-  }, [selectedVendorFilter, selectedStatusFilter, page]);
+  }, [selectedVendorFilter, selectedStatusFilter, selectedImageFilter, page]);
+
+  const handleSaveReupload = async () => {
+    if (!reuploadProduct) return;
+    const validImages = reuploadImages.filter(
+      (img) => img && img.trim() && !img.includes("placeholder")
+    );
+    if (validImages.length === 0) {
+      toast.error("Please add at least one valid product image before saving.");
+      return;
+    }
+    setIsSavingReupload(true);
+    try {
+      const res = await cpoReuploadProductImage({
+        productId: reuploadProduct.id,
+        images: validImages,
+      });
+      if (res.success) {
+        toast.success(`Successfully updated images for "${reuploadProduct.name}"!`);
+        setReuploadProduct(null);
+        setReuploadImages([]);
+        loadData();
+      } else {
+        toast.error(res.error || "Failed to update images");
+      }
+    } catch (err: any) {
+      toast.error(err?.message || "An unexpected error occurred while saving images");
+    } finally {
+      setIsSavingReupload(false);
+    }
+  };
 
   const handleSearchSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -218,7 +262,7 @@ function CpoCatalogContent() {
             />
           </form>
 
-          {/* Status Filter Pills */}
+          {/* Status & Image Filter Pills */}
           <div className="flex items-center gap-1.5 w-full md:w-auto overflow-x-auto pb-1 md:pb-0">
             {["all", "active", "paused", "pending"].map((st) => (
               <button
@@ -234,6 +278,31 @@ function CpoCatalogContent() {
                 }`}
               >
                 {st}
+              </button>
+            ))}
+
+            <span className="h-4 w-[1px] bg-gray-300 mx-1 hidden sm:inline-block" />
+
+            {[
+              { id: "all", label: "All Images" },
+              { id: "missing", label: "⚠️ Missing Image" },
+              { id: "with_image", label: "With Image" },
+            ].map((imgOpt) => (
+              <button
+                key={imgOpt.id}
+                onClick={() => {
+                  setSelectedImageFilter(imgOpt.id as any);
+                  setPage(1);
+                }}
+                className={`px-3 py-1.5 rounded-xl text-xs font-bold whitespace-nowrap transition-colors cursor-pointer ${
+                  selectedImageFilter === imgOpt.id
+                    ? imgOpt.id === "missing"
+                      ? "bg-amber-600 text-white shadow-xs"
+                      : "bg-[#F26522] text-white shadow-xs"
+                    : "bg-gray-100 text-gray-600 hover:bg-gray-200"
+                }`}
+              >
+                {imgOpt.label}
               </button>
             ))}
           </div>
@@ -301,6 +370,15 @@ function CpoCatalogContent() {
                     (acc: number, v: any) => acc + (v.stockBoxes || 0),
                     0
                   );
+                  const isImageMissing =
+                    !p.images ||
+                    p.images.length === 0 ||
+                    p.images.every(
+                      (img: string) =>
+                        !img ||
+                        img === "/placeholders/product.svg" ||
+                        img.includes("placeholder")
+                    );
 
                   return (
                     <tr key={p.id} className="hover:bg-gray-50/80 transition-colors">
@@ -323,6 +401,13 @@ function CpoCatalogContent() {
                             <div className="text-[11px] text-gray-400 font-mono truncate">
                               ID: {p.id.slice(-8)} • {p.material || "Standard"} • {p.unitOfSale || "box"}
                             </div>
+                            {isImageMissing && (
+                              <div className="mt-1">
+                                <span className="inline-flex items-center gap-1 text-[10px] font-bold text-amber-700 bg-amber-50 border border-amber-200 px-2 py-0.5 rounded-md">
+                                  <AlertCircle className="w-3 h-3 text-amber-600" /> Image Missing
+                                </span>
+                              </div>
+                            )}
                           </div>
                         </div>
                       </td>
@@ -385,10 +470,30 @@ function CpoCatalogContent() {
                       {/* Actions */}
                       <td className="py-3.5 px-4 text-right">
                         <div className="flex items-center justify-end gap-1.5">
+                          {/* Quick Image Upload button */}
+                          <button
+                            onClick={() => {
+                              setReuploadProduct(p);
+                              setReuploadImages(
+                                (p.images || []).filter(
+                                  (img: string) => img && !img.includes("placeholder")
+                                )
+                              );
+                            }}
+                            className={`p-1.5 rounded-lg transition-colors cursor-pointer ${
+                              isImageMissing
+                                ? "bg-amber-100 text-amber-800 hover:bg-amber-200"
+                                : "text-gray-500 hover:text-gray-800 hover:bg-gray-100"
+                            }`}
+                            title={isImageMissing ? "Upload Missing Image" : "Quick Update Images"}
+                          >
+                            <Upload className="w-4 h-4" />
+                          </button>
+
                           {/* Toggle status */}
                           <button
                             onClick={() => handleToggleStatus(p)}
-                            className="p-1.5 rounded-lg text-gray-500 hover:text-gray-800 hover:bg-gray-100 transition-colors"
+                            className="p-1.5 rounded-lg text-gray-500 hover:text-gray-800 hover:bg-gray-100 transition-colors cursor-pointer"
                             title={p.status === "active" ? "Pause Product" : "Activate Product"}
                           >
                             {p.status === "active" ? (
@@ -410,7 +515,7 @@ function CpoCatalogContent() {
                           {/* Delete */}
                           <button
                             onClick={() => handleDeleteProduct(p.id, p.name)}
-                            className="p-1.5 rounded-lg text-gray-400 hover:text-rose-600 hover:bg-rose-50 transition-colors"
+                            className="p-1.5 rounded-lg text-gray-400 hover:text-rose-600 hover:bg-rose-50 transition-colors cursor-pointer"
                             title="Delete Product"
                           >
                             <Trash2 className="w-4 h-4" />
@@ -450,6 +555,72 @@ function CpoCatalogContent() {
           </div>
         )}
       </div>
+
+      {/* Quick Re-upload Image Modal */}
+      {reuploadProduct && (
+        <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-xs flex items-center justify-center p-4">
+          <div className="bg-white rounded-2xl max-w-xl w-full p-6 shadow-2xl border border-gray-100 space-y-5 animate-in fade-in zoom-in-95 duration-150">
+            <div className="flex items-center justify-between pb-3 border-b border-gray-100">
+              <div>
+                <h3 className="text-base font-black text-gray-900">
+                  Update Images: {reuploadProduct.name}
+                </h3>
+                <p className="text-xs text-gray-500 font-medium mt-0.5">
+                  Vendor:{" "}
+                  <span className="font-bold text-gray-700">
+                    {reuploadProduct.vendor?.businessName || "Direct"}
+                  </span>
+                </p>
+              </div>
+              <button
+                onClick={() => setReuploadProduct(null)}
+                disabled={isSavingReupload || isReuploading}
+                className="p-1 rounded-lg hover:bg-gray-100 text-gray-400 hover:text-gray-600 transition-colors"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            <div className="space-y-4">
+              <ImageUploadManager
+                images={reuploadImages}
+                onChange={setReuploadImages}
+                onUploadingChange={setIsReuploading}
+                vendorId={reuploadProduct.vendorId}
+              />
+            </div>
+
+            <div className="flex items-center justify-end gap-3 pt-3 border-t border-gray-100">
+              <button
+                type="button"
+                disabled={isSavingReupload || isReuploading}
+                onClick={() => setReuploadProduct(null)}
+                className="px-4 py-2 rounded-xl border border-gray-200 text-xs font-bold text-gray-600 hover:bg-gray-50 transition-colors cursor-pointer"
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                disabled={isSavingReupload || isReuploading || reuploadImages.length === 0}
+                onClick={handleSaveReupload}
+                className="inline-flex items-center gap-2 px-5 py-2 rounded-xl bg-[#F26522] hover:bg-[#d95517] disabled:opacity-50 text-white text-xs font-bold shadow-xs transition-colors cursor-pointer"
+              >
+                {isSavingReupload ? (
+                  <>
+                    <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                    <span>Saving Changes...</span>
+                  </>
+                ) : (
+                  <>
+                    <CheckCircle2 className="w-3.5 h-3.5" />
+                    <span>Save & Apply Images</span>
+                  </>
+                )}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

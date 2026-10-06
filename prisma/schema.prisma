@@ -110,6 +110,7 @@ model Category {
   popularSizes    String[]   @default([])
   calculatorType  String     @default("none") // none | area_to_boxes | area_to_volume | length_to_units
   calculatorInputType String @default("area") // area | length | none
+  attributeSchema Json?      // Dynamic specifications schema e.g. [{ name, type, options, required, unit }]
   order           Int        @default(0)
   parentId        String?
   createdAt       DateTime   @default(now())
@@ -170,6 +171,8 @@ model Product {
   pricePerSqft      Float              @default(45) // Equivalent reference price
   mrp               Float?             // List price / MRP in INR
   wastageFactor     Float?             @default(1.1)
+  hasVariants       Boolean            @default(false)
+  gstRate           Float?             @default(18)
 
   // Flags & Media
   isTrending        Boolean            @default(false)
@@ -187,6 +190,45 @@ model Product {
   manualReviewCount Int?
   specs             Json?
 
+  // Extended Listing & Sale Attributes
+  manufacturer      String?
+  condition         String?            @default("New") // New | Refurbished | Used
+  highlights        String[]           @default([])
+  keywords          String[]           @default([])
+  salePrice         Float?
+  saleStartDate     DateTime?
+  saleEndDate       DateTime?
+  allowBackorders   Boolean            @default(false)
+
+  // Phase 4: Dimensions, Shipping, Returns & Compliance
+  dimensions        Json?              // { lengthCm, widthCm, heightCm, packedWeightKg }
+  inTheBox          String?
+  manufactureDate   DateTime?
+  expiryDate        DateTime?
+  shippingMode      String?            @default("standard") // vendor | intrihub | standard
+  dispatchTimeDays  Int?               @default(2)
+  pincodesServed    String[]           @default([])
+  freeDeliveryAbove Float?
+  deliveryCharge    Float?
+  allowScheduledDelivery Boolean         @default(true)
+  allowCod          Boolean            @default(true)
+  isFragile         Boolean            @default(false)
+  isPerishable      Boolean            @default(false)
+  returnPolicyDays  Int?               @default(7)
+  replacementAllowed Boolean           @default(true)
+  warrantyType      String?            @default("brand") // none | brand | vendor
+  warrantyDuration  String?            @default("1 Year")
+  returnConditions  String?
+  complianceDeclarations Json?         // { ageRestriction, hazardous, hasBattery, isLiquid }
+  certificates      String[]           @default([])
+  vendorDeclaration Boolean            @default(true)
+
+  // Phase 5: SEO, Scheduling & Featured
+  metaTitle         String?
+  metaDescription   String?
+  isFeatured        Boolean            @default(false)
+  scheduledPublishDate DateTime?
+
   // Multi-Vendor fields
   vendorId          String?
   status            String             @default("active") // active | paused | draft | archived
@@ -197,6 +239,7 @@ model Product {
   createdByCpoId    String?
   updatedByCpoId    String?
   actorRole         String?
+  editHistory       Json?              // Revision history: [{ timestamp, actorRole, userId, action, changes }]
 
   createdAt         DateTime           @default(now())
   updatedAt         DateTime           @updatedAt
@@ -239,24 +282,38 @@ model ProductVariant {
   id             String      @id @default(cuid())
   productId      String
   sku            String?
-  size           String
-  finish         String
-  color          String      // Canonical colour name e.g. "Grey", "Alaska White"
+  variantName    String?
+  size           String      @default("Standard")
+  finish         String      @default("")
+  color          String      @default("Default") // Canonical colour name e.g. "Grey", "Alaska White"
   colorHex       String?     // Hex code e.g. "#808080"
   swatchImage    String?     // Texture image URL for stone, wood, granite
   image          String?     // Variant specific product image
+  images         String[]    @default([]) // Multi-images per variant
   unit           String?     // Variant selling unit override
   attributeLabel String?
   attributeValue String?
+  attributes     Json?       // Dynamic multi-attribute key-values e.g. { size: "5 kg", colour: "Grey" }
   variantSpecs   Json?       // Category-specific variant attributes
   weightKg       Float?      @default(2.5) // in kilograms
   mrp            Float?      // MRP in INR for variant
-  pricePerSqft   Float       // Equivalent Reference Price
-  pricePerBox    Float       // Variant Selling Unit Price
-  sqftPerBox     Float       // Conversion ratio / coverage
+  price          Float?      // Direct selling price for variant
+  pricePerSqft   Float       @default(0) // Equivalent Reference Price
+  pricePerBox    Float       @default(0) // Variant Selling Unit Price
+  sqftPerBox     Float       @default(1) // Conversion ratio / coverage
   piecesPerBox   Int         @default(4)
   inStock        Boolean     @default(true)
   stockBoxes     Int         @default(50)
+  active         Boolean     @default(true)
+  lowStockAlert  Int?        @default(10)
+  minOrderQuantity Int?      @default(1)
+  maxOrderQuantity Int?
+  isDefault      Boolean     @default(false)
+  barcode        String?
+  salePrice      Float?
+  saleStartDate  DateTime?
+  saleEndDate    DateTime?
+  allowBackorders Boolean    @default(false)
   createdAt      DateTime    @default(now())
   updatedAt      DateTime    @updatedAt
 
@@ -267,6 +324,7 @@ model ProductVariant {
   @@index([productId])
   @@index([color])
   @@index([size])
+  @@index([active])
 }
 
 model Colour {
@@ -282,6 +340,27 @@ model Colour {
   updatedAt    DateTime @updatedAt
 
   @@index([name])
+}
+
+model AttributeOption {
+  id           String   @id @default(cuid())
+  scope        String   @default("vendor") // "global" | "vendor"
+  vendorId     String?  // null if global
+  type         String   // "unit" | "colour" | "dimension" | "custom"
+  name         String   // e.g. "Size/Weight", "Colour", "Dimension", "Material", "Grade"
+  value        String   // e.g. "kg", "25 kg", "Signal Red", "10x20 cm", "SS 304"
+  meta         Json?    // e.g. { hex: "#ff0000", swatch: "...", family: "weight", unit: "kg" }
+  displayOrder Int      @default(0)
+  isActive     Boolean  @default(true)
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  vendor       Vendor?  @relation(fields: [vendorId], references: [id], onDelete: Cascade)
+
+  @@index([vendorId])
+  @@index([type])
+  @@index([scope])
+  @@index([type, scope])
 }
 
 model PriceTier {
@@ -464,6 +543,7 @@ model OrderItem {
   pricePerBox    Float
   totalPrice     Float
   image          String          @default("")
+  vendorId       String?
 
   order          Order           @relation(fields: [orderId], references: [id], onDelete: Cascade)
   product        Product?        @relation(fields: [productId], references: [id], onDelete: SetNull)
@@ -471,6 +551,7 @@ model OrderItem {
 
   @@index([orderId])
   @@index([productId])
+  @@index([vendorId])
 }
 
 model ReturnRequest {
@@ -911,6 +992,7 @@ model Vendor {
   coupons               VendorCoupon[]
   impersonationSessions ImpersonationSession[] @relation("VendorImpersonationSessions")
   auditLogs             AdminAuditLog[]        @relation("VendorAuditLogs")
+  attributeOptions      AttributeOption[]
 
   @@index([status])
   @@index([ownerId])

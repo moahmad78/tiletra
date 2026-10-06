@@ -5,7 +5,7 @@ import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { ArrowLeft, Save, Trash2, ExternalLink, Loader2 } from "lucide-react";
 import ImageUploadManager from "@/components/admin/ImageUploadManager";
-import VariantEditor from "@/components/admin/VariantEditor";
+import UnifiedVariantManager from "@/components/shared/UnifiedVariantManager";
 import AttributeEditor from "@/components/admin/AttributeEditor";
 import { getProductById, updateProduct, deleteProduct } from "@/lib/actions/products";
 import { getCategories } from "@/lib/actions/categories";
@@ -41,7 +41,8 @@ export default function EditProductPage({
   const [tagsInput, setTagsInput] = useState("");
   const [attributes, setAttributes] = useState<ProductAttribute[]>([]);
   const [images, setImages] = useState<string[]>([]);
-  const [variants, setVariants] = useState<ProductVariant[]>([]);
+  const [hasVariants, setHasVariants] = useState(false);
+  const [variants, setVariants] = useState<any[]>([]);
   const [specs, setSpecs] = useState<any>({});
   const [coverageRate, setCoverageRate] = useState<string>("");
   const [piecesPerBox, setPiecesPerBox] = useState<string>("");
@@ -71,7 +72,17 @@ export default function EditProductPage({
           setManualReviewCount(p.manualReviewCount !== null && p.manualReviewCount !== undefined ? String(p.manualReviewCount) : (p.reviewCount ? String(p.reviewCount) : "18"));
           setTagsInput(p.tags?.join(", ") || "");
           setImages(p.images);
-          setVariants(p.variants);
+          setHasVariants(Boolean(p.hasVariants) || (p.variants && p.variants.length > 1));
+          setVariants(
+            (p.variants || []).map((v) => ({
+              ...v,
+              variantName: v.variantName || v.attributeValue || v.size || "Standard",
+              price: v.price !== null && v.price !== undefined ? Number(v.price) : Number(v.pricePerBox),
+              active: v.active !== false,
+              isDefault: Boolean(v.isDefault),
+              images: Array.isArray(v.images) ? v.images : (v.image ? [v.image] : []),
+            }))
+          );
           setAttributes(p.attributes || []);
           setSpecs(p.specs || {});
           setCoverageRate(p.coverageRate ? String(p.coverageRate) : "");
@@ -120,10 +131,57 @@ export default function EditProductPage({
       toast.error("Please add at least one product photo");
       return;
     }
-    if (variants.length === 0) {
-      toast.error("Please add at least one variant");
+    // Validate Variants
+    const activeVariants = variants.filter((v: any) => v.active !== false);
+    if (activeVariants.length === 0) {
+      toast.error("At least one active variant is required");
       return;
     }
+
+    for (const v of activeVariants as any[]) {
+      const priceVal = Number(v.price ?? v.pricePerBox ?? 0);
+      if (isNaN(priceVal) || priceVal <= 0) {
+        toast.error(`Variant "${v.variantName || v.size || "Unnamed"}" must have a valid selling price (> 0)`);
+        return;
+      }
+      if (v.mrp && Number(v.mrp) < priceVal) {
+        toast.error(`Selling price for "${v.variantName || v.size}" cannot exceed MRP (₹${v.mrp})`);
+        return;
+      }
+    }
+
+    const mappedVariants = variants.map((v: any, index) => {
+      const price = Number(v.price ?? v.pricePerBox ?? 0);
+      return {
+        id: v.id,
+        variantName: v.variantName || v.size || `Variant ${index + 1}`,
+        size: v.size || "Standard",
+        finish: v.finish || "Glossy",
+        color: v.color || "Standard",
+        colorHex: v.colorHex || null,
+        swatchImage: v.swatchImage || null,
+        image: v.image || (Array.isArray(v.images) && v.images[0]) || null,
+        images: Array.isArray(v.images) ? v.images : (v.image ? [v.image] : []),
+        unit: v.unit || unitOfSale,
+        attributeLabel: v.attributeLabel || null,
+        attributeValue: v.attributeValue || null,
+        attributes: v.attributes || null,
+        sku: v.sku || null,
+        barcode: v.barcode || null,
+        price,
+        mrp: v.mrp ? Number(v.mrp) : null,
+        pricePerBox: v.pricePerBox ? Number(v.pricePerBox) : price,
+        pricePerSqft: v.pricePerSqft ? Number(v.pricePerSqft) : (price || 1000),
+        sqftPerBox: v.sqftPerBox ? Number(v.sqftPerBox) : 1,
+        weightKg: v.weightKg ? Number(v.weightKg) : 2.5,
+        stockBoxes: v.stockBoxes !== undefined ? Number(v.stockBoxes) : 50,
+        active: v.active !== false,
+        lowStockAlert: v.lowStockAlert !== undefined ? Number(v.lowStockAlert) : 10,
+        minOrderQuantity: v.minOrderQuantity !== undefined ? Number(v.minOrderQuantity) : 1,
+        maxOrderQuantity: v.maxOrderQuantity ? Number(v.maxOrderQuantity) : null,
+        isDefault: Boolean(v.isDefault),
+      };
+    });
 
     setSaving(true);
     const selectedCat = categories.find((c) => c.slug === categorySlug);
@@ -140,21 +198,8 @@ export default function EditProductPage({
       coverageRate: !isNaN(parseFloat(coverageRate)) && parseFloat(coverageRate) > 0 ? parseFloat(coverageRate) : null,
       piecesPerBox: !isNaN(parseInt(piecesPerBox, 10)) && parseInt(piecesPerBox, 10) > 0 ? parseInt(piecesPerBox, 10) : null,
       wastageFactor: (parseFloat(wastagePercent) || 10) / 100 + 1.0,
-      variants: variants.map((v) => ({
-        size: v.size,
-        finish: v.finish,
-        color: v.color,
-        image: v.image || null,
-        unit: v.unit || unitOfSale,
-        attributeLabel: v.attributeLabel || null,
-        attributeValue: v.attributeValue || null,
-        mrp: v.mrp ? Number(v.mrp) : null,
-        weightKg: v.weightKg ? Number(v.weightKg) : 2.5,
-        pricePerBox: Number(v.pricePerBox),
-        pricePerSqft: Number(v.pricePerSqft || v.pricePerBox),
-        sqftPerBox: Number(v.sqftPerBox || 1),
-        stockBoxes: Number(v.stockBoxes || 50),
-      })),
+      hasVariants: hasVariants && mappedVariants.length > 0,
+      variants: mappedVariants,
       isBestseller,
       isNew,
       manualRating: manualRating ? parseFloat(manualRating) : null,
@@ -343,8 +388,14 @@ export default function EditProductPage({
 
       {/* ── Section 4: Variants, Sizes & Pricing ── */}
       <div className="bg-white p-6 rounded-2xl border border-gray-200/80 shadow-2xs space-y-4">
-        <h3 className="text-base font-black text-[#052a51]">4. Options, Pricing & Inventory</h3>
-        <VariantEditor variants={variants} onChange={setVariants} unitOfSale={unitOfSale} />
+        <UnifiedVariantManager
+          hasVariants={hasVariants}
+          onHasVariantsChange={setHasVariants}
+          variants={variants as any}
+          onChange={setVariants as any}
+          unitOfSale={unitOfSale}
+          vendorId={product.vendorId}
+        />
 
         {/* Coverage & Smart Calculator Configuration */}
         <div className={`grid grid-cols-1 ${unitOfSale === "box" ? "sm:grid-cols-3" : "sm:grid-cols-2"} gap-4 pt-4 border-t border-gray-100`}>

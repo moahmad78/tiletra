@@ -14,6 +14,7 @@ export type CartItem = {
 
 type CartState = {
   items: CartItem[];
+  buyNowItem: CartItem | null;
   isOpen: boolean;
 
   // Actions
@@ -21,6 +22,8 @@ type CartState = {
   removeItem: (variantId: string) => void;
   updateQuantity: (variantId: string, quantity: number) => void;
   clearCart: () => void;
+  setBuyNowItem: (item: CartItem | null) => void;
+  clearBuyNowItem: () => void;
   openCart: () => void;
   closeCart: () => void;
   toggleCart: () => void;
@@ -59,6 +62,7 @@ export const useCartStore = create<CartState>()(
   persist(
     (set, get) => ({
       items: [],
+      buyNowItem: null,
       isOpen: false,
 
       addItem: (product, variant, quantity = 1) => {
@@ -106,6 +110,14 @@ export const useCartStore = create<CartState>()(
         triggerDbSync([]);
       },
 
+      setBuyNowItem: (item) => {
+        set({ buyNowItem: item });
+      },
+
+      clearBuyNowItem: () => {
+        set({ buyNowItem: null });
+      },
+
       setItems: (items) => {
         set({ items });
         triggerDbSync(items);
@@ -134,7 +146,7 @@ export const useCartStore = create<CartState>()(
       getTotalBoxes: () => get().items.reduce((sum, i) => sum + i.quantity, 0),
       getSubtotal: () =>
         get().items.reduce(
-          (sum, i) => sum + i.variant.pricePerBox * i.quantity,
+          (sum, i) => sum + (i.variant.price ?? i.variant.pricePerBox) * i.quantity,
           0
         ),
       getTotalSqft: () =>
@@ -160,7 +172,7 @@ export const useCartStore = create<CartState>()(
     }),
     {
       name: "intrihub-cart",
-      partialize: (state) => ({ items: state.items }),
+      partialize: (state) => ({ items: state.items, buyNowItem: state.buyNowItem }),
     }
   )
 );

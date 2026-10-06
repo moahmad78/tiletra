@@ -26,26 +26,104 @@ export async function POST(req: NextRequest) {
     }
 
     let isAuthorized = false;
+    let actorType = "UNKNOWN";
+    let effectiveVendorId: string | null = null;
+
+    // 1. Check Vendor Workspace Auth (passes req for cookie & header inspection)
     try {
       const { resolveVendorContext } = await import("@/lib/vendor-workspace-auth");
-      const workspaceContext = await resolveVendorContext();
-      if (workspaceContext) isAuthorized = true;
+      const workspaceContext = await resolveVendorContext(req);
+      if (workspaceContext) {
+        isAuthorized = true;
+        actorType = workspaceContext.actor.type;
+        effectiveVendorId = workspaceContext.vendorId;
+      }
     } catch { }
 
+    // 2. Check Admin Auth (cookie or header)
     if (!isAuthorized) {
       try {
-        const { checkIsAdmin, getAuthenticatedVendor } = await import("@/lib/server-auth");
-        const [isAdmin, vendor] = await Promise.all([checkIsAdmin(), getAuthenticatedVendor()]);
-        if (isAdmin || vendor) isAuthorized = true;
+        const { checkIsAdmin, verifyAdminSessionToken } = await import("@/lib/server-auth");
+        const isAdmin = await checkIsAdmin();
+        if (isAdmin) {
+          isAuthorized = true;
+          actorType = "ADMIN";
+        } else {
+          const adminCookie = req.cookies.get("intrihub_admin_token")?.value;
+          if (adminCookie) {
+            const verified = verifyAdminSessionToken(adminCookie);
+            if (verified.valid) {
+              isAuthorized = true;
+              actorType = "ADMIN";
+            }
+          }
+        }
+      } catch { }
+    }
+
+    // 3. Check CPO Auth (cookie, x-cpo-token, or Bearer auth)
+    if (!isAuthorized) {
+      try {
+        const cpoCookie =
+          req.cookies.get("intrihub_cpo_token")?.value ||
+          req.headers.get("x-cpo-token") ||
+          (req.headers.get("authorization")?.startsWith("Bearer ")
+            ? req.headers.get("authorization")?.replace("Bearer ", "").trim()
+            : undefined);
+        if (cpoCookie) {
+          const { verifyCpoSessionToken } = await import("@/lib/cpo/auth");
+          const verified = await verifyCpoSessionToken(cpoCookie);
+          if (verified.valid) {
+            isAuthorized = true;
+            actorType = "CPO";
+          }
+        }
+        if (!isAuthorized) {
+          const { getCpoSession } = await import("@/lib/cpo/auth");
+          const cpoSession = await getCpoSession();
+          if (cpoSession) {
+            isAuthorized = true;
+            actorType = "CPO";
+          }
+        }
+      } catch { }
+    }
+
+    // 4. Check Vendor Auth
+    if (!isAuthorized) {
+      try {
+        const { getAuthenticatedVendor, verifyVendorSessionToken } = await import("@/lib/server-auth");
+        const vendor = await getAuthenticatedVendor();
+        if (vendor) {
+          isAuthorized = true;
+          actorType = "VENDOR";
+          effectiveVendorId = vendor.vendorId;
+        } else {
+          const vendorCookie = req.cookies.get("intrihub_vendor_token")?.value;
+          if (vendorCookie) {
+            const verified = verifyVendorSessionToken(vendorCookie);
+            if (verified.valid && verified.vendorId) {
+              isAuthorized = true;
+              actorType = "VENDOR";
+              effectiveVendorId = verified.vendorId;
+            }
+          }
+        }
       } catch { }
     }
 
     if (!isAuthorized) {
-       return NextResponse.json({ success: false, error: "Unauthorized: You must be logged in to upload files." }, { status: 401 });
+       return NextResponse.json(
+         { success: false, error: "Unauthorized: You must be logged in as CPO, Admin, or Vendor to upload files." },
+         { status: 401 }
+       );
     }
 
     const formData = await req.formData();
     const files = (formData.getAll("file") as unknown) as File[];
+    const requestVendorId =
+      ((formData.get("vendorId") as string) || req.nextUrl.searchParams.get("vendorId") || effectiveVendorId || "")
+        .trim();
 
     if (!files || files.length === 0) {
       return NextResponse.json({ success: false, error: "No files provided" }, { status: 400 });
@@ -135,7 +213,10 @@ export async function POST(req: NextRequest) {
         .replace(/[^a-zA-Z0-9]/g, "-")
         .toLowerCase()
         .slice(0, 30);
-      const fileStem = `${sanitizedBase || "upload"}-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`;
+      const vendorPrefix = requestVendorId
+        ? `v-${requestVendorId.replace(/[^a-zA-Z0-9_-]/g, "").slice(0, 15)}-`
+        : "";
+      const fileStem = `${vendorPrefix}${sanitizedBase || "upload"}-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`;
       const uniqueFileName = `${fileStem}${ext}`;
 
       // If PDF document, keep original buffer and mime

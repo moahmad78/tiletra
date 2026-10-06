@@ -20,25 +20,39 @@ export type ProductAttribute = {
 export type ProductVariant = {
   id: string;
   sku?: string | null;
+  variantName?: string | null;
   size: string; // e.g. "600x600mm", "4L", "19mm x 4x8ft", "Standard"
   finish: Finish | string;
   color: string; // e.g. "Grey", "Alaska White"
   colorHex?: string | null; // e.g. "#808080"
   swatchImage?: string | null;
   image?: string | null;
+  images?: string[];
   unit?: string | null;
   attributeLabel?: string | null; // e.g. "Volume", "Dimension", "Color", "Size"
   attributeValue?: string | null; // e.g. "4L", "19mm x 4x8ft", "Ivory White"
+  attributes?: Record<string, any> | null;
   variantSpecs?: any;
   weightKg?: number | null; // in kg (e.g. 2.5, 18, 4)
   mrp?: number | null; // List price / MRP in INR
+  price?: number | null; // Direct selling price
   pricePerBox: number; // in INR (price for selling unit / pack / box / can / sheet)
   pricePerSqft: number; // base / equivalent unit price
   sqftPerBox: number; // conversion factor / coverage
   piecesPerBox?: number;
   stockBoxes: number;
   inStock?: boolean;
+  active?: boolean;
+  lowStockAlert?: number | null;
+  minOrderQuantity?: number | null;
+  maxOrderQuantity?: number | null;
+  isDefault?: boolean;
+  barcode?: string | null;
   priceTiers?: PriceTier[];
+  salePrice?: number | null;
+  saleStartDate?: Date | string | null;
+  saleEndDate?: Date | string | null;
+  allowBackorders?: boolean;
 };
 
 export type Product = {
@@ -56,6 +70,8 @@ export type Product = {
   material: Material;
   images: string[];
   videos?: string[];
+  hasVariants?: boolean;
+  gstRate?: number | null;
   unitOfSale?: UnitOfSale;
   sellingUnit?: UnitOfSale;
   baseUnit?: string | null;
@@ -121,6 +137,35 @@ export type Product = {
     frostResistance?: string;
     [key: string]: string | undefined;
   };
+  dimensions?: { lengthCm?: number; widthCm?: number; heightCm?: number; packedWeightKg?: number } | null;
+  inTheBox?: string | null;
+  manufactureDate?: string | Date | null;
+  expiryDate?: string | Date | null;
+  shippingMode?: string | null;
+  dispatchTimeDays?: number | null;
+  pincodesServed?: string[];
+  freeDeliveryAbove?: number | null;
+  deliveryCharge?: number | null;
+  allowScheduledDelivery?: boolean;
+  allowCod?: boolean;
+  isFragile?: boolean;
+  isPerishable?: boolean;
+  returnPolicyDays?: number | null;
+  replacementAllowed?: boolean;
+  warrantyType?: string | null;
+  warrantyDuration?: string | null;
+  returnConditions?: string | null;
+  complianceDeclarations?: Record<string, any> | null;
+  certificates?: string[];
+  vendorDeclaration?: boolean;
+  countryOfOrigin?: string | null;
+  condition?: string | null;
+  highlights?: string[];
+  keywords?: string[];
+  metaTitle?: string | null;
+  metaDescription?: string | null;
+  isFeatured?: boolean;
+  scheduledPublishDate?: string | Date | null;
 };
 
 // Clean platform slate — 0 static mock products

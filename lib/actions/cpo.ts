@@ -244,6 +244,7 @@ export async function getCpoCatalog(options?: {
   vendorId?: string;
   categorySlug?: string;
   status?: string;
+  imageFilter?: "all" | "missing" | "with_image";
   page?: number;
   limit?: number;
 }) {
@@ -271,6 +272,27 @@ export async function getCpoCatalog(options?: {
         { brand: { contains: term, mode: "insensitive" } },
         { sku: { contains: term, mode: "insensitive" } },
         { categoryName: { contains: term, mode: "insensitive" } },
+      ];
+    }
+
+    if (options?.imageFilter === "missing") {
+      const missingCondition = {
+        OR: [
+          { images: { isEmpty: true } },
+          { images: { has: "/placeholders/product.svg" } },
+        ],
+      };
+      if (where.OR) {
+        where.AND = [{ OR: where.OR }, missingCondition];
+        delete where.OR;
+      } else {
+        where.OR = missingCondition.OR;
+      }
+    } else if (options?.imageFilter === "with_image") {
+      where.AND = [
+        ...(where.AND || []),
+        { images: { isEmpty: false } },
+        { NOT: { images: { has: "/placeholders/product.svg" } } },
       ];
     }
 
@@ -450,3 +472,116 @@ export async function getCpoActivityLogs(filters?: {
     return [];
   }
 }
+
+/**
+ * Re-upload product images as CPO directly without opening full edit form
+ */
+export async function cpoReuploadProductImage(params: {
+  productId: string;
+  images: string[];
+}) {
+  const cpo = await requireCpoSession("catalog:edit");
+
+  try {
+    const existing = await prisma.product.findUnique({
+      where: { id: params.productId },
+      include: { variants: true },
+    });
+    if (!existing) return { success: false, error: "Product not found" };
+
+    const validImages = params.images.filter(
+      (img) => img && img.trim() && img !== "/placeholders/product.svg" && !img.includes("placeholder")
+    );
+    if (validImages.length === 0) {
+      return { success: false, error: "Please provide at least one valid non-placeholder image." };
+    }
+
+    const updated = await prisma.product.update({
+      where: { id: params.productId },
+      data: {
+        images: validImages,
+        updatedByCpoId: cpo.userId,
+        actorRole: "CPO",
+        variants: {
+          updateMany: {
+            where: {
+              OR: [
+                { image: null },
+                { image: "" },
+                { image: "/placeholders/product.svg" },
+              ],
+            },
+            data: {
+              image: validImages[0],
+            },
+          },
+        },
+      },
+    });
+
+    await prisma.adminAuditLog.create({
+      data: {
+        adminId: cpo.userId,
+        vendorId: existing.vendorId,
+        action: "CPO_IMAGE_REUPLOAD",
+        entity: "Product",
+        entityId: existing.id,
+        actorRole: "CPO",
+        before: { images: existing.images },
+        after: { images: validImages },
+      },
+    });
+
+    safeRevalidate("/cpo/catalog");
+    safeRevalidate("/shop");
+    safeRevalidate(`/product/${existing.slug}`);
+
+    return { success: true, product: formatProduct(updated) };
+  } catch (error: any) {
+    console.error("cpoReuploadProductImage error:", error);
+    return { success: false, error: error?.message || "Failed to update product images." };
+  }
+}
+
+/**
+ * Bulk re-upload product images for multiple products
+ */
+export async function cpoBulkUpdateProductImages(
+  updates: Array<{ productId: string; images: string[] }>
+) {
+  const cpo = await requireCpoSession("catalog:edit");
+
+  try {
+    let count = 0;
+    for (const item of updates) {
+      const validImages = item.images.filter(
+        (img) => img && img.trim() && img !== "/placeholders/product.svg" && !img.includes("placeholder")
+      );
+      if (validImages.length > 0) {
+        await prisma.product.update({
+          where: { id: item.productId },
+          data: {
+            images: validImages,
+            updatedByCpoId: cpo.userId,
+            variants: {
+              updateMany: {
+                where: {
+                  OR: [{ image: null }, { image: "" }, { image: "/placeholders/product.svg" }],
+                },
+                data: { image: validImages[0] },
+              },
+            },
+          },
+        });
+        count++;
+      }
+    }
+
+    safeRevalidate("/cpo/catalog");
+    return { success: true, updatedCount: count };
+  } catch (error: any) {
+    console.error("cpoBulkUpdateProductImages error:", error);
+    return { success: false, error: error?.message || "Failed to bulk update images." };
+  }
+}
+

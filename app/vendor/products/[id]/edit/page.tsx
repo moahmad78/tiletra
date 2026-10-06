@@ -11,7 +11,7 @@ import type { Category } from "@/lib/data/categories";
 import type { Product } from "@/lib/data/products";
 import { UNIT_OF_SALE_OPTIONS } from "@/lib/units";
 import ImageUploadManager from "@/components/admin/ImageUploadManager";
-import VariantEditor from "@/components/admin/VariantEditor";
+import UnifiedVariantManager from "@/components/shared/UnifiedVariantManager";
 import {
   ArrowLeft,
   Plus,
@@ -53,15 +53,20 @@ export default function VendorEditProductPage() {
   const [vendorProfile, setVendorProfile] = useState<any | null>(null);
 
   // Variants
-  const [variants, setVariants] = useState([
+  const [hasVariants, setHasVariants] = useState(false);
+  const [variants, setVariants] = useState<any[]>([
     {
+      variantName: "Standard",
       size: "600x600mm",
       finish: "Glossy",
       color: "Standard",
+      price: 1200,
       pricePerBox: 1200,
       pricePerSqft: 60,
       sqftPerBox: 20,
       stockBoxes: 50,
+      active: true,
+      isDefault: true,
     },
   ]);
 
@@ -90,22 +95,37 @@ export default function VendorEditProductPage() {
           setCoverageRate(prod.coverageRate ? String(prod.coverageRate) : "");
           setPiecesPerBox(prod.piecesPerBox ? String(prod.piecesPerBox) : "");
           setWastagePercent(prod.wastageFactor ? String(Math.round((prod.wastageFactor - 1) * 100)) : "10");
+          setHasVariants(Boolean(prod.hasVariants) || (prod.variants && prod.variants.length > 1));
           if (prod.variants && prod.variants.length > 0) {
             setVariants(
               prod.variants.map((v) => ({
-                size: v.size,
-                finish: v.finish,
-                color: v.color,
+                id: v.id,
+                sku: v.sku || null,
+                variantName: v.variantName || v.attributeValue || v.size || "Standard",
+                size: v.size || "Standard",
+                finish: v.finish || "Glossy",
+                color: v.color || "Standard",
+                colorHex: v.colorHex || null,
+                swatchImage: v.swatchImage || null,
                 image: v.image || null,
+                images: Array.isArray(v.images) ? v.images : (v.image ? [v.image] : []),
                 unit: v.unit || null,
                 attributeLabel: v.attributeLabel || null,
                 attributeValue: v.attributeValue || null,
+                attributes: (v as any).attributes || null,
                 mrp: v.mrp ? Number(v.mrp) : null,
                 weightKg: v.weightKg ? Number(v.weightKg) : 2.5,
+                price: v.price !== null && v.price !== undefined ? Number(v.price) : Number(v.pricePerBox),
                 pricePerBox: v.pricePerBox,
                 pricePerSqft: v.pricePerSqft,
                 sqftPerBox: v.sqftPerBox,
                 stockBoxes: v.stockBoxes ?? 50,
+                active: v.active !== false,
+                lowStockAlert: v.lowStockAlert ?? 10,
+                minOrderQuantity: v.minOrderQuantity ?? 1,
+                maxOrderQuantity: v.maxOrderQuantity ?? null,
+                isDefault: Boolean(v.isDefault),
+                barcode: v.barcode || null,
               }))
             );
           }
@@ -132,37 +152,6 @@ export default function VendorEditProductPage() {
     setCategorySlug(slug);
     const found = categories.find((c) => c.slug === slug);
     if (found) setCategoryName(found.name);
-  };
-
-  const handleAddVariant = () => {
-    setVariants((prev) => [
-      ...prev,
-      {
-        size: "Standard",
-        finish: "Standard",
-        color: "Standard",
-        pricePerBox: 1000,
-        pricePerSqft: 50,
-        sqftPerBox: 20,
-        stockBoxes: 50,
-      },
-    ]);
-  };
-
-  const handleRemoveVariant = (idx: number) => {
-    if (variants.length <= 1) {
-      toast.error("You must have at least one product variant");
-      return;
-    }
-    setVariants((prev) => prev.filter((_, i) => i !== idx));
-  };
-
-  const handleVariantChange = (idx: number, field: string, value: any) => {
-    setVariants((prev) => {
-      const copy = [...prev];
-      copy[idx] = { ...copy[idx], [field]: value };
-      return copy;
-    });
   };
 
   const handleAddAttribute = () => {
@@ -193,6 +182,58 @@ export default function VendorEditProductPage() {
       return;
     }
 
+    // Validate Variants
+    const activeVariants = variants.filter((v) => v.active !== false);
+    if (activeVariants.length === 0) {
+      toast.error("At least one active variant is required");
+      return;
+    }
+
+    for (const v of activeVariants) {
+      const priceVal = Number(v.price ?? v.pricePerBox ?? 0);
+      if (isNaN(priceVal) || priceVal <= 0) {
+        toast.error(`Variant "${v.variantName || v.size || "Unnamed"}" must have a valid selling price (> 0)`);
+        return;
+      }
+      if (v.mrp && Number(v.mrp) < priceVal) {
+        toast.error(`Selling price for "${v.variantName || v.size}" cannot exceed MRP (₹${v.mrp})`);
+        return;
+      }
+    }
+
+    const mappedVariants = variants.map((v, index) => {
+      const price = Number(v.price ?? v.pricePerBox ?? 0);
+      return {
+        id: v.id,
+        variantName: v.variantName || v.size || `Variant ${index + 1}`,
+        size: v.size || "Standard",
+        finish: v.finish || "Glossy",
+        color: v.color || "Standard",
+        colorHex: v.colorHex || null,
+        swatchImage: v.swatchImage || null,
+        image: v.image || (Array.isArray(v.images) && v.images[0]) || null,
+        images: Array.isArray(v.images) ? v.images : (v.image ? [v.image] : []),
+        unit: v.unit || null,
+        attributeLabel: v.attributeLabel || null,
+        attributeValue: v.attributeValue || null,
+        attributes: v.attributes || null,
+        sku: v.sku || null,
+        barcode: v.barcode || null,
+        price,
+        mrp: v.mrp ? Number(v.mrp) : null,
+        pricePerBox: v.pricePerBox ? Number(v.pricePerBox) : price,
+        pricePerSqft: v.pricePerSqft ? Number(v.pricePerSqft) : (price || 1000),
+        sqftPerBox: v.sqftPerBox ? Number(v.sqftPerBox) : 1,
+        weightKg: v.weightKg ? Number(v.weightKg) : 2.5,
+        stockBoxes: v.stockBoxes !== undefined ? Number(v.stockBoxes) : 50,
+        active: v.active !== false,
+        lowStockAlert: v.lowStockAlert !== undefined ? Number(v.lowStockAlert) : 10,
+        minOrderQuantity: v.minOrderQuantity !== undefined ? Number(v.minOrderQuantity) : 1,
+        maxOrderQuantity: v.maxOrderQuantity ? Number(v.maxOrderQuantity) : null,
+        isDefault: Boolean(v.isDefault),
+      };
+    });
+
     const cleanAttributes = attributes.filter((a) => a.key.trim() && a.value.trim());
 
     setSaving(true);
@@ -208,7 +249,8 @@ export default function VendorEditProductPage() {
       coverageRate: !isNaN(parseFloat(coverageRate)) && parseFloat(coverageRate) > 0 ? parseFloat(coverageRate) : null,
       piecesPerBox: !isNaN(parseInt(piecesPerBox, 10)) && parseInt(piecesPerBox, 10) > 0 ? parseInt(piecesPerBox, 10) : null,
       wastageFactor: (parseFloat(wastagePercent) || 10) / 100 + 1.0,
-      variants,
+      hasVariants: hasVariants && mappedVariants.length > 0,
+      variants: mappedVariants,
     });
     setSaving(false);
 
@@ -429,10 +471,13 @@ export default function VendorEditProductPage() {
 
         {/* Variants & Pricing */}
         <div className="bg-white rounded-3xl p-6 border border-gray-200/80 shadow-xs space-y-4">
-          <VariantEditor
-            variants={variants as any}
-            onChange={setVariants as any}
+          <UnifiedVariantManager
+            hasVariants={hasVariants}
+            onHasVariantsChange={setHasVariants}
+            variants={variants}
+            onChange={setVariants}
             unitOfSale={unitOfSale}
+            vendorId={vendor?.id}
           />
 
           {/* Smart Calculator Estimator Settings */}

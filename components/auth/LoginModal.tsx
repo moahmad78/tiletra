@@ -22,7 +22,7 @@ export default function LoginModal() {
     sendEmailOtp, verifyEmailOtp,
     pendingIntent,
   } = useAuthStore();
-  const { addItem } = useCartStore();
+  const { addItem, setBuyNowItem } = useCartStore();
 
   // Tab / step state
   const [tab, setTab] = useState<LoginTab>("choose");
@@ -90,10 +90,10 @@ export default function LoginModal() {
         const prod = await getProductById(productId);
         if (prod) {
           const variant = prod.variants.find((v) => v.id === variantId) || prod.variants[0];
-          addItem(prod, variant, quantity);
+          setBuyNowItem({ product: prod, variant, quantity });
         }
       } catch (e) { console.error("buy_now intent error:", e); }
-      router.push("/checkout");
+      router.push("/checkout?mode=direct");
     }
   };
 

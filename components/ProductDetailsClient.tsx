@@ -23,7 +23,14 @@ import {
   Zap,
   MessageSquare,
   MessageCircle,
+  Bell,
+  X,
+  RotateCcw,
+  FileCheck2,
+  Box,
+  ShieldAlert,
 } from "lucide-react";
+import { toast } from "sonner";
 import type { Product, ProductVariant } from "@/lib/data/products";
 import { useCartStore } from "@/lib/cart-store";
 import { useWishlistStore } from "@/lib/wishlist-store";
@@ -58,7 +65,7 @@ export default function ProductDetailsClient({
   allProducts,
 }: ProductDetailsClientProps) {
   const router = useRouter();
-  const { addItem } = useCartStore();
+  const { addItem, setBuyNowItem } = useCartStore();
   const { isWishlisted, toggleWishlist } = useWishlistStore();
 
   const [selectedVariant, setSelectedVariant] = useState<ProductVariant>(
@@ -80,6 +87,9 @@ export default function ProductDetailsClient({
   const [specsOpen, setSpecsOpen] = useState(true);
   const [reviewsOpen, setReviewsOpen] = useState(false);
   const [mounted, setMounted] = useState(false);
+  const [notifySuccess, setNotifySuccess] = useState(false);
+  const [showNotifyModal, setShowNotifyModal] = useState(false);
+  const [notifyContact, setNotifyContact] = useState("");
 
   // Dynamic gallery images including variant specific images
   const allGalleryImages = useMemo(() => {
@@ -183,7 +193,7 @@ export default function ProductDetailsClient({
     trackProductView(definedProduct.id);
   }, [definedProduct.id]);
 
-  const { isAuthenticated, openLoginModal } = useAuthStore();
+  const { isAuthenticated, user, openLoginModal } = useAuthStore();
 
   function handleAddToCart() {
     if (isOutOfStock) return;
@@ -195,6 +205,13 @@ export default function ProductDetailsClient({
 
   function handleBuyNow() {
     if (isOutOfStock) return;
+    // Direct checkout session with only this item (does NOT touch existing cart)
+    setBuyNowItem({
+      product: definedProduct,
+      variant: selectedVariant,
+      quantity,
+    });
+
     if (!isAuthenticated) {
       openLoginModal({
         type: "buy_now",
@@ -206,8 +223,26 @@ export default function ProductDetailsClient({
       });
       return;
     }
-    addItem(definedProduct, selectedVariant, quantity);
-    router.push("/checkout");
+    router.push("/checkout?mode=direct");
+  }
+
+  function handleNotifyMe() {
+    if (isAuthenticated && user?.phone) {
+      setNotifySuccess(true);
+      toast.success(`We will notify you at ${user.phone} when this item is back in stock!`);
+    } else {
+      setShowNotifyModal(true);
+    }
+  }
+
+  function submitNotifyMe() {
+    if (!notifyContact.trim()) {
+      toast.error("Please enter your phone number or email");
+      return;
+    }
+    setShowNotifyModal(false);
+    setNotifySuccess(true);
+    toast.success(`We will notify you at ${notifyContact} when this item is back in stock!`);
   }
 
   const coveragePerUnit =
@@ -433,12 +468,25 @@ export default function ProductDetailsClient({
                     )}
                   </div>
 
-                  <div className="flex items-center gap-2 text-xs text-gray-500 font-medium pt-1 border-t border-gray-200/60">
-                    <span>Inclusive of all taxes</span>
+                  <div className="flex items-center gap-2 text-xs font-medium pt-1 border-t border-gray-200/60">
+                    <span className="text-gray-500">Inclusive of all taxes</span>
                     <span className="text-gray-300">·</span>
-                    <span className={isOutOfStock ? "text-red-500 font-bold" : "text-[#2F7A4F] font-bold"}>
-                      {isOutOfStock ? "Out of stock" : `In stock (${selectedVariant.stockBoxes} ${unitLabel}s available)`}
-                    </span>
+                    {selectedVariant.stockBoxes <= 0 ? (
+                      <span className="text-red-500 font-bold flex items-center gap-1">
+                        <span className="w-1.5 h-1.5 rounded-full bg-red-500 animate-pulse" />
+                        Out of stock
+                      </span>
+                    ) : selectedVariant.stockBoxes <= 5 ? (
+                      <span className="text-amber-600 font-bold flex items-center gap-1 bg-amber-50 px-2 py-0.5 rounded-md border border-amber-200">
+                        <span className="w-1.5 h-1.5 rounded-full bg-amber-500 animate-ping" />
+                        Only {selectedVariant.stockBoxes} left in stock
+                      </span>
+                    ) : (
+                      <span className="text-[#2F7A4F] font-bold flex items-center gap-1">
+                        <span className="w-1.5 h-1.5 rounded-full bg-[#2F7A4F]" />
+                        In stock ({selectedVariant.stockBoxes} {unitLabel}s available)
+                      </span>
+                    )}
                   </div>
                 </div>
               );
@@ -537,16 +585,28 @@ export default function ProductDetailsClient({
                 )}
               </button>
 
-              <button
-                onClick={handleBuyNow}
-                disabled={isOutOfStock || definedProduct.status === "discontinued"}
-                className="flex-1 min-w-0 h-12 px-3 sm:px-4 font-bold text-xs sm:text-sm rounded-full flex items-center justify-center gap-1.5 bg-[#052a51] text-white hover:bg-[#041f3d] active:scale-95 transition-all shadow-md disabled:opacity-40 cursor-pointer whitespace-nowrap"
-              >
-                <Zap size={16} className="text-[#F26522] shrink-0" />
-                <span className="whitespace-nowrap truncate">
-                  {definedProduct.status === "discontinued" ? "Unavailable" : "Buy Now"}
-                </span>
-              </button>
+              {isOutOfStock ? (
+                <button
+                  type="button"
+                  onClick={handleNotifyMe}
+                  className="flex-1 min-w-0 h-12 px-3 sm:px-4 font-bold text-xs sm:text-sm rounded-full flex items-center justify-center gap-1.5 bg-[#052a51] text-white hover:bg-[#041f3d] active:scale-95 transition-all shadow-md cursor-pointer whitespace-nowrap"
+                >
+                  <Bell size={16} className="text-[#F26522] shrink-0" />
+                  <span className="whitespace-nowrap truncate">{notifySuccess ? "Notified!" : "Notify me"}</span>
+                </button>
+              ) : (
+                <button
+                  id="buy-now-btn"
+                  onClick={handleBuyNow}
+                  disabled={definedProduct.status === "discontinued"}
+                  className="flex-1 min-w-0 h-12 px-3 sm:px-4 font-bold text-xs sm:text-sm rounded-full flex items-center justify-center gap-1.5 bg-[#052a51] text-white hover:bg-[#041f3d] active:scale-95 transition-all shadow-md disabled:opacity-40 cursor-pointer whitespace-nowrap"
+                >
+                  <Zap size={16} className="text-[#F26522] shrink-0" />
+                  <span className="whitespace-nowrap truncate">
+                    {definedProduct.status === "discontinued" ? "Unavailable" : "Buy Now"}
+                  </span>
+                </button>
+              )}
             </div>
 
             {/* ── 6. Trust & Dispatch Badges ── */}
@@ -657,6 +717,109 @@ export default function ProductDetailsClient({
                   {definedProduct.description}
                 </p>
               </div>
+
+              {/* ── Phase 4: Dimensions, Shipping, Returns & Compliance Cards ── */}
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4 pt-2">
+                {/* Dimensions & Packaging */}
+                {(definedProduct.dimensions || definedProduct.inTheBox) && (
+                  <div className="bg-[#F8F9FA] rounded-2xl p-4 border border-gray-200/70 space-y-2">
+                    <h3 className="text-xs font-bold text-[#052a51] uppercase tracking-wider flex items-center gap-1.5">
+                      <Box size={14} className="text-[#F26522]" /> Dimensions & Packaging
+                    </h3>
+                    <div className="space-y-1.5 text-xs">
+                      {definedProduct.dimensions && (
+                        <div className="flex justify-between py-1 border-b border-gray-100">
+                          <span className="text-gray-500">Dimensions (L × W × H)</span>
+                          <span className="font-bold text-[#052a51]">
+                            {definedProduct.dimensions.lengthCm ?? "—"} × {definedProduct.dimensions.widthCm ?? "—"} × {definedProduct.dimensions.heightCm ?? "—"} cm
+                          </span>
+                        </div>
+                      )}
+                      {definedProduct.dimensions?.packedWeightKg && (
+                        <div className="flex justify-between py-1 border-b border-gray-100">
+                          <span className="text-gray-500">Packed Weight</span>
+                          <span className="font-bold text-[#052a51]">{definedProduct.dimensions.packedWeightKg} kg</span>
+                        </div>
+                      )}
+                      {definedProduct.inTheBox && (
+                        <div className="flex justify-between py-1">
+                          <span className="text-gray-500">In the Box</span>
+                          <span className="font-bold text-[#052a51] text-right truncate max-w-[180px]">{definedProduct.inTheBox}</span>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                )}
+
+                {/* Shipping & Delivery Info */}
+                <div className="bg-[#F8F9FA] rounded-2xl p-4 border border-gray-200/70 space-y-2">
+                  <h3 className="text-xs font-bold text-[#052a51] uppercase tracking-wider flex items-center gap-1.5">
+                    <Truck size={14} className="text-[#F26522]" /> Shipping & Fulfillment
+                  </h3>
+                  <div className="space-y-1.5 text-xs">
+                    <div className="flex justify-between py-1 border-b border-gray-100">
+                      <span className="text-gray-500">Dispatch Lead Time</span>
+                      <span className="font-bold text-[#052a51]">Within {definedProduct.dispatchTimeDays ?? 2} business days</span>
+                    </div>
+                    <div className="flex justify-between py-1 border-b border-gray-100">
+                      <span className="text-gray-500">Cash on Delivery</span>
+                      <span className="font-bold text-[#052a51]">{definedProduct.allowCod !== false ? "Available" : "Prepaid Only"}</span>
+                    </div>
+                    {definedProduct.freeDeliveryAbove && (
+                      <div className="flex justify-between py-1">
+                        <span className="text-gray-500">Free Shipping</span>
+                        <span className="font-bold text-emerald-700">Orders above ₹{definedProduct.freeDeliveryAbove.toLocaleString("en-IN")}</span>
+                      </div>
+                    )}
+                  </div>
+                </div>
+
+                {/* Returns & Warranty */}
+                <div className="bg-[#F8F9FA] rounded-2xl p-4 border border-gray-200/70 space-y-2">
+                  <h3 className="text-xs font-bold text-[#052a51] uppercase tracking-wider flex items-center gap-1.5">
+                    <RotateCcw size={14} className="text-[#F26522]" /> Returns & Warranty
+                  </h3>
+                  <div className="space-y-1.5 text-xs">
+                    <div className="flex justify-between py-1 border-b border-gray-100">
+                      <span className="text-gray-500">Return Window</span>
+                      <span className="font-bold text-[#052a51]">{definedProduct.returnPolicyDays ? `${definedProduct.returnPolicyDays} Days Returnable` : "Final Sale"}</span>
+                    </div>
+                    <div className="flex justify-between py-1 border-b border-gray-100">
+                      <span className="text-gray-500">Warranty</span>
+                      <span className="font-bold text-[#052a51]">{definedProduct.warrantyDuration ?? "1 Year"} ({definedProduct.warrantyType ?? "Brand"})</span>
+                    </div>
+                    {definedProduct.replacementAllowed && (
+                      <div className="flex justify-between py-1">
+                        <span className="text-gray-500">Transit Damage</span>
+                        <span className="font-bold text-emerald-700">Free Replacement Covered</span>
+                      </div>
+                    )}
+                  </div>
+                </div>
+
+                {/* Compliance & Certifications */}
+                <div className="bg-[#F8F9FA] rounded-2xl p-4 border border-gray-200/70 space-y-2">
+                  <h3 className="text-xs font-bold text-[#052a51] uppercase tracking-wider flex items-center gap-1.5">
+                    <FileCheck2 size={14} className="text-[#F26522]" /> Quality & Compliance
+                  </h3>
+                  <div className="space-y-1.5 text-xs">
+                    <div className="flex justify-between py-1 border-b border-gray-100">
+                      <span className="text-gray-500">Country of Origin</span>
+                      <span className="font-bold text-[#052a51]">{definedProduct.countryOfOrigin ?? "India"}</span>
+                    </div>
+                    {definedProduct.hsnCode && (
+                      <div className="flex justify-between py-1 border-b border-gray-100">
+                        <span className="text-gray-500">HSN Code</span>
+                        <span className="font-bold text-[#052a51]">{definedProduct.hsnCode}</span>
+                      </div>
+                    )}
+                    <div className="flex justify-between py-1">
+                      <span className="text-gray-500">GST Invoice</span>
+                      <span className="font-bold text-emerald-700">Available with GSTIN ({definedProduct.gstPercent ?? 18}%)</span>
+                    </div>
+                  </div>
+                </div>
+              </div>
             </div>
           )}
         </div>
@@ -751,21 +914,72 @@ export default function ProductDetailsClient({
             ) : (
               <>
                 <ShoppingCart size={14} className="shrink-0" />
-                <span className="whitespace-nowrap">Add to Cart</span>
+                <span className="whitespace-nowrap">{isOutOfStock ? "Out of Stock" : "Add to Cart"}</span>
               </>
             )}
           </button>
 
-          <button
-            onClick={handleBuyNow}
-            disabled={isOutOfStock}
-            className="flex-1 min-w-0 h-11 px-2.5 sm:px-3 bg-[#052a51] text-white text-xs font-bold rounded-xl active:scale-95 flex items-center justify-center gap-1 shadow-sm disabled:opacity-40 cursor-pointer hover:bg-[#041f3d] transition-all whitespace-nowrap"
-          >
-            <Zap size={14} className="text-[#F26522] shrink-0" />
-            <span className="whitespace-nowrap">Buy Now</span>
-          </button>
+          {isOutOfStock ? (
+            <button
+              onClick={handleNotifyMe}
+              className="flex-1 min-w-0 h-11 px-2.5 sm:px-3 bg-[#052a51] text-white text-xs font-bold rounded-xl active:scale-95 flex items-center justify-center gap-1 shadow-sm cursor-pointer hover:bg-[#041f3d] transition-all whitespace-nowrap"
+            >
+              <Bell size={14} className="text-[#F26522] shrink-0" />
+              <span className="whitespace-nowrap">{notifySuccess ? "Notified!" : "Notify me"}</span>
+            </button>
+          ) : (
+            <button
+              onClick={handleBuyNow}
+              className="flex-1 min-w-0 h-11 px-2.5 sm:px-3 bg-[#052a51] text-white text-xs font-bold rounded-xl active:scale-95 flex items-center justify-center gap-1 shadow-sm disabled:opacity-40 cursor-pointer hover:bg-[#041f3d] transition-all whitespace-nowrap"
+            >
+              <Zap size={14} className="text-[#F26522] shrink-0" />
+              <span className="whitespace-nowrap">Buy Now</span>
+            </button>
+          )}
         </div>
       </div>
+
+      {/* Notify Me Modal */}
+      {showNotifyModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4">
+          <div className="bg-white rounded-3xl p-6 max-w-md w-full shadow-2xl relative border border-gray-100">
+            <button
+              onClick={() => setShowNotifyModal(false)}
+              className="absolute top-4 right-4 text-gray-400 hover:text-gray-600 p-1.5 rounded-full hover:bg-gray-100 transition-colors"
+            >
+              <X size={18} />
+            </button>
+            <div className="w-12 h-12 rounded-2xl bg-orange-50 border border-orange-200 flex items-center justify-center text-[#F26522] mb-4">
+              <Bell size={24} />
+            </div>
+            <h3 className="text-lg font-black text-[#052a51]">Notify When In Stock</h3>
+            <p className="text-xs text-gray-500 mt-1 leading-relaxed">
+              We will alert you as soon as <span className="font-bold text-gray-800">{definedProduct.name}</span> ({selectedVariant.attributeValue || selectedVariant.size}) is available for order.
+            </p>
+            <div className="mt-4 space-y-3">
+              <div>
+                <label className="text-xs font-bold text-gray-700 block mb-1">
+                  Mobile Number or Email
+                </label>
+                <input
+                  type="text"
+                  placeholder="+91 98765 43210 or you@example.com"
+                  value={notifyContact}
+                  onChange={(e) => setNotifyContact(e.target.value)}
+                  className="w-full px-3.5 py-2.5 rounded-xl border border-gray-200 text-sm focus:outline-none focus:border-[#F26522] focus:ring-1 focus:ring-[#F26522]"
+                />
+              </div>
+              <button
+                type="button"
+                onClick={submitNotifyMe}
+                className="w-full py-3 bg-[#052a51] hover:bg-[#041f3d] text-white text-xs font-black uppercase tracking-wider rounded-xl transition-all shadow-md active:scale-98"
+              >
+                Send Notification Alert
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       <Footer />
     </main>

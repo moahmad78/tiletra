@@ -12,6 +12,7 @@ export type Category = {
   parentId?: string | null;
   calculatorType?: CalculatorType;
   calculatorInputType?: "area" | "length" | "none";
+  attributeSchema?: any;
 };
 
 export const categories: Category[] = [

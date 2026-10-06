@@ -63,6 +63,7 @@ export async function getCategories(): Promise<Category[]> {
           icon: c.icon || "Grid",
           calculatorType: inferCalculatorType(c.slug, c.calculatorType),
           calculatorInputType: c.calculatorInputType || "area",
+          attributeSchema: c.attributeSchema || staticMatch?.attributeSchema || null,
         };
       });
 
@@ -106,6 +107,7 @@ export async function getCategoryBySlug(slug: string): Promise<Category | null> 
         icon: c.icon || "Grid",
         calculatorType: inferCalculatorType(c.slug, (c as any).calculatorType),
         calculatorInputType: (c as any).calculatorInputType || "area",
+        attributeSchema: (c as any).attributeSchema || staticMatch?.attributeSchema || null,
       };
     }
   } catch (error) {
@@ -164,6 +166,7 @@ export async function updateCategory(id: string, data: {
   parentId?: string | null;
   calculatorType?: string;
   calculatorInputType?: "area" | "length" | "none";
+  attributeSchema?: any;
 }) {
   try {
     const auth = await requireAdminAction("categories:manage");

@@ -108,7 +108,9 @@ export default function ProductCard({
             </h3>
           </Link>
           <p className="text-xs text-gray-500 mt-1">
-            {defaultVariant?.size || "Standard"} · {defaultVariant?.finish || "Matte"} · {product.material}
+            {Boolean(product.hasVariants) || (product.variants && product.variants.length > 1)
+              ? `${(product.variants || []).filter((v) => v.active !== false).length} options available · ${product.material || "Quality"}`
+              : `${defaultVariant?.size || "Standard"} · ${defaultVariant?.finish || "Matte"} · ${product.material}`}
           </p>
 
           {/* Rating (Admin Controlled / DB) - Only show if genuine reviews exist */}
@@ -153,7 +155,7 @@ export default function ProductCard({
 
         <div className="flex items-center justify-between mt-4 pt-3 border-t border-gray-50 gap-2">
           {(() => {
-            const priceInfo = getProductPriceInfo(product, defaultVariant);
+            const priceInfo = getProductPriceInfo(product, null);
             return (
               <div className="flex items-baseline gap-2 flex-wrap min-w-0">
                 <div className="flex items-baseline">

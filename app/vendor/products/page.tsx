@@ -13,9 +13,6 @@ import {
 import { getCategories } from "@/lib/actions/categories";
 import type { Category } from "@/lib/data/categories";
 import type { Product } from "@/lib/data/products";
-import { UNIT_OF_SALE_OPTIONS } from "@/lib/units";
-import ImageUploadManager from "@/components/admin/ImageUploadManager";
-import VariantEditor from "@/components/admin/VariantEditor";
 import { resolveColorHex } from "@/lib/catalog";
 import {
   Plus,
@@ -46,19 +43,6 @@ export default function VendorProductsPage() {
   const [searchQuery, setSearchQuery] = useState("");
   const [filterTab, setFilterTab] = useState<"all" | "active" | "paused" | "pending" | "rejected">("all");
 
-  // Edit Modal State
-  const [editingProduct, setEditingProduct] = useState<Product | null>(null);
-  const [editName, setEditName] = useState("");
-  const [editCategorySlug, setEditCategorySlug] = useState("");
-  const [editCategoryName, setEditCategoryName] = useState("");
-  const [editMaterial, setEditMaterial] = useState("");
-  const [editUnitOfSale, setEditUnitOfSale] = useState("box");
-  const [editDescription, setEditDescription] = useState("");
-  const [editImages, setEditImages] = useState<string[]>([]);
-  const [editVariants, setEditVariants] = useState<any[]>([]);
-  const [editAttributes, setEditAttributes] = useState<{ key: string; value: string }[]>([]);
-  const [editSaving, setEditSaving] = useState(false);
-
   const loadData = async () => {
     if (!vendor?.id) return;
     try {
@@ -79,74 +63,6 @@ export default function VendorProductsPage() {
   useEffect(() => {
     loadData();
   }, [vendor?.id]);
-
-  const handleStartEdit = (p: Product) => {
-    setEditingProduct(p);
-    setEditName(p.name);
-    setEditCategorySlug(p.categorySlug || "floor-tiles");
-    setEditCategoryName(p.categoryName || "Floor Tiles");
-    setEditMaterial(p.material || "Vitrified");
-    setEditUnitOfSale(p.unitOfSale || "box");
-    setEditDescription(p.description || "");
-    setEditImages(p.images && p.images.length > 0 ? p.images : ["/placeholders/product.svg"]);
-    setEditVariants(
-      p.variants && p.variants.length > 0
-        ? p.variants.map((v) => ({
-            size: v.size,
-            finish: v.finish,
-            color: v.color,
-            pricePerBox: v.pricePerBox,
-            pricePerSqft: v.pricePerSqft,
-            sqftPerBox: v.sqftPerBox,
-            stockBoxes: v.stockBoxes ?? 50,
-          }))
-        : [
-            {
-              size: "Standard",
-              finish: "Standard",
-              color: "Standard",
-              pricePerBox: 1000,
-              pricePerSqft: 50,
-              sqftPerBox: 20,
-              stockBoxes: 50,
-            },
-          ]
-    );
-    setEditAttributes(p.attributes && p.attributes.length > 0 ? p.attributes.map((a) => ({ key: a.key, value: a.value })) : []);
-  };
-
-  const handleSaveEdit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!vendor?.id || !editingProduct) return;
-    if (!editName.trim()) {
-      toast.error("Product name is required");
-      return;
-    }
-
-    setEditSaving(true);
-    const res = await updateVendorProduct(vendor.id, editingProduct.id, {
-      name: editName.trim(),
-      categorySlug: editCategorySlug,
-      categoryName: editCategoryName,
-      material: editMaterial,
-      unitOfSale: editUnitOfSale,
-      description: editDescription.trim(),
-      images: editImages.filter((img) => img.trim().length > 0),
-      variants: editVariants,
-      attributes: editAttributes.filter((a) => a.key.trim() && a.value.trim()),
-    });
-    setEditSaving(false);
-
-    if (res.success && res.product) {
-      toast.success("Product updated! Sent for Super Admin approval.");
-      setProducts((prev) =>
-        prev.map((p) => (p.id === editingProduct.id ? res.product! : p))
-      );
-      setEditingProduct(null);
-    } else {
-      toast.error(res.error || "Failed to update product");
-    }
-  };
 
   const handleToggleStatus = async (product: Product) => {
     if (!vendor?.id) return;
@@ -451,13 +367,13 @@ export default function VendorProductsPage() {
                       {/* Actions */}
                       <td className="py-3.5 px-4 text-right">
                         <div className="flex items-center justify-end gap-1.5">
-                          <button
-                            onClick={() => handleStartEdit(p)}
+                          <Link
+                            href={`/vendor/products/${p.id}/edit`}
                             className="p-1.5 text-gray-500 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-colors cursor-pointer"
-                            title="Edit Listing (Triggers re-approval)"
+                            title="Edit Listing (Full Editor & Multi-Variety)"
                           >
                             <Edit size={15} />
-                          </button>
+                          </Link>
                           {isApproved && !isPaused && (
                             <Link
                               href={`/product/${p.slug}`}
@@ -488,150 +404,6 @@ export default function VendorProductsPage() {
 
       {/* Admin Transparency & Activity Section */}
       {vendor?.id && <AdminActivitySection vendorId={vendor.id} />}
-
-      {/* Edit Product Modal */}
-      {editingProduct && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-xs overflow-y-auto">
-          <div className="bg-white rounded-3xl max-w-2xl w-full max-h-[90vh] overflow-y-auto shadow-2xl border border-gray-100 p-6 space-y-5 my-8">
-            <div className="flex items-center justify-between pb-3 border-b border-gray-100">
-              <div>
-                <h2 className="text-lg font-black text-gray-900">Edit Product Listing</h2>
-                <p className="text-xs text-gray-500">
-                  Editing will resubmit this product for Super Admin approval
-                </p>
-              </div>
-              <button
-                onClick={() => setEditingProduct(null)}
-                className="p-2 rounded-xl text-gray-400 hover:text-gray-600 hover:bg-gray-100 cursor-pointer"
-              >
-                <X size={18} />
-              </button>
-            </div>
-
-            <form onSubmit={handleSaveEdit} className="space-y-4">
-              <div>
-                <label className="block text-xs font-bold text-gray-700 uppercase mb-1">
-                  Product Name *
-                </label>
-                <input
-                  type="text"
-                  value={editName}
-                  onChange={(e) => setEditName(e.target.value)}
-                  className="w-full bg-gray-50 border border-gray-200 rounded-xl px-4 py-2.5 text-sm font-medium text-gray-800 focus:bg-white focus:border-emerald-500 focus:outline-hidden"
-                  required
-                />
-              </div>
-
-              <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-                <div>
-                  <label className="block text-xs font-bold text-gray-700 uppercase mb-1">
-                    Category *
-                  </label>
-                  <select
-                    value={editCategorySlug}
-                    onChange={(e) => {
-                      setEditCategorySlug(e.target.value);
-                      const found = categories.find((c) => c.slug === e.target.value);
-                      if (found) setEditCategoryName(found.name);
-                    }}
-                    className="w-full bg-gray-50 border border-gray-200 rounded-xl px-3 py-2.5 text-xs font-medium text-gray-800 focus:bg-white focus:border-emerald-500 focus:outline-hidden"
-                  >
-                    {categories.map((c) => (
-                      <option key={c.slug} value={c.slug}>
-                        {c.name}
-                      </option>
-                    ))}
-                  </select>
-                </div>
-
-                <div>
-                  <label className="block text-xs font-bold text-gray-700 uppercase mb-1">
-                    Material *
-                  </label>
-                  <input
-                    type="text"
-                    value={editMaterial}
-                    onChange={(e) => setEditMaterial(e.target.value)}
-                    className="w-full bg-gray-50 border border-gray-200 rounded-xl px-3 py-2.5 text-xs font-medium text-gray-800 focus:bg-white focus:border-emerald-500 focus:outline-hidden"
-                    required
-                  />
-                </div>
-
-                <div>
-                  <label className="block text-xs font-bold text-gray-700 uppercase mb-1">
-                    Unit of Sale *
-                  </label>
-                  <select
-                    required
-                    value={editUnitOfSale}
-                    onChange={(e) => setEditUnitOfSale(e.target.value)}
-                    className="w-full bg-gray-50 border border-gray-200 rounded-xl px-3 py-2.5 text-xs font-medium text-gray-800 focus:bg-white focus:border-emerald-500 focus:outline-hidden cursor-pointer"
-                  >
-                    {UNIT_OF_SALE_OPTIONS.map((opt) => (
-                      <option key={opt.value} value={opt.value}>
-                        {opt.label}
-                      </option>
-                    ))}
-                  </select>
-                </div>
-              </div>
-
-              <div>
-                <label className="block text-xs font-bold text-gray-700 uppercase mb-1">
-                  Description
-                </label>
-                <textarea
-                  value={editDescription}
-                  onChange={(e) => setEditDescription(e.target.value)}
-                  rows={3}
-                  className="w-full bg-gray-50 border border-gray-200 rounded-xl px-4 py-2 text-xs font-medium text-gray-800 focus:bg-white focus:border-emerald-500 focus:outline-hidden"
-                />
-              </div>
-
-              {/* Photos & Media */}
-              <div>
-                <label className="block text-xs font-bold text-gray-700 uppercase mb-2">
-                  Product Photos (File Upload + URL Links)
-                </label>
-                <ImageUploadManager images={editImages} onChange={setEditImages} />
-              </div>
-
-              {/* Multi-Variants & Rich Color Palette */}
-              <div className="bg-gray-50 rounded-2xl p-4 border border-gray-200/80">
-                <VariantEditor
-                  variants={editVariants}
-                  onChange={setEditVariants}
-                  unitOfSale={editUnitOfSale}
-                />
-              </div>
-
-              <div className="flex items-center justify-end gap-3 pt-3 border-t border-gray-100">
-                <button
-                  type="button"
-                  onClick={() => setEditingProduct(null)}
-                  className="px-4 py-2.5 rounded-xl text-xs font-bold text-gray-600 bg-gray-100 hover:bg-gray-200 cursor-pointer"
-                >
-                  Cancel
-                </button>
-                <button
-                  type="submit"
-                  disabled={editSaving}
-                  className="px-5 py-2.5 rounded-xl text-xs font-bold text-white bg-emerald-600 hover:bg-emerald-700 active:scale-95 shadow-md transition-all cursor-pointer flex items-center gap-2"
-                >
-                  {editSaving ? (
-                    <>
-                      <Loader2 size={14} className="animate-spin" />
-                      <span>Saving Changes...</span>
-                    </>
-                  ) : (
-                    <span>Save & Submit for Approval</span>
-                  )}
-                </button>
-              </div>
-            </form>
-          </div>
-        </div>
-      )}
     </div>
   );
 }

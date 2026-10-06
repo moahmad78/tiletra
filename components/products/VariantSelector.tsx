@@ -53,53 +53,84 @@ export default function VariantSelector({
   // Handler when selecting a color in a multi-dimensional product
   const handleColorClick = (colorName: string) => {
     const currentSize = selectedVariant.attributeValue || selectedVariant.size;
-    const match = variants.find(
+    // 1. Try exact active match (color + current size)
+    const exactActiveMatch = variants.find(
       (v: ProductVariant) =>
+        v.active !== false &&
         v.color?.toLowerCase().trim() === colorName.toLowerCase().trim() &&
         (v.attributeValue || v.size)?.toLowerCase().trim() === currentSize?.toLowerCase().trim()
     );
 
-    if (match) {
-      onSelectVariant(match);
-      if (match.image && onSelectImage) onSelectImage(match.image);
+    if (exactActiveMatch) {
+      onSelectVariant(exactActiveMatch);
+      if (exactActiveMatch.image && onSelectImage) onSelectImage(exactActiveMatch.image);
       return;
     }
 
-    const fallback = variants.find(
+    // 2. Auto-fallback: first available active variant for that color
+    const activeFallback = variants.find(
+      (v: ProductVariant) =>
+        v.active !== false &&
+        v.color?.toLowerCase().trim() === colorName.toLowerCase().trim()
+    );
+    if (activeFallback) {
+      onSelectVariant(activeFallback);
+      if (activeFallback.image && onSelectImage) onSelectImage(activeFallback.image);
+      return;
+    }
+
+    // 3. Last fallback: any variant for that color
+    const anyFallback = variants.find(
       (v: ProductVariant) => v.color?.toLowerCase().trim() === colorName.toLowerCase().trim()
     );
-    if (fallback) {
-      onSelectVariant(fallback);
-      if (fallback.image && onSelectImage) onSelectImage(fallback.image);
+    if (anyFallback) {
+      onSelectVariant(anyFallback);
+      if (anyFallback.image && onSelectImage) onSelectImage(anyFallback.image);
     }
   };
 
   // Handler when selecting a size / volume in a multi-dimensional product
   const handleSizeClick = (sizeValue: string) => {
     const currentColor = selectedVariant.color;
-    const match = variants.find(
+    // 1. Try exact active match (current color + size)
+    const exactActiveMatch = variants.find(
       (v: ProductVariant) =>
+        v.active !== false &&
         (v.attributeValue || v.size)?.toLowerCase().trim() === sizeValue.toLowerCase().trim() &&
         v.color?.toLowerCase().trim() === currentColor?.toLowerCase().trim()
     );
 
-    if (match) {
-      onSelectVariant(match);
-      if (match.image && onSelectImage) onSelectImage(match.image);
+    if (exactActiveMatch) {
+      onSelectVariant(exactActiveMatch);
+      if (exactActiveMatch.image && onSelectImage) onSelectImage(exactActiveMatch.image);
       return;
     }
 
-    const fallback = variants.find(
+    // 2. Auto-fallback: first available active variant for that size
+    const activeFallback = variants.find(
+      (v: ProductVariant) =>
+        v.active !== false &&
+        (v.attributeValue || v.size)?.toLowerCase().trim() === sizeValue.toLowerCase().trim()
+    );
+    if (activeFallback) {
+      onSelectVariant(activeFallback);
+      if (activeFallback.image && onSelectImage) onSelectImage(activeFallback.image);
+      return;
+    }
+
+    // 3. Last fallback: any variant for that size
+    const anyFallback = variants.find(
       (v: ProductVariant) => (v.attributeValue || v.size)?.toLowerCase().trim() === sizeValue.toLowerCase().trim()
     );
-    if (fallback) {
-      onSelectVariant(fallback);
-      if (fallback.image && onSelectImage) onSelectImage(fallback.image);
+    if (anyFallback) {
+      onSelectVariant(anyFallback);
+      if (anyFallback.image && onSelectImage) onSelectImage(anyFallback.image);
     }
   };
 
   // Handler for direct 1D variant click
   const handleDirectVariantClick = (v: ProductVariant) => {
+    if (v.active === false) return;
     onSelectVariant(v);
     if (v.image && onSelectImage) {
       onSelectImage(v.image);
@@ -157,6 +188,10 @@ export default function VariantSelector({
                 const resolved = resolveColour(col);
                 const hex = repVariant?.colorHex || resolved.hexCode;
                 const isLight = resolved.textColor === "dark";
+                const hasAnyActive = variants.some(
+                  (v: ProductVariant) => v.color?.toLowerCase().trim() === colorKey && v.active !== false
+                );
+                const isColorUnavailable = !hasAnyActive;
                 const isOutOfStock = repVariant ? repVariant.stockBoxes <= 0 : false;
                 const swatchTexture = repVariant?.swatchImage || (resolved as any).swatchImage;
 
@@ -165,11 +200,14 @@ export default function VariantSelector({
                     key={col}
                     type="button"
                     onClick={() => handleColorClick(col)}
+                    disabled={isColorUnavailable}
                     className={`group relative flex items-center gap-2 pl-2 pr-3 py-1.5 rounded-xl border-2 transition-all cursor-pointer ${
-                      isSelected
+                      isColorUnavailable
+                        ? "opacity-35 line-through bg-gray-100/80 text-gray-400 border-dashed border-gray-300 pointer-events-none cursor-not-allowed"
+                        : isSelected
                         ? "border-[#F26522] bg-orange-50/60 shadow-xs ring-2 ring-orange-200"
                         : "border-gray-200 bg-white hover:border-gray-300"
-                    } ${isOutOfStock ? "opacity-60" : ""}`}
+                    } ${!isColorUnavailable && isOutOfStock ? "opacity-60" : ""}`}
                   >
                     <span
                       className="w-5 h-5 rounded-full border border-black/15 shadow-2xs flex items-center justify-center shrink-0 overflow-hidden relative"
@@ -208,28 +246,35 @@ export default function VariantSelector({
                 const currentSize = selectedVariant.attributeValue || selectedVariant.size;
                 const isSelected = currentSize?.toLowerCase().trim() === sz.toLowerCase().trim();
 
+                const matchingCombo = variants.find(
+                  (v: ProductVariant) =>
+                    (v.attributeValue || v.size)?.toLowerCase().trim() === sz.toLowerCase().trim() &&
+                    v.color?.toLowerCase().trim() === selectedVariant.color?.toLowerCase().trim()
+                );
+
+                const isCombinationUnavailable = !matchingCombo || matchingCombo.active === false;
+
                 const matchingForPrice =
-                  variants.find(
-                    (v: ProductVariant) =>
-                      (v.attributeValue || v.size)?.toLowerCase().trim() === sz.toLowerCase().trim() &&
-                      v.color?.toLowerCase().trim() === selectedVariant.color?.toLowerCase().trim()
-                  ) ||
+                  matchingCombo ||
                   variants.find(
                     (v: ProductVariant) => (v.attributeValue || v.size)?.toLowerCase().trim() === sz.toLowerCase().trim()
                   );
 
-                const isOutOfStock = matchingForPrice ? matchingForPrice.stockBoxes <= 0 : false;
+                const isOutOfStock = matchingCombo ? matchingCombo.stockBoxes <= 0 : false;
 
                 return (
                   <button
                     key={sz}
                     type="button"
                     onClick={() => handleSizeClick(sz)}
+                    disabled={isCombinationUnavailable}
                     className={`group relative flex items-center gap-2 px-3.5 py-2 rounded-xl border-2 transition-all active:scale-95 cursor-pointer ${
-                      isSelected
+                      isCombinationUnavailable
+                        ? "opacity-35 line-through bg-gray-100/80 text-gray-400 border-dashed border-gray-300 pointer-events-none cursor-not-allowed"
+                        : isSelected
                         ? "border-[#052a51] bg-[#052a51] text-white shadow-xs"
                         : "border-gray-200 bg-white text-gray-700 hover:border-gray-300"
-                    } ${isOutOfStock ? "opacity-60" : ""}`}
+                    } ${!isCombinationUnavailable && isOutOfStock ? "opacity-60" : ""}`}
                   >
                     <span className="text-xs font-bold">{sz}</span>
 
@@ -240,6 +285,12 @@ export default function VariantSelector({
                         }`}
                       >
                         {formatPrice(matchingForPrice.pricePerBox)}
+                      </span>
+                    )}
+
+                    {!isCombinationUnavailable && isOutOfStock && (
+                      <span className="text-[9px] font-black uppercase text-red-500 bg-red-50 px-1.5 py-0.5 rounded">
+                        Out of stock
                       </span>
                     )}
                   </button>
@@ -264,6 +315,7 @@ export default function VariantSelector({
               const resolved = resolveColour(v.color);
               const hex = v.colorHex || resolved.hexCode;
               const isLight = resolved.textColor === "dark";
+              const isUnavailable = v.active === false;
               const isOutOfStock = v.stockBoxes <= 0;
               const swatchTexture = v.swatchImage || (resolved as any).swatchImage;
 
@@ -272,11 +324,14 @@ export default function VariantSelector({
                   key={v.id}
                   type="button"
                   onClick={() => handleDirectVariantClick(v)}
+                  disabled={isUnavailable}
                   className={`group relative flex items-center gap-2 pl-2 pr-3 py-1.5 rounded-xl border-2 transition-all cursor-pointer ${
-                    isSelected
+                    isUnavailable
+                      ? "opacity-35 line-through bg-gray-100/80 text-gray-400 border-dashed border-gray-300 pointer-events-none cursor-not-allowed"
+                      : isSelected
                       ? "border-[#F26522] bg-orange-50/60 shadow-xs ring-2 ring-orange-200"
                       : "border-gray-200 bg-white hover:border-gray-300"
-                  } ${isOutOfStock ? "opacity-60" : ""}`}
+                  } ${!isUnavailable && isOutOfStock ? "opacity-60" : ""}`}
                 >
                   <span
                     className="w-5 h-5 rounded-full border border-black/15 shadow-2xs flex items-center justify-center shrink-0 overflow-hidden relative"
@@ -323,6 +378,7 @@ export default function VariantSelector({
             {variants.map((v: ProductVariant) => {
               const displayVal = v.attributeValue || v.size;
               const isSelected = selectedVariant.id === v.id;
+              const isUnavailable = v.active === false;
               const isOutOfStock = v.stockBoxes <= 0;
 
               return (
@@ -330,11 +386,14 @@ export default function VariantSelector({
                   key={v.id}
                   type="button"
                   onClick={() => handleDirectVariantClick(v)}
+                  disabled={isUnavailable}
                   className={`group relative flex items-center gap-2 px-3.5 py-2 rounded-xl border-2 transition-all active:scale-95 cursor-pointer ${
-                    isSelected
+                    isUnavailable
+                      ? "opacity-35 line-through bg-gray-100/80 text-gray-400 border-dashed border-gray-300 pointer-events-none cursor-not-allowed"
+                      : isSelected
                       ? "border-[#052a51] bg-[#052a51] text-white shadow-xs"
                       : "border-gray-200 bg-white text-gray-700 hover:border-gray-300"
-                  } ${isOutOfStock ? "opacity-60" : ""}`}
+                  } ${!isUnavailable && isOutOfStock ? "opacity-60" : ""}`}
                 >
                   <span className="text-xs font-bold">{displayVal}</span>
 
@@ -348,7 +407,7 @@ export default function VariantSelector({
                     </span>
                   )}
 
-                  {isOutOfStock && (
+                  {!isUnavailable && isOutOfStock && (
                     <span className="text-[9px] font-black uppercase text-red-500 bg-red-50 px-1.5 py-0.5 rounded">
                       Out of stock
                     </span>

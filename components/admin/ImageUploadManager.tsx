@@ -8,17 +8,27 @@ import { toast } from "sonner";
 interface ImageUploadManagerProps {
   images: string[];
   onChange: (images: string[]) => void;
+  onUploadingChange?: (isUploading: boolean) => void;
+  vendorId?: string | null;
 }
 
 export default function ImageUploadManager({
   images,
   onChange,
+  onUploadingChange,
+  vendorId,
 }: ImageUploadManagerProps) {
   const [urlInput, setUrlInput] = useState("");
   const [isAddingUrl, setIsAddingUrl] = useState(false);
   const [isUploading, setIsUploading] = useState(false);
+  const [uploadError, setUploadError] = useState<string | null>(null);
   const [isDragging, setIsDragging] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
+
+  const setUploadingState = (uploading: boolean) => {
+    setIsUploading(uploading);
+    onUploadingChange?.(uploading);
+  };
 
   const isValidUrl = (url: string) => {
     try {
@@ -42,6 +52,7 @@ export default function ImageUploadManager({
       return;
     }
 
+    setUploadError(null);
     onChange([...images.filter((img) => img !== "/placeholders/product.svg"), cleanUrl]);
     toast.success("Image added!");
   };
@@ -59,8 +70,12 @@ export default function ImageUploadManager({
   const uploadFiles = async (files: FileList | File[]) => {
     if (!files || files.length === 0) return;
 
-    setIsUploading(true);
+    setUploadingState(true);
+    setUploadError(null);
     const formData = new FormData();
+    if (vendorId) {
+      formData.append("vendorId", vendorId);
+    }
     for (let i = 0; i < files.length; i++) {
       formData.append("file", files[i]);
     }
@@ -72,18 +87,23 @@ export default function ImageUploadManager({
       });
 
       const data = await res.json();
-      if (data.success && Array.isArray(data.urls) && data.urls.length > 0) {
+      if (res.ok && data.success && Array.isArray(data.urls) && data.urls.length > 0) {
         const currentFiltered = images.filter((img) => img !== "/placeholders/product.svg");
         onChange([...currentFiltered, ...data.urls]);
+        setUploadError(null);
         toast.success(`Uploaded ${data.urls.length} photo(s) successfully`);
       } else {
-        toast.error(data.error || "Failed to upload photos");
+        const errMsg = data.error || `Upload failed (Status ${res.status})`;
+        setUploadError(errMsg);
+        toast.error(errMsg);
       }
     } catch (err: any) {
       console.error("Upload error:", err);
-      toast.error("Upload error: " + (err?.message || "Check network connection"));
+      const errMsg = "Upload network error: " + (err?.message || "Check connection");
+      setUploadError(errMsg);
+      toast.error(errMsg);
     } finally {
-      setIsUploading(false);
+      setUploadingState(false);
       if (fileInputRef.current) fileInputRef.current.value = "";
     }
   };
@@ -153,6 +173,28 @@ export default function ImageUploadManager({
 
   return (
     <div className="space-y-6">
+      {isUploading && (
+        <div className="p-3.5 bg-orange-50 border border-orange-200 rounded-2xl flex items-center gap-3 text-xs font-bold text-[#F26522] animate-pulse">
+          <Loader2 className="animate-spin shrink-0" size={16} />
+          <span>Uploading and optimizing images... Please wait until upload completes before saving.</span>
+        </div>
+      )}
+
+      {uploadError && (
+        <div className="p-3.5 bg-red-50 border border-red-200 rounded-2xl flex items-center justify-between gap-3 text-xs font-bold text-red-700">
+          <div className="flex items-center gap-2">
+            <AlertCircle className="shrink-0 text-red-600" size={16} />
+            <span>Image Upload Error: {uploadError}. Never save products without an image.</span>
+          </div>
+          <button
+            type="button"
+            onClick={() => setUploadError(null)}
+            className="text-red-500 hover:text-red-800 text-xs underline cursor-pointer shrink-0"
+          >
+            Dismiss
+          </button>
+        </div>
+      )}
       
       <div className="grid grid-cols-1 sm:grid-cols-12 gap-6">
         {/* Primary Image Section */}
