@@ -3,7 +3,7 @@
     "name": "Intrihub Business",
     "slug": "intrihub-business",
     "owner": "sahil_sheikh78",
-    "version": "1.0.11",
+    "version": "1.0.12",
     "orientation": "portrait",
     "icon": "./assets/icon.png",
     "scheme": "intrihub-biz",
@@ -36,7 +36,7 @@
     },
     "android": {
       "package": "com.intrihub.business",
-      "versionCode": 12,
+      "versionCode": 13,
       "config": {
         "googleMaps": {
           "apiKey": ""
