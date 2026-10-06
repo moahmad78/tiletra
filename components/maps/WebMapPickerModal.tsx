@@ -107,7 +107,11 @@ export default function WebMapPickerModal({
     if (!showPredictions) return;
     const handleOutsideClick = (e: MouseEvent) => {
       if (searchContainerRef.current && !searchContainerRef.current.contains(e.target as Node)) {
-        setShowPredictions(false);
+        import("react").then(({ startTransition }) => {
+          startTransition(() => {
+            setShowPredictions(false);
+          });
+        });
       }
     };
     document.addEventListener("mousedown", handleOutsideClick, { passive: true });

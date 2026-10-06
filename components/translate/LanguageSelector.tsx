@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useRef, useEffect, useMemo } from "react";
+import React, { useState, useRef, useEffect, useMemo, startTransition } from "react";
 import { Globe, Search, Check, ChevronDown, ChevronRight, X, Loader2 } from "lucide-react";
 import { useLanguage } from "./LanguageProvider";
 import { cn } from "@/lib/utils";
@@ -99,7 +99,7 @@ export default function LanguageSelector({
       <div className={cn("w-full notranslate", className)} translate="no" ref={dropdownRef}>
         <button
           type="button"
-          onClick={() => setIsOpen(true)}
+          onClick={() => startTransition(() => setIsOpen(true))}
           className="w-full flex items-center justify-between p-3.5 rounded-2xl hover:bg-gray-50 active:bg-gray-100 transition-colors border border-gray-100/80 text-left notranslate"
           translate="no"
           aria-label="Select Language"
@@ -245,7 +245,7 @@ export default function LanguageSelector({
     <div className={cn("relative inline-block text-left notranslate", className)} translate="no" ref={dropdownRef}>
       <button
         type="button"
-        onClick={() => setIsOpen(!isOpen)}
+        onClick={() => startTransition(() => setIsOpen(!isOpen))}
         aria-label="Select Language"
         className={cn(
           "flex items-center gap-1.5 rounded-xl transition-all cursor-pointer font-bold select-none notranslate",

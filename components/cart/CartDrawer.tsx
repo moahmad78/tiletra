@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef, useMemo } from "react";
+import { useEffect, useRef, useMemo, startTransition } from "react";
 import { X, Minus, Plus, ShoppingBag, ArrowRight, Trash2 } from "lucide-react";
 import Link from "next/link";
 import Image from "next/image";
@@ -35,7 +35,9 @@ export default function CartDrawer() {
   useEffect(() => {
     function handleClick(e: MouseEvent) {
       if (drawerRef.current && !drawerRef.current.contains(e.target as Node)) {
-        closeCart();
+        startTransition(() => {
+          closeCart();
+        });
       }
     }
     if (isOpen) {
@@ -52,7 +54,11 @@ export default function CartDrawer() {
   useEffect(() => {
     if (!isOpen) return;
     function handleKey(e: KeyboardEvent) {
-      if (e.key === "Escape") closeCart();
+      if (e.key === "Escape") {
+        startTransition(() => {
+          closeCart();
+        });
+      }
     }
     window.addEventListener("keydown", handleKey);
     return () => window.removeEventListener("keydown", handleKey);

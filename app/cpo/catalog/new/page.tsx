@@ -23,7 +23,7 @@ function CpoNewProductContent() {
       getCpoVendors({ status: "approved" }),
       getActiveCpoWorkspaceStatus(),
     ])
-      .then(([vList, ws]) => {
+      .then(async ([vList, ws]) => {
         setVendors(vList);
         if (vendorIdParam) {
           setSelectedVendorId(vendorIdParam);
@@ -31,6 +31,10 @@ function CpoNewProductContent() {
           setSelectedVendorId(ws.vendorId);
         } else if (vList.length > 0) {
           setSelectedVendorId(vList[0].id);
+          await selectCpoVendor({
+            vendorId: vList[0].id,
+            reason: `CPO Adding Product for ${vList[0].businessName} (Default selected)`,
+          });
         }
       })
       .finally(() => setLoading(false));

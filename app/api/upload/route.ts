@@ -25,6 +25,25 @@ export async function POST(req: NextRequest) {
       );
     }
 
+    let isAuthorized = false;
+    try {
+      const { resolveVendorContext } = await import("@/lib/vendor-workspace-auth");
+      const workspaceContext = await resolveVendorContext();
+      if (workspaceContext) isAuthorized = true;
+    } catch { }
+
+    if (!isAuthorized) {
+      try {
+        const { checkIsAdmin, getAuthenticatedVendor } = await import("@/lib/server-auth");
+        const [isAdmin, vendor] = await Promise.all([checkIsAdmin(), getAuthenticatedVendor()]);
+        if (isAdmin || vendor) isAuthorized = true;
+      } catch { }
+    }
+
+    if (!isAuthorized) {
+       return NextResponse.json({ success: false, error: "Unauthorized: You must be logged in to upload files." }, { status: 401 });
+    }
+
     const formData = await req.formData();
     const files = (formData.getAll("file") as unknown) as File[];
 
