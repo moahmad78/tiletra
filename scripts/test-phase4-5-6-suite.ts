@@ -277,7 +277,7 @@ async function runPhase456Suite() {
     // TEST GROUP 8: Phase 6 - CSV Template & parseCsvAndBulkCreate
     // ------------------------------------------------------------
     console.log("--- 8. Testing Phase 6 CSV Template & parseCsvAndBulkCreate ---");
-    const template = generateProductCsvTemplate();
+    const template = await generateProductCsvTemplate();
     assert(template.includes("name,categorySlug,brand"), "CSV template contains standard headers");
 
     const sampleCsv = `name,categorySlug,brand,sellingPrice,mrp,stockQuantity,unitOfSale,sku,description,highlights,imageUrl,countryOfOrigin,gstRate,hsnCode,dispatchTimeDays,returnPolicyDays

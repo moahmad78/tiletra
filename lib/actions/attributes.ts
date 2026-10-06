@@ -16,7 +16,7 @@ export interface AttributeOptionItem {
   createdAt: Date;
 }
 
-export const DEFAULT_PRESET_UNITS = [
+const DEFAULT_PRESET_UNITS = [
   { name: "Weight", value: "kg", meta: { family: "weight" } },
   { name: "Weight", value: "g", meta: { family: "weight" } },
   { name: "Weight", value: "mg", meta: { family: "weight" } },
@@ -37,7 +37,7 @@ export const DEFAULT_PRESET_UNITS = [
   { name: "Packaging", value: "roll", meta: { family: "container" } },
 ];
 
-export const DEFAULT_PRESET_COLOURS = [
+const DEFAULT_PRESET_COLOURS = [
   { name: "White", value: "White", meta: { hex: "#FFFFFF" } },
   { name: "Off White", value: "Off White", meta: { hex: "#FAF9F6" } },
   { name: "Ivory", value: "Ivory", meta: { hex: "#FFFFF0" } },
@@ -58,7 +58,7 @@ export const DEFAULT_PRESET_COLOURS = [
   { name: "Silver", value: "Silver", meta: { hex: "#C0C0C0" } },
 ];
 
-export const DEFAULT_PRESET_DIMENSIONS = [
+const DEFAULT_PRESET_DIMENSIONS = [
   { name: "Dimension Unit", value: "mm", meta: { type: "dimension_unit" } },
   { name: "Dimension Unit", value: "cm", meta: { type: "dimension_unit" } },
   { name: "Dimension Unit", value: "m", meta: { type: "dimension_unit" } },
@@ -66,7 +66,7 @@ export const DEFAULT_PRESET_DIMENSIONS = [
   { name: "Dimension Unit", value: "ft", meta: { type: "dimension_unit" } },
 ];
 
-export const DEFAULT_CUSTOM_ATTRIBUTES = [
+const DEFAULT_CUSTOM_ATTRIBUTES = [
   { name: "Material", value: "Ceramic", meta: {} },
   { name: "Material", value: "Vitrified", meta: {} },
   { name: "Material", value: "Porcelain", meta: {} },

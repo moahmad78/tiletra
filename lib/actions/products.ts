@@ -458,14 +458,18 @@ export async function getBestsellers(limit = 8): Promise<Product[]> {
   return sections.bestsellers.slice(0, limit);
 }
 
-export const getBestsellerProducts = getBestsellers;
+export async function getBestsellerProducts(limit = 8): Promise<Product[]> {
+  return getBestsellers(limit);
+}
 
 export async function getNewArrivals(limit = 8): Promise<Product[]> {
   const sections = await getHomepageSections();
   return sections.newArrivals.slice(0, limit);
 }
 
-export const getNewArrivalProducts = getNewArrivals;
+export async function getNewArrivalProducts(limit = 8): Promise<Product[]> {
+  return getNewArrivals(limit);
+}
 
 export async function getRelatedProducts(productId: string, categorySlug: string, limit = 4): Promise<Product[]> {
   try {
@@ -1559,7 +1563,7 @@ export async function bulkUpdateProducts(
 /**
  * Generates a standard CSV header string for product uploads.
  */
-export function generateProductCsvTemplate(): string {
+export async function generateProductCsvTemplate(): Promise<string> {
   const headers = [
     "name",
     "categorySlug",
