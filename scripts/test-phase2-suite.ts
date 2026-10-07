@@ -1,3 +1,4 @@
+import "./test-db-guard";
 import { PrismaClient } from "@prisma/client";
 import { createProduct, checkDuplicateProduct } from "../lib/actions/products";
 import { createAttributeOption, getAttributeOptions } from "../lib/actions/attributes";

@@ -843,7 +843,7 @@ export const AddressModal: React.FC<AddressModalProps> = ({ visible, onClose, on
                     <Search size={18} color={COLORS.textTertiary} />
                     <TextInput
                       style={styles.addressSearchInput}
-                      placeholder="Search area, apartment, street (e.g. Indiranagar)..."
+                      placeholder="Search address"
                       placeholderTextColor={COLORS.textTertiary}
                       value={addressSearchQuery}
                       onChangeText={handleAddressSearchChange}
@@ -1548,10 +1548,15 @@ const styles = StyleSheet.create({
   },
   addressSearchInput: {
     flex: 1,
-    fontSize: 13,
-    fontWeight: "700",
+    height: "100%",
+    fontSize: 13.5,
+    fontWeight: "500",
     color: COLORS.text,
     paddingVertical: 0,
+    paddingHorizontal: 0,
+    margin: 0,
+    textAlignVertical: "center",
+    includeFontPadding: false,
   },
   searchPredictionsCard: {
     backgroundColor: "#ffffff",

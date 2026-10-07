@@ -182,7 +182,7 @@ ${order.deliveryAddress || [
   .join(", ") || order.shippingAddress?.street || ""}
 
 Official Helpline: +91 7090120211
-IntriHub — Everything, Every Place`;
+IntriHub — Every Material. Every Space.`;
 
               await Share.share({
                 title: `IntriHub_Invoice_${order.id}`,
@@ -581,7 +581,7 @@ IntriHub — Everything, Every Place`;
               {/* Company & Bill Info */}
               <View style={styles.invoiceHeaderBox}>
                 <Text style={styles.invoiceBrand}>INTRIHUB PRIVATE LIMITED</Text>
-                <Text style={styles.invoiceSub}>Everything, Every Place</Text>
+                <Text style={styles.invoiceSub}>Every Material. Every Space.</Text>
                 <Text style={styles.invoiceMeta}>GSTIN: 29AAAAA0000A1Z5 | Verified Tax Bill</Text>
               </View>
 

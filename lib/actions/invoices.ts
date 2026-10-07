@@ -387,7 +387,7 @@ export async function getOrderInvoiceData(orderId: string) {
       taxMode: "exclusive" as const,
       isInterState: false,
       notes: `Order #${order.id} • Bengaluru express dispatch via IntriHub fleet`,
-      terms: "• Computer-generated tax invoice verified by IntriHub.\n• Goods once delivered cannot be returned without physical QC verification.\n• All disputes subject to Bengaluru jurisdiction.\n• Everything, Every Place • www.intrihub.com",
+      terms: "• Computer-generated tax invoice verified by IntriHub.\n• Goods once delivered cannot be returned without physical QC verification.\n• All disputes subject to Bengaluru jurisdiction.\n• Every Material. Every Space. • www.intrihub.com",
       showSignature: true,
     };
 

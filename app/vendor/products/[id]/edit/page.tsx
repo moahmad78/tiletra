@@ -417,7 +417,7 @@ export default function VendorEditProductPage() {
               {images.filter((img) => img !== "/placeholders/product.svg").length} photo(s)
             </span>
           </div>
-          <ImageUploadManager images={images} onChange={setImages} />
+          <ImageUploadManager images={images} onChange={setImages} vendorId={vendor?.id || null} />
         </div>
 
         {/* Flexible Custom Attributes */}
@@ -480,7 +480,7 @@ export default function VendorEditProductPage() {
             vendorId={vendor?.id}
           />
 
-          {/* Smart Calculator Estimator Settings */}
+          {/* Packaging Specifications Settings */}
           <div className={`grid grid-cols-1 ${unitOfSale === "box" ? "sm:grid-cols-3" : "sm:grid-cols-2"} gap-4 pt-4 border-t border-gray-100`}>
             <div>
               <label className="text-xs font-bold text-gray-800 uppercase tracking-wider block mb-1.5 flex justify-between">
@@ -499,7 +499,7 @@ export default function VendorEditProductPage() {
                     ? "Direct Area Unit (1:1 sq.ft)"
                     : "Coverage / Yield per Unit"}
                 </span>
-                <span className="text-[10px] text-gray-400 font-normal">Powers Calculator</span>
+                <span className="text-[10px] text-gray-400 font-normal">Packaging Specs</span>
               </label>
               <input
                 type="number"
@@ -533,7 +533,7 @@ export default function VendorEditProductPage() {
                   ? "Sq.ft covered per roll (e.g. 57 for wallpaper)"
                   : unitOfSale === "kg"
                   ? "Sq.ft covered per kg (e.g. 20 for tile adhesive/putty)"
-                  : "Leave empty if product does not require calculator"}
+                  : "Leave empty if not applicable"}
               </p>
             </div>
 

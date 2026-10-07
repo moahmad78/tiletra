@@ -24,8 +24,8 @@
 
 Copy and schedule one post per week on your Google Business Profile to drive local engagement and build authority:
 
-### Week 1: Everything for Every Space
-- **Post Copy:** Sourcing materials for your new construction or villa renovation? From structural foundation cement to luxury vitrified tile finishes, IntriHub provides everything for every space in one place with 60-minute site delivery across Bengaluru.
+### Week 1: Every Material. Every Space.
+- **Post Copy:** Sourcing materials for your new construction or villa renovation? From structural foundation cement to luxury vitrified tile finishes, IntriHub provides every material for every space in one place with 60-minute site delivery across Bengaluru.
 - **CTA Button:** Learn More
 - **Link:** `https://intrihub.com/everything-for-every-space`
 

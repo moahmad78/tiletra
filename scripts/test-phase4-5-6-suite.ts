@@ -15,6 +15,7 @@
 
 process.env.ALLOW_SYSTEM_MUTATIONS = "true";
 
+import "./test-db-guard";
 import { prisma } from "../lib/prisma";
 import {
   createProduct,

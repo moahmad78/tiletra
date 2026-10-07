@@ -24,7 +24,7 @@
 ## 🏆 The Complete Top 20 USPs
 
 ### Pillar 1: Full-Stack Space Procurement
-1. **🏗️ Everything for Every Space:** Construction, renovation aur interiors ke liye ek hi complete platform.
+1. **🏗️ Every Material. Every Space.:** Construction, renovation aur interiors ke liye ek hi complete platform.
 2. **🛒 One Platform, Multiple Categories:** Electrical se vitrified tiles, plumbing, paint, hardware, lighting, furniture, sanitary, false ceiling aur decor tak.
 3. **📦 One Order → Multiple Materials:** Customer aur contractors ko alag-alag shops se manually procurement manage karne ki zarurat khatam. Single cart and single invoice.
 4. **📋 Project-Based Shopping:** "Mujhe bathroom renovate karna hai" ya "2BHK full fitout banana hai" → required materials ko project scope ke basis par curate & organize karna.

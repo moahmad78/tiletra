@@ -23,7 +23,6 @@ import {
   Star,
   ShieldCheck,
   Truck,
-  Calculator,
   ShoppingBag,
   Check,
   LayoutGrid,
@@ -287,9 +286,6 @@ export default function ProductDetailScreen() {
   const { isWishlisted, toggleWishlist } = useWishlistStore();
 
   const [selectedVariant, setSelectedVariant] = useState<ProductVariant | null>(null);
-  const [calculatorArea, setCalculatorArea] = useState("");
-  const [calculatedBoxes, setCalculatedBoxes] = useState<number | null>(null);
-  const [calculatedPieces, setCalculatedPieces] = useState<number | null>(null);
   const [quantity, setQuantity] = useState(1);
   const [addedToast, setAddedToast] = useState(false);
   const [writeReviewOpen, setWriteReviewOpen] = useState(false);
@@ -389,35 +385,7 @@ export default function ProductDetailScreen() {
       : ["/images/placeholder-product.svg"];
   const images = rawImages.map((img) => getImageUrl(img));
 
-  const handleCalculateBoxes = (text: string) => {
-    setCalculatorArea(text);
-    const val = parseFloat(text);
-    if (!isNaN(val) && val > 0) {
-      const u = (product?.unitOfSale || "box").toLowerCase().trim();
-      const coverageRate = product?.coverageRate || (u === "box" ? (selectedVariant?.sqftPerBox || 16) : 1);
-      const wastage = product?.wastageFactor || 1.1;
-      const isDirectSqft = u === "sqft";
-      const safeCeil = (n: number) => Math.ceil(Math.round(n * 10000) / 10000);
 
-      const units = isDirectSqft
-        ? Math.max(1, safeCeil(val * wastage))
-        : Math.max(1, safeCeil((val * wastage) / coverageRate));
-
-      setCalculatedBoxes(units);
-      setQuantity(units);
-
-      const piecesPerBoxVal = product?.piecesPerBox || (selectedVariant as any)?.piecesPerBox;
-      if (u === "box" && piecesPerBoxVal && piecesPerBoxVal > 0) {
-        const sqftPerPiece = coverageRate / piecesPerBoxVal;
-        setCalculatedPieces(safeCeil((val * wastage) / sqftPerPiece));
-      } else {
-        setCalculatedPieces(null);
-      }
-    } else {
-      setCalculatedBoxes(null);
-      setCalculatedPieces(null);
-    }
-  };
 
   const handleAddToCart = () => {
     if (!product) return;
@@ -505,64 +473,7 @@ export default function ProductDetailScreen() {
         <Text style={styles.taxNote}>Inclusive of all taxes • Factory Direct Pricing</Text>
       </View>
 
-      {/* Smart Quantity & Coverage Calculator Tool (Data-driven) */}
-      {(Boolean(product.coverageRate && product.coverageRate > 0) || product.unitOfSale === "sqft" || (product.unitOfSale === "box" && Boolean(selectedVariant?.sqftPerBox))) && (
-        <View style={styles.calculatorCard}>
-          <View style={styles.calcHeader}>
-            <Calculator size={18} color={COLORS.primary} />
-            <Text style={styles.calcTitle}>
-              {product.unitOfSale === "metre" || product.unitOfSale === "meter" || product.unitOfSale === "coil"
-                ? "Length & Wiring Estimator"
-                : product.unitOfSale === "litre"
-                ? "Paint & Surface Estimator"
-                : "Area & Quantity Calculator"}
-            </Text>
-          </View>
-          <Text style={styles.calcSub}>
-            {product.unitOfSale === "meter" || product.unitOfSale === "coil"
-              ? "Enter required circuit length in meters to calculate coils needed"
-              : "Enter your floor or wall area to auto-calculate required quantity (includes +10% buffer)"}
-          </Text>
 
-          <View style={styles.calcInputRow}>
-            <TextInput
-              style={styles.calcInput}
-              placeholder={product.unitOfSale === "meter" || product.unitOfSale === "coil" ? "e.g. 180" : "e.g. 250"}
-              placeholderTextColor="#94a3b8"
-              keyboardType="numeric"
-              value={calculatorArea}
-              onChangeText={handleCalculateBoxes}
-            />
-            <Text style={styles.calcUnit}>
-              {product.unitOfSale === "meter" || product.unitOfSale === "coil" ? "meters" : "sq.ft"}
-            </Text>
-          </View>
-
-          {calculatedBoxes !== null && (
-            <View style={styles.calcResultBox}>
-              <Text style={styles.calcResultText}>
-                Required:{" "}
-                <Text style={styles.boldPrimary}>
-                  {calculatedBoxes}{" "}
-                  {product.unitOfSale === "box"
-                    ? "Boxes"
-                    : product.unitOfSale === "sqft"
-                    ? "sq.ft"
-                    : product.unitOfSale === "litre"
-                    ? "Litres"
-                    : product.unitOfSale === "coil"
-                    ? "Coils"
-                    : product.unitOfSale || "Units"}
-                  {calculatedPieces !== null ? ` (${calculatedPieces} Pieces)` : ""}
-                </Text>
-              </Text>
-              <Text style={styles.calcResultSub}>
-                Estimated: ₹{(calculatedBoxes * price).toLocaleString("en-IN")}
-              </Text>
-            </View>
-          )}
-        </View>
-      )}
 
       {/* Available Sizes, Finishes & Colour Swatches (Variants) */}
       {product.variants && product.variants.length > 0 && (
@@ -1258,72 +1169,7 @@ const styles = StyleSheet.create({
     color: COLORS.textMuted,
     marginTop: 6,
   },
-  calculatorCard: {
-    backgroundColor: "rgba(5, 42, 81, 0.04)",
-    margin: SPACING.md,
-    padding: SPACING.md,
-    borderRadius: RADIUS.md,
-    borderWidth: 1,
-    borderColor: "rgba(5, 42, 81, 0.1)",
-  },
-  calcHeader: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 6,
-    marginBottom: 4,
-  },
-  calcTitle: {
-    fontSize: 14,
-    fontWeight: "800",
-    color: COLORS.primary,
-  },
-  calcSub: {
-    fontSize: 11.5,
-    color: COLORS.textMuted,
-    marginBottom: 10,
-    lineHeight: 16,
-  },
-  calcInputRow: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 8,
-  },
-  calcInput: {
-    flex: 1,
-    backgroundColor: COLORS.surface,
-    borderWidth: 1,
-    borderColor: COLORS.border,
-    borderRadius: RADIUS.sm,
-    paddingHorizontal: 12,
-    paddingVertical: 8,
-    fontSize: 14,
-    fontWeight: "700",
-    color: COLORS.text,
-  },
-  calcUnit: {
-    fontSize: 13,
-    fontWeight: "700",
-    color: COLORS.textSecondary,
-  },
-  calcResultBox: {
-    marginTop: 10,
-    paddingTop: 10,
-    borderTopWidth: 1,
-    borderTopColor: "rgba(5, 42, 81, 0.08)",
-  },
-  calcResultText: {
-    fontSize: 13,
-    color: COLORS.text,
-  },
-  boldPrimary: {
-    fontWeight: "800",
-    color: COLORS.primary,
-  },
-  calcResultSub: {
-    fontSize: 11.5,
-    color: COLORS.textMuted,
-    marginTop: 2,
-  },
+
   sectionCard: {
     backgroundColor: COLORS.surface,
     marginHorizontal: SPACING.md,

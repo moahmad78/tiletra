@@ -78,7 +78,7 @@ export default function Header() {
               <div className="flex items-center gap-4">
                 <span className="text-[#F26522] font-bold inline-flex items-center gap-1.5">
                   <Truck size={13} className="text-[#F26522]" />
-                  <span>Build Better, We Deliver Faster</span>
+                  <span>Every Material. Every Space.</span>
                 </span>
                 <span className="text-white/30">|</span>
                 <RotatingHeaderContact />

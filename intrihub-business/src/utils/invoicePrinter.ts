@@ -140,8 +140,8 @@ export function generateOrderInvoiceHtml(order: any, customSettings?: any): stri
   const sigText = settings.invoiceSignatureText || "INTRIHUB";
   const sigTitle = settings.invoiceSignatureTitle || "Authorized Signatory";
   const digitalBadge = settings.invoiceDigitalBadge || "✔ Digitally Signed";
-  const termsText = settings.invoiceTermsNotes || "• Computer-generated tax invoice verified by IntriHub.\n• Everything, Every Place • www.intrihub.com";
-  const footerTagline = settings.invoiceFooterTagline || "This is an official computer-generated tax invoice verified by IntriHub.";
+  const termsText = settings.invoiceTermsNotes || "• Computer-generated tax invoice verified by IntriHub.\n• Every Material. Every Space. • www.intrihub.com";
+  const footerTagline = settings.invoiceFooterTagline || "Every Material. Every Space. • This is an official computer-generated tax invoice verified by IntriHub.";
   const watermarkUrl = settings.invoiceWatermarkUrl || "https://www.intrihub.com/logo/intri-web-logo.png";
 
   const termsListHtml = termsText
@@ -401,7 +401,7 @@ export function generateOrderInvoiceHtml(order: any, customSettings?: any): stri
 
       <div class="footer">
         <div>${footerTagline}</div>
-        <div>Everything, Every Place • www.intrihub.com • Support: ${supportEmail}</div>
+        <div>Every Material. Every Space. • www.intrihub.com • Support: ${supportEmail}</div>
       </div>
     </div>
   </div>

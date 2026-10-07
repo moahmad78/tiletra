@@ -350,7 +350,7 @@ export function getInvoiceHtml(order: any): string {
         <div style="font-size: 11px; color: #64748b; line-height: 16px; max-width: 340px;">
           <div style="font-weight: 700; color: #0f172a; margin-bottom: 2px;">Terms & Notes:</div>
           <div>• Computer-generated tax invoice verified by IntriHub.</div>
-          <div>• Everything, Every Place • www.intrihub.com</div>
+          <div>• Every Material. Every Space. • www.intrihub.com</div>
         </div>
 
         <div style="text-align: right;">
@@ -381,7 +381,7 @@ export function getInvoiceHtml(order: any): string {
 
       <div class="footer">
         <div>This is an official computer-generated tax invoice verified by IntriHub.</div>
-        <div>Everything, Every Place • www.intrihub.com • Support: support@intrihub.com</div>
+        <div>Every Material. Every Space. • www.intrihub.com • Support: support@intrihub.com</div>
       </div>
     </div>
   </div>

@@ -53,7 +53,7 @@ export function generateRootGraphSchema() {
           "India's First Local Trade Digitalizer",
         ],
         legalName: "IntriHub Quickcommerce",
-        slogan: "India's First Company Digitalizing Local Markets & Traditional Trades",
+        slogan: "Every Material. Every Space.",
         url: BASE_SITE_URL,
         logo: `${BASE_SITE_URL}/logo/intri-web-logo.png`,
         image: `${BASE_SITE_URL}/og-image.png`,
@@ -206,7 +206,7 @@ export function generateOrganizationSchema() {
       "India's First Local Trade Digitalizer",
     ],
     legalName: "IntriHub Quickcommerce",
-    slogan: "India's First Company Digitalizing Local Markets & Traditional Trades",
+    slogan: "Every Material. Every Space.",
     url: BASE_SITE_URL,
     logo: `${BASE_SITE_URL}/logo/intri-web-logo.png`,
     image: `${BASE_SITE_URL}/og-image.png`,
@@ -267,7 +267,7 @@ export function generateWebSiteSchema() {
       "IntriHub Marketplace",
     ],
     description:
-      "Intrihub is India's instant building materials and interior supplies quick-commerce marketplace with direct factory site delivery.",
+      "IntriHub — Every Material. Every Space. India's instant building materials and interior supplies quick-commerce marketplace with direct factory site delivery.",
     publisher: {
       "@id": `${BASE_SITE_URL}/#organization`,
     },

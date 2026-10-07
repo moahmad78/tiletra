@@ -2,7 +2,6 @@
 
 import { useState, useEffect } from "react";
 import Link from "next/link";
-import { motion } from "framer-motion";
 import { Star, Heart, ShoppingBag } from "lucide-react";
 import { type Product } from "@/lib/data/products";
 import { getProductPriceInfo } from "@/lib/formatters";
@@ -19,10 +18,10 @@ export default function ProductCard({
   priority?: boolean;
 }) {
   const [mounted, setMounted] = useState(false);
-  const { addItem } = useCartStore();
-  const { isWishlisted, toggleWishlist } = useWishlistStore();
+  const addItem = useCartStore((s) => s.addItem);
+  const wishlisted = useWishlistStore((s) => s.items.some((p) => p.id === product.id));
+  const toggleWishlist = useWishlistStore((s) => s.toggleWishlist);
   const defaultVariant = product.variants[0];
-  const wishlisted = isWishlisted(product.id);
   const productImg = product.images && product.images[0] ? product.images[0] : null;
 
   useEffect(() => {
@@ -43,13 +42,11 @@ export default function ProductCard({
   };
 
   return (
-    <motion.div
-      whileHover={{ y: -4 }}
-      transition={{ duration: 0.25 }}
-      className="group bg-white rounded-2xl overflow-hidden border border-gray-100 shadow-sm hover:shadow-xl transition-all duration-300 flex flex-col justify-between"
+    <div
+      className="group bg-white rounded-2xl overflow-hidden border border-gray-100 shadow-sm hover:shadow-xl hover:-translate-y-1 transition-[transform,box-shadow] duration-200 ease-out flex flex-col justify-between"
     >
       <div className="relative">
-        <Link href={`/product/${product.slug}`} aria-label={`View ${product.name} details`} className="block">
+        <Link href={`/product/${product.slug}`} aria-label={`View ${product.name} details`} className="block" prefetch={false}>
           <div className="relative aspect-square w-full overflow-hidden bg-gray-100">
             <SafeImage
               src={productImg}
@@ -57,7 +54,7 @@ export default function ProductCard({
               alt={product.name}
               fill
               priority={priority}
-              className="object-cover transition-transform duration-500 group-hover:scale-110"
+              className="object-cover transition-transform duration-300 group-hover:scale-105 pointer-events-none select-none"
               sizes="(max-width: 640px) 50vw, (max-width: 1024px) 33vw, 300px"
             />
             {/* Badges */}
@@ -102,7 +99,7 @@ export default function ProductCard({
 
       <div className="p-4 flex-1 flex flex-col justify-between">
         <div>
-          <Link href={`/product/${product.slug}`}>
+          <Link href={`/product/${product.slug}`} prefetch={false}>
             <h3 className="font-bold text-[#052a51] text-[14px] leading-tight hover:text-[#F26522] transition-colors line-clamp-1">
               {product.name}
             </h3>
@@ -190,6 +187,6 @@ export default function ProductCard({
           </button>
         </div>
       </div>
-    </motion.div>
+    </div>
   );
 }

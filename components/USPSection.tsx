@@ -42,7 +42,7 @@ const TOP_20_USPS: USPItem[] = [
   {
     number: 1,
     icon: Building2,
-    title: "Everything for Every Space",
+    title: "Every Material. Every Space.",
     hindiTitle: "Complete Space Solutions",
     description:
       "Construction, renovation aur interiors ke liye ek hi complete platform — structural foundation se lekar luxury decorative finishes tak.",

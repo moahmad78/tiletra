@@ -11,6 +11,7 @@ import {
 import { deleteProduct, updateProduct } from "@/lib/actions/products";
 import { getActiveCpoWorkspaceStatus, selectCpoVendor } from "@/lib/cpo/auth";
 import ImageUploadManager from "@/components/admin/ImageUploadManager";
+import CpoVendorChooserModal from "@/components/cpo/CpoVendorChooserModal";
 import {
   Package,
   Search,
@@ -65,6 +66,7 @@ function CpoCatalogContent() {
     vendorId?: string;
     vendorName?: string;
   }>({ active: false });
+  const [isChooserOpen, setIsChooserOpen] = useState(false);
 
   const loadData = async () => {
     setLoading(true);
@@ -239,7 +241,7 @@ function CpoCatalogContent() {
             <select
               value={selectedVendorFilter}
               onChange={(e) => handleVendorFilterChange(e.target.value)}
-              className="bg-gray-50 border border-gray-200 rounded-xl px-3 py-2 text-xs font-bold text-gray-900 focus:outline-none focus:border-[#F26522] focus:bg-white transition-all w-full md:w-64"
+              className="bg-gray-50 border border-gray-200 rounded-xl px-3 py-2 text-xs font-bold text-gray-900 focus:outline-none focus:border-[#F26522] focus:bg-white transition-all w-full md:w-64 cursor-pointer"
             >
               <option value="all">All Vendors ({vendors.length})</option>
               {vendors.map((v) => (
@@ -248,6 +250,14 @@ function CpoCatalogContent() {
                 </option>
               ))}
             </select>
+            <button
+              type="button"
+              onClick={() => setIsChooserOpen(true)}
+              className="p-2 rounded-xl bg-gray-100 hover:bg-[#F26522] hover:text-white text-gray-600 transition-colors cursor-pointer shrink-0"
+              title="Search and select vendor"
+            >
+              <Search className="w-3.5 h-3.5" />
+            </button>
           </div>
 
           {/* Search Form */}
@@ -586,7 +596,7 @@ function CpoCatalogContent() {
                 images={reuploadImages}
                 onChange={setReuploadImages}
                 onUploadingChange={setIsReuploading}
-                vendorId={reuploadProduct.vendorId}
+                vendorId={reuploadProduct.vendorId || workspace.vendorId || null}
               />
             </div>
 
@@ -621,6 +631,14 @@ function CpoCatalogContent() {
           </div>
         </div>
       )}
+
+      {/* Vendor Chooser Modal for Top Bar & Quick Switch */}
+      <CpoVendorChooserModal
+        isOpen={isChooserOpen}
+        onClose={() => setIsChooserOpen(false)}
+        currentVendorId={selectedVendorFilter === "all" ? workspace.vendorId : selectedVendorFilter}
+        onSelectVendor={(vId) => handleVendorFilterChange(vId)}
+      />
     </div>
   );
 }

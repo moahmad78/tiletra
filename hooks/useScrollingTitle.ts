@@ -40,7 +40,7 @@ export function useScrollingTitle(intervalMs = 450) {
         rawTitle = rawTitle.split('   •   ')[0].trim();
       }
 
-      let base = rawTitle || 'IntriHub — Build Better, We Deliver Faster';
+      let base = rawTitle || 'IntriHub — Every Material. Every Space.';
       base = base.replace(/wholesale/gi, 'Best Rates');
       originalTitleRef.current = base;
 

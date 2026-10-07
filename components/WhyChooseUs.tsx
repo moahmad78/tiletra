@@ -16,7 +16,7 @@ import SectionHeader from "./SectionHeader";
 
 export default function WhyChooseUs() {
   const features = [
-    { title: "Everything for Every Space", icon: Building2 },
+    { title: "Every Material. Every Space.", icon: Building2 },
     { title: "Multi-Vendor Marketplace", icon: Store },
     { title: "Direct-to-Site 60-Min Delivery", icon: Truck },
     { title: "Smart Quantity Box Calculator", icon: Calculator },

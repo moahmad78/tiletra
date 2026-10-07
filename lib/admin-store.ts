@@ -329,8 +329,8 @@ export const useAdminStore = create<AdminStore>()(
       offerBanners: SEED_OFFER_BANNERS,
       heroContent: {
         badge: "Free delivery above ₹15,000",
-        headline: "Quality Tiles. Strong Spaces.",
-        subheadline: "Discover 200+ premium floor, wall, bathroom & kitchen tiles. Browse by room, choose your size & finish, and order directly to your door.",
+        headline: "Every Material. Every Space.",
+        subheadline: "India's premier interior & construction supply platform — tiles, electrical, plumbing, hardware & finishes delivered directly to your site.",
         ctaText: "Shop All Tiles",
         ctaHref: "/shop",
         secondaryCtaText: "Explore Catalog",

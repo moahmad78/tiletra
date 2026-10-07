@@ -22,10 +22,10 @@ export default function CompactProductCard({
 }) {
   const [mounted, setMounted] = useState(false);
   const [justAdded, setJustAdded] = useState(false);
-  const { addItem } = useCartStore();
-  const { isWishlisted, toggleWishlist } = useWishlistStore();
+  const addItem = useCartStore((s) => s.addItem);
+  const wishlisted = useWishlistStore((s) => s.items.some((p) => p.id === product.id));
+  const toggleWishlist = useWishlistStore((s) => s.toggleWishlist);
   const defaultVariant = product.variants[0];
-  const wishlisted = isWishlisted(product.id);
   const productImg = product.images?.[0] || null;
 
   useEffect(() => {
@@ -56,14 +56,14 @@ export default function CompactProductCard({
     >
       {/* Top Image Container */}
       <div className="relative">
-        <Link href={`/product/${product.slug}`} aria-label={`View ${product.name} details`} className="block relative aspect-square w-full bg-gray-50 overflow-hidden">
+        <Link href={`/product/${product.slug}`} aria-label={`View ${product.name} details`} className="block relative aspect-square w-full bg-gray-50 overflow-hidden" prefetch={false}>
           <SafeImage
             src={productImg}
             variantSize={400}
             alt={product.name}
             fill
             priority={priority}
-            className="object-cover transition-transform duration-300 hover:scale-105"
+            className="object-cover transition-transform duration-300 hover:scale-105 pointer-events-none select-none"
             sizes="(max-width: 640px) 50vw, (max-width: 1024px) 33vw, 220px"
           />
           {/* Badge */}

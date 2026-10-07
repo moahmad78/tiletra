@@ -32,14 +32,14 @@ export default function IntrihubBrandSEOSection() {
     <>
       {/* ── Semantic Crawlable HTML Structure for Search Engines (Visually Hidden via sr-only) ── */}
       <section className="sr-only" aria-hidden="false" aria-label="About IntriHub Building Materials Ecosystem">
-        <h2>About IntriHub: One Platform → Every Material → One Order → Direct to Site</h2>
+        <h2>About IntriHub: Every Material. Every Space. — Direct to Site</h2>
         <p>
-          Welcome to IntriHub, India&apos;s premier digital procurement platform and multi-vendor marketplace for construction, renovation, and interiors. Our core positioning is simple: &ldquo;One Platform for Complete Construction &amp; Interior Procurement — From Material Discovery to Site Delivery.&rdquo; From one screw to a complete turnkey project, IntriHub connects verified Bengaluru suppliers and tier-1 factories to deliver factory-direct building materials straight to your active construction site in under 60 minutes.
+          Welcome to IntriHub, India&apos;s premier digital procurement platform and multi-vendor marketplace for construction, renovation, and interiors. Our official brand slogan and mission is: &ldquo;Every Material. Every Space.&rdquo; From one screw to a complete turnkey project, IntriHub connects verified Bengaluru suppliers and tier-1 factories to deliver factory-direct building materials straight to your active construction site in under 60 minutes.
         </p>
 
         <h3>IntriHub Top USPs: Why Contractors, Builders &amp; Homeowners Choose IntriHub</h3>
         <p>
-          As India&apos;s first multi-category quick-commerce building materials ecosystem, IntriHub provides 20 distinct advantages: everything for every space, 20+ building material categories, multi-vendor marketplace in Bengaluru, single consolidated order for multiple materials, direct-to-site padded delivery, 60-minute express dispatch, location-based vendor discovery, real-time live stock visibility, transparent factory and local market pricing, contractor-tailored workflows, enterprise builder procurement, homeowner-friendly visual shopping, smart quantity &amp; box calculators, project-based shopping bundles, 1-click repeat reordering, comprehensive screw-to-structure coverage, unified vendor portal tools, digital empowerment for local dealers, automated GST billing, and a seamless phygital online-offline bridge.
+          As India&apos;s first multi-category quick-commerce building materials ecosystem, IntriHub provides 20 distinct advantages: every material for every space, 20+ building material categories, multi-vendor marketplace in Bengaluru, single consolidated order for multiple materials, direct-to-site padded delivery, 60-minute express dispatch, location-based vendor discovery, real-time live stock visibility, transparent factory and local market pricing, contractor-tailored workflows, enterprise builder procurement, homeowner-friendly visual shopping, smart quantity &amp; box calculators, project-based shopping bundles, 1-click repeat reordering, comprehensive screw-to-structure coverage, unified vendor portal tools, digital empowerment for local dealers, automated GST billing, and a seamless phygital online-offline bridge.
         </p>
 
         <div>

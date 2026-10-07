@@ -383,7 +383,7 @@ export default function EditProductPage({
       {/* ── Section 3: Photo Gallery ── */}
       <div className="bg-white p-6 rounded-2xl border border-gray-200/80 shadow-2xs space-y-4">
         <h3 className="text-base font-black text-[#052a51]">3. Product Photography</h3>
-        <ImageUploadManager images={images} onChange={setImages} />
+        <ImageUploadManager images={images} onChange={setImages} vendorId={product?.vendorId || null} />
       </div>
 
       {/* ── Section 4: Variants, Sizes & Pricing ── */}
@@ -397,7 +397,7 @@ export default function EditProductPage({
           vendorId={product.vendorId}
         />
 
-        {/* Coverage & Smart Calculator Configuration */}
+        {/* Coverage & Packaging Specifications */}
         <div className={`grid grid-cols-1 ${unitOfSale === "box" ? "sm:grid-cols-3" : "sm:grid-cols-2"} gap-4 pt-4 border-t border-gray-100`}>
           <div>
             <label className="text-xs font-bold text-[#052a51] uppercase tracking-wider block mb-1.5 flex justify-between">
@@ -416,7 +416,7 @@ export default function EditProductPage({
                   ? "Direct Area Unit (1:1 sq.ft)"
                   : "Coverage / Yield per Unit"}
               </span>
-              <span className="text-[10px] text-gray-400 font-normal">Powers Calculator</span>
+              <span className="text-[10px] text-gray-400 font-normal">Packaging Specs</span>
             </label>
             <input
               type="number"
@@ -450,7 +450,7 @@ export default function EditProductPage({
                 ? "Sq.ft covered per roll (e.g. 57 for wallpaper)"
                 : unitOfSale === "kg"
                 ? "Sq.ft covered per kg (e.g. 20 for tile adhesive/putty)"
-                : "Leave empty if product does not require calculator"}
+                : "Leave empty if not applicable"}
             </p>
           </div>
 

@@ -243,7 +243,7 @@ export default function ProfileScreen() {
             <View style={styles.menuLeft}>
               <Globe size={20} color={COLORS.primary} />
               <View style={{ marginLeft: 12 }}>
-                <Text style={styles.menuLabel}>{t("profile.language") || "App Language"}</Text>
+                <Text style={styles.menuLabel}>{t("nav.language") || "Language"}</Text>
                 <Text style={styles.supportSubText}>
                   {currentLangObj ? `${currentLangObj.nativeName} (${currentLangObj.name})` : "English"}
                 </Text>
@@ -328,6 +328,7 @@ export default function ProfileScreen() {
         </View>
 
         <View style={styles.appInfo}>
+          <Text style={styles.taglineText}>Every Material. Every Space.</Text>
           <Text style={styles.versionText}>IntriHub Mobile v1.1.2 (Android)</Text>
           <Text style={styles.copyrightText}>© 2026 IntriHub. All Rights Reserved.</Text>
         </View>
@@ -650,6 +651,13 @@ const styles = StyleSheet.create({
     alignItems: "center",
     marginTop: 32,
     marginBottom: 40,
+  },
+  taglineText: {
+    fontSize: 12,
+    fontWeight: "800",
+    color: "#F26522",
+    marginBottom: 4,
+    letterSpacing: 0.3,
   },
   versionText: {
     fontSize: 11,

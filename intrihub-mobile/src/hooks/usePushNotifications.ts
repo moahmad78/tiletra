@@ -114,9 +114,23 @@ export function usePushNotifications() {
               }
             });
           } else if (data?.orderId) {
-            router.push(`/order/${String(data.orderId)}` as Parameters<typeof router.push>[0]);
+            const cleanOrderId = String(data.orderId).replace(/^[#\s]+/, "").trim();
+            router.push(`/order/${cleanOrderId}` as Parameters<typeof router.push>[0]);
+          } else if (data?.productId) {
+            router.push(`/product/${String(data.productId).trim()}` as Parameters<typeof router.push>[0]);
           } else if (data?.screen) {
             router.push(String(data.screen) as Parameters<typeof router.push>[0]);
+          } else if (data?.link && typeof data.link === "string") {
+            const cleanLink = data.link.trim();
+            const orderMatch = cleanLink.match(/\/orders?\/([a-zA-Z0-9_-]+)/i);
+            const prodMatch = cleanLink.match(/\/products?\/([a-zA-Z0-9_-]+)/i);
+            if (orderMatch && orderMatch[1]) {
+              router.push(`/order/${orderMatch[1]}` as Parameters<typeof router.push>[0]);
+            } else if (prodMatch && prodMatch[1]) {
+              router.push(`/product/${prodMatch[1]}` as Parameters<typeof router.push>[0]);
+            } else {
+              router.push("/notifications" as Parameters<typeof router.push>[0]);
+            }
           }
         } catch (e) {
           console.warn("[PushNotifications] Error handling notification response:", e);

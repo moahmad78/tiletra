@@ -189,8 +189,8 @@ export default function AdminAccountMasterHubScreen() {
   const [invSigText, setInvSigText] = useState("INTRIHUB");
   const [invSigTitle, setInvSigTitle] = useState("Authorized Signatory");
   const [invDigitalBadge, setInvDigitalBadge] = useState("✔ Digitally Signed");
-  const [invTermsNotes, setInvTermsNotes] = useState("• Computer-generated tax invoice verified by IntriHub.\n• Everything, Every Place • www.intrihub.com");
-  const [invFooterTagline, setInvFooterTagline] = useState("This is an official computer-generated tax invoice verified by IntriHub.");
+  const [invTermsNotes, setInvTermsNotes] = useState("• Computer-generated tax invoice verified by IntriHub.\n• Every Material. Every Space. • www.intrihub.com");
+  const [invFooterTagline, setInvFooterTagline] = useState("Every Material. Every Space. • This is an official computer-generated tax invoice verified by IntriHub.");
   const [invWatermarkUrl, setInvWatermarkUrl] = useState("https://www.intrihub.com/logo/intri-web-logo.png");
 
   // Settlement Editing State
@@ -274,7 +274,7 @@ export default function AdminAccountMasterHubScreen() {
       setWebsiteLogo(s.websiteLogo || "");
       setAppIcon(s.appIcon || "");
       setHeroHeadline(s.heroHeadline || "Direct-From-Factory Building Materials");
-      setHeroTagline(s.heroTagline || "Tiles, Granites, Sanitaryware & Paints Delivered to Your Site");
+      setHeroTagline(s.heroTagline || "Every Material. Every Space.");
       setTrendingHeading(s.trendingHeading || "Trending Now");
       setTrendingCaption(s.trendingCaption || "Architect-approved curated designs for modern spaces");
       setBestsellersHeading(s.bestsellersHeading || "Bestseller Collections");

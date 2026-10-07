@@ -74,7 +74,7 @@
     "welcomeBack": "Welcome back"
   },
   "home": {
-    "heroTitle": "Everything for Every Space",
+    "heroTitle": "Every Material. Every Space.",
     "heroSubtitle": "Direct to Site Delivery within 60 Minutes across Bengaluru",
     "searchPlaceholder": "Search for tiles, sanitaryware, pipes, adhesives...",
     "expressDelivery": "Within 60 Minutes",
@@ -175,6 +175,9 @@
     "editProfile": "Edit Profile",
     "changePhoto": "Change Photo",
     "removePhoto": "Remove Photo"
+  },
+  "profile": {
+    "language": "Language"
   },
   "vendor": {
     "dashboard": "Seller Dashboard",

@@ -2,7 +2,7 @@
 
 ## 1. COMPANY OVERVIEW & IDENTITY
 - Brand Name: Intrihub (powered by Tiletra)
-- Slogan: Building India's Smartest Tiles, Sanitaryware & Construction Materials Marketplace
+- Slogan: Every Material. Every Space.
 - Official Website: https://www.intrihub.com
 - Customer App: Intrihub Mobile App (available on Android / Google Play Store & iOS Web)
 - Business & Vendor App: Intrihub Business App

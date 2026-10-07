@@ -88,7 +88,8 @@ export function SafeImage({
       onLoad={() => setIsLoaded(true)}
       priority={priority}
       sizes={sizes || "(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 33vw"}
-      className={`${className} ${!isLoaded ? "animate-pulse bg-slate-100 dark:bg-slate-800/60" : ""} transition-opacity duration-300`}
+      className={`${className} ${!isLoaded ? "bg-slate-100 dark:bg-slate-800/60 opacity-90" : "opacity-100"} transition-opacity duration-200`}
+      decoding="async"
       unoptimized
       {...rest}
     />

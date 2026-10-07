@@ -269,7 +269,7 @@ export default function OrderInvoiceModal({
               <div className="text-[11px] text-gray-500 leading-relaxed max-w-xs">
                 <p className="font-bold text-gray-800 mb-0.5">Terms & Notes:</p>
                 <p>• Computer-generated tax invoice verified by IntriHub.</p>
-                <p>• Everything, Every Place • www.intrihub.com</p>
+                <p>• Every Material. Every Space. • www.intrihub.com</p>
               </div>
 
               <div className="flex flex-col items-end space-y-3">
@@ -302,7 +302,7 @@ export default function OrderInvoiceModal({
             {/* Footer */}
             <div className="invoice-avoid-break mt-8 pt-4 border-t border-gray-100 text-center text-[10px] text-gray-400 space-y-0.5">
               <p>This is an official computer-generated tax invoice verified by IntriHub.</p>
-              <p>Everything, Every Place • www.intrihub.com • Support: support@intrihub.com</p>
+              <p>Every Material. Every Space. • www.intrihub.com • Support: support@intrihub.com</p>
             </div>
           </div>
         </div>

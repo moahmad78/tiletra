@@ -14,13 +14,12 @@ import {
 } from "react-native";
 import { useQuery, useInfiniteQuery } from "@tanstack/react-query";
 import { useRouter, useFocusEffect } from "expo-router";
-import { ArrowRight, TrendingUp, Award, Shield, CheckCircle2 } from "lucide-react-native";
+import { ArrowRight, TrendingUp, CheckCircle2 } from "lucide-react-native";
 import { Header } from "../../src/components/Header";
 import { BannerCarousel } from "../../src/components/BannerCarousel";
 import { CategoryGrid } from "../../src/components/CategoryGrid";
 import { ProductCard } from "../../src/components/ProductCard";
 import { AddressModal } from "../../src/components/AddressModal";
-import { NewUserWalkthroughModal } from "../../src/components/NewUserWalkthroughModal";
 import { getCategories, getProducts } from "../../src/api/products";
 import { COLORS, SPACING, RADIUS } from "../../src/constants/theme";
 import { Product } from "../../src/types";
@@ -170,20 +169,7 @@ export default function HomeScreen() {
         </View>
       )}
 
-      {/* Trust Badges */}
-      <View style={styles.trustBanner}>
-        <View style={styles.trustItem}>
-          <Shield size={20} color={COLORS.primary} />
-          <Text style={styles.trustTitle}>Everything, Every Place</Text>
-          <Text style={styles.trustSub}>India's top building & interior marketplace</Text>
-        </View>
-        <View style={styles.trustDivider} />
-        <View style={styles.trustItem}>
-          <Award size={20} color={COLORS.primary} />
-          <Text style={styles.trustTitle}>Verified Quality</Text>
-          <Text style={styles.trustSub}>100% genuine supplies</Text>
-        </View>
-      </View>
+
 
       {/* Infinite Product Catalog Section Title */}
       <View style={styles.sectionHeader}>
@@ -259,9 +245,6 @@ export default function HomeScreen() {
         onClose={() => setAddressModalVisible(false)}
         onSelectAddress={() => {}}
       />
-
-      {/* New User Guided Walkthrough Onboarding Tour */}
-      <NewUserWalkthroughModal />
     </View>
   );
 }
@@ -337,35 +320,7 @@ const styles = StyleSheet.create({
   horizontalProductList: {
     paddingHorizontal: SPACING.lg,
   },
-  trustBanner: {
-    flexDirection: "row",
-    backgroundColor: COLORS.surface,
-    borderRadius: RADIUS.md,
-    marginHorizontal: SPACING.lg,
-    marginVertical: SPACING.md,
-    padding: SPACING.md,
-    borderWidth: 1,
-    borderColor: COLORS.border,
-  },
-  trustItem: {
-    flex: 1,
-    alignItems: "center",
-  },
-  trustDivider: {
-    width: 1,
-    backgroundColor: COLORS.border,
-    marginVertical: 4,
-  },
-  trustTitle: {
-    fontSize: 12,
-    fontWeight: "700",
-    color: COLORS.primary,
-    marginTop: 4,
-  },
-  trustSub: {
-    fontSize: 10,
-    color: COLORS.textMuted,
-  },
+
   gridCardWrapper: {
     width: "50%",
     paddingHorizontal: 2,

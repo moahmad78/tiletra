@@ -550,7 +550,7 @@ export default function AnimatedSplashScreen({
           </View>
         </Animated.View>
 
-        {/* Tagline: "Build Better, We Deliver Faster" */}
+        {/* Tagline: "Every Material. Every Space." */}
         <Animated.View
           style={[
             styles.taglineWrapper,
@@ -561,8 +561,8 @@ export default function AnimatedSplashScreen({
           ]}
         >
           <Text style={styles.taglineText}>
-            <Text style={styles.taglineNavy}>Build Better, </Text>
-            <Text style={styles.taglineOrange}>We Deliver Faster</Text>
+            <Text style={styles.taglineNavy}>Every Material. </Text>
+            <Text style={styles.taglineOrange}>Every Space.</Text>
           </Text>
         </Animated.View>
 

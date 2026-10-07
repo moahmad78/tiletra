@@ -9,6 +9,8 @@ import type { Category } from "@/lib/data/categories";
 import { UNIT_OF_SALE_OPTIONS } from "@/lib/units";
 import ImageUploadManager from "@/components/admin/ImageUploadManager";
 import UnifiedVariantManager from "@/components/shared/UnifiedVariantManager";
+import CpoVendorChooserModal from "@/components/cpo/CpoVendorChooserModal";
+import { getActiveCpoWorkspaceStatus, selectCpoVendor } from "@/lib/cpo/auth";
 import {
   ArrowLeft,
   Plus,
@@ -18,6 +20,7 @@ import {
   Store,
   Layers,
   Sparkles,
+  RefreshCw,
 } from "lucide-react";
 import { toast } from "sonner";
 
@@ -33,6 +36,7 @@ export default function CpoEditProductPage() {
   const [vendorName, setVendorName] = useState<string | null>(null);
   const [vendorId, setVendorId] = useState<string | null>(null);
   const [hasVariants, setHasVariants] = useState(false);
+  const [isChooserOpen, setIsChooserOpen] = useState(false);
 
   // Form State
   const [name, setName] = useState("");
@@ -90,6 +94,12 @@ export default function CpoEditProductPage() {
           setWastagePercent(prod.wastageFactor ? String(Math.round((prod.wastageFactor - 1) * 100)) : "10");
           if (prod.vendorId) {
             setVendorId(prod.vendorId);
+          } else {
+            const ws = await getActiveCpoWorkspaceStatus();
+            if (ws.active && ws.vendorId) {
+              setVendorId(ws.vendorId);
+              setVendorName(ws.vendorName || null);
+            }
           }
           if (prod.vendor?.businessName) {
             setVendorName(prod.vendor.businessName);
@@ -281,12 +291,34 @@ export default function CpoEditProductPage() {
             </p>
           </div>
         </div>
-        {vendorName && (
-          <span className="hidden sm:inline-flex items-center gap-1.5 px-3 py-1 bg-[#052a51]/5 text-[#052a51] rounded-xl text-xs font-bold border border-[#052a51]/15">
-            <Store className="w-3.5 h-3.5 text-[#F26522]" />
-            <span>{vendorName}</span>
-          </span>
-        )}
+        <div className="flex items-center gap-2">
+          {vendorName ? (
+            <div className="flex items-center gap-2">
+              <span className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-[#052a51]/5 text-[#052a51] rounded-xl text-xs font-bold border border-[#052a51]/15">
+                <Store className="w-3.5 h-3.5 text-[#F26522]" />
+                <span>{vendorName}</span>
+              </span>
+              <button
+                type="button"
+                onClick={() => setIsChooserOpen(true)}
+                className="px-2.5 py-1.5 rounded-xl border border-gray-200 text-gray-600 hover:bg-gray-100 text-xs font-bold flex items-center gap-1 cursor-pointer transition-colors"
+                title="Switch vendor context"
+              >
+                <RefreshCw className="w-3 h-3 text-[#F26522]" />
+                <span>Switch</span>
+              </button>
+            </div>
+          ) : (
+            <button
+              type="button"
+              onClick={() => setIsChooserOpen(true)}
+              className="px-3.5 py-2 bg-[#F26522] hover:bg-[#d95a1e] text-white text-xs font-bold rounded-xl flex items-center gap-1.5 cursor-pointer shadow-xs transition-colors"
+            >
+              <Store className="w-3.5 h-3.5" />
+              <span>Select Vendor</span>
+            </button>
+          )}
+        </div>
       </div>
 
       <form onSubmit={handleSubmit} className="space-y-6">
@@ -461,10 +493,10 @@ export default function CpoEditProductPage() {
           unitOfSale={unitOfSale}
         />
 
-        {/* 4b. Calculator Settings */}
+        {/* 4b. Packaging Specifications */}
         <div className="bg-white rounded-3xl p-6 border border-gray-200/90 shadow-xs space-y-4">
           <h4 className="text-xs font-bold text-gray-700 uppercase tracking-wider">
-            Calculator &amp; Coverage Settings
+            Packaging &amp; Coverage Specifications
           </h4>
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 pt-1">
             <div>
@@ -546,6 +578,18 @@ export default function CpoEditProductPage() {
           </button>
         </div>
       </form>
+
+      {/* Vendor Chooser Modal */}
+      <CpoVendorChooserModal
+        isOpen={isChooserOpen}
+        onClose={() => setIsChooserOpen(false)}
+        currentVendorId={vendorId}
+        onSelectVendor={(vId, vName) => {
+          setVendorId(vId);
+          setVendorName(vName);
+          toast.success(`Assigned vendor "${vName}" for this editing session`);
+        }}
+      />
     </div>
   );
 }

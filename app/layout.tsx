@@ -61,11 +61,11 @@ export const metadata: Metadata = {
   metadataBase: new URL(BASE_SITE_URL),
   referrer: "no-referrer-when-downgrade",
   title: {
-    default: "IntriHub — India's First Platform Digitalizing Local Markets | Quick-Commerce",
+    default: "IntriHub — Every Material. Every Space. | Quick-Commerce",
     template: "%s | IntriHub",
   },
   description:
-    "Intrihub is India's first company founded by Sahil Sheikh to completely digitalize local markets, hardware stores, and traditional trades, helping them scale sales and bridge the gap with modern quick-commerce infrastructure.",
+    "IntriHub — Every Material. Every Space. Buy vitrified tiles, electrical, plumbing, sanitaryware, plywood & hardware online with fast site delivery across Bengaluru.",
   keywords: [
     "Intrihub",
     "IntriHub",
@@ -156,9 +156,9 @@ export const metadata: Metadata = {
   },
   manifest: "/site.webmanifest",
   openGraph: {
-    title: "Build Better, We Deliver Faster | IntriHub",
+    title: "Every Material. Every Space. | IntriHub",
     description:
-      "Buy tiles, electrical, plumbing, plywood, hardware & interior supplies online at best prices. Delivery across Bengaluru.",
+      "IntriHub — Every Material. Every Space. Buy vitrified tiles, electrical, plumbing, plywood, hardware & interior supplies online with instant doorstep site delivery.",
     type: "website",
     url: "https://www.intrihub.com/",
     siteName: "IntriHub",
@@ -168,15 +168,15 @@ export const metadata: Metadata = {
         url: `${BASE_SITE_URL}/og-image.png?v=2`,
         width: 1200,
         height: 630,
-        alt: "Build Better, We Deliver Faster | IntriHub — Instant Building & Interior Materials Delivery",
+        alt: "Every Material. Every Space. | IntriHub — Instant Building & Interior Materials Delivery",
       },
     ],
   },
   twitter: {
     card: "summary_large_image",
-    title: "Build Better, We Deliver Faster | IntriHub",
+    title: "Every Material. Every Space. | IntriHub",
     description:
-      "Buy tiles, electrical, plumbing, plywood, hardware & interior supplies online at best prices. Delivery across Bengaluru.",
+      "IntriHub — Every Material. Every Space. Buy vitrified tiles, electrical, plumbing, plywood, hardware & interior supplies online with instant doorstep site delivery.",
     images: [`${BASE_SITE_URL}/og-image.png?v=2`],
   },
 };
@@ -248,7 +248,7 @@ j=d.createElement(s),dl=l!='dataLayer'?'&l='+l:'';j.async=true;j.src=
           id="developer-credit"
           strategy="afterInteractive"
           dangerouslySetInnerHTML={{
-            __html: `console.log("%c🚀 Intrihub — Build Better, We Deliver Faster%c\\n✨ Founded & Developed by Sahil Sheikh (@sahil_sheikh78)\\n📸 Instagram: https://instagram.com/sahil_sheikh78\\n💼 Founder & CEO | Intrihub Supply Network", "background: #052a51; color: #F26522; font-size: 14px; font-weight: 900; padding: 6px 12px; border-radius: 6px;", "color: #052a51; font-size: 12px; font-weight: 700; line-height: 1.6;");`,
+            __html: `console.log("%c🚀 Intrihub — Every Material. Every Space.%c\\n✨ Founded & Developed by Sahil Sheikh (@sahil_sheikh78)\\n📸 Instagram: https://instagram.com/sahil_sheikh78\\n💼 Founder & CEO | Intrihub Supply Network", "background: #052a51; color: #F26522; font-size: 14px; font-weight: 900; padding: 6px 12px; border-radius: 6px;", "color: #052a51; font-size: 12px; font-weight: 700; line-height: 1.6;");`,
           }}
         />
 

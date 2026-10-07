@@ -9,7 +9,7 @@ This document provides the complete, production-ready **App Store Optimization (
 | Field | Max Limit | Recommended Copy | Keyword Targets |
 |---|---|---|---|
 | **App Title** | 30 chars | `IntriHub: Building Materials` | `IntriHub`, `Building Materials`, `Delivery` |
-| **Short Description** | 80 chars | `Buy tiles, plumbing, electrical & building materials online. 60-min site delivery!` | `building materials`, `tiles`, `plumbing`, `electrical`, `60-min delivery` |
+| **Short Description** | 80 chars | `Every Material. Every Space. 60-min building materials site delivery!` | `Every Material. Every Space.`, `building materials`, `60-min delivery` |
 | **Category** | — | `Shopping` / `Business` | — |
 | **Content Rating** | — | `Rated for 3+` (Everyone) | — |
 
@@ -73,7 +73,7 @@ Have a custom Bill of Quantities (BOQ) or bulk order?
 • <b>Website:</b> https://www.intrihub.com
 • <b>Support:</b> support@intrihub.com
 
-Download the <b>IntriHub App</b> today — <i>Build Better, We Deliver Faster!</i>
+Download the <b>IntriHub App</b> today — <i>Every Material. Every Space.!</i>
 ```
 
 ---

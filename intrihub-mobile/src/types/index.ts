@@ -255,6 +255,9 @@ export interface AppNotification {
   type: string; // "order_status" | "order" | "offer" | "promo" | "general" | "info"
   isRead: boolean;
   link?: string | null;
+  image?: string | null;
+  orderId?: string | null;
+  productId?: string | null;
   createdAt: string;
 }
 

@@ -200,7 +200,7 @@ export default function Footer() {
               </Link>
             </div>
             <p className="text-xs sm:text-sm leading-relaxed mb-4 text-white/80">
-              <strong className="text-white">Build Better, We Deliver Faster.</strong> India&apos;s complete interior &amp; construction supply platform — tiles, electrical, plumbing, hardware, plywood, granite, aluminum doors &amp; wallpaper delivered directly to your site.
+              <strong className="text-white">Every Material. Every Space.</strong> India&apos;s complete interior &amp; construction supply platform — tiles, electrical, plumbing, hardware, plywood, granite, aluminum doors &amp; wallpaper delivered directly to your site.
             </p>
             {/* Free delivery badge */}
             <div className="inline-flex items-center gap-2 px-3 py-1.5 bg-[#F26522]/20 border border-[#F26522]/30 rounded-full text-[#F26522] text-xs font-bold mb-3">

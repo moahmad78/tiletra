@@ -197,7 +197,7 @@ const INITIAL_INVOICE: InvoiceData = {
   taxMode: "exclusive",
   isInterState: false,
 
-  terms: "1. Computer-generated official tax invoice verified by IntriHub.\n2. Goods once delivered cannot be returned without physical QC verification.\n3. All disputes subject to Bengaluru jurisdiction.\n4. Issued under Rule 46 of the CGST Rules, 2017.",
+  terms: "1. Computer-generated official tax invoice verified by IntriHub.\n2. Goods once delivered cannot be returned without physical QC verification.\n3. All disputes subject to Bengaluru jurisdiction.\n4. Every Material. Every Space. • www.intrihub.com\n5. Issued under Rule 46 of the CGST Rules, 2017.",
   notes: "Direct-to-site express delivery completed via IntriHub heavy cargo fleet.",
   showSignature: true,
 };
@@ -719,7 +719,7 @@ Discount: ₹${discount.toLocaleString("en-IN")}
 *Grand Total: ₹${grandTotal.toLocaleString("en-IN")}*
 Status: ${invoice.paymentStatus} (${invoice.paymentMethod})
 
-Everything, Every Place • www.intrihub.com`;
+Every Material. Every Space. • www.intrihub.com`;
 
     navigator.clipboard.writeText(summary);
     setCopied(true);
@@ -1843,7 +1843,7 @@ Everything, Every Place • www.intrihub.com`;
                 <div className="invoice-avoid-break pt-2 border-t border-slate-200 text-center text-[9px] text-gray-400 space-y-0.5">
                   <p>Tax Invoice issued under Rule 46 of the Central Goods and Services Tax Rules, 2017.</p>
                   <p>
-                    IntriHub Quick-Commerce Pvt Ltd • Begur, Bommanahalli, Bengaluru 560068 • CIN: U74999KA2024PTC189211 • www.intrihub.com
+                    Every Material. Every Space. • IntriHub Quick-Commerce Pvt Ltd • Begur, Bommanahalli, Bengaluru 560068 • www.intrihub.com
                   </p>
                 </div>
               </div>

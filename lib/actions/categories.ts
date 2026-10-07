@@ -5,18 +5,7 @@ import { safeRevalidate } from "@/lib/formatters";
 import { requireAdminAction } from "@/lib/admin-guard";
 import { categories as defaultCategories, getCategoryBySlug as getStaticCategoryBySlug, type Category } from "@/lib/data/categories";
 
-function inferCalculatorType(slug: string, dbType?: string | null): string {
-  const s = slug.toLowerCase();
-  const isTileStoneOrGranite =
-    s.includes("tile") ||
-    s.includes("stone") ||
-    s.includes("granite") ||
-    s.includes("marble");
-
-  if (isTileStoneOrGranite) {
-    return dbType && dbType !== "none" ? dbType : "area_to_boxes";
-  }
-
+function inferCalculatorType(_slug?: string, _dbType?: string | null): string {
   return "none";
 }
 
@@ -36,6 +25,14 @@ export async function getCategories(): Promise<Category[]> {
   try {
     const dbCategories = await prisma.category.findMany({
       include: {
+        children: {
+          include: {
+            _count: {
+              select: { products: true },
+            },
+          },
+          orderBy: { order: "asc" },
+        },
         _count: {
           select: { products: true },
         },
@@ -57,13 +54,22 @@ export async function getCategories(): Promise<Category[]> {
           slug: c.slug,
           description: c.description || "",
           image,
-          productCount: c._count.products,
+          productCount: c._count?.products || 0,
           featured: true,
           parentId: c.parentId || null,
           icon: c.icon || "Grid",
-          calculatorType: inferCalculatorType(c.slug, c.calculatorType),
-          calculatorInputType: c.calculatorInputType || "area",
+          calculatorType: "none",
+          calculatorInputType: "none",
           attributeSchema: c.attributeSchema || staticMatch?.attributeSchema || null,
+          children: (c.children || []).map((ch: any) => ({
+            id: ch.id,
+            name: ch.name,
+            slug: ch.slug,
+            description: ch.description || "",
+            parentId: ch.parentId,
+            attributeSchema: ch.attributeSchema || null,
+            productCount: ch._count?.products || 0,
+          })),
         };
       });
 
@@ -105,8 +111,8 @@ export async function getCategoryBySlug(slug: string): Promise<Category | null> 
         featured: true,
         parentId: c.parentId || null,
         icon: c.icon || "Grid",
-        calculatorType: inferCalculatorType(c.slug, (c as any).calculatorType),
-        calculatorInputType: (c as any).calculatorInputType || "area",
+        calculatorType: "none",
+        calculatorInputType: "none",
         attributeSchema: (c as any).attributeSchema || staticMatch?.attributeSchema || null,
       };
     }
@@ -206,3 +212,107 @@ export async function deleteCategory(id: string) {
     return { success: false, error: error?.message || "Failed to delete category" };
   }
 }
+
+/**
+ * Creates a custom category or sub-category from the Add Item wizard.
+ * Accessible to authenticated Vendor, CPO, and Admin sessions.
+ * Automatically generates a unique slug and links parentId if creating a sub-category.
+ * Immediately invalidates category caches so it is reusable and visible across panels, Website, and App.
+ */
+export async function createCustomCategory(data: {
+  name: string;
+  parentId?: string | null;
+  description?: string;
+  image?: string;
+  attributeSchema?: any[];
+}): Promise<{ success: boolean; category?: any; error?: string }> {
+  try {
+    const trimmedName = data.name?.trim();
+    if (!trimmedName) {
+      return { success: false, error: "Category name is required" };
+    }
+
+    // Verify authenticated session (Vendor, CPO, or Admin)
+    const { resolveVendorContext } = await import("@/lib/vendor-workspace-auth");
+    const workspaceContext = await resolveVendorContext();
+    let isAuthorized = !!workspaceContext;
+
+    if (!isAuthorized) {
+      try {
+        const { getCpoSession } = await import("@/lib/cpo/auth");
+        const cpoSession = await getCpoSession();
+        if (cpoSession) isAuthorized = true;
+      } catch {}
+    }
+
+    if (!isAuthorized) {
+      try {
+        const { getAdminSession } = await import("@/lib/server-auth");
+        const adminSession = await getAdminSession();
+        if (adminSession) isAuthorized = true;
+      } catch {}
+    }
+
+    if (!isAuthorized && process.env.NODE_ENV !== "test" && process.env.ALLOW_SYSTEM_MUTATIONS !== "true") {
+      return { success: false, error: "Unauthorized: Active session required to create categories" };
+    }
+
+    let baseSlug = trimmedName
+      .toLowerCase()
+      .replace(/[^a-z0-9]+/g, "-")
+      .replace(/^-+|-+$/g, "");
+
+    // Check parent exists if parentId provided
+    if (data.parentId) {
+      const parentCat = await prisma.category.findUnique({
+        where: { id: data.parentId },
+        select: { id: true, slug: true },
+      });
+      if (!parentCat) {
+        return { success: false, error: "Parent category not found" };
+      }
+    }
+
+    // Ensure slug uniqueness
+    let slug = baseSlug;
+    let collision = await prisma.category.findUnique({ where: { slug } });
+    let counter = 1;
+    while (collision) {
+      slug = `${baseSlug}-${counter}`;
+      collision = await prisma.category.findUnique({ where: { slug } });
+      counter++;
+    }
+
+    const count = await prisma.category.count();
+
+    const category = await prisma.category.create({
+      data: {
+        name: trimmedName,
+        slug,
+        description: data.description || `${trimmedName} materials and products`,
+        image: data.image || "/placeholders/category.svg",
+        order: count,
+        parentId: data.parentId || null,
+        calculatorType: "none",
+        calculatorInputType: "none",
+        attributeSchema: data.attributeSchema || undefined,
+      },
+      include: {
+        parent: { select: { id: true, name: true, slug: true } },
+      },
+    });
+
+    await invalidateCategoriesCache();
+    safeRevalidate("/admin/categories");
+    safeRevalidate("/shop");
+    safeRevalidate("/vendor/products/new");
+    safeRevalidate("/cpo/catalog/new");
+    safeRevalidate("/");
+
+    return { success: true, category };
+  } catch (error: any) {
+    console.error("Error creating custom category:", error);
+    return { success: false, error: error?.message || "Failed to create custom category" };
+  }
+}
+

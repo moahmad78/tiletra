@@ -183,7 +183,7 @@ export default function AdminHeader({
             {getPageTitle()}
           </h1>
           <p className="text-[11px] text-gray-400 hidden sm:block">
-            Intrihub Operations & Store Management
+            Every Material. Every Space. • Store Management
           </p>
         </div>
       </div>

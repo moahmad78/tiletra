@@ -8,11 +8,19 @@ export async function OPTIONS() {
 
 export async function GET(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   try {
-    const { id } = await params;
+    const rawId = decodeURIComponent((await params).id || "").trim();
+    const cleanId = rawId.replace(/^[#\s]+/, "");
     const user = await getAuthenticatedMobileUser(req);
 
-    const order = await prisma.order.findUnique({
-      where: { id },
+    const order = await prisma.order.findFirst({
+      where: {
+        OR: [
+          { id: cleanId },
+          { id: rawId },
+          { id: `#${cleanId}` },
+          { id: { equals: cleanId, mode: "insensitive" } },
+        ],
+      },
       include: {
         items: {
           include: {
@@ -35,7 +43,7 @@ export async function GET(req: NextRequest, { params }: { params: Promise<{ id: 
     }
 
     const vendorSplits = await prisma.vendorOrderSplit.findMany({
-      where: { orderId: id },
+      where: { orderId: order.id },
       include: {
         vendor: {
           select: {

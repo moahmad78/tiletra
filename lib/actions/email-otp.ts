@@ -246,7 +246,7 @@ export async function sendEmailOtp(
       title: "Your Login Verification Code",
       desc: "Use the 6-digit code below to securely sign into your Intrihub account.",
       expire: `⏱ This code will expire in <strong>${OTP_EXPIRY_MINUTES} minutes</strong>.<br />For security, never share this code with anyone.`,
-      note: "Build Better, We Deliver Faster",
+      note: "Every Material. Every Space.",
       footer: "If you did not request this verification code, you can safely ignore this email.",
     },
     hi: {
@@ -254,7 +254,7 @@ export async function sendEmailOtp(
       title: "लॉगिन सत्यापन कोड",
       desc: "अपने Intrihub खाते में सुरक्षित रूप से साइन इन करने के लिए नीचे दिए गए 6-अंकों के कोड का उपयोग करें।",
       expire: `⏱ यह कोड <strong>${OTP_EXPIRY_MINUTES} मिनट</strong> में समाप्त हो जाएगा।<br />सुरक्षा के लिए, यह कोड कभी किसी के साथ साझा न करें।`,
-      note: "बेहतरीन निर्माण, सबसे तेज डिलीवरी",
+      note: "हर सामग्री। हर स्पेस।",
       footer: "यदि आपने इस सत्यापन कोड का अनुरोध नहीं किया है, तो आप इस ईमेल को अनदेखा कर सकते हैं।",
     },
     kn: {
@@ -262,7 +262,7 @@ export async function sendEmailOtp(
       title: "ಲಾಗಿನ್ ಪರಿಶೀಲನಾ ಕೋಡ್",
       desc: "ನಿಮ್ಮ Intrihub ಖಾತೆಗೆ ಸುರಕ್ಷಿತವಾಗಿ ಸೈನ್ ಇನ್ ಮಾಡಲು ಕೆಳಗಿನ 6-ಅಂಕಿಯ ಕೋಡ್ ಬಳಸಿ.",
       expire: `⏱ ಈ ಕೋಡ್ <strong>${OTP_EXPIRY_MINUTES} ನಿಮಿಷಗಳಲ್ಲಿ</strong> ಮುಕ್ತಾಯಗೊಳ್ಳುತ್ತದೆ.<br />ಭದ್ರತೆಗಾಗಿ, ಈ ಕೋಡ್ ಅನ್ನು ಯಾರೊಂದಿಗೂ ಹಂಚಿಕೊಳ್ಳಬೇಡಿ.`,
-      note: "ಉತ್ತಮ ನಿರ್ಮಾಣ, ವೇಗದ ವಿತರಣೆ",
+      note: "ಪ್ರತಿ ಸಾಮಗ್ರಿ. ಪ್ರತಿ ಜಾಗ.",
       footer: "ನೀವು ಈ ಪರಿಶೀಲನಾ ಕೋಡ್ ಅನ್ನು ವಿನಂತಿಸದಿದ್ದರೆ, ಈ ಇಮೇಲ್ ಅನ್ನು ನಿರ್ಲಕ್ಷಿಸಬಹುದು.",
     },
   };

@@ -238,7 +238,7 @@ export default function HelpDeskPage() {
               </Link>
               <div className="pt-1">
                 <p className="text-xs font-black text-[#F26522] uppercase tracking-wider">
-                  Build Better, We Deliver Faster
+                  Every Material. Every Space.
                 </p>
                 <h1 className="text-xl font-extrabold text-[#052a51] tracking-tight flex items-center justify-center gap-2 mt-2">
                   <Headphones className="h-5 w-5 text-[#F26522]" />

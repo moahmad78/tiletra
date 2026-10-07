@@ -100,38 +100,63 @@ export default function CartScreen() {
         <View style={styles.itemsList}>
           {items.map((item) => {
             const mainImage = getImageUrl(item.product.images?.[0]);
+            const targetProductId = item.product.slug || item.product.id;
+            const handleNavigate = () => {
+              if (targetProductId) {
+                router.push({
+                  pathname: "/product/[id]",
+                  params: { id: targetProductId },
+                });
+              }
+            };
+
             return (
               <View key={item.id} style={[styles.itemCard, SHADOWS.sm]}>
-                <Image
-                  source={{ uri: mainImage }}
-                  style={styles.itemImage}
-                  contentFit="cover"
-                />
+                <TouchableOpacity
+                  onPress={handleNavigate}
+                  activeOpacity={0.8}
+                >
+                  <Image
+                    source={{ uri: mainImage }}
+                    style={styles.itemImage}
+                    contentFit="cover"
+                  />
+                </TouchableOpacity>
 
                 <View style={styles.itemInfo}>
                   <View style={styles.itemTopRow}>
-                    <Text style={styles.itemTitle} numberOfLines={1}>
-                      {item.product.name}
-                    </Text>
+                    <TouchableOpacity
+                      onPress={handleNavigate}
+                      activeOpacity={0.7}
+                      style={{ flex: 1, marginRight: 6 }}
+                    >
+                      <Text style={styles.itemTitle} numberOfLines={2}>
+                        {item.product.name}
+                      </Text>
+                      <Text style={styles.itemVariant}>
+                        {item.variant?.name || `${item.product.size} • ${item.product.finish}`}
+                      </Text>
+                    </TouchableOpacity>
+
                     <TouchableOpacity
                       onPress={() => removeItem(item.id)}
                       style={styles.deleteBtn}
+                      hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
                     >
                       <Trash2 size={16} color={COLORS.textMuted} />
                     </TouchableOpacity>
                   </View>
 
-                  <Text style={styles.itemVariant}>
-                    {item.variant?.name || `${item.product.size} • ${item.product.finish}`}
-                  </Text>
-
                   <View style={styles.itemBottomRow}>
-                    <View>
+                    <TouchableOpacity
+                      onPress={handleNavigate}
+                      activeOpacity={0.8}
+                    >
                       <Text style={styles.itemPrice}>₹{item.calculatedPrice.toLocaleString("en-IN")}</Text>
                       <Text style={styles.unitPrice}>
                         ₹{item.product.pricePerSqft}/{item.product.unitOfSale}
                       </Text>
-                    </View>
+                    </TouchableOpacity>
 
                     {/* Quantity Stepper */}
                     <View style={styles.stepper}>

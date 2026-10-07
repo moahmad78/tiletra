@@ -10,7 +10,7 @@
 
 export const INTRIHUB_BRAND = {
   name: "Intrihub",
-  tagline: "India's interior & construction supply marketplace",
+  tagline: "Every Material. Every Space.",
   website: "https://intrihub.com",
   vendorLoginUrl: "https://intrihub.com/vendor/login",
   adminLoginUrl: "https://intrihub.com/admin/login",

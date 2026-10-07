@@ -50,7 +50,7 @@ export const categories: Category[] = [
     productCount: 6,
     featured: true,
     icon: "Grid",
-    calculatorType: "area_to_boxes",
+    calculatorType: "none",
   },
   // ── 4. PAINT & FINISHES ────────────────────────────
   {

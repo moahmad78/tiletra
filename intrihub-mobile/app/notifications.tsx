@@ -1,4 +1,4 @@
-import React, { useEffect } from "react";
+import React, { useEffect, useState } from "react";
 import {
   View,
   Text,
@@ -9,6 +9,7 @@ import {
   StatusBar,
   ActivityIndicator,
 } from "react-native";
+import { Image } from "expo-image";
 import { useRouter } from "expo-router";
 import {
   ArrowLeft,
@@ -18,10 +19,14 @@ import {
   Info,
   CheckCheck,
   ChevronRight,
+  Truck,
+  Check,
+  Sparkles,
 } from "lucide-react-native";
 import { useNotificationStore } from "../src/store/notificationStore";
 import { AppNotification } from "../src/types";
 import { COLORS, SPACING, RADIUS, SHADOWS } from "../src/constants/theme";
+import { getImageUrl } from "../src/constants/config";
 
 // Helper for relative timestamps
 function formatRelativeTime(dateString: string): string {
@@ -44,6 +49,108 @@ function formatRelativeTime(dateString: string): string {
   }
 }
 
+// ── Flipkart-Style Thumbnail with Corner Indicator Badge ──
+function NotificationThumbnail({ item }: { item: AppNotification }) {
+  const [hasError, setHasError] = useState(false);
+
+  const isOrder =
+    item.type === "order" ||
+    item.type === "order_status" ||
+    item.type === "order_placed" ||
+    Boolean(item.orderId);
+
+  const isPromo =
+    item.type === "offer" ||
+    item.type === "promo" ||
+    item.type === "discount";
+
+  const renderFallbackIcon = () => {
+    if (isOrder) {
+      return (
+        <View style={[styles.iconCircle, { backgroundColor: "rgba(5, 42, 81, 0.08)" }]}>
+          <Package size={22} color={COLORS.primary} />
+        </View>
+      );
+    }
+    if (isPromo) {
+      return (
+        <View style={[styles.iconCircle, { backgroundColor: "rgba(242, 101, 34, 0.1)" }]}>
+          <Tag size={22} color={COLORS.accentOrange} />
+        </View>
+      );
+    }
+    return (
+      <View style={[styles.iconCircle, { backgroundColor: "rgba(5, 150, 105, 0.1)" }]}>
+        <Info size={22} color="#059669" />
+      </View>
+    );
+  };
+
+  const renderMiniBadge = () => {
+    if (isOrder) {
+      const lowerText = `${item.title || ""} ${item.message || ""}`.toLowerCase();
+      const isDelivered = lowerText.includes("delivered");
+      const isDispatched = lowerText.includes("dispatched") || lowerText.includes("out for delivery");
+
+      if (isDelivered) {
+        return (
+          <View style={[styles.miniBadge, { backgroundColor: "#10B981" }]}>
+            <Check size={9} color="#FFFFFF" strokeWidth={3} />
+          </View>
+        );
+      }
+      if (isDispatched) {
+        return (
+          <View style={[styles.miniBadge, { backgroundColor: "#3B82F6" }]}>
+            <Truck size={9} color="#FFFFFF" strokeWidth={2.5} />
+          </View>
+        );
+      }
+      return (
+        <View style={[styles.miniBadge, { backgroundColor: COLORS.primary }]}>
+          <Package size={9} color="#FFFFFF" strokeWidth={2.5} />
+        </View>
+      );
+    }
+
+    if (isPromo) {
+      return (
+        <View style={[styles.miniBadge, { backgroundColor: COLORS.accentOrange }]}>
+          <Tag size={9} color="#FFFFFF" strokeWidth={2.5} />
+        </View>
+      );
+    }
+
+    return (
+      <View style={[styles.miniBadge, { backgroundColor: "#059669" }]}>
+        <Info size={9} color="#FFFFFF" strokeWidth={2.5} />
+      </View>
+    );
+  };
+
+  if (item.image && !hasError) {
+    return (
+      <View style={styles.thumbnailWrapper}>
+        <Image
+          source={{ uri: getImageUrl(item.image) }}
+          style={styles.thumbnailImage}
+          contentFit="cover"
+          cachePolicy="memory-disk"
+          transition={200}
+          onError={() => setHasError(true)}
+        />
+        {renderMiniBadge()}
+      </View>
+    );
+  }
+
+  return (
+    <View style={styles.thumbnailWrapper}>
+      {renderFallbackIcon()}
+    </View>
+  );
+}
+
 export default function NotificationsScreen() {
   const router = useRouter();
   const {
@@ -63,57 +170,91 @@ export default function NotificationsScreen() {
     markAsRead(item.id);
 
     const link = (item.link || "").trim();
+    const textToScan = `${item.title || ""} ${item.message || ""} ${link}`;
 
-    // 1. Check for Order ID in link (e.g. /order/123, /orders/123, https://.../order/123)
-    const orderLinkMatch = link.match(/\/orders?\/([a-zA-Z0-9_-]+)/i);
-    if (orderLinkMatch && orderLinkMatch[1]) {
-      const id = orderLinkMatch[1];
-      if (id !== "undefined" && id !== "null") {
+    // ── 1. SPECIFIC ORDER PRIORITY (Flipkart: Order clicks go straight to Order Details) ──
+    // A) If orderId was directly resolved by the backend
+    if (item.orderId && item.orderId !== "null" && item.orderId !== "undefined") {
+      const cleanOrderId = item.orderId.replace(/^[#\s]+/, "").trim();
+      if (cleanOrderId) {
         router.push({
           pathname: "/order/[id]",
-          params: { id },
+          params: { id: cleanOrderId },
         });
         return;
       }
     }
 
-    // 2. Check for Product in link (e.g. /product/123, /products/123)
-    const productLinkMatch = link.match(/\/products?\/([a-zA-Z0-9_-]+)/i);
-    if (productLinkMatch && productLinkMatch[1]) {
-      const id = productLinkMatch[1];
-      if (id !== "undefined" && id !== "null") {
+    // B) If link points to a specific order (e.g. /order/IH-138885 or /orders/ORD-123456)
+    const orderLinkMatch = link.match(/\/orders?\/([a-zA-Z0-9_-]+)/i);
+    if (orderLinkMatch && orderLinkMatch[1]) {
+      const cleanId = orderLinkMatch[1].replace(/^[#\s]+/, "").trim();
+      const nonIds = ["all", "account", "history", "null", "undefined", "list"];
+      if (cleanId && !nonIds.includes(cleanId.toLowerCase())) {
         router.push({
-          pathname: "/product/[id]",
-          params: { id },
+          pathname: "/order/[id]",
+          params: { id: cleanId },
         });
         return;
       }
     }
 
-    // 3. Check for Category in link (e.g. /category/living-room)
-    const catLinkMatch = link.match(/\/categor(y|ies)\/([a-zA-Z0-9_-]+)/i);
-    if (catLinkMatch && catLinkMatch[2]) {
+    // C) Scan title and message for order ID (e.g. Order #IH-138885, Order #ORD-387512, #IH-123456)
+    const textOrderMatch = textToScan.match(/(?:Order\s*#?|#)([A-Za-z0-9_-]+)/i);
+    if (textOrderMatch && textOrderMatch[1]) {
+      const cleanId = textOrderMatch[1].replace(/^[#\s]+/, "").trim();
+      const nonIds = [
+        "updated", "confirmed", "placed", "delivered", "cancelled",
+        "canceled", "processing", "dispatched", "refunded", "order", "status"
+      ];
+      if (cleanId && !nonIds.includes(cleanId.toLowerCase()) && cleanId.length >= 3) {
+        router.push({
+          pathname: "/order/[id]",
+          params: { id: cleanId },
+        });
+        return;
+      }
+    }
+
+    // ── 2. PRODUCT PRIORITY (Flipkart: Product deal clicks go straight to PDP) ──
+    if (item.productId && item.productId !== "null" && item.productId !== "undefined") {
       router.push({
-        pathname: "/category/[slug]",
-        params: { slug: catLinkMatch[2] },
+        pathname: "/product/[id]",
+        params: { id: item.productId },
       });
       return;
     }
 
-    // 4. Check for Tab routes in link
-    if (link.includes("/orders") || link.includes("account/orders")) {
-      router.push("/(tabs)/orders" as any);
+    const productLinkMatch = link.match(/\/products?\/([a-zA-Z0-9_-]+)/i);
+    if (productLinkMatch && productLinkMatch[1]) {
+      const cleanProd = productLinkMatch[1].trim();
+      if (cleanProd && !["all", "null", "undefined"].includes(cleanProd.toLowerCase())) {
+        router.push({
+          pathname: "/product/[id]",
+          params: { id: cleanProd },
+        });
+        return;
+      }
+    }
+
+    // ── 3. CATEGORY / COLLECTION PRIORITY ──
+    const catLinkMatch =
+      link.match(/\/categor(?:y|ies)\/([a-zA-Z0-9_-]+)/i) ||
+      link.match(/[?&]category=([a-zA-Z0-9_-]+)/i);
+    if (catLinkMatch && catLinkMatch[1]) {
+      router.push({
+        pathname: "/category/[slug]",
+        params: { slug: catLinkMatch[1] },
+      });
       return;
     }
-    if (link.includes("/shop") || link.includes("/offers") || link.includes("/products") || link.includes("/deals")) {
-      router.push("/(tabs)/shop" as any);
-      return;
-    }
+
+    // ── 4. APP TAB & SECTION ROUTES ──
     if (link.includes("/cart") || link.includes("/checkout")) {
       router.push("/(tabs)/cart" as any);
       return;
     }
-    if (link.includes("/profile") || link.includes("/account")) {
+    if ((link.includes("/profile") || link.includes("/account")) && !link.includes("/orders")) {
       router.push("/(tabs)/profile" as any);
       return;
     }
@@ -121,25 +262,29 @@ export default function NotificationsScreen() {
       router.push("/support" as any);
       return;
     }
-
-    // 5. Check for Order ID in Title / Body / Description (e.g. Order #ORD-686411 or #cmt4...)
-    const textToScan = `${item.title || ""} ${item.message || ""} ${(item as any).body || ""}`;
-    const orderMatch = textToScan.match(/#([a-zA-Z0-9_-]+)/i);
-    if (orderMatch && orderMatch[1]) {
-      router.push({
-        pathname: "/order/[id]",
-        params: { id: orderMatch[1] },
-      });
+    if (link.includes("/wishlist")) {
+      router.push("/wishlist" as any);
       return;
     }
-
-    // 6. Fallback based on Notification Type
-    if (item.type === "order_status" || item.type === "order") {
+    if (
+      link.includes("/orders") ||
+      item.type === "order_status" ||
+      item.type === "order" ||
+      item.type === "order_placed"
+    ) {
       router.push("/(tabs)/orders" as any);
       return;
     }
-    if (item.type === "offer" || item.type === "promo" || item.type === "discount") {
-      router.push("/(tabs)/shop" as any);
+    if (
+      link.includes("/shop") ||
+      link.includes("/categories") ||
+      link.includes("/deals") ||
+      link.includes("/offers") ||
+      item.type === "offer" ||
+      item.type === "promo" ||
+      item.type === "discount"
+    ) {
+      router.push("/(tabs)/categories" as any);
       return;
     }
     if (item.type === "support") {
@@ -147,40 +292,30 @@ export default function NotificationsScreen() {
       return;
     }
 
-    // Default safe fallback to Home
+    // Default safe fallback
     router.push("/(tabs)/home" as any);
   };
 
-  const renderIcon = (type: string) => {
-    switch (type) {
-      case "order_status":
-      case "order":
-        return (
-          <View style={[styles.iconCircle, { backgroundColor: "rgba(5, 42, 81, 0.08)" }]}>
-            <Package size={18} color={COLORS.primary} />
-          </View>
-        );
-      case "offer":
-      case "promo":
-        return (
-          <View style={[styles.iconCircle, { backgroundColor: "rgba(242, 101, 34, 0.1)" }]}>
-            <Tag size={18} color={COLORS.accentOrange} />
-          </View>
-        );
-      default:
-        return (
-          <View style={[styles.iconCircle, { backgroundColor: "rgba(5, 150, 105, 0.1)" }]}>
-            <Info size={18} color="#059669" />
-          </View>
-        );
-    }
+  const getActionLabel = (item: AppNotification) => {
+    const isOrder =
+      item.type === "order" ||
+      item.type === "order_status" ||
+      item.type === "order_placed" ||
+      Boolean(item.orderId);
+    if (isOrder) return "Track order";
+    if (item.productId || item.type === "offer" || item.type === "promo") return "View deal";
+    return "View details";
   };
 
   return (
     <View style={styles.container}>
       {/* Header */}
       <View style={styles.header}>
-        <TouchableOpacity style={styles.backBtn} onPress={() => router.back()}>
+        <TouchableOpacity
+          style={styles.backBtn}
+          onPress={() => router.back()}
+          hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+        >
           <ArrowLeft size={20} color={COLORS.text} />
         </TouchableOpacity>
 
@@ -220,10 +355,12 @@ export default function NotificationsScreen() {
             <TouchableOpacity
               style={[styles.notificationCard, !item.isRead && styles.unreadCard]}
               onPress={() => handleNotificationPress(item)}
-              activeOpacity={0.85}
+              activeOpacity={0.8}
             >
-              {renderIcon(item.type)}
+              {/* Left Flipkart-Style Thumbnail or Icon */}
+              <NotificationThumbnail item={item} />
 
+              {/* Right Content */}
               <View style={styles.cardContent}>
                 <View style={styles.titleRow}>
                   <View style={{ flexDirection: "row", alignItems: "center", gap: 6, flex: 1 }}>
@@ -233,11 +370,10 @@ export default function NotificationsScreen() {
                     >
                       {item.title}
                     </Text>
-                    {(item.title?.toLowerCase().includes("scheduled") || item.message?.toLowerCase().includes("scheduled")) && (
-                      <View style={{ backgroundColor: "#7C3AED", paddingHorizontal: 5, paddingVertical: 1.5, borderRadius: 3 }}>
-                        <Text style={{ color: "#FFFFFF", fontSize: 8, fontWeight: "900", letterSpacing: 0.5 }}>
-                          SCHEDULED
-                        </Text>
+                    {(item.title?.toLowerCase().includes("scheduled") ||
+                      item.message?.toLowerCase().includes("scheduled")) && (
+                      <View style={styles.scheduledBadge}>
+                        <Text style={styles.scheduledBadgeText}>SCHEDULED</Text>
                       </View>
                     )}
                   </View>
@@ -250,12 +386,10 @@ export default function NotificationsScreen() {
 
                 <View style={styles.timeRow}>
                   <Text style={styles.timeText}>{formatRelativeTime(item.createdAt)}</Text>
-                  {item.link ? (
-                    <View style={styles.viewLinkRow}>
-                      <Text style={styles.viewLinkText}>View details</Text>
-                      <ChevronRight size={12} color={COLORS.primary} />
-                    </View>
-                  ) : null}
+                  <View style={styles.viewLinkRow}>
+                    <Text style={styles.viewLinkText}>{getActionLabel(item)}</Text>
+                    <ChevronRight size={13} color={COLORS.primary} />
+                  </View>
                 </View>
               </View>
             </TouchableOpacity>
@@ -341,24 +475,54 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     backgroundColor: COLORS.surface,
     borderRadius: RADIUS.md,
-    padding: 14,
+    padding: 13,
     marginBottom: 10,
     borderWidth: 1,
     borderColor: COLORS.border,
+    alignItems: "flex-start",
   },
   unreadCard: {
     backgroundColor: "#F8FAFC",
-    borderColor: "rgba(5, 42, 81, 0.15)",
+    borderColor: "rgba(5, 42, 81, 0.16)",
     borderLeftWidth: 3.5,
     borderLeftColor: COLORS.primary,
   },
-  iconCircle: {
-    width: 40,
-    height: 40,
+  thumbnailWrapper: {
+    width: 56,
+    height: 56,
+    borderRadius: RADIUS.sm,
+    marginRight: 12,
+    position: "relative",
+    justifyContent: "center",
+    alignItems: "center",
+  },
+  thumbnailImage: {
+    width: 56,
+    height: 56,
+    borderRadius: RADIUS.sm,
+    backgroundColor: "#F3F4F6",
+    borderWidth: 1,
+    borderColor: "rgba(0, 0, 0, 0.08)",
+  },
+  miniBadge: {
+    position: "absolute",
+    bottom: -3,
+    right: -3,
+    width: 18,
+    height: 18,
     borderRadius: RADIUS.full,
     alignItems: "center",
     justifyContent: "center",
-    marginRight: 12,
+    borderWidth: 1.5,
+    borderColor: "#FFFFFF",
+    ...SHADOWS.sm,
+  },
+  iconCircle: {
+    width: 52,
+    height: 52,
+    borderRadius: RADIUS.sm,
+    alignItems: "center",
+    justifyContent: "center",
   },
   cardContent: {
     flex: 1,
@@ -386,6 +550,18 @@ const styles = StyleSheet.create({
     backgroundColor: COLORS.accentOrange,
     marginLeft: 6,
   },
+  scheduledBadge: {
+    backgroundColor: "#7C3AED",
+    paddingHorizontal: 5,
+    paddingVertical: 1.5,
+    borderRadius: 3,
+  },
+  scheduledBadgeText: {
+    color: "#FFFFFF",
+    fontSize: 8,
+    fontWeight: "900",
+    letterSpacing: 0.5,
+  },
   cardMessage: {
     fontSize: 12.5,
     color: COLORS.textSecondary,
@@ -406,7 +582,7 @@ const styles = StyleSheet.create({
     alignItems: "center",
   },
   viewLinkText: {
-    fontSize: 11,
+    fontSize: 11.5,
     fontWeight: "700",
     color: COLORS.primary,
     marginRight: 2,

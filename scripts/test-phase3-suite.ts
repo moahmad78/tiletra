@@ -1,3 +1,4 @@
+import "./test-db-guard";
 import { prisma } from "../lib/prisma";
 
 async function main() {

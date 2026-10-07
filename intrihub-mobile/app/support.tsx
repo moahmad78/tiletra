@@ -26,7 +26,6 @@ import {
   HelpCircle,
   Truck,
   CreditCard,
-  Calculator,
   RotateCcw,
   Send,
   Building2,
@@ -55,11 +54,11 @@ const FAQ_DATA: FAQItem[] = [
   },
   {
     id: "2",
-    category: "Tiles & Area Calculation",
-    icon: Calculator,
-    question: "How do I calculate how many tile boxes I need for my room?",
+    category: "Tiles & Packaging Info",
+    icon: HelpCircle,
+    question: "Where can I find coverage area and pieces per box?",
     answer:
-      "On every tile product page, tap 'Tile Calculator'. Enter your room length and width in feet or meters. The calculator automatically computes total square footage and adds recommended 10% cutting wastage to give exact box counts.",
+      "On every product details page, refer to 'Packaging & Unit Details'. It shows the coverage in sq.ft per box, pieces per box, and weight per unit so you can easily determine your required quantity.",
   },
   {
     id: "3",
@@ -363,7 +362,7 @@ export default function CustomerSupportScreen() {
         </View>
 
         <View style={styles.appFooterInfo}>
-          <Text style={styles.footerVersion}>IntriHub Customer Support • Everything, Every Place</Text>
+          <Text style={styles.footerVersion}>IntriHub Customer Support • Every Material. Every Space.</Text>
         </View>
       </ScrollView>
     </SafeAreaView>

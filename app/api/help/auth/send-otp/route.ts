@@ -49,7 +49,7 @@ export async function POST(req: NextRequest) {
           <a href="https://www.intrihub.com" target="_blank" style="text-decoration:none;display:inline-block;">
             <img src="https://www.intrihub.com/logo/intri-web-logo.png" alt="IntriHub" width="160" height="42" style="display:block;margin:0 auto;height:42px;width:auto;max-width:180px;border:0;outline:none;" />
           </a>
-          <p style="color:#64748b;font-size:13px;margin:8px 0 0;font-weight:600;">Build Better, We Deliver Faster</p>
+          <p style="color:#64748b;font-size:13px;margin:8px 0 0;font-weight:600;">Every Material. Every Space.</p>
         </div>
 
         <div style="background:#ffffff;border-radius:14px;padding:32px 24px;text-align:center;border:1px solid #e2e8f0;box-shadow:0 2px 8px rgba(0,0,0,0.04);">

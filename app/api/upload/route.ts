@@ -121,9 +121,57 @@ export async function POST(req: NextRequest) {
 
     const formData = await req.formData();
     const files = (formData.getAll("file") as unknown) as File[];
-    const requestVendorId =
-      ((formData.get("vendorId") as string) || req.nextUrl.searchParams.get("vendorId") || effectiveVendorId || "")
-        .trim();
+
+    let requestVendorId: string = "";
+
+    if (actorType === "CPO" || actorType === "ADMIN") {
+      const explicitVendorId = (
+        (formData.get("vendorId") as string) ||
+        req.nextUrl.searchParams.get("vendorId") ||
+        ""
+      ).trim();
+
+      if (!explicitVendorId) {
+        return NextResponse.json(
+          {
+            success: false,
+            error: "vendorId is required for CPO/Admin uploads. Please select a vendor.",
+          },
+          { status: 400 }
+        );
+      }
+
+      const vendorExists = await prisma.vendor.findUnique({
+        where: { id: explicitVendorId },
+        select: { id: true },
+      });
+
+      if (!vendorExists) {
+        return NextResponse.json(
+          {
+            success: false,
+            error: `Selected vendor "${explicitVendorId}" does not exist.`,
+          },
+          { status: 400 }
+        );
+      }
+
+      requestVendorId = explicitVendorId;
+    } else if (actorType === "VENDOR") {
+      if (!effectiveVendorId) {
+        return NextResponse.json(
+          { success: false, error: "Unauthorized: Vendor session missing vendorId." },
+          { status: 401 }
+        );
+      }
+      // Vendors always use their own authenticated vendorId, ignoring any passed vendorId
+      requestVendorId = effectiveVendorId;
+    } else {
+      return NextResponse.json(
+        { success: false, error: "Unauthorized: Invalid upload session role." },
+        { status: 401 }
+      );
+    }
 
     if (!files || files.length === 0) {
       return NextResponse.json({ success: false, error: "No files provided" }, { status: 400 });

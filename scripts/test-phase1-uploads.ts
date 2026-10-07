@@ -1,3 +1,4 @@
+import "./test-db-guard";
 import { PrismaClient } from "@prisma/client";
 import { createProduct, getProductBySlug } from "../lib/actions/products";
 import { formatProduct, getProductPriceInfo } from "../lib/formatters";

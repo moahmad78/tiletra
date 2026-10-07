@@ -28,7 +28,7 @@ export const metadata: Metadata = {
   openGraph: {
     title: "Why IntriHub? 20 Reasons to Buy Building & Interior Materials Online",
     description:
-      "One Platform → Every Material → One Order → Direct to Site. Explore the 20 Unique Selling Propositions of IntriHub.",
+      "Every Material. Every Space. — One Platform → One Order → Direct to Site. Explore the 20 Unique Selling Propositions of IntriHub.",
     url: canonicalUrl,
     type: "website",
     siteName: "IntriHub",
@@ -37,7 +37,7 @@ export const metadata: Metadata = {
     card: "summary_large_image",
     title: "Why IntriHub? 20 Reasons to Buy Building & Interior Materials Online",
     description:
-      "One Platform → Every Material → One Order → Direct to Site. Fast 60-minute site delivery across Bengaluru.",
+      "Every Material. Every Space. — Fast 60-minute site delivery across Bengaluru with IntriHub.",
   },
 };
 
@@ -118,7 +118,7 @@ export default function WhyIntrihubPage() {
 
             <div className="space-y-2 max-w-4xl mx-auto">
               <p className="text-xs sm:text-sm font-bold text-orange-400 uppercase tracking-widest">
-                The Master Workflow
+                Every Material. Every Space.
               </p>
               <h1 className="text-2xl sm:text-4xl md:text-5xl font-black text-white tracking-tight leading-tight">
                 One Platform <span className="text-[#F26522]">→</span> Every Material{" "}

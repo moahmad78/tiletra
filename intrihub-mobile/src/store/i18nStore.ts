@@ -4,8 +4,31 @@ import AsyncStorage from "@react-native-async-storage/async-storage";
 import en from "../../locales/en.json";
 import hi from "../../locales/hi.json";
 import kn from "../../locales/kn.json";
+import ta from "../../locales/ta.json";
+import te from "../../locales/te.json";
+import ml from "../../locales/ml.json";
+import mr from "../../locales/mr.json";
+import bn from "../../locales/bn.json";
+import gu from "../../locales/gu.json";
+import pa from "../../locales/pa.json";
+import ur from "../../locales/ur.json";
+import or from "../../locales/or.json";
+import as from "../../locales/as.json";
 
-export type SupportedLanguage = "en" | "hi" | "kn";
+export type SupportedLanguage =
+  | "en"
+  | "hi"
+  | "kn"
+  | "ta"
+  | "te"
+  | "ml"
+  | "mr"
+  | "bn"
+  | "gu"
+  | "pa"
+  | "ur"
+  | "or"
+  | "as";
 
 export interface LanguageInfo {
   code: SupportedLanguage;
@@ -17,12 +40,32 @@ export const SUPPORTED_LANGUAGES: LanguageInfo[] = [
   { code: "en", name: "English", nativeName: "English" },
   { code: "hi", name: "Hindi", nativeName: "हिन्दी" },
   { code: "kn", name: "Kannada", nativeName: "ಕನ್ನಡ" },
+  { code: "ta", name: "Tamil", nativeName: "தமிழ்" },
+  { code: "te", name: "Telugu", nativeName: "తెలుగు" },
+  { code: "ml", name: "Malayalam", nativeName: "മലയാളം" },
+  { code: "mr", name: "Marathi", nativeName: "मराठी" },
+  { code: "bn", name: "Bengali", nativeName: "বাংলা" },
+  { code: "gu", name: "Gujarati", nativeName: "ગુજરાતી" },
+  { code: "pa", name: "Punjabi", nativeName: "ਪੰਜਾਬੀ" },
+  { code: "ur", name: "Urdu", nativeName: "اردو" },
+  { code: "or", name: "Odia", nativeName: "ଓଡ଼ିଆ" },
+  { code: "as", name: "Assamese", nativeName: "অসমীয়া" },
 ];
 
 const translations: Record<SupportedLanguage, any> = {
   en,
   hi,
   kn,
+  ta,
+  te,
+  ml,
+  mr,
+  bn,
+  gu,
+  pa,
+  ur,
+  or,
+  as,
 };
 
 function getNestedValue(obj: any, path: string): string | undefined {
@@ -61,7 +104,11 @@ export const useI18nStore = create<I18nState>((set, get) => ({
       const stored = await AsyncStorage.getItem(STORAGE_KEY);
       const hasSelected = await AsyncStorage.getItem(HAS_SELECTED_KEY);
 
-      const resolved = (stored === "hi" || stored === "kn" || stored === "en") ? stored : "en";
+      const validCodes = SUPPORTED_LANGUAGES.map((l) => l.code);
+      const resolved = (stored && validCodes.includes(stored as SupportedLanguage))
+        ? (stored as SupportedLanguage)
+        : "en";
+
       set({
         language: resolved,
         isReady: true,

@@ -132,7 +132,11 @@ export default function CartDrawer() {
                     className="flex gap-4 p-4 bg-gray-50 rounded-2xl border border-gray-100 group"
                   >
                     {/* Image */}
-                    <div className="relative w-20 h-20 rounded-xl overflow-hidden flex-shrink-0 bg-gray-100">
+                    <Link
+                      href={`/product/${item.product.slug}`}
+                      onClick={closeCart}
+                      className="relative w-20 h-20 rounded-xl overflow-hidden flex-shrink-0 bg-gray-100 block hover:opacity-90 transition-opacity"
+                    >
                       <Image
                         src={item.variant.image || item.product.images[0] || "/placeholders/product.svg"}
                         alt={item.product.name}
@@ -140,13 +144,19 @@ export default function CartDrawer() {
                         className="object-cover"
                         sizes="80px"
                       />
-                    </div>
+                    </Link>
 
                     {/* Info */}
                     <div className="flex-1 min-w-0">
-                      <p className="text-sm font-bold text-[#052a51] leading-tight line-clamp-1">
-                        {item.product.name}
-                      </p>
+                      <Link
+                        href={`/product/${item.product.slug}`}
+                        onClick={closeCart}
+                        className="block group"
+                      >
+                        <p className="text-sm font-bold text-[#052a51] leading-tight line-clamp-1 group-hover:text-[#F26522] transition-colors">
+                          {item.product.name}
+                        </p>
+                      </Link>
                       <p className="text-xs text-gray-500 mt-0.5">
                         {[item.variant.attributeValue || item.variant.size, item.variant.color !== "Standard" && item.variant.color, item.variant.finish !== "Standard" && item.variant.finish].filter(Boolean).join(" · ")}
                       </p>

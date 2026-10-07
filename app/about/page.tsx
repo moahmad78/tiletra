@@ -38,7 +38,7 @@ export const metadata: Metadata = {
     canonical: getCanonicalUrl("/about"),
   },
   openGraph: {
-    title: "About IntriHub | Build Better, We Deliver Faster",
+    title: "About IntriHub | Every Material. Every Space.",
     description:
       "India's instant building & interior materials quick commerce marketplace. Factory-direct sourcing with 60-minute site delivery in Bengaluru.",
     url: getCanonicalUrl("/about"),
@@ -138,7 +138,7 @@ export default function AboutPage() {
 
             {/* H1 Heading */}
             <h1 className="text-3xl sm:text-5xl md:text-6xl lg:text-[62px] font-black tracking-tight leading-[1.12] max-w-4xl mx-auto">
-              Build Better, Deliver Faster — Direct To Site In{" "}
+              Every Material. Every Space. — Direct To Site In{" "}
               <span className="text-transparent bg-clip-text bg-gradient-to-r from-[#F26522] via-[#ff8f5a] to-[#F26522]">
                 60 Minutes
               </span>

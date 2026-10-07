@@ -503,29 +503,89 @@ export async function createProduct(input: CreateProductInput) {
   try {
     const { resolveVendorContext } = await import("@/lib/vendor-workspace-auth");
     const workspaceContext = await resolveVendorContext();
-    if (!workspaceContext) {
-      if (process.env.NODE_ENV === "test" || process.env.ALLOW_SYSTEM_MUTATIONS === "true") {
-        input.approvalStatus = input.approvalStatus || "approved";
-      } else {
-        return { success: false, error: "Unauthorized: Active session required to create products." };
-      }
-    } else {
-      input.vendorId = workspaceContext.vendorId;
 
-      if (workspaceContext.actor.type === "ADMIN") {
-        input.createdByAdminId = workspaceContext.actor.adminId;
-        input.updatedByAdminId = workspaceContext.actor.adminId;
+    let cpoSession: any = null;
+    let adminSession: any = null;
+
+    if (!workspaceContext) {
+      try {
+        const { getCpoSession } = await import("@/lib/cpo/auth");
+        cpoSession = await getCpoSession();
+      } catch {}
+      if (!cpoSession) {
+        try {
+          const { getAdminSession } = await import("@/lib/server-auth");
+          adminSession = await getAdminSession();
+        } catch {}
+      }
+    }
+
+    const isCpo = workspaceContext?.actor.type === "CPO" || !!cpoSession;
+    const isAdmin = workspaceContext?.actor.type === "ADMIN" || !!adminSession;
+    const isVendor = workspaceContext?.actor.type === "VENDOR";
+    const isTestMode = process.env.NODE_ENV === "test" || process.env.ALLOW_SYSTEM_MUTATIONS === "true";
+
+    if (!isCpo && !isAdmin && !isVendor && !isTestMode) {
+      return { success: false, error: "Unauthorized: Active session required to create products." };
+    }
+
+    if (isCpo || isAdmin) {
+      // CPO / Admin: require explicit target vendor selection from payload (no silent cookie fallback)
+      const explicitVendorId = input.vendorId?.trim();
+      if (!explicitVendorId) {
+        return { success: false, error: "Vendor selection is required for CPO/Admin product creation." };
+      }
+      const targetVendor = await prisma.vendor.findUnique({
+        where: { id: explicitVendorId },
+        select: { id: true, businessName: true, status: true },
+      });
+      if (!targetVendor) {
+        return { success: false, error: `Selected vendor "${explicitVendorId}" does not exist.` };
+      }
+      input.vendorId = targetVendor.id;
+
+      if (isAdmin) {
+        const adminId = workspaceContext?.actor.type === "ADMIN" ? workspaceContext.actor.adminId : adminSession?.adminId || "admin-system";
+        input.createdByAdminId = adminId;
+        input.updatedByAdminId = adminId;
+        (input as any).actorRole = "ADMIN";
+        (input as any).createdByCpoId = null;
+        (input as any).updatedByCpoId = null;
         input.approvalStatus = "approved";
-      } else if (workspaceContext.actor.type === "CPO") {
-        (input as any).createdByCpoId = workspaceContext.actor.cpoId;
-        (input as any).updatedByCpoId = workspaceContext.actor.cpoId;
+      } else {
+        const cpoId = workspaceContext?.actor.type === "CPO" ? workspaceContext.actor.cpoId : cpoSession?.userId || "cpo-system";
+        (input as any).createdByCpoId = cpoId;
+        (input as any).updatedByCpoId = cpoId;
+        (input as any).actorRole = "CPO";
+        input.createdByAdminId = null;
+        input.updatedByAdminId = null;
         input.approvalStatus = "approved";
-      } else if (workspaceContext.actor.type === "VENDOR") {
+      }
+    } else if (isVendor && workspaceContext) {
+      // Normal vendor: ALWAYS force authenticated vendorId, ignoring any spoofed or passed vendorId
+      input.vendorId = workspaceContext.vendorId;
+      input.createdByAdminId = null;
+      input.updatedByAdminId = null;
+      (input as any).createdByCpoId = null;
+      (input as any).updatedByCpoId = null;
+      (input as any).actorRole = "VENDOR";
+
+      const vendorRec = await prisma.vendor.findUnique({
+        where: { id: workspaceContext.vendorId },
+        select: { autoPublishEnabled: true },
+      });
+      input.approvalStatus = vendorRec?.autoPublishEnabled ? "approved" : "pending";
+    } else if (isTestMode) {
+      input.approvalStatus = input.approvalStatus || "approved";
+      (input as any).actorRole = (input as any).actorRole || "SYSTEM";
+      if (input.vendorId) {
         const vendorRec = await prisma.vendor.findUnique({
-          where: { id: workspaceContext.vendorId },
-          select: { autoPublishEnabled: true },
+          where: { id: input.vendorId },
+          select: { id: true },
         });
-        input.approvalStatus = vendorRec?.autoPublishEnabled ? "approved" : "pending";
+        if (!vendorRec) {
+          return { success: false, error: `Selected vendor "${input.vendorId}" does not exist.` };
+        }
       }
     }
 
@@ -726,29 +786,37 @@ export async function createProduct(input: CreateProductInput) {
     safeRevalidate("/vendor/products");
     safeRevalidate("/");
 
-    if (workspaceContext && (workspaceContext.actor.type === "ADMIN" || workspaceContext.actor.type === "CPO")) {
+    if (isAdmin || isCpo) {
       try {
         const { logAdminAuditAction } = await import("@/lib/vendor-workspace-auth");
         const { notifyVendorOfAdminChanges } = await import("@/lib/notifications/vendor-workspace-notify");
+        const currentActorRole = isAdmin ? "ADMIN" : "CPO";
+        const currentActorId = isAdmin
+          ? (workspaceContext?.actor.type === "ADMIN" ? workspaceContext.actor.adminId! : adminSession?.adminId || "admin-system")
+          : (workspaceContext?.actor.type === "CPO" ? workspaceContext.actor.cpoId! : cpoSession?.userId || "cpo-system");
+
         await logAdminAuditAction({
-          sessionId: workspaceContext.sessionId,
-          adminId: workspaceContext.actor.type === "ADMIN" ? workspaceContext.actor.adminId! : workspaceContext.actor.cpoId!,
-          vendorId: workspaceContext.vendorId,
+          sessionId: workspaceContext?.sessionId,
+          adminId: currentActorId,
+          vendorId: newProduct.vendorId || undefined,
           action: "ITEM_CREATED",
           entity: "Product",
           entityId: newProduct.id,
-          actorRole: workspaceContext.actor.type,
+          actorRole: currentActorRole,
           after: {
             name: newProduct.name,
             categorySlug: newProduct.categorySlug,
             pricePerBox: primaryVariant.pricePerBox,
+            vendorId: newProduct.vendorId,
           },
         });
-        const actorLabel = workspaceContext.actor.type === "CPO" ? "Catalog Processing Officer" : "IntriHub admin";
-        await notifyVendorOfAdminChanges(
-          workspaceContext.vendorId,
-          `${actorLabel} added a new product "${newProduct.name}" to your store.`
-        );
+        if (newProduct.vendorId) {
+          const actorLabel = currentActorRole === "CPO" ? "Catalog Processing Officer" : "IntriHub admin";
+          await notifyVendorOfAdminChanges(
+            newProduct.vendorId,
+            `${actorLabel} added a new product "${newProduct.name}" to your store.`
+          );
+        }
       } catch (auditErr) {
         console.error("Workspace audit error:", auditErr);
       }
@@ -836,10 +904,10 @@ export async function createProductsBulk(inputs: CreateProductInput[]) {
             reviewCount: 0,
             specs: input.specs || null,
             vendor: workspaceContext?.vendorId ? { connect: { id: workspaceContext.vendorId } } : (input.vendorId ? { connect: { id: input.vendorId } } : undefined),
-            createdByAdminId: workspaceContext?.actor?.type === "ADMIN" ? workspaceContext.actor.adminId : (input.createdByAdminId || null),
-            updatedByAdminId: workspaceContext?.actor?.type === "ADMIN" ? workspaceContext.actor.adminId : (input.updatedByAdminId || null),
-            createdByCpoId: workspaceContext?.actor?.type === "CPO" ? workspaceContext.actor.cpoId : null,
-            updatedByCpoId: workspaceContext?.actor?.type === "CPO" ? workspaceContext.actor.cpoId : null,
+            createdByAdminId: workspaceContext?.actor?.type === "ADMIN" ? (workspaceContext.actor.adminId || null) : (input.createdByAdminId || null),
+            updatedByAdminId: workspaceContext?.actor?.type === "ADMIN" ? (workspaceContext.actor.adminId || null) : (input.updatedByAdminId || null),
+            createdByCpoId: workspaceContext?.actor?.type === "CPO" ? (workspaceContext.actor.cpoId || null) : null,
+            updatedByCpoId: workspaceContext?.actor?.type === "CPO" ? (workspaceContext.actor.cpoId || null) : null,
             actorRole: workspaceContext?.actor?.type || "SYSTEM",
             status: input.status || "active",
             approvalStatus: input.approvalStatus || ((workspaceContext?.actor?.type === "ADMIN" || workspaceContext?.actor?.type === "CPO") ? "approved" : "pending"),
@@ -1017,7 +1085,7 @@ export async function updateProduct(id: string, input: Partial<CreateProductInpu
     if (input.countryOfOrigin !== undefined) updateData.countryOfOrigin = input.countryOfOrigin;
     if (input.hsnCode !== undefined) updateData.hsnCode = input.hsnCode;
     if (input.gstPercent !== undefined) updateData.gstPercent = input.gstPercent !== null ? Number(input.gstPercent) : 18;
-    if (input.vendorId !== undefined) updateData.vendorId = input.vendorId;
+    // Note: Normal product updates must NEVER alter vendorId. Use moveProductToVendor for vendor reassignments.
     if (input.status !== undefined) updateData.status = input.status;
     if (input.approvalStatus !== undefined) updateData.approvalStatus = input.approvalStatus;
     if (input.rejectionReason !== undefined) updateData.rejectionReason = input.rejectionReason;
@@ -1221,6 +1289,158 @@ export async function updateProduct(id: string, input: Partial<CreateProductInpu
   } catch (error: any) {
     console.error("Error updating product:", error);
     return { success: false, error: error?.message || "Failed to update product" };
+  }
+}
+
+/**
+ * Explicit server action to move a product to another vendor.
+ * Restricted to CPO and Admin only.
+ * Logs the move to Product.editHistory and AdminAuditLog with action PRODUCT_MOVED_TO_ANOTHER_VENDOR.
+ */
+export async function moveProductToVendor(params: {
+  productId: string;
+  targetVendorId: string;
+  reason?: string;
+}): Promise<{ success: boolean; product?: any; error?: string }> {
+  try {
+    const { productId, targetVendorId, reason } = params;
+    if (!productId || !targetVendorId) {
+      return { success: false, error: "Product ID and Target Vendor ID are required." };
+    }
+
+    // Verify CPO or Admin authorization
+    let actorRole: "CPO" | "ADMIN" | null = null;
+    let actorId: string | null = null;
+
+    const { resolveVendorContext } = await import("@/lib/vendor-workspace-auth");
+    const workspaceContext = await resolveVendorContext();
+    if (workspaceContext?.actor.type === "CPO") {
+      actorRole = "CPO";
+      actorId = workspaceContext.actor.cpoId || null;
+    } else if (workspaceContext?.actor.type === "ADMIN") {
+      actorRole = "ADMIN";
+      actorId = workspaceContext.actor.adminId || null;
+    }
+
+    if (!actorRole) {
+      const { getCpoSession } = await import("@/lib/cpo/auth");
+      const cpoSession = await getCpoSession();
+      if (cpoSession) {
+        actorRole = "CPO";
+        actorId = cpoSession.userId;
+      }
+    }
+
+    if (!actorRole) {
+      const { getAdminSession } = await import("@/lib/server-auth");
+      const adminSession = await getAdminSession();
+      if (adminSession) {
+        actorRole = "ADMIN";
+        actorId = adminSession.adminId;
+      }
+    }
+
+    if (!actorRole && process.env.ALLOW_SYSTEM_MUTATIONS === "true") {
+      actorRole = "ADMIN";
+      actorId = process.env.SYSTEM_MUTATION_ADMIN_ID || "cmtct8uv10003jp232l1eq0ml";
+    }
+
+    if (!actorRole || !actorId) {
+      return {
+        success: false,
+        error: "Unauthorized: Chief Product Officer or Admin authorization required to move products.",
+      };
+    }
+
+    const product = await prisma.product.findUnique({
+      where: { id: productId },
+      include: {
+        vendor: { select: { id: true, businessName: true } },
+      },
+    });
+
+    if (!product) {
+      return { success: false, error: `Product with ID "${productId}" not found.` };
+    }
+
+    const targetVendor = await prisma.vendor.findUnique({
+      where: { id: targetVendorId },
+      select: { id: true, businessName: true, status: true },
+    });
+
+    if (!targetVendor) {
+      return { success: false, error: `Target vendor "${targetVendorId}" does not exist.` };
+    }
+
+    if (product.vendorId === targetVendorId) {
+      return { success: false, error: "Product is already assigned to this vendor." };
+    }
+
+    const prevHistory = Array.isArray(product.editHistory) ? (product.editHistory as any[]) : [];
+    const historyEntry = {
+      timestamp: new Date().toISOString(),
+      role: actorRole,
+      userId: actorId,
+      action: "PRODUCT_MOVED_TO_ANOTHER_VENDOR",
+      reason: reason || `Vendor reassignment by ${actorRole}`,
+      before: {
+        vendorId: product.vendorId,
+        vendorName: product.vendor?.businessName || null,
+      },
+      after: {
+        vendorId: targetVendor.id,
+        vendorName: targetVendor.businessName,
+      },
+    };
+
+    const updated = await prisma.product.update({
+      where: { id: productId },
+      data: {
+        vendorId: targetVendor.id,
+        editHistory: [...prevHistory, historyEntry],
+        ...(actorRole === "CPO" ? { updatedByCpoId: actorId } : { updatedByAdminId: actorId }),
+      },
+      include: {
+        vendor: { select: { id: true, businessName: true } },
+        variants: true,
+      },
+    });
+
+    try {
+      const { logAdminAuditAction } = await import("@/lib/vendor-workspace-auth");
+      await logAdminAuditAction({
+        adminId: actorId,
+        vendorId: targetVendor.id,
+        action: "PRODUCT_MOVED_TO_ANOTHER_VENDOR",
+        entity: "Product",
+        entityId: productId,
+        actorRole,
+        before: {
+          vendorId: product.vendorId,
+          vendorName: product.vendor?.businessName || null,
+        },
+        after: {
+          vendorId: targetVendor.id,
+          vendorName: targetVendor.businessName,
+          reason,
+        },
+      });
+    } catch (auditErr) {
+      console.error("Failed to log admin audit action for product vendor move:", auditErr);
+    }
+
+    safeRevalidate("/shop");
+    safeRevalidate(`/shop/${updated.categorySlug}`);
+    safeRevalidate(`/product/${updated.slug}`);
+    safeRevalidate("/admin/products");
+    safeRevalidate("/cpo/catalog");
+    safeRevalidate("/vendor/products");
+    safeRevalidate("/");
+
+    return { success: true, product: formatProduct(updated) };
+  } catch (error: any) {
+    console.error("Error moving product to vendor:", error);
+    return { success: false, error: error?.message || "Failed to move product to vendor" };
   }
 }
 

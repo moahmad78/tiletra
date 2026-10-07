@@ -82,10 +82,10 @@ export default function RootLayout() {
   usePushNotifications();
 
   useEffect(() => {
-    if (isLangReady && !hasSelectedLanguage && isAppReady) {
+    if (isLangReady && !hasSelectedLanguage && !splashMounted) {
       setShowFirstLaunchLang(true);
     }
-  }, [isLangReady, hasSelectedLanguage, isAppReady]);
+  }, [isLangReady, hasSelectedLanguage, splashMounted]);
 
   // Hide the native OS splash screen immediately on React Native mount so Layer 2 AnimatedSplashScreen takes over
   useLayoutEffect(() => {

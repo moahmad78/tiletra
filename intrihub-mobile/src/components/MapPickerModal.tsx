@@ -480,7 +480,7 @@ export const MapPickerModal: React.FC<MapPickerModalProps> = ({
               <Search size={18} color={COLORS.textTertiary} />
               <TextInput
                 style={styles.searchInput}
-                placeholder="Search area, apartment, street..."
+                placeholder="Search address"
                 placeholderTextColor={COLORS.textTertiary}
                 value={searchQuery}
                 onChangeText={handleSearchChange}
@@ -675,10 +675,15 @@ const styles = StyleSheet.create({
   },
   searchInput: {
     flex: 1,
-    fontSize: 13,
-    fontWeight: "700",
+    height: "100%",
+    fontSize: 13.5,
+    fontWeight: "500",
     color: COLORS.text,
     paddingVertical: 0,
+    paddingHorizontal: 0,
+    margin: 0,
+    textAlignVertical: "center",
+    includeFontPadding: false,
   },
   predictionsCard: {
     backgroundColor: "#ffffff",

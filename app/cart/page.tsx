@@ -123,7 +123,10 @@ export default function CartPage() {
                   transition={{ delay: i * 0.04 }}
                   className="bg-white rounded-2xl p-4 sm:p-5 flex gap-3.5 sm:gap-4 items-start shadow-2xs border border-gray-100 hover:border-gray-200 transition-all"
                 >
-                  <div className="relative w-20 h-20 sm:w-24 sm:h-24 rounded-xl overflow-hidden flex-shrink-0 bg-gray-100 border border-gray-100">
+                  <Link
+                    href={`/product/${item.product.slug}`}
+                    className="relative w-20 h-20 sm:w-24 sm:h-24 rounded-xl overflow-hidden flex-shrink-0 bg-gray-100 border border-gray-100 block hover:opacity-90 transition-opacity"
+                  >
                     <Image
                       src={item.variant.image || item.product.images[0] || "/placeholders/product.svg"}
                       alt={item.product.name}
@@ -131,7 +134,7 @@ export default function CartPage() {
                       className="object-cover"
                       sizes="96px"
                     />
-                  </div>
+                  </Link>
                   <div className="flex-1 min-w-0">
                     <div className="flex items-start justify-between gap-2">
                       <div>
