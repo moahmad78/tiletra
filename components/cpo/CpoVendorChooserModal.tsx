@@ -71,6 +71,13 @@ export default function CpoVendorChooserModal({
         if (onSelectVendor) {
           onSelectVendor(vId, bName);
         }
+        if (typeof window !== "undefined") {
+          window.dispatchEvent(
+            new CustomEvent("cpo-workspace-changed", {
+              detail: { active: true, vendorId: vId, vendorName: bName },
+            })
+          );
+        }
         onClose();
         router.refresh();
       } else {
@@ -90,6 +97,13 @@ export default function CpoVendorChooserModal({
       toast.info("Viewing all vendors catalog (read-only mode)");
       if (onSelectVendor) {
         onSelectVendor("all", "All Vendors");
+      }
+      if (typeof window !== "undefined") {
+        window.dispatchEvent(
+          new CustomEvent("cpo-workspace-changed", {
+            detail: { active: false },
+          })
+        );
       }
       onClose();
       router.push("/cpo/catalog?vendorId=all");

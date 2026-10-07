@@ -23,6 +23,8 @@ import {
   Package,
   Plus,
   Trash2,
+  Upload,
+  Link as LinkIcon,
   Search,
   Store,
   Video,
@@ -42,6 +44,9 @@ import {
 import { toast } from "sonner";
 import ImageUploadManager from "@/components/admin/ImageUploadManager";
 import UnifiedVariantManager from "@/components/shared/UnifiedVariantManager";
+import ColorRadioSelector from "@/components/shared/ColorRadioSelector";
+import ProductWebsitePreviewModal from "@/components/shared/ProductWebsitePreviewModal";
+import LiveSidePreviewPanel from "@/components/shared/LiveSidePreviewPanel";
 import { createProduct, checkDuplicateProduct } from "@/lib/actions/products";
 import { getCategories, createCustomCategory } from "@/lib/actions/categories";
 import { getVendorProfile } from "@/lib/actions/vendor";
@@ -55,6 +60,10 @@ export interface SharedProductUploadWizardProps {
   vendorId?: string | null;
   isAdminOrCpo?: boolean;
   initialListingType?: "single" | "multi";
+  headerTitle?: string;
+  headerSubtitle?: string;
+  headerBadge?: string;
+  headerVendorSlot?: React.ReactNode;
 }
 
 const GST_SLABS = [0, 5, 12, 18, 28];
@@ -104,6 +113,10 @@ export default function SharedProductUploadWizard({
   vendorId: initialVendorId = null,
   isAdminOrCpo = false,
   initialListingType = "single",
+  headerTitle,
+  headerSubtitle,
+  headerBadge,
+  headerVendorSlot,
 }: SharedProductUploadWizardProps) {
   const router = useRouter();
 
@@ -133,6 +146,11 @@ export default function SharedProductUploadWizard({
   const [isAddingCustomCategory, setIsAddingCustomCategory] = useState<boolean>(false);
   const [customCategoryName, setCustomCategoryName] = useState<string>("");
   const [customCategoryDesc, setCustomCategoryDesc] = useState<string>("");
+  const [customCategoryImage, setCustomCategoryImage] = useState<string>("");
+  const [categoryImageMode, setCategoryImageMode] = useState<"upload" | "link">("upload");
+  const [customCategoryUrlInput, setCustomCategoryUrlInput] = useState<string>("");
+  const [isUploadingCategoryImage, setIsUploadingCategoryImage] = useState<boolean>(false);
+  const categoryFileInputRef = useRef<HTMLInputElement>(null);
   const [isSavingCategory, setIsSavingCategory] = useState<boolean>(false);
 
   // ── STEP 2: Basic Details & Rate Details ──
@@ -185,6 +203,18 @@ export default function SharedProductUploadWizard({
   const [isAddingCustomSubcategory, setIsAddingCustomSubcategory] = useState<boolean>(false);
   const [customSubcategoryName, setCustomSubcategoryName] = useState<string>("");
   const [customSubcategoryDesc, setCustomSubcategoryDesc] = useState<string>("");
+  const [customSubcategoryImage, setCustomSubcategoryImage] = useState<string>("");
+  const [customSubcategoryImageMode, setCustomSubcategoryImageMode] = useState<"upload" | "link">("upload");
+  const [customSubcategoryUrlInput, setCustomSubcategoryUrlInput] = useState<string>("");
+  const [isUploadingSubcategoryImage, setIsUploadingSubcategoryImage] = useState<boolean>(false);
+  const subcategoryFileInputRef = useRef<HTMLInputElement>(null);
+  const [customSubcategoryPrice, setCustomSubcategoryPrice] = useState<string>("");
+  const [customSubcategoryMrp, setCustomSubcategoryMrp] = useState<string>("");
+  const [customSubcategoryColour, setCustomSubcategoryColour] = useState<string>("");
+  const [customSubcategoryLength, setCustomSubcategoryLength] = useState<string>("");
+  const [customSubcategoryWidth, setCustomSubcategoryWidth] = useState<string>("");
+  const [customSubcategoryHeight, setCustomSubcategoryHeight] = useState<string>("");
+  const [customSubcategoryWeight, setCustomSubcategoryWeight] = useState<string>("");
   const [isSavingSubcategory, setIsSavingSubcategory] = useState<boolean>(false);
   const [dynamicAttributes, setDynamicAttributes] = useState<Record<string, string>>({});
   const [customSpecs, setCustomSpecs] = useState<Array<{ key: string; value: string }>>([]);
@@ -234,6 +264,8 @@ export default function SharedProductUploadWizard({
   const [metaDescription, setMetaDescription] = useState<string>("");
   const [listingStatus, setListingStatus] = useState<"active" | "draft" | "paused">("active");
   const [previewDevice, setPreviewDevice] = useState<"desktop" | "mobile">("desktop");
+  const [isPreviewOpen, setIsPreviewOpen] = useState<boolean>(false);
+  const [showSidePreview, setShowSidePreview] = useState<boolean>(true);
 
   // ── Draft Autosave (localStorage) ──
   const AUTOSAVE_KEY = `intrihub_product_upload_draft_${activeVendorId || "common"}`;
@@ -422,9 +454,11 @@ export default function SharedProductUploadWizard({
   }, [selectedCategory]);
 
   const filteredCategoryList = useMemo(() => {
-    if (!categorySearch.trim()) return categories;
+    const topLevel = categories.filter((c) => !c.parentId);
+    const listToFilter = topLevel.length > 0 ? topLevel : categories;
+    if (!categorySearch.trim()) return listToFilter;
     const q = categorySearch.toLowerCase().trim();
-    return categories.filter(
+    return listToFilter.filter(
       (c) =>
         c.name.toLowerCase().includes(q) ||
         c.slug.toLowerCase().includes(q) ||
@@ -432,63 +466,157 @@ export default function SharedProductUploadWizard({
     );
   }, [categories, categorySearch]);
 
-  // Duplicate Check
-  useEffect(() => {
-    if (!title.trim() || title.length < 4 || !activeVendorId) {
-      setDuplicateWarning(null);
+  // Upload image helper for custom category
+  const handleUploadCategoryImage = async (file: File) => {
+    if (!file) return;
+    if (!file.type.startsWith("image/")) {
+      toast.error("Please select a valid image file (PNG, JPG, WebP)");
+      return;
+    }
+    if (file.size > 10 * 1024 * 1024) {
+      toast.error("Image file size should be less than 10MB");
       return;
     }
 
-    const timer = setTimeout(async () => {
-      setCheckingDuplicate(true);
-      const res = await checkDuplicateProduct({
-        vendorId: activeVendorId,
-        name: title,
-        brand: brand === "other" ? customBrandInput : brand,
-        modelNumber: modelNumber || undefined,
-      });
-      setCheckingDuplicate(false);
-      if (res.isDuplicate) {
-        setDuplicateWarning(
-          `Notice: An item named "${res.duplicateName}" with this brand/model already exists in your store.`
-        );
-      } else {
-        setDuplicateWarning(null);
+    setIsUploadingCategoryImage(true);
+    try {
+      const formData = new FormData();
+      if (activeVendorId) {
+        formData.append("vendorId", activeVendorId);
       }
-    }, 600);
+      formData.append("file", file);
 
-    return () => clearTimeout(timer);
-  }, [title, brand, customBrandInput, modelNumber, activeVendorId]);
+      const res = await fetch("/api/upload", {
+        method: "POST",
+        body: formData,
+      });
 
-  const mrpNum = parseFloat(mrp) || 0;
-  const sellingNum = parseFloat(sellingPrice) || 0;
-  const discountPercent =
-    mrpNum > 0 && sellingNum > 0 && mrpNum > sellingNum
-      ? Math.round(((mrpNum - sellingNum) / mrpNum) * 100)
-      : 0;
+      const data = await res.json();
+      if (res.ok && data.success) {
+        const finalUrl = data.url || (Array.isArray(data.urls) && data.urls[0]);
+        if (finalUrl) {
+          setCustomCategoryImage(finalUrl);
+          setCustomCategoryUrlInput(finalUrl);
+          toast.success("Category photo uploaded successfully!");
+        } else {
+          toast.error("No image URL returned from upload server");
+        }
+      } else {
+        toast.error(data.error || "Failed to upload category image");
+      }
+    } catch (err: any) {
+      console.error("Error uploading category image:", err);
+      toast.error(err?.message || "Failed to upload image");
+    } finally {
+      setIsUploadingCategoryImage(false);
+    }
+  };
+
+  // Upload image helper for custom sub-category
+  const handleUploadSubcategoryImage = async (file: File) => {
+    if (!file) return;
+    if (!file.type.startsWith("image/")) {
+      toast.error("Please select a valid image file (PNG, JPG, WebP)");
+      return;
+    }
+    if (file.size > 10 * 1024 * 1024) {
+      toast.error("Image file size should be less than 10MB");
+      return;
+    }
+
+    setIsUploadingSubcategoryImage(true);
+    try {
+      const formData = new FormData();
+      if (activeVendorId) {
+        formData.append("vendorId", activeVendorId);
+      }
+      formData.append("file", file);
+
+      const res = await fetch("/api/upload", {
+        method: "POST",
+        body: formData,
+      });
+
+      const data = await res.json();
+      if (res.ok && data.success) {
+        const finalUrl = data.url || (Array.isArray(data.urls) && data.urls[0]);
+        if (finalUrl) {
+          setCustomSubcategoryImage(finalUrl);
+          setCustomSubcategoryUrlInput(finalUrl);
+          toast.success("Sub-category photo uploaded successfully!");
+        } else {
+          toast.error("No image URL returned from upload server");
+        }
+      } else {
+        toast.error(data.error || "Failed to upload sub-category image");
+      }
+    } catch (err: any) {
+      console.error("Error uploading sub-category image:", err);
+      toast.error(err?.message || "Failed to upload image");
+    } finally {
+      setIsUploadingSubcategoryImage(false);
+    }
+  };
 
   // ── Custom Category Handlers ──
   const handleSaveCustomCategory = async (e?: React.FormEvent) => {
-    if (e) e.preventDefault();
+    if (e) {
+      e.preventDefault();
+      e.stopPropagation();
+    }
     if (!customCategoryName.trim()) {
       toast.error("Please enter a category name");
       return;
     }
     setIsSavingCategory(true);
     try {
+      const finalImage = customCategoryImage.trim() || customCategoryUrlInput.trim() || undefined;
       const res = await createCustomCategory({
         name: customCategoryName.trim(),
         description: customCategoryDesc.trim() || undefined,
+        image: finalImage,
       });
       if (res.success && res.category) {
-        toast.success(`Category "${res.category.name}" created and selected!`);
-        const updatedCats = await getCategories();
-        setCategories(updatedCats as CategoryWithChildren[]);
+        toast.success(`Category "${res.category.name}" created and added to categories!`);
+        
+        const newCatFormatted: CategoryWithChildren = {
+          id: res.category.id,
+          name: res.category.name,
+          slug: res.category.slug,
+          description: res.category.description || "",
+          image: res.category.image || finalImage || "/images/placeholder-category.svg",
+          productCount: 0,
+          featured: true,
+          parentId: null,
+          icon: "Grid",
+          children: [],
+        };
+
+        // Immediately update categories in state so it appears in the grid without refresh
+        setCategories((prev) => [newCatFormatted, ...prev.filter((c) => c.id !== res.category.id)]);
         setSelectedCategoryId(res.category.id);
         setSelectedSubcategoryId("");
+        setDynamicAttributes({});
         setCustomCategoryName("");
         setCustomCategoryDesc("");
+        setCustomCategoryImage("");
+        setCustomCategoryUrlInput("");
         setIsAddingCustomCategory(false);
+
+        // Background refetch with forceRefresh to ensure database cache parity
+        try {
+          const freshCats = await getCategories({ forceRefresh: true });
+          if (freshCats && freshCats.length > 0) {
+            const hasNew = freshCats.some((c) => c.id === res.category.id);
+            if (hasNew) {
+              setCategories(freshCats as CategoryWithChildren[]);
+            } else {
+              setCategories([newCatFormatted, ...(freshCats as CategoryWithChildren[])]);
+            }
+          }
+        } catch (fetchErr) {
+          console.warn("Background categories refresh warning:", fetchErr);
+        }
       } else {
         toast.error(res.error || "Failed to create category");
       }
@@ -511,19 +639,101 @@ export default function SharedProductUploadWizard({
     }
     setIsSavingSubcategory(true);
     try {
+      const finalSubImage = customSubcategoryImage.trim() || customSubcategoryUrlInput.trim() || undefined;
       const res = await createCustomCategory({
         name: customSubcategoryName.trim(),
         parentId: selectedCategoryId,
         description: customSubcategoryDesc.trim() || undefined,
+        image: finalSubImage,
       });
       if (res.success && res.category) {
-        toast.success(`Sub-category "${res.category.name}" created and selected!`);
-        const updatedCats = await getCategories();
-        setCategories(updatedCats as CategoryWithChildren[]);
+        toast.success(`Sub-category "${res.category.name}" created and configured!`);
+        
+        const newChild: any = {
+          id: res.category.id,
+          name: res.category.name,
+          slug: res.category.slug,
+          description: res.category.description || "",
+          parentId: selectedCategoryId,
+          image: res.category.image || finalSubImage || "/placeholders/category.svg",
+          productCount: 0,
+        };
+
+        // Optimistically add sub-category to selected category's children
+        setCategories((prev) =>
+          prev.map((cat) => {
+            if (cat.id === selectedCategoryId) {
+              const existingChildren = cat.children || [];
+              const updatedChildren = [newChild, ...existingChildren.filter((ch: any) => ch.id !== res.category.id)];
+              return { ...cat, children: updatedChildren };
+            }
+            return cat;
+          })
+        );
+
         setSelectedSubcategoryId(res.category.id);
+
+        // Apply custom rate if provided
+        if (customSubcategoryPrice.trim()) {
+          setSellingPrice(customSubcategoryPrice.trim());
+        }
+        if (customSubcategoryMrp.trim()) {
+          setMrp(customSubcategoryMrp.trim());
+        }
+
+        // Apply custom dimensions if provided
+        if (customSubcategoryLength.trim()) {
+          setLengthCm(customSubcategoryLength.trim());
+        }
+        if (customSubcategoryWidth.trim()) {
+          setWidthCm(customSubcategoryWidth.trim());
+        }
+        if (customSubcategoryHeight.trim()) {
+          setHeightCm(customSubcategoryHeight.trim());
+        }
+        if (customSubcategoryWeight.trim()) {
+          setPackedWeightKg(customSubcategoryWeight.trim());
+        }
+
+        // Apply image if provided and primary image list is empty
+        if (finalSubImage) {
+          setImages((prev) => {
+            if (!prev.includes(finalSubImage)) {
+              return [finalSubImage, ...prev.filter((img) => img !== "/placeholders/product.svg")];
+            }
+            return prev;
+          });
+        }
+
+        // If colour is specified, bind to attributes
+        if (customSubcategoryColour.trim()) {
+          setDynamicAttributes((prev) => ({
+            ...prev,
+            "Colour": customSubcategoryColour.trim(),
+            "Color": customSubcategoryColour.trim(),
+          }));
+        }
+
+        // Reset subcategory inputs
         setCustomSubcategoryName("");
         setCustomSubcategoryDesc("");
+        setCustomSubcategoryImage("");
+        setCustomSubcategoryUrlInput("");
+        setCustomSubcategoryPrice("");
+        setCustomSubcategoryMrp("");
+        setCustomSubcategoryColour("");
+        setCustomSubcategoryLength("");
+        setCustomSubcategoryWidth("");
+        setCustomSubcategoryHeight("");
+        setCustomSubcategoryWeight("");
         setIsAddingCustomSubcategory(false);
+
+        // Sync with fresh categories
+        getCategories().then((freshCats) => {
+          if (freshCats && freshCats.length > 0) {
+            setCategories(freshCats as CategoryWithChildren[]);
+          }
+        });
       } else {
         toast.error(res.error || "Failed to create sub-category");
       }
@@ -533,6 +743,11 @@ export default function SharedProductUploadWizard({
       setIsSavingSubcategory(false);
     }
   };
+
+  // Price & Discount calculations
+  const sellingNum = parseFloat(sellingPrice) || 0;
+  const mrpNum = parseFloat(mrp) || 0;
+  const discountPercent = mrpNum > sellingNum && mrpNum > 0 ? Math.round(((mrpNum - sellingNum) / mrpNum) * 100) : 0;
 
   // Completeness calculation
   const completeness = useMemo(() => {
@@ -830,9 +1045,9 @@ export default function SharedProductUploadWizard({
           {
             variantName: "Standard",
             size: "Standard",
-            finish: "Standard",
-            color: "Standard",
-            colorHex: resolveColorHex("Standard"),
+            finish: dynamicAttributes["Surface Finish"] || dynamicAttributes["Finish"] || "Standard",
+            color: dynamicAttributes["Colour"] || dynamicAttributes["Color"] || "Standard",
+            colorHex: resolveColorHex(dynamicAttributes["Colour"] || dynamicAttributes["Color"] || "Standard"),
             image: images[0] || null,
             images: images.length > 0 ? [images[0]] : [],
             unit: unitOfSale,
@@ -951,7 +1166,17 @@ export default function SharedProductUploadWizard({
   ];
 
   return (
-    <form onSubmit={handleFinalSubmit} className="space-y-6 max-w-5xl mx-auto pb-24">
+    <form
+      onSubmit={handleFinalSubmit}
+      onKeyDown={(e) => {
+        if (e.key === "Enter" && (e.target as HTMLElement).tagName !== "TEXTAREA") {
+          e.preventDefault();
+        }
+      }}
+      className={`space-y-6 mx-auto pb-24 transition-all ${
+        showSidePreview ? "max-w-[1600px] px-2 sm:px-4" : "max-w-5xl"
+      }`}
+    >
       {/* ── Saved Draft Restore Notification Banner ── */}
       {savedDraftAvailable && (
         <div className="bg-amber-50 border border-amber-200 p-4 rounded-3xl flex items-center justify-between gap-4 shadow-2xs animate-in fade-in">
@@ -996,21 +1221,60 @@ export default function SharedProductUploadWizard({
           </Link>
           <div>
             <div className="flex items-center gap-2">
-              <h1 className="text-xl sm:text-2xl font-black text-[#052a51]">Item Upload Wizard</h1>
+              <h1 className="text-xl sm:text-2xl font-black text-[#052a51]">
+                {headerTitle || (isAdminOrCpo ? "Add New Catalog Product" : "Item Upload Wizard")}
+              </h1>
               <span className="px-2.5 py-0.5 rounded-full bg-emerald-50 border border-emerald-200 text-emerald-700 text-[10px] font-black uppercase tracking-wider">
-                7-Step Unified Architecture
+                {headerBadge || (isAdminOrCpo ? "Ready" : "7-Step Unified Architecture")}
               </span>
             </div>
             <p className="text-xs text-gray-500 mt-0.5">
-              {vendorProfile?.businessName
-                ? `Assigning to vendor: ${vendorProfile.businessName}`
-                : "One shared listing engine with full catalog specs across Vendor, CPO, & Admin"}
+              {headerSubtitle ||
+                (vendorProfile?.businessName
+                  ? `Assigning to vendor: ${vendorProfile.businessName}`
+                  : "One shared listing engine with full catalog specs across Vendor, CPO, & Admin")}
             </p>
           </div>
         </div>
 
         {/* Global Save Draft & Actions */}
-        <div className="flex items-center gap-2.5">
+        <div className="flex flex-wrap items-center gap-2.5">
+          {headerVendorSlot}
+
+          {/* Live Side Preview Switcher Toggle */}
+          <button
+            type="button"
+            onClick={() => setShowSidePreview((prev) => !prev)}
+            className={`px-3.5 py-2.5 rounded-2xl text-xs font-bold transition-all flex items-center gap-2 cursor-pointer shadow-2xs shrink-0 border ${
+              showSidePreview
+                ? "bg-orange-50 border-orange-300 text-[#F26522]"
+                : "bg-white border-gray-300 text-gray-700 hover:bg-gray-50"
+            }`}
+            title="Toggle Live Side Preview Panel"
+          >
+            <span className="relative flex h-2 w-2">
+              {showSidePreview && (
+                <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
+              )}
+              <span
+                className={`relative inline-flex rounded-full h-2 w-2 ${
+                  showSidePreview ? "bg-emerald-500" : "bg-gray-400"
+                }`}
+              ></span>
+            </span>
+            <span>Live Preview {showSidePreview ? "ON" : "OFF"}</span>
+          </button>
+
+          <button
+            type="button"
+            onClick={() => setIsPreviewOpen(true)}
+            className="px-4 py-2.5 bg-white border border-gray-300 hover:border-[#F26522] hover:text-[#F26522] text-gray-700 text-xs font-bold rounded-2xl transition-all flex items-center gap-1.5 cursor-pointer shadow-2xs shrink-0"
+            title="Preview how this product will look on the customer website"
+          >
+            <Eye size={15} className="text-[#F26522]" />
+            <span>Storefront Preview</span>
+          </button>
+
           <button
             type="button"
             onClick={() => {
@@ -1018,7 +1282,7 @@ export default function SharedProductUploadWizard({
               handleFinalSubmit();
             }}
             disabled={loading}
-            className="px-4 py-2.5 border border-gray-300 hover:bg-gray-50 text-gray-700 text-xs font-bold rounded-2xl transition-all flex items-center gap-2 cursor-pointer disabled:opacity-50"
+            className="px-4 py-2.5 border border-gray-300 hover:bg-gray-50 text-gray-700 text-xs font-bold rounded-2xl transition-all flex items-center gap-2 cursor-pointer disabled:opacity-50 shrink-0"
           >
             {loading && submitAction === "draft" ? <Loader2 size={15} className="animate-spin" /> : <Save size={15} />}
             <span>Save Draft</span>
@@ -1028,7 +1292,7 @@ export default function SharedProductUploadWizard({
             type="submit"
             onClick={() => setSubmitAction("publish")}
             disabled={loading || isImageUploading}
-            className="px-5 py-2.5 bg-[#F26522] hover:bg-[#d95a1e] text-white text-xs font-bold rounded-2xl shadow-md active:scale-95 transition-all flex items-center gap-2 cursor-pointer disabled:opacity-50"
+            className="px-5 py-2.5 bg-[#F26522] hover:bg-[#d95a1e] text-white text-xs font-bold rounded-2xl shadow-md active:scale-95 transition-all flex items-center gap-2 cursor-pointer disabled:opacity-50 shrink-0"
           >
             {loading && submitAction === "publish" ? <Loader2 size={15} className="animate-spin" /> : <Zap size={15} />}
             <span>{isAdminOrCpo ? "Publish Listing" : "Submit for Approval"}</span>
@@ -1103,8 +1367,11 @@ export default function SharedProductUploadWizard({
         </div>
       </div>
 
-      {/* ── STEP 1: CATEGORY (FIRST FIELD) ── */}
-      {currentStep === 1 && (
+      {/* ── Main Workspace: Step Form on Left + Sticky Live Preview on Right ── */}
+      <div className="flex flex-col lg:flex-row items-start gap-6 w-full">
+        <div className="flex-1 min-w-0 space-y-6 w-full">
+          {/* ── STEP 1: CATEGORY (FIRST FIELD) ── */}
+          {currentStep === 1 && (
         <div className="bg-white p-6 sm:p-8 rounded-3xl border border-gray-200 shadow-2xs space-y-6 animate-in fade-in">
           <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
             <div>
@@ -1139,52 +1406,115 @@ export default function SharedProductUploadWizard({
           </div>
 
           {/* Category Grid Selection */}
-          <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3 max-h-80 overflow-y-auto p-1 border border-gray-100 rounded-2xl">
-            {filteredCategoryList.map((cat) => {
-              const isSelected = selectedCategoryId === cat.id;
-              return (
+          <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-4 gap-3.5 max-h-[420px] overflow-y-auto p-2 border border-gray-100 rounded-2xl bg-gray-50/40">
+            {filteredCategoryList.length === 0 ? (
+              <div className="col-span-full py-12 text-center text-gray-400">
+                <ImageIcon size={32} className="mx-auto mb-2 text-gray-300" />
+                <p className="text-xs font-bold text-gray-600">No categories found matching &quot;{categorySearch}&quot;</p>
                 <button
-                  key={cat.id}
                   type="button"
-                  onClick={() => {
-                    setSelectedCategoryId(cat.id);
-                    setSelectedSubcategoryId("");
-                    setDynamicAttributes({});
-                  }}
-                  className={`p-3.5 rounded-2xl border text-left transition-all cursor-pointer flex flex-col justify-between h-24 ${
-                    isSelected
-                      ? "border-[#052a51] bg-[#052a51] text-white shadow-xs"
-                      : "border-gray-200 bg-gray-50/60 hover:bg-gray-100 text-gray-800"
-                  }`}
+                  onClick={() => setIsAddingCustomCategory(true)}
+                  className="mt-3 px-3.5 py-1.5 bg-[#F26522] text-white text-xs font-bold rounded-xl hover:bg-[#d95517] transition-colors cursor-pointer"
                 >
-                  <span className="text-xs font-black block truncate">{cat.name}</span>
-                  <div className="flex items-center justify-between mt-auto">
-                    <span className={`text-[10px] ${isSelected ? "text-gray-300" : "text-gray-400"}`}>
-                      {cat.productCount ?? 0} listings
-                    </span>
-                    {isSelected && <Check size={14} className="text-[#F26522]" />}
-                  </div>
+                  + Create &quot;{categorySearch}&quot; as New Category
                 </button>
-              );
-            })}
+              </div>
+            ) : (
+              filteredCategoryList.map((cat) => {
+                const isSelected = selectedCategoryId === cat.id;
+                return (
+                  <button
+                    key={cat.id}
+                    type="button"
+                    onClick={() => {
+                      setSelectedCategoryId(cat.id);
+                      setSelectedSubcategoryId("");
+                      setDynamicAttributes({});
+                    }}
+                    className={`group relative rounded-2xl border p-2.5 text-left transition-all duration-200 cursor-pointer flex flex-col justify-between ${
+                      isSelected
+                        ? "border-[#F26522] bg-white ring-2 ring-[#F26522] shadow-sm"
+                        : "border-gray-200 bg-white hover:border-gray-300 hover:shadow-2xs"
+                    }`}
+                  >
+                    {/* Category Image Container */}
+                    <div className="relative w-full aspect-16/10 rounded-xl overflow-hidden bg-gray-100 mb-2 shrink-0 border border-gray-100">
+                      <img
+                        src={cat.image && cat.image.trim() ? cat.image : "/images/placeholder-category.svg"}
+                        alt={cat.name}
+                        className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-105"
+                        onError={(e) => {
+                          (e.currentTarget as HTMLImageElement).src = "/images/placeholder-category.svg";
+                        }}
+                      />
+
+                      {/* Selection Checkmark Badge */}
+                      {isSelected && (
+                        <div className="absolute top-1.5 right-1.5 w-6 h-6 rounded-full bg-[#F26522] text-white flex items-center justify-center shadow-md animate-in zoom-in-75 duration-150">
+                          <Check size={13} strokeWidth={3} />
+                        </div>
+                      )}
+                    </div>
+
+                    {/* Category Text & Listing Stats */}
+                    <div className="min-w-0 w-full px-0.5">
+                      <span className={`text-xs font-black block truncate transition-colors ${
+                        isSelected ? "text-[#052a51]" : "text-gray-900 group-hover:text-[#F26522]"
+                      }`}>
+                        {cat.name}
+                      </span>
+                      <div className="flex items-center justify-between mt-1 text-[10px]">
+                        <span className="text-gray-600 font-medium">
+                          {cat.productCount ?? 0} items
+                        </span>
+                        {isSelected && (
+                          <span className="font-black text-[#F26522] uppercase tracking-wider text-[9px]">
+                            Active
+                          </span>
+                        )}
+                      </div>
+                    </div>
+                  </button>
+                );
+              })
+            )}
           </div>
 
           {selectedCategory && (
             <div className="p-4 rounded-2xl bg-emerald-50 border border-emerald-200 flex items-center justify-between text-xs text-emerald-900 shadow-2xs">
-              <div className="flex items-center gap-2">
-                <CheckCircle2 size={16} className="text-emerald-600" />
-                <span className="font-bold">
-                  Active Category: <strong>{selectedCategory.name}</strong>
-                </span>
+              <div className="flex items-center gap-3">
+                {selectedCategory.image && (
+                  <img
+                    src={selectedCategory.image}
+                    alt={selectedCategory.name}
+                    className="w-11 h-11 rounded-xl object-cover border border-emerald-200 bg-white shrink-0 shadow-2xs"
+                    onError={(e) => {
+                      (e.currentTarget as HTMLImageElement).style.display = "none";
+                    }}
+                  />
+                )}
+                <div>
+                  <div className="flex items-center gap-2">
+                    <CheckCircle2 size={16} className="text-emerald-600 shrink-0" />
+                    <span className="font-bold text-gray-900">
+                      Active Category: <strong className="text-emerald-800">{selectedCategory.name}</strong>
+                    </span>
+                  </div>
+                  <p className="text-[11px] text-emerald-700/80 mt-0.5 line-clamp-1">
+                    {selectedCategory.description || `${selectedCategory.name} products & catalog materials`}
+                  </p>
+                </div>
               </div>
-              <span className="text-[11px] font-mono text-emerald-700">Slug: {selectedCategory.slug}</span>
+              <span className="text-[11px] font-mono text-emerald-700 bg-emerald-100/80 px-2.5 py-1 rounded-md shrink-0">
+                slug: {selectedCategory.slug}
+              </span>
             </div>
           )}
 
           {/* Custom Category Modal */}
           {isAddingCustomCategory && (
             <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-xs flex items-center justify-center p-4">
-              <div className="bg-white rounded-3xl max-w-md w-full p-6 shadow-2xl border border-gray-100 space-y-4 animate-in fade-in">
+              <div className="bg-white rounded-3xl max-w-lg w-full p-6 shadow-2xl border border-gray-100 space-y-4 animate-in fade-in max-h-[90vh] overflow-y-auto">
                 <div className="flex items-center justify-between pb-3 border-b border-gray-100">
                   <h3 className="text-base font-black text-gray-900 flex items-center gap-2">
                     <Sliders size={18} className="text-[#F26522]" />
@@ -1192,13 +1522,18 @@ export default function SharedProductUploadWizard({
                   </h3>
                   <button
                     type="button"
-                    onClick={() => setIsAddingCustomCategory(false)}
+                    onClick={() => {
+                      setIsAddingCustomCategory(false);
+                      setCustomCategoryImage("");
+                      setCustomCategoryUrlInput("");
+                    }}
                     className="p-1 text-gray-400 hover:text-gray-600 rounded-lg cursor-pointer"
                   >
                     <X size={16} />
                   </button>
                 </div>
-                <div className="space-y-3">
+
+                <div className="space-y-4">
                   <div>
                     <label className="text-xs font-bold text-gray-700 block mb-1">
                       Category Name <span className="text-red-500">*</span>
@@ -1212,6 +1547,7 @@ export default function SharedProductUploadWizard({
                       autoFocus
                     />
                   </div>
+
                   <div>
                     <label className="text-xs font-bold text-gray-700 block mb-1">Description (Optional)</label>
                     <textarea
@@ -1222,11 +1558,218 @@ export default function SharedProductUploadWizard({
                       className="w-full px-3.5 py-2 rounded-xl border border-gray-200 text-xs text-gray-800 focus:outline-none focus:border-[#F26522]"
                     />
                   </div>
+
+                  {/* Category Image Section (Upload & Link) */}
+                  <div className="space-y-2.5">
+                    <label className="text-xs font-bold text-gray-700 flex items-center justify-between">
+                      <span className="flex items-center gap-1.5">
+                        <ImageIcon size={14} className="text-[#F26522]" />
+                        <span>Category Image</span>
+                      </span>
+                      <span className="text-[10px] font-normal text-gray-500">Upload from device or paste link</span>
+                    </label>
+
+                    {/* Image Mode Switcher */}
+                    <div className="flex items-center gap-1.5 p-1 bg-gray-100 rounded-xl w-fit">
+                      <button
+                        type="button"
+                        onClick={() => setCategoryImageMode("upload")}
+                        className={`px-3 py-1 rounded-lg text-xs font-bold transition-all flex items-center gap-1.5 cursor-pointer ${
+                          categoryImageMode === "upload"
+                            ? "bg-white text-gray-900 shadow-2xs"
+                            : "text-gray-500 hover:text-gray-800"
+                        }`}
+                      >
+                        <Upload size={13} />
+                        <span>Upload File</span>
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => setCategoryImageMode("link")}
+                        className={`px-3 py-1 rounded-lg text-xs font-bold transition-all flex items-center gap-1.5 cursor-pointer ${
+                          categoryImageMode === "link"
+                            ? "bg-white text-gray-900 shadow-2xs"
+                            : "text-gray-500 hover:text-gray-800"
+                        }`}
+                      >
+                        <LinkIcon size={13} />
+                        <span>Image Link</span>
+                      </button>
+                    </div>
+
+                    {/* Image Preview Box if attached */}
+                    {customCategoryImage ? (
+                      <div className="flex items-center gap-3 p-3 rounded-2xl bg-orange-50/60 border border-orange-200 animate-in fade-in">
+                        <div className="relative w-16 h-16 rounded-xl overflow-hidden bg-white border border-orange-200 shrink-0 shadow-2xs">
+                          <img
+                            src={customCategoryImage}
+                            alt="Category preview"
+                            className="w-full h-full object-cover"
+                            onError={(e) => {
+                              (e.currentTarget as HTMLImageElement).src = "/images/placeholder-category.svg";
+                            }}
+                          />
+                        </div>
+                        <div className="min-w-0 flex-1">
+                          <div className="flex items-center gap-1.5">
+                            <CheckCircle2 size={13} className="text-emerald-600" />
+                            <p className="text-xs font-bold text-gray-900 truncate">Image Attached</p>
+                          </div>
+                          <p className="text-[10px] text-gray-500 truncate mt-0.5 font-mono">{customCategoryImage}</p>
+                          <button
+                            type="button"
+                            onClick={() => {
+                              setCustomCategoryImage("");
+                              setCustomCategoryUrlInput("");
+                            }}
+                            className="mt-1.5 text-[11px] font-bold text-red-600 hover:text-red-700 hover:underline flex items-center gap-1 cursor-pointer"
+                          >
+                            <Trash2 size={12} /> Remove / Change Image
+                          </button>
+                        </div>
+                      </div>
+                    ) : (
+                      <>
+                        {categoryImageMode === "upload" && (
+                          <div>
+                            <input
+                              type="file"
+                              ref={categoryFileInputRef}
+                              accept="image/png,image/jpeg,image/webp,image/svg+xml"
+                              onChange={(e) => {
+                                const file = e.target.files?.[0];
+                                if (file) handleUploadCategoryImage(file);
+                              }}
+                              className="hidden"
+                            />
+                            <div
+                              onClick={() => categoryFileInputRef.current?.click()}
+                              className={`border-2 border-dashed rounded-2xl p-4 text-center cursor-pointer transition-colors ${
+                                isUploadingCategoryImage
+                                  ? "border-orange-300 bg-orange-50/40"
+                                  : "border-gray-300 hover:border-[#F26522] hover:bg-orange-50/20"
+                              }`}
+                            >
+                              {isUploadingCategoryImage ? (
+                                <div className="py-2 flex flex-col items-center justify-center gap-2">
+                                  <Loader2 size={22} className="animate-spin text-[#F26522]" />
+                                  <span className="text-xs font-bold text-gray-700">Uploading category photo...</span>
+                                </div>
+                              ) : (
+                                <div className="py-1 flex flex-col items-center justify-center gap-1.5">
+                                  <div className="w-10 h-10 rounded-xl bg-orange-100 text-[#F26522] flex items-center justify-center">
+                                    <Upload size={18} />
+                                  </div>
+                                  <p className="text-xs font-bold text-gray-800">
+                                    Click to choose photo from device or drag &amp; drop
+                                  </p>
+                                  <p className="text-[10px] text-gray-400">
+                                    PNG, JPG, WebP, SVG up to 10MB
+                                  </p>
+                                </div>
+                              )}
+                            </div>
+                          </div>
+                        )}
+
+                        {categoryImageMode === "link" && (
+                          <div className="space-y-2">
+                            <div className="flex gap-2">
+                              <input
+                                type="url"
+                                placeholder="Paste image URL (https://... or /images/...)"
+                                value={customCategoryUrlInput}
+                                onChange={(e) => {
+                                  const val = e.target.value;
+                                  setCustomCategoryUrlInput(val);
+                                  const trimmed = val.trim();
+                                  if (trimmed && (trimmed.startsWith("http://") || trimmed.startsWith("https://") || trimmed.startsWith("/"))) {
+                                    setCustomCategoryImage(trimmed);
+                                  }
+                                }}
+                                onBlur={(e) => {
+                                  const trimmed = e.target.value.trim();
+                                  if (trimmed) setCustomCategoryImage(trimmed);
+                                }}
+                                onKeyDown={(e) => {
+                                  if (e.key === "Enter") {
+                                    e.preventDefault();
+                                    e.stopPropagation();
+                                    const trimmed = customCategoryUrlInput.trim();
+                                    if (!trimmed) {
+                                      toast.error("Please enter a valid image URL");
+                                      return;
+                                    }
+                                    setCustomCategoryImage(trimmed);
+                                  }
+                                }}
+                                className="flex-1 px-3.5 py-2 rounded-xl border border-gray-200 text-xs font-medium text-gray-900 focus:outline-none focus:border-[#F26522]"
+                              />
+                              <button
+                                type="button"
+                                onClick={(e) => {
+                                  e.preventDefault();
+                                  e.stopPropagation();
+                                  const trimmed = customCategoryUrlInput.trim();
+                                  if (!trimmed) {
+                                    toast.error("Please enter a valid image URL");
+                                    return;
+                                  }
+                                  setCustomCategoryImage(trimmed);
+                                  toast.success("Image link attached!");
+                                }}
+                                className="px-4 py-2 bg-[#052a51] hover:bg-[#031d38] text-white rounded-xl text-xs font-bold transition-colors cursor-pointer shrink-0"
+                              >
+                                Apply Link
+                              </button>
+                            </div>
+
+                            {/* Quick Preset Chips */}
+                            <div className="pt-1">
+                              <span className="text-[10px] font-bold text-gray-400 block mb-1">
+                                Quick Preset Photos:
+                              </span>
+                              <div className="flex flex-wrap gap-1.5">
+                                {[
+                                  { label: "Tiles & Stone", url: "/images/categories/cat-tiles-stone.jpg" },
+                                  { label: "Electrical", url: "/images/categories/cat-electrical.jpg" },
+                                  { label: "Plumbing", url: "/images/categories/cat-plumbing.jpg" },
+                                  { label: "Floor Tiles", url: "/images/categories/cat-floor-tiles.jpg" },
+                                  { label: "Lighting", url: "/images/categories/cat-lighting.jpg" },
+                                  { label: "Paints", url: "/images/categories/cat-paint-finishes.jpg" },
+                                ].map((preset) => (
+                                  <button
+                                    key={preset.label}
+                                    type="button"
+                                    onClick={(e) => {
+                                      e.preventDefault();
+                                      e.stopPropagation();
+                                      setCustomCategoryUrlInput(preset.url);
+                                      setCustomCategoryImage(preset.url);
+                                      toast.success(`Selected "${preset.label}" photo`);
+                                    }}
+                                    className="px-2.5 py-1 rounded-lg bg-gray-100 hover:bg-orange-100 text-gray-700 hover:text-[#F26522] border border-gray-200 hover:border-orange-300 text-[10px] font-bold transition-colors cursor-pointer"
+                                  >
+                                    {preset.label}
+                                  </button>
+                                ))}
+                              </div>
+                            </div>
+                          </div>
+                        )}
+                      </>
+                    )}
+                  </div>
                 </div>
+
                 <div className="flex items-center justify-end gap-2.5 pt-3 border-t border-gray-100">
                   <button
                     type="button"
-                    onClick={() => setIsAddingCustomCategory(false)}
+                    onClick={() => {
+                      setIsAddingCustomCategory(false);
+                      setCustomCategoryImage("");
+                      setCustomCategoryUrlInput("");
+                    }}
                     className="px-4 py-2 rounded-xl border border-gray-200 text-xs font-bold text-gray-600 hover:bg-gray-50 cursor-pointer"
                   >
                     Cancel
@@ -1234,11 +1777,15 @@ export default function SharedProductUploadWizard({
                   <button
                     type="button"
                     onClick={handleSaveCustomCategory}
-                    disabled={isSavingCategory}
-                    className="px-5 py-2 bg-[#F26522] hover:bg-[#d95517] text-white text-xs font-bold rounded-xl flex items-center gap-1.5 shadow-xs disabled:opacity-50 cursor-pointer"
+                    disabled={isSavingCategory || isUploadingCategoryImage}
+                    className="px-5 py-2.5 bg-[#F26522] hover:bg-[#d95517] text-white text-xs font-bold rounded-xl flex items-center gap-1.5 shadow-xs disabled:opacity-50 cursor-pointer"
                   >
-                    {isSavingCategory ? <Loader2 size={13} className="animate-spin" /> : <Check size={13} />}
-                    <span>Save &amp; Select</span>
+                    {isSavingCategory ? (
+                      <Loader2 size={13} className="animate-spin" />
+                    ) : (
+                      <Plus size={14} strokeWidth={2.5} />
+                    )}
+                    <span>+ Add Category</span>
                   </button>
                 </div>
               </div>
@@ -1581,6 +2128,27 @@ export default function SharedProductUploadWizard({
             />
           </div>
 
+          {/* Primary Product Colour (12+ Standard Colours Radio Buttons + Custom Option) */}
+          {!selectedSubcategory && (
+            <div className="p-5 rounded-3xl bg-gray-50/70 border border-gray-200 space-y-3">
+              <ColorRadioSelector
+                value={dynamicAttributes["Colour"] || dynamicAttributes["Color"] || ""}
+                onChange={(colorName, colorHex) => {
+                  setDynamicAttributes((prev) => ({
+                    ...prev,
+                    Colour: colorName,
+                    Color: colorName,
+                    ...(colorHex ? { ColorHex: colorHex } : {}),
+                  }));
+                }}
+                label="Product Colour (12+ Standard Colours Radio Buttons)"
+                helperText="Click any standard colour for single-click selection or enter custom shade"
+                allowCustom={true}
+                nameGroup="primary-colour-selector"
+              />
+            </div>
+          )}
+
           {/* Subcategory Section / Button (Below Gallery) */}
           <div className="p-5 rounded-3xl bg-gray-50/70 border border-gray-200 space-y-4">
             <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
@@ -1615,70 +2183,635 @@ export default function SharedProductUploadWizard({
               </div>
             </div>
 
-            {/* Sub-category Dropdown */}
-            {(isSubcategoryRevealed || selectedSubcategoryId) && (
-              <div className="pt-2 animate-in fade-in space-y-2">
-                <label className="text-xs font-bold text-gray-700">Choose Sub-category</label>
-                <select
-                  value={selectedSubcategoryId}
-                  onChange={(e) => setSelectedSubcategoryId(e.target.value)}
-                  className="w-full px-4 py-2.5 rounded-2xl border border-gray-200 text-xs font-bold text-gray-900 bg-white focus:outline-none focus:border-[#F26522] cursor-pointer"
-                >
-                  <option value="">-- No specific sub-category --</option>
-                  {selectedCategory?.children?.map((ch: any) => (
-                    <option key={ch.id} value={ch.id}>
-                      {ch.name}
-                    </option>
-                  ))}
-                </select>
+            {/* Sub-category Quick Selector & Pills */}
+            {selectedCategory?.children && selectedCategory.children.length > 0 && (
+              <div className="space-y-2 pt-1 animate-in fade-in">
+                <span className="text-[11px] font-bold text-gray-600 block">
+                  Quick Select Sub-category (Click to pick):
+                </span>
+                <div className="flex flex-wrap gap-2">
+                  {selectedCategory.children.map((ch: any) => {
+                    const isSelected = selectedSubcategoryId === ch.id;
+                    return (
+                      <button
+                        key={ch.id}
+                        type="button"
+                        onClick={() => {
+                          if (isSelected) {
+                            setSelectedSubcategoryId("");
+                          } else {
+                            setSelectedSubcategoryId(ch.id);
+                            setIsSubcategoryRevealed(true);
+                          }
+                        }}
+                        className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all flex items-center gap-2 cursor-pointer border ${
+                          isSelected
+                            ? "bg-[#052a51] text-white border-[#052a51] shadow-xs"
+                            : "bg-white text-gray-700 border-gray-200 hover:border-orange-300 hover:bg-orange-50/30"
+                        }`}
+                      >
+                        {ch.image && (
+                          <img
+                            src={ch.image}
+                            alt=""
+                            className="w-4 h-4 rounded-md object-cover"
+                            onError={(e) => {
+                              (e.currentTarget as HTMLImageElement).style.display = "none";
+                            }}
+                          />
+                        )}
+                        <span>{ch.name}</span>
+                        {isSelected && <Check size={12} className="text-orange-400" />}
+                      </button>
+                    );
+                  })}
+                </div>
               </div>
             )}
 
-            {/* Custom Sub-category Modal */}
+            {/* Sub-category Dropdown & Configuration Card */}
+            {(isSubcategoryRevealed || selectedSubcategoryId) && (
+              <div className="pt-2 animate-in fade-in space-y-4">
+                <div>
+                  <label className="text-xs font-bold text-gray-700 block mb-1">Choose Sub-category Dropdown</label>
+                  <select
+                    value={selectedSubcategoryId}
+                    onChange={(e) => setSelectedSubcategoryId(e.target.value)}
+                    className="w-full px-4 py-2.5 rounded-2xl border border-gray-200 text-xs font-bold text-gray-900 bg-white focus:outline-none focus:border-[#F26522] cursor-pointer"
+                  >
+                    <option value="">-- No specific sub-category --</option>
+                    {selectedCategory?.children?.map((ch: any) => (
+                      <option key={ch.id} value={ch.id}>
+                        {ch.name}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+
+                {/* Selected Sub-category Detailed Configuration (Alag Rate, Colour, Dimension, Image) */}
+                {selectedSubcategory && (
+                  <div className="p-4.5 rounded-2xl bg-white border-2 border-orange-200/80 shadow-xs space-y-4 animate-in fade-in">
+                    {/* Header with Sub-category info */}
+                    <div className="flex items-center justify-between pb-3 border-b border-gray-100">
+                      <div className="flex items-center gap-3">
+                        {selectedSubcategory.image ? (
+                          <img
+                            src={selectedSubcategory.image}
+                            alt={selectedSubcategory.name}
+                            className="w-12 h-12 rounded-xl object-cover border border-orange-200 bg-white shrink-0"
+                            onError={(e) => {
+                              (e.currentTarget as HTMLImageElement).src = "/placeholders/category.svg";
+                            }}
+                          />
+                        ) : (
+                          <div className="w-12 h-12 rounded-xl bg-orange-100 text-[#F26522] flex items-center justify-center font-black shrink-0">
+                            <Box size={20} />
+                          </div>
+                        )}
+                        <div>
+                          <div className="flex items-center gap-2">
+                            <h4 className="text-sm font-black text-gray-900">
+                              {selectedSubcategory.name}
+                            </h4>
+                            <span className="text-[10px] px-2 py-0.5 rounded-md bg-[#F26522] text-white font-black uppercase">
+                              Active Sub-category
+                            </span>
+                          </div>
+                          <p className="text-[11px] text-gray-500 mt-0.5">
+                            {selectedSubcategory.description || `Belongs to ${selectedCategory?.name}. Configure distinct rate, colour, dimensions, and image below.`}
+                          </p>
+                        </div>
+                      </div>
+
+                      <button
+                        type="button"
+                        onClick={() => setIsAddingCustomSubcategory(true)}
+                        className="px-3 py-1.5 rounded-xl border border-orange-200 bg-orange-50 text-[#F26522] hover:bg-[#F26522] hover:text-white text-xs font-bold transition-colors cursor-pointer flex items-center gap-1 shrink-0"
+                      >
+                        <Plus size={12} />
+                        <span>+ Add New Sub-type</span>
+                      </button>
+                    </div>
+
+                    {/* 1. Sub-category Rate & Pricing */}
+                    <div className="p-3.5 bg-orange-50/50 rounded-2xl border border-orange-200 space-y-2.5">
+                      <div className="flex items-center justify-between">
+                        <label className="text-xs font-black text-gray-900 flex items-center gap-1.5">
+                          <IndianRupee size={15} className="text-[#F26522]" />
+                          <span>Sub-category Rate &amp; Pricing</span>
+                        </label>
+                        {discountPercent > 0 && (
+                          <span className="px-2.5 py-0.5 rounded-full bg-emerald-100 text-emerald-800 text-[11px] font-black">
+                            {discountPercent}% OFF
+                          </span>
+                        )}
+                      </div>
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                        <div>
+                          <label className="text-[11px] font-bold text-gray-600 block mb-1">
+                            Selling Price (₹) <span className="text-red-500">*</span>
+                          </label>
+                          <div className="relative">
+                            <span className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 font-bold text-xs">₹</span>
+                            <input
+                              type="number"
+                              min="0"
+                              step="0.01"
+                              placeholder="e.g. 1250"
+                              value={sellingPrice}
+                              onChange={(e) => setSellingPrice(e.target.value)}
+                              className="w-full pl-7 pr-3 py-2.5 rounded-xl border border-gray-200 text-xs font-mono font-black text-[#052a51] bg-white focus:outline-none focus:border-[#F26522]"
+                            />
+                          </div>
+                        </div>
+                        <div>
+                          <label className="text-[11px] font-bold text-gray-600 block mb-1">
+                            Maximum Retail Price (MRP ₹)
+                          </label>
+                          <div className="relative">
+                            <span className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 font-bold text-xs">₹</span>
+                            <input
+                              type="number"
+                              min="0"
+                              step="0.01"
+                              placeholder="e.g. 1500"
+                              value={mrp}
+                              onChange={(e) => setMrp(e.target.value)}
+                              className="w-full pl-7 pr-3 py-2.5 rounded-xl border border-gray-200 text-xs font-mono font-bold text-gray-700 bg-white focus:outline-none focus:border-[#F26522]"
+                            />
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* 2. Sub-category Colour & Finish */}
+                    <div className="p-4 bg-gray-50/80 rounded-2xl border border-gray-200 space-y-4">
+                      <ColorRadioSelector
+                        value={dynamicAttributes["Colour"] || dynamicAttributes["Color"] || ""}
+                        onChange={(colorName, colorHex) => {
+                          setDynamicAttributes((prev) => ({
+                            ...prev,
+                            Colour: colorName,
+                            Color: colorName,
+                            ...(colorHex ? { ColorHex: colorHex } : {}),
+                          }));
+                        }}
+                        label="Sub-category Colour (12+ Standard Colours Radio Buttons)"
+                        helperText="Click any standard colour for single-click selection or enter custom shade"
+                        allowCustom={true}
+                        nameGroup="subcategory-colour-selector"
+                      />
+
+                      <div>
+                        <label className="text-[11px] font-bold text-gray-600 block mb-1">
+                          Surface Finish
+                        </label>
+                        <select
+                          value={dynamicAttributes["Surface Finish"] || ""}
+                          onChange={(e) =>
+                            setDynamicAttributes({
+                              ...dynamicAttributes,
+                              "Surface Finish": e.target.value,
+                            })
+                          }
+                          className="w-full px-3 py-2.5 rounded-xl border border-gray-200 text-xs font-bold text-gray-900 bg-white focus:outline-none focus:border-[#F26522] cursor-pointer"
+                        >
+                          <option value="">Select Surface Finish...</option>
+                          <option value="Glossy / Polished">Glossy / Polished</option>
+                          <option value="Matt / Matte">Matt / Matte</option>
+                          <option value="Satin / Silk">Satin / Silk</option>
+                          <option value="Carving / Textured">Carving / Textured</option>
+                          <option value="Rustic / Anti-Skid">Rustic / Anti-Skid</option>
+                          <option value="High Gloss">High Gloss</option>
+                        </select>
+                      </div>
+                    </div>
+
+                    {/* 3. Sub-category Item Dimensions & Packaging */}
+                    <div className="p-3.5 bg-gray-50/80 rounded-2xl border border-gray-200 space-y-2.5">
+                      <label className="text-xs font-black text-gray-900 flex items-center gap-1.5">
+                        <Package size={15} className="text-[#F26522]" />
+                        <span>Sub-category Dimensions &amp; Packaging</span>
+                      </label>
+                      <div className="grid grid-cols-2 sm:grid-cols-4 gap-2.5">
+                        <div>
+                          <label className="text-[10px] font-bold text-gray-500 block mb-1">Length (cm)</label>
+                          <input
+                            type="number"
+                            step="any"
+                            placeholder="e.g. 60"
+                            value={lengthCm}
+                            onChange={(e) => setLengthCm(e.target.value)}
+                            className="w-full px-2.5 py-2 rounded-xl border border-gray-200 text-xs font-medium bg-white focus:outline-none focus:border-[#F26522]"
+                          />
+                        </div>
+                        <div>
+                          <label className="text-[10px] font-bold text-gray-500 block mb-1">Width (cm)</label>
+                          <input
+                            type="number"
+                            step="any"
+                            placeholder="e.g. 60"
+                            value={widthCm}
+                            onChange={(e) => setWidthCm(e.target.value)}
+                            className="w-full px-2.5 py-2 rounded-xl border border-gray-200 text-xs font-medium bg-white focus:outline-none focus:border-[#F26522]"
+                          />
+                        </div>
+                        <div>
+                          <label className="text-[10px] font-bold text-gray-500 block mb-1">Height/Thick (cm)</label>
+                          <input
+                            type="number"
+                            step="any"
+                            placeholder="e.g. 0.9"
+                            value={heightCm}
+                            onChange={(e) => setHeightCm(e.target.value)}
+                            className="w-full px-2.5 py-2 rounded-xl border border-gray-200 text-xs font-medium bg-white focus:outline-none focus:border-[#F26522]"
+                          />
+                        </div>
+                        <div>
+                          <label className="text-[10px] font-bold text-gray-500 block mb-1">Weight (kg)</label>
+                          <input
+                            type="number"
+                            step="any"
+                            placeholder="e.g. 2.4"
+                            value={packedWeightKg}
+                            onChange={(e) => setPackedWeightKg(e.target.value)}
+                            className="w-full px-2.5 py-2 rounded-xl border border-gray-200 text-xs font-medium bg-white focus:outline-none focus:border-[#F26522]"
+                          />
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* 4. Sub-category Specific Image */}
+                    <div className="p-3.5 bg-gray-50/80 rounded-2xl border border-gray-200 space-y-2.5">
+                      <label className="text-xs font-black text-gray-900 flex items-center justify-between">
+                        <span className="flex items-center gap-1.5">
+                          <ImageIcon size={15} className="text-[#F26522]" />
+                          <span>Sub-category Image</span>
+                        </span>
+                        <span className="text-[10px] text-gray-400">Linked to this sub-category</span>
+                      </label>
+
+                      {selectedSubcategory.image ? (
+                        <div className="flex items-center gap-3 p-3 bg-white rounded-2xl border border-orange-200">
+                          <img
+                            src={selectedSubcategory.image}
+                            alt={selectedSubcategory.name}
+                            className="w-14 h-14 rounded-xl object-cover border border-gray-200 shrink-0"
+                            onError={(e) => {
+                              (e.currentTarget as HTMLImageElement).src = "/placeholders/category.svg";
+                            }}
+                          />
+                          <div className="flex-1 min-w-0">
+                            <p className="text-xs font-black text-gray-900 truncate">
+                              {selectedSubcategory.name} Photo
+                            </p>
+                            <p className="text-[10px] text-gray-500 truncate font-mono mt-0.5">
+                              {selectedSubcategory.image}
+                            </p>
+                            <div className="flex items-center gap-3 mt-1.5">
+                              <button
+                                type="button"
+                                onClick={() => {
+                                  if (selectedSubcategory.image && !images.includes(selectedSubcategory.image)) {
+                                    setImages([selectedSubcategory.image, ...images.filter((img) => img !== "/placeholders/product.svg")]);
+                                    toast.success("Sub-category photo set as primary product image!");
+                                  } else {
+                                    toast.info("Image already included in product gallery.");
+                                  }
+                                }}
+                                className="text-[11px] font-bold text-[#F26522] hover:underline flex items-center gap-1 cursor-pointer"
+                              >
+                                <Zap size={11} /> Use as Primary Product Image
+                              </button>
+                            </div>
+                          </div>
+                        </div>
+                      ) : (
+                        <div className="p-3 bg-white rounded-2xl border border-gray-200 flex items-center justify-between">
+                          <span className="text-xs text-gray-500">
+                            No dedicated image linked to this sub-category yet.
+                          </span>
+                          <button
+                            type="button"
+                            onClick={() => setIsAddingCustomSubcategory(true)}
+                            className="text-xs font-bold text-[#F26522] hover:underline cursor-pointer"
+                          >
+                            + Add Image via Sub-type
+                          </button>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                )}
+              </div>
+            )}
+
+            {/* Custom Sub-category Modal (With Custom Rate, Colour, Dimension, and Image) */}
             {isAddingCustomSubcategory && (
               <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-xs flex items-center justify-center p-4">
-                <div className="bg-white rounded-3xl max-w-md w-full p-6 shadow-2xl border border-gray-100 space-y-4 animate-in fade-in">
+                <div className="bg-white rounded-3xl max-w-xl w-full p-6 shadow-2xl border border-gray-100 space-y-4 animate-in fade-in max-h-[90vh] overflow-y-auto">
                   <div className="flex items-center justify-between pb-3 border-b border-gray-100">
-                    <h3 className="text-base font-black text-gray-900 flex items-center gap-2">
-                      <Box size={18} className="text-[#F26522]" />
-                      Add Custom Sub-category
-                    </h3>
+                    <div className="flex items-center gap-2">
+                      <div className="w-8 h-8 rounded-xl bg-orange-100 text-[#F26522] flex items-center justify-center">
+                        <Box size={18} />
+                      </div>
+                      <div>
+                        <h3 className="text-base font-black text-gray-900">
+                          Add Custom Sub-category
+                        </h3>
+                        <p className="text-[11px] text-gray-500">
+                          Under category: <strong className="text-gray-700">{selectedCategory?.name || "General"}</strong>
+                        </p>
+                      </div>
+                    </div>
                     <button
                       type="button"
-                      onClick={() => setIsAddingCustomSubcategory(false)}
+                      onClick={() => {
+                        setIsAddingCustomSubcategory(false);
+                        setCustomSubcategoryImage("");
+                        setCustomSubcategoryUrlInput("");
+                      }}
                       className="p-1 text-gray-400 hover:text-gray-600 rounded-lg cursor-pointer"
                     >
                       <X size={16} />
                     </button>
                   </div>
-                  <div className="space-y-3">
-                    <div>
-                      <label className="text-xs font-bold text-gray-700 block mb-1">Parent Category</label>
-                      <input
-                        type="text"
-                        disabled
-                        value={selectedCategory?.name || "None"}
-                        className="w-full px-3.5 py-2 rounded-xl bg-gray-100 text-xs font-bold text-gray-600"
-                      />
-                    </div>
+
+                  <div className="space-y-4">
+                    {/* Sub-category Name */}
                     <div>
                       <label className="text-xs font-bold text-gray-700 block mb-1">
                         Sub-category Name <span className="text-red-500">*</span>
                       </label>
                       <input
                         type="text"
-                        placeholder="e.g. Hexagonal Mosaic Tiles"
+                        placeholder="e.g. Italian Carrara White 1200x600, Matte Hexagonal..."
                         value={customSubcategoryName}
                         onChange={(e) => setCustomSubcategoryName(e.target.value)}
                         className="w-full px-3.5 py-2.5 rounded-xl border border-gray-200 text-xs font-bold text-gray-900 focus:outline-none focus:border-[#F26522]"
                         autoFocus
                       />
                     </div>
+
+                    {/* Sub-category Image (Upload & Link) */}
+                    <div className="space-y-2 p-3 bg-gray-50/70 rounded-2xl border border-gray-200">
+                      <label className="text-xs font-bold text-gray-700 flex items-center justify-between">
+                        <span className="flex items-center gap-1.5">
+                          <ImageIcon size={14} className="text-[#F26522]" />
+                          Sub-category Image
+                        </span>
+                        <span className="text-[10px] text-gray-400">Photo specific to this sub-category</span>
+                      </label>
+
+                      {/* Mode Switcher */}
+                      <div className="flex items-center gap-2 p-1 bg-gray-200/70 rounded-xl w-fit">
+                        <button
+                          type="button"
+                          onClick={() => setCustomSubcategoryImageMode("upload")}
+                          className={`px-3 py-1 rounded-lg text-xs font-bold transition-all flex items-center gap-1 cursor-pointer ${
+                            customSubcategoryImageMode === "upload"
+                              ? "bg-white text-gray-900 shadow-2xs"
+                              : "text-gray-600 hover:text-gray-900"
+                          }`}
+                        >
+                          <Upload size={12} />
+                          <span>Upload Photo</span>
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => setCustomSubcategoryImageMode("link")}
+                          className={`px-3 py-1 rounded-lg text-xs font-bold transition-all flex items-center gap-1 cursor-pointer ${
+                            customSubcategoryImageMode === "link"
+                              ? "bg-white text-gray-900 shadow-2xs"
+                              : "text-gray-600 hover:text-gray-900"
+                          }`}
+                        >
+                          <LinkIcon size={12} />
+                          <span>Image Link</span>
+                        </button>
+                      </div>
+
+                      {/* Preview or Inputs */}
+                      {customSubcategoryImage ? (
+                        <div className="flex items-center gap-3 p-2.5 bg-white rounded-xl border border-orange-200">
+                          <img
+                            src={customSubcategoryImage}
+                            alt="Subcategory preview"
+                            className="w-14 h-14 rounded-lg object-cover border border-gray-200 shrink-0"
+                            onError={(e) => {
+                              (e.currentTarget as HTMLImageElement).src = "/placeholders/category.svg";
+                            }}
+                          />
+                          <div className="min-w-0 flex-1">
+                            <span className="text-xs font-bold text-gray-900 truncate block">Image Attached</span>
+                            <span className="text-[10px] text-gray-400 truncate block font-mono">{customSubcategoryImage}</span>
+                            <button
+                              type="button"
+                              onClick={() => {
+                                setCustomSubcategoryImage("");
+                                setCustomSubcategoryUrlInput("");
+                              }}
+                              className="text-[11px] text-red-600 font-bold hover:underline mt-1 flex items-center gap-1 cursor-pointer"
+                            >
+                              <Trash2 size={11} /> Remove
+                            </button>
+                          </div>
+                        </div>
+                      ) : (
+                        <>
+                          {customSubcategoryImageMode === "upload" && (
+                            <div>
+                              <input
+                                type="file"
+                                ref={subcategoryFileInputRef}
+                                accept="image/png,image/jpeg,image/webp,image/svg+xml"
+                                onChange={(e) => {
+                                  const file = e.target.files?.[0];
+                                  if (file) handleUploadSubcategoryImage(file);
+                                }}
+                                className="hidden"
+                              />
+                              <div
+                                onClick={() => subcategoryFileInputRef.current?.click()}
+                                className={`border-2 border-dashed rounded-xl p-3 text-center cursor-pointer transition-colors ${
+                                  isUploadingSubcategoryImage
+                                    ? "border-orange-300 bg-orange-50/50"
+                                    : "border-gray-300 hover:border-[#F26522] bg-white"
+                                }`}
+                              >
+                                {isUploadingSubcategoryImage ? (
+                                  <div className="flex items-center justify-center gap-2 py-1 text-xs font-bold text-gray-600">
+                                    <Loader2 size={16} className="animate-spin text-[#F26522]" />
+                                    <span>Uploading photo...</span>
+                                  </div>
+                                ) : (
+                                  <div className="flex items-center justify-center gap-2 py-1 text-xs text-gray-600 font-bold">
+                                    <Upload size={14} className="text-[#F26522]" />
+                                    <span>Click to upload sub-category image</span>
+                                  </div>
+                                )}
+                              </div>
+                            </div>
+                          )}
+
+                          {customSubcategoryImageMode === "link" && (
+                            <div className="flex gap-2">
+                              <input
+                                type="url"
+                                placeholder="Paste image link (https://... or /images/...)"
+                                value={customSubcategoryUrlInput}
+                                onChange={(e) => setCustomSubcategoryUrlInput(e.target.value)}
+                                onKeyDown={(e) => {
+                                  if (e.key === "Enter") {
+                                    e.preventDefault();
+                                    e.stopPropagation();
+                                    const trimmed = customSubcategoryUrlInput.trim();
+                                    if (!trimmed) {
+                                      toast.error("Please enter a valid image URL");
+                                      return;
+                                    }
+                                    setCustomSubcategoryImage(trimmed);
+                                  }
+                                }}
+                                className="flex-1 px-3 py-1.5 rounded-xl border border-gray-200 text-xs bg-white focus:outline-none focus:border-[#F26522]"
+                              />
+                              <button
+                                type="button"
+                                onClick={(e) => {
+                                  e.preventDefault();
+                                  e.stopPropagation();
+                                  const trimmed = customSubcategoryUrlInput.trim();
+                                  if (!trimmed) {
+                                    toast.error("Please enter a valid image URL");
+                                    return;
+                                  }
+                                  setCustomSubcategoryImage(trimmed);
+                                }}
+                                className="px-3 py-1.5 bg-gray-900 text-white rounded-xl text-xs font-bold hover:bg-gray-800 transition-colors cursor-pointer shrink-0"
+                              >
+                                Apply
+                              </button>
+                            </div>
+                          )}
+                        </>
+                      )}
+                    </div>
+
+                    {/* Custom Rate / Pricing (Selling Price & MRP) */}
+                    <div className="p-3 bg-gray-50/70 rounded-2xl border border-gray-200 space-y-2">
+                      <label className="text-xs font-bold text-gray-700 flex items-center gap-1.5">
+                        <IndianRupee size={14} className="text-[#F26522]" />
+                        Sub-category Rate &amp; Price
+                      </label>
+                      <div className="grid grid-cols-2 gap-3">
+                        <div>
+                          <label className="text-[11px] font-bold text-gray-600 block mb-1">Selling Price (₹)</label>
+                          <input
+                            type="number"
+                            min="0"
+                            step="0.01"
+                            placeholder="e.g. 1250"
+                            value={customSubcategoryPrice}
+                            onChange={(e) => setCustomSubcategoryPrice(e.target.value)}
+                            className="w-full px-3 py-2 rounded-xl border border-gray-200 text-xs font-mono font-bold text-[#052a51] bg-white focus:outline-none focus:border-[#F26522]"
+                          />
+                        </div>
+                        <div>
+                          <label className="text-[11px] font-bold text-gray-600 block mb-1">MRP (₹)</label>
+                          <input
+                            type="number"
+                            min="0"
+                            step="0.01"
+                            placeholder="e.g. 1500"
+                            value={customSubcategoryMrp}
+                            onChange={(e) => setCustomSubcategoryMrp(e.target.value)}
+                            className="w-full px-3 py-2 rounded-xl border border-gray-200 text-xs font-mono font-bold text-gray-700 bg-white focus:outline-none focus:border-[#F26522]"
+                          />
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Colour & Dimensions */}
+                    <div className="p-3.5 bg-gray-50/70 rounded-2xl border border-gray-200 space-y-3">
+                      <ColorRadioSelector
+                        value={customSubcategoryColour}
+                        onChange={(colorName) => setCustomSubcategoryColour(colorName)}
+                        label="Sub-category Colour (12+ Standard Colours Radio Buttons)"
+                        helperText="Click any standard colour for single-click selection or enter custom shade"
+                        allowCustom={true}
+                        nameGroup="modal-subcat-colour-selector"
+                      />
+
+                      {/* Dimensions: Length, Width, Height, Weight */}
+                      <div className="grid grid-cols-2 sm:grid-cols-4 gap-2.5">
+                        <div>
+                          <label className="text-[10px] font-bold text-gray-500 block mb-1">Length (cm)</label>
+                          <input
+                            type="number"
+                            step="any"
+                            placeholder="e.g. 60"
+                            value={customSubcategoryLength}
+                            onChange={(e) => setCustomSubcategoryLength(e.target.value)}
+                            className="w-full px-2.5 py-1.5 rounded-xl border border-gray-200 text-xs bg-white focus:outline-none focus:border-[#F26522]"
+                          />
+                        </div>
+                        <div>
+                          <label className="text-[10px] font-bold text-gray-500 block mb-1">Width (cm)</label>
+                          <input
+                            type="number"
+                            step="any"
+                            placeholder="e.g. 60"
+                            value={customSubcategoryWidth}
+                            onChange={(e) => setCustomSubcategoryWidth(e.target.value)}
+                            className="w-full px-2.5 py-1.5 rounded-xl border border-gray-200 text-xs bg-white focus:outline-none focus:border-[#F26522]"
+                          />
+                        </div>
+                        <div>
+                          <label className="text-[10px] font-bold text-gray-500 block mb-1">Height (cm)</label>
+                          <input
+                            type="number"
+                            step="any"
+                            placeholder="e.g. 0.9"
+                            value={customSubcategoryHeight}
+                            onChange={(e) => setCustomSubcategoryHeight(e.target.value)}
+                            className="w-full px-2.5 py-1.5 rounded-xl border border-gray-200 text-xs bg-white focus:outline-none focus:border-[#F26522]"
+                          />
+                        </div>
+                        <div>
+                          <label className="text-[10px] font-bold text-gray-500 block mb-1">Weight (kg)</label>
+                          <input
+                            type="number"
+                            step="any"
+                            placeholder="e.g. 2.4"
+                            value={customSubcategoryWeight}
+                            onChange={(e) => setCustomSubcategoryWeight(e.target.value)}
+                            className="w-full px-2.5 py-1.5 rounded-xl border border-gray-200 text-xs bg-white focus:outline-none focus:border-[#F26522]"
+                          />
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Description */}
+                    <div>
+                      <label className="text-xs font-bold text-gray-700 block mb-1">Description (Optional)</label>
+                      <textarea
+                        rows={2}
+                        placeholder="Brief technical notes for this sub-category..."
+                        value={customSubcategoryDesc}
+                        onChange={(e) => setCustomSubcategoryDesc(e.target.value)}
+                        className="w-full px-3.5 py-2 rounded-xl border border-gray-200 text-xs text-gray-800 focus:outline-none focus:border-[#F26522]"
+                      />
+                    </div>
                   </div>
+
                   <div className="flex items-center justify-end gap-2.5 pt-3 border-t border-gray-100">
                     <button
                       type="button"
-                      onClick={() => setIsAddingCustomSubcategory(false)}
+                      onClick={() => {
+                        setIsAddingCustomSubcategory(false);
+                        setCustomSubcategoryImage("");
+                        setCustomSubcategoryUrlInput("");
+                      }}
                       className="px-4 py-2 rounded-xl border border-gray-200 text-xs font-bold text-gray-600 hover:bg-gray-50 cursor-pointer"
                     >
                       Cancel
@@ -1686,7 +2819,7 @@ export default function SharedProductUploadWizard({
                     <button
                       type="button"
                       onClick={handleSaveCustomSubcategory}
-                      disabled={isSavingSubcategory}
+                      disabled={isSavingSubcategory || isUploadingSubcategoryImage}
                       className="px-5 py-2 bg-[#F26522] hover:bg-[#d95517] text-white text-xs font-bold rounded-xl flex items-center gap-1.5 shadow-xs disabled:opacity-50 cursor-pointer"
                     >
                       {isSavingSubcategory ? <Loader2 size={13} className="animate-spin" /> : <Check size={13} />}
@@ -2195,6 +3328,15 @@ export default function SharedProductUploadWizard({
         </button>
 
         <div className="flex items-center gap-3">
+          <button
+            type="button"
+            onClick={() => setIsPreviewOpen(true)}
+            className="px-4 py-2.5 rounded-2xl border border-gray-300 hover:border-[#F26522] hover:text-[#F26522] text-gray-700 bg-white text-xs font-bold flex items-center gap-1.5 shadow-2xs transition-colors cursor-pointer"
+          >
+            <Eye size={15} className="text-[#F26522]" />
+            <span>Preview on Website</span>
+          </button>
+
           {currentStep < 7 ? (
             <button
               type="button"
@@ -2216,6 +3358,94 @@ export default function SharedProductUploadWizard({
           )}
         </div>
       </div>
+        </div>
+
+        {/* ── Sticky Live Side Preview Column ── */}
+        {showSidePreview && (
+          <aside className="hidden lg:block w-[380px] xl:w-[420px] 2xl:w-[460px] shrink-0 sticky top-24 self-start">
+            <LiveSidePreviewPanel
+              currentStep={currentStep}
+              categoryName={selectedCategory?.name}
+              categoryImage={selectedCategory?.image}
+              subcategoryName={
+                selectedSubcategory?.name ||
+                (customSubcategoryName.trim() ? customSubcategoryName.trim() : undefined)
+              }
+              subcategoryImage={selectedSubcategory?.image || customSubcategoryImage}
+              title={title}
+              brand={brand}
+              customBrandInput={customBrandInput}
+              modelNumber={modelNumber}
+              description={description}
+              sellingPrice={sellingPrice}
+              mrp={mrp}
+              unitOfSale={unitOfSale}
+              stockQuantity={stockQuantity}
+              images={images}
+              colour={dynamicAttributes["Colour"] || dynamicAttributes["Color"] || customSubcategoryColour}
+              finish={dynamicAttributes["Surface Finish"] || dynamicAttributes["Finish"]}
+              material={dynamicAttributes["Material"]}
+              lengthCm={lengthCm || customSubcategoryLength}
+              widthCm={widthCm || customSubcategoryWidth}
+              heightCm={heightCm || customSubcategoryHeight}
+              packedWeightKg={packedWeightKg || customSubcategoryWeight}
+              highlights={highlights}
+              shippingMode={shippingMode}
+              dispatchTimeDays={dispatchTimeDays}
+              returnPolicyDays={returnPolicyDays}
+              warrantyDuration={warrantyDuration}
+              allowCod={allowCod}
+              slug={slug}
+              onExpandModal={() => setIsPreviewOpen(true)}
+              onClosePreview={() => setShowSidePreview(false)}
+            />
+          </aside>
+        )}
+      </div>
+
+      {/* Mobile Floating Live Preview Button */}
+      <div className="fixed bottom-6 right-6 z-40 lg:hidden">
+        <button
+          type="button"
+          onClick={() => setIsPreviewOpen(true)}
+          className="px-4 py-2.5 bg-[#052a51] text-white text-xs font-black rounded-full shadow-2xl flex items-center gap-2 border-2 border-[#F26522] cursor-pointer active:scale-95 transition-all"
+        >
+          <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
+          <span>Live Preview</span>
+        </button>
+      </div>
+
+      {/* Product Storefront Website Preview Modal */}
+      <ProductWebsitePreviewModal
+        isOpen={isPreviewOpen}
+        onClose={() => setIsPreviewOpen(false)}
+        data={{
+          name: title || "New Product Title",
+          brand: brand === "other" ? customBrandInput : brand,
+          modelNumber,
+          description,
+          categoryName: selectedCategory?.name,
+          subcategoryName: selectedSubcategory?.name,
+          unitOfSale,
+          sellingPrice: sellingPrice || 0,
+          mrp: mrp || 0,
+          images: images.length > 0 ? images : undefined,
+          colour: dynamicAttributes["Colour"] || dynamicAttributes["Color"] || customSubcategoryColour,
+          finish: dynamicAttributes["Surface Finish"] || dynamicAttributes["Finish"],
+          material: dynamicAttributes["Material"],
+          lengthCm,
+          widthCm,
+          heightCm,
+          weightKg: packedWeightKg,
+          highlights,
+          shippingMode,
+          dispatchTimeDays,
+          returnPolicyDays,
+          warrantyDuration,
+          allowCod,
+          slug,
+        }}
+      />
     </form>
   );
 }

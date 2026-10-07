@@ -262,7 +262,13 @@ export async function getCpoCatalog(options?: {
     }
 
     if (options?.status && options.status !== "all") {
-      where.status = options.status;
+      if (options.status === "recycle_bin") {
+        where.status = { in: ["archived", "discontinued"] };
+      } else {
+        where.status = options.status;
+      }
+    } else {
+      where.status = { notIn: ["archived", "discontinued"] };
     }
 
     if (options?.search) {
@@ -300,7 +306,14 @@ export async function getCpoCatalog(options?: {
     const limit = Math.min(100, options?.limit || 50);
     const skip = (page - 1) * limit;
 
-    const [products, total] = await Promise.all([
+    const recycleBinWhere: any = {
+      status: { in: ["archived", "discontinued"] },
+    };
+    if (options?.vendorId && options.vendorId !== "all") {
+      recycleBinWhere.vendorId = options.vendorId;
+    }
+
+    const [products, total, recycleBinCount] = await Promise.all([
       prisma.product.findMany({
         where,
         include: {
@@ -320,6 +333,7 @@ export async function getCpoCatalog(options?: {
         take: limit,
       }),
       prisma.product.count({ where }),
+      prisma.product.count({ where: recycleBinWhere }),
     ]);
 
     return {
@@ -327,10 +341,11 @@ export async function getCpoCatalog(options?: {
       total,
       page,
       totalPages: Math.ceil(total / limit),
+      recycleBinCount,
     };
   } catch (error) {
     console.error("getCpoCatalog error:", error);
-    return { products: [], total: 0, page: 1, totalPages: 1 };
+    return { products: [], total: 0, page: 1, totalPages: 1, recycleBinCount: 0 };
   }
 }
 
@@ -582,6 +597,307 @@ export async function cpoBulkUpdateProductImages(
   } catch (error: any) {
     console.error("cpoBulkUpdateProductImages error:", error);
     return { success: false, error: error?.message || "Failed to bulk update images." };
+  }
+}
+
+/**
+ * Bulk Delete Products as CPO (Soft delete / Move to Recycle Bin, or Permanent Purge)
+ */
+export async function cpoBulkDeleteProducts(params: {
+  productIds: string[];
+  permanent?: boolean;
+}) {
+  const cpo = await requireCpoSession("catalog:delete_item");
+
+  if (!params.productIds || params.productIds.length === 0) {
+    return { success: false, error: "Please select at least one product." };
+  }
+
+  try {
+    const { deleteProduct } = await import("@/lib/actions/products");
+
+    if (params.permanent) {
+      // Hard delete each product to ensure 301 redirects are properly recorded and variants cleaned up
+      let deletedCount = 0;
+      for (const id of params.productIds) {
+        const res = await deleteProduct(id, { hardDelete: true });
+        if (res.success) deletedCount++;
+      }
+
+      await prisma.adminAuditLog.create({
+        data: {
+          adminId: cpo.userId,
+          action: "CPO_BULK_PERMANENT_DELETE",
+          entity: "Product",
+          actorRole: "CPO",
+          after: {
+            productIds: params.productIds,
+            deletedCount,
+          },
+        },
+      });
+
+      safeRevalidate("/cpo/catalog");
+      safeRevalidate("/cpo/recycle-bin");
+      safeRevalidate("/shop");
+      safeRevalidate("/vendor/products");
+
+      return {
+        success: true,
+        count: deletedCount,
+        message: `Permanently deleted ${deletedCount} product(s).`,
+      };
+    } else {
+      // Soft delete: move to Recycle Bin (status: "archived")
+      const res = await prisma.product.updateMany({
+        where: { id: { in: params.productIds } },
+        data: {
+          status: "archived",
+          updatedByCpoId: cpo.userId,
+          actorRole: "CPO",
+        },
+      });
+
+      await prisma.adminAuditLog.create({
+        data: {
+          adminId: cpo.userId,
+          action: "CPO_BULK_MOVE_TO_RECYCLE_BIN",
+          entity: "Product",
+          actorRole: "CPO",
+          after: {
+            productIds: params.productIds,
+            movedCount: res.count,
+          },
+        },
+      });
+
+      safeRevalidate("/cpo/catalog");
+      safeRevalidate("/cpo/recycle-bin");
+      safeRevalidate("/shop");
+      safeRevalidate("/vendor/products");
+
+      return {
+        success: true,
+        count: res.count,
+        message: `Moved ${res.count} product(s) to Recycle Bin.`,
+      };
+    }
+  } catch (error: any) {
+    console.error("cpoBulkDeleteProducts error:", error);
+    return { success: false, error: error?.message || "Failed to delete products." };
+  }
+}
+
+/**
+ * Restore a single product from Recycle Bin back to active
+ */
+export async function cpoRestoreProduct(productId: string) {
+  const cpo = await requireCpoSession("catalog:edit_item");
+
+  try {
+    const existing = await prisma.product.findUnique({
+      where: { id: productId },
+    });
+    if (!existing) {
+      return { success: false, error: "Product not found." };
+    }
+
+    const updated = await prisma.product.update({
+      where: { id: productId },
+      data: {
+        status: "active",
+        updatedByCpoId: cpo.userId,
+        actorRole: "CPO",
+      },
+    });
+
+    await prisma.adminAuditLog.create({
+      data: {
+        adminId: cpo.userId,
+        vendorId: existing.vendorId,
+        action: "CPO_PRODUCT_RESTORED",
+        entity: "Product",
+        entityId: existing.id,
+        actorRole: "CPO",
+        before: { status: existing.status },
+        after: { status: "active" },
+      },
+    });
+
+    safeRevalidate("/cpo/catalog");
+    safeRevalidate("/cpo/recycle-bin");
+    safeRevalidate("/shop");
+    safeRevalidate(`/product/${existing.slug}`);
+
+    return {
+      success: true,
+      product: formatProduct(updated),
+      message: `Product "${existing.name}" restored to catalog!`,
+    };
+  } catch (error: any) {
+    console.error("cpoRestoreProduct error:", error);
+    return { success: false, error: error?.message || "Failed to restore product." };
+  }
+}
+
+/**
+ * Bulk restore multiple products from Recycle Bin back to active
+ */
+export async function cpoBulkRestoreProducts(productIds: string[]) {
+  const cpo = await requireCpoSession("catalog:edit_item");
+
+  if (!productIds || productIds.length === 0) {
+    return { success: false, error: "Please select at least one product." };
+  }
+
+  try {
+    const res = await prisma.product.updateMany({
+      where: { id: { in: productIds } },
+      data: {
+        status: "active",
+        updatedByCpoId: cpo.userId,
+        actorRole: "CPO",
+      },
+    });
+
+    await prisma.adminAuditLog.create({
+      data: {
+        adminId: cpo.userId,
+        action: "CPO_BULK_RESTORE_PRODUCTS",
+        entity: "Product",
+        actorRole: "CPO",
+        after: {
+          productIds,
+          restoredCount: res.count,
+        },
+      },
+    });
+
+    safeRevalidate("/cpo/catalog");
+    safeRevalidate("/cpo/recycle-bin");
+    safeRevalidate("/shop");
+    safeRevalidate("/vendor/products");
+
+    return {
+      success: true,
+      count: res.count,
+      message: `Successfully restored ${res.count} product(s) to active catalog!`,
+    };
+  } catch (error: any) {
+    console.error("cpoBulkRestoreProducts error:", error);
+    return { success: false, error: error?.message || "Failed to restore products." };
+  }
+}
+
+/**
+ * Empty the Recycle Bin completely (permanently purges all archived/discontinued items)
+ */
+export async function cpoEmptyRecycleBin(vendorId?: string) {
+  const cpo = await requireCpoSession("catalog:delete_item");
+
+  try {
+    const { deleteProduct } = await import("@/lib/actions/products");
+
+    const where: any = {
+      status: { in: ["archived", "discontinued"] },
+    };
+    if (vendorId && vendorId !== "all") {
+      where.vendorId = vendorId;
+    }
+
+    const items = await prisma.product.findMany({
+      where,
+      select: { id: true, name: true },
+    });
+
+    if (items.length === 0) {
+      return { success: true, count: 0, message: "Recycle Bin is already empty." };
+    }
+
+    let purgedCount = 0;
+    for (const item of items) {
+      const res = await deleteProduct(item.id, { hardDelete: true });
+      if (res.success) purgedCount++;
+    }
+
+    await prisma.adminAuditLog.create({
+      data: {
+        adminId: cpo.userId,
+        action: "CPO_EMPTY_RECYCLE_BIN",
+        entity: "Product",
+        actorRole: "CPO",
+        after: {
+          vendorId: vendorId || "all",
+          purgedCount,
+        },
+      },
+    });
+
+    safeRevalidate("/cpo/catalog");
+    safeRevalidate("/cpo/recycle-bin");
+    safeRevalidate("/shop");
+    safeRevalidate("/vendor/products");
+
+    return {
+      success: true,
+      count: purgedCount,
+      message: `Emptied Recycle Bin: permanently removed ${purgedCount} product(s).`,
+    };
+  } catch (error: any) {
+    console.error("cpoEmptyRecycleBin error:", error);
+    return { success: false, error: error?.message || "Failed to empty Recycle Bin." };
+  }
+}
+
+/**
+ * Bulk update product status (active | paused)
+ */
+export async function cpoBulkUpdateProductStatus(
+  productIds: string[],
+  status: "active" | "paused"
+) {
+  const cpo = await requireCpoSession("catalog:bulk_edit");
+
+  if (!productIds || productIds.length === 0) {
+    return { success: false, error: "Please select at least one product." };
+  }
+
+  try {
+    const res = await prisma.product.updateMany({
+      where: { id: { in: productIds } },
+      data: {
+        status,
+        updatedByCpoId: cpo.userId,
+        actorRole: "CPO",
+      },
+    });
+
+    await prisma.adminAuditLog.create({
+      data: {
+        adminId: cpo.userId,
+        action: `CPO_BULK_STATUS_${status.toUpperCase()}`,
+        entity: "Product",
+        actorRole: "CPO",
+        after: {
+          productIds,
+          status,
+          updatedCount: res.count,
+        },
+      },
+    });
+
+    safeRevalidate("/cpo/catalog");
+    safeRevalidate("/shop");
+    safeRevalidate("/vendor/products");
+
+    return {
+      success: true,
+      count: res.count,
+      message: `Updated status to "${status}" for ${res.count} product(s).`,
+    };
+  } catch (error: any) {
+    console.error("cpoBulkUpdateProductStatus error:", error);
+    return { success: false, error: error?.message || "Failed to update product statuses." };
   }
 }
 

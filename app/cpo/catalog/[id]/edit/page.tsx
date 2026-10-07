@@ -21,6 +21,7 @@ import {
   Layers,
   Sparkles,
   RefreshCw,
+  ExternalLink,
 } from "lucide-react";
 import { toast } from "sonner";
 
@@ -35,6 +36,7 @@ export default function CpoEditProductPage() {
   const [isImageUploading, setIsImageUploading] = useState(false);
   const [vendorName, setVendorName] = useState<string | null>(null);
   const [vendorId, setVendorId] = useState<string | null>(null);
+  const [productSlug, setProductSlug] = useState<string>("");
   const [hasVariants, setHasVariants] = useState(false);
   const [isChooserOpen, setIsChooserOpen] = useState(false);
 
@@ -83,6 +85,7 @@ export default function CpoEditProductPage() {
 
         if (prod) {
           setName(prod.name);
+          setProductSlug(prod.slug || "");
           setCategorySlug(prod.categorySlug || "floor-tiles");
           setCategoryName(prod.categoryName || "Floor Tiles");
           setMaterial(prod.material || "Vitrified");
@@ -292,6 +295,18 @@ export default function CpoEditProductPage() {
           </div>
         </div>
         <div className="flex items-center gap-2">
+          {productSlug && (
+            <a
+              href={`/product/${productSlug}`}
+              target="_blank"
+              rel="noreferrer"
+              className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-white border border-gray-200 hover:border-[#F26522] hover:text-[#F26522] text-gray-700 text-xs font-bold rounded-xl shadow-2xs transition-colors cursor-pointer"
+              title="View this product on the live customer storefront"
+            >
+              <ExternalLink size={13} className="text-[#F26522]" />
+              <span>View on Website</span>
+            </a>
+          )}
           {vendorName ? (
             <div className="flex items-center gap-2">
               <span className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-[#052a51]/5 text-[#052a51] rounded-xl text-xs font-bold border border-[#052a51]/15">

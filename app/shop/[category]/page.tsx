@@ -15,7 +15,6 @@ import {
   generateLocalBusinessCategorySchema,
 } from "@/lib/seo";
 import JsonLd from "@/components/JsonLd";
-import CategorySeoBlock from "@/components/seo/CategorySeoBlock";
 import { getCategorySeo } from "@/lib/data/category-seo";
 
 export const revalidate = 60;
@@ -160,34 +159,8 @@ export default async function CategoryPage({
         {/* Category Catalog & Products Grid */}
         <section className="py-6 sm:py-8 md:py-10 flex-1">
           <div className="w-full max-w-[1400px] mx-auto px-3 sm:px-4 md:px-6 lg:px-8">
-            {/* Delivery Strip Banner */}
-            <div className="bg-white border border-slate-200/90 rounded-2xl p-4 sm:p-5 flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6 shadow-2xs">
-              <div className="flex items-center gap-3.5">
-                <div className="w-10 h-10 rounded-xl bg-[#052A51] text-white flex items-center justify-center shrink-0 shadow-xs">
-                  <svg className="w-5 h-5 text-[#FF9900]" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                    <path d="M9 17a2 2 0 11-4 0 2 2 0 014 0zM19 17a2 2 0 11-4 0 2 2 0 014 0z" />
-                    <path strokeLinecap="round" strokeLinejoin="round" d="M13 16V6a1 1 0 00-1-1H4a1 1 0 00-1 1v10a1 1 0 001 1h1m8-1a1 1 0 01-1 1H9m4-1V8a1 1 0 011-1h2.586a1 1 0 01.707.293l3.414 3.414a1 1 0 01.293.707V16a1 1 0 01-1 1h-1m-6-1a1 1 0 001 1h1M5 17a2 2 0 104 0m-4 0a2 2 0 114 0m6 0a2 2 0 104 0m-4 0a2 2 0 114 0" />
-                  </svg>
-                </div>
-                <div>
-                  <p className="font-extrabold text-slate-900 text-sm sm:text-base leading-tight">
-                    {seo.deliveryText || "60-minute delivery in Bengaluru; 3-7 days Pan-India."}
-                  </p>
-                  <p className="text-xs text-slate-500 mt-0.5">
-                    Direct manufacturer supply with verified transit damage replacement.
-                  </p>
-                </div>
-              </div>
-            </div>
-
             <CategoryCatalogClient
               products={categoryProducts}
-              categoryName={category.name}
-            />
-
-            {/* SEO block — placed below product grid, never above fold */}
-            <CategorySeoBlock
-              categorySlug={categorySlug}
               categoryName={category.name}
             />
           </div>

@@ -80,6 +80,26 @@ body {
   animation: borderFlow 3.5s linear infinite;
 }
 
+@keyframes cpoMarqueeScroll {
+  0% {
+    transform: translate3d(0, 0, 0);
+  }
+  100% {
+    transform: translate3d(-50%, 0, 0);
+  }
+}
+
+.cpo-marquee-track {
+  display: inline-flex;
+  white-space: nowrap;
+  animation: cpoMarqueeScroll 30s linear infinite;
+  will-change: transform;
+}
+
+.cpo-marquee-track:hover {
+  animation-play-state: paused;
+}
+
 /* ==========================================================================
    Apple iOS & Mobile Safari Optimizations
    ========================================================================== */

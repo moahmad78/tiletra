@@ -17,7 +17,6 @@ import {
 import { SEO_LOCATIONS, getLocationBySlug } from "@/lib/data/seo-locations";
 import { categories as allCategories } from "@/lib/data/categories";
 import LocationSeoIntro from "@/components/seo/LocationSeoIntro";
-import CategorySeoBlock from "@/components/seo/CategorySeoBlock";
 import { getCategorySeo } from "@/lib/data/category-seo";
 import { ChevronRight, Home } from "lucide-react";
 
@@ -218,11 +217,7 @@ export default async function CategoryLocationPage({
               </div>
             )}
 
-            {/* Full Category SEO block & cross-links below grid */}
-            <CategorySeoBlock
-              categorySlug={categorySlug}
-              categoryName={category.name}
-            />
+            {/* End of content */}
           </div>
         </section>
 

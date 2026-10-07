@@ -3,14 +3,12 @@
 import { useState, useEffect } from "react";
 import Link from "next/link";
 import { getCpoDashboardStats, getCpoActivityLogs } from "@/lib/actions/cpo";
-import { getActiveCpoWorkspaceStatus } from "@/lib/cpo/auth";
 import {
   Store,
   Package,
   FileText,
   PlusCircle,
   ShieldCheck,
-  Briefcase,
   ExternalLink,
   ArrowRight,
   TrendingUp,
@@ -22,19 +20,16 @@ import {
 export default function CpoDashboardPage() {
   const [stats, setStats] = useState<any>(null);
   const [recentLogs, setRecentLogs] = useState<any[]>([]);
-  const [workspace, setWorkspace] = useState<any>(null);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     Promise.all([
       getCpoDashboardStats(),
       getCpoActivityLogs({ limit: 6 }),
-      getActiveCpoWorkspaceStatus(),
     ])
-      .then(([statsRes, logsRes, wsRes]) => {
+      .then(([statsRes, logsRes]) => {
         setStats(statsRes);
         setRecentLogs(logsRes);
-        setWorkspace(wsRes);
       })
       .finally(() => setLoading(false));
   }, []);
@@ -58,53 +53,14 @@ export default function CpoDashboardPage() {
 
         <div className="flex items-center gap-3 shrink-0 flex-wrap">
           <Link
-            href="/cpo/catalog/new"
-            className="inline-flex items-center gap-2 px-5 py-2.5 bg-[#F26522] hover:bg-[#d95517] text-white text-xs font-bold rounded-xl shadow-sm transition-all hover:scale-[1.02]"
-          >
-            <PlusCircle className="w-4 h-4" />
-            <span>+ Add New Product</span>
-          </Link>
-          <Link
             href="/cpo/invoices"
-            className="inline-flex items-center gap-2 px-5 py-2.5 bg-[#052a51] hover:bg-[#04203e] text-white text-xs font-bold rounded-xl shadow-sm transition-all hover:scale-[1.02]"
+            className="inline-flex items-center gap-2 px-4 py-2.5 bg-[#052a51] hover:bg-[#04203e] text-white text-xs font-bold rounded-xl shadow-xs transition-all hover:scale-[1.02]"
           >
-            <FileText className="w-4 h-4" />
+            <FileText className="w-4 h-4 text-[#F26522]" />
             <span>Tax Invoices</span>
           </Link>
         </div>
       </div>
-
-      {/* Active Workspace Banner Card (if active) */}
-      {workspace?.active && (
-        <div className="bg-amber-50/80 border border-amber-200/80 rounded-2xl p-5 flex flex-col sm:flex-row sm:items-center justify-between gap-4 shadow-xs">
-          <div className="flex items-center gap-3.5">
-            <div className="w-12 h-12 rounded-xl bg-[#F26522] text-white flex items-center justify-center shrink-0 shadow-xs">
-              <Briefcase className="w-6 h-6" />
-            </div>
-            <div>
-              <div className="text-xs text-amber-900 font-bold uppercase tracking-wider">
-                Currently Working on Behalf of:
-              </div>
-              <div className="text-base font-black text-gray-900">{workspace.vendorName}</div>
-              <div className="text-xs text-gray-500 font-mono">Vendor ID: {workspace.vendorId}</div>
-            </div>
-          </div>
-          <div className="flex items-center gap-2.5">
-            <Link
-              href={`/cpo/catalog/new?vendorId=${workspace.vendorId}`}
-              className="text-xs font-bold px-4 py-2 rounded-xl bg-[#F26522] text-white hover:bg-[#d95517] shadow-xs transition-colors"
-            >
-              + Add Item for this Vendor
-            </Link>
-            <Link
-              href={`/cpo/catalog?vendorId=${workspace.vendorId}`}
-              className="text-xs font-bold px-4 py-2 rounded-xl bg-white text-gray-800 border border-gray-200 hover:bg-gray-50 shadow-xs transition-colors"
-            >
-              View Vendor Catalog
-            </Link>
-          </div>
-        </div>
-      )}
 
       {/* 4 Core Management Shortcuts */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">

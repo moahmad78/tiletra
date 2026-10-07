@@ -11,6 +11,7 @@ import {
   Shield,
   LayoutDashboard,
   Layers,
+  Trash2,
 } from "lucide-react";
 
 const NAV_ITEMS = [
@@ -19,6 +20,7 @@ const NAV_ITEMS = [
   { href: "/cpo/categories", label: "Categories & Taxonomy", icon: Layers },
   { href: "/cpo/catalog", label: "Catalog & Items", icon: Package },
   { href: "/cpo/catalog/new", label: "Add Item (All Options)", icon: PlusCircle },
+  { href: "/cpo/recycle-bin", label: "Recycle Bin", icon: Trash2 },
   { href: "/cpo/invoices", label: "Tax Invoice Generator", icon: FileText },
 ];
 
@@ -26,9 +28,9 @@ export default function CpoSidebar() {
   const pathname = usePathname();
 
   return (
-    <aside className="w-64 bg-[#052a51] text-white flex flex-col shrink-0 min-h-screen border-r border-white/10 select-none notranslate" translate="no">
+    <aside className="w-64 bg-[#052a51] text-white flex flex-col shrink-0 h-full border-r border-white/10 select-none notranslate" translate="no">
       {/* Brand Header with IntriHub Web Logo */}
-      <div className="h-16 px-4 border-b border-white/10 flex items-center justify-between">
+      <div className="h-16 px-4 border-b border-white/10 flex items-center justify-between shrink-0">
         <Link href="/cpo" className="flex items-center gap-2">
           <div className="bg-white px-2.5 py-1 rounded-xl shadow-xs flex items-center">
             {/* eslint-disable-next-line @next/next/no-img-element */}
@@ -45,7 +47,7 @@ export default function CpoSidebar() {
       </div>
 
       {/* Navigation */}
-      <nav className="flex-1 px-3 py-4 space-y-1.5 overflow-y-auto">
+      <nav className="flex-1 min-h-0 px-3 py-4 space-y-1.5 overflow-y-auto">
         <div className="px-3 pb-2 text-[10px] font-bold uppercase tracking-wider text-white/40">
           Management
         </div>

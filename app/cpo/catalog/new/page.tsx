@@ -11,12 +11,8 @@ import {
   ArrowLeft,
   Store,
   Loader2,
-  Sparkles,
   Search,
   Package,
-  RefreshCw,
-  AlertCircle,
-  ShieldCheck,
 } from "lucide-react";
 import { toast } from "sonner";
 
@@ -206,84 +202,41 @@ function CpoNewProductContent() {
   // ─────────────────────────────────────────────────────────────
   return (
     <div className="max-w-5xl mx-auto space-y-6">
-      {/* Top Header & Vendor Switcher Bar */}
-      <div className="bg-white rounded-3xl p-6 border border-gray-200/90 shadow-xs flex flex-col md:flex-row md:items-center justify-between gap-4">
-        <div className="flex items-center gap-3">
-          <Link
-            href="/cpo/catalog"
-            className="p-2.5 rounded-xl bg-gray-50 border border-gray-200 text-gray-600 hover:bg-gray-100 transition-colors"
-          >
-            <ArrowLeft size={18} />
-          </Link>
-          <div>
-            <h1 className="text-xl md:text-2xl font-black text-gray-900 tracking-tight flex items-center gap-2">
-              <span>Add New Catalog Product</span>
-              <span className="text-[10px] font-bold px-2 py-0.5 rounded-md bg-emerald-100 text-emerald-800 uppercase">
-                Ready
-              </span>
-            </h1>
-            <p className="text-xs text-gray-500 mt-0.5">
-              Uploading on behalf of <strong>{selectedVendor.businessName}</strong>. All images and variants will be bound to this vendor.
-            </p>
-          </div>
-        </div>
-
-        {/* Change Vendor Control */}
-        <div className="flex items-center gap-2 bg-gray-50 p-2 rounded-2xl border border-gray-200">
-          <Store className="w-4 h-4 text-[#F26522] shrink-0 ml-1" />
-          <span className="text-xs font-bold text-gray-700 whitespace-nowrap">Vendor:</span>
-          <select
-            value={selectedVendorId}
-            onChange={(e) => handleVendorSelect(e.target.value)}
-            disabled={switching}
-            className="bg-white border border-gray-200 rounded-xl px-3 py-1.5 text-xs font-bold text-gray-900 focus:outline-none focus:border-[#F26522] cursor-pointer"
-          >
-            {vendors.map((v) => (
-              <option key={v.id} value={v.id}>
-                {v.businessName} ({v._count?.products ?? 0} items)
-              </option>
-            ))}
-          </select>
-          <button
-            type="button"
-            onClick={() => setIsChooserOpen(true)}
-            className="p-1.5 rounded-xl text-gray-500 hover:text-[#F26522] hover:bg-white transition-colors cursor-pointer"
-            title="Browse full vendor list"
-          >
-            <Search size={15} />
-          </button>
-        </div>
-      </div>
-
-      {/* Selected Vendor Notice Banner */}
-      <div className="bg-[#052a51]/5 border border-[#052a51]/15 rounded-2xl p-4 flex flex-wrap items-center justify-between gap-3 text-xs text-[#052a51]">
-        <div className="flex items-center gap-2.5">
-          <Sparkles className="w-4 h-4 text-[#F26522] shrink-0" />
-          <span>
-            Active Vendor Workspace: <strong className="text-[#052a51] font-bold">{selectedVendor.businessName}</strong>
-            <span className="text-gray-500 font-mono ml-1.5">({selectedVendor.category || "General Materials"})</span>
-          </span>
-        </div>
-        <div className="flex items-center gap-2">
-          <span className="text-[11px] text-gray-500 font-mono">
-            ID: {selectedVendor.id.slice(0, 14)}...
-          </span>
-          <button
-            type="button"
-            onClick={() => setIsChooserOpen(true)}
-            className="inline-flex items-center gap-1 text-[11px] font-bold text-[#F26522] hover:underline cursor-pointer ml-2"
-          >
-            <RefreshCw size={11} />
-            Change Vendor
-          </button>
-        </div>
-      </div>
-
-      {/* Unified Product Upload Wizard */}
+      {/* Unified Product Upload Wizard with Consolidated Header & Vendor Controls */}
       <DynamicProductUploadForm
+        key={selectedVendorId}
         vendorId={selectedVendorId}
         onSuccessRedirectUrl="/cpo/catalog"
         isAdminOrCpo={true}
+        headerTitle="Add New Catalog Product"
+        headerBadge="Ready"
+        headerSubtitle={`Uploading on behalf of ${selectedVendor.businessName}. All images and variants will be bound to this vendor.`}
+        headerVendorSlot={
+          <div className="flex items-center gap-2 bg-gray-50 p-1.5 rounded-2xl border border-gray-200">
+            <Store className="w-4 h-4 text-[#F26522] shrink-0 ml-1" />
+            <span className="text-xs font-bold text-gray-700 whitespace-nowrap">Vendor:</span>
+            <select
+              value={selectedVendorId}
+              onChange={(e) => handleVendorSelect(e.target.value)}
+              disabled={switching}
+              className="bg-white border border-gray-200 rounded-xl px-2.5 py-1 text-xs font-bold text-gray-900 focus:outline-none focus:border-[#F26522] cursor-pointer"
+            >
+              {vendors.map((v) => (
+                <option key={v.id} value={v.id}>
+                  {v.businessName} ({v._count?.products ?? 0} items)
+                </option>
+              ))}
+            </select>
+            <button
+              type="button"
+              onClick={() => setIsChooserOpen(true)}
+              className="p-1 rounded-xl text-gray-500 hover:text-[#F26522] hover:bg-white transition-colors cursor-pointer"
+              title="Browse full vendor list"
+            >
+              <Search size={14} />
+            </button>
+          </div>
+        }
       />
 
       {/* Vendor Chooser Modal */}

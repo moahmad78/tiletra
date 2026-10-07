@@ -16,9 +16,9 @@ export async function invalidateCategoriesCache(): Promise<void> {
   cachedCategories = null;
 }
 
-export async function getCategories(): Promise<Category[]> {
+export async function getCategories(options?: { forceRefresh?: boolean }): Promise<Category[]> {
   const now = Date.now();
-  if (cachedCategories && now - cachedCategories.timestamp < CATEGORIES_CACHE_TTL) {
+  if (!options?.forceRefresh && cachedCategories && now - cachedCategories.timestamp < CATEGORIES_CACHE_TTL) {
     return cachedCategories.data;
   }
 
@@ -67,6 +67,7 @@ export async function getCategories(): Promise<Category[]> {
             slug: ch.slug,
             description: ch.description || "",
             parentId: ch.parentId,
+            image: ch.image && ch.image.trim() ? ch.image : "/placeholders/category.svg",
             attributeSchema: ch.attributeSchema || null,
             productCount: ch._count?.products || 0,
           })),
@@ -239,17 +240,23 @@ export async function createCustomCategory(data: {
 
     if (!isAuthorized) {
       try {
-        const { getCpoSession } = await import("@/lib/cpo/auth");
-        const cpoSession = await getCpoSession();
-        if (cpoSession) isAuthorized = true;
+        const { getCpoSession, getActiveCpoWorkspaceStatus } = await import("@/lib/cpo/auth");
+        const [cpoSession, wsStatus] = await Promise.all([
+          getCpoSession().catch(() => null),
+          getActiveCpoWorkspaceStatus().catch(() => null),
+        ]);
+        if (cpoSession || (wsStatus && wsStatus.active)) isAuthorized = true;
       } catch {}
     }
 
     if (!isAuthorized) {
       try {
-        const { getAdminSession } = await import("@/lib/server-auth");
-        const adminSession = await getAdminSession();
-        if (adminSession) isAuthorized = true;
+        const { getAdminSession, getAuthenticatedVendor } = await import("@/lib/server-auth");
+        const [adminSession, vendor] = await Promise.all([
+          getAdminSession().catch(() => null),
+          getAuthenticatedVendor().catch(() => null),
+        ]);
+        if (adminSession || vendor) isAuthorized = true;
       } catch {}
     }
 

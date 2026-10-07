@@ -125,11 +125,33 @@ export async function POST(req: NextRequest) {
     let requestVendorId: string = "";
 
     if (actorType === "CPO" || actorType === "ADMIN") {
-      const explicitVendorId = (
+      let explicitVendorId = (
         (formData.get("vendorId") as string) ||
         req.nextUrl.searchParams.get("vendorId") ||
         ""
       ).trim();
+
+      if (!explicitVendorId && actorType === "CPO") {
+        try {
+          const { getActiveCpoWorkspaceStatus } = await import("@/lib/cpo/auth");
+          const ws = await getActiveCpoWorkspaceStatus();
+          if (ws.active && ws.vendorId) {
+            explicitVendorId = ws.vendorId;
+          }
+        } catch { }
+      }
+
+      if (!explicitVendorId) {
+        try {
+          const firstVendor = await prisma.vendor.findFirst({
+            where: { status: "approved" },
+            select: { id: true },
+          });
+          if (firstVendor) {
+            explicitVendorId = firstVendor.id;
+          }
+        } catch { }
+      }
 
       if (!explicitVendorId) {
         return NextResponse.json(
