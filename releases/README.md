@@ -19,11 +19,10 @@ Latest fresh production builds ready for Google Play Store release:
 ### Release Notes (Play Console):
 #### English (en-US):
 ```text
-• 13 Regional Languages Support: IntriHub now speaks your language! Choose from English, Hindi, Kannada, Tamil, Telugu, Malayalam, Marathi, Bengali, Gujarati, Punjabi, Urdu, Odia, and Assamese.
-• Instant Language Switcher: Fast multilingual search bar in Settings & Onboarding with native script and English filtering.
-• Streamlined Quick-Start Experience: Removed redundant popups for instant 1-tap browsing of construction & interior materials.
-• Official Brand Slogan Update: "Every Material. Every Space." synchronized across headers, invoices, and material sheets.
-• Performance & Stability: Instant app launch, optimized Hermes bytecode execution, and improved memory efficiency on Android 15.
+• 13 Indian Languages: Now supports 13 regional languages with instant search & switcher.
+• Faster Onboarding: Removed extra popups for direct 1-tap catalog browsing.
+• New Official Slogan: "Every Material. Every Space."
+• Performance Boost: Faster app launch and smoother experience on Android 15.
 ```
 
 #### Hindi (hi-IN):
