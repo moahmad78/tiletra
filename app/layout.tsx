@@ -1,5 +1,5 @@
 import type { Metadata, Viewport } from "next";
-import { Plus_Jakarta_Sans, Noto_Sans_Devanagari, Noto_Sans_Kannada } from "next/font/google";
+import { Plus_Jakarta_Sans, Noto_Sans_Devanagari } from "next/font/google";
 import { cookies } from "next/headers";
 import { Suspense } from "react";
 import "./globals.css";
@@ -38,12 +38,7 @@ const devanagari = Noto_Sans_Devanagari({
   weight: ["400", "500", "600", "700"],
 });
 
-const kannada = Noto_Sans_Kannada({
-  variable: "--font-kannada",
-  subsets: ["kannada"],
-  display: "swap",
-  weight: ["400", "500", "600", "700"],
-});
+
 
 export const viewport: Viewport = {
   width: "device-width",
@@ -195,7 +190,7 @@ export default async function RootLayout({
   return (
     <html
       lang={currentLang}
-      className={`${jakarta.variable} ${devanagari.variable} ${kannada.variable} h-full antialiased scroll-smooth`}
+      className={`${jakarta.variable} ${devanagari.variable} h-full antialiased scroll-smooth`}
     >
       <head>
         {/* DOM Mutation Safety Patch: Prevents React 19 hydration/reconciliation crashes from Google Translate wrapping nodes in <font> */}
@@ -252,7 +247,10 @@ j=d.createElement(s),dl=l!='dataLayer'?'&l='+l:'';j.async=true;j.src=
           }}
         />
 
-        {/* Preconnect to Required Services */}
+        {/* Preconnect to Required Services & Web Fonts */}
+        <link rel="preconnect" href="https://fonts.googleapis.com" />
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
+        <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Noto+Sans+Kannada:wght@400;500;600;700&display=swap" />
         <link rel="preconnect" href="https://www.googletagmanager.com" crossOrigin="anonymous" />
         {/* Preload Hero Banner Image */}
         <link
