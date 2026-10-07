@@ -23,11 +23,11 @@ export const GOOGLE_MAPS_API_KEY =
 
 export const APP_VERSION: string =
   (Constants.expoConfig?.version as string | undefined) ??
-  "1.1.9";
+  "1.2.4";
 
 export const APP_VERSION_CODE: number =
   (Constants.expoConfig?.android?.versionCode as number | undefined) ??
-  12;
+  17;
 
 export const PACKAGE_NAME = "com.intrihub.app";
 export const SUPPORT_PHONE = "7090120211";

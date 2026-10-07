@@ -4,35 +4,44 @@ Latest fresh production builds ready for Google Play Store release:
 
 ---
 
-## 1. 📱 Customer / User App (IntriHub)
-* **File Name:** `intrihub-mobile-release-v1.2.3-code16.aab`
-* **Full Local Path:** `d:\Intrihub\releases\intrihub-mobile-release-v1.2.3-code16.aab`
+## 1. 📱 Customer / User App (IntriHub) — Latest
+* **File Name:** `intrihub-mobile-release-v1.2.4-code17.aab`
+* **Full Local Path:** `d:\Intrihub\releases\intrihub-mobile-release-v1.2.4-code17.aab`
 * **Bundle Output Path:** `d:\Intrihub\intrihub-mobile\android\app\build\outputs\bundle\release\app-release.aab`
-* **File Size:** 75.6 MB (`75,615,827 bytes`)
-* **Version Name:** `1.2.3`
-* **Version Code:** `16`
+* **File Size:** 75.6 MB (`75,618,245 bytes`)
+* **Version Name:** `1.2.4`
+* **Version Code:** `17`
 * **Package Name:** `com.intrihub.app`
 * **Signing Keystore:** `intrihub-mobile/android/app/intrihub-release-key.keystore`
 * **Key Alias:** `intrihub-key-alias`
-* **Build Date:** October 06, 2026
+* **Build Date:** October 07, 2026
 
 ### Release Notes (Play Console):
 #### English (en-US):
 ```text
-• New Multi-Variant Catalog: Seamlessly browse, select, and compare tile dimensions, finishes, and thickness options with live price updates.
-• Real-time Inventory & Stock Sync: Accurate stock availability and instant cart validation.
-• Enhanced Site Address Search: Blinkit-style ultra-fast address search and precise GPS pin for construction site deliveries.
-• Optimized Checkout & Delivery Estimation: Faster order dispatch scheduling and zero-latency route calculations.
-• Performance & Stability: Memory footprint improvements, optimized image caching, and full Android 15 compatibility.
+• 13 Regional Languages Support: IntriHub now speaks your language! Choose from English, Hindi, Kannada, Tamil, Telugu, Malayalam, Marathi, Bengali, Gujarati, Punjabi, Urdu, Odia, and Assamese.
+• Instant Language Switcher: Fast multilingual search bar in Settings & Onboarding with native script and English filtering.
+• Streamlined Quick-Start Experience: Removed redundant popups for instant 1-tap browsing of construction & interior materials.
+• Official Brand Slogan Update: "Every Material. Every Space." synchronized across headers, invoices, and material sheets.
+• Performance & Stability: Instant app launch, optimized Hermes bytecode execution, and improved memory efficiency on Android 15.
 ```
 
 #### Hindi (hi-IN):
 ```text
-• नया मल्टी-वेरिएंट कैटलॉग: टाइल्स के आकार, फिनिश और मोटाई के विकल्पों को लाइव कीमतों के साथ आसानी से देखें और चुनें।
-• रियल-टाइम स्टॉक सिंक: सटीक स्टॉक उपलब्धता और त्वरित कार्ट सत्यापन।
-• बेहतर साइट एड्रेस सर्च: कंस्ट्रक्शन साइट और डिलीवरी पते के लिए सुपरफास्ट ऑटो-कंप्लीट और सटीक पिन।
-• फास्ट चेकआउट और डिलीवरी समय अनुमान: तेज ऑर्डर शेड्यूलिंग और तुरंत रूट कैलकुलेशन।
-• ऐप परफॉर्मेंस और स्थिरता: लोडिंग स्पीड में सुधार और Android 15 सपोर्ट।
+• 13 भारतीय भाषाओं का सपोर्ट: अब IntriHub आपकी भाषा में! हिंदी, कन्नड़, तमिल, तेलुगु, मलयालम, मराठी, बंगाली, गुजराती, पंजाबी, उर्दू, ओडिया, असमिया और अंग्रेजी में से चुनें।
+• सुपरफास्ट भाषा चयन: सर्च बार के साथ अपनी पसंदीदा भाषा चुनें और किसी भी समय प्रोफाइल सेटिंग्स से बदलें।
+• आसान व त्वरित शुरुआत: अनावश्यक पॉपअप हटाए गए, सीधे कैटलॉग में 1-टैप प्रवेश।
+• नया आधिकारिक स्लोगन: "Every Material. Every Space." पूरे ऐप में अपडेट।
+• बेहतर स्पीड और परफॉर्मेंस: ऐप लोडिंग गति में सुधार और Android 15 के लिए ऑप्टिमाइज़्ड।
+```
+
+#### Kannada (kn-IN):
+```text
+• 13 ಭಾರತೀಯ ಭಾಷೆಗಳ ಬೆಂಬಲ: ಈಗ IntriHub ನಿಮ್ಮ ಭಾಷೆಯಲ್ಲಿದೆ! ಕನ್ನಡ, ಹಿಂದಿ, ಇಂಗ್ಲಿಷ್, ತಮಿಳು, ತೆಲುಗು, ಮಲಯಾಳಂ, ಮರಾಠಿ, ಬಂಗಾಳಿ, ಗುಜರಾತಿ, ಪಂಜಾಬಿ, ಉರ್ದು, ಒಡಿಯಾ ಮತ್ತು ಅಸ್ಸಾಮಿ ಭಾಷೆಗಳಲ್ಲಿ ಲಭ್ಯ.
+• ತ್ವರಿತ ಭಾಷಾ ಆಯ್ಕೆ: ಹುಡುಕಾಟ ಬಾರ್‌ನೊಂದಿಗೆ ನಿಮ್ಮ ಮೆಚ್ಚಿನ ಭಾಷೆಯನ್ನು ಸುಲಭವಾಗಿ ಆರಿಸಿ.
+• ತಡೆರಹಿತ ಆರಂಭ: ಅನಗತ್ಯ ಪಾಪ್-ಅಪ್‌ಗಳನ್ನು ತೆಗೆದುಹಾಕಲಾಗಿದೆ, ನೇರವಾಗಿ ಉತ್ಪನ್ನಗಳನ್ನು ಬ್ರೌಸ್ ಮಾಡಿ.
+• ಹೊಸ ಬ್ರ್ಯಾಂಡ್ ಸ್ಲೋಗನ್: "Every Material. Every Space." ಅಪ್ಲಿಕೇಶನ್‌ನಾದ್ಯಂತ ಅಪ್‌ಡೇಟ್ ಮಾಡಲಾಗಿದೆ.
+• ವೇಗದ ಕಾರ್ಯಕ್ಷಮತೆ: ಆಂಡ್ರಾಯ್ಡ್ 15 ಹೊಂದಾಣಿಕೆ ಮತ್ತು ತ್ವರಿತ ಲೋಡಿಂಗ್ ವೇಗ.
 ```
 
 ---
