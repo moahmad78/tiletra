@@ -1,6 +1,6 @@
 import sharp from "sharp";
-import fs from "fs";
-import path from "path";
+import * as fs from "fs";
+import * as path from "path";
 
 async function main() {
   console.log("==========================================================================");
