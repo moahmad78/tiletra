@@ -1,6 +1,6 @@
 import { Metadata } from "next";
 import Link from "next/link";
-import { notFound } from "next/navigation";
+import { notFound, redirect } from "next/navigation";
 import { getCategoryBySlug } from "@/lib/actions/categories";
 import { getProducts } from "@/lib/actions/products";
 import Header from "@/components/Header";
@@ -96,7 +96,7 @@ export default async function CategoryLocationPage({
   const location = getLocationBySlug(locationSlug);
 
   if (!category || !location) {
-    notFound();
+    redirect("/");
   }
 
   const seo = getCategorySeo(categorySlug);

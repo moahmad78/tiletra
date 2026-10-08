@@ -1,5 +1,5 @@
 import { Metadata } from "next";
-import { notFound, permanentRedirect } from "next/navigation";
+import { notFound, permanentRedirect, redirect } from "next/navigation";
 import { prisma } from "@/lib/prisma";
 import { BASE_SITE_URL, generateSeoKeywordPageSchemas } from "@/lib/seo";
 import JsonLd from "@/components/JsonLd";
@@ -101,7 +101,7 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
 
   if (!page || !page.isPublished) {
     return {
-      title: "Page Not Found",
+      title: "IntriHub – Every Material. Every Space.",
       robots: { index: false, follow: false },
     };
   }
@@ -166,7 +166,7 @@ export default async function SeoLandingPage({ params }: PageProps) {
   }
 
   if (!page || !page.isPublished) {
-    notFound();
+    redirect("/");
   }
 
   // 4. Fetch Live Filtered Catalog Products

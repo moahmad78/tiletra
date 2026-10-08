@@ -132,7 +132,7 @@ export default async function ProductPage({
     if (redirectRecord && redirectRecord.toPath) {
       redirect(redirectRecord.toPath);
     }
-    notFound();
+    redirect("/");
   }
 
   const relatedProducts = allProducts

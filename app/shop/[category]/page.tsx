@@ -121,7 +121,7 @@ export default async function CategoryPage({
     if (redirectRecord) {
       redirect(redirectRecord.toPath);
     }
-    notFound();
+    redirect("/");
   }
 
   const seo = getCategorySeo(categorySlug);

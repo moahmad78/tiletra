@@ -1,7 +1,7 @@
 import { Metadata } from "next";
 import Link from "next/link";
 import Image from "next/image";
-import { notFound } from "next/navigation";
+import { notFound, redirect } from "next/navigation";
 import { Clock, Calendar, ChevronRight, User, BookOpen, ArrowRight, Share2, Tag, ArrowLeft } from "lucide-react";
 import Header from "@/components/Header";
 import Footer from "@/components/Footer";
@@ -101,7 +101,7 @@ export default async function BuyingGuideDetailPage({
   const guide = await getGuidePostBySlug(slug);
 
   if (!guide) {
-    notFound();
+    redirect("/");
   }
 
   // Related Guides (other posts in same or general categories)

@@ -11,6 +11,14 @@ export default function NotFound() {
     router.replace("/");
   }, [router]);
 
-  // Clean empty state to prevent UI flashes during redirection
-  return null;
+  return (
+    <>
+      <meta httpEquiv="refresh" content="0; url=/" />
+      <script
+        dangerouslySetInnerHTML={{
+          __html: "window.location.replace('/');",
+        }}
+      />
+    </>
+  );
 }
