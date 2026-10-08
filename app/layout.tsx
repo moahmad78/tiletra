@@ -55,11 +55,11 @@ export const metadata: Metadata = {
   metadataBase: new URL(BASE_SITE_URL),
   referrer: "no-referrer-when-downgrade",
   title: {
-    default: "Every Material. Every Space. | IntriHub",
+    default: "IntriHub – Every Material. Every Space.",
     template: "%s | IntriHub",
   },
   description:
-    "IntriHub: Every Material. Every Space. Buy vitrified tiles, electrical, plumbing, sanitaryware, plywood & hardware online with fast site delivery.",
+    "Shop tiles, hardware, electrical, lighting and construction materials online with IntriHub. Quality materials, competitive prices and fast delivery across Bengaluru.",
   keywords: [
     "Intrihub",
     "IntriHub",
@@ -150,9 +150,9 @@ export const metadata: Metadata = {
   },
   manifest: "/site.webmanifest",
   openGraph: {
-    title: "Every Material. Every Space. | IntriHub",
+    title: "IntriHub – Every Material. Every Space.",
     description:
-      "IntriHub — Every Material. Every Space. Buy vitrified tiles, electrical, plumbing, plywood, hardware & interior supplies online with instant doorstep site delivery.",
+      "Shop interior and construction materials online. Everything you need for every space, delivered across Bengaluru.",
     type: "website",
     url: "https://www.intrihub.com/",
     siteName: "IntriHub",
@@ -160,17 +160,17 @@ export const metadata: Metadata = {
     images: [
       {
         url: `${BASE_SITE_URL}/images/intrihub-og-image.jpg`,
-        width: 1024,
-        height: 537,
-        alt: "Every Material. Every Space. | IntriHub — Instant Building & Interior Materials Delivery",
+        width: 1200,
+        height: 630,
+        alt: "IntriHub – Every Material. Every Space.",
       },
     ],
   },
   twitter: {
     card: "summary_large_image",
-    title: "Every Material. Every Space. | IntriHub",
+    title: "IntriHub – Every Material. Every Space.",
     description:
-      "IntriHub — Every Material. Every Space. Buy vitrified tiles, electrical, plumbing, plywood, hardware & interior supplies online with instant doorstep site delivery.",
+      "Shop interior and construction materials online. Everything you need for every space, delivered across Bengaluru.",
     images: [`${BASE_SITE_URL}/images/intrihub-og-image.jpg`],
   },
 };

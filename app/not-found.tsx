@@ -1,23 +1,16 @@
-import type { Metadata } from "next";
-import Header from "@/components/Header";
-import Footer from "@/components/Footer";
-import NotFoundClient from "@/components/NotFoundClient";
+"use client";
 
-export const metadata: Metadata = {
-  title: "404: Page Not Found",
-  description: "The page or resource you were looking for is unavailable or has moved. Search 500+ building materials or contact IntriHub support.",
-  robots: {
-    index: false,
-    follow: true,
-  },
-};
+import { useEffect } from "react";
+import { useRouter } from "next/navigation";
 
 export default function NotFound() {
-  return (
-    <main className="min-h-screen flex flex-col bg-[#F8FAFC]">
-      <Header />
-      <NotFoundClient />
-      <Footer />
-    </main>
-  );
+  const router = useRouter();
+
+  useEffect(() => {
+    // Instant client-side redirect to homepage replacing browser history
+    router.replace("/");
+  }, [router]);
+
+  // Clean empty state to prevent UI flashes during redirection
+  return null;
 }

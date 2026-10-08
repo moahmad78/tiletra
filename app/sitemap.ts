@@ -17,9 +17,12 @@ const EXCLUDED_SITEMAP_PATTERNS = [
   /^\/account(\/.*)?$/i,
   /^\/admin(\/.*)?$/i,
   /^\/vendor(?!\/apply$).*$/i, // excludes /vendor/* except /vendor/apply
+  /^\/cpo(\/.*)?$/i,
   /^\/cart(\/.*)?$/i,
   /^\/checkout(\/.*)?$/i,
   /^\/checkout-v2(\/.*)?$/i,
+  /^\/wishlist(\/.*)?$/i,
+  /^\/delete-account(\/.*)?$/i,
   /^\/api(\/.*)?$/i,
   /^\/upload(\/.*)?$/i,
   /^\/designs(\/.*)?$/i, // Redirects to /shop

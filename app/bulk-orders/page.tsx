@@ -19,6 +19,7 @@ import Header from "@/components/Header";
 import Footer from "@/components/Footer";
 import JsonLd from "@/components/JsonLd";
 import {
+  BASE_SITE_URL,
   getCanonicalUrl,
   generateBreadcrumbSchema,
   generateArchitectServiceSchema,
@@ -39,14 +40,21 @@ export const metadata: Metadata = {
     url: getCanonicalUrl("/bulk-orders"),
     type: "website",
     siteName: "IntriHub",
-    images: [{ url: "https://intrihub.com/og-image.png", alt: "Bulk Orders — IntriHub" }],
+    images: [
+      {
+        url: `${BASE_SITE_URL}/images/intrihub-og-image.jpg`,
+        width: 1200,
+        height: 630,
+        alt: "Bulk Orders — IntriHub",
+      },
+    ],
   },
   twitter: {
     card: "summary_large_image",
     title: "Bulk Orders for Contractors & Projects | IntriHub",
     description:
       "Bulk construction materials for contractors in Bangalore — tiles, electrical, plumbing, plywood, hardware.",
-    images: ["https://intrihub.com/og-image.png"],
+    images: [`${BASE_SITE_URL}/images/intrihub-og-image.jpg`],
   },
 };
 

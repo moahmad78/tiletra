@@ -40,12 +40,15 @@ export async function generateMetadata({
     product.description?.slice(0, 160) ||
     `Buy ${product.name} online at IntriHub. Direct-from-factory building & interior materials with rapid delivery across Bangalore & Pan-India.`;
 
-  const imageUrls =
-    product.images && product.images.length > 0
-      ? product.images.map((img) =>
-          img.startsWith("http") ? img : `${BASE_SITE_URL}${img.startsWith("/") ? img : `/${img}`}`
-        )
-      : [`${BASE_SITE_URL}/logo/intri-web-logo.png`];
+  const validImages = (product.images || [])
+    .filter((img) => typeof img === "string" && !img.startsWith("data:"))
+    .map((img) =>
+      img.startsWith("http") ? img : `${BASE_SITE_URL}${img.startsWith("/") ? img : `/${img}`}`
+    );
+
+  const imageUrls = validImages.length > 0
+    ? validImages
+    : [`${BASE_SITE_URL}/images/intrihub-og-image.jpg`];
 
   return {
     title,
@@ -136,11 +139,23 @@ export default async function ProductPage({
     .filter((p) => p.categorySlug === product.categorySlug && p.id !== product.id)
     .slice(0, 6);
 
+  const productExtra = product as Record<string, unknown>;
+  const fallbackPrice =
+    typeof productExtra.pricePerSqft === "number"
+      ? productExtra.pricePerSqft
+      : typeof productExtra.mrp === "number"
+      ? productExtra.mrp
+      : 0;
+
   const minPrice = product.variants?.length
     ? Math.min(...product.variants.map((v) => v.pricePerBox || v.pricePerSqft || 0))
-    : 0;
+    : fallbackPrice;
 
-  const productExtra = product as Record<string, unknown>;
+  const schemaImages = (product.images || [])
+    .filter((img) => typeof img === "string" && !img.startsWith("data:"))
+    .map((img) =>
+      img.startsWith("http") ? img : `${BASE_SITE_URL}${img.startsWith("/") ? img : `/${img}`}`
+    );
   const rawReviewCount = typeof productExtra.reviewCount === "number" ? productExtra.reviewCount : 0;
   const realReviewCount =
     publishedReviews.length > 0
@@ -158,7 +173,7 @@ export default async function ProductPage({
     name: product.name,
     slug: product.slug,
     description: product.description,
-    images: product.images,
+    images: schemaImages.length > 0 ? schemaImages : [`${BASE_SITE_URL}/images/intrihub-og-image.jpg`],
     price: minPrice,
     inStock: product.variants?.some((v) => v.stockBoxes > 0) ?? true,
     categoryName: product.categoryName || product.categorySlug,

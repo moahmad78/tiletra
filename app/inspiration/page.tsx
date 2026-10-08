@@ -21,12 +21,18 @@ export const metadata: Metadata = {
     siteName: "IntriHub",
     images: [
       {
-        url: `${BASE_SITE_URL}/og-image.png`,
+        url: `${BASE_SITE_URL}/images/intrihub-og-image.jpg`,
         width: 1200,
         height: 630,
         alt: "IntriHub Material Inspiration",
       },
     ],
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: "Material Trends & Space Ideas | IntriHub",
+    description: "Trending tile textures, acoustic panels, and modular woodwork inspiration.",
+    images: [`${BASE_SITE_URL}/images/intrihub-og-image.jpg`],
   },
 };
 

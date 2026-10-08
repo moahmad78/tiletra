@@ -29,7 +29,7 @@ export async function generateMetadata(): Promise<Metadata> {
       siteName: "IntriHub",
       images: [
         {
-          url: `${BASE_SITE_URL}/og-image.png`,
+          url: `${BASE_SITE_URL}/images/intrihub-og-image.jpg`,
           width: 1200,
           height: 630,
           alt: `${usp.h1} — IntriHub`,
@@ -40,7 +40,7 @@ export async function generateMetadata(): Promise<Metadata> {
       card: "summary_large_image",
       title: usp.title,
       description: usp.metaDescription,
-      images: [`${BASE_SITE_URL}/og-image.png`],
+      images: [`${BASE_SITE_URL}/images/intrihub-og-image.jpg`],
     },
   };
 }

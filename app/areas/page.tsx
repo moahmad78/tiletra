@@ -23,14 +23,14 @@ export const metadata: Metadata = {
       "Find your locality in Bangalore or Karnataka. Express site delivery for construction & interior fit-out materials.",
     url: getCanonicalUrl("/areas"),
     siteName: "IntriHub",
-    images: [{ url: `${BASE_SITE_URL}/og-image.png`, width: 1200, height: 630, alt: "IntriHub Serviceable Areas" }],
+    images: [{ url: `${BASE_SITE_URL}/images/intrihub-og-image.jpg`, width: 1200, height: 630, alt: "IntriHub Serviceable Areas" }],
   },
   twitter: {
     card: "summary_large_image",
     title: "Serviceable Areas in Karnataka | IntriHub",
     description:
       "Find your locality in Bangalore or Karnataka. Express site delivery for construction & interior fit-out materials.",
-    images: [`${BASE_SITE_URL}/og-image.png`],
+    images: [`${BASE_SITE_URL}/images/intrihub-og-image.jpg`],
   },
 };
 

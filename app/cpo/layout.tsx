@@ -4,7 +4,17 @@ import CpoSidebar from "@/components/cpo/CpoSidebar";
 import CpoHeader from "@/components/cpo/CpoHeader";
 import CpoWorkspaceBanner from "@/components/cpo/CpoWorkspaceBanner";
 
+import type { Metadata } from "next";
+
 export const dynamic = "force-dynamic";
+
+export const metadata: Metadata = {
+  title: "CPO Workspace",
+  robots: {
+    index: false,
+    follow: false,
+  },
+};
 
 export default async function CpoLayout({
   children,

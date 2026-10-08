@@ -403,12 +403,15 @@ export function generateProductSchema(product: {
     user?: { name?: string | null };
   }>;
 }) {
+  const rawImages = (product.images || []).filter(
+    (img) => typeof img === "string" && !img.startsWith("data:")
+  );
   const images =
-    product.images && product.images.length > 0
-      ? product.images.map((img) =>
+    rawImages.length > 0
+      ? rawImages.map((img) =>
           img.startsWith("http") ? img : `${BASE_SITE_URL}${img.startsWith("/") ? img : `/${img}`}`
         )
-      : [`${BASE_SITE_URL}/images/placeholder-product.svg`];
+      : [`${BASE_SITE_URL}/images/intrihub-og-image.jpg`];
 
   const productUrl = getCanonicalUrl(`/product/${product.slug}`);
   const priceVal = String(product.price || 0);

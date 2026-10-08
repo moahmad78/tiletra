@@ -37,7 +37,7 @@ export const metadata: Metadata = {
     siteName: "IntriHub",
     images: [
       {
-        url: `${BASE_SITE_URL}/og-image.png`,
+        url: `${BASE_SITE_URL}/images/intrihub-og-image.jpg`,
         width: 1200,
         height: 630,
         alt: "IntriHub Architectural Specification & Material Sourcing",
@@ -49,7 +49,7 @@ export const metadata: Metadata = {
     title: "Architects & Specifiers Material Sourcing | IntriHub",
     description:
       "End-to-end interior & construction material procurement for architectural firms with sampling support, CAD/BIM data, and direct site delivery.",
-    images: [`${BASE_SITE_URL}/og-image.png`],
+    images: [`${BASE_SITE_URL}/images/intrihub-og-image.jpg`],
   },
 };
 

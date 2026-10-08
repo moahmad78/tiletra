@@ -8,33 +8,34 @@ import { generateHomepageFaqSchema } from "@/lib/seo";
 
 export const metadata: Metadata = {
   title: {
-    absolute: "Every Material. Every Space. | IntriHub",
+    absolute: "IntriHub – Every Material. Every Space.",
   },
   description:
-    "IntriHub: Every Material. Every Space. Buy vitrified tiles, electrical, plumbing, sanitaryware, plywood & hardware online with fast site delivery.",
+    "Shop tiles, hardware, electrical, lighting and construction materials online with IntriHub. Quality materials, competitive prices and fast delivery across Bengaluru.",
   alternates: {
     canonical: "https://www.intrihub.com/",
   },
   openGraph: {
-    title: "Every Material. Every Space. | IntriHub",
+    title: "IntriHub – Every Material. Every Space.",
     description:
-      "IntriHub: Every Material. Every Space. Buy vitrified tiles, electrical, plumbing, sanitaryware, plywood & hardware online with fast site delivery.",
+      "Shop interior and construction materials online. Everything you need for every space, delivered across Bengaluru.",
+    type: "website",
     url: "https://www.intrihub.com/",
     siteName: "IntriHub",
     images: [
       {
         url: "https://www.intrihub.com/images/intrihub-og-image.jpg",
-        width: 1024,
-        height: 537,
-        alt: "Every Material. Every Space. | IntriHub",
+        width: 1200,
+        height: 630,
+        alt: "IntriHub – Every Material. Every Space.",
       },
     ],
   },
   twitter: {
     card: "summary_large_image",
-    title: "Every Material. Every Space. | IntriHub",
+    title: "IntriHub – Every Material. Every Space.",
     description:
-      "IntriHub: Every Material. Every Space. Buy vitrified tiles, electrical, plumbing, sanitaryware, plywood & hardware online with fast site delivery.",
+      "Shop interior and construction materials online. Everything you need for every space, delivered across Bengaluru.",
     images: ["https://www.intrihub.com/images/intrihub-og-image.jpg"],
   },
 };

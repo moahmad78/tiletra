@@ -5,6 +5,7 @@ import { getCategories } from "@/lib/actions/categories";
 import ShopCatalogClient from "@/components/ShopCatalogClient";
 import JsonLd from "@/components/JsonLd";
 import {
+  BASE_SITE_URL,
   getCanonicalUrl,
   generateBreadcrumbSchema,
   generateItemListSchema,
@@ -24,6 +25,23 @@ export const metadata: Metadata = {
     description:
       "Buy factory-direct interior & construction materials online with doorstep delivery.",
     url: getCanonicalUrl("/shop"),
+    type: "website",
+    siteName: "IntriHub",
+    images: [
+      {
+        url: `${BASE_SITE_URL}/images/intrihub-og-image.jpg`,
+        width: 1200,
+        height: 630,
+        alt: "Shop All Interior & Construction Materials | IntriHub",
+      },
+    ],
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: "Shop Interior & Construction Supplies | IntriHub",
+    description:
+      "Buy factory-direct interior & construction materials online with doorstep delivery.",
+    images: [`${BASE_SITE_URL}/images/intrihub-og-image.jpg`],
   },
 };
 

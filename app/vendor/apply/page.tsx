@@ -19,7 +19,7 @@ export const metadata: Metadata = {
     siteName: "IntriHub",
     images: [
       {
-        url: `${BASE_SITE_URL}/og-image.png`,
+        url: `${BASE_SITE_URL}/images/intrihub-og-image.jpg`,
         width: 1200,
         height: 630,
         alt: "IntriHub Vendor Onboarding",
@@ -30,7 +30,7 @@ export const metadata: Metadata = {
     card: "summary_large_image",
     title: "Become a Vendor Partner | IntriHub",
     description: "Sell construction and interior materials with express site delivery across Bangalore.",
-    images: [`${BASE_SITE_URL}/og-image.png`],
+    images: [`${BASE_SITE_URL}/images/intrihub-og-image.jpg`],
   },
 };
 
