@@ -20,13 +20,13 @@ import { USP_ITEMS, USP_PILLARS } from "@/lib/data/usps";
 const canonicalUrl = getCanonicalUrl("/why-intrihub");
 
 export const metadata: Metadata = {
-  title: "Why IntriHub? 20 Reasons to Buy Building & Interior Materials Online | IntriHub",
+  title: "Why Choose Us: 20 Advantages",
   description:
-    "Discover 20 reasons why builders, contractors, and homeowners choose IntriHub for building & interior material procurement with direct 60-minute site delivery.",
+    "Discover 20 reasons why builders, contractors, and homeowners choose IntriHub for building & interior material procurement with direct site delivery.",
   robots: { index: true, follow: true },
   alternates: { canonical: canonicalUrl },
   openGraph: {
-    title: "Why IntriHub? 20 Reasons to Buy Building & Interior Materials Online",
+    title: "Why Choose Us: 20 Advantages | IntriHub",
     description:
       "Every Material. Every Space. — One Platform → One Order → Direct to Site. Explore the 20 Unique Selling Propositions of IntriHub.",
     url: canonicalUrl,
@@ -35,9 +35,9 @@ export const metadata: Metadata = {
   },
   twitter: {
     card: "summary_large_image",
-    title: "Why IntriHub? 20 Reasons to Buy Building & Interior Materials Online",
+    title: "Why Choose Us: 20 Advantages | IntriHub",
     description:
-      "Every Material. Every Space. — Fast 60-minute site delivery across Bengaluru with IntriHub.",
+      "Every Material. Every Space. — Fast site delivery across Bengaluru with IntriHub.",
   },
 };
 

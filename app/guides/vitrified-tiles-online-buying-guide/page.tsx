@@ -20,14 +20,14 @@ import Footer from "@/components/Footer";
 import { BASE_SITE_URL } from "@/lib/seo";
 
 export const metadata: Metadata = {
-  title: "Vitrified Tiles Online: Buying Guide for Indian Homes 2026",
+  title: "Vitrified Tiles Online Buying Guide 2026",
   description:
     "GVT, PGVT, double charge or full body? Learn how to pick size, finish and thickness, and order vitrified tiles online from IntriHub in Bengaluru.",
   alternates: {
     canonical: `${BASE_SITE_URL}/guides/vitrified-tiles-online-buying-guide`,
   },
   openGraph: {
-    title: "Vitrified Tiles Online: Buying Guide for Indian Homes 2026",
+    title: "Vitrified Tiles Online Buying Guide 2026 | IntriHub",
     description:
       "GVT, PGVT, double charge or full body? Learn how to pick size, finish and thickness, and order vitrified tiles online from IntriHub in Bengaluru.",
     url: `${BASE_SITE_URL}/guides/vitrified-tiles-online-buying-guide`,

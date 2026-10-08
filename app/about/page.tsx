@@ -31,16 +31,16 @@ import JsonLd from "@/components/JsonLd";
 import USPSection from "@/components/USPSection";
 
 export const metadata: Metadata = {
-  title: "About Our 60-Minute Materials Marketplace",
+  title: "About: Building & Interior Materials",
   description:
-    "Learn about IntriHub — India's instant building materials quick-commerce network. Founded in 2026 by Sahil Sheikh in Begur, Bengaluru to deliver factory-direct supplies in 60 minutes.",
+    "Learn about IntriHub: India's instant building materials quick-commerce network. Founded by Sahil Sheikh to deliver factory-direct supplies.",
   alternates: {
     canonical: getCanonicalUrl("/about"),
   },
   openGraph: {
-    title: "About IntriHub | Every Material. Every Space.",
+    title: "About: Building & Interior Materials | IntriHub",
     description:
-      "India's instant building & interior materials quick commerce marketplace. Factory-direct sourcing with 60-minute site delivery in Bengaluru.",
+      "India's instant building & interior materials marketplace. Factory-direct sourcing with fast site delivery.",
     url: getCanonicalUrl("/about"),
     type: "website",
     siteName: "IntriHub",

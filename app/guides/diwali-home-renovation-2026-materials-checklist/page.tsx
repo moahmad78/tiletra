@@ -29,14 +29,14 @@ import { BASE_SITE_URL } from "@/lib/seo";
 import DiwaliInteractiveChecklist from "@/components/guides/DiwaliInteractiveChecklist";
 
 export const metadata: Metadata = {
-  title: "Diwali Home Renovation 2026: Materials Checklist & Timeline",
+  title: "Diwali Home Renovation 2026 Checklist",
   description:
     "Diwali is on 8 November 2026. Use this 4-week plan and interior materials checklist to renovate your home on time, with delivery in Bengaluru.",
   alternates: {
     canonical: `${BASE_SITE_URL}/guides/diwali-home-renovation-2026-materials-checklist`,
   },
   openGraph: {
-    title: "Diwali Home Renovation 2026: Materials Checklist and 4-Week Plan",
+    title: "Diwali Home Renovation 2026 Checklist | IntriHub",
     description:
       "Diwali is on 8 November. Start now with this simple timeline and room-by-room materials checklist.",
     url: `${BASE_SITE_URL}/guides/diwali-home-renovation-2026-materials-checklist`,

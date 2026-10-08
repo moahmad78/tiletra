@@ -7,14 +7,14 @@ import { getCanonicalUrl, generateBreadcrumbSchema, generateArchitectServiceSche
 import JsonLd from "@/components/JsonLd";
 
 export const metadata: Metadata = {
-  title: "Civil & Interior Contractors Bulk Sourcing",
+  title: "For Contractors & Builders",
   description:
     "Bulk interior & construction materials for contractors: vitrified tiles, CPVC pipes, FRLS cables, tile adhesives, and sanitaryware with direct site delivery and GST billing.",
   alternates: {
     canonical: getCanonicalUrl("/for-contractors"),
   },
   openGraph: {
-    title: "Civil & Interior Contractors Bulk Sourcing | IntriHub",
+    title: "For Contractors & Builders | IntriHub",
     description:
       "Direct interior & construction materials for contractors with GST invoices, phased site deliveries, and factory pricing.",
     url: getCanonicalUrl("/for-contractors"),

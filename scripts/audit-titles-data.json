@@ -1,0 +1,800 @@
+[
+  {
+    "url": "/",
+    "sourceFile": "app/page.tsx",
+    "rawPageTitle": "",
+    "renderedTitle": "Buy Tiles, Hardware & Standard Construction Items Online | IntriHub",
+    "titleLength": 67,
+    "ogTitle": "Buy Tiles, Hardware & Standard Construction Items Online | IntriHub",
+    "twitterTitle": "Buy Tiles, Hardware & Standard Construction Items Online | IntriHub",
+    "titleTagCount": 1,
+    "problems": [
+      "Longer than 60 chars (67 chars)"
+    ]
+  },
+  {
+    "url": "/about",
+    "sourceFile": "app/about/page.tsx",
+    "rawPageTitle": "",
+    "renderedTitle": "About Our 60-Minute Materials Marketplace | IntriHub",
+    "titleLength": 52,
+    "ogTitle": "About IntriHub | Every Material. Every Space.",
+    "twitterTitle": "Every Material. Every Space. | IntriHub",
+    "titleTagCount": 1,
+    "problems": []
+  },
+  {
+    "url": "/contact",
+    "sourceFile": "app/contact/page.tsx",
+    "rawPageTitle": "",
+    "renderedTitle": "Contact Us — Trade & Site Support | IntriHub",
+    "titleLength": 44,
+    "ogTitle": "Contact Us — Trade & Site Support | IntriHub",
+    "twitterTitle": "Every Material. Every Space. | IntriHub",
+    "titleTagCount": 1,
+    "problems": []
+  },
+  {
+    "url": "/areas",
+    "sourceFile": "app/areas/page.tsx",
+    "rawPageTitle": "",
+    "renderedTitle": "Areas We Serve — Express Building & Interior Materials Delivery across Karnataka | IntriHub | IntriHub",
+    "titleLength": 102,
+    "ogTitle": "Areas We Serve Across Karnataka | IntriHub QuickCommerce",
+    "twitterTitle": "Every Material. Every Space. | IntriHub",
+    "titleTagCount": 1,
+    "problems": [
+      "Brand repeated ('| IntriHub | IntriHub')",
+      "Longer than 60 chars (102 chars)"
+    ]
+  },
+  {
+    "url": "/for-interior-designers",
+    "sourceFile": "app/for-interior-designers/page.tsx",
+    "rawPageTitle": "",
+    "renderedTitle": "Interior Designers & Studios Material Sourcing | IntriHub",
+    "titleLength": 57,
+    "ogTitle": "Interior Designers & Studios Material Sourcing | IntriHub",
+    "twitterTitle": "Every Material. Every Space. | IntriHub",
+    "titleTagCount": 1,
+    "problems": []
+  },
+  {
+    "url": "/for-architects",
+    "sourceFile": "app/for-architects/page.tsx",
+    "rawPageTitle": "",
+    "renderedTitle": "Architects & Specifiers Material Sourcing | IntriHub",
+    "titleLength": 52,
+    "ogTitle": "Architects & Specifiers Material Sourcing | IntriHub",
+    "twitterTitle": "Architects & Specifiers Material Sourcing | IntriHub",
+    "titleTagCount": 1,
+    "problems": []
+  },
+  {
+    "url": "/for-contractors",
+    "sourceFile": "app/for-contractors/page.tsx",
+    "rawPageTitle": "",
+    "renderedTitle": "Civil & Interior Contractors Bulk Sourcing | IntriHub",
+    "titleLength": 53,
+    "ogTitle": "Civil & Interior Contractors Bulk Sourcing | IntriHub",
+    "twitterTitle": "Every Material. Every Space. | IntriHub",
+    "titleTagCount": 1,
+    "problems": []
+  },
+  {
+    "url": "/founder",
+    "sourceFile": "app/founder/page.tsx",
+    "rawPageTitle": "",
+    "renderedTitle": "Sahil Sheikh — Founder, CEO & CTO of Intrihub Quickcommerce | IntriHub",
+    "titleLength": 70,
+    "ogTitle": "Sahil Sheikh — Founder, CEO & CTO of Intrihub Quickcommerce",
+    "twitterTitle": "Sahil Sheikh — Founder, CEO & CTO of Intrihub",
+    "titleTagCount": 1,
+    "problems": [
+      "Longer than 60 chars (70 chars)"
+    ]
+  },
+  {
+    "url": "/faq",
+    "sourceFile": "app/faq/page.tsx",
+    "rawPageTitle": "",
+    "renderedTitle": "Frequently Asked Questions (FAQ) | IntriHub",
+    "titleLength": 43,
+    "ogTitle": "Frequently Asked Questions | IntriHub",
+    "twitterTitle": "Every Material. Every Space. | IntriHub",
+    "titleTagCount": 1,
+    "problems": []
+  },
+  {
+    "url": "/bulk-orders",
+    "sourceFile": "app/bulk-orders/page.tsx",
+    "rawPageTitle": "",
+    "renderedTitle": "Bulk Orders for Contractors & Projects | IntriHub",
+    "titleLength": 49,
+    "ogTitle": "Bulk Orders for Contractors & Projects | IntriHub",
+    "twitterTitle": "Bulk Orders for Contractors & Projects | IntriHub",
+    "titleTagCount": 1,
+    "problems": []
+  },
+  {
+    "url": "/categories",
+    "sourceFile": "app/categories/page.tsx",
+    "rawPageTitle": "",
+    "renderedTitle": "Explore 20+ Construction & Interior Categories | IntriHub",
+    "titleLength": 57,
+    "ogTitle": "Every Material. Every Space. | IntriHub",
+    "twitterTitle": "Every Material. Every Space. | IntriHub",
+    "titleTagCount": 1,
+    "problems": []
+  },
+  {
+    "url": "/shop",
+    "sourceFile": "app/shop/page.tsx",
+    "rawPageTitle": "",
+    "renderedTitle": "Shop All Interior & Construction Materials | IntriHub",
+    "titleLength": 53,
+    "ogTitle": "Shop Interior & Construction Supplies | IntriHub",
+    "twitterTitle": "Every Material. Every Space. | IntriHub",
+    "titleTagCount": 1,
+    "problems": []
+  },
+  {
+    "url": "/guides",
+    "sourceFile": "app/guides/page.tsx",
+    "rawPageTitle": "",
+    "renderedTitle": "Interior Material Buying Guides & Expert Technical Articles | IntriHub | IntriHub",
+    "titleLength": 81,
+    "ogTitle": "Interior Material Buying Guides & Technical Articles | IntriHub",
+    "twitterTitle": "Every Material. Every Space. | IntriHub",
+    "titleTagCount": 1,
+    "problems": [
+      "Brand repeated ('| IntriHub | IntriHub')",
+      "Longer than 60 chars (81 chars)"
+    ]
+  },
+  {
+    "url": "/guides/diwali-home-renovation-2026-materials-checklist",
+    "sourceFile": "app/guides/diwali-home-renovation-2026-materials-checklist/page.tsx",
+    "rawPageTitle": "",
+    "renderedTitle": "Diwali Home Renovation 2026: Materials Checklist & Timeline | IntriHub",
+    "titleLength": 70,
+    "ogTitle": "Diwali Home Renovation 2026: Materials Checklist and 4-Week Plan",
+    "twitterTitle": "Diwali Home Renovation 2026: Materials Checklist and 4-Week Plan",
+    "titleTagCount": 1,
+    "problems": [
+      "Longer than 60 chars (70 chars)"
+    ]
+  },
+  {
+    "url": "/guides/vitrified-tiles-online-buying-guide",
+    "sourceFile": "app/guides/vitrified-tiles-online-buying-guide/page.tsx",
+    "rawPageTitle": "",
+    "renderedTitle": "Vitrified Tiles Online: Buying Guide for Indian Homes 2026 | IntriHub",
+    "titleLength": 69,
+    "ogTitle": "Vitrified Tiles Online: Buying Guide for Indian Homes 2026",
+    "twitterTitle": "Vitrified Tiles Online: Buying Guide for Indian Homes 2026",
+    "titleTagCount": 1,
+    "problems": [
+      "Longer than 60 chars (69 chars)"
+    ]
+  },
+  {
+    "url": "/privacy-policy",
+    "sourceFile": "app/privacy-policy/page.tsx",
+    "rawPageTitle": "",
+    "renderedTitle": "Privacy Policy | IntriHub",
+    "titleLength": 25,
+    "ogTitle": "Privacy Policy | IntriHub",
+    "twitterTitle": "Every Material. Every Space. | IntriHub",
+    "titleTagCount": 1,
+    "problems": []
+  },
+  {
+    "url": "/terms",
+    "sourceFile": "app/terms/page.tsx",
+    "rawPageTitle": "",
+    "renderedTitle": "Terms & Conditions | IntriHub",
+    "titleLength": 29,
+    "ogTitle": "Terms & Conditions | IntriHub",
+    "twitterTitle": "Every Material. Every Space. | IntriHub",
+    "titleTagCount": 1,
+    "problems": []
+  },
+  {
+    "url": "/returns-policy",
+    "sourceFile": "app/returns-policy/page.tsx",
+    "rawPageTitle": "",
+    "renderedTitle": "Returns & Replacement Policy | IntriHub",
+    "titleLength": 39,
+    "ogTitle": "Returns & Replacement Policy | IntriHub",
+    "twitterTitle": "Every Material. Every Space. | IntriHub",
+    "titleTagCount": 1,
+    "problems": []
+  },
+  {
+    "url": "/shipping-policy",
+    "sourceFile": "app/shipping-policy/page.tsx",
+    "rawPageTitle": "",
+    "renderedTitle": "Shipping & Delivery Policy | IntriHub",
+    "titleLength": 37,
+    "ogTitle": "Shipping & Delivery Policy | IntriHub",
+    "twitterTitle": "Every Material. Every Space. | IntriHub",
+    "titleTagCount": 1,
+    "problems": []
+  },
+  {
+    "url": "/why-intrihub",
+    "sourceFile": "app/why-intrihub/page.tsx",
+    "rawPageTitle": "",
+    "renderedTitle": "Why IntriHub? 20 Reasons to Buy Building & Interior Materials Online | IntriHub | IntriHub",
+    "titleLength": 90,
+    "ogTitle": "Why IntriHub? 20 Reasons to Buy Building & Interior Materials Online",
+    "twitterTitle": "Why IntriHub? 20 Reasons to Buy Building & Interior Materials Online",
+    "titleTagCount": 1,
+    "problems": [
+      "Brand repeated ('| IntriHub | IntriHub')",
+      "Longer than 60 chars (90 chars)"
+    ]
+  },
+  {
+    "url": "/smart-quantity-calculator",
+    "sourceFile": "app/smart-quantity-calculator/page.tsx",
+    "rawPageTitle": "",
+    "renderedTitle": "Smart Quantity & Box Calculator — Tiles, Paint & Wires | IntriHub | IntriHub",
+    "titleLength": 76,
+    "ogTitle": "Smart Quantity & Box Calculator — Tiles, Paint & Wires | IntriHub",
+    "twitterTitle": "Smart Quantity & Box Calculator — Tiles, Paint & Wires | IntriHub",
+    "titleTagCount": 1,
+    "problems": [
+      "Brand repeated ('| IntriHub | IntriHub')",
+      "Longer than 60 chars (76 chars)"
+    ]
+  },
+  {
+    "url": "/building-materials-online",
+    "sourceFile": "app/building-materials-online/page.tsx",
+    "rawPageTitle": "",
+    "renderedTitle": "Buy Building Materials Online | 60-Min Express Delivery in Bengaluru | IntriHub | IntriHub",
+    "titleLength": 90,
+    "ogTitle": "Buy Building Materials Online | 60-Min Express Delivery in Bengaluru | IntriHub",
+    "twitterTitle": "Buy Building Materials Online | 60-Min Express Delivery in Bengaluru | IntriHub",
+    "titleTagCount": 1,
+    "problems": [
+      "Brand repeated ('| IntriHub | IntriHub')",
+      "Longer than 60 chars (90 chars)"
+    ]
+  },
+  {
+    "url": "/factory-direct-pricing",
+    "sourceFile": "app/factory-direct-pricing/page.tsx",
+    "rawPageTitle": "",
+    "renderedTitle": "Local Market & Factory-Direct Pricing — Zero Markup | IntriHub | IntriHub",
+    "titleLength": 73,
+    "ogTitle": "Local Market & Factory-Direct Pricing — Zero Markup | IntriHub",
+    "twitterTitle": "Local Market & Factory-Direct Pricing — Zero Markup | IntriHub",
+    "titleTagCount": 1,
+    "problems": [
+      "Brand repeated ('| IntriHub | IntriHub')",
+      "Longer than 60 chars (73 chars)"
+    ]
+  },
+  {
+    "url": "/60-minute-express-delivery",
+    "sourceFile": "app/60-minute-express-delivery/page.tsx",
+    "rawPageTitle": "",
+    "renderedTitle": "60-Minute Express Delivery — Fast Local Dispatch | IntriHub | IntriHub",
+    "titleLength": 70,
+    "ogTitle": "60-Minute Express Delivery — Fast Local Dispatch | IntriHub",
+    "twitterTitle": "60-Minute Express Delivery — Fast Local Dispatch | IntriHub",
+    "titleTagCount": 1,
+    "problems": [
+      "Brand repeated ('| IntriHub | IntriHub')",
+      "Longer than 60 chars (70 chars)"
+    ]
+  },
+  {
+    "url": "/zero-breakage-transit-guarantee",
+    "sourceFile": "app/zero-breakage-transit-guarantee/page.tsx",
+    "rawPageTitle": "",
+    "renderedTitle": "0% Breakage Transit Guarantee — Tiles & Sanitaryware | IntriHub | IntriHub",
+    "titleLength": 74,
+    "ogTitle": "0% Breakage Transit Guarantee — Tiles & Sanitaryware | IntriHub",
+    "twitterTitle": "0% Breakage Transit Guarantee — Tiles & Sanitaryware | IntriHub",
+    "titleTagCount": 1,
+    "problems": [
+      "Brand repeated ('| IntriHub | IntriHub')",
+      "Longer than 60 chars (74 chars)"
+    ]
+  },
+  {
+    "url": "/vendor-ecosystem-local-digitalization",
+    "sourceFile": "app/vendor-ecosystem-local-digitalization/page.tsx",
+    "rawPageTitle": "",
+    "renderedTitle": "Customer + Vendor Ecosystem & Local Digitalization | IntriHub | IntriHub",
+    "titleLength": 72,
+    "ogTitle": "Customer + Vendor Ecosystem & Local Digitalization | IntriHub",
+    "twitterTitle": "Customer + Vendor Ecosystem & Local Digitalization | IntriHub",
+    "titleTagCount": 1,
+    "problems": [
+      "Brand repeated ('| IntriHub | IntriHub')",
+      "Longer than 60 chars (72 chars)"
+    ]
+  },
+  {
+    "url": "/multi-vendor-marketplace-bengaluru",
+    "sourceFile": "app/multi-vendor-marketplace-bengaluru/page.tsx",
+    "rawPageTitle": "",
+    "renderedTitle": "Multi-Vendor Marketplace — Bengaluru Suppliers & Factories | IntriHub | IntriHub",
+    "titleLength": 80,
+    "ogTitle": "Multi-Vendor Marketplace — Bengaluru Suppliers & Factories | IntriHub",
+    "twitterTitle": "Multi-Vendor Marketplace — Bengaluru Suppliers & Factories | IntriHub",
+    "titleTagCount": 1,
+    "problems": [
+      "Brand repeated ('| IntriHub | IntriHub')",
+      "Longer than 60 chars (80 chars)"
+    ]
+  },
+  {
+    "url": "/one-order-multiple-materials",
+    "sourceFile": "app/one-order-multiple-materials/page.tsx",
+    "rawPageTitle": "",
+    "renderedTitle": "One Order, Multiple Materials — Consolidated Cart & Billing | IntriHub | IntriHub",
+    "titleLength": 81,
+    "ogTitle": "One Order, Multiple Materials — Consolidated Cart & Billing | IntriHub",
+    "twitterTitle": "One Order, Multiple Materials — Consolidated Cart & Billing | IntriHub",
+    "titleTagCount": 1,
+    "problems": [
+      "Brand repeated ('| IntriHub | IntriHub')",
+      "Longer than 60 chars (81 chars)"
+    ]
+  },
+  {
+    "url": "/one-platform-multiple-categories",
+    "sourceFile": "app/one-platform-multiple-categories/page.tsx",
+    "rawPageTitle": "",
+    "renderedTitle": "One Platform, Multiple Categories — Electrical to Furniture | IntriHub | IntriHub",
+    "titleLength": 81,
+    "ogTitle": "One Platform, Multiple Categories — Electrical to Furniture | IntriHub",
+    "twitterTitle": "One Platform, Multiple Categories — Electrical to Furniture | IntriHub",
+    "titleTagCount": 1,
+    "problems": [
+      "Brand repeated ('| IntriHub | IntriHub')",
+      "Longer than 60 chars (81 chars)"
+    ]
+  },
+  {
+    "url": "/online-offline-phygital-marketplace",
+    "sourceFile": "app/online-offline-phygital-marketplace/page.tsx",
+    "rawPageTitle": "",
+    "renderedTitle": "Online + Offline Phygital Marketplace | IntriHub | IntriHub",
+    "titleLength": 59,
+    "ogTitle": "Online + Offline Phygital Marketplace | IntriHub",
+    "twitterTitle": "Online + Offline Phygital Marketplace | IntriHub",
+    "titleTagCount": 1,
+    "problems": [
+      "Brand repeated ('| IntriHub | IntriHub')"
+    ]
+  },
+  {
+    "url": "/builder-friendly-procurement",
+    "sourceFile": "app/builder-friendly-procurement/page.tsx",
+    "rawPageTitle": "",
+    "renderedTitle": "Builder-Friendly Procurement — Large-Scale Projects | IntriHub | IntriHub",
+    "titleLength": 73,
+    "ogTitle": "Builder-Friendly Procurement — Large-Scale Projects | IntriHub",
+    "twitterTitle": "Builder-Friendly Procurement — Large-Scale Projects | IntriHub",
+    "titleTagCount": 1,
+    "problems": [
+      "Brand repeated ('| IntriHub | IntriHub')",
+      "Longer than 60 chars (73 chars)"
+    ]
+  },
+  {
+    "url": "/contractor-friendly-platform",
+    "sourceFile": "app/contractor-friendly-platform/page.tsx",
+    "rawPageTitle": "",
+    "renderedTitle": "Contractor-Friendly Platform — Bulk & Repeat Orders | IntriHub | IntriHub",
+    "titleLength": 73,
+    "ogTitle": "Contractor-Friendly Platform — Bulk & Repeat Orders | IntriHub",
+    "twitterTitle": "Contractor-Friendly Platform — Bulk & Repeat Orders | IntriHub",
+    "titleTagCount": 1,
+    "problems": [
+      "Brand repeated ('| IntriHub | IntriHub')",
+      "Longer than 60 chars (73 chars)"
+    ]
+  },
+  {
+    "url": "/homeowner-friendly-shopping",
+    "sourceFile": "app/homeowner-friendly-shopping/page.tsx",
+    "rawPageTitle": "",
+    "renderedTitle": "Homeowner-Friendly Shopping — Simple & Transparent | IntriHub | IntriHub",
+    "titleLength": 72,
+    "ogTitle": "Homeowner-Friendly Shopping — Simple & Transparent | IntriHub",
+    "twitterTitle": "Homeowner-Friendly Shopping — Simple & Transparent | IntriHub",
+    "titleTagCount": 1,
+    "problems": [
+      "Brand repeated ('| IntriHub | IntriHub')",
+      "Longer than 60 chars (72 chars)"
+    ]
+  },
+  {
+    "url": "/location-based-vendor-discovery",
+    "sourceFile": "app/location-based-vendor-discovery/page.tsx",
+    "rawPageTitle": "",
+    "renderedTitle": "Location-Based Vendor Discovery — Nearby Suppliers | IntriHub | IntriHub",
+    "titleLength": 72,
+    "ogTitle": "Location-Based Vendor Discovery — Nearby Suppliers | IntriHub",
+    "twitterTitle": "Location-Based Vendor Discovery — Nearby Suppliers | IntriHub",
+    "titleTagCount": 1,
+    "problems": [
+      "Brand repeated ('| IntriHub | IntriHub')",
+      "Longer than 60 chars (72 chars)"
+    ]
+  },
+  {
+    "url": "/project-based-shopping",
+    "sourceFile": "app/project-based-shopping/page.tsx",
+    "rawPageTitle": "",
+    "renderedTitle": "Project-Based Shopping — Curated Material Packages | IntriHub | IntriHub",
+    "titleLength": 72,
+    "ogTitle": "Project-Based Shopping — Curated Material Packages | IntriHub",
+    "twitterTitle": "Project-Based Shopping — Curated Material Packages | IntriHub",
+    "titleTagCount": 1,
+    "problems": [
+      "Brand repeated ('| IntriHub | IntriHub')",
+      "Longer than 60 chars (72 chars)"
+    ]
+  },
+  {
+    "url": "/real-time-stock-visibility",
+    "sourceFile": "app/real-time-stock-visibility/page.tsx",
+    "rawPageTitle": "",
+    "renderedTitle": "Real-Time Stock Visibility — Live Vendor Inventory | IntriHub | IntriHub",
+    "titleLength": 72,
+    "ogTitle": "Real-Time Stock Visibility — Live Vendor Inventory | IntriHub",
+    "twitterTitle": "Real-Time Stock Visibility — Live Vendor Inventory | IntriHub",
+    "titleTagCount": 1,
+    "problems": [
+      "Brand repeated ('| IntriHub | IntriHub')",
+      "Longer than 60 chars (72 chars)"
+    ]
+  },
+  {
+    "url": "/repeat-1-click-reordering",
+    "sourceFile": "app/repeat-1-click-reordering/page.tsx",
+    "rawPageTitle": "",
+    "renderedTitle": "Repeat & 1-Click Reordering — Consumables Made Easy | IntriHub | IntriHub",
+    "titleLength": 73,
+    "ogTitle": "Repeat & 1-Click Reordering — Consumables Made Easy | IntriHub",
+    "twitterTitle": "Repeat & 1-Click Reordering — Consumables Made Easy | IntriHub",
+    "titleTagCount": 1,
+    "problems": [
+      "Brand repeated ('| IntriHub | IntriHub')",
+      "Longer than 60 chars (73 chars)"
+    ]
+  },
+  {
+    "url": "/screw-to-complete-project",
+    "sourceFile": "app/screw-to-complete-project/page.tsx",
+    "rawPageTitle": "",
+    "renderedTitle": "From One Screw to Complete Project | IntriHub | IntriHub",
+    "titleLength": 56,
+    "ogTitle": "From One Screw to Complete Project | IntriHub",
+    "twitterTitle": "From One Screw to Complete Project | IntriHub",
+    "titleTagCount": 1,
+    "problems": [
+      "Brand repeated ('| IntriHub | IntriHub')"
+    ]
+  },
+  {
+    "url": "/gst-invoicing-procurement",
+    "sourceFile": "app/gst-invoicing-procurement/page.tsx",
+    "rawPageTitle": "",
+    "renderedTitle": "Digital Procurement & GST Invoicing | IntriHub | IntriHub",
+    "titleLength": 57,
+    "ogTitle": "Digital Procurement & GST Invoicing | IntriHub",
+    "twitterTitle": "Digital Procurement & GST Invoicing | IntriHub",
+    "titleTagCount": 1,
+    "problems": [
+      "Brand repeated ('| IntriHub | IntriHub')"
+    ]
+  },
+  {
+    "url": "/pan-india-delivery",
+    "sourceFile": "app/pan-india-delivery/page.tsx",
+    "rawPageTitle": "",
+    "renderedTitle": "Pan-India Building Materials Delivery | IntriHub | IntriHub",
+    "titleLength": 59,
+    "ogTitle": "Pan-India Building Materials Delivery | IntriHub",
+    "twitterTitle": "Every Material. Every Space. | IntriHub",
+    "titleTagCount": 1,
+    "problems": [
+      "Brand repeated ('| IntriHub | IntriHub')"
+    ]
+  },
+  {
+    "url": "/direct-to-site-delivery",
+    "sourceFile": "app/direct-to-site-delivery/page.tsx",
+    "rawPageTitle": "",
+    "renderedTitle": "Direct-to-Site Delivery — Home & Construction Sites | IntriHub | IntriHub",
+    "titleLength": 73,
+    "ogTitle": "Direct-to-Site Delivery — Home & Construction Sites | IntriHub",
+    "twitterTitle": "Direct-to-Site Delivery — Home & Construction Sites | IntriHub",
+    "titleTagCount": 1,
+    "problems": [
+      "Brand repeated ('| IntriHub | IntriHub')",
+      "Longer than 60 chars (73 chars)"
+    ]
+  },
+  {
+    "url": "/everything-for-every-space",
+    "sourceFile": "app/everything-for-every-space/page.tsx",
+    "rawPageTitle": "",
+    "renderedTitle": "Every Material. Every Space. — Construction to Luxury Finishes | IntriHub | IntriHub",
+    "titleLength": 84,
+    "ogTitle": "Every Material. Every Space. — Construction to Luxury Finishes | IntriHub",
+    "twitterTitle": "Every Material. Every Space. — Construction to Luxury Finishes | IntriHub",
+    "titleTagCount": 1,
+    "problems": [
+      "Brand repeated ('| IntriHub | IntriHub')",
+      "Longer than 60 chars (84 chars)"
+    ]
+  },
+  {
+    "url": "/shop/hardware",
+    "sourceFile": "app/shop/[category]/page.tsx",
+    "rawPageTitle": "",
+    "renderedTitle": "Hardware Store Online: Tools, Fittings, Fasteners | IntriHub | IntriHub",
+    "titleLength": 71,
+    "ogTitle": "Hardware Store Online: Tools, Fittings, Fasteners | IntriHub | IntriHub",
+    "twitterTitle": "Hardware Store Online: Tools, Fittings, Fasteners | IntriHub | IntriHub",
+    "titleTagCount": 1,
+    "problems": [
+      "Brand repeated ('| IntriHub | IntriHub')",
+      "Longer than 60 chars (71 chars)"
+    ]
+  },
+  {
+    "url": "/shop/plumbing-sanitary",
+    "sourceFile": "app/shop/[category]/page.tsx",
+    "rawPageTitle": "",
+    "renderedTitle": "Plumbing Materials Online: Pipes, Fittings, Taps | IntriHub | IntriHub",
+    "titleLength": 70,
+    "ogTitle": "Plumbing Materials Online: Pipes, Fittings, Taps | IntriHub | IntriHub",
+    "twitterTitle": "Plumbing Materials Online: Pipes, Fittings, Taps | IntriHub | IntriHub",
+    "titleTagCount": 1,
+    "problems": [
+      "Brand repeated ('| IntriHub | IntriHub')",
+      "Longer than 60 chars (70 chars)"
+    ]
+  },
+  {
+    "url": "/shop/tiles-stone",
+    "sourceFile": "app/shop/[category]/page.tsx",
+    "rawPageTitle": "",
+    "renderedTitle": "Tiles Online: Vitrified, Ceramic & More | IntriHub | IntriHub",
+    "titleLength": 61,
+    "ogTitle": "Tiles Online: Vitrified, Ceramic & More | IntriHub | IntriHub",
+    "twitterTitle": "Tiles Online: Vitrified, Ceramic & More | IntriHub | IntriHub",
+    "titleTagCount": 1,
+    "problems": [
+      "Brand repeated ('| IntriHub | IntriHub')",
+      "Longer than 60 chars (61 chars)"
+    ]
+  },
+  {
+    "url": "/shop/electrical",
+    "sourceFile": "app/shop/[category]/page.tsx",
+    "rawPageTitle": "",
+    "renderedTitle": "Electrical Materials Online in Bengaluru & India | IntriHub | IntriHub",
+    "titleLength": 70,
+    "ogTitle": "Electrical Materials Online in Bengaluru & India | IntriHub | IntriHub",
+    "twitterTitle": "Electrical Materials Online in Bengaluru & India | IntriHub | IntriHub",
+    "titleTagCount": 1,
+    "problems": [
+      "Brand repeated ('| IntriHub | IntriHub')",
+      "Longer than 60 chars (70 chars)"
+    ]
+  },
+  {
+    "url": "/shop/plywood-timber",
+    "sourceFile": "app/shop/[category]/page.tsx",
+    "rawPageTitle": "",
+    "renderedTitle": "",
+    "titleLength": 0,
+    "ogTitle": "",
+    "twitterTitle": "",
+    "titleTagCount": 1,
+    "problems": []
+  },
+  {
+    "url": "/shop/tiles-stone/sarjapur-road",
+    "sourceFile": "app/shop/[category]/[location]/page.tsx",
+    "rawPageTitle": "",
+    "renderedTitle": "Tiles & Stone Provider in Sarjapur Road, Bengaluru | IntriHub | IntriHub",
+    "titleLength": 72,
+    "ogTitle": "Tiles & Stone Provider in Sarjapur Road, Bengaluru | IntriHub",
+    "twitterTitle": "Tiles & Stone Provider in Sarjapur Road, Bengaluru | IntriHub",
+    "titleTagCount": 1,
+    "problems": [
+      "Brand repeated ('| IntriHub | IntriHub')",
+      "Longer than 60 chars (72 chars)"
+    ]
+  },
+  {
+    "url": "/shop/hardware/whitefield",
+    "sourceFile": "app/shop/[category]/[location]/page.tsx",
+    "rawPageTitle": "",
+    "renderedTitle": "Hardware Provider in Whitefield, Bengaluru | IntriHub | IntriHub",
+    "titleLength": 64,
+    "ogTitle": "Hardware Provider in Whitefield, Bengaluru | IntriHub",
+    "twitterTitle": "Hardware Provider in Whitefield, Bengaluru | IntriHub",
+    "titleTagCount": 1,
+    "problems": [
+      "Brand repeated ('| IntriHub | IntriHub')",
+      "Longer than 60 chars (64 chars)"
+    ]
+  },
+  {
+    "url": "/shop/plumbing-sanitary/electronic-city",
+    "sourceFile": "app/shop/[category]/[location]/page.tsx",
+    "rawPageTitle": "",
+    "renderedTitle": "Plumbing & Sanitary Provider in Electronic City, Bengaluru | IntriHub | IntriHub",
+    "titleLength": 80,
+    "ogTitle": "Plumbing & Sanitary Provider in Electronic City, Bengaluru | IntriHub",
+    "twitterTitle": "Plumbing & Sanitary Provider in Electronic City, Bengaluru | IntriHub",
+    "titleTagCount": 1,
+    "problems": [
+      "Brand repeated ('| IntriHub | IntriHub')",
+      "Longer than 60 chars (80 chars)"
+    ]
+  },
+  {
+    "url": "/product/m-sand-50-kg-bag-1742",
+    "sourceFile": "app/product/[slug]/page.tsx",
+    "rawPageTitle": "",
+    "renderedTitle": "M sand 50 kg bag | IntriHub",
+    "titleLength": 27,
+    "ogTitle": "M sand 50 kg bag",
+    "twitterTitle": "M sand 50 kg bag",
+    "titleTagCount": 1,
+    "problems": []
+  },
+  {
+    "url": "/cement-price-in-bangalore",
+    "sourceFile": "app/[...slug]/page.tsx",
+    "rawPageTitle": "",
+    "renderedTitle": "Cement Price in Bangalore — 53 Grade & PPC Per Bag Rates | IntriHub | IntriHub",
+    "titleLength": 78,
+    "ogTitle": "Cement Price in Bangalore — 53 Grade & PPC Per Bag Rates | IntriHub | IntriHub",
+    "twitterTitle": "Cement Price in Bangalore — 53 Grade & PPC Per Bag Rates | IntriHub | IntriHub",
+    "titleTagCount": 1,
+    "problems": [
+      "Brand repeated ('| IntriHub | IntriHub')",
+      "Longer than 60 chars (78 chars)"
+    ]
+  },
+  {
+    "url": "/plywood-price-per-sheet-bangalore",
+    "sourceFile": "app/[...slug]/page.tsx",
+    "rawPageTitle": "",
+    "renderedTitle": "Plywood Price Per Sheet Bangalore — 2026 Rate Guide | IntriHub | IntriHub",
+    "titleLength": 73,
+    "ogTitle": "Plywood Price Per Sheet Bangalore — 2026 Rate Guide | IntriHub | IntriHub",
+    "twitterTitle": "Plywood Price Per Sheet Bangalore — 2026 Rate Guide | IntriHub | IntriHub",
+    "titleTagCount": 1,
+    "problems": [
+      "Brand repeated ('| IntriHub | IntriHub')",
+      "Longer than 60 chars (73 chars)"
+    ]
+  },
+  {
+    "url": "/vitrified-tiles-price-in-bangalore",
+    "sourceFile": "app/[...slug]/page.tsx",
+    "rawPageTitle": "",
+    "renderedTitle": "Vitrified Tiles Price in Bangalore — 2026 Rate Guide | IntriHub | IntriHub",
+    "titleLength": 74,
+    "ogTitle": "Vitrified Tiles Price in Bangalore — 2026 Rate Guide | IntriHub | IntriHub",
+    "twitterTitle": "Vitrified Tiles Price in Bangalore — 2026 Rate Guide | IntriHub | IntriHub",
+    "titleTagCount": 1,
+    "problems": [
+      "Brand repeated ('| IntriHub | IntriHub')",
+      "Longer than 60 chars (74 chars)"
+    ]
+  },
+  {
+    "url": "/interior-material-supplier-bangalore",
+    "sourceFile": "app/[...slug]/page.tsx",
+    "rawPageTitle": "",
+    "renderedTitle": "Interior Material Supplier in Bangalore — Factory Direct | IntriHub | IntriHub",
+    "titleLength": 78,
+    "ogTitle": "Interior Material Supplier in Bangalore — Factory Direct | IntriHub | IntriHub",
+    "twitterTitle": "Interior Material Supplier in Bangalore — Factory Direct | IntriHub | IntriHub",
+    "titleTagCount": 1,
+    "problems": [
+      "Brand repeated ('| IntriHub | IntriHub')",
+      "Longer than 60 chars (78 chars)"
+    ]
+  },
+  {
+    "url": "/best-interior-material-electronic-city",
+    "sourceFile": "app/[...slug]/page.tsx",
+    "rawPageTitle": "",
+    "renderedTitle": "Best Interior Material Provider in Electronic City | IntriHub | IntriHub",
+    "titleLength": 72,
+    "ogTitle": "Best Interior Material Provider in Electronic City | IntriHub | IntriHub",
+    "twitterTitle": "Best Interior Material Provider in Electronic City | IntriHub | IntriHub",
+    "titleTagCount": 1,
+    "problems": [
+      "Brand repeated ('| IntriHub | IntriHub')",
+      "Longer than 60 chars (72 chars)"
+    ]
+  },
+  {
+    "url": "/tiles",
+    "sourceFile": "app/[...slug]/page.tsx",
+    "rawPageTitle": "",
+    "renderedTitle": "Tiles Online India — Vitrified, Ceramic & Granite | IntriHub | IntriHub",
+    "titleLength": 71,
+    "ogTitle": "Tiles Online India — Vitrified, Ceramic & Granite | IntriHub | IntriHub",
+    "twitterTitle": "Tiles Online India — Vitrified, Ceramic & Granite | IntriHub | IntriHub",
+    "titleTagCount": 1,
+    "problems": [
+      "Brand repeated ('| IntriHub | IntriHub')",
+      "Longer than 60 chars (71 chars)"
+    ]
+  },
+  {
+    "url": "/plywood",
+    "sourceFile": "app/[...slug]/page.tsx",
+    "rawPageTitle": "",
+    "renderedTitle": "Plywood Online India — BWP, Marine & Commercial Ply | IntriHub | IntriHub",
+    "titleLength": 73,
+    "ogTitle": "Plywood Online India — BWP, Marine & Commercial Ply | IntriHub | IntriHub",
+    "twitterTitle": "Plywood Online India — BWP, Marine & Commercial Ply | IntriHub | IntriHub",
+    "titleTagCount": 1,
+    "problems": [
+      "Brand repeated ('| IntriHub | IntriHub')",
+      "Longer than 60 chars (73 chars)"
+    ]
+  },
+  {
+    "url": "/hardware",
+    "sourceFile": "app/[...slug]/page.tsx",
+    "rawPageTitle": "",
+    "renderedTitle": "Hardware Store Online — Door Handles, Hinges & Channels | IntriHub | IntriHub",
+    "titleLength": 77,
+    "ogTitle": "Hardware Store Online — Door Handles, Hinges & Channels | IntriHub | IntriHub",
+    "twitterTitle": "Hardware Store Online — Door Handles, Hinges & Channels | IntriHub | IntriHub",
+    "titleTagCount": 1,
+    "problems": [
+      "Brand repeated ('| IntriHub | IntriHub')",
+      "Longer than 60 chars (77 chars)"
+    ]
+  },
+  {
+    "url": "/sanitaryware",
+    "sourceFile": "app/[...slug]/page.tsx",
+    "rawPageTitle": "",
+    "renderedTitle": "Sanitaryware Online India — Water Closets, Basins & Faucets | IntriHub | IntriHub",
+    "titleLength": 81,
+    "ogTitle": "Sanitaryware Online India — Water Closets, Basins & Faucets | IntriHub | IntriHub",
+    "twitterTitle": "Sanitaryware Online India — Water Closets, Basins & Faucets | IntriHub | IntriHub",
+    "titleTagCount": 1,
+    "problems": [
+      "Brand repeated ('| IntriHub | IntriHub')",
+      "Longer than 60 chars (81 chars)"
+    ]
+  },
+  {
+    "url": "/electricals",
+    "sourceFile": "app/[...slug]/page.tsx",
+    "rawPageTitle": "",
+    "renderedTitle": "",
+    "titleLength": 0,
+    "ogTitle": "",
+    "twitterTitle": "",
+    "titleTagCount": 1,
+    "problems": []
+  }
+]

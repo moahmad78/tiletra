@@ -11,19 +11,26 @@ import { MapPin, Truck, Clock, ShieldCheck, ArrowRight, Building, CheckCircle2 }
 export const revalidate = 86400; // 24 hours ISR
 
 export const metadata: Metadata = {
-  title: "Areas We Serve — Express Building & Interior Materials Delivery across Karnataka | IntriHub",
+  title: "Serviceable Areas in Karnataka",
   description:
-    "Explore all serviceable delivery locations across Bengaluru and Karnataka. Factory-direct tiles, electrical wires, plumbing pipes, plywood, and hardware with express site dispatch.",
+    "Explore all serviceable delivery locations across Bengaluru and Karnataka. Factory-direct materials with express site dispatch.",
   alternates: {
     canonical: getCanonicalUrl("/areas"),
   },
   openGraph: {
-    title: "Areas We Serve Across Karnataka | IntriHub QuickCommerce",
+    title: "Serviceable Areas in Karnataka | IntriHub",
     description:
       "Find your locality in Bangalore or Karnataka. Express site delivery for construction & interior fit-out materials.",
     url: getCanonicalUrl("/areas"),
     siteName: "IntriHub",
     images: [{ url: `${BASE_SITE_URL}/og-image.png`, width: 1200, height: 630, alt: "IntriHub Serviceable Areas" }],
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: "Serviceable Areas in Karnataka | IntriHub",
+    description:
+      "Find your locality in Bangalore or Karnataka. Express site delivery for construction & interior fit-out materials.",
+    images: [`${BASE_SITE_URL}/og-image.png`],
   },
 };
 

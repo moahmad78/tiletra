@@ -8,16 +8,16 @@ import { getGuidePosts, seedInitialGuidesIfEmpty, type GuidePostItem } from "@/l
 import { BASE_SITE_URL, getCanonicalUrl, generateBreadcrumbSchema, safeJsonLd } from "@/lib/seo";
 
 export const metadata: Metadata = {
-  title: "Interior Material Buying Guides & Expert Technical Articles | IntriHub",
+  title: "Building & Interior Buying Guides",
   description:
-    "Explore comprehensive buying guides for tiles, sanitaryware, electricals, plumbing, and architectural materials. Compare specifications, calculate quantities, and make confident building decisions.",
+    "Explore comprehensive buying guides for tiles, sanitaryware, electricals, plumbing, and architectural materials. Compare specs and calculate quantities.",
   alternates: {
     canonical: getCanonicalUrl("/guides"),
   },
   openGraph: {
-    title: "Interior Material Buying Guides & Technical Articles | IntriHub",
+    title: "Building & Interior Buying Guides | IntriHub",
     description:
-      "Expert technical buying guides for tiles, sanitaryware, electricals, plumbing, and construction materials. Step-by-step quantity calculation formulas and checklists.",
+      "Expert technical buying guides for tiles, sanitaryware, electricals, plumbing, and construction materials.",
     url: getCanonicalUrl("/guides"),
     type: "website",
     siteName: "IntriHub",
@@ -26,9 +26,16 @@ export const metadata: Metadata = {
         url: "/logo/intri-web-logo.png",
         width: 1200,
         height: 630,
-        alt: "Intrihub Buying Guides",
+        alt: "IntriHub Buying Guides",
       },
     ],
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: "Building & Interior Buying Guides | IntriHub",
+    description:
+      "Expert technical buying guides for tiles, sanitaryware, electricals, plumbing, and construction materials.",
+    images: ["/logo/intri-web-logo.png"],
   },
 };
 

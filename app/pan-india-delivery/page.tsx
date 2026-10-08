@@ -20,7 +20,7 @@ import { BASE_SITE_URL, getCanonicalUrl, generateBreadcrumbSchema } from "@/lib/
 import JsonLd from "@/components/JsonLd";
 
 export const metadata: Metadata = {
-  title: "Pan-India Building Materials Delivery | IntriHub",
+  title: "Pan-India Building Materials Delivery",
   description:
     "IntriHub delivers construction & interior materials across India in 3-7 days, with 60-minute instant delivery in Bengaluru. Expanding local vendor network nationwide.",
   alternates: {

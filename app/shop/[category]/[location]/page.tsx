@@ -8,6 +8,7 @@ import Footer from "@/components/Footer";
 import CategoryCatalogClient from "@/components/CategoryCatalogClient";
 import JsonLd from "@/components/JsonLd";
 import {
+  BASE_SITE_URL,
   getCanonicalUrl,
   generateBreadcrumbSchema,
   generateItemListSchema,
@@ -46,11 +47,14 @@ export async function generateMetadata({
   ];
 
   if (!category || !location) {
-    return { title: "Location Not Found | IntriHub" };
+    return { title: "Location Not Found" };
   }
 
   const canonicalUrl = getCanonicalUrl(`/shop/${category.slug}/${location.slug}`);
-  const cleanTitle = `${category.name} Provider in ${location.name}, ${location.city} | IntriHub`;
+  let cleanTitle = `${category.name} in ${location.name}`;
+  if (cleanTitle.length > 48) {
+    cleanTitle = cleanTitle.slice(0, 48).trim().replace(/[,\-:|—\s]+$/, "");
+  }
   const subAreasText = location.serviceableSubAreas?.slice(0, 3).join(", ") || location.area;
   const description = `Buy ${category.name} in ${location.name}, ${location.city}. Direct site delivery with ${location.dispatchWindow.toLowerCase()} across ${subAreasText}. Factory rates & verified GST invoice.`;
 
@@ -61,18 +65,18 @@ export async function generateMetadata({
       canonical: canonicalUrl,
     },
     openGraph: {
-      title: `${cleanTitle}`,
+      title: `${cleanTitle} | IntriHub`,
       description,
       url: canonicalUrl,
       type: "website",
       siteName: "IntriHub",
-      images: [{ url: "https://intrihub.com/og-image.png", alt: `${category.name} in ${location.name}` }],
+      images: [{ url: `${BASE_SITE_URL}/og-image.png`, alt: `${category.name} in ${location.name}` }],
     },
     twitter: {
       card: "summary_large_image",
-      title: `${cleanTitle}`,
+      title: `${cleanTitle} | IntriHub`,
       description,
-      images: ["https://intrihub.com/og-image.png"],
+      images: [`${BASE_SITE_URL}/og-image.png`],
     },
   };
 }

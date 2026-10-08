@@ -6,14 +6,14 @@ import Footer from "@/components/Footer";
 import { BASE_SITE_URL, getCanonicalUrl, generateBreadcrumbSchema, safeJsonLd } from "@/lib/seo";
 
 export const metadata: Metadata = {
-  title: "Interior Design Inspiration & Trending Materials | IntriHub",
+  title: "Interior Design Inspiration & Trends",
   description:
     "Explore architectural mood boards, trending surface finishes, and designer material inspirations for residential and commercial spaces across Bengaluru.",
   alternates: {
     canonical: getCanonicalUrl("/inspiration"),
   },
   openGraph: {
-    title: "Interior Design Inspiration & Trending Materials | IntriHub",
+    title: "Interior Design Inspiration & Trends | IntriHub",
     description:
       "Explore architectural mood boards, trending surface finishes, and designer material inspirations for residential and commercial spaces.",
     url: getCanonicalUrl("/inspiration"),

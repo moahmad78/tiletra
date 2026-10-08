@@ -7,24 +7,26 @@ import JsonLd from "@/components/JsonLd";
 import { generateHomepageFaqSchema } from "@/lib/seo";
 
 export const metadata: Metadata = {
-  title: "Buy Tiles, Hardware & Standard Construction Items Online | IntriHub",
+  title: {
+    absolute: "Every Material. Every Space. | IntriHub",
+  },
   description:
-    "Explore standard vitrified tiles, sanitaryware, electricals & hardware items online at best prices. Every Material. Every Space. Delivered across Bengaluru & Karnataka.",
+    "IntriHub: Every Material. Every Space. Buy vitrified tiles, electrical, plumbing, sanitaryware, plywood & hardware online with fast site delivery.",
   alternates: {
     canonical: "https://www.intrihub.com/",
   },
   openGraph: {
-    title: "Buy Tiles, Hardware & Standard Construction Items Online | IntriHub",
+    title: "Every Material. Every Space. | IntriHub",
     description:
-      "Explore standard vitrified tiles, sanitaryware, electricals & hardware items online at best prices. Every Material. Every Space. Delivered across Bengaluru & Karnataka.",
+      "IntriHub: Every Material. Every Space. Buy vitrified tiles, electrical, plumbing, sanitaryware, plywood & hardware online with fast site delivery.",
     url: "https://www.intrihub.com/",
     siteName: "IntriHub",
   },
   twitter: {
     card: "summary_large_image",
-    title: "Buy Tiles, Hardware & Standard Construction Items Online | IntriHub",
+    title: "Every Material. Every Space. | IntriHub",
     description:
-      "Explore standard vitrified tiles, sanitaryware, electricals & hardware items online at best prices. Every Material. Every Space. Delivered across Bengaluru & Karnataka.",
+      "IntriHub: Every Material. Every Space. Buy vitrified tiles, electrical, plumbing, sanitaryware, plywood & hardware online with fast site delivery.",
   },
 };
 

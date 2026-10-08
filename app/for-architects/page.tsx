@@ -22,14 +22,14 @@ import {
 import JsonLd from "@/components/JsonLd";
 
 export const metadata: Metadata = {
-  title: "Architects & Specifiers Material Sourcing",
+  title: "For Architects & Specifiers",
   description:
     "Factory-direct material procurement for architectural firms and specifiers. Access technical compliance data, certified sample swatch boxes, R9-R11 slip ratings, single-batch manufacturing runs, and express site delivery in Bengaluru.",
   alternates: {
     canonical: getCanonicalUrl("/for-architects"),
   },
   openGraph: {
-    title: "Architects & Specifiers Material Sourcing | IntriHub",
+    title: "For Architects & Specifiers | IntriHub",
     description:
       "End-to-end interior and construction material procurement for architectural firms with sampling support, BIM/CAD specs, single-batch allocations, and direct site delivery.",
     url: getCanonicalUrl("/for-architects"),

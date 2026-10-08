@@ -7,11 +7,25 @@ import { getCanonicalUrl } from "@/lib/seo";
 export const revalidate = 60;
 
 export const metadata: Metadata = {
-  title: "Explore 20+ Construction & Interior Categories",
+  title: "Browse All Product Categories",
   description:
-    "Browse all 20 categories of construction, hardware, electrical, plumbing, sanitaryware, tiles, paint, and interior supplies at Intrihub Bangalore.",
+    "Browse all 20 categories of construction, hardware, electrical, plumbing, sanitaryware, tiles, paint, and interior supplies at IntriHub Bangalore.",
   alternates: {
     canonical: getCanonicalUrl("/categories"),
+  },
+  openGraph: {
+    title: "Browse All Product Categories | IntriHub",
+    description:
+      "Browse all 20 categories of construction, hardware, electrical, plumbing, sanitaryware, tiles, paint, and interior supplies at IntriHub Bangalore.",
+    url: getCanonicalUrl("/categories"),
+    type: "website",
+    siteName: "IntriHub",
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: "Browse All Product Categories | IntriHub",
+    description:
+      "Browse all 20 categories of construction, hardware, electrical, plumbing, sanitaryware, tiles, paint, and interior supplies at IntriHub Bangalore.",
   },
 };
 

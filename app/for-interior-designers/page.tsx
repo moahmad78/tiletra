@@ -7,14 +7,14 @@ import { getCanonicalUrl, generateBreadcrumbSchema, generateArchitectServiceSche
 import JsonLd from "@/components/JsonLd";
 
 export const metadata: Metadata = {
-  title: "Interior Designers & Studios Material Sourcing",
+  title: "For Interior Designers & Studios",
   description:
     "Curated interior material sourcing for design studios: luxury vitrified tiles, designer bath fittings, lighting, textures, and bespoke stone surfaces with trade discounts.",
   alternates: {
     canonical: getCanonicalUrl("/for-interior-designers"),
   },
   openGraph: {
-    title: "Interior Designers & Studios Material Sourcing | IntriHub",
+    title: "For Interior Designers & Studios | IntriHub",
     description:
       "Curated interior material sourcing for design studios with trade discounts, sample deliveries, and fast site procurement.",
     url: getCanonicalUrl("/for-interior-designers"),

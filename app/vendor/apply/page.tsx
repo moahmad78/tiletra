@@ -5,14 +5,14 @@ import VendorApplyForm from "@/components/vendor/VendorApplyForm";
 import { BASE_SITE_URL, getCanonicalUrl } from "@/lib/seo";
 
 export const metadata: Metadata = {
-  title: "Become an IntriHub Vendor Partner — Sell Building & Interior Materials",
+  title: "Become a Vendor Partner",
   description:
     "Join Bangalore's fastest growing building and interior materials quick-commerce marketplace. Direct customer reach, transparent margins, and weekly automated settlements.",
   alternates: {
     canonical: getCanonicalUrl("/vendor/apply"),
   },
   openGraph: {
-    title: "Become a Vendor Partner | IntriHub QuickCommerce",
+    title: "Become a Vendor Partner | IntriHub",
     description:
       "Grow your construction supplies or interior retail business with IntriHub. Direct site orders from contractors, architects & homeowners.",
     url: getCanonicalUrl("/vendor/apply"),
@@ -28,7 +28,7 @@ export const metadata: Metadata = {
   },
   twitter: {
     card: "summary_large_image",
-    title: "Become an IntriHub Vendor Partner",
+    title: "Become a Vendor Partner | IntriHub",
     description: "Sell construction and interior materials with express site delivery across Bangalore.",
     images: [`${BASE_SITE_URL}/og-image.png`],
   },

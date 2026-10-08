@@ -55,11 +55,11 @@ export const metadata: Metadata = {
   metadataBase: new URL(BASE_SITE_URL),
   referrer: "no-referrer-when-downgrade",
   title: {
-    default: "IntriHub — Every Material. Every Space. | Quick-Commerce",
+    default: "Every Material. Every Space. | IntriHub",
     template: "%s | IntriHub",
   },
   description:
-    "IntriHub — Every Material. Every Space. Buy vitrified tiles, electrical, plumbing, sanitaryware, plywood & hardware online with fast site delivery across Bengaluru.",
+    "IntriHub: Every Material. Every Space. Buy vitrified tiles, electrical, plumbing, sanitaryware, plywood & hardware online with fast site delivery.",
   keywords: [
     "Intrihub",
     "IntriHub",

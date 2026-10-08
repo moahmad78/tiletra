@@ -54,7 +54,10 @@ export async function generateMetadata({
   }
 
   const seo = getCategorySeo(categorySlug);
-  const cleanMetaTitle = seo.metaTitle;
+  let cleanMetaTitle = seo.metaTitle.replace(/\s*\|\s*IntriHub/gi, "").trim();
+  if (cleanMetaTitle.length > 48) {
+    cleanMetaTitle = cleanMetaTitle.slice(0, 48).trim().replace(/[,\-:|—\s]+$/, "");
+  }
   const canonicalUrl = getCanonicalUrl(`/shop/${category.slug}`);
 
   return {
@@ -85,7 +88,7 @@ export async function generateMetadata({
           url: category.image && !category.image.includes("placeholder")
             ? (category.image.startsWith("http") ? category.image : `${BASE_SITE_URL}${category.image.startsWith("/") ? category.image : `/${category.image}`}`)
             : `${BASE_SITE_URL}/og-image.png`,
-          alt: `${category.name} on Intrihub`,
+          alt: `${category.name} on IntriHub`,
         },
       ],
     },

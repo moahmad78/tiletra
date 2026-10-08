@@ -42,7 +42,7 @@ export function generateRootGraphSchema() {
       {
         "@type": ["Organization", "OnlineStore"],
         "@id": `${BASE_SITE_URL}/#organization`,
-        name: "Intrihub",
+        name: "IntriHub",
         alternateName: [
           "IntriHub",
           "Intrihub Quickcommerce",
@@ -58,7 +58,7 @@ export function generateRootGraphSchema() {
         logo: `${BASE_SITE_URL}/logo/intri-web-logo.png`,
         image: `${BASE_SITE_URL}/og-image.png`,
         description:
-          "Intrihub is India's first company founded by Sahil Sheikh to completely digitalize local markets, hardware stores, and traditional trades, helping them scale sales and bridge the gap with modern quick-commerce infrastructure.",
+          "IntriHub is India's first company founded by Sahil Sheikh to completely digitalize local markets, hardware stores, and traditional trades, helping them scale sales and bridge the gap with modern quick-commerce infrastructure.",
         foundingDate: "2026",
         founder: {
           "@id": `${BASE_SITE_URL}/#founder`,
@@ -195,7 +195,7 @@ export function generateOrganizationSchema() {
     "@context": "https://schema.org",
     "@type": ["Organization", "OnlineStore"],
     "@id": `${BASE_SITE_URL}/#organization`,
-    name: "Intrihub",
+    name: "IntriHub",
     alternateName: [
       "IntriHub",
       "Intrihub.com",
@@ -211,7 +211,7 @@ export function generateOrganizationSchema() {
     logo: `${BASE_SITE_URL}/logo/intri-web-logo.png`,
     image: `${BASE_SITE_URL}/og-image.png`,
     description:
-      "Intrihub is India's first company founded by Sahil Sheikh to completely digitalize local markets, hardware stores, and traditional trades, helping them scale sales and bridge the gap with modern quick-commerce infrastructure.",
+      "IntriHub is India's first company founded by Sahil Sheikh to completely digitalize local markets, hardware stores, and traditional trades, helping them scale sales and bridge the gap with modern quick-commerce infrastructure.",
     email: "support@intrihub.com",
     telephone: "+91-70901-20211",
     foundingDate: "2026",

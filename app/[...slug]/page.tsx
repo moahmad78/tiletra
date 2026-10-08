@@ -101,15 +101,20 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
 
   if (!page || !page.isPublished) {
     return {
-      title: "Page Not Found | IntriHub",
+      title: "Page Not Found",
       robots: { index: false, follow: false },
     };
   }
 
   const canonicalUrl = `${BASE_SITE_URL}/${page.slug}`;
+  const rawTitle = page.title || "";
+  let cleanTitle = rawTitle.replace(/\s*\|\s*Intrihub/gi, "").trim();
+  if (cleanTitle.length > 48) {
+    cleanTitle = cleanTitle.slice(0, 48).trim().replace(/[,\-:|—\s]+$/, "");
+  }
 
   return {
-    title: page.title,
+    title: cleanTitle,
     description: page.metaDescription,
     alternates: {
       canonical: canonicalUrl,
@@ -126,7 +131,7 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
       },
     },
     openGraph: {
-      title: `${page.title} | IntriHub`,
+      title: `${cleanTitle} | IntriHub`,
       description: page.metaDescription,
       url: canonicalUrl,
       type: "website",
@@ -142,7 +147,7 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
     },
     twitter: {
       card: "summary_large_image",
-      title: `${page.title} | IntriHub`,
+      title: `${cleanTitle} | IntriHub`,
       description: page.metaDescription,
       images: [`${BASE_SITE_URL}/og-image.png`],
     },

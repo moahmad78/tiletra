@@ -28,7 +28,7 @@ import {
 export const metadata: Metadata = {
   title: "Bulk Orders for Contractors & Projects",
   description:
-    "Order bulk tiles, electrical, plumbing, plywood & hardware for construction projects in Bangalore. Factory-direct pricing, GST invoices, phased site delivery. Intrihub.",
+    "Order bulk tiles, electrical, plumbing, plywood & hardware for construction projects in Bangalore. Factory-direct pricing, GST invoices, phased site delivery. IntriHub.",
   alternates: {
     canonical: getCanonicalUrl("/bulk-orders"),
   },

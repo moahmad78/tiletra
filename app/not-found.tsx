@@ -4,7 +4,7 @@ import Footer from "@/components/Footer";
 import NotFoundClient from "@/components/NotFoundClient";
 
 export const metadata: Metadata = {
-  title: "404 - Page Not Found | IntriHub",
+  title: "404: Page Not Found",
   description: "The page or resource you were looking for is unavailable or has moved. Search 500+ building materials or contact IntriHub support.",
   robots: {
     index: false,

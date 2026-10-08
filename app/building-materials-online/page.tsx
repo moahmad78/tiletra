@@ -30,7 +30,7 @@ import { BASE_SITE_URL, getCanonicalUrl } from "@/lib/seo";
 
 export const revalidate = 3600; // 1-hour ISR revalidation
 
-const PAGE_TITLE = "Buy Building Materials Online | 60-Min Express Delivery in Bengaluru | IntriHub";
+const PAGE_TITLE = "Buy Building Materials Online";
 const PAGE_DESCRIPTION =
   "Order 100% genuine building & construction materials online in Bengaluru. Direct manufacturer pricing on cement, TMT steel, CPVC plumbing, vitrified tiles, electricals, false ceiling, and hardware. Fast 60-minute site delivery with GST invoice.";
 const CANONICAL_URL = getCanonicalUrl("/building-materials-online");
@@ -42,7 +42,7 @@ export const metadata: Metadata = {
     canonical: CANONICAL_URL,
   },
   openGraph: {
-    title: PAGE_TITLE,
+    title: `${PAGE_TITLE} | IntriHub`,
     description: PAGE_DESCRIPTION,
     url: CANONICAL_URL,
     siteName: "IntriHub",
@@ -59,7 +59,7 @@ export const metadata: Metadata = {
   },
   twitter: {
     card: "summary_large_image",
-    title: PAGE_TITLE,
+    title: `${PAGE_TITLE} | IntriHub`,
     description: PAGE_DESCRIPTION,
     images: [`${BASE_SITE_URL}/images/banners/banner-slide-1-1400.webp`],
   },

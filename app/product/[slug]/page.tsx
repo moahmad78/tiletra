@@ -30,9 +30,12 @@ export async function generateMetadata({
 
   const isDiscontinued = product.status === "discontinued";
   const canonicalUrl = getCanonicalUrl(`/product/${product.slug}`);
-  const title = isDiscontinued
+  let title = isDiscontinued
     ? `${product.name} (Discontinued)`
     : product.name;
+  if (title.length > 48) {
+    title = title.slice(0, 48).trim().replace(/[,\-:|—\s]+$/, "");
+  }
   const description =
     product.description?.slice(0, 160) ||
     `Buy ${product.name} online at IntriHub. Direct-from-factory building & interior materials with rapid delivery across Bangalore & Pan-India.`;
@@ -61,7 +64,7 @@ export async function generateMetadata({
           follow: true,
         },
     openGraph: {
-      title,
+      title: `${title} | IntriHub`,
       description,
       url: canonicalUrl,
       type: "website",
@@ -75,7 +78,7 @@ export async function generateMetadata({
     },
     twitter: {
       card: "summary_large_image",
-      title,
+      title: `${title} | IntriHub`,
       description,
       images: imageUrls,
     },

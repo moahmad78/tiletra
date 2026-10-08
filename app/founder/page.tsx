@@ -37,15 +37,15 @@ import { BASE_SITE_URL, getCanonicalUrl, generateBreadcrumbSchema } from "@/lib/
 const canonicalUrl = getCanonicalUrl("/founder");
 
 export const metadata: Metadata = {
-  title: "Sahil Sheikh — Founder, CEO & CTO of Intrihub Quickcommerce",
+  title: "Sahil Sheikh: Founder, CEO & CTO",
   description:
-    "Sahil Sheikh is the 23-year-old visionary Founder, CEO & CTO of Intrihub, India's first company to completely digitalize local markets, hardware stores, and traditional trades across Bharat.",
+    "Sahil Sheikh is the visionary Founder, CEO & CTO of IntriHub, digitalizing local markets and traditional building material trades across Bharat.",
   robots: { index: true, follow: true },
   alternates: { canonical: canonicalUrl },
   openGraph: {
-    title: "Sahil Sheikh — Founder, CEO & CTO of Intrihub Quickcommerce",
+    title: "Sahil Sheikh: Founder, CEO & CTO | IntriHub",
     description:
-      "The official story of Sahil Sheikh, the 23-year-old visionary software engineer from Uttar Pradesh who founded Intrihub to digitalize India's local markets and represent Bharat on the global stage.",
+      "The official story of Sahil Sheikh, visionary software engineer who founded IntriHub to digitalize India's local building material trades.",
     url: canonicalUrl,
     type: "profile",
     images: [
@@ -53,15 +53,15 @@ export const metadata: Metadata = {
         url: `${BASE_SITE_URL}/images/brand/sahil-sheikh.jpg`,
         width: 1024,
         height: 1024,
-        alt: "Sahil Sheikh - Founder, CEO & CTO of Intrihub",
+        alt: "Sahil Sheikh - Founder, CEO & CTO of IntriHub",
       },
     ],
   },
   twitter: {
     card: "summary_large_image",
-    title: "Sahil Sheikh — Founder, CEO & CTO of Intrihub",
+    title: "Sahil Sheikh: Founder, CEO & CTO | IntriHub",
     description:
-      "Sahil Sheikh founded Intrihub to digitalize India's local markets, hardware stores, and traditional trades.",
+      "Sahil Sheikh founded IntriHub to digitalize India's local markets, hardware stores, and traditional trades.",
     images: [`${BASE_SITE_URL}/images/brand/sahil-sheikh.jpg`],
   },
 };
