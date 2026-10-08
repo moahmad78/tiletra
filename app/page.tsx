@@ -21,12 +21,21 @@ export const metadata: Metadata = {
       "IntriHub: Every Material. Every Space. Buy vitrified tiles, electrical, plumbing, sanitaryware, plywood & hardware online with fast site delivery.",
     url: "https://www.intrihub.com/",
     siteName: "IntriHub",
+    images: [
+      {
+        url: "https://www.intrihub.com/images/intrihub-og-image.jpg",
+        width: 1024,
+        height: 537,
+        alt: "Every Material. Every Space. | IntriHub",
+      },
+    ],
   },
   twitter: {
     card: "summary_large_image",
     title: "Every Material. Every Space. | IntriHub",
     description:
       "IntriHub: Every Material. Every Space. Buy vitrified tiles, electrical, plumbing, sanitaryware, plywood & hardware online with fast site delivery.",
+    images: ["https://www.intrihub.com/images/intrihub-og-image.jpg"],
   },
 };
 

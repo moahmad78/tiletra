@@ -138,9 +138,9 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
       siteName: "IntriHub",
       images: [
         {
-          url: `${BASE_SITE_URL}/og-image.png`,
-          width: 1200,
-          height: 630,
+          url: `${BASE_SITE_URL}/images/intrihub-og-image.jpg`,
+          width: 1024,
+          height: 537,
           alt: `${page.targetKeyword} — IntriHub`,
         },
       ],
@@ -149,7 +149,7 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
       card: "summary_large_image",
       title: `${cleanTitle} | IntriHub`,
       description: page.metaDescription,
-      images: [`${BASE_SITE_URL}/og-image.png`],
+      images: [`${BASE_SITE_URL}/images/intrihub-og-image.jpg`],
     },
   };
 }

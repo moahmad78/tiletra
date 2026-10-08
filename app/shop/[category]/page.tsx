@@ -87,7 +87,7 @@ export async function generateMetadata({
         {
           url: category.image && !category.image.includes("placeholder")
             ? (category.image.startsWith("http") ? category.image : `${BASE_SITE_URL}${category.image.startsWith("/") ? category.image : `/${category.image}`}`)
-            : `${BASE_SITE_URL}/og-image.png`,
+            : `${BASE_SITE_URL}/images/intrihub-og-image.jpg`,
           alt: `${category.name} on IntriHub`,
         },
       ],
@@ -99,7 +99,7 @@ export async function generateMetadata({
       images: [
         category.image && !category.image.includes("placeholder")
           ? (category.image.startsWith("http") ? category.image : `${BASE_SITE_URL}${category.image.startsWith("/") ? category.image : `/${category.image}`}`)
-          : `${BASE_SITE_URL}/og-image.png`,
+          : `${BASE_SITE_URL}/images/intrihub-og-image.jpg`,
       ],
     },
   };

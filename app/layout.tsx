@@ -159,9 +159,9 @@ export const metadata: Metadata = {
     locale: "en_IN",
     images: [
       {
-        url: `${BASE_SITE_URL}/og-image.png?v=2`,
-        width: 1200,
-        height: 630,
+        url: `${BASE_SITE_URL}/images/intrihub-og-image.jpg`,
+        width: 1024,
+        height: 537,
         alt: "Every Material. Every Space. | IntriHub — Instant Building & Interior Materials Delivery",
       },
     ],
@@ -171,7 +171,7 @@ export const metadata: Metadata = {
     title: "Every Material. Every Space. | IntriHub",
     description:
       "IntriHub — Every Material. Every Space. Buy vitrified tiles, electrical, plumbing, plywood, hardware & interior supplies online with instant doorstep site delivery.",
-    images: [`${BASE_SITE_URL}/og-image.png?v=2`],
+    images: [`${BASE_SITE_URL}/images/intrihub-og-image.jpg`],
   },
 };
 

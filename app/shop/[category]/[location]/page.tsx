@@ -70,13 +70,13 @@ export async function generateMetadata({
       url: canonicalUrl,
       type: "website",
       siteName: "IntriHub",
-      images: [{ url: `${BASE_SITE_URL}/og-image.png`, alt: `${category.name} in ${location.name}` }],
+      images: [{ url: `${BASE_SITE_URL}/images/intrihub-og-image.jpg`, alt: `${category.name} in ${location.name}` }],
     },
     twitter: {
       card: "summary_large_image",
       title: `${cleanTitle} | IntriHub`,
       description,
-      images: [`${BASE_SITE_URL}/og-image.png`],
+      images: [`${BASE_SITE_URL}/images/intrihub-og-image.jpg`],
     },
   };
 }

@@ -56,7 +56,7 @@ export function generateRootGraphSchema() {
         slogan: "Every Material. Every Space.",
         url: BASE_SITE_URL,
         logo: `${BASE_SITE_URL}/logo/intri-web-logo.png`,
-        image: `${BASE_SITE_URL}/og-image.png`,
+        image: `${BASE_SITE_URL}/images/intrihub-og-image.jpg`,
         description:
           "IntriHub is India's first company founded by Sahil Sheikh to completely digitalize local markets, hardware stores, and traditional trades, helping them scale sales and bridge the gap with modern quick-commerce infrastructure.",
         foundingDate: "2026",
@@ -141,7 +141,7 @@ export function generateRootGraphSchema() {
         name: "IntriHub",
         description:
           "India's instant building materials and interior supplies quick-commerce store in Begur, Bengaluru, empowering local trades.",
-        image: `${BASE_SITE_URL}/og-image.png`,
+        image: `${BASE_SITE_URL}/images/intrihub-og-image.jpg`,
         url: BASE_SITE_URL,
         telephone: "+91-70901-20211",
         priceRange: "₹₹",
@@ -209,7 +209,7 @@ export function generateOrganizationSchema() {
     slogan: "Every Material. Every Space.",
     url: BASE_SITE_URL,
     logo: `${BASE_SITE_URL}/logo/intri-web-logo.png`,
-    image: `${BASE_SITE_URL}/og-image.png`,
+    image: `${BASE_SITE_URL}/images/intrihub-og-image.jpg`,
     description:
       "IntriHub is India's first company founded by Sahil Sheikh to completely digitalize local markets, hardware stores, and traditional trades, helping them scale sales and bridge the gap with modern quick-commerce infrastructure.",
     email: "support@intrihub.com",
@@ -720,7 +720,7 @@ export function generateLocalBusinessCategorySchema(opts: {
     name: `Intrihub ${categoryName}${nameSuffix}`,
     url: pageUrl,
     telephone: "+91-70901-20211",
-    image: `${BASE_SITE_URL}/og-image.png`,
+    image: `${BASE_SITE_URL}/images/intrihub-og-image.jpg`,
     priceRange: "\u20b9\u20b9",
     knowsAbout: [
       categoryName,
@@ -808,7 +808,7 @@ export function generateSeoKeywordPageSchemas(opts: {
     url: "https://intrihub.com",
     telephone: "+91 92649 20211",
     priceRange: "₹₹",
-    image: `${BASE_SITE_URL}/og-image.png`,
+    image: `${BASE_SITE_URL}/images/intrihub-og-image.jpg`,
     address: {
       "@type": "PostalAddress",
       streetAddress: "Begur",
