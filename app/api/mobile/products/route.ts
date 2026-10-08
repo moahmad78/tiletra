@@ -1,6 +1,7 @@
 import { NextRequest } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { mobileApiResponse, handleMobileCorsOptions } from "@/lib/mobile-auth";
+import { haversineDistanceKm } from "@/lib/delivery/geo";
 
 export async function OPTIONS() {
   return handleMobileCorsOptions();
@@ -27,6 +28,14 @@ export async function GET(req: NextRequest) {
     const isBestseller = searchParams.get("bestseller") === "true";
     const isNewArrival = searchParams.get("newArrival") === "true";
     const sortBy = searchParams.get("sort") || "popular";
+
+    // F1: Parse and validate customer coordinates
+    const rawLat = searchParams.get("lat");
+    const rawLng = searchParams.get("lng");
+    const lat = rawLat !== null && !isNaN(parseFloat(rawLat)) && parseFloat(rawLat) >= -90 && parseFloat(rawLat) <= 90 ? parseFloat(rawLat) : undefined;
+    const lng = rawLng !== null && !isNaN(parseFloat(rawLng)) && parseFloat(rawLng) >= -180 && parseFloat(rawLng) <= 180 ? parseFloat(rawLng) : undefined;
+    const hasCoordinates = lat !== undefined && lng !== undefined;
+
     const page = Math.max(1, parseInt(searchParams.get("page") || "1", 10));
     const limit = Math.min(250, Math.max(1, parseInt(searchParams.get("limit") || "40", 10)));
     const skip = (page - 1) * limit;
@@ -88,28 +97,94 @@ export async function GET(req: NextRequest) {
     else if (sortBy === "rating") orderBy = { rating: "desc" };
     else if (sortBy === "popular") orderBy = [{ isTrending: "desc" }, { isBestseller: "desc" }, { rating: "desc" }];
 
-    let [products, totalCount] = await Promise.all([
-      prisma.product.findMany({
-        where,
-        orderBy,
-        skip,
-        take: limit,
-        include: {
-          vendor: {
-            select: {
-              id: true,
-              businessName: true,
-              slug: true,
-              logo: true,
+    // Nearest-first distance ordering activates when coordinates are provided and no explicit price/rating sort is chosen
+    const shouldSortNearest = hasCoordinates && sortBy === "popular";
+
+    let products: any[] = [];
+    let totalCount = 0;
+
+    if (shouldSortNearest) {
+      // Fetch all candidate products matching filter to sort nearest-first with deterministic pagination
+      const [allMatchedProducts, count] = await Promise.all([
+        prisma.product.findMany({
+          where,
+          orderBy,
+          take: 1000, // safe ceiling for current catalog
+          include: {
+            vendor: {
+              select: {
+                id: true,
+                businessName: true,
+                slug: true,
+                logo: true,
+                latitude: true,
+                longitude: true,
+              },
+            },
+            variants: {
+              take: 10,
             },
           },
-          variants: {
-            take: 10,
+        }),
+        prisma.product.count({ where }),
+      ]);
+
+      totalCount = count;
+
+      // Calculate distance for each item
+      const getDist = (p: any): number => {
+        if (p.vendor?.latitude != null && p.vendor?.longitude != null) {
+          return haversineDistanceKm(lat!, lng!, p.vendor.latitude, p.vendor.longitude);
+        }
+        return Infinity;
+      };
+
+      // Sort nearest to farthest with 100m tie-break rule (F1-11)
+      allMatchedProducts.sort((a, b) => {
+        const distA = getDist(a);
+        const distB = getDist(b);
+
+        if (distA === Infinity && distB === Infinity) return 0;
+        if (distA === Infinity) return 1;
+        if (distB === Infinity) return -1;
+
+        // F1-11: Vendors within 100m (0.1 km) of each other preserve secondary ranking
+        if (Math.abs(distA - distB) < 0.1) {
+          return 0; // retain database orderBy ranking
+        }
+        return distA - distB;
+      });
+
+      products = allMatchedProducts.slice(skip, skip + limit);
+    } else {
+      // Default path without coordinates or with explicit non-popular sort
+      const [dbProducts, count] = await Promise.all([
+        prisma.product.findMany({
+          where,
+          orderBy,
+          skip,
+          take: limit,
+          include: {
+            vendor: {
+              select: {
+                id: true,
+                businessName: true,
+                slug: true,
+                logo: true,
+                latitude: true,
+                longitude: true,
+              },
+            },
+            variants: {
+              take: 10,
+            },
           },
-        },
-      }),
-      prisma.product.count({ where }),
-    ]);
+        }),
+        prisma.product.count({ where }),
+      ]);
+      products = dbProducts;
+      totalCount = count;
+    }
 
     // If a search query yielded 0 exact results, fallback to active items
     let isFallback = false;

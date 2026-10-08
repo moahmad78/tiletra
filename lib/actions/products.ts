@@ -4,6 +4,7 @@ import { prisma } from "@/lib/prisma";
 import type { Product } from "@/lib/data/products";
 import { formatProduct, safeRevalidate } from "@/lib/formatters";
 import { recordHardDeleteRedirect } from "@/lib/redirects";
+import { haversineDistanceKm } from "@/lib/delivery/geo";
 
 export type CreateProductInput = {
   name: string;
@@ -147,9 +148,16 @@ export async function getProducts(options?: {
   status?: string;
   approvalStatus?: string;
   includeAllStatuses?: boolean;
+  lat?: number;
+  lng?: number;
 }): Promise<Product[]> {
   try {
     const where: any = {};
+
+    // Validate coordinates if provided
+    const validLat = options?.lat !== undefined && !isNaN(Number(options.lat)) && Number(options.lat) >= -90 && Number(options.lat) <= 90 ? Number(options.lat) : undefined;
+    const validLng = options?.lng !== undefined && !isNaN(Number(options.lng)) && Number(options.lng) >= -180 && Number(options.lng) <= 180 ? Number(options.lng) : undefined;
+    const isNearest = validLat !== undefined && validLng !== undefined;
 
     // For customer storefront, strictly enforce active & approved unless includeAllStatuses is true
     if (!options?.includeAllStatuses) {
@@ -253,6 +261,57 @@ export async function getProducts(options?: {
       }
     }
 
+    if (isNearest) {
+      // Nearest-first sorting
+      const dbProducts = await prisma.product.findMany({
+        where,
+        include: {
+          variants: true,
+          attributes: true,
+          priceTiers: true,
+          vendor: {
+            select: {
+              id: true,
+              businessName: true,
+              status: true,
+              latitude: true,
+              longitude: true,
+            },
+          },
+        },
+        orderBy: { createdAt: "desc" },
+        take: 1000,
+      });
+
+      const getDist = (p: any): number => {
+        if (p.vendor?.latitude != null && p.vendor?.longitude != null) {
+          return haversineDistanceKm(validLat!, validLng!, p.vendor.latitude, p.vendor.longitude);
+        }
+        return Infinity;
+      };
+
+      dbProducts.sort((a, b) => {
+        const distA = getDist(a);
+        const distB = getDist(b);
+
+        if (distA === Infinity && distB === Infinity) return 0;
+        if (distA === Infinity) return 1;
+        if (distB === Infinity) return -1;
+
+        // F1-11: 100m tie-break rule
+        if (Math.abs(distA - distB) < 0.1) {
+          return 0; // retain database orderBy ranking
+        }
+        return distA - distB;
+      });
+
+      const startIdx = options?.skip ?? options?.offset ?? 0;
+      const endIdx = options?.limit !== undefined ? startIdx + options.limit : undefined;
+      const sliced = dbProducts.slice(startIdx, endIdx);
+
+      return sliced.map(formatProduct);
+    }
+
     const dbProducts = await prisma.product.findMany({
       where,
       include: {
@@ -264,6 +323,8 @@ export async function getProducts(options?: {
             id: true,
             businessName: true,
             status: true,
+            latitude: true,
+            longitude: true,
           },
         },
       },
