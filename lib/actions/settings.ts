@@ -62,6 +62,11 @@ export async function updateStoreSettings(data: {
   codBlockedPincodes?: string[];
   estimatedDelivery?: string;
   autoAcceptOrders?: boolean;
+  cancelWindowMinutes?: number;
+  readyMinutes?: number;
+  awaitingVendorTimeoutMinutes?: number;
+  codAutoAcceptCap?: number;
+  alertStepTimings?: any;
 }) {
   try {
     let settings = await prisma.storeSettings.findFirst();

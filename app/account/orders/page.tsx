@@ -3,9 +3,9 @@
 import { useState, useEffect } from "react";
 import Link from "next/link";
 import Image from "next/image";
-import { Truck, ArrowLeft, Star, Loader2, ShoppingBag, LogIn, FileText, Download } from "lucide-react";
+import { Truck, ArrowLeft, Star, Loader2, ShoppingBag, LogIn, FileText, Download, XCircle } from "lucide-react";
 import { useAuthStore, useAuthHydrated } from "@/lib/auth-store";
-import { getCustomerOrders } from "@/lib/actions/orders";
+import { getCustomerOrders, cancelOrder } from "@/lib/actions/orders";
 import { useSocket } from "@/lib/socket";
 import WriteReviewModal from "@/components/reviews/WriteReviewModal";
 import OrderTrackingModal from "@/components/orders/OrderTrackingModal";
@@ -25,6 +25,7 @@ export default function OrdersPage() {
   const [reviewProduct, setReviewProduct] = useState<{ id: string; name: string; orderId: string } | null>(null);
   const [selectedTrackingOrder, setSelectedTrackingOrder] = useState<any>(null);
   const [selectedInvoiceOrder, setSelectedInvoiceOrder] = useState<any>(null);
+  const [cancellingOrderId, setCancellingOrderId] = useState<string | null>(null);
 
   const cleanPhone = user?.phone ? user.phone.replace(/\D/g, "") : "";
   const userRoom = user?.id ? `user:${user.id}` : cleanPhone ? `phone:${cleanPhone}` : null;
@@ -90,11 +91,49 @@ export default function OrdersPage() {
       case "Dispatched":
       case "Out for Delivery":
         return "text-blue-700 bg-blue-50 border-blue-200";
-      case "Processing":
       case "Confirmed":
+        return "text-emerald-700 bg-emerald-50 border-emerald-200";
+      case "Awaiting Vendor":
+        return "text-purple-700 bg-purple-50 border-purple-200";
+      case "Processing":
         return "text-amber-600 bg-amber-50 border-amber-200";
+      case "Cancelled":
+        return "text-rose-700 bg-rose-50 border-rose-200";
       default:
         return "text-gray-600 bg-gray-50 border-gray-200";
+    }
+  };
+
+  const getStatusLabel = (status: string) => {
+    if (status === "Confirmed") return "Order confirmed";
+    if (status === "Awaiting Vendor") return "Waiting for vendor to confirm";
+    return status;
+  };
+
+  const handleCancelOrder = async (orderId: string) => {
+    if (!confirm("Are you sure you want to cancel this order? Any prepaid amount will be refunded.")) {
+      return;
+    }
+    setCancellingOrderId(orderId);
+    try {
+      const res = await cancelOrder({
+        orderId,
+        reason: "Cancelled by customer via web portal",
+        cancelledBy: "customer",
+        userId: user?.id,
+      });
+      if (res.success) {
+        toast.success("Order cancelled successfully");
+        setOrders((prev) =>
+          prev.map((o) => (o.id === orderId ? { ...o, orderStatus: "Cancelled" } : o))
+        );
+      } else {
+        toast.error(res.error || "Failed to cancel order");
+      }
+    } catch (err: any) {
+      toast.error(err?.message || "Failed to cancel order");
+    } finally {
+      setCancellingOrderId(null);
     }
   };
 
@@ -197,7 +236,7 @@ export default function OrdersPage() {
                       order.orderStatus
                     )}`}
                   >
-                    {order.orderStatus}
+                    {getStatusLabel(order.orderStatus)}
                   </span>
                   <span className="text-sm font-black text-[#052a51]">{formatPrice(order.total)}</span>
                 </div>
@@ -265,8 +304,26 @@ export default function OrdersPage() {
                   </span>
                 </div>
 
-                {/* Two Clear Buttons: Track Order & Download Bill */}
+                {/* Clear Buttons: Track Order, Download Bill, and Cancel Order */}
                 <div className="flex items-center gap-2.5 flex-wrap">
+                  {/* Cancel Button (allowed until cancelWindowExpiresAt) */}
+                  {["Confirmed", "Awaiting Vendor", "Processing"].includes(order.orderStatus) &&
+                    (!order.cancelWindowExpiresAt || new Date() <= new Date(order.cancelWindowExpiresAt)) && (
+                      <button
+                        type="button"
+                        disabled={cancellingOrderId === order.id}
+                        onClick={() => handleCancelOrder(order.id)}
+                        className="inline-flex items-center justify-center gap-1.5 px-3 py-2 rounded-xl bg-rose-50 hover:bg-rose-100 text-rose-700 border border-rose-200 font-bold text-xs transition-all shadow-2xs active:scale-95 cursor-pointer disabled:opacity-50"
+                      >
+                        {cancellingOrderId === order.id ? (
+                          <Loader2 size={13} className="animate-spin" />
+                        ) : (
+                          <XCircle size={13} />
+                        )}
+                        <span>Cancel Order</span>
+                      </button>
+                    )}
+
                   <button
                     type="button"
                     onClick={() => setSelectedTrackingOrder(order)}

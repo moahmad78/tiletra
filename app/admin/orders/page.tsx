@@ -39,6 +39,7 @@ function formatPrice(n: number) {
 
 const STATUS_FILTERS = [
   "All",
+  "Awaiting Vendor",
   "Processing",
   "Confirmed",
   "Dispatched",
@@ -291,6 +292,8 @@ export default function AdminOrdersPage() {
       case "Processing":
       case "Confirmed":
         return "bg-amber-50 text-amber-700 border-amber-200";
+      case "Awaiting Vendor":
+        return "bg-purple-50 text-purple-700 border-purple-200";
       case "Cancelled":
       case "Returned":
         return "bg-red-50 text-red-700 border-red-200";
@@ -440,6 +443,7 @@ export default function AdminOrdersPage() {
                   className="bg-transparent text-white text-xs font-bold px-2 py-1 focus:outline-none cursor-pointer rounded-lg [&>option]:text-gray-900 [&>option]:bg-white"
                 >
                   <option value="Confirmed">Mark as Confirmed (Approve)</option>
+                  <option value="Awaiting Vendor">Mark as Awaiting Vendor</option>
                   <option value="Dispatched">Mark as Dispatched</option>
                   <option value="Out for Delivery">Mark Out for Delivery</option>
                   <option value="Delivered">Mark as Delivered</option>
@@ -585,32 +589,46 @@ export default function AdminOrdersPage() {
                       </td>
 
                       <td className="py-3.5 px-4">
-                        <div className="flex items-center gap-2">
-                          <select
-                            value={order.orderStatus}
-                            onChange={(e) => handleStatusChange(order.id, e.target.value)}
-                            className={`px-2.5 py-1.5 rounded-xl text-xs font-bold border focus:outline-none cursor-pointer ${getStatusBadge(
-                              order.orderStatus
-                            )}`}
-                          >
-                            <option value="Processing">Processing</option>
-                            <option value="Confirmed">Confirmed</option>
-                            <option value="Dispatched">Dispatched</option>
-                            <option value="Out for Delivery">Out for Delivery</option>
-                            <option value="Delivered">Delivered</option>
-                            <option value="Cancelled">Cancelled</option>
-                          </select>
-
-                          {order.orderStatus === "Processing" && (
-                            <button
-                              type="button"
-                              onClick={() => handleStatusChange(order.id, "Confirmed")}
-                              className="px-2 py-1 bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg text-[11px] font-bold shadow-2xs transition-all active:scale-95 flex items-center gap-1 cursor-pointer"
-                              title="Quick Approve / Confirm Order"
+                        <div className="flex flex-col gap-1.5">
+                          <div className="flex items-center gap-2">
+                            <select
+                              value={order.orderStatus}
+                              onChange={(e) => handleStatusChange(order.id, e.target.value)}
+                              className={`px-2.5 py-1.5 rounded-xl text-xs font-bold border focus:outline-none cursor-pointer ${getStatusBadge(
+                                order.orderStatus
+                              )}`}
                             >
-                              <Check size={12} strokeWidth={3} />
-                              <span>Approve</span>
-                            </button>
+                              <option value="Awaiting Vendor">Awaiting Vendor</option>
+                              <option value="Processing">Processing</option>
+                              <option value="Confirmed">Confirmed</option>
+                              <option value="Dispatched">Dispatched</option>
+                              <option value="Out for Delivery">Out for Delivery</option>
+                              <option value="Delivered">Delivered</option>
+                              <option value="Cancelled">Cancelled</option>
+                            </select>
+
+                            {(order.orderStatus === "Processing" || order.orderStatus === "Awaiting Vendor") && (
+                              <button
+                                type="button"
+                                onClick={() => handleStatusChange(order.id, "Confirmed")}
+                                className="px-2 py-1 bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg text-[11px] font-bold shadow-2xs transition-all active:scale-95 flex items-center gap-1 cursor-pointer"
+                                title="Quick Approve / Confirm Order"
+                              >
+                                <Check size={12} strokeWidth={3} />
+                                <span>Approve</span>
+                              </button>
+                            )}
+                          </div>
+
+                          {order.autoAccepted && (
+                            <span className="inline-flex items-center gap-1 text-[10px] font-bold text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded-md border border-emerald-200 w-fit">
+                              ⚡ Auto-Accepted
+                            </span>
+                          )}
+                          {order.orderStatus === "Awaiting Vendor" && order.autoAcceptReason && (
+                            <span className="text-[10px] text-purple-700 line-clamp-1" title={order.autoAcceptReason}>
+                              {order.autoAcceptReason}
+                            </span>
                           )}
                         </div>
                       </td>

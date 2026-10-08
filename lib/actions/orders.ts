@@ -4,6 +4,8 @@ import { prisma } from "@/lib/prisma";
 import { safeRevalidate } from "@/lib/formatters";
 import { requireAdminAction } from "@/lib/admin-guard";
 import { validateDeliverySchedule } from "@/lib/delivery-slots";
+import { haversineDistanceKm } from "@/lib/delivery/geo";
+import { isWithinOperatingHours } from "@/lib/delivery/operating-hours";
 import Razorpay from "razorpay";
 import crypto from "crypto";
 
@@ -365,15 +367,280 @@ export async function createOrder(input: CreateOrderInput) {
         },
       });
 
-      // 4. Create Parent Order & Items inside transaction
-      let currentEstDelivery = "Within 60 Minutes";
+      // 4. Multi-Vendor Marketplace: Route, Split & Auto-Accept Checks (PRD v2 Feature 2)
+      let storeSettings: any = null;
       try {
-        const storeSettings: any = await tx.storeSettings.findFirst();
-        if (storeSettings?.estimatedDelivery) {
-          currentEstDelivery = storeSettings.estimatedDelivery;
-        }
+        storeSettings = await tx.storeSettings.findFirst();
       } catch {}
 
+      const storeAutoAccept = storeSettings?.autoAcceptOrders ?? true;
+      const readyMinutes = storeSettings?.readyMinutes ?? 10;
+      const cancelWindowMinutes = storeSettings?.cancelWindowMinutes ?? 2;
+      const codAutoAcceptCap = storeSettings?.codAutoAcceptCap ?? 5000;
+      const currentEstDelivery = storeSettings?.estimatedDelivery || "Within 60 Minutes";
+
+      const customerLat = rawAddr?.latitude ? Number(rawAddr.latitude) : null;
+      const customerLng = rawAddr?.longitude ? Number(rawAddr.longitude) : null;
+
+      // Check customer completed order count for Check 7 (COD cap)
+      let customerCompletedOrdersCount = 0;
+      try {
+        customerCompletedOrdersCount = await tx.order.count({
+          where: {
+            OR: [
+              { customerPhone: input.customerPhone },
+              ...(validUserId ? [{ userId: validUserId }] : []),
+            ],
+            orderStatus: { in: ["Delivered", "delivered"] },
+          },
+        });
+      } catch {}
+
+      const productIds = verifiedItems.map((i) => i.productId).filter(Boolean);
+      const dbProducts = await tx.product.findMany({
+        where: { id: { in: productIds } },
+        select: {
+          id: true,
+          weightKg: true,
+          isBulky: true,
+          vendorId: true,
+          vendor: {
+            select: {
+              id: true,
+              commissionRate: true,
+              businessName: true,
+              deliveryMethod: true,
+              autoAcceptOrders: true,
+              latitude: true,
+              longitude: true,
+              serviceAreaRadiusKm: true,
+              isOnline: true,
+              operatingHours: true,
+              lastHeartbeatAt: true,
+              status: true,
+            },
+          },
+        },
+      });
+
+      const productVendorMap = new Map<
+        string,
+        {
+          vendorId: string;
+          vendor: any;
+          commissionRate: number;
+          deliveryMethod: string;
+          autoAcceptOrders: boolean;
+          weightKg: number;
+          isBulky: boolean;
+        }
+      >();
+
+      for (const p of dbProducts) {
+        if (p.vendorId && p.vendor) {
+          productVendorMap.set(p.id, {
+            vendorId: p.vendorId,
+            vendor: p.vendor,
+            commissionRate: p.vendor.commissionRate ?? 15,
+            deliveryMethod: p.vendor.deliveryMethod || "self",
+            autoAcceptOrders: p.vendor.autoAcceptOrders ?? false,
+            weightKg: p.weightKg || 2.5,
+            isBulky: Boolean(p.isBulky),
+          });
+        }
+      }
+
+      // Group items by vendor
+      const vendorSubtotals = new Map<
+        string,
+        {
+          vendor: any;
+          subtotal: number;
+          commissionRate: number;
+          deliveryMethod: string;
+          autoAccept: boolean;
+          totalWeightKg: number;
+          hasBulkyItem: boolean;
+        }
+      >();
+
+      for (const item of verifiedItems) {
+        const vInfo = productVendorMap.get(item.productId);
+        if (vInfo) {
+          const current = vendorSubtotals.get(vInfo.vendorId) || {
+            vendor: vInfo.vendor,
+            subtotal: 0,
+            commissionRate: vInfo.commissionRate,
+            deliveryMethod: vInfo.deliveryMethod,
+            autoAccept: vInfo.autoAcceptOrders,
+            totalWeightKg: 0,
+            hasBulkyItem: false,
+          };
+          const itemWeight = (vInfo.weightKg || 2.5) * (item.boxQuantity || 1);
+          current.subtotal += item.totalPrice;
+          current.totalWeightKg += itemWeight;
+          if (vInfo.isBulky) current.hasBulkyItem = true;
+          vendorSubtotals.set(vInfo.vendorId, current);
+        }
+      }
+
+      // ── Evaluate 7 Eligibility Checks per Vendor Split (PRD v2 Section 5) ──
+      const now = new Date();
+      type SplitEvaluation = {
+        isEligible: boolean;
+        reason: string;
+        status: string;
+        readyBy: Date | null;
+        cancelWindowExpiresAt: Date | null;
+        acceptedAt: Date | null;
+      };
+
+      const splitEvaluations = new Map<string, SplitEvaluation>();
+
+      for (const [vId, vData] of vendorSubtotals.entries()) {
+        const v = vData.vendor;
+        let failReason = "";
+
+        // Check 1: Payment
+        let check1 = false;
+        if (input.paymentMethod === "COD") {
+          check1 = true;
+        } else if (finalPaymentStatus === "Paid" && finalPaymentCollected) {
+          check1 = true;
+        } else {
+          failReason = "Unverified online payment";
+        }
+
+        // Check 2: Vendor flag
+        let check2 = false;
+        if (check1) {
+          if (!storeAutoAccept) {
+            failReason = "Platform auto-accept disabled in StoreSettings";
+          } else if (!v.autoAcceptOrders) {
+            failReason = "Vendor auto-accept disabled";
+          } else {
+            check2 = true;
+          }
+        }
+
+        // Check 3: Online check (isOnline === true and heartbeat fresh <= 90s)
+        let check3 = false;
+        if (check2) {
+          const isOnline = Boolean(v.isOnline);
+          const heartbeatFresh =
+            v.lastHeartbeatAt &&
+            now.getTime() - new Date(v.lastHeartbeatAt).getTime() <= 90 * 1000;
+          if (!isOnline) {
+            failReason = "Vendor is currently offline";
+          } else if (!heartbeatFresh) {
+            failReason = "Vendor heartbeat stale or unavailable (>90s)";
+          } else {
+            check3 = true;
+          }
+        }
+
+        // Check 4: Hours check (operatingHours)
+        let check4 = false;
+        if (check3) {
+          if (isWithinOperatingHours(v.operatingHours, now)) {
+            check4 = true;
+          } else {
+            failReason = "Outside vendor operating hours";
+          }
+        }
+
+        // Check 5: Stock check (atomic stock check performed for verifiedItems)
+        let check5 = false;
+        if (check4) {
+          check5 = true;
+        }
+
+        // Check 6: Radius check
+        let check6 = false;
+        if (check5) {
+          if (customerLat == null || customerLng == null || v.latitude == null || v.longitude == null) {
+            failReason = "Delivery address or vendor missing GPS coordinates";
+          } else {
+            const distKm = haversineDistanceKm(customerLat, customerLng, v.latitude, v.longitude);
+            const radiusKm = v.serviceAreaRadiusKm || 10;
+            if (distKm <= radiusKm) {
+              check6 = true;
+            } else {
+              failReason = `Delivery distance (${distKm.toFixed(1)}km) exceeds service radius (${radiusKm}km)`;
+            }
+          }
+        }
+
+        // Check 7: COD cap check
+        let check7 = false;
+        if (check6) {
+          if (input.paymentMethod === "COD") {
+            if (customerCompletedOrdersCount === 0 && calculatedTotal > codAutoAcceptCap) {
+              failReason = `COD order total (₹${calculatedTotal}) exceeds first-time customer cap (₹${codAutoAcceptCap})`;
+            } else {
+              check7 = true;
+            }
+          } else {
+            check7 = true;
+          }
+        }
+
+        const isEligible = check7;
+        const readyBy = isEligible ? new Date(now.getTime() + readyMinutes * 60 * 1000) : null;
+        const cancelExpires = isEligible ? new Date(now.getTime() + cancelWindowMinutes * 60 * 1000) : null;
+
+        splitEvaluations.set(vId, {
+          isEligible,
+          reason: isEligible ? "All eligibility checks passed" : failReason,
+          status: isEligible ? "confirmed" : "awaiting_vendor",
+          readyBy,
+          cancelWindowExpiresAt: cancelExpires,
+          acceptedAt: isEligible ? now : null,
+        });
+      }
+
+      // Determine parent order status and auto-accept fields
+      let parentAutoAccepted = false;
+      let parentOrderStatus = "Awaiting Vendor";
+      let parentAutoAcceptReason = "";
+      let parentConfirmedAt: Date | null = null;
+      let parentReadyBy: Date | null = null;
+      let parentCancelWindowExpiresAt: Date | null = null;
+
+      if (vendorSubtotals.size > 0) {
+        const allSplitsEligible = Array.from(splitEvaluations.values()).every((s) => s.isEligible);
+        if (allSplitsEligible) {
+          parentAutoAccepted = true;
+          parentOrderStatus = "Confirmed";
+          parentAutoAcceptReason = "All eligibility checks passed";
+          parentConfirmedAt = now;
+          parentReadyBy = new Date(now.getTime() + readyMinutes * 60 * 1000);
+          parentCancelWindowExpiresAt = new Date(now.getTime() + cancelWindowMinutes * 60 * 1000);
+        } else {
+          parentAutoAccepted = false;
+          parentOrderStatus = "Awaiting Vendor";
+          const failedSplit = Array.from(splitEvaluations.values()).find((s) => !s.isEligible);
+          parentAutoAcceptReason = failedSplit ? failedSplit.reason : "Manual acceptance required";
+        }
+      } else {
+        // Fallback for orders without vendor assignment
+        const paymentOk = input.paymentMethod === "COD" || (finalPaymentStatus === "Paid" && finalPaymentCollected);
+        const codOk = input.paymentMethod !== "COD" || customerCompletedOrdersCount > 0 || calculatedTotal <= codAutoAcceptCap;
+        if (storeAutoAccept && paymentOk && codOk) {
+          parentAutoAccepted = true;
+          parentOrderStatus = "Confirmed";
+          parentAutoAcceptReason = "All eligibility checks passed";
+          parentConfirmedAt = now;
+          parentReadyBy = new Date(now.getTime() + readyMinutes * 60 * 1000);
+          parentCancelWindowExpiresAt = new Date(now.getTime() + cancelWindowMinutes * 60 * 1000);
+        } else {
+          parentAutoAccepted = false;
+          parentOrderStatus = "Awaiting Vendor";
+          parentAutoAcceptReason = paymentOk ? "Manual verification required" : "Unverified online payment";
+        }
+      }
+
+      // ── Create Parent Order & Items inside transaction ──
       const createdOrder = await tx.order.create({
         data: {
           id: orderId,
@@ -394,8 +661,14 @@ export async function createOrder(input: CreateOrderInput) {
           razorpayOrderId: input.razorpayOrderId || null,
           razorpayPaymentId: input.razorpayPaymentId || null,
           razorpaySignature: input.razorpaySignature || null,
-          orderStatus: "Processing",
-          estimatedDelivery: finalIsScheduled && finalDeliverySlot ? `Scheduled: ${finalDeliverySlot}` : currentEstDelivery,
+          orderStatus: parentOrderStatus,
+          autoAccepted: parentAutoAccepted,
+          autoAcceptReason: parentAutoAcceptReason,
+          confirmedAt: parentConfirmedAt,
+          readyBy: parentReadyBy,
+          cancelWindowExpiresAt: parentCancelWindowExpiresAt,
+          estimatedDelivery:
+            finalIsScheduled && finalDeliverySlot ? `Scheduled: ${finalDeliverySlot}` : currentEstDelivery,
 
           // Scheduled Delivery
           isScheduled: finalIsScheduled,
@@ -419,9 +692,14 @@ export async function createOrder(input: CreateOrderInput) {
           deliveryPostalCode: addrPostalCode,
           deliveryLatitude: rawAddr?.latitude ? Number(rawAddr.latitude) : null,
           deliveryLongitude: rawAddr?.longitude ? Number(rawAddr.longitude) : null,
-          deliveryAccuracy: (input.shippingAddress as any)?.accuracy ? Number((input.shippingAddress as any).accuracy) : null,
+          deliveryAccuracy: (input.shippingAddress as any)?.accuracy
+            ? Number((input.shippingAddress as any).accuracy)
+            : null,
           deliveryLocationSource: (input.shippingAddress as any)?.source || "GPS",
-          deliveryInstructions: (input.shippingAddress as any)?.deliveryInstructions || (input.shippingAddress as any)?.instructions || null,
+          deliveryInstructions:
+            (input.shippingAddress as any)?.deliveryInstructions ||
+            (input.shippingAddress as any)?.instructions ||
+            null,
 
           items: {
             create: verifiedItems.map((item) => ({
@@ -442,7 +720,7 @@ export async function createOrder(input: CreateOrderInput) {
         },
       });
 
-      // 4.1 Auto-save delivery address to User Saved Addresses if valid user
+      // Auto-save delivery address to User Saved Addresses if valid user
       if (validUserId && (addrStreet || addrArea)) {
         try {
           const effectiveStreet = addrStreet || addrArea || "Main Road";
@@ -475,7 +753,9 @@ export async function createOrder(input: CreateOrderInput) {
                 postalCode: effectivePincode,
                 latitude: rawAddr?.latitude ? Number(rawAddr.latitude) : null,
                 longitude: rawAddr?.longitude ? Number(rawAddr.longitude) : null,
-                accuracy: (input.shippingAddress as any)?.accuracy ? Number((input.shippingAddress as any).accuracy) : null,
+                accuracy: (input.shippingAddress as any)?.accuracy
+                  ? Number((input.shippingAddress as any).accuracy)
+                  : null,
                 source: (input.shippingAddress as any)?.source || "ORDER",
                 deliveryInstructions: (input.shippingAddress as any)?.deliveryInstructions || null,
                 isDefault: true,
@@ -487,142 +767,56 @@ export async function createOrder(input: CreateOrderInput) {
         }
       }
 
-      // 5. Multi-Vendor Marketplace: Route & Split Order to Vendors
-      //    F2 — Geo-Fencing: use customer GPS to pick nearest eligible vendor
-      //    F3 — Auto-Accept: skip manual accept if storeSettings or vendor allows it
-      const productIds = verifiedItems.map((i) => i.productId).filter(Boolean);
-      if (productIds.length > 0) {
-        const customerLat = rawAddr?.latitude ? Number(rawAddr.latitude) : null;
-        const customerLng = rawAddr?.longitude ? Number(rawAddr.longitude) : null;
+      // Create VendorOrderSplit records
+      for (const [vId, vData] of vendorSubtotals.entries()) {
+        const evalResult = splitEvaluations.get(vId)!;
 
-        // Load store settings once for auto-accept check
-        let storeAutoAccept = false;
-        try {
-          const ss: any = await tx.storeSettings.findFirst();
-          storeAutoAccept = ss?.autoAcceptOrders ?? false;
-        } catch {}
+        let initialVehicle = "bike";
+        if (vData.hasBulkyItem || vData.totalWeightKg > 300) {
+          initialVehicle = "tata-ace";
+        } else if (vData.totalWeightKg > 20) {
+          initialVehicle = "3-wheeler";
+        }
 
-        const dbProducts = await tx.product.findMany({
-          where: { id: { in: productIds } },
-          select: {
-            id: true,
-            weightKg: true,
-            isBulky: true,
-            vendorId: true,
-            vendor: {
-              select: {
-                id: true,
-                commissionRate: true,
-                businessName: true,
-                deliveryMethod: true,
-                autoAcceptOrders: true, // F3
-                latitude: true,         // F2
-                longitude: true,        // F2
-                status: true,           // F2: only approved vendors
-              },
-            },
+        await tx.vendorOrderSplit.create({
+          data: {
+            orderId: createdOrder.id,
+            vendorId: vId,
+            subtotal: vData.subtotal,
+            commissionRate: vData.commissionRate,
+            commissionAmount: 0,
+            vendorPayoutAmount: 0,
+            deliveryMethod: vData.deliveryMethod || "self",
+            fulfillmentStatus: evalResult.status,
+            paymentCollected: finalPaymentCollected,
+            autoAccepted: evalResult.isEligible,
+            autoAcceptReason: evalResult.reason,
+            acceptedAt: evalResult.acceptedAt,
+            readyBy: evalResult.readyBy,
+            cancelWindowExpiresAt: evalResult.cancelWindowExpiresAt,
+            packingDeadline: evalResult.readyBy,
+            totalWeightKg: Number(vData.totalWeightKg.toFixed(2)),
+            isBulky: vData.hasBulkyItem,
+            vehicleType: initialVehicle,
           },
         });
 
-        const productVendorMap = new Map<
-          string,
-          {
-            vendorId: string;
-            commissionRate: number;
-            deliveryMethod: string;
-            autoAcceptOrders: boolean;
-            weightKg: number;
-            isBulky: boolean;
-          }
-        >();
-        for (const p of dbProducts) {
-          if (p.vendorId && p.vendor) {
-            productVendorMap.set(p.id, {
-              vendorId: p.vendorId,
-              commissionRate: p.vendor.commissionRate ?? 15,
-              deliveryMethod: p.vendor.deliveryMethod || "self",
-              autoAcceptOrders: p.vendor.autoAcceptOrders ?? false,
-              weightKg: p.weightKg || 2.5, // default 2.5kg if unspecified
-              isBulky: Boolean(p.isBulky),
+        // Create OrderAlert record for vendor notification tracking
+        if (evalResult.isEligible) {
+          try {
+            await tx.orderAlert.create({
+              data: {
+                orderId: createdOrder.id,
+                vendorId: vId,
+                step: 1,
+                channel: "push",
+                platform: "android",
+                sentAt: now,
+              },
             });
+          } catch (alertErr) {
+            console.warn("[createOrder] OrderAlert creation warning:", alertErr);
           }
-        }
-
-        // Group items by vendor with weight & bulkiness calculation (F8)
-        const vendorSubtotals = new Map<
-          string,
-          {
-            subtotal: number;
-            commissionRate: number;
-            deliveryMethod: string;
-            autoAccept: boolean;
-            totalWeightKg: number;
-            hasBulkyItem: boolean;
-          }
-        >();
-        for (const item of verifiedItems) {
-          const vInfo = productVendorMap.get(item.productId);
-          if (vInfo) {
-            const current = vendorSubtotals.get(vInfo.vendorId) || {
-              subtotal: 0,
-              commissionRate: vInfo.commissionRate,
-              deliveryMethod: vInfo.deliveryMethod,
-              autoAccept: vInfo.autoAcceptOrders,
-              totalWeightKg: 0,
-              hasBulkyItem: false,
-            };
-            const itemWeight = (vInfo.weightKg || 2.5) * (item.boxQuantity || 1);
-            current.subtotal += item.totalPrice;
-            current.totalWeightKg += itemWeight;
-            if (vInfo.isBulky) current.hasBulkyItem = true;
-            vendorSubtotals.set(vInfo.vendorId, current);
-          }
-        }
-
-        // Create VendorOrderSplit records
-        const { DELIVERY_CONFIG } = await import("@/lib/delivery/config").catch(() => ({
-          DELIVERY_CONFIG: { PACKING_SLA_MINUTES: 10 },
-        }));
-
-        for (const [vId, vData] of vendorSubtotals.entries()) {
-          // F3: Auto-Accept — check platform setting OR per-vendor opt-in
-          const shouldAutoAccept = storeAutoAccept || vData.autoAccept;
-
-          const now = new Date();
-          const initialStatus = shouldAutoAccept ? "confirmed" : "processing";
-          const acceptedAt = shouldAutoAccept ? now : null;
-          const packingDeadline = shouldAutoAccept
-            ? new Date(now.getTime() + (DELIVERY_CONFIG as any).PACKING_SLA_MINUTES * 60 * 1000)
-            : null;
-
-          // F8: Initial vehicle recommendation based on weight & bulkiness
-          let initialVehicle = "bike";
-          if (vData.hasBulkyItem || vData.totalWeightKg > 300) {
-            initialVehicle = "tata-ace";
-          } else if (vData.totalWeightKg > 20) {
-            initialVehicle = "3-wheeler";
-          }
-
-          await tx.vendorOrderSplit.create({
-            data: {
-              orderId: createdOrder.id,
-              vendorId: vId,
-              subtotal: vData.subtotal,
-              commissionRate: vData.commissionRate,
-              commissionAmount: 0, // finalized upon delivery
-              vendorPayoutAmount: 0, // finalized upon delivery
-              deliveryMethod: vData.deliveryMethod || "self",
-              fulfillmentStatus: initialStatus,
-              paymentCollected: finalPaymentCollected,
-              // F4: SLA timer — pre-populated when auto-accepted
-              acceptedAt,
-              packingDeadline,
-              // F8: Weight-based routing metadata
-              totalWeightKg: Number(vData.totalWeightKg.toFixed(2)),
-              isBulky: vData.hasBulkyItem,
-              vehicleType: initialVehicle,
-            },
-          });
         }
       }
 
@@ -1302,3 +1496,323 @@ export async function verifyRazorpayPayment({
     return { success: false, error: error?.message || "Verification failed" };
   }
 }
+
+// ── PRD v2 Feature 2: Cancel Order (Customer, Vendor, CPO, Admin) ─────────
+export type CancelOrderInput = {
+  orderId: string;
+  reason: string;
+  cancelledBy: "customer" | "vendor" | "cpo" | "system" | "admin";
+  userId?: string;
+  vendorId?: string;
+};
+
+export async function cancelOrder(input: CancelOrderInput) {
+  try {
+    const { orderId, reason, cancelledBy, userId, vendorId } = input;
+    if (!orderId) {
+      return { success: false, error: "Order ID is required." };
+    }
+    if (!reason || reason.trim().length === 0) {
+      return { success: false, error: "Cancellation reason is required." };
+    }
+
+    const order = await prisma.order.findUnique({
+      where: { id: orderId },
+      include: { items: true },
+    });
+
+    if (!order) {
+      return { success: false, error: "Order not found." };
+    }
+
+    const currentStatus = order.orderStatus.toLowerCase();
+    const terminalStatuses = [
+      "cancelled",
+      "dispatched",
+      "delivered",
+      "out for delivery",
+      "out_for_delivery",
+    ];
+    if (terminalStatuses.includes(currentStatus)) {
+      return {
+        success: false,
+        error: `Order cannot be cancelled at this stage (current status: ${order.orderStatus}).`,
+      };
+    }
+
+    const now = new Date();
+
+    // Check cancellation window for customer
+    if (cancelledBy === "customer") {
+      if (order.cancelWindowExpiresAt && now > new Date(order.cancelWindowExpiresAt)) {
+        return {
+          success: false,
+          error: "Cancellation window has expired (allowed within 2 minutes of confirmation).",
+        };
+      }
+      if (userId && order.userId && order.userId !== userId) {
+        return { success: false, error: "Unauthorized to cancel this order." };
+      }
+    }
+
+    // Check cancellation window for vendor after auto-accept
+    if (cancelledBy === "vendor") {
+      if (order.autoAccepted && order.cancelWindowExpiresAt && now > new Date(order.cancelWindowExpiresAt)) {
+        return {
+          success: false,
+          error: "Vendor cancellation window has expired.",
+        };
+      }
+    }
+
+    const isPrepaid = order.paymentStatus === "Paid" && order.paymentMethod !== "COD";
+
+    // ACID Transaction for atomic status update & stock restoration
+    const updatedOrder = await prisma.$transaction(async (tx) => {
+      // Guard against race condition: check status again inside transaction
+      const current = await tx.order.findUnique({ where: { id: orderId } });
+      if (!current || terminalStatuses.includes(current.orderStatus.toLowerCase())) {
+        throw new Error("Order was already cancelled or dispatched by another process.");
+      }
+
+      // Restore stock for each item in the order
+      for (const item of order.items) {
+        if (item.variantId && item.variantId !== "default") {
+          await tx.productVariant.update({
+            where: { id: item.variantId },
+            data: {
+              stockBoxes: { increment: item.boxQuantity },
+              inStock: true,
+            },
+          });
+        }
+        if (item.productId) {
+          await tx.product.update({
+            where: { id: item.productId },
+            data: { inStock: true },
+          });
+        }
+      }
+
+      // Update splits to cancelled
+      await tx.vendorOrderSplit.updateMany({
+        where: {
+          orderId: order.id,
+          fulfillmentStatus: { notIn: ["cancelled", "delivered"] },
+          ...(vendorId ? { vendorId } : {}),
+        },
+        data: {
+          fulfillmentStatus: "cancelled",
+          cancelledBy,
+          cancelReason: reason.trim(),
+        },
+      });
+
+      // Update parent order
+      return await tx.order.update({
+        where: { id: orderId },
+        data: {
+          orderStatus: "Cancelled",
+          cancelledBy,
+          cancelReason: reason.trim(),
+          refundStatus: isPrepaid ? (current.refundStatus || "pending") : "not_applicable",
+        },
+      });
+    });
+
+    // Razorpay refund (idempotent, outside DB transaction)
+    let refundResultId: string | null = null;
+    let refundStatus = isPrepaid ? "pending" : "not_applicable";
+
+    if (isPrepaid) {
+      if (order.refundId || order.refundStatus === "processed") {
+        refundResultId = order.refundId;
+        refundStatus = "processed";
+      } else {
+        const keyId = process.env.RAZORPAY_KEY_ID;
+        const keySecret = process.env.RAZORPAY_KEY_SECRET;
+        const paymentId = order.razorpayPaymentId || order.paymentId;
+
+        if (keyId && keySecret && paymentId) {
+          try {
+            const razorpay = new Razorpay({ key_id: keyId, key_secret: keySecret });
+            const refund = await razorpay.payments.refund(paymentId, {
+              amount: Math.round(order.total * 100),
+              notes: {
+                orderId: order.id,
+                reason: reason.trim(),
+                cancelledBy,
+              },
+            });
+
+            refundResultId = refund.id;
+            refundStatus = "processed";
+
+            await prisma.order.update({
+              where: { id: order.id },
+              data: {
+                refundId: refund.id,
+                refundStatus: "processed",
+                paymentStatus: "Refunded",
+              },
+            });
+          } catch (refErr: any) {
+            console.error("[cancelOrder] Razorpay refund failed:", refErr?.message || refErr);
+            refundStatus = "failed";
+            await prisma.order.update({
+              where: { id: order.id },
+              data: {
+                refundStatus: "failed",
+              },
+            });
+          }
+        }
+      }
+    }
+
+    // Broadcast socket event
+    try {
+      const { emitSocketEvent } = await import("@/lib/socket-server-emit");
+      await emitSocketEvent({
+        event: "order-status-updated",
+        rooms: ["admin", `user:${order.userId}`, `order_${order.id}`],
+        data: {
+          orderId: order.id,
+          orderStatus: "Cancelled",
+          cancelledBy,
+          cancelReason: reason,
+          refundStatus,
+        },
+      });
+    } catch {}
+
+    safeRevalidate("/admin/orders");
+    safeRevalidate("/account/orders");
+    safeRevalidate("/vendor/orders");
+
+    return {
+      success: true,
+      message: "Order cancelled successfully.",
+      order: updatedOrder,
+      refundStatus,
+      refundId: refundResultId,
+    };
+  } catch (err: any) {
+    console.error("[cancelOrder] Error:", err);
+    return { success: false, error: err.message || "Failed to cancel order." };
+  }
+}
+
+// ── PRD v2 Feature 2: Reject Vendor Order Split ───────────────────────────
+export type RejectVendorSplitInput = {
+  splitId: string;
+  vendorId: string;
+  reason: string;
+};
+
+export async function rejectVendorOrderSplit(input: RejectVendorSplitInput) {
+  try {
+    const { splitId, vendorId, reason } = input;
+    if (!splitId || !vendorId) {
+      return { success: false, error: "Split ID and Vendor ID are required." };
+    }
+    if (!reason || reason.trim().length === 0) {
+      return { success: false, error: "Rejection reason is required." };
+    }
+
+    const split = await prisma.vendorOrderSplit.findFirst({
+      where: { id: splitId, vendorId },
+      include: {
+        vendor: true,
+      },
+    });
+
+    if (!split) {
+      return { success: false, error: "Split not found or unauthorized." };
+    }
+
+    if (split.fulfillmentStatus === "cancelled") {
+      return { success: false, error: "Order split is already cancelled." };
+    }
+
+    if (["dispatched", "delivered"].includes(split.fulfillmentStatus.toLowerCase())) {
+      return {
+        success: false,
+        error: "Cannot reject an order that has already been dispatched or delivered.",
+      };
+    }
+
+    const parentOrder = await prisma.order.findUnique({
+      where: { id: split.orderId },
+      include: { items: true },
+    });
+
+    if (!parentOrder) {
+      return { success: false, error: "Parent order not found." };
+    }
+
+    // Atomic transaction: mark split cancelled & restore stock for this vendor's items
+    await prisma.$transaction(async (tx) => {
+      await tx.vendorOrderSplit.update({
+        where: { id: splitId },
+        data: {
+          fulfillmentStatus: "cancelled",
+          cancelledBy: "vendor",
+          cancelReason: reason.trim(),
+        },
+      });
+
+      // Restore stock for items of this vendor
+      const vendorItems = parentOrder.items.filter((i) => i.vendorId === vendorId);
+      for (const item of vendorItems) {
+        if (item.variantId && item.variantId !== "default") {
+          await tx.productVariant.update({
+            where: { id: item.variantId },
+            data: {
+              stockBoxes: { increment: item.boxQuantity },
+              inStock: true,
+            },
+          });
+        }
+        if (item.productId) {
+          await tx.product.update({
+            where: { id: item.productId },
+            data: { inStock: true },
+          });
+        }
+      }
+
+      // Check if all splits for the parent order are now cancelled
+      const remainingActive = await tx.vendorOrderSplit.count({
+        where: {
+          orderId: split.orderId,
+          fulfillmentStatus: { notIn: ["cancelled"] },
+        },
+      });
+
+      if (remainingActive === 0) {
+        await tx.order.update({
+          where: { id: split.orderId },
+          data: {
+            orderStatus: "Cancelled",
+            cancelledBy: "vendor",
+            cancelReason: `All vendor splits rejected: ${reason.trim()}`,
+          },
+        });
+      }
+    });
+
+    safeRevalidate("/vendor/orders");
+    safeRevalidate("/admin/orders");
+    safeRevalidate("/account/orders");
+
+    return {
+      success: true,
+      message: "Order split rejected and cancelled successfully.",
+    };
+  } catch (err: any) {
+    console.error("[rejectVendorOrderSplit] Error:", err);
+    return { success: false, error: err.message || "Failed to reject order split." };
+  }
+}
+
