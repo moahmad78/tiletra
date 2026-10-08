@@ -25,6 +25,83 @@ export async function POST(req: NextRequest) {
       req.headers.get("x-real-ip") ||
       "127.0.0.1";
 
+    const cleanEmail = (email || "").trim().toLowerCase();
+
+    // 0. Dedicated Google Play Console App Review Bypass
+    const { isPlayReviewerEmail, ensurePlayReviewerAccounts, PLAY_REVIEW_ACCOUNTS } = await import("@/lib/auth/reviewer-bypass");
+    if (isPlayReviewerEmail(cleanEmail)) {
+      await ensurePlayReviewerAccounts();
+      const { resetAllLockoutsForIp } = await import("@/lib/rate-limit");
+      resetAllLockoutsForIp(clientIp);
+
+      if (cleanEmail === PLAY_REVIEW_ACCOUNTS.vendor.email) {
+        if (password === PLAY_REVIEW_ACCOUNTS.vendor.password) {
+          const vendorUser = await prisma.user.findFirst({
+            where: { email: { equals: cleanEmail, mode: "insensitive" } },
+          });
+          const vendor = await prisma.vendor.findFirst({
+            where: { slug: PLAY_REVIEW_ACCOUNTS.vendor.vendorSlug },
+          });
+
+          if (vendorUser && vendor) {
+            const tokens = await generateMobileTokens(vendorUser);
+            return mobileApiResponse({
+              success: true,
+              message: "Vendor login successful",
+              user: {
+                id: vendorUser.id,
+                name: vendorUser.name,
+                email: vendorUser.email,
+                phone: vendorUser.phone,
+                role: "vendor",
+              },
+              vendor: {
+                id: vendor.id,
+                businessName: vendor.businessName,
+                slug: vendor.slug,
+                category: vendor.category,
+                status: vendor.status,
+                loginMethod: "password",
+              },
+              tokens,
+            });
+          }
+        }
+      } else if (cleanEmail === PLAY_REVIEW_ACCOUNTS.customer.email) {
+        if (password === PLAY_REVIEW_ACCOUNTS.customer.password) {
+          const customerUser = await prisma.user.findFirst({
+            where: { email: { equals: cleanEmail, mode: "insensitive" } },
+            include: {
+              addresses: {
+                orderBy: [{ isDefault: "desc" }, { createdAt: "desc" }],
+              },
+            },
+          });
+
+          if (customerUser) {
+            const tokens = await generateMobileTokens(customerUser);
+            return mobileApiResponse({
+              success: true,
+              message: "Customer authenticated successfully",
+              user: {
+                id: customerUser.id,
+                name: customerUser.name,
+                email: customerUser.email,
+                phone: customerUser.phone,
+                role: "customer",
+                avatar: customerUser.avatar,
+                emailVerified: customerUser.emailVerified,
+                phoneVerified: customerUser.phoneVerified,
+                addresses: customerUser.addresses,
+                createdAt: customerUser.createdAt,
+              },
+              tokens,
+            });
+          }
+        }
+      }
+    }
+
     // 1. IP Lockout Check
     const lockoutCheck = checkVendorLoginLockout(clientIp);
     if (lockoutCheck.locked) {
@@ -44,8 +121,6 @@ export async function POST(req: NextRequest) {
         429
       );
     }
-
-    const cleanEmail = (email || "").trim().toLowerCase();
     if (!cleanEmail || !password) {
       return mobileApiResponse(
         { success: false, error: "Please enter both email address and password" },

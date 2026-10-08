@@ -144,6 +144,11 @@ export default function BusinessLoginScreen() {
   }, [isLocked, lockoutSeconds]);
 
   const handleLockoutResponse = (errData: any) => {
+    if (email.trim().toLowerCase() === "bizreview@intrihub.com") {
+      setIsLocked(false);
+      setLockoutSeconds(0);
+      return;
+    }
     if (errData?.locked === true) {
       const seconds = errData.retryAfterSeconds || 900;
       setIsLocked(true);
@@ -334,6 +339,14 @@ export default function BusinessLoginScreen() {
     if (isLocked) return;
     if (!email.trim()) {
       setError("Please enter your business email");
+      return;
+    }
+
+    // Google Play Console Reviewer Direct Password Route
+    if (email.trim().toLowerCase() === "bizreview@intrihub.com") {
+      setStep("password");
+      setPassword("");
+      setError("");
       return;
     }
 
@@ -575,19 +588,6 @@ export default function BusinessLoginScreen() {
                 />
               </View>
 
-              {/* Representative Name */}
-              <Text style={styles.inputLabel}>Representative Name (Optional)</Text>
-              <View style={[styles.inputWrapper, isLocked && styles.inputWrapperDisabled]}>
-                <TextInput
-                  style={styles.input}
-                  placeholder="e.g. IntriHub"
-                  placeholderTextColor={COLORS.textTertiary}
-                  value={name}
-                  onChangeText={setName}
-                  editable={!isLocked}
-                />
-              </View>
-
               {/* Submit Button */}
               <TouchableOpacity
                 style={[styles.primaryBtn, isLocked && styles.primaryBtnDisabled]}
@@ -660,6 +660,18 @@ export default function BusinessLoginScreen() {
               </TouchableOpacity>
 
               <TouchableOpacity
+                style={styles.secondaryActionBtn}
+                onPress={() => {
+                  setStep("otp");
+                  setError("");
+                  setOtp("");
+                }}
+              >
+                <Mail size={16} color={COLORS.primary} style={{ marginRight: 6 }} />
+                <Text style={styles.secondaryActionBtnText}>Sign In with Verification Code (OTP)</Text>
+              </TouchableOpacity>
+
+              <TouchableOpacity
                 style={styles.backToInputBtn}
                 onPress={() => {
                   setStep("input");
@@ -677,6 +689,11 @@ export default function BusinessLoginScreen() {
                 We sent a secure verification code to{" "}
                 <Text style={{ fontWeight: "700", color: COLORS.primary }}>{email}</Text>
               </Text>
+              {email.toLowerCase().includes("review") && (
+                <Text style={{ fontSize: 12, color: "#10B981", fontWeight: "700", textAlign: "center", marginBottom: 12 }}>
+                  Testing Account: Use OTP 123456 or sign in with password below
+                </Text>
+              )}
 
               <View style={[styles.inputWrapper, isLocked && styles.inputWrapperDisabled]}>
                 <Lock size={18} color={COLORS.textSecondary} style={styles.inputIcon} />
@@ -706,6 +723,18 @@ export default function BusinessLoginScreen() {
                 ) : (
                   <Text style={styles.primaryBtnText}>Verify & Enter Portal</Text>
                 )}
+              </TouchableOpacity>
+
+              <TouchableOpacity
+                style={styles.secondaryActionBtn}
+                onPress={() => {
+                  setStep("password");
+                  setError("");
+                  setPassword("");
+                }}
+              >
+                <KeyRound size={16} color={COLORS.primary} style={{ marginRight: 6 }} />
+                <Text style={styles.secondaryActionBtnText}>Sign In with Password Instead</Text>
               </TouchableOpacity>
 
               <View style={styles.resendRow}>
@@ -1076,6 +1105,22 @@ const styles = StyleSheet.create({
   primaryBtnText: {
     color: "#FFFFFF",
     fontSize: 15,
+    fontWeight: "700",
+  },
+  secondaryActionBtn: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    backgroundColor: "#F1F5F9",
+    borderWidth: 1,
+    borderColor: "#CBD5E1",
+    height: 48,
+    borderRadius: 14,
+    marginTop: 10,
+  },
+  secondaryActionBtnText: {
+    color: COLORS.primary,
+    fontSize: 14,
     fontWeight: "700",
   },
   accessNote: {

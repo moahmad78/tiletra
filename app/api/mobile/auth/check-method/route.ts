@@ -29,6 +29,30 @@ export async function POST(req: NextRequest) {
     const cleanEmail = email ? email.trim().toLowerCase() : "";
     const cleanPhone = phone ? phone.replace(/\D/g, "") : "";
 
+    // 0. Dedicated Google Play Console App Review Bypass
+    const { isPlayReviewerEmail, ensurePlayReviewerAccounts, PLAY_REVIEW_ACCOUNTS } = await import("@/lib/auth/reviewer-bypass");
+    if (isPlayReviewerEmail(cleanEmail)) {
+      await ensurePlayReviewerAccounts();
+      const { resetAllLockoutsForIp } = await import("@/lib/rate-limit");
+      resetAllLockoutsForIp(clientIp);
+
+      if (cleanEmail === PLAY_REVIEW_ACCOUNTS.vendor.email) {
+        return mobileApiResponse({
+          success: true,
+          loginMethod: "password",
+          vendorName: PLAY_REVIEW_ACCOUNTS.vendor.businessName,
+          email: cleanEmail,
+        });
+      } else if (cleanEmail === PLAY_REVIEW_ACCOUNTS.customer.email) {
+        return mobileApiResponse({
+          success: true,
+          loginMethod: "password",
+          name: "Play Reviewer Customer",
+          email: cleanEmail,
+        });
+      }
+    }
+
     // Customer flow (IntriHub User App)
     if (purpose === "customer") {
       if (cleanEmail) {

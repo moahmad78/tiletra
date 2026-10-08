@@ -325,6 +325,12 @@ export function resetMobileAuthLockout(ip: string): void {
   resetFailedAttempts(key);
 }
 
+export function resetAllLockoutsForIp(ip: string): void {
+  resetVendorLoginLockout(ip);
+  resetAdminLoginLockout(ip);
+  resetMobileAuthLockout(ip);
+}
+
 // -----------------------------------------------------------------------------
 // ABUSE PROTECTION & MULTI-TIER RATE LIMITING
 // -----------------------------------------------------------------------------

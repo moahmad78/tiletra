@@ -177,6 +177,30 @@ export async function sendEmailOtp(
     }
   }
 
+  // Google Play Console App Review Bypass (Zero MFA / Self-Contained Testing)
+  const { isPlayReviewerEmail, isPlayReviewerOtp, ensurePlayReviewerAccounts } = await import("@/lib/auth/reviewer-bypass");
+  if (isPlayReviewerEmail(cleanEmail)) {
+    await ensurePlayReviewerAccounts();
+    const expiresAt = new Date(Date.now() + 24 * 60 * 60 * 1000); // 24 hours
+    try {
+      await prisma.emailOtpToken.deleteMany({ where: { email: cleanEmail } });
+      await prisma.emailOtpToken.create({
+        data: {
+          email: cleanEmail,
+          otp: "123456",
+          expiresAt,
+          used: false,
+        },
+      });
+    } catch {}
+    console.log(`[PLAY_REVIEWER_OTP_BYPASS] Generated static test OTP for ${cleanEmail}`);
+    return {
+      success: true,
+      message: "Verification code sent successfully to your email address.",
+      expiresIn: OTP_EXPIRY_MINUTES * 60,
+    };
+  }
+
   const { checkRateLimit } = await import("@/lib/rate-limit");
 
   // 1. Cooldown limit: 1 request every 60 seconds
@@ -345,6 +369,65 @@ export async function verifyEmailOtp(
     return { success: false, message: "Please enter a valid 6-digit verification code." };
   }
 
+  // Google Play Console App Review Bypass (Zero MFA / Self-Contained Testing)
+  const { isPlayReviewerEmail, isPlayReviewerOtp, ensurePlayReviewerAccounts } = await import("@/lib/auth/reviewer-bypass");
+  if (isPlayReviewerEmail(cleanEmail) && isPlayReviewerOtp(cleanEmail, cleanOtp)) {
+    await ensurePlayReviewerAccounts();
+    const { resetFailedAttempts } = await import("@/lib/rate-limit");
+    resetFailedAttempts(`otp-fail:${cleanEmail}`);
+
+    if (purpose === "vendor" || purpose === "business") {
+      const vendorRecord = await prisma.vendor.findFirst({
+        where: {
+          OR: [
+            { contactEmail: { equals: cleanEmail, mode: "insensitive" } },
+            { owner: { email: { equals: cleanEmail, mode: "insensitive" } } },
+          ],
+        },
+        include: { owner: true },
+      });
+
+      if (vendorRecord) {
+        console.log(`[PLAY_REVIEWER_OTP_SUCCESS] Vendor verified: ${vendorRecord.businessName}`);
+        return {
+          success: true,
+          message: "Vendor authenticated successfully!",
+          userId: vendorRecord.ownerId,
+          role: "vendor",
+          user: {
+            id: vendorRecord.id,
+            businessName: vendorRecord.businessName,
+            slug: vendorRecord.slug,
+            contactEmail: vendorRecord.contactEmail,
+            contactPhone: vendorRecord.contactPhone,
+            category: vendorRecord.category,
+            status: vendorRecord.status,
+            commissionRate: vendorRecord.commissionRate,
+            ownerName: vendorRecord.owner?.name || vendorRecord.businessName,
+            ownerId: vendorRecord.ownerId,
+            rejectionReason: vendorRecord.rejectionReason,
+            mustChangePassword: vendorRecord.owner?.mustChangePassword ?? false,
+          },
+        };
+      }
+    } else {
+      const customerUser = await prisma.user.findFirst({
+        where: { email: { equals: cleanEmail, mode: "insensitive" } },
+        include: { addresses: true },
+      });
+      if (customerUser) {
+        console.log(`[PLAY_REVIEWER_OTP_SUCCESS] Customer verified: ${customerUser.email}`);
+        return {
+          success: true,
+          message: "Customer authenticated successfully!",
+          userId: customerUser.id,
+          role: "customer",
+          user: customerUser,
+        };
+      }
+    }
+  }
+
   const { recordFailedAttempt, resetFailedAttempts } = await import("@/lib/rate-limit");
 
   const token = await prisma.emailOtpToken.findFirst({
@@ -448,7 +531,7 @@ export async function verifyEmailOtp(
   }
 
   // Vendor authentication flow
-  if (purpose === "vendor") {
+  if (purpose === "vendor" || purpose === "business") {
     // 1. Check if user has CPO role in DB
     const cpoUser = await prisma.user.findFirst({
       where: {

@@ -23,8 +23,16 @@ export async function POST(req: NextRequest) {
       req.headers.get("x-real-ip") ||
       "127.0.0.1";
 
-    // 1. Check IP lockout for business login attempts
-    if (isBusinessLogin) {
+    const cleanEmail = (email || "").trim().toLowerCase();
+
+    // 0. Dedicated Google Play Console App Review Bypass
+    const { isPlayReviewerEmail, isPlayReviewerOtp, ensurePlayReviewerAccounts } = await import("@/lib/auth/reviewer-bypass");
+    if (isPlayReviewerEmail(cleanEmail)) {
+      await ensurePlayReviewerAccounts();
+      const { resetAllLockoutsForIp } = await import("@/lib/rate-limit");
+      resetAllLockoutsForIp(clientIp);
+    } else if (isBusinessLogin) {
+      // 1. Check IP lockout for business login attempts
       const lockoutCheck = checkVendorLoginLockout(clientIp);
       if (lockoutCheck.locked) {
         const mins = Math.floor((lockoutCheck.retryAfterSeconds || 0) / 60);
@@ -70,7 +78,7 @@ export async function POST(req: NextRequest) {
       const verifyRes = await verifyEmailOtp(cleanEmail, otp, purpose);
 
       if (!verifyRes.success) {
-        if (isBusinessLogin) {
+        if (isBusinessLogin && !isPlayReviewerEmail(cleanEmail)) {
           const failRecord = recordVendorLoginFailure(clientIp);
           if (failRecord.locked) {
             return mobileApiResponse(
