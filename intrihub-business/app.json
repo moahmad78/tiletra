@@ -55,7 +55,10 @@
         "RECEIVE_BOOT_COMPLETED",
         "VIBRATE",
         "INTERNET",
-        "POST_NOTIFICATIONS"
+        "POST_NOTIFICATIONS",
+        "WAKE_LOCK",
+        "USE_FULL_SCREEN_INTENT",
+        "FOREGROUND_SERVICE"
       ]
     },
     "web": {

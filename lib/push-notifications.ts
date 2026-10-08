@@ -5,7 +5,7 @@ export interface ExpoPushPayload {
   title: string;
   body: string;
   data?: Record<string, any>;
-  sound?: "default" | null;
+  sound?: "default" | "order_alert" | string | null;
   priority?: "default" | "normal" | "high";
   badge?: number;
   channelId?: string;
@@ -37,7 +37,7 @@ export async function sendExpoPushNotification(payload: ExpoPushPayload): Promis
       body: payload.body,
       data: payload.data || {},
       priority: payload.priority || "high",
-      channelId: "default",
+      channelId: payload.channelId || "orders_high_importance",
     }));
 
     const res = await fetch("https://exp.host/--/api/v2/push/send", {

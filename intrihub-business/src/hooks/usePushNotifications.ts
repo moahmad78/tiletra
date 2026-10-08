@@ -135,6 +135,16 @@ async function registerForPushNotificationsAsync(): Promise<string | null> {
         vibrationPattern: [0, 250, 250, 250],
         lightColor: "#F26522",
       });
+
+      await Notifications.setNotificationChannelAsync("orders_high_importance", {
+        name: "Incoming Orders High Alert",
+        importance: (Notifications as any).AndroidImportance?.MAX ?? 5,
+        vibrationPattern: [0, 500, 250, 500, 250, 500],
+        sound: "order_alert",
+        lockscreenVisibility: (Notifications as any).AndroidNotificationVisibility?.PUBLIC ?? 1,
+        bypassDnd: true,
+        lightColor: "#F26522",
+      });
     } catch (e) {
       console.warn("Could not create notification channel:", e);
     }
