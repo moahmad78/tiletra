@@ -12,6 +12,7 @@ import {
   Star,
   Save,
   CheckCircle,
+  ShoppingCart,
 } from "lucide-react";
 import { useNotificationsStore } from "@/lib/notifications-store";
 import { useAuthStore } from "@/lib/auth-store";
@@ -27,6 +28,7 @@ export default function NotificationPreferencesPage() {
   const [priceDrops, setPriceDrops] = useState(preferences.priceDrops);
   const [backInStock, setBackInStock] = useState(preferences.backInStock);
   const [promotions, setPromotions] = useState(preferences.promotions);
+  const [cartReminders, setCartReminders] = useState(true);
   const [reviewReminders, setReviewReminders] = useState(preferences.reviewReminders);
 
   const handleSave = (e: React.FormEvent) => {
@@ -38,6 +40,19 @@ export default function NotificationPreferencesPage() {
       promotions,
       reviewReminders,
     });
+
+    if (user?.id) {
+      fetch("/api/mobile/notifications/preferences", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          userId: user.id,
+          offersEnabled: promotions,
+          cartRemindersEnabled: cartReminders,
+        }),
+      }).catch(() => {});
+    }
+
     toast.success("Notification preferences saved!");
   };
 
@@ -187,6 +202,27 @@ export default function NotificationPreferencesPage() {
               type="checkbox"
               checked={promotions}
               onChange={(e) => setPromotions(e.target.checked)}
+              className="w-5 h-5 accent-[#F26522] rounded cursor-pointer"
+            />
+          </div>
+
+          {/* Cart Reminders (Rule R-1) */}
+          <div className="py-4 last:pb-0 flex items-center justify-between gap-4">
+            <div className="flex items-start gap-3.5">
+              <div className="w-10 h-10 rounded-2xl bg-emerald-50 text-emerald-700 flex items-center justify-center shrink-0 mt-0.5">
+                <ShoppingCart size={18} />
+              </div>
+              <div>
+                <h3 className="text-sm font-bold text-[#052a51]">Cart Reminders</h3>
+                <p className="text-xs text-gray-500 mt-0.5">
+                  Helpful notifications when reserved products are waiting in your cart
+                </p>
+              </div>
+            </div>
+            <input
+              type="checkbox"
+              checked={cartReminders}
+              onChange={(e) => setCartReminders(e.target.checked)}
               className="w-5 h-5 accent-[#F26522] rounded cursor-pointer"
             />
           </div>

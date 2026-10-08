@@ -48,6 +48,7 @@ export async function sendExpoPushNotification(payload: ExpoPushPayload): Promis
         "Content-Type": "application/json",
       },
       body: JSON.stringify(messages),
+      signal: AbortSignal.timeout(6000),
     });
 
     const data = await res.json();

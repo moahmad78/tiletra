@@ -84,10 +84,24 @@ export function usePushNotifications() {
         }
 
         if (Platform.OS === "android") {
-          await notif!.setNotificationChannelAsync("orders", {
+          await notif!.setNotificationChannelAsync("orders_high_importance", {
             name: "Order Updates",
             importance: notif!.AndroidImportance.MAX,
             vibrationPattern: [0, 250, 250, 250],
+            lightColor: "#052a51",
+          });
+
+          await notif!.setNotificationChannelAsync("reminders_default", {
+            name: "Cart Reminders",
+            importance: notif!.AndroidImportance.DEFAULT,
+            vibrationPattern: [0, 250, 250],
+            lightColor: "#052a51",
+          });
+
+          await notif!.setNotificationChannelAsync("offers_default", {
+            name: "Exclusive Offers & Discounts",
+            importance: notif!.AndroidImportance.DEFAULT,
+            vibrationPattern: [0, 250],
             lightColor: "#052a51",
           });
         }
@@ -106,6 +120,14 @@ export function usePushNotifications() {
       responseListener.current = notif.addNotificationResponseReceivedListener((response: any) => {
         try {
           const data = response?.notification?.request?.content?.data;
+
+          // Report notification open to backend for audit & analytics (T4)
+          if (data?.logId) {
+            import("../api/client").then(({ apiClient }) => {
+              apiClient.post("/api/mobile/notifications/open", { logId: data.logId }).catch(() => {});
+            }).catch(() => {});
+          }
+
           if (data?.storeUrl || data?.type === "app_update") {
             const targetUrl = data.storeUrl || data.webUrl || "market://details?id=com.intrihub.app";
             Linking.openURL(String(targetUrl)).catch(() => {
@@ -113,6 +135,24 @@ export function usePushNotifications() {
                 Linking.openURL(String(data.webUrl)).catch(() => {});
               }
             });
+            return;
+          }
+
+          // Handle PRD T5 deep link targets
+          const target = data?.target || "";
+          if (target === "cart") {
+            router.push("/cart" as Parameters<typeof router.push>[0]);
+          } else if (target.startsWith("item:")) {
+            const itemId = target.replace(/^item:/, "").trim();
+            router.push(`/product/${itemId}` as Parameters<typeof router.push>[0]);
+          } else if (target.startsWith("category:")) {
+            const catId = target.replace(/^category:/, "").trim();
+            router.push(`/category/${catId}` as Parameters<typeof router.push>[0]);
+          } else if (target.startsWith("order:")) {
+            const ordId = target.replace(/^order:/, "").trim();
+            router.push(`/order/${ordId}` as Parameters<typeof router.push>[0]);
+          } else if (target === "offers") {
+            router.push("/" as Parameters<typeof router.push>[0]);
           } else if (data?.orderId) {
             const cleanOrderId = String(data.orderId).replace(/^[#\s]+/, "").trim();
             router.push(`/order/${cleanOrderId}` as Parameters<typeof router.push>[0]);
@@ -131,6 +171,8 @@ export function usePushNotifications() {
             } else {
               router.push("/notifications" as Parameters<typeof router.push>[0]);
             }
+          } else {
+            router.push("/" as Parameters<typeof router.push>[0]);
           }
         } catch (e) {
           console.warn("[PushNotifications] Error handling notification response:", e);

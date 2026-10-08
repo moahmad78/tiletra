@@ -25,6 +25,7 @@ import {
   BookOpen,
   FileText,
   Activity,
+  BellRing,
 } from "lucide-react";
 import { useState, useCallback, useEffect } from "react";
 import { getAdminMarketplaceStats } from "@/lib/actions/admin-vendor";
@@ -39,6 +40,7 @@ const navItems = [
   { name: "Products", href: "/admin/products", icon: Package, badgeKey: "lowStock" },
   { name: "Categories", href: "/admin/categories", icon: Layers },
   { name: "Orders", href: "/admin/orders", icon: ShoppingBag, badgeKey: "pendingOrders" },
+  { name: "Push Campaigns", href: "/admin/campaigns", icon: BellRing },
   { name: "Invoice Generator", href: "/admin/invoices", icon: FileText },
   { name: "Logistics & Deliveries", href: "/admin/deliveries", icon: Truck },
   { name: "Customers", href: "/admin/customers", icon: Users },

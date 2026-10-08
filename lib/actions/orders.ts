@@ -860,6 +860,14 @@ export async function createOrder(input: CreateOrderInput) {
         console.error("Failed to create customer notification:", e);
       }
 
+      // Stop cart reminder ladder at once when order is placed (Rule R-6)
+      try {
+        const { cancelCartReminder } = await import("@/lib/cart-reminder-runner");
+        await cancelCartReminder(order.userId);
+      } catch (e) {
+        console.warn("[createOrder] Cart reminder cancel error:", e);
+      }
+
       // Dispatch Mobile Push Notification to Customer
       try {
         const { sendPushToUser } = await import("@/lib/push-notifications");

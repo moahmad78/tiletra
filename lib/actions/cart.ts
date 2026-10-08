@@ -64,6 +64,14 @@ export async function syncCartToDb(
       }
     }
 
+    // Hook into cart reminder ladder (T6)
+    try {
+      const { recordCartChange } = await import("@/lib/cart-reminder-runner");
+      await recordCartChange(user.id, items.length);
+    } catch (reminderErr) {
+      console.warn("[syncCartToDb] Error updating cart reminder state:", reminderErr);
+    }
+
     return { success: true };
   } catch (error: any) {
     console.error("Error syncing cart to DB:", error);

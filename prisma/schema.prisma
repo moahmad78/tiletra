@@ -44,6 +44,8 @@ model User {
   impersonationSessions ImpersonationSession[]  @relation("AdminImpersonationSessions")
   adminAuditLogs        AdminAuditLog[]         @relation("AdminAuditLogs")
   vendor                Vendor?                 @relation("VendorOwner")
+  cartReminderState     CartReminderState?
+  notificationLogs      NotificationLog[]
 
   @@index([phone])
   @@index([email])
@@ -775,6 +777,14 @@ model StoreSettings {
   // Mobile App Controls & Smart Website Install Prompt
   appInstallPromptEnabled      Boolean  @default(true)
   appVersionConfig             Json?
+  // Push Campaigns & Cart Reminders
+  maxPushPerDay                Int      @default(2)
+  quietHoursStart              String   @default("21:00") // Asia/Kolkata
+  quietHoursEnd                String   @default("08:00") // Asia/Kolkata
+  cartReminderDelaysHours      Int[]    @default([1, 24, 72])
+  maxCartReminders             Int      @default(3)
+  offersPaused                 Boolean  @default(false)
+  cartRemindersPaused          Boolean  @default(false)
   updatedAt             DateTime @updatedAt
 }
 
@@ -820,11 +830,13 @@ model NotificationPreference {
   id           String   @id @default(cuid())
   userId       String   @unique
   orderUpdates Boolean  @default(true)
-  promotional  Boolean  @default(true)
-  email        Boolean  @default(true)
-  sms          Boolean  @default(true)
-  whatsapp     Boolean  @default(true)
-  updatedAt    DateTime @updatedAt
+  promotional          Boolean  @default(true)
+  email                Boolean  @default(true)
+  sms                  Boolean  @default(true)
+  whatsapp             Boolean  @default(true)
+  offersEnabled        Boolean  @default(true)
+  cartRemindersEnabled Boolean  @default(true)
+  updatedAt            DateTime @updatedAt
 
   user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
 }
@@ -1576,4 +1588,66 @@ model BroadcastLogEntry {
   @@index([broadcastLogId])
   @@index([phoneNumber])
   @@index([status])
+}
+
+// ----------------------------------------------------
+// 19. Push Campaigns, Cart Reminders & Audit Logs
+// ----------------------------------------------------
+model CartReminderState {
+  id               String    @id @default(cuid())
+  userId           String    @unique
+  cartVersion      Int       @default(1)
+  lastCartChangeAt DateTime  @default(now())
+  step             Int       @default(0) // 0 to 3
+  nextDueAt        DateTime?
+  status           String    @default("pending") // pending | sent | stopped | done
+  createdAt        DateTime  @default(now())
+  updatedAt        DateTime  @updatedAt
+
+  user             User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([status, nextDueAt])
+  @@index([userId])
+}
+
+model Campaign {
+  id          String            @id @default(cuid())
+  title       String            // max 40 chars
+  body        String            // max 90 chars
+  imageUrl    String?
+  target      String            @default("offers") // cart, item:ID, category:ID, offers, order:ID
+  audience    Json?             // { type: "all" | "no_orders_days" | "ordered_days" | "cart_has_items" | "city", days?: number, city?: string }
+  scheduledAt DateTime?
+  status      String            @default("draft") // draft | scheduled | sending | sent | cancelled
+  platforms   String            @default("all") // all | android | ios
+  sendMode    String            @default("scheduled") // scheduled | manual
+  createdBy   String?
+  sentAt      DateTime?
+  stats       Json?             // { totalAudience: number, sent: number, skipped: number, failed: number, androidSent: number, iosSent: number }
+  createdAt   DateTime          @default(now())
+  updatedAt   DateTime          @updatedAt
+  logs        NotificationLog[]
+
+  @@index([status, scheduledAt])
+}
+
+model NotificationLog {
+  id            String    @id @default(cuid())
+  userId        String
+  type          String    // cart_reminder | offer_campaign | price_drop | back_in_stock | direct_support
+  campaignId    String?
+  cartVersion   Int?
+  platform      String?   // android | ios | web
+  status        String    @default("sent") // sent | delivered | skipped | failed | opened
+  skipReason    String?   // quiet_hours | daily_cap_reached | preferences_disabled | paused | invalid_cart | stale | no_tokens
+  sentByAdminId String?
+  createdAt     DateTime  @default(now())
+  openedAt      DateTime?
+
+  user          User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  campaign      Campaign? @relation(fields: [campaignId], references: [id], onDelete: SetNull)
+
+  @@index([userId, createdAt])
+  @@index([type])
+  @@index([campaignId])
 }

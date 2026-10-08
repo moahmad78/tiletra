@@ -31,6 +31,7 @@ import {
   Globe,
   X,
   Check,
+  Bell,
 } from "lucide-react-native";
 import { useAuthStore } from "../../src/store/authStore";
 import { getProfile, updateProfile, uploadAvatarImage } from "../../src/api/auth";
@@ -261,6 +262,18 @@ export default function ProfileScreen() {
             <View style={styles.menuLeft}>
               <Heart size={20} color={COLORS.accentOrange} />
               <Text style={styles.menuLabel}>My Wishlist</Text>
+            </View>
+            <ChevronRight size={18} color={COLORS.textMuted} />
+          </TouchableOpacity>
+
+          <TouchableOpacity
+            style={styles.menuItem}
+            onPress={() => router.push("/notification-settings" as any)}
+            activeOpacity={0.75}
+          >
+            <View style={styles.menuLeft}>
+              <Bell size={20} color={COLORS.primary} />
+              <Text style={styles.menuLabel}>Notification Settings</Text>
             </View>
             <ChevronRight size={18} color={COLORS.textMuted} />
           </TouchableOpacity>
