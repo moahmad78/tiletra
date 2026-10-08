@@ -59,59 +59,42 @@ export async function sendExpoPushNotification(payload: ExpoPushPayload): Promis
 }
 
 /**
- * Registers an Expo push token against a user ID and role in PostgreSQL.
+ * Registers an Expo push token against a user ID and role in PostgreSQL DeviceToken table.
  */
 export async function registerPushToken(params: {
   userId: string;
-  role: string;
+  role?: string;
   token: string;
   platform?: string;
+  appVersion?: string;
 }) {
   try {
-    const { userId, role, token, platform = "android" } = params;
+    const { userId, role = "customer", token, platform = "android", appVersion } = params;
     if (!token || (!token.startsWith("ExponentPushToken[") && !token.startsWith("ExpoPushToken["))) {
       return { success: false, error: "Invalid Expo push token" };
     }
 
-    const key = `push_tokens_${userId}`;
-    const existing = await prisma.setting.findUnique({ where: { key } });
-
-    let tokens: { token: string; platform: string; updatedAt: string }[] = [];
-    if (existing && existing.value) {
-      try {
-        tokens = JSON.parse(existing.value);
-      } catch {}
-    }
-
-    // Keep unique tokens
-    tokens = tokens.filter((t) => t.token !== token);
-    tokens.push({ token, platform, updatedAt: new Date().toISOString() });
-
-    await prisma.setting.upsert({
-      where: { key },
-      update: { value: JSON.stringify(tokens) },
-      create: { key, value: JSON.stringify(tokens) },
+    // Upsert into dedicated DeviceToken table
+    const deviceToken = await prisma.deviceToken.upsert({
+      where: { token },
+      update: {
+        userId,
+        role,
+        platform,
+        appVersion: appVersion || null,
+        lastSeenAt: new Date(),
+      },
+      create: {
+        userId,
+        role,
+        platform,
+        token,
+        appVersion: appVersion || null,
+        lastSeenAt: new Date(),
+      },
     });
 
-    // Also register in role groups (admin vs vendor)
-    if (role === "admin") {
-      const adminKey = "push_tokens_admin_group";
-      const adminExisting = await prisma.setting.findUnique({ where: { key: adminKey } });
-      let adminTokens: string[] = [];
-      if (adminExisting && adminExisting.value) {
-        try { adminTokens = JSON.parse(adminExisting.value); } catch {}
-      }
-      if (!adminTokens.includes(token)) {
-        adminTokens.push(token);
-        await prisma.setting.upsert({
-          where: { key: adminKey },
-          update: { value: JSON.stringify(adminTokens) },
-          create: { key: adminKey, value: JSON.stringify(adminTokens) },
-        });
-      }
-    }
-
-    return { success: true };
+    return { success: true, deviceToken };
   } catch (error: any) {
     console.error("[Register Push Token Error]", error);
     return { success: false, error: error?.message };
@@ -119,7 +102,7 @@ export async function registerPushToken(params: {
 }
 
 /**
- * Dispatches a push notification to all Super Admin devices.
+ * Dispatches a push notification to all Super Admin devices using DeviceToken table.
  */
 export async function notifyAdminPush(params: {
   title: string;
@@ -127,11 +110,12 @@ export async function notifyAdminPush(params: {
   data?: Record<string, any>;
 }) {
   try {
-    const adminKey = "push_tokens_admin_group";
-    const setting = await prisma.setting.findUnique({ where: { key: adminKey } });
-    if (!setting || !setting.value) return;
+    const records = await prisma.deviceToken.findMany({
+      where: { role: { in: ["admin", "superadmin", "cpo"] } },
+      select: { token: true },
+    });
 
-    const tokens: string[] = JSON.parse(setting.value);
+    const tokens = records.map((r) => r.token);
     if (tokens.length > 0) {
       await sendExpoPushNotification({
         to: tokens,
@@ -146,7 +130,7 @@ export async function notifyAdminPush(params: {
 }
 
 /**
- * Dispatches a push notification to a specific Vendor's registered devices.
+ * Dispatches a push notification to a specific Vendor's registered devices using DeviceToken table.
  */
 export async function notifyVendorPush(params: {
   vendorId?: string;
@@ -168,13 +152,12 @@ export async function notifyVendorPush(params: {
 
     if (!targetUserId) return;
 
-    const key = `push_tokens_${targetUserId}`;
-    const setting = await prisma.setting.findUnique({ where: { key } });
-    if (!setting || !setting.value) return;
+    const records = await prisma.deviceToken.findMany({
+      where: { userId: targetUserId },
+      select: { token: true },
+    });
 
-    const tokensObj: { token: string }[] = JSON.parse(setting.value);
-    const tokens = tokensObj.map((t) => t.token);
-
+    const tokens = records.map((r) => r.token);
     if (tokens.length > 0) {
       await sendExpoPushNotification({
         to: tokens,
@@ -189,7 +172,7 @@ export async function notifyVendorPush(params: {
 }
 
 /**
- * Dispatches a push notification to a specific customer / user ID.
+ * Dispatches a push notification to a specific customer / user ID using DeviceToken table.
  */
 export async function sendPushToUser(
   userId: string,
@@ -201,13 +184,13 @@ export async function sendPushToUser(
 ) {
   try {
     if (!userId) return;
-    const key = `push_tokens_${userId}`;
-    const setting = await prisma.setting.findUnique({ where: { key } });
-    if (!setting || !setting.value) return;
 
-    const tokensObj: { token: string }[] = JSON.parse(setting.value);
-    const tokens = tokensObj.map((t) => t.token);
+    const records = await prisma.deviceToken.findMany({
+      where: { userId },
+      select: { token: true },
+    });
 
+    const tokens = records.map((r) => r.token);
     if (tokens.length > 0) {
       await sendExpoPushNotification({
         to: tokens,

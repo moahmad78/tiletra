@@ -252,6 +252,11 @@ export async function saveUserAddress(userId: string, address: any) {
     const userExists = await prisma.user.findUnique({ where: { id: userId } });
     if (!userExists) return { success: false, error: "User not found" };
 
+    const parsedLat = address.latitude !== undefined && address.latitude !== null && !isNaN(Number(address.latitude)) && Number(address.latitude) >= -90 && Number(address.latitude) <= 90 ? Number(address.latitude) : null;
+    const parsedLng = address.longitude !== undefined && address.longitude !== null && !isNaN(Number(address.longitude)) && Number(address.longitude) >= -180 && Number(address.longitude) <= 180 ? Number(address.longitude) : null;
+    const parsedAcc = address.accuracy !== undefined && address.accuracy !== null && !isNaN(Number(address.accuracy)) && Number(address.accuracy) >= 0 ? Number(address.accuracy) : null;
+    const resolvedSource = address.source || (parsedLat !== null && parsedLng !== null ? "GPS" : "MANUAL");
+
     const created = await prisma.address.create({
       data: {
         userId,
@@ -261,8 +266,10 @@ export async function saveUserAddress(userId: string, address: any) {
         pincode: address.pincode || "560001",
         landmark: address.landmark || null,
         label: address.label || "Home",
-        latitude: address.latitude ? Number(address.latitude) : null,
-        longitude: address.longitude ? Number(address.longitude) : null,
+        latitude: parsedLat,
+        longitude: parsedLng,
+        accuracy: parsedAcc,
+        source: resolvedSource,
         isDefault: Boolean(address.isDefault),
       },
     });

@@ -25,6 +25,7 @@ import {
   FileText,
   Package,
   ExternalLink,
+  MapPin,
 } from "lucide-react";
 import { toast } from "sonner";
 import Link from "next/link";
@@ -274,11 +275,17 @@ export default function CpoVendorsPage() {
                       }`}
                     >
                       <td className="py-3.5 px-4">
-                        <div className="flex items-center gap-2">
+                        <div className="flex items-center gap-2 flex-wrap">
                           <span className="font-bold text-gray-900 text-sm">{v.businessName}</span>
                           {isActiveWorkspace && (
                             <span className="px-2 py-0.5 rounded text-[9px] font-black uppercase tracking-wider bg-[#F26522] text-white">
                               Active
+                            </span>
+                          )}
+                          {(!v.latitude || !v.longitude) && (
+                            <span className="px-2 py-0.5 rounded text-[9px] font-bold uppercase tracking-wider bg-amber-100 text-amber-800 border border-amber-300 inline-flex items-center gap-1" title="Vendor missing latitude or longitude coordinates">
+                              <MapPin className="w-2.5 h-2.5 text-amber-600" />
+                              Location Missing
                             </span>
                           )}
                         </div>

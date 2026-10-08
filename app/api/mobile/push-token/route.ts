@@ -14,7 +14,7 @@ export async function POST(req: NextRequest) {
     }
 
     const body = await req.json().catch(() => ({}));
-    const { token, platform = "android" } = body;
+    const { token, platform = "android", appVersion } = body;
 
     if (!token) {
       return mobileApiResponse({ success: false, error: "Push token is required" }, 400);
@@ -25,6 +25,7 @@ export async function POST(req: NextRequest) {
       role: user.role,
       token: String(token).trim(),
       platform,
+      appVersion: appVersion ? String(appVersion) : undefined,
     });
 
     if (!res.success) {

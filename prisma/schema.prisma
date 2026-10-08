@@ -36,6 +36,7 @@ model User {
   recentlyViewed        RecentlyViewed[]
   wishlist              WishlistItem[]
   pushTokens            MobilePushToken[]
+  deviceTokens          DeviceToken[]
   returnRequests        ReturnRequest[]
   complaints            ComplaintNote[]
   auditLogs             AuditLog[]
@@ -471,6 +472,18 @@ model Order {
   deliveryArrivedAt      DateTime?
   deliveredAt            DateTime?
 
+  // Auto-Accept & Lifecycle Tracking (PRD v2)
+  autoAccepted           Boolean         @default(false)
+  autoAcceptReason       String?
+  confirmedAt            DateTime?
+  readyBy                DateTime?
+  cancelWindowExpiresAt  DateTime?
+  cancelReason           String?
+  cancelledBy            String?         // customer | vendor | cpo | system
+  refundId               String?
+  refundStatus           String?         // pending | processed | failed
+  orderAlerts            OrderAlert[]
+
   createdAt              DateTime        @default(now())
   updatedAt              DateTime        @updatedAt
 
@@ -753,6 +766,12 @@ model StoreSettings {
   codBlockedPincodes    String[] @default(["560099"])
   estimatedDelivery     String   @default("Within 60 Minutes")
   deliverySlots         Json?    // Configured DeliverySlotDefinition[]
+  // PRD v2 Auto-Accept & Alert Timings
+  cancelWindowMinutes          Int      @default(2)
+  readyMinutes                 Int      @default(10)
+  awaitingVendorTimeoutMinutes  Int      @default(5)
+  codAutoAcceptCap             Float    @default(5000)
+  alertStepTimings             Json?
   updatedAt             DateTime @updatedAt
 }
 
@@ -977,6 +996,9 @@ model Vendor {
   // Quick Commerce Automation (F3 / F5)
   autoAcceptOrders      Boolean            @default(false) // per-vendor: skip manual accept step
   serviceAreaRadiusKm   Float              @default(10)    // max km from vendor to accept geo-routed orders
+  isOnline              Boolean            @default(true)
+  operatingHours        Json?
+  lastHeartbeatAt       DateTime?
 
   // Authentication Method (Admin-Configurable: otp vs password)
   loginMethod         String             @default("otp") // otp | password
@@ -993,10 +1015,12 @@ model Vendor {
   impersonationSessions ImpersonationSession[] @relation("VendorImpersonationSessions")
   auditLogs             AdminAuditLog[]        @relation("VendorAuditLogs")
   attributeOptions      AttributeOption[]
+  orderAlerts           OrderAlert[]
 
   @@index([status])
   @@index([ownerId])
   @@index([applicationId])
+  @@index([latitude, longitude])
 }
 
 model VendorApplication {
@@ -1052,6 +1076,14 @@ model VendorOrderSplit {
   totalWeightKg        Float?    // Total sum weight of items in split (kg)
   isBulky              Boolean   @default(false) // True if any item in split is bulky
   updatedByAdminId     String?
+
+  // Auto-Accept & Split Lifecycle Tracking (PRD v2)
+  autoAccepted         Boolean   @default(false)
+  autoAcceptReason     String?
+  readyBy              DateTime?
+  cancelWindowExpiresAt DateTime?
+  cancelReason         String?
+  cancelledBy          String?
 
   createdAt            DateTime  @default(now())
   updatedAt            DateTime  @updatedAt
@@ -1137,6 +1169,46 @@ model MobilePushToken {
   user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@index([userId])
+}
+
+model DeviceToken {
+  id          String    @id @default(cuid())
+  userId      String
+  role        String    @default("customer") // customer | vendor | rider | admin
+  platform    String    @default("android")  // android | ios | web
+  token       String    @unique
+  appVersion  String?
+  lastSeenAt  DateTime  @default(now())
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+
+  user        User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([role])
+  @@index([token])
+}
+
+model OrderAlert {
+  id             String    @id @default(cuid())
+  orderId        String
+  vendorId       String
+  step           Int       @default(1)
+  channel        String    @default("push") // push | whatsapp | call | cpo_alert
+  platform       String    @default("android") // android | ios | web
+  sentAt         DateTime  @default(now())
+  deliveredAt    DateTime?
+  acknowledgedAt DateTime?
+  escalatedAt    DateTime?
+  createdAt      DateTime  @default(now())
+  updatedAt      DateTime  @updatedAt
+
+  order          Order     @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  vendor         Vendor    @relation(fields: [vendorId], references: [id], onDelete: Cascade)
+
+  @@index([orderId])
+  @@index([vendorId])
+  @@index([acknowledgedAt])
 }
 
 model WishlistItem {

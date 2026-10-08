@@ -151,6 +151,11 @@ export async function saveAddress(userId: string, input: AddressInput) {
       });
     }
 
+    const parsedLat = input.latitude !== undefined && input.latitude !== null && !isNaN(Number(input.latitude)) && Number(input.latitude) >= -90 && Number(input.latitude) <= 90 ? Number(input.latitude) : null;
+    const parsedLng = input.longitude !== undefined && input.longitude !== null && !isNaN(Number(input.longitude)) && Number(input.longitude) >= -180 && Number(input.longitude) <= 180 ? Number(input.longitude) : null;
+    const parsedAcc = input.accuracy !== undefined && input.accuracy !== null && !isNaN(Number(input.accuracy)) && Number(input.accuracy) >= 0 ? Number(input.accuracy) : null;
+    const resolvedSource = input.source || (parsedLat !== null && parsedLng !== null ? "GPS" : "MANUAL");
+
     if (input.id) {
       // Update existing with strict ownership verification
       const existing = await prisma.address.findFirst({
@@ -178,10 +183,10 @@ export async function saveAddress(userId: string, input: AddressInput) {
           country: input.country || "India",
           pincode: pincode,
           postalCode: pincode,
-          latitude: input.latitude !== undefined && input.latitude !== null ? Number(input.latitude) : null,
-          longitude: input.longitude !== undefined && input.longitude !== null ? Number(input.longitude) : null,
-          accuracy: input.accuracy !== undefined && input.accuracy !== null ? Number(input.accuracy) : null,
-          source: input.source || "MAP_PIN",
+          latitude: parsedLat !== null ? parsedLat : existing.latitude,
+          longitude: parsedLng !== null ? parsedLng : existing.longitude,
+          accuracy: parsedAcc !== null ? parsedAcc : existing.accuracy,
+          source: input.source || existing.source || "MAP_PIN",
           deliveryInstructions: input.deliveryInstructions || null,
           isDefault: Boolean(input.isDefault),
         },
@@ -211,10 +216,10 @@ export async function saveAddress(userId: string, input: AddressInput) {
         country: input.country || "India",
         pincode: pincode,
         postalCode: pincode,
-        latitude: input.latitude !== undefined && input.latitude !== null ? Number(input.latitude) : null,
-        longitude: input.longitude !== undefined && input.longitude !== null ? Number(input.longitude) : null,
-        accuracy: input.accuracy !== undefined && input.accuracy !== null ? Number(input.accuracy) : null,
-        source: input.source || "GPS",
+        latitude: parsedLat,
+        longitude: parsedLng,
+        accuracy: parsedAcc,
+        source: resolvedSource,
         deliveryInstructions: input.deliveryInstructions || null,
         isDefault: Boolean(input.isDefault),
       },

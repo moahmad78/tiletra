@@ -101,6 +101,10 @@ export default function AddressStep({
   const [deliveryInstructions, setDeliveryInstructions] = useState("");
   const [isDefault, setIsDefault] = useState(userAddresses.length === 0);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [coordLat, setCoordLat] = useState<number | null>(null);
+  const [coordLng, setCoordLng] = useState<number | null>(null);
+  const [coordAcc, setCoordAcc] = useState<number | null>(null);
+  const [coordSource, setCoordSource] = useState<string>("MANUAL");
 
   // ── Blinkit-Style Address Autocomplete Search ──
   const [addressSearch, setAddressSearch] = useState("");
@@ -150,6 +154,11 @@ export default function AddressStep({
         if (loc.state) setState(loc.state);
         if (loc.pincode) setPincode(loc.pincode);
         if (loc.landmark) setLandmark(loc.landmark);
+        if (loc.lat && loc.lng) {
+          setCoordLat(Number(loc.lat));
+          setCoordLng(Number(loc.lng));
+          setCoordSource("SEARCH");
+        }
         setDetectedNotice(`Selected: ${loc.formattedAddress}`);
         setIsAddingNew(true);
         toast.success("Address details auto-filled from search!");
@@ -171,8 +180,13 @@ export default function AddressStep({
     setIsDetectingLocation(true);
     setDetectedNotice(null);
 
-    const applyCoords = async (latitude: number, longitude: number) => {
+    const applyCoords = async (latitude: number, longitude: number, accuracy?: number) => {
       try {
+        setCoordLat(latitude);
+        setCoordLng(longitude);
+        if (accuracy !== undefined) setCoordAcc(accuracy);
+        setCoordSource("GPS");
+
         const res = await fetch(`/api/geo/reverse-geocode?lat=${latitude}&lng=${longitude}`);
         const data = await res.json();
 
@@ -209,13 +223,13 @@ export default function AddressStep({
     // Stage 1: Ultra-fast coarse / cached position (<300ms)
     navigator.geolocation.getCurrentPosition(
       (pos) => {
-        applyCoords(pos.coords.latitude, pos.coords.longitude);
+        applyCoords(pos.coords.latitude, pos.coords.longitude, pos.coords.accuracy);
       },
       () => {
         // Stage 2: Fallback to high accuracy if coarse fails
         navigator.geolocation.getCurrentPosition(
           (pos) => {
-            applyCoords(pos.coords.latitude, pos.coords.longitude);
+            applyCoords(pos.coords.latitude, pos.coords.longitude, pos.coords.accuracy);
           },
           (err) => {
             console.warn("Geolocation fallback notice:", err);
@@ -245,6 +259,11 @@ export default function AddressStep({
     if (loc.state) setState(loc.state);
     if (loc.pincode) setPincode(loc.pincode);
     if (loc.landmark) setLandmark(loc.landmark);
+    if (loc.latitude && loc.longitude) {
+      setCoordLat(loc.latitude);
+      setCoordLng(loc.longitude);
+      setCoordSource("MAP_PIN");
+    }
     setDetectedNotice(`Location pinned: ${loc.formattedAddress}`);
     setIsAddingNew(true);
     toast.success("Delivery point selected from map!");
@@ -327,7 +346,10 @@ export default function AddressStep({
         landmark: landmark.trim() || undefined,
         label,
         deliveryInstructions: deliveryInstructions.trim() || undefined,
-        source: "MANUAL",
+        latitude: coordLat !== null ? coordLat : undefined,
+        longitude: coordLng !== null ? coordLng : undefined,
+        accuracy: coordAcc !== null ? coordAcc : undefined,
+        source: coordSource || "MANUAL",
         isDefault: isDefault || userAddresses.length === 0,
       });
 

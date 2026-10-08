@@ -53,10 +53,32 @@ export function usePushNotifications() {
       }
     });
 
-    // 1. Notification received while app is foregrounded
+    // 1. Notification received while app is foregrounded - navigate to order screen
     notificationListener.current = Notifications.addNotificationReceivedListener(
       (notification) => {
         console.log("Push notification received in foreground:", notification);
+        const data = notification.request.content.data;
+        if (data?.orderId || data?.id) {
+          const targetOrderId = data.orderId || data.id;
+          try {
+            router.push({
+              pathname: "/(tabs)/orders",
+              params: { orderId: targetOrderId },
+            } as any);
+          } catch (e) {
+            console.error("Error routing foreground order notification:", e);
+          }
+        } else if (data?.screen) {
+          try {
+            if (data.id) {
+              router.push({ pathname: data.screen, params: { id: data.id } } as any);
+            } else {
+              router.push(data.screen as any);
+            }
+          } catch (e) {
+            console.error("Error deep-linking foreground push notification:", e);
+          }
+        }
       }
     );
 

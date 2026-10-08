@@ -93,6 +93,10 @@ export const AddressModal: React.FC<AddressModalProps> = ({ visible, onClose, on
   const [pincode, setPincode] = useState("");
   const [deliveryInstructions, setDeliveryInstructions] = useState("");
   const [error, setError] = useState("");
+  const [latitude, setLatitude] = useState<number | null>(null);
+  const [longitude, setLongitude] = useState<number | null>(null);
+  const [accuracy, setAccuracy] = useState<number | null>(null);
+  const [source, setSource] = useState<string>("GPS");
 
   // ── Blinkit-Style Address Search State ──
   const [addressSearchQuery, setAddressSearchQuery] = useState("");
@@ -143,6 +147,9 @@ export const AddressModal: React.FC<AddressModalProps> = ({ visible, onClose, on
       setLoading(true);
 
       if (prediction.latitude && prediction.longitude) {
+        setLatitude(prediction.latitude);
+        setLongitude(prediction.longitude);
+        setSource("SEARCH");
         setStreet(prediction.mainText);
         setArea("");
         setIsAddingNew(true);
@@ -154,6 +161,11 @@ export const AddressModal: React.FC<AddressModalProps> = ({ visible, onClose, on
       });
       if (res.data?.success && res.data.location) {
         const loc = res.data.location;
+        if (loc.lat && loc.lng) {
+          setLatitude(Number(loc.lat));
+          setLongitude(Number(loc.lng));
+          setSource("SEARCH");
+        }
         setStreet(loc.street || prediction.mainText);
         setArea(loc.area || "");
         setCity(loc.city || "Bengaluru");
@@ -310,6 +322,10 @@ export const AddressModal: React.FC<AddressModalProps> = ({ visible, onClose, on
     setPincode("");
     setDeliveryInstructions("");
     setError("");
+    setLatitude(null);
+    setLongitude(null);
+    setAccuracy(null);
+    setSource("GPS");
   };
 
   const handleStartEdit = (addr: Address) => {
@@ -330,6 +346,10 @@ export const AddressModal: React.FC<AddressModalProps> = ({ visible, onClose, on
     setPincode(addr.pincode || addr.postalCode || "");
     setDeliveryInstructions(addr.deliveryInstructions || "");
     setError("");
+    setLatitude(addr.latitude ?? null);
+    setLongitude(addr.longitude ?? null);
+    setAccuracy(addr.accuracy ?? null);
+    setSource(addr.source ?? "MANUAL");
     setIsAddingNew(true);
   };
 
@@ -401,6 +421,12 @@ export const AddressModal: React.FC<AddressModalProps> = ({ visible, onClose, on
       if (detected.pincode) setPincode(detected.pincode);
       if (detected.houseNumber && !houseNumber) setHouseNumber(detected.houseNumber);
       if (detected.landmark && !landmark) setLandmark(detected.landmark);
+      if (detected.latitude && detected.longitude) {
+        setLatitude(detected.latitude);
+        setLongitude(detected.longitude);
+        setAccuracy(detected.accuracy ?? null);
+        setSource("GPS");
+      }
 
       setIsAddingNew(true);
     } catch (err: any) {
@@ -464,6 +490,10 @@ export const AddressModal: React.FC<AddressModalProps> = ({ visible, onClose, on
         country: "India",
         pincode: pincode.trim(),
         postalCode: pincode.trim(),
+        latitude: latitude !== null ? latitude : undefined,
+        longitude: longitude !== null ? longitude : undefined,
+        accuracy: accuracy !== null ? accuracy : undefined,
+        source: source || "MANUAL",
         deliveryInstructions: deliveryInstructions.trim() || undefined,
         formattedAddress: formatted,
         isDefault: editingAddress ? Boolean(editingAddress.isDefault) : savedAddresses.length === 0,
@@ -487,6 +517,10 @@ export const AddressModal: React.FC<AddressModalProps> = ({ visible, onClose, on
               state: addressPayload.state,
               pincode: addressPayload.pincode,
               postalCode: addressPayload.postalCode,
+              latitude: addressPayload.latitude,
+              longitude: addressPayload.longitude,
+              accuracy: addressPayload.accuracy,
+              source: addressPayload.source,
               deliveryInstructions: addressPayload.deliveryInstructions,
               isDefault: addressPayload.isDefault,
             });
@@ -504,6 +538,10 @@ export const AddressModal: React.FC<AddressModalProps> = ({ visible, onClose, on
               state: addressPayload.state,
               pincode: addressPayload.pincode,
               postalCode: addressPayload.postalCode,
+              latitude: addressPayload.latitude,
+              longitude: addressPayload.longitude,
+              accuracy: addressPayload.accuracy,
+              source: addressPayload.source,
               deliveryInstructions: addressPayload.deliveryInstructions,
               isDefault: addressPayload.isDefault,
             });
@@ -543,6 +581,10 @@ export const AddressModal: React.FC<AddressModalProps> = ({ visible, onClose, on
             state: addressPayload.state,
             pincode: addressPayload.pincode,
             postalCode: addressPayload.postalCode,
+            latitude: addressPayload.latitude,
+            longitude: addressPayload.longitude,
+            accuracy: addressPayload.accuracy,
+            source: addressPayload.source,
             deliveryInstructions: addressPayload.deliveryInstructions,
             isDefault: addressPayload.isDefault,
           });
@@ -1058,6 +1100,12 @@ export const AddressModal: React.FC<AddressModalProps> = ({ visible, onClose, on
         visible={showMapPicker}
         onClose={() => setShowMapPicker(false)}
         onConfirmLocation={(loc) => {
+          if (loc.latitude && loc.longitude) {
+            setLatitude(loc.latitude);
+            setLongitude(loc.longitude);
+            setAccuracy(loc.accuracy ?? null);
+            setSource("MAP_PIN");
+          }
           if (loc.street) setStreet(loc.street);
           if (loc.area) setArea(loc.area);
           if (loc.city) setCity(loc.city);

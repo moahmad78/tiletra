@@ -481,18 +481,26 @@ export default function AdminVendorsPage() {
                             <p className="text-[10px] text-gray-400 truncate">
                               Owner: {v.owner?.name || "N/A"}
                             </p>
-                            <button
-                              type="button"
-                              onClick={() => handleToggleAutoPublish(v.id, Boolean(v.autoPublishEnabled))}
-                              className={`inline-flex items-center gap-1 px-2 py-0.5 mt-0.5 rounded text-[9px] font-bold border transition-all cursor-pointer ${
-                                v.autoPublishEnabled
-                                  ? "bg-emerald-50 text-emerald-800 border-emerald-300 hover:bg-emerald-100"
-                                  : "bg-gray-100 text-gray-600 border-gray-200 hover:bg-gray-200"
-                              }`}
-                              title="Click to toggle Auto-Publish / Direct Live mode"
-                            >
-                              <span>{v.autoPublishEnabled ? "⚡ Auto-Publish (ON)" : "⏳ Standard Review (OFF)"}</span>
-                            </button>
+                            <div className="flex items-center gap-1.5 flex-wrap mt-0.5">
+                              <button
+                                type="button"
+                                onClick={() => handleToggleAutoPublish(v.id, Boolean(v.autoPublishEnabled))}
+                                className={`inline-flex items-center gap-1 px-2 py-0.5 rounded text-[9px] font-bold border transition-all cursor-pointer ${
+                                  v.autoPublishEnabled
+                                    ? "bg-emerald-50 text-emerald-800 border-emerald-300 hover:bg-emerald-100"
+                                    : "bg-gray-100 text-gray-600 border-gray-200 hover:bg-gray-200"
+                                }`}
+                                title="Click to toggle Auto-Publish / Direct Live mode"
+                              >
+                                <span>{v.autoPublishEnabled ? "⚡ Auto-Publish (ON)" : "⏳ Standard Review (OFF)"}</span>
+                              </button>
+                              {(!v.latitude || !v.longitude) && (
+                                <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded text-[9px] font-bold bg-amber-50 text-amber-800 border border-amber-300" title="Vendor missing coordinates">
+                                  <MapPin size={10} className="text-amber-600" />
+                                  <span>Location Missing</span>
+                                </span>
+                              )}
+                            </div>
                           </div>
                         </div>
                       </td>
