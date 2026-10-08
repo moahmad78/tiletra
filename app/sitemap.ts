@@ -104,6 +104,12 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
       priority: 0.9,
     },
     {
+      url: `${BASE_SITE_URL}/guides/diwali-home-renovation-2026-materials-checklist`,
+      lastModified: new Date("2026-10-08T00:00:00.000Z"),
+      changeFrequency: "weekly",
+      priority: 0.9,
+    },
+    {
       url: `${BASE_SITE_URL}/inspiration`,
       lastModified: new Date("2026-09-29T00:00:00.000Z"),
       changeFrequency: "weekly",

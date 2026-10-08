@@ -161,10 +161,12 @@ export default function AddProductScreen() {
 
   const handlePickImage = async () => {
     try {
-      const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
-      if (status !== "granted") {
-        Alert.alert("Permission Required", "Gallery access is required to upload product images.");
-        return;
+      if (Platform.OS === "ios") {
+        const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
+        if (status !== "granted") {
+          Alert.alert("Permission Required", "Gallery access is required to upload product images.");
+          return;
+        }
       }
 
       const result = await ImagePicker.launchImageLibraryAsync({

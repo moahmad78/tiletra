@@ -56,10 +56,12 @@ export function WriteReviewModal({
     }
 
     try {
-      const permission = await ImagePicker.requestMediaLibraryPermissionsAsync();
-      if (!permission.granted) {
-        Alert.alert("Permission Required", "Camera roll permission is needed to upload photos/videos.");
-        return;
+      if (Platform.OS === "ios") {
+        const permission = await ImagePicker.requestMediaLibraryPermissionsAsync();
+        if (!permission.granted) {
+          Alert.alert("Permission Required", "Camera roll permission is needed to upload photos/videos.");
+          return;
+        }
       }
 
       const result = await ImagePicker.launchImageLibraryAsync({

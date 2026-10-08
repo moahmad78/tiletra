@@ -108,8 +108,8 @@ When filling out the Google Play Console forms, use the exact answers below:
 ### Permissions Compliance (Android 14 & 15)
 - **POST_NOTIFICATIONS**: Declared and requested at runtime for Android 13+ order alerts.
 - **READ_EXTERNAL_STORAGE**: Scoped to `android:maxSdkVersion="32"` to adhere to Google Play storage policy.
-- **WRITE_EXTERNAL_STORAGE**: Scoped to `android:maxSdkVersion="28"` to adhere to Scoped Storage requirements.
-- **READ_MEDIA_IMAGES**: Used for modern granular photo selection (avatar uploads).
+- **WRITE_EXTERNAL_STORAGE**: Scoped to `android:maxSdkVersion="32"` to adhere to Scoped Storage requirements.
+- **Photo & Video Picker Compliance**: System Android Photo Picker is used natively. `READ_MEDIA_IMAGES` and `READ_MEDIA_VIDEO` are explicitly removed and blocked via `tools:node="remove"` and `blockedPermissions` to comply with Google Play Photo & Video Permissions Policy.
 
 ### App Access / Credentials for Google Review Team
 When setting up **App access** in Google Play Console (Policy > App content > App access):
@@ -122,14 +122,13 @@ When setting up **App access** in Google Play Console (Policy > App content > Ap
 - **Password**: `IntriReview#2026`
 - **Any other instructions (for reviewer)**:
   ```text
-  1. Open the IntriHub app. If prompted, you may continue as Guest or Sign In.
-  2. Tap "Sign In" or visit Profile/Cart to prompt login.
-  3. Enter email: playreview@intrihub.com and tap "Continue with Email OTP".
-  4. The app will immediately present the dedicated reviewer Password screen (bypassing OTP).
-  5. Enter password: IntriReview#2026 and tap "Sign In".
-  6. The reviewer account has a pre-configured delivery address in Koramangala, Bengaluru and sample past orders.
-  7. Browse the catalog, add products to cart, and proceed to the Checkout screen.
-  8. Account is permanent, reusable, and never expires.
+  Direct password authentication (Zero 2FA / Zero OTP / Zero SMS required):
+  1. Open the IntriHub app. If prompted, tap "Sign In" or visit Profile.
+  2. Enter Email: playreview@intrihub.com
+  3. Tap "Continue". The app immediately prompts for the account Password.
+  4. Enter Password: IntriReview#2026 and tap "Sign In".
+  5. Access is granted instantly without requiring any SMS codes, email inboxes, or external one-time passwords.
+  6. Account is permanent, self-contained, and pre-configured for full catalog, cart, and checkout review.
   ```
 
 #### Account Attributes & Verification:

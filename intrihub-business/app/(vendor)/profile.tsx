@@ -10,6 +10,7 @@ import {
   Modal,
   TextInput,
   ActivityIndicator,
+  Platform,
 } from "react-native";
 import { useRouter } from "expo-router";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
@@ -82,10 +83,12 @@ export default function VendorProfileScreen() {
 
   const handlePickAndUploadLogo = async () => {
     try {
-      const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
-      if (status !== "granted") {
-        Alert.alert("Permission Required", "Gallery permission is required to upload your store logo.");
-        return;
+      if (Platform.OS === "ios") {
+        const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
+        if (status !== "granted") {
+          Alert.alert("Permission Required", "Gallery permission is required to upload your store logo.");
+          return;
+        }
       }
 
       const result = await ImagePicker.launchImageLibraryAsync({

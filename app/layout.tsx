@@ -12,7 +12,6 @@ import GoogleAnalyticsTracker from "@/components/analytics/GoogleAnalyticsTracke
 import AddToCartToast from "@/components/cart/AddToCartToast";
 import PwaInstallPrompt from "@/components/pwa/PwaInstallPrompt";
 import { Toaster } from "sonner";
-import { ScrollingTitle } from "@/components/ScrollingTitle";
 import { LanguageProvider } from "@/components/translate/LanguageProvider";
 import GoogleTranslateBootstrap from "@/components/translate/GoogleTranslateBootstrap";
 
@@ -329,7 +328,6 @@ j=d.createElement(s),dl=l!='dataLayer'?'&l='+l:'';j.async=true;j.src=
             <Suspense fallback={null}>
               <GoogleSessionHydrator />
               <GoogleAnalyticsTracker measurementId={gaMeasurementId} />
-              <ScrollingTitle />
             </Suspense>
           </QuoteModalProvider>
           <GoogleTranslateBootstrap />

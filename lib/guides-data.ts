@@ -23,6 +23,112 @@ export interface BuyingGuide {
 
 export const BUYING_GUIDES: BuyingGuide[] = [
   {
+    slug: "diwali-home-renovation-2026-materials-checklist",
+    title: "Diwali Home Renovation 2026: Interior Materials Checklist and 4-Week Timeline",
+    shortDescription:
+      "Diwali is on 8 November 2026. Use this 4-week plan and interior materials checklist to renovate your home on time, with delivery in Bengaluru.",
+    category: "Guides / Interior and Renovation",
+    readTime: "6 min read",
+    publishedAt: "2026-10-08T00:00:00.000Z",
+    updatedAt: "2026-10-08T00:00:00.000Z",
+    image: "/images/guides/diwali-renovation-hero.jpg",
+    author: "IntriHub Team",
+    summary:
+      "Diwali falls on Sunday, 8 November 2026. Use this simple four-week plan, room-by-room materials checklist, and procurement tips to avoid festive-season delays and renovate your home on time.",
+    sections: [
+      {
+        heading: "1. Why start this week",
+        content: [
+          "Contractors get busy. Painters, carpenters, electricians and tile workers are in demand before Diwali. The earlier you book, the better your choice of dates.",
+          "Delivery gets crowded. Order volumes usually rise before festivals, so deliveries can take longer closer to the date.",
+          "Paint and finishing need time. Walls must dry between coats, and a house needs a day or two to air out before guests arrive.",
+          "You get a buffer. If something is damaged or out of stock, you still have time to replace it.",
+        ],
+      },
+      {
+        heading: "2. Your 4-week timeline",
+        content: [
+          "Week 1 (8 to 14 Oct): Decide scope and budget. Measure rooms. Book painter, electrician and carpenter. Choose colours, tiles and fittings.",
+          "Week 2 (15 to 21 Oct): Order materials. Do repairs first: wall cracks, seepage, leaking taps, loose tiles. Do any electrical or plumbing changes now.",
+          "Week 3 (22 to 28 Oct): Painting and tiling work. Follow the drying times on the product instructions between coats.",
+          "Week 4 (29 Oct to 7 Nov): Fit lights, switches, handles, fittings and curtains. Deep clean. Final touch-ups. Air the house.",
+          "Leave Diwali week for decoration and cleaning only, not for construction work. Tip: if your timeline is tight, do repairs and the most visible rooms first (living room and entrance), and finish the rest after the festival.",
+        ],
+      },
+      {
+        heading: "3. Room-by-room materials checklist",
+        content: [
+          "Living room: Interior wall paint, primer and putty; modular switches and sockets (replace old, yellowed plates); lights (ceiling lights, cove or strip lights, wall lights); skirting or wall panels (optional).",
+          "Kitchen: Tiles for backsplash or floor refresh; taps, sink fittings and waste couplings; cabinet handles, hinges and channels; electrical sockets for new appliances.",
+          "Bathrooms: Anti-skid floor tiles; CP fittings (taps, shower, mixer); sealant and tile adhesive for repairs; pipes and fittings if any leak needs fixing.",
+          "Bedrooms: Paint and putty; switches and fan regulators; wardrobe hardware (hinges, handles, locks).",
+          "Entrance and balcony: Name plate, door handles and locks; exterior-grade paint or waterproof coating; outdoor lights and weatherproof fittings.",
+          "Before you order, ask your contractor to confirm the quantity for each item and add a small extra for wastage (for tiles, commonly 5 to 10% from the same batch).",
+        ],
+      },
+      {
+        heading: "4. Small upgrades that make a big difference",
+        content: [
+          "If your budget is limited, these upgrades change how a home looks without major work:",
+        ],
+        bulletPoints: [
+          "Fresh paint on one feature wall instead of the whole house",
+          "New switch plates and lights, which instantly modernise a room",
+          "Replacing old handles, taps and door hardware",
+          "Fixing visible cracks and damp patches before painting",
+          "Better lighting in the living room and entrance",
+        ],
+      },
+      {
+        heading: "5. Mistakes to avoid",
+        content: [
+          "Painting before repairs. Fix cracks and seepage first, or the new paint will peel.",
+          "Ordering tiles without extra. A later batch can differ in shade.",
+          "Waiting for the last week. Prices of labour, delivery slots and stock are all tighter then.",
+          "Skipping the electrical check. Old wiring and loose sockets are a safety risk, especially with festive lighting.",
+          "Mixing too many colours and finishes. Keep a simple palette so rooms look consistent.",
+        ],
+      },
+      {
+        heading: "6. How IntriHub helps",
+        content: [
+          "Everything in one place: Paint-ready materials, electrical items, tiles, plumbing, plywood, hardware and furniture, so you do not run between multiple shops.",
+          "Browse and compare online: Explore building materials online at your own pace.",
+          "60-minute delivery in Bengaluru: Order what each stage needs, right when you need it, instead of stockpiling.",
+          "Pan-India delivery: Outside Bengaluru, delivery currently takes 3 to 7 days, so order early for your city.",
+        ],
+      },
+    ],
+    faqs: [
+      {
+        question: "When should I start my Diwali home renovation?",
+        answer:
+          "Ideally four to five weeks before. With Diwali on 8 November 2026, starting this week gives you time for repairs, painting and fittings without a last-minute rush.",
+      },
+      {
+        question: "What should I do first: painting or repairs?",
+        answer:
+          "Repairs first. Fix cracks, damp patches, leaks and electrical issues before painting, so you do not have to redo the work.",
+      },
+      {
+        question: "How much extra tile should I order?",
+        answer:
+          "Commonly 5 to 10% extra, from the same batch, to cover cutting waste and future repairs. Confirm with your tile fitter.",
+      },
+      {
+        question: "Can I get building and interior materials delivered in Bengaluru quickly?",
+        answer:
+          "Yes. IntriHub offers 60-minute delivery in Bengaluru. Outside Bengaluru, delivery currently takes 3 to 7 days.",
+      },
+      {
+        question: "What is a low-cost way to refresh my home for Diwali?",
+        answer:
+          "Paint one feature wall, replace old switch plates and handles, fix visible damage, and improve lighting.",
+      },
+    ],
+    relatedCategorySlugs: ["tiles-stone", "paint-finishes", "lighting", "electrical", "hardware-fittings"],
+  },
+  {
     slug: "vitrified-tiles-online-buying-guide",
     title: "Vitrified Tiles Online: Complete Buying Guide for Indian Homes (2026)",
     shortDescription:

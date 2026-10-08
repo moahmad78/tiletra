@@ -472,7 +472,7 @@ export default function LoginScreen() {
                 <ActivityIndicator color={COLORS.textWhite} size="small" />
               ) : (
                 <View style={styles.btnRow}>
-                  <Text style={styles.primaryButtonText}>Continue with Email OTP</Text>
+                  <Text style={styles.primaryButtonText}>Continue</Text>
                   <ArrowRight size={16} color={COLORS.textWhite} style={{ marginLeft: 8 }} />
                 </View>
               )}

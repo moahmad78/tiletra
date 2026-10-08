@@ -86,10 +86,12 @@ export default function ProfileScreen() {
 
   const handlePickAvatar = async () => {
     try {
-      const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
-      if (status !== "granted") {
-        Alert.alert("Permission Required", "Gallery permission is required to select a profile picture.");
-        return;
+      if (Platform.OS === "ios") {
+        const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
+        if (status !== "granted") {
+          Alert.alert("Permission Required", "Gallery permission is required to select a profile picture.");
+          return;
+        }
       }
 
       const result = await ImagePicker.launchImageLibraryAsync({

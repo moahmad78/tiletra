@@ -13,6 +13,7 @@ import {
   Image,
   Alert,
   Switch,
+  Platform,
 } from "react-native";
 import { useRouter } from "expo-router";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
@@ -152,10 +153,12 @@ export default function AdminContentScreen() {
 
   const handlePickImage = async () => {
     try {
-      const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
-      if (status !== "granted") {
-        Alert.alert("Permission Required", "Gallery permission is required to upload banners.");
-        return;
+      if (Platform.OS === "ios") {
+        const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
+        if (status !== "granted") {
+          Alert.alert("Permission Required", "Gallery permission is required to upload banners.");
+          return;
+        }
       }
 
       const result = await ImagePicker.launchImageLibraryAsync({

@@ -5,59 +5,55 @@ Latest fresh production builds ready for Google Play Store release:
 ---
 
 ## 1. 📱 Customer / User App (IntriHub) — Latest
-* **File Name:** `intrihub-mobile-release-v1.2.4-code17.aab`
-* **Full Local Path:** `d:\Intrihub\releases\intrihub-mobile-release-v1.2.4-code17.aab`
+* **File Name:** `intrihub-mobile-release-v1.2.5-code18.aab`
+* **Full Local Path:** `d:\Intrihub\releases\intrihub-mobile-release-v1.2.5-code18.aab`
 * **Bundle Output Path:** `d:\Intrihub\intrihub-mobile\android\app\build\outputs\bundle\release\app-release.aab`
-* **File Size:** 75.6 MB (`75,618,245 bytes`)
-* **Version Name:** `1.2.4`
-* **Version Code:** `17`
+* **Version Name:** `1.2.5`
+* **Version Code:** `18`
 * **Package Name:** `com.intrihub.app`
 * **Signing Keystore:** `intrihub-mobile/android/app/intrihub-release-key.keystore`
 * **Key Alias:** `intrihub-key-alias`
-* **Build Date:** October 07, 2026
+* **Build Date:** October 08, 2026
 
 ### Release Notes (Play Console):
 #### English (en-US):
 ```text
-• 13 Indian Languages: Now supports 13 regional languages with instant search & switcher.
-• Faster Onboarding: Removed extra popups for direct 1-tap catalog browsing.
-• New Official Slogan: "Every Material. Every Space."
-• Performance Boost: Faster app launch and smoother experience on Android 15.
+• Google Play Photo Picker Compliance: Switched to native Android Photo Picker with zero broad media permissions.
+• Streamlined Sign-In: Smoother authentication and password login flow.
+• 13 Indian Languages: Full regional language support with instant search & switcher.
+• Performance & Stability: Enhanced loading times and Android 15 compatibility.
 ```
 
 #### Hindi (hi-IN):
 ```text
-• 13 भारतीय भाषाओं का सपोर्ट: अब IntriHub आपकी भाषा में! हिंदी, कन्नड़, तमिल, तेलुगु, मलयालम, मराठी, बंगाली, गुजराती, पंजाबी, उर्दू, ओडिया, असमिया और अंग्रेजी में से चुनें।
-• सुपरफास्ट भाषा चयन: सर्च बार के साथ अपनी पसंदीदा भाषा चुनें और किसी भी समय प्रोफाइल सेटिंग्स से बदलें।
-• आसान व त्वरित शुरुआत: अनावश्यक पॉपअप हटाए गए, सीधे कैटलॉग में 1-टैप प्रवेश।
-• नया आधिकारिक स्लोगन: "Every Material. Every Space." पूरे ऐप में अपडेट।
-• बेहतर स्पीड और परफॉर्मेंस: ऐप लोडिंग गति में सुधार और Android 15 के लिए ऑप्टिमाइज़्ड।
-```
-
-#### Kannada (kn-IN):
-```text
-• 13 ಭಾರತೀಯ ಭಾಷೆಗಳ ಬೆಂಬಲ: ಈಗ IntriHub ನಿಮ್ಮ ಭಾಷೆಯಲ್ಲಿದೆ! ಕನ್ನಡ, ಹಿಂದಿ, ಇಂಗ್ಲಿಷ್, ತಮಿಳು, ತೆಲುಗು, ಮಲಯಾಳಂ, ಮರಾಠಿ, ಬಂಗಾಳಿ, ಗುಜರಾತಿ, ಪಂಜಾಬಿ, ಉರ್ದು, ಒಡಿಯಾ ಮತ್ತು ಅಸ್ಸಾಮಿ ಭಾಷೆಗಳಲ್ಲಿ ಲಭ್ಯ.
-• ತ್ವರಿತ ಭಾಷಾ ಆಯ್ಕೆ: ಹುಡುಕಾಟ ಬಾರ್‌ನೊಂದಿಗೆ ನಿಮ್ಮ ಮೆಚ್ಚಿನ ಭಾಷೆಯನ್ನು ಸುಲಭವಾಗಿ ಆರಿಸಿ.
-• ತಡೆರಹಿತ ಆರಂಭ: ಅನಗತ್ಯ ಪಾಪ್-ಅಪ್‌ಗಳನ್ನು ತೆಗೆದುಹಾಕಲಾಗಿದೆ, ನೇರವಾಗಿ ಉತ್ಪನ್ನಗಳನ್ನು ಬ್ರೌಸ್ ಮಾಡಿ.
-• ಹೊಸ ಬ್ರ್ಯಾಂಡ್ ಸ್ಲೋಗನ್: "Every Material. Every Space." ಅಪ್ಲಿಕೇಶನ್‌ನಾದ್ಯಂತ ಅಪ್‌ಡೇಟ್ ಮಾಡಲಾಗಿದೆ.
-• ವೇಗದ ಕಾರ್ಯಕ್ಷಮತೆ: ಆಂಡ್ರಾಯ್ಡ್ 15 ಹೊಂದಾಣಿಕೆ ಮತ್ತು ತ್ವರಿತ ಲೋಡಿಂಗ್ ವೇಗ.
+• गूगल प्ले फोटो पिकर अनुपालन: सुरक्षित और निर्बाध मीडिया चयन के लिए नेटिव एंड्रॉयड फोटो पिकर।
+• आसान लॉगिन: सुव्यवस्थित पासवर्ड और प्रमाणीकरण अनुभव।
+• 13 भारतीय भाषाओं का सपोर्ट: हिंदी, कन्नड़, तमिल, तेलुगु और अन्य क्षेत्रीय भाषाओं में उपलब्ध।
+• बेहतर स्पीड और परफॉर्मेंस: ऐप लोडिंग में सुधार और Android 15 अनुकूलन।
 ```
 
 ---
 
-## 2. 💼 Business / Vendor App (IntriHub Business)
-* **File Name:** `intrihub-business-release-v1.0.12-code13.aab`
-* **Full Local Path:** `d:\Intrihub\releases\intrihub-business-release-v1.0.12-code13.aab`
+## 2. 💼 Business / Vendor App (IntriHub Business) — Latest
+* **File Name:** `intrihub-business-release-v1.0.13-code14.aab`
+* **Full Local Path:** `d:\Intrihub\releases\intrihub-business-release-v1.0.13-code14.aab`
 * **Bundle Output Path:** `d:\Intrihub\intrihub-business\android\app\build\outputs\bundle\release\app-release.aab`
-* **File Size:** 81.5 MB (`81,485,471 bytes`)
-* **Version Name:** `1.0.12`
-* **Version Code:** `13`
+* **File Size:** 81.5 MB (`81,485,132 bytes`)
+* **Version Name:** `1.0.13`
+* **Version Code:** `14`
 * **Package Name:** `com.intrihub.business`
 * **Signing Keystore:** `intrihub-business/android/app/intrihub-business-release-key.keystore`
 * **Key Alias:** `intrihub-biz-alias`
-* **Build Date:** October 06, 2026
+* **Build Date:** October 08, 2026
 
 ### Release Notes (Play Console):
+#### English (en-US):
+```text
+• Google Play Photo Picker Compliance: Switched to native Android Photo Picker without requesting broad media permissions.
+• Catalog & Variant Uploads: Faster product uploads with automated multi-variant matrix generator.
+• Per-Variant Inventory Control: Set distinct pricing, SKU, and stock quantities directly from mobile.
+• Vendor Dashboard & Performance: Instant authentication, reduced memory usage, and full Android 15 support.
+```
 #### English (en-US):
 ```text
 • Unified Item & Variant Upload System: Easily create products with multiple finishes, sizes, and thicknesses using the automated matrix generator.
