@@ -296,10 +296,10 @@ async function runFeature2TestSuite() {
       cleanupOrderIds.push(`ORD-F2-PASS-${stamp}`);
       assert(orderRes.success === true, "Eligible order created successfully");
 
-      const saved = await prisma.order.findUnique({
+      const saved: any = await prisma.order.findUnique({
         where: { id: `ORD-F2-PASS-${stamp}` },
       });
-      const splits = await prisma.vendorOrderSplit.findMany({
+      const splits: any = await prisma.vendorOrderSplit.findMany({
         where: { orderId: `ORD-F2-PASS-${stamp}` },
       });
 
@@ -349,10 +349,10 @@ async function runFeature2TestSuite() {
       cleanupOrderIds.push(`ORD-F2-OFFLINE-${stamp}`);
       assert(orderRes.success === true, "Order created without error");
 
-      const saved = await prisma.order.findUnique({
+      const saved: any = await prisma.order.findUnique({
         where: { id: `ORD-F2-OFFLINE-${stamp}` },
       });
-      const splits = await prisma.vendorOrderSplit.findMany({
+      const splits: any = await prisma.vendorOrderSplit.findMany({
         where: { orderId: `ORD-F2-OFFLINE-${stamp}` },
       });
 
@@ -402,7 +402,7 @@ async function runFeature2TestSuite() {
       cleanupOrderIds.push(`ORD-F2-RADIUS-${stamp}`);
       assert(orderRes.success === true, "Order created");
 
-      const saved = await prisma.order.findUnique({
+      const saved: any = await prisma.order.findUnique({
         where: { id: `ORD-F2-RADIUS-${stamp}` },
       });
 
@@ -450,7 +450,7 @@ async function runFeature2TestSuite() {
       cleanupOrderIds.push(`ORD-F2-NO-GPS-${stamp}`);
       assert(orderRes.success === true, "Order created");
 
-      const saved = await prisma.order.findUnique({
+      const saved: any = await prisma.order.findUnique({
         where: { id: `ORD-F2-NO-GPS-${stamp}` },
       });
 
@@ -514,10 +514,10 @@ async function runFeature2TestSuite() {
       cleanupOrderIds.push(`ORD-F2-MULTI-${stamp}`);
       assert(orderRes.success === true, "Multi-vendor order created");
 
-      const saved = await prisma.order.findUnique({
+      const saved: any = await prisma.order.findUnique({
         where: { id: `ORD-F2-MULTI-${stamp}` },
       });
-      const splits = await prisma.vendorOrderSplit.findMany({
+      const splits: any = await prisma.vendorOrderSplit.findMany({
         where: { orderId: `ORD-F2-MULTI-${stamp}` },
       });
 
@@ -578,7 +578,7 @@ async function runFeature2TestSuite() {
       cleanupOrderIds.push(`ORD-F2-CODCAP-${stamp}`);
       assert(orderRes.success === true, "COD Cap order placed");
 
-      const saved = await prisma.order.findUnique({
+      const saved: any = await prisma.order.findUnique({
         where: { id: `ORD-F2-CODCAP-${stamp}` },
       });
 
@@ -644,10 +644,10 @@ async function runFeature2TestSuite() {
 
       assert(cancelRes.success === true, "Cancel order succeeded");
 
-      const saved = await prisma.order.findUnique({
+      const saved: any = await prisma.order.findUnique({
         where: { id: `ORD-F2-CANCEL-${stamp}` },
       });
-      const splits = await prisma.vendorOrderSplit.findMany({
+      const splits: any = await prisma.vendorOrderSplit.findMany({
         where: { orderId: `ORD-F2-CANCEL-${stamp}` },
       });
 
@@ -667,7 +667,7 @@ async function runFeature2TestSuite() {
     // -------------------------------------------------------------------------
     console.log("\n--- 11. Testing Cancellation After Window Expiry Blocked ---");
     {
-      const order = await prisma.order.create({
+      const order: any = await prisma.order.create({
         data: {
           id: `ORD-F2-EXPIRED-${stamp}`,
           customerName: "Late Customer",
@@ -753,7 +753,7 @@ async function runFeature2TestSuite() {
 
       cleanupOrderIds.push(`ORD-F2-REJECT-${stamp}`);
 
-      const splits = await prisma.vendorOrderSplit.findMany({
+      const splits: any = await prisma.vendorOrderSplit.findMany({
         where: { orderId: `ORD-F2-REJECT-${stamp}` },
       });
 
@@ -768,13 +768,13 @@ async function runFeature2TestSuite() {
 
       assert(rejectRes.success === true, "Vendor reject succeeded");
 
-      const updatedSplit = await prisma.vendorOrderSplit.findUnique({
+      const updatedSplit: any = await prisma.vendorOrderSplit.findUnique({
         where: { id: splitId },
       });
       assert(updatedSplit?.fulfillmentStatus === "cancelled", "Split fulfillmentStatus is 'cancelled'");
       assert(updatedSplit?.cancelledBy === "vendor", "Split cancelledBy is 'vendor'");
 
-      const updatedOrder = await prisma.order.findUnique({
+      const updatedOrder: any = await prisma.order.findUnique({
         where: { id: `ORD-F2-REJECT-${stamp}` },
       });
       assert(updatedOrder?.orderStatus === "Cancelled", "Parent order updated to 'Cancelled'");
@@ -791,11 +791,11 @@ async function runFeature2TestSuite() {
         data: { lastHeartbeatAt: now },
       });
 
-      const fetched = await prisma.vendor.findUnique({
+      const fetched: any = await prisma.vendor.findUnique({
         where: { id: vendorEligible.id },
       });
 
-      const diffMs = Date.now() - new Date(fetched!.lastHeartbeatAt!).getTime();
+      const diffMs = Date.now() - new Date((fetched as any)?.lastHeartbeatAt || 0).getTime();
       const isThrottled = diffMs < 20 * 1000;
 
       assert(isThrottled === true, "Immediate successive heartbeat recognized as throttled (<20s)");
