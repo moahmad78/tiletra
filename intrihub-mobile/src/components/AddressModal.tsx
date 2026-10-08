@@ -424,7 +424,7 @@ export const AddressModal: React.FC<AddressModalProps> = ({ visible, onClose, on
       if (detected.latitude && detected.longitude) {
         setLatitude(detected.latitude);
         setLongitude(detected.longitude);
-        setAccuracy(detected.accuracy ?? null);
+        setAccuracy((detected as any).accuracy ?? null);
         setSource("GPS");
       }
 
@@ -1103,7 +1103,7 @@ export const AddressModal: React.FC<AddressModalProps> = ({ visible, onClose, on
           if (loc.latitude && loc.longitude) {
             setLatitude(loc.latitude);
             setLongitude(loc.longitude);
-            setAccuracy(loc.accuracy ?? null);
+            setAccuracy((loc as any).accuracy ?? null);
             setSource("MAP_PIN");
           }
           if (loc.street) setStreet(loc.street);

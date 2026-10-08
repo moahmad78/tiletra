@@ -1,187 +1,62 @@
-import React, { useEffect, useState, useCallback, useRef } from "react";
+import React from "react";
 import {
   View,
   Text,
   Modal,
   StyleSheet,
   TouchableOpacity,
-  Linking,
-  Platform,
-  AppState,
-  AppStateStatus,
   ScrollView,
 } from "react-native";
-import Constants, { ExecutionEnvironment } from "expo-constants";
-import AsyncStorage from "@react-native-async-storage/async-storage";
-import { DownloadCloud, ArrowUpCircle, CheckCircle2, X } from "lucide-react-native";
-import { apiClient } from "../api/client";
-import { APP_VERSION, APP_VERSION_CODE, PACKAGE_NAME } from "../constants/config";
-import { COLORS } from "../constants/theme";
-
-const STORAGE_KEY_LAST_NOTIFIED_VERSION = "intrihub_last_notified_update_version_code";
-const STORAGE_KEY_DISMISSED_UNTIL = "intrihub_update_dismissed_until";
-
-interface UpdateConfig {
-  updateAvailable: boolean;
-  forceUpdate: boolean;
-  latestVersion: string;
-  latestVersionCode: number;
-  title: string;
-  message: string;
-  releaseNotes: string[];
-  storeUrl: string;
-  webUrl: string;
-}
+import { DownloadCloud, ArrowUpCircle, CheckCircle2, X, AlertTriangle } from "lucide-react-native";
+import { useAppUpdateCheck } from "../hooks/useAppUpdateCheck";
+import { APP_VERSION } from "../constants/config";
 
 export default function AppUpdateModal() {
-  const [modalVisible, setModalVisible] = useState(false);
-  const [updateInfo, setUpdateInfo] = useState<UpdateConfig | null>(null);
-  const isCheckingRef = useRef(false);
-
-  const checkVersion = useCallback(async () => {
-    if (isCheckingRef.current || Platform.OS === "web") return;
-    isCheckingRef.current = true;
-
-    try {
-      const res = await apiClient.get<UpdateConfig>("/api/mobile/version-check", {
-        params: {
-          app: "customer",
-          currentVersionCode: APP_VERSION_CODE,
-        },
-        timeout: 8000,
-      });
-
-      if (!res.data || !res.data.updateAvailable) {
-        setModalVisible(false);
-        return;
-      }
-
-      const info = res.data;
-      setUpdateInfo(info);
-
-      // Check if this update was dismissed temporarily by the user
-      if (!info.forceUpdate) {
-        const dismissedUntil = await AsyncStorage.getItem(STORAGE_KEY_DISMISSED_UNTIL);
-        if (dismissedUntil && Date.now() < parseInt(dismissedUntil, 10)) {
-          // Temporarily suppressed for a few hours
-          return;
-        }
-      }
-
-      // Show in-app update popup
-      setModalVisible(true);
-
-      // Trigger local push notification if not notified for this version yet
-      const lastNotifiedCode = await AsyncStorage.getItem(STORAGE_KEY_LAST_NOTIFIED_VERSION);
-      const isExpoGo =
-        Constants.appOwnership === "expo" ||
-        Constants.executionEnvironment === ExecutionEnvironment.StoreClient;
-
-      if (lastNotifiedCode !== String(info.latestVersionCode) && !isExpoGo && (Platform.OS as string) !== "web") {
-        try {
-          const Notifications = require("expo-notifications");
-          await Notifications.scheduleNotificationAsync({
-            content: {
-              title: info.title || "🚀 Update Available!",
-              body:
-                info.message ||
-                `IntriHub v${info.latestVersion} is now available with new features. Tap to update!`,
-              data: {
-                type: "app_update",
-                storeUrl: info.storeUrl || `market://details?id=${PACKAGE_NAME}`,
-                webUrl: info.webUrl,
-                latestVersion: info.latestVersion,
-              },
-              sound: true,
-              priority: Notifications.AndroidNotificationPriority.HIGH,
-            },
-            trigger: null, // deliver immediately
-          });
-
-          await AsyncStorage.setItem(
-            STORAGE_KEY_LAST_NOTIFIED_VERSION,
-            String(info.latestVersionCode)
-          );
-        } catch (notifErr) {
-          console.warn("[AppUpdateModal] Local notification error:", notifErr);
-        }
-      }
-    } catch (e) {
-      // Gracefully ignore network errors on version check
-    } finally {
-      isCheckingRef.current = false;
-    }
-  }, []);
-
-  useEffect(() => {
-    // Initial check on mount
-    checkVersion();
-
-    // Check again whenever the user brings the app back to foreground
-    const subscription = AppState.addEventListener("change", (nextState: AppStateStatus) => {
-      if (nextState === "active") {
-        checkVersion();
-      }
-    });
-
-    return () => {
-      subscription.remove();
-    };
-  }, [checkVersion]);
-
-  const handleUpdatePress = async () => {
-    if (!updateInfo) return;
-    const storeUrl = updateInfo.storeUrl || `market://details?id=${PACKAGE_NAME}`;
-    const webUrl =
-      updateInfo.webUrl || `https://play.google.com/store/apps/details?id=${PACKAGE_NAME}`;
-
-    try {
-      const supported = await Linking.canOpenURL(storeUrl);
-      if (supported) {
-        await Linking.openURL(storeUrl);
-      } else {
-        await Linking.openURL(webUrl);
-      }
-    } catch {
-      await Linking.openURL(webUrl).catch(() => {});
-    }
-  };
-
-  const handleDismiss = async () => {
-    if (updateInfo?.forceUpdate) return;
-    // Dismiss for 4 hours
-    const fourHoursLater = Date.now() + 4 * 60 * 60 * 1000;
-    await AsyncStorage.setItem(STORAGE_KEY_DISMISSED_UNTIL, String(fourHoursLater));
-    setModalVisible(false);
-  };
+  const {
+    modalVisible,
+    updateInfo,
+    handleUpdatePress,
+    handleLaterPress,
+  } = useAppUpdateCheck({
+    app: "customer",
+    installedVersion: APP_VERSION,
+  });
 
   if (!modalVisible || !updateInfo) return null;
+
+  const isForce = updateInfo.isForceUpdate;
 
   return (
     <Modal
       visible={modalVisible}
-      transparent
+      transparent={!isForce}
       animationType="fade"
-      onRequestClose={updateInfo.forceUpdate ? () => {} : handleDismiss}
+      onRequestClose={isForce ? () => {} : handleLaterPress}
       statusBarTranslucent
     >
-      <View style={styles.overlay}>
-        <View style={styles.card}>
+      <View style={[styles.overlay, isForce && styles.forceOverlay]}>
+        <View style={[styles.card, isForce && styles.forceCard]}>
           {/* Header Icon / Badge */}
           <View style={styles.badgeWrapper}>
-            <View style={styles.badgeCircle}>
-              <ArrowUpCircle size={36} color="#FFFFFF" strokeWidth={2.2} />
+            <View style={[styles.badgeCircle, isForce && styles.forceBadgeCircle]}>
+              {isForce ? (
+                <AlertTriangle size={36} color="#FFFFFF" strokeWidth={2.4} />
+              ) : (
+                <ArrowUpCircle size={36} color="#FFFFFF" strokeWidth={2.2} />
+              )}
             </View>
-            <View style={styles.sparkleIcon}>
-              <CheckCircle2 size={16} color="#10B981" strokeWidth={2.2} />
-            </View>
+            {!isForce && (
+              <View style={styles.sparkleIcon}>
+                <CheckCircle2 size={16} color="#10B981" strokeWidth={2.2} />
+              </View>
+            )}
           </View>
 
-          {/* Close button if not forced */}
-          {!updateInfo.forceUpdate && (
+          {/* Close button ONLY if NOT force update */}
+          {!isForce && (
             <TouchableOpacity
               style={styles.closeBtn}
-              onPress={handleDismiss}
+              onPress={handleLaterPress}
               activeOpacity={0.7}
               hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
             >
@@ -190,19 +65,26 @@ export default function AppUpdateModal() {
           )}
 
           {/* Title & Version Tag */}
-          <Text style={styles.title}>{updateInfo.title || "New Update Available!"}</Text>
+          <Text style={styles.title}>
+            {isForce ? "Update Required" : updateInfo.title || "New Update Available!"}
+          </Text>
+
           <View style={styles.versionTagContainer}>
             <Text style={styles.currentVersionText}>Current: v{APP_VERSION}</Text>
             <Text style={styles.versionArrow}>→</Text>
-            <View style={styles.newVersionBadge}>
-              <Text style={styles.newVersionText}>Latest: v{updateInfo.latestVersion}</Text>
+            <View style={[styles.newVersionBadge, isForce && styles.forceVersionBadge]}>
+              <Text style={[styles.newVersionText, isForce && styles.forceVersionText]}>
+                Latest: v{updateInfo.latestVersion}
+              </Text>
             </View>
           </View>
 
           {/* Description */}
           <Text style={styles.message}>
-            {updateInfo.message ||
-              "A brand new version of IntriHub is ready with speed improvements, smoother checkout, and new features."}
+            {isForce
+              ? "This version of IntriHub is deprecated and no longer supported. Please update now to continue ordering materials."
+              : updateInfo.message ||
+                "A brand new version of IntriHub is ready with speed improvements, smoother checkout, and new features."}
           </Text>
 
           {/* Release Notes */}
@@ -227,21 +109,23 @@ export default function AppUpdateModal() {
           {/* Actions */}
           <View style={styles.actionsContainer}>
             <TouchableOpacity
-              style={styles.updateBtn}
+              style={[styles.updateBtn, isForce && styles.forceUpdateBtn]}
               onPress={handleUpdatePress}
               activeOpacity={0.88}
             >
               <DownloadCloud size={20} color="#FFFFFF" strokeWidth={2.4} />
-              <Text style={styles.updateBtnText}>Update Now</Text>
+              <Text style={styles.updateBtnText}>
+                {isForce ? "Update Now" : "Update Now"}
+              </Text>
             </TouchableOpacity>
 
-            {!updateInfo.forceUpdate && (
+            {!isForce && (
               <TouchableOpacity
                 style={styles.laterBtn}
-                onPress={handleDismiss}
+                onPress={handleLaterPress}
                 activeOpacity={0.7}
               >
-                <Text style={styles.laterBtnText}>Maybe Later</Text>
+                <Text style={styles.laterBtnText}>Later</Text>
               </TouchableOpacity>
             )}
           </View>
@@ -254,10 +138,14 @@ export default function AppUpdateModal() {
 const styles = StyleSheet.create({
   overlay: {
     flex: 1,
-    backgroundColor: "rgba(5, 15, 30, 0.75)",
+    backgroundColor: "rgba(5, 15, 30, 0.78)",
     justifyContent: "center",
     alignItems: "center",
     paddingHorizontal: 24,
+  },
+  forceOverlay: {
+    backgroundColor: "#051A33",
+    paddingHorizontal: 20,
   },
   card: {
     width: "100%",
@@ -274,6 +162,13 @@ const styles = StyleSheet.create({
     shadowRadius: 28,
     elevation: 20,
     position: "relative",
+  },
+  forceCard: {
+    maxWidth: 420,
+    paddingTop: 36,
+    paddingBottom: 32,
+    borderWidth: 1.5,
+    borderColor: "#E2E8F0",
   },
   closeBtn: {
     position: "absolute",
@@ -302,6 +197,10 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.35,
     shadowRadius: 14,
     elevation: 10,
+  },
+  forceBadgeCircle: {
+    backgroundColor: "#DC2626",
+    shadowColor: "#DC2626",
   },
   sparkleIcon: {
     position: "absolute",
@@ -342,10 +241,17 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: "#BFDBFE",
   },
+  forceVersionBadge: {
+    backgroundColor: "#FEF2F2",
+    borderColor: "#FECACA",
+  },
   newVersionText: {
     fontSize: 12,
     fontFamily: "PlusJakartaSans_600SemiBold",
     color: "#1D4ED8",
+  },
+  forceVersionText: {
+    color: "#DC2626",
   },
   message: {
     fontSize: 13,
@@ -409,6 +315,11 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.3,
     shadowRadius: 10,
     elevation: 6,
+  },
+  forceUpdateBtn: {
+    backgroundColor: "#DC2626",
+    shadowColor: "#DC2626",
+    height: 52,
   },
   updateBtnText: {
     fontSize: 15,

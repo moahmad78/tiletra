@@ -12,6 +12,10 @@ import {
   Trash2,
   RotateCcw,
   Check,
+  Smartphone,
+  DownloadCloud,
+  AlertCircle,
+  ExternalLink,
 } from "lucide-react";
 import {
   getStoreSettings,
@@ -19,6 +23,12 @@ import {
   getStoreDeliverySlotsConfig,
   updateStoreDeliverySlotsConfig,
 } from "@/lib/actions/settings";
+import {
+  DEFAULT_APP_VERSION_SETTINGS,
+  type AppVersionSettings,
+  isValidSemver,
+  compareSemver,
+} from "@/lib/semver";
 import {
   DEFAULT_DELIVERY_SLOTS,
   MASTER_DELIVERY_SLOTS,
@@ -47,6 +57,10 @@ export default function AdminSettingsPage() {
   const [codEnabled, setCodEnabled] = useState(true);
   const [codMaxLimit, setCodMaxLimit] = useState(25000);
   const [codBlockedPincodes, setCodBlockedPincodes] = useState("560099, 560088");
+
+  // Mobile App Governance & Website Install Prompt
+  const [appInstallPromptEnabled, setAppInstallPromptEnabled] = useState(true);
+  const [versionConfig, setVersionConfig] = useState<AppVersionSettings>(DEFAULT_APP_VERSION_SETTINGS);
 
   // Delivery Slots Management State (Default Morning Starts at 10:00 AM)
   const [deliverySlots, setDeliverySlots] = useState<DeliverySlotDefinition[]>(DEFAULT_DELIVERY_SLOTS);
@@ -79,6 +93,19 @@ export default function AdminSettingsPage() {
           setCodEnabled(s.codEnabled);
           setCodMaxLimit(s.codMaxLimit);
           setCodBlockedPincodes((s.codBlockedPincodes || []).join(", "));
+          setAppInstallPromptEnabled(s.appInstallPromptEnabled !== false);
+          if (s.appVersionConfig) {
+            setVersionConfig({
+              customer: {
+                android: { ...DEFAULT_APP_VERSION_SETTINGS.customer.android, ...(s.appVersionConfig.customer?.android || {}) },
+                ios: { ...DEFAULT_APP_VERSION_SETTINGS.customer.ios, ...(s.appVersionConfig.customer?.ios || {}) },
+              },
+              business: {
+                android: { ...DEFAULT_APP_VERSION_SETTINGS.business.android, ...(s.appVersionConfig.business?.android || {}) },
+                ios: { ...DEFAULT_APP_VERSION_SETTINGS.business.ios, ...(s.appVersionConfig.business?.ios || {}) },
+              },
+            });
+          }
         }
         if (slotsConfig?.activeSlots && slotsConfig.activeSlots.length > 0) {
           setDeliverySlots(slotsConfig.activeSlots);
@@ -159,6 +186,34 @@ export default function AdminSettingsPage() {
 
   const handleSave = async (e: React.FormEvent) => {
     e.preventDefault();
+
+    // 1. Validate version policies across Customer and Vendor apps
+    const appsToValidate: Array<{ name: string; config: any }> = [
+      { name: "Customer App (Android)", config: versionConfig.customer.android },
+      { name: "Customer App (iOS)", config: versionConfig.customer.ios },
+      { name: "Vendor App (Android)", config: versionConfig.business.android },
+      { name: "Vendor App (iOS)", config: versionConfig.business.ios },
+    ];
+
+    for (const item of appsToValidate) {
+      if (!isValidSemver(item.config.latestVersion)) {
+        toast.error(`Invalid Latest Version "${item.config.latestVersion}" for ${item.name}. Format must be X.Y or X.Y.Z (e.g. 1.2.5).`);
+        return;
+      }
+      if (!isValidSemver(item.config.minSupportedVersion)) {
+        toast.error(`Invalid Min Supported Version "${item.config.minSupportedVersion}" for ${item.name}. Format must be X.Y or X.Y.Z (e.g. 1.2.0).`);
+        return;
+      }
+      if (compareSemver(item.config.minSupportedVersion, item.config.latestVersion) > 0) {
+        toast.error(`Min Supported Version (${item.config.minSupportedVersion}) cannot exceed Latest Version (${item.config.latestVersion}) for ${item.name}.`);
+        return;
+      }
+      if (!item.config.storeUrl || !/^https?:\/\//i.test(item.config.storeUrl.trim())) {
+        toast.error(`Invalid Store URL for ${item.name}. Must start with http:// or https://`);
+        return;
+      }
+    }
+
     setSaving(true);
     const blockedPincodesArray = codBlockedPincodes
       .split(",")
@@ -182,11 +237,13 @@ export default function AdminSettingsPage() {
       codEnabled,
       codMaxLimit: Number(codMaxLimit),
       codBlockedPincodes: blockedPincodesArray,
+      appInstallPromptEnabled,
+      appVersionConfig: versionConfig,
     });
     setSaving(false);
 
     if (res.success) {
-      toast.success("Store settings, GST & delivery charges updated successfully!");
+      toast.success("Store settings, version policies & install prompt updated successfully!");
     } else {
       toast.error(res.error || "Failed to update settings");
     }
@@ -773,6 +830,326 @@ export default function AdminSettingsPage() {
               <p className="text-[10px] text-gray-400 mt-1">
                 Pincodes where delivery partners do not support cash collection.
               </p>
+            </div>
+          </div>
+        </div>
+
+        {/* ── Section 4: Website Smart App Install Prompt ── */}
+        <div className="bg-white p-6 rounded-2xl border border-gray-200/80 shadow-2xs space-y-4">
+          <div className="flex items-center justify-between pb-2 border-b border-gray-100">
+            <div className="flex items-center gap-2">
+              <DownloadCloud size={18} className="text-[#F26522]" />
+              <div>
+                <h3 className="text-base font-black text-[#052a51]">Smart App Install Prompt (Website Android)</h3>
+                <p className="text-xs text-gray-500 mt-0.5">
+                  Controls the bottom floating prompt on mobile Android browsers. Opens app via intent link or Google Play.
+                </p>
+              </div>
+            </div>
+
+            <label className="flex items-center gap-2 cursor-pointer">
+              <span className="text-xs font-bold text-gray-600">Enable Prompt</span>
+              <input
+                type="checkbox"
+                checked={appInstallPromptEnabled}
+                onChange={(e) => setAppInstallPromptEnabled(e.target.checked)}
+                className="w-4 h-4 accent-[#F26522] rounded cursor-pointer"
+              />
+            </label>
+          </div>
+          <p className="text-[11px] text-gray-500">
+            When enabled, mobile Android visitors without the app or PWA will see the prompt after a short delay or on second page view. Hides for 7 days when dismissed.
+          </p>
+        </div>
+
+        {/* ── Section 5: Mobile App Version Policies (Customer & Vendor Apps) ── */}
+        <div className="bg-white p-6 rounded-2xl border border-gray-200/80 shadow-2xs space-y-6">
+          <div className="pb-2 border-b border-gray-100">
+            <div className="flex items-center gap-2">
+              <Smartphone size={18} className="text-[#F26522]" />
+              <div>
+                <h3 className="text-base font-black text-[#052a51]">Mobile App Version Governance</h3>
+                <p className="text-xs text-gray-500 mt-0.5">
+                  Manage live versions and enforce force update barriers on Google Play Store & Apple App Store.
+                </p>
+              </div>
+            </div>
+          </div>
+
+          {/* Customer App Settings */}
+          <div className="space-y-4 border border-blue-100 bg-blue-50/30 p-4.5 rounded-2xl">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                <span className="w-2.5 h-2.5 rounded-full bg-blue-600" />
+                <h4 className="text-sm font-black text-[#052a51]">Customer App (IntriHub)</h4>
+                <span className="text-[10px] font-mono bg-blue-100 text-blue-800 px-2 py-0.5 rounded-md font-bold">
+                  com.intrihub.app
+                </span>
+              </div>
+            </div>
+
+            {/* Android Customer */}
+            <div className="space-y-3 bg-white p-4 rounded-xl border border-gray-200/70">
+              <h5 className="text-xs font-black text-emerald-700 uppercase tracking-wider flex items-center gap-1.5">
+                <span>🤖 Android (Google Play)</span>
+              </h5>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                <div>
+                  <label className="text-[11px] font-bold text-gray-700 block mb-1">
+                    Latest Version (SemVer, e.g. 1.2.5)
+                  </label>
+                  <input
+                    type="text"
+                    value={versionConfig.customer.android.latestVersion}
+                    onChange={(e) =>
+                      setVersionConfig((prev) => ({
+                        ...prev,
+                        customer: {
+                          ...prev.customer,
+                          android: { ...prev.customer.android, latestVersion: e.target.value.trim() },
+                        },
+                      }))
+                    }
+                    className="w-full px-3 py-2 bg-gray-50 border border-gray-200 rounded-lg text-xs font-bold text-[#052a51] focus:outline-none focus:border-[#F26522]"
+                    placeholder="1.2.5"
+                  />
+                  <p className="text-[10px] text-gray-400 mt-0.5">Triggers soft update popup if user version &lt; latest.</p>
+                </div>
+                <div>
+                  <label className="text-[11px] font-bold text-gray-700 block mb-1">
+                    Min Supported Version (Force Update Wall)
+                  </label>
+                  <input
+                    type="text"
+                    value={versionConfig.customer.android.minSupportedVersion}
+                    onChange={(e) =>
+                      setVersionConfig((prev) => ({
+                        ...prev,
+                        customer: {
+                          ...prev.customer,
+                          android: { ...prev.customer.android, minSupportedVersion: e.target.value.trim() },
+                        },
+                      }))
+                    }
+                    className="w-full px-3 py-2 bg-gray-50 border border-gray-200 rounded-lg text-xs font-bold text-[#052a51] focus:outline-none focus:border-[#F26522]"
+                    placeholder="1.2.0"
+                  />
+                  <p className="text-[10px] text-gray-400 mt-0.5">Blocks app if user version &lt; min supported.</p>
+                </div>
+              </div>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-1">
+                <div>
+                  <label className="text-[11px] font-bold text-gray-700 block mb-1">Play Store URL</label>
+                  <input
+                    type="text"
+                    value={versionConfig.customer.android.storeUrl}
+                    onChange={(e) =>
+                      setVersionConfig((prev) => ({
+                        ...prev,
+                        customer: {
+                          ...prev.customer,
+                          android: { ...prev.customer.android, storeUrl: e.target.value.trim() },
+                        },
+                      }))
+                    }
+                    className="w-full px-3 py-2 bg-gray-50 border border-gray-200 rounded-lg text-xs text-[#052a51] focus:outline-none focus:border-[#F26522]"
+                  />
+                </div>
+                <div>
+                  <label className="text-[11px] font-bold text-gray-700 block mb-1">Update Message</label>
+                  <input
+                    type="text"
+                    value={versionConfig.customer.android.message || ""}
+                    onChange={(e) =>
+                      setVersionConfig((prev) => ({
+                        ...prev,
+                        customer: {
+                          ...prev.customer,
+                          android: { ...prev.customer.android, message: e.target.value },
+                        },
+                      }))
+                    }
+                    className="w-full px-3 py-2 bg-gray-50 border border-gray-200 rounded-lg text-xs text-[#052a51] focus:outline-none focus:border-[#F26522]"
+                    placeholder="A fresh update of IntriHub is here..."
+                  />
+                </div>
+              </div>
+            </div>
+
+            {/* iOS Customer */}
+            <div className="space-y-3 bg-white p-4 rounded-xl border border-gray-200/70">
+              <h5 className="text-xs font-black text-slate-700 uppercase tracking-wider flex items-center gap-1.5">
+                <span>🍎 iOS (Apple App Store)</span>
+              </h5>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                <div>
+                  <label className="text-[11px] font-bold text-gray-700 block mb-1">Latest Version</label>
+                  <input
+                    type="text"
+                    value={versionConfig.customer.ios.latestVersion}
+                    onChange={(e) =>
+                      setVersionConfig((prev) => ({
+                        ...prev,
+                        customer: {
+                          ...prev.customer,
+                          ios: { ...prev.customer.ios, latestVersion: e.target.value.trim() },
+                        },
+                      }))
+                    }
+                    className="w-full px-3 py-2 bg-gray-50 border border-gray-200 rounded-lg text-xs font-bold text-[#052a51] focus:outline-none focus:border-[#F26522]"
+                    placeholder="1.2.5"
+                  />
+                </div>
+                <div>
+                  <label className="text-[11px] font-bold text-gray-700 block mb-1">Min Supported Version</label>
+                  <input
+                    type="text"
+                    value={versionConfig.customer.ios.minSupportedVersion}
+                    onChange={(e) =>
+                      setVersionConfig((prev) => ({
+                        ...prev,
+                        customer: {
+                          ...prev.customer,
+                          ios: { ...prev.customer.ios, minSupportedVersion: e.target.value.trim() },
+                        },
+                      }))
+                    }
+                    className="w-full px-3 py-2 bg-gray-50 border border-gray-200 rounded-lg text-xs font-bold text-[#052a51] focus:outline-none focus:border-[#F26522]"
+                    placeholder="1.2.0"
+                  />
+                </div>
+              </div>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-1">
+                <div>
+                  <label className="text-[11px] font-bold text-gray-700 block mb-1">App Store URL</label>
+                  <input
+                    type="text"
+                    value={versionConfig.customer.ios.storeUrl}
+                    onChange={(e) =>
+                      setVersionConfig((prev) => ({
+                        ...prev,
+                        customer: {
+                          ...prev.customer,
+                          ios: { ...prev.customer.ios, storeUrl: e.target.value.trim() },
+                        },
+                      }))
+                    }
+                    className="w-full px-3 py-2 bg-gray-50 border border-gray-200 rounded-lg text-xs text-[#052a51] focus:outline-none focus:border-[#F26522]"
+                  />
+                </div>
+                <div>
+                  <label className="text-[11px] font-bold text-gray-700 block mb-1">Update Message</label>
+                  <input
+                    type="text"
+                    value={versionConfig.customer.ios.message || ""}
+                    onChange={(e) =>
+                      setVersionConfig((prev) => ({
+                        ...prev,
+                        customer: {
+                          ...prev.customer,
+                          ios: { ...prev.customer.ios, message: e.target.value },
+                        },
+                      }))
+                    }
+                    className="w-full px-3 py-2 bg-gray-50 border border-gray-200 rounded-lg text-xs text-[#052a51] focus:outline-none focus:border-[#F26522]"
+                  />
+                </div>
+              </div>
+            </div>
+          </div>
+
+          {/* Vendor App Settings */}
+          <div className="space-y-4 border border-amber-100 bg-amber-50/30 p-4.5 rounded-2xl">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                <span className="w-2.5 h-2.5 rounded-full bg-amber-600" />
+                <h4 className="text-sm font-black text-[#052a51]">Vendor App (Intrihub Business)</h4>
+                <span className="text-[10px] font-mono bg-amber-100 text-amber-900 px-2 py-0.5 rounded-md font-bold">
+                  com.intrihub.business
+                </span>
+              </div>
+            </div>
+
+            {/* Android Vendor */}
+            <div className="space-y-3 bg-white p-4 rounded-xl border border-gray-200/70">
+              <h5 className="text-xs font-black text-emerald-700 uppercase tracking-wider flex items-center gap-1.5">
+                <span>🤖 Android (Google Play)</span>
+              </h5>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                <div>
+                  <label className="text-[11px] font-bold text-gray-700 block mb-1">Latest Version</label>
+                  <input
+                    type="text"
+                    value={versionConfig.business.android.latestVersion}
+                    onChange={(e) =>
+                      setVersionConfig((prev) => ({
+                        ...prev,
+                        business: {
+                          ...prev.business,
+                          android: { ...prev.business.android, latestVersion: e.target.value.trim() },
+                        },
+                      }))
+                    }
+                    className="w-full px-3 py-2 bg-gray-50 border border-gray-200 rounded-lg text-xs font-bold text-[#052a51] focus:outline-none focus:border-[#F26522]"
+                    placeholder="1.0.13"
+                  />
+                </div>
+                <div>
+                  <label className="text-[11px] font-bold text-gray-700 block mb-1">Min Supported Version</label>
+                  <input
+                    type="text"
+                    value={versionConfig.business.android.minSupportedVersion}
+                    onChange={(e) =>
+                      setVersionConfig((prev) => ({
+                        ...prev,
+                        business: {
+                          ...prev.business,
+                          android: { ...prev.business.android, minSupportedVersion: e.target.value.trim() },
+                        },
+                      }))
+                    }
+                    className="w-full px-3 py-2 bg-gray-50 border border-gray-200 rounded-lg text-xs font-bold text-[#052a51] focus:outline-none focus:border-[#F26522]"
+                    placeholder="1.0.10"
+                  />
+                </div>
+              </div>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-1">
+                <div>
+                  <label className="text-[11px] font-bold text-gray-700 block mb-1">Play Store URL</label>
+                  <input
+                    type="text"
+                    value={versionConfig.business.android.storeUrl}
+                    onChange={(e) =>
+                      setVersionConfig((prev) => ({
+                        ...prev,
+                        business: {
+                          ...prev.business,
+                          android: { ...prev.business.android, storeUrl: e.target.value.trim() },
+                        },
+                      }))
+                    }
+                    className="w-full px-3 py-2 bg-gray-50 border border-gray-200 rounded-lg text-xs text-[#052a51] focus:outline-none focus:border-[#F26522]"
+                  />
+                </div>
+                <div>
+                  <label className="text-[11px] font-bold text-gray-700 block mb-1">Update Message</label>
+                  <input
+                    type="text"
+                    value={versionConfig.business.android.message || ""}
+                    onChange={(e) =>
+                      setVersionConfig((prev) => ({
+                        ...prev,
+                        business: {
+                          ...prev.business,
+                          android: { ...prev.business.android, message: e.target.value },
+                        },
+                      }))
+                    }
+                    className="w-full px-3 py-2 bg-gray-50 border border-gray-200 rounded-lg text-xs text-[#052a51] focus:outline-none focus:border-[#F26522]"
+                    placeholder="Update Intrihub Business for instant order chimes..."
+                  />
+                </div>
+              </div>
             </div>
           </div>
         </div>

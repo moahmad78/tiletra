@@ -530,7 +530,6 @@ export default function IntrihubHelpAutobotDesk({ onLogout }: IntrihubHelpAutobo
   const handleCloseInstallModal = () => {
     setShowInstallModal(false);
     localStorage.setItem("intrihub_helpdesk_app_dismissed", "true");
-    localStorage.setItem("intrihub_pwa_dismissed", "true");
   };
 
   const handleDownloadWebLauncher = () => {

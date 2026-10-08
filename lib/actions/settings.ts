@@ -9,6 +9,10 @@ import {
   sanitizeDeliverySlots,
   type DeliverySlotDefinition,
 } from "@/lib/delivery-slots";
+import {
+  DEFAULT_APP_VERSION_SETTINGS,
+  type AppVersionSettings,
+} from "@/lib/semver";
 
 export async function getStoreSettings() {
   try {
@@ -35,6 +39,13 @@ export async function getStoreSettings() {
           estimatedDelivery: "Within 60 Minutes",
         } as any,
       });
+    }
+    if (settings) {
+      return {
+        ...settings,
+        appInstallPromptEnabled: (settings as any).appInstallPromptEnabled !== false,
+        appVersionConfig: ((settings as any).appVersionConfig as AppVersionSettings) || DEFAULT_APP_VERSION_SETTINGS,
+      };
     }
     return settings;
   } catch (error) {
@@ -67,6 +78,8 @@ export async function updateStoreSettings(data: {
   awaitingVendorTimeoutMinutes?: number;
   codAutoAcceptCap?: number;
   alertStepTimings?: any;
+  appInstallPromptEnabled?: boolean;
+  appVersionConfig?: Partial<AppVersionSettings> | any;
 }) {
   try {
     let settings = await prisma.storeSettings.findFirst();

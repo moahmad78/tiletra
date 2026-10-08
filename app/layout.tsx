@@ -10,7 +10,7 @@ import LoginModal from "@/components/auth/LoginModal";
 import GoogleSessionHydrator from "@/components/auth/GoogleSessionHydrator";
 import GoogleAnalyticsTracker from "@/components/analytics/GoogleAnalyticsTracker";
 import AddToCartToast from "@/components/cart/AddToCartToast";
-import PwaInstallPrompt from "@/components/pwa/PwaInstallPrompt";
+import AppInstallPrompt from "@/components/pwa/AppInstallPrompt";
 import { Toaster } from "sonner";
 import { LanguageProvider } from "@/components/translate/LanguageProvider";
 import GoogleTranslateBootstrap from "@/components/translate/GoogleTranslateBootstrap";
@@ -323,7 +323,7 @@ j=d.createElement(s),dl=l!='dataLayer'?'&l='+l:'';j.async=true;j.src=
             <AddToCartToast />
             <BottomTabBar />
             <LoginModal />
-            <PwaInstallPrompt />
+            <AppInstallPrompt />
             <Toaster position="top-center" richColors />
             <Suspense fallback={null}>
               <GoogleSessionHydrator />

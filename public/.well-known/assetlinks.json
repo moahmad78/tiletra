@@ -1,0 +1,15 @@
+[
+  {
+    "relation": [
+      "delegate_permission/common.handle_all_urls",
+      "delegate_permission/common.get_login_creds"
+    ],
+    "target": {
+      "namespace": "android_app",
+      "package_name": "com.intrihub.app",
+      "sha256_cert_fingerprints": [
+        "14:6D:E9:7D:0F:52:AB:E0:5F:AE:D3:21:40:E1:92:0B:4F:9C:23:4E:91:0F:7A:B3:C2:5E:D4:2B:6A:E7:8C:91"
+      ]
+    }
+  }
+]

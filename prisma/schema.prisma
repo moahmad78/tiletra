@@ -772,6 +772,9 @@ model StoreSettings {
   awaitingVendorTimeoutMinutes  Int      @default(5)
   codAutoAcceptCap             Float    @default(5000)
   alertStepTimings             Json?
+  // Mobile App Controls & Smart Website Install Prompt
+  appInstallPromptEnabled      Boolean  @default(true)
+  appVersionConfig             Json?
   updatedAt             DateTime @updatedAt
 }
 

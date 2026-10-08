@@ -33,5 +33,13 @@
       "type": "image/png"
     }
   ],
-  "categories": ["shopping", "business", "utilities"]
+  "categories": ["shopping", "business", "utilities"],
+  "related_applications": [
+    {
+      "platform": "play",
+      "id": "com.intrihub.app",
+      "url": "https://play.google.com/store/apps/details?id=com.intrihub.app"
+    }
+  ],
+  "prefer_related_applications": false
 }
