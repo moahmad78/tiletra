@@ -20,8 +20,8 @@ import * as path from "path";
 let passedCount = 0;
 let failedCount = 0;
 
-function assert(condition: boolean, testName: string, detail?: string) {
-  if (condition) {
+function assert(condition: unknown, testName: string, detail?: string) {
+  if (Boolean(condition)) {
     console.log(`  ✅ PASS: ${testName}`);
     passedCount++;
   } else {
