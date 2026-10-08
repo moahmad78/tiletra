@@ -5,7 +5,7 @@ export const dynamic = "force-dynamic";
 
 export async function GET() {
   try {
-    const settings = await prisma.storeSettings.findFirst({
+    const settings = await (prisma.storeSettings as any).findFirst({
       select: { appInstallPromptEnabled: true },
     });
     const enabled = settings ? (settings as any).appInstallPromptEnabled !== false : true;

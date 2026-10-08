@@ -12,7 +12,8 @@
  * 8. app.json permissions and orders_high_importance channel configuration.
  */
 
-import { prisma } from "../lib/prisma";
+import { prisma as rawPrisma } from "../lib/prisma";
+const prisma = rawPrisma as any;
 import { createOrder } from "../lib/actions/orders";
 import * as fs from "fs";
 import * as path from "path";

@@ -18,7 +18,8 @@
  * 14. Heartbeat 20-second throttle logic.
  */
 
-import { prisma } from "../lib/prisma";
+import { prisma as rawPrisma } from "../lib/prisma";
+const prisma = rawPrisma as any;
 import { createOrder, cancelOrder, rejectVendorOrderSplit } from "../lib/actions/orders";
 import { haversineDistanceKm } from "../lib/delivery/geo";
 import { isWithinOperatingHours } from "../lib/delivery/operating-hours";
@@ -522,8 +523,8 @@ async function runFeature2TestSuite() {
 
       assert(splits.length === 2, "Generated 2 independent vendor splits");
 
-      const eligibleSplit = splits.find((s) => s.vendorId === vendorEligible.id);
-      const offlineSplit = splits.find((s) => s.vendorId === vendorOffline.id);
+      const eligibleSplit = splits.find((s: any) => s.vendorId === vendorEligible.id);
+      const offlineSplit = splits.find((s: any) => s.vendorId === vendorOffline.id);
 
       assert(eligibleSplit?.fulfillmentStatus === "confirmed", "Eligible split is confirmed");
       assert(eligibleSplit?.autoAccepted === true, "Eligible split autoAccepted is true");
