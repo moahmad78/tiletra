@@ -901,3 +901,47 @@ export async function cpoBulkUpdateProductStatus(
   }
 }
 
+/**
+ * Fetch OrderAlerts for CPO Monitoring (PRD v2 Feature 3)
+ */
+export async function getCpoOrderAlerts(options?: {
+  unacknowledgedOnly?: boolean;
+  limit?: number;
+}) {
+  await requireCpoSession("dashboard:view");
+  try {
+    const where: any = {};
+    if (options?.unacknowledgedOnly) {
+      where.acknowledgedAt = null;
+    }
+    const alerts = await prisma.orderAlert.findMany({
+      where,
+      include: {
+        vendor: {
+          select: {
+            id: true,
+            businessName: true,
+            contactPhone: true,
+          },
+        },
+        order: {
+          select: {
+            id: true,
+            customerName: true,
+            total: true,
+            orderStatus: true,
+            readyBy: true,
+          },
+        },
+      },
+      orderBy: { sentAt: "desc" },
+      take: options?.limit || 50,
+    });
+    return alerts;
+  } catch (err) {
+    console.error("getCpoOrderAlerts error:", err);
+    return [];
+  }
+}
+
+
