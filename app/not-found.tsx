@@ -39,7 +39,7 @@ export default function NotFound() {
     <>
       {/* Strict noindex tag for 404 route SEO compliance */}
       <head>
-        <title>URL galat hai | IntriHub</title>
+        <title>Page Not Found | IntriHub</title>
         <meta name="robots" content="noindex, nofollow" />
       </head>
 
@@ -62,12 +62,12 @@ export default function NotFound() {
             id="wrong-url-title"
             className="text-xl sm:text-2xl font-black text-red-600 tracking-tight"
           >
-            URL galat hai
+            Page Not Found
           </h1>
 
-          {/* Description Text */}
+          {/* Description Text in English */}
           <p className="text-xs sm:text-sm text-slate-600 mt-2 leading-relaxed">
-            Ye page nahi mila. Aapko home page par le ja rahe hain...
+            This page does not exist. Redirecting you to the home page...
           </p>
 
           {/* Visual Countdown Badge */}
@@ -82,7 +82,7 @@ export default function NotFound() {
             onClick={handleRedirect}
             className="mt-5 w-full py-3 px-4 rounded-xl bg-[#F26522] hover:bg-[#d95a1e] active:scale-[0.98] text-white font-bold text-sm shadow-md shadow-orange-500/25 transition-all flex items-center justify-center gap-2 cursor-pointer"
           >
-            <span>Home par jaayein</span>
+            <span>Go to Homepage</span>
             <ArrowRight className="w-4 h-4" />
           </button>
         </div>
