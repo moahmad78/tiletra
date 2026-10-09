@@ -166,7 +166,7 @@ export default async function SeoLandingPage({ params }: PageProps) {
   }
 
   if (!page || !page.isPublished) {
-    redirect("/");
+    notFound();
   }
 
   // 4. Fetch Live Filtered Catalog Products

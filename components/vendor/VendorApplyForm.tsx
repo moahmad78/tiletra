@@ -2,6 +2,7 @@
 
 import { useState, useRef } from "react";
 import Link from "next/link";
+import Image from "next/image";
 import {
   CheckCircle2,
   ShieldCheck,
@@ -258,6 +259,33 @@ export default function VendorApplyForm() {
                 <span>Vendor Login</span>
                 <ChevronRight size={14} />
               </Link>
+            </div>
+          </div>
+
+          {/* Official Free Vendor Registration Promotional Graphic */}
+          <div className="rounded-3xl overflow-hidden shadow-lg border border-slate-200/90 bg-white group hover:shadow-xl transition-all">
+            <div className="relative aspect-square w-full">
+              <Image
+                src="/images/marketing/free-vendor-registration-banner.jpg"
+                alt="Intrihub Free Vendor Registration - Partner with Intrihub and Grow Your Business"
+                fill
+                className="object-cover group-hover:scale-[1.02] transition-transform duration-500"
+                sizes="(max-width: 768px) 100vw, 500px"
+                priority
+              />
+            </div>
+          </div>
+
+          {/* Aapki Sale Humari Guarantee Partner Graphic */}
+          <div className="rounded-3xl overflow-hidden shadow-lg border border-slate-200/90 bg-white group hover:shadow-xl transition-all">
+            <div className="relative aspect-square w-full">
+              <Image
+                src="/images/marketing/vendor-sales-guarantee-partner.jpg"
+                alt="Aapki Sale, Humari Guarantee! Intrihub Merchant Growth Partner Banner"
+                fill
+                className="object-cover group-hover:scale-[1.02] transition-transform duration-500"
+                sizes="(max-width: 768px) 100vw, 500px"
+              />
             </div>
           </div>
         </div>

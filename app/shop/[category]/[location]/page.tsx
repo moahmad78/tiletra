@@ -96,7 +96,7 @@ export default async function CategoryLocationPage({
   const location = getLocationBySlug(locationSlug);
 
   if (!category || !location) {
-    redirect("/");
+    notFound();
   }
 
   const seo = getCategorySeo(categorySlug);

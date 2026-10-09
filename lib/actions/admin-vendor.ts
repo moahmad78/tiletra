@@ -936,3 +936,44 @@ export async function updateVendorLoginMethod(
     return { success: false, error: error?.message || "Failed to update vendor login method" };
   }
 }
+
+// 12. Update Vendor Shop Location & GPS Coordinates (Admin)
+export async function updateVendorLocation(
+  vendorId: string,
+  data: {
+    businessAddress?: string;
+    latitude?: number | null;
+    longitude?: number | null;
+    serviceAreaRadiusKm?: number;
+  }
+) {
+  try {
+    await requireAdminAction();
+
+    if (!vendorId) return { success: false, error: "Vendor ID required" };
+
+    const updated = await prisma.vendor.update({
+      where: { id: vendorId },
+      data: {
+        ...(data.businessAddress !== undefined && { businessAddress: data.businessAddress.trim() }),
+        ...(data.latitude !== undefined && { latitude: data.latitude }),
+        ...(data.longitude !== undefined && { longitude: data.longitude }),
+        ...(data.serviceAreaRadiusKm !== undefined && {
+          serviceAreaRadiusKm: Math.max(1, Math.min(50, Number(data.serviceAreaRadiusKm))),
+        }),
+      },
+    });
+
+    safeRevalidate(`/admin/vendors/${vendorId}`);
+    safeRevalidate("/admin/vendors");
+
+    return {
+      success: true,
+      vendor: updated,
+      message: "Vendor shop location & GPS coordinates updated successfully!",
+    };
+  } catch (error: any) {
+    console.error("updateVendorLocation error:", error);
+    return { success: false, error: error?.message || "Failed to update vendor location" };
+  }
+}

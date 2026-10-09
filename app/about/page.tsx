@@ -317,8 +317,8 @@ export default function AboutPage() {
                 <div className="relative rounded-3xl overflow-hidden shadow-xl border border-slate-200/80 bg-slate-100 group">
                   <div className="relative aspect-[4/3] w-full">
                     <Image
-                      src="/about/express-delivery.jpg"
-                      alt="IntriHub 60-Minute Fast Logistics and Site Unloading"
+                      src="/images/marketing/intrihub-60min-express-delivery-bengaluru.jpg"
+                      alt="IntriHub 60-Minute Fast Logistics and Construction Site Delivery in Bengaluru"
                       fill
                       className="object-cover transition-transform duration-500 group-hover:scale-105"
                       sizes="(max-width: 1024px) 100vw, 50vw"
@@ -774,6 +774,75 @@ export default function AboutPage() {
                     <span>Read Full Founder Story</span>
                     <ArrowRight className="w-3.5 h-3.5" />
                   </Link>
+                </div>
+              </div>
+            </div>
+
+            {/* Vendor & Merchant Partner Ecosystem Showcase */}
+            <div className="mt-16 bg-white rounded-3xl p-6 sm:p-10 border border-slate-200/80 shadow-md">
+              <div className="text-center max-w-2xl mx-auto mb-10">
+                <span className="px-3.5 py-1 rounded-full bg-orange-50 text-[#F26522] border border-orange-200 text-xs font-black uppercase tracking-wider inline-block mb-3">
+                  Vendor Empowerment Movement
+                </span>
+                <h3 className="text-2xl sm:text-3xl font-black text-[#052a51]">
+                  Aapki Sale, Humari Guarantee! — Partner With IntriHub
+                </h3>
+                <p className="text-slate-600 text-xs sm:text-sm mt-2 leading-relaxed">
+                  We empower local building material retailers, tile showrooms, and hardware stockists across India with free digital onboarding, zero listing fees, and guaranteed buyer flow.
+                </p>
+              </div>
+
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-8 items-center max-w-4xl mx-auto">
+                {/* Poster 1: Free Vendor Registration */}
+                <div className="rounded-3xl overflow-hidden shadow-xl border border-slate-200 bg-white group hover:shadow-2xl transition-all">
+                  <div className="relative aspect-square w-full">
+                    <Image
+                      src="/images/marketing/free-vendor-registration-banner.jpg"
+                      alt="Intrihub Free Vendor Registration - Partner with Intrihub and Grow Your Business"
+                      fill
+                      className="object-cover group-hover:scale-[1.02] transition-transform duration-500"
+                      sizes="(max-width: 768px) 100vw, 450px"
+                    />
+                  </div>
+                  <div className="p-5 bg-slate-50 border-t border-slate-100 flex items-center justify-between">
+                    <div>
+                      <h4 className="text-sm font-black text-slate-900">Free Vendor Registration</h4>
+                      <p className="text-xs text-slate-500">Instant delivery, secure weekly payments</p>
+                    </div>
+                    <Link
+                      href="/vendor/apply"
+                      className="px-4 py-2 rounded-xl bg-[#052a51] hover:bg-[#083a70] text-white text-xs font-bold transition-colors inline-flex items-center gap-1.5"
+                    >
+                      <span>Register Now</span>
+                      <ArrowRight size={13} />
+                    </Link>
+                  </div>
+                </div>
+
+                {/* Poster 2: Aapki Sale Humari Guarantee */}
+                <div className="rounded-3xl overflow-hidden shadow-xl border border-slate-200 bg-white group hover:shadow-2xl transition-all">
+                  <div className="relative aspect-square w-full">
+                    <Image
+                      src="/images/marketing/vendor-sales-guarantee-partner.jpg"
+                      alt="Aapki Sale, Humari Guarantee! Intrihub Merchant Growth Partner Banner"
+                      fill
+                      className="object-cover group-hover:scale-[1.02] transition-transform duration-500"
+                      sizes="(max-width: 768px) 100vw, 450px"
+                    />
+                  </div>
+                  <div className="p-5 bg-slate-50 border-t border-slate-100 flex items-center justify-between">
+                    <div>
+                      <h4 className="text-sm font-black text-slate-900">Sales Double Guarantee</h4>
+                      <p className="text-xs text-slate-500">Zero order fulfillment tension</p>
+                    </div>
+                    <Link
+                      href="/vendor/apply"
+                      className="px-4 py-2 rounded-xl bg-[#F26522] hover:bg-[#d95a1e] text-white text-xs font-bold transition-colors inline-flex items-center gap-1.5"
+                    >
+                      <span>Join as Partner</span>
+                      <ArrowRight size={13} />
+                    </Link>
+                  </div>
                 </div>
               </div>
             </div>

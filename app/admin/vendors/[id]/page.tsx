@@ -41,6 +41,8 @@ import {
   KeyRound,
   Eye,
   EyeOff,
+  Navigation,
+  Compass,
 } from "lucide-react";
 import { toast } from "sonner";
 import {
@@ -52,9 +54,11 @@ import {
   deleteVendor,
   verifyVendorKyc,
   updateVendorLoginMethod,
+  updateVendorLocation,
 } from "@/lib/actions/admin-vendor";
 import { toggleVendorAutoPublish } from "@/lib/actions/vendor";
 import { formatPrice } from "@/lib/formatters";
+import WebMapPickerModal, { WebPickedLocation } from "@/components/maps/WebMapPickerModal";
 
 export default function VendorDetailDashboardPage() {
   const params = useParams();
@@ -86,6 +90,15 @@ export default function VendorDetailDashboardPage() {
   const [showVendorPassword, setShowVendorPassword] = useState(false);
   const [savingLoginMethod, setSavingLoginMethod] = useState(false);
 
+  // Shop Location & GPS Management State
+  const [isMapModalOpen, setIsMapModalOpen] = useState(false);
+  const [isDetectingLocation, setIsDetectingLocation] = useState(false);
+  const [savingLocation, setSavingLocation] = useState(false);
+  const [locAddress, setLocAddress] = useState("");
+  const [locLat, setLocLat] = useState<number | null>(null);
+  const [locLng, setLocLng] = useState<number | null>(null);
+  const [locRadius, setLocRadius] = useState<number>(15);
+
   const loadData = async () => {
     if (!vendorId) return;
     try {
@@ -98,12 +111,105 @@ export default function VendorDetailDashboardPage() {
       if ((result?.vendor as any)?.loginMethod) {
         setSelectedLoginMethod((result?.vendor as any).loginMethod as "otp" | "password");
       }
+      if (result?.vendor) {
+        const v = result.vendor as any;
+        setLocAddress(v.businessAddress || "");
+        setLocLat(v.latitude != null ? Number(v.latitude) : null);
+        setLocLng(v.longitude != null ? Number(v.longitude) : null);
+        setLocRadius(v.serviceAreaRadiusKm || 15);
+      }
     } catch (e) {
       console.error("Error loading vendor analytics:", e);
       toast.error("Failed to load vendor details");
     } finally {
       setLoading(false);
     }
+  };
+
+  const handleSaveLocation = async (
+    overrideAddress?: string,
+    overrideLat?: number | null,
+    overrideLng?: number | null,
+    overrideRadius?: number
+  ) => {
+    if (!vendorId) return;
+    setSavingLocation(true);
+    try {
+      const finalAddress = overrideAddress !== undefined ? overrideAddress : locAddress;
+      const finalLat = overrideLat !== undefined ? overrideLat : locLat;
+      const finalLng = overrideLng !== undefined ? overrideLng : locLng;
+      const finalRadius = overrideRadius !== undefined ? overrideRadius : locRadius;
+
+      const res = await updateVendorLocation(vendorId, {
+        businessAddress: finalAddress,
+        latitude: finalLat,
+        longitude: finalLng,
+        serviceAreaRadiusKm: finalRadius,
+      });
+
+      if (res.success) {
+        toast.success(res.message || "Vendor shop location updated!");
+        setData((prev: any) => ({
+          ...prev,
+          vendor: {
+            ...prev.vendor,
+            businessAddress: finalAddress,
+            latitude: finalLat,
+            longitude: finalLng,
+            serviceAreaRadiusKm: finalRadius,
+          },
+        }));
+      } else {
+        toast.error(res.error || "Failed to update vendor location");
+      }
+    } catch (e: any) {
+      toast.error(e?.message || "Error saving location");
+    } finally {
+      setSavingLocation(false);
+    }
+  };
+
+  const handleAdminLocationPicked = (loc: WebPickedLocation) => {
+    setLocAddress(loc.formattedAddress);
+    setLocLat(loc.latitude);
+    setLocLng(loc.longitude);
+    setIsMapModalOpen(false);
+    handleSaveLocation(loc.formattedAddress, loc.latitude, loc.longitude, locRadius);
+  };
+
+  const handleAdminAutoDetectGPS = async () => {
+    if (typeof window === "undefined" || !navigator.geolocation) {
+      toast.error("Geolocation is not supported by your browser");
+      return;
+    }
+    setIsDetectingLocation(true);
+    navigator.geolocation.getCurrentPosition(
+      async (pos) => {
+        const { latitude, longitude } = pos.coords;
+        try {
+          const res = await fetch(`/api/geo/reverse-geocode?lat=${latitude}&lng=${longitude}`);
+          const geoData = await res.json();
+          const address = geoData?.address || `${latitude.toFixed(6)}, ${longitude.toFixed(6)}`;
+          setLocAddress(address);
+          setLocLat(latitude);
+          setLocLng(longitude);
+          toast.success("Location auto-detected!");
+          handleSaveLocation(address, latitude, longitude, locRadius);
+        } catch {
+          setLocLat(latitude);
+          setLocLng(longitude);
+          toast.success("GPS coordinates detected!");
+        } finally {
+          setIsDetectingLocation(false);
+        }
+      },
+      (err) => {
+        setIsDetectingLocation(false);
+        console.warn("Geolocation error:", err);
+        toast.error("Location permission denied or unavailable.");
+      },
+      { enableHighAccuracy: true, timeout: 10000 }
+    );
   };
 
   useEffect(() => {
@@ -672,6 +778,161 @@ export default function VendorDetailDashboardPage() {
                 )}
               </button>
             </div>
+          </div>
+        </div>
+      </div>
+
+      {/* ── Shop Location & Precision Dispatch Geofence Card ── */}
+      <div className="bg-white rounded-3xl p-6 sm:p-7 border border-gray-200/90 shadow-xs space-y-5">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-gray-100 pb-4">
+          <div className="flex items-center gap-3">
+            <div className="w-10 h-10 rounded-2xl bg-emerald-700 text-white flex items-center justify-center font-bold shadow-xs">
+              <MapPin size={20} />
+            </div>
+            <div>
+              <div className="flex items-center gap-2 flex-wrap">
+                <h2 className="text-base font-black text-[#052a51]">
+                  Vendor Shop Location & Dispatch Coordinates
+                </h2>
+                {locLat && locLng ? (
+                  <span className="px-2.5 py-0.5 rounded-full text-[10px] font-black uppercase bg-emerald-100 text-emerald-800 border border-emerald-300 flex items-center gap-1">
+                    <span className="w-1.5 h-1.5 rounded-full bg-emerald-600 animate-pulse" />
+                    GPS Pinned (Nearest-Route Active)
+                  </span>
+                ) : (
+                  <span className="px-2.5 py-0.5 rounded-full text-[10px] font-black uppercase bg-amber-100 text-amber-800 border border-amber-300 flex items-center gap-1">
+                    <AlertTriangle size={11} /> Unpinned (Missing GPS)
+                  </span>
+                )}
+              </div>
+              <p className="text-xs text-gray-500 mt-0.5">
+                Exact physical location used for nearest-vendor catalog sorting, 60-minute express routing, and driver dispatch.
+              </p>
+            </div>
+          </div>
+
+          <div className="flex items-center gap-2 flex-wrap">
+            <button
+              type="button"
+              onClick={handleAdminAutoDetectGPS}
+              disabled={isDetectingLocation}
+              className="inline-flex items-center gap-1.5 px-3 py-2 bg-emerald-50 hover:bg-emerald-100 text-emerald-800 border border-emerald-300 text-xs font-bold rounded-xl transition-all cursor-pointer disabled:opacity-50"
+              title="Detect device GPS coordinates"
+            >
+              {isDetectingLocation ? (
+                <Loader2 size={13} className="animate-spin text-emerald-600" />
+              ) : (
+                <Compass size={13} className="text-emerald-700" />
+              )}
+              <span>{isDetectingLocation ? "Detecting GPS..." : "📍 Quick Auto-Detect"}</span>
+            </button>
+            <button
+              type="button"
+              onClick={() => setIsMapModalOpen(true)}
+              className="inline-flex items-center gap-1.5 px-3.5 py-2 bg-gradient-to-r from-emerald-600 to-teal-700 hover:from-emerald-700 hover:to-teal-800 text-white text-xs font-bold rounded-xl shadow-xs transition-all cursor-pointer"
+            >
+              <Navigation size={13} />
+              <span>🗺️ Open Interactive Map (Search & Pin)</span>
+            </button>
+          </div>
+        </div>
+
+        {/* Location Form & Live Values */}
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+          <div className="md:col-span-2 space-y-1.5">
+            <label className="block text-xs font-bold text-gray-700 uppercase tracking-wider">
+              Physical Shop / Warehouse Address
+            </label>
+            <textarea
+              rows={2}
+              value={locAddress}
+              onChange={(e) => setLocAddress(e.target.value)}
+              placeholder="Enter full physical storefront or warehouse address..."
+              className="w-full bg-gray-50 border border-gray-200 rounded-xl px-4 py-2.5 text-xs sm:text-sm font-medium text-gray-800 focus:bg-white focus:border-emerald-500 focus:outline-hidden"
+            />
+          </div>
+
+          <div className="space-y-1.5">
+            <label className="block text-xs font-bold text-gray-700 uppercase tracking-wider">
+              Service Area Radius (km)
+            </label>
+            <div className="flex items-center gap-2">
+              <input
+                type="number"
+                min={1}
+                max={50}
+                value={locRadius}
+                onChange={(e) => setLocRadius(Number(e.target.value))}
+                className="w-full bg-gray-50 border border-gray-200 rounded-xl px-3.5 py-2.5 text-xs sm:text-sm font-bold text-gray-800 focus:bg-white focus:border-emerald-500 focus:outline-hidden"
+              />
+              <span className="text-xs font-bold text-gray-500">KM</span>
+            </div>
+            <p className="text-[11px] text-gray-400">
+              Maximum delivery radius covered from this shop.
+            </p>
+          </div>
+        </div>
+
+        {/* GPS Coordinates Bar */}
+        <div className="p-4 rounded-2xl bg-gray-50/90 border border-gray-200 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+          <div className="flex items-center gap-4 flex-wrap text-xs">
+            <div>
+              <span className="text-gray-400 font-bold uppercase text-[10px] block">Latitude</span>
+              <span className="font-mono font-bold text-gray-900">
+                {locLat != null ? Number(locLat).toFixed(6) : "Not Set"}
+              </span>
+            </div>
+            <div>
+              <span className="text-gray-400 font-bold uppercase text-[10px] block">Longitude</span>
+              <span className="font-mono font-bold text-gray-900">
+                {locLng != null ? Number(locLng).toFixed(6) : "Not Set"}
+              </span>
+            </div>
+            {locLat != null && locLng != null && (
+              <a
+                href={`https://www.google.com/maps/search/?api=1&query=${locLat},${locLng}`}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="inline-flex items-center gap-1 text-xs font-bold text-emerald-700 hover:text-emerald-900 hover:underline"
+              >
+                <span>View on Google Maps</span>
+                <ExternalLink size={12} />
+              </a>
+            )}
+          </div>
+
+          <div className="flex items-center gap-2 self-end sm:self-auto">
+            {locLat != null && locLng != null && (
+              <button
+                type="button"
+                onClick={() => {
+                  setLocLat(null);
+                  setLocLng(null);
+                  handleSaveLocation(locAddress, null, null, locRadius);
+                }}
+                className="px-3 py-1.5 text-xs font-semibold text-rose-600 hover:text-rose-800 cursor-pointer"
+              >
+                Reset Pin
+              </button>
+            )}
+            <button
+              type="button"
+              disabled={savingLocation}
+              onClick={() => handleSaveLocation()}
+              className="px-4 py-2 bg-emerald-600 hover:bg-emerald-700 disabled:bg-gray-300 text-white text-xs font-bold rounded-xl transition-all flex items-center gap-1.5 cursor-pointer shadow-xs disabled:cursor-not-allowed"
+            >
+              {savingLocation ? (
+                <>
+                  <Loader2 size={13} className="animate-spin" />
+                  <span>Saving...</span>
+                </>
+              ) : (
+                <>
+                  <Check size={13} />
+                  <span>Save Location Details</span>
+                </>
+              )}
+            </button>
           </div>
         </div>
       </div>
@@ -1344,6 +1605,15 @@ export default function VendorDetailDashboardPage() {
           </div>
         </div>
       )}
+
+      {/* Interactive Map Picker Modal */}
+      <WebMapPickerModal
+        isOpen={isMapModalOpen}
+        onClose={() => setIsMapModalOpen(false)}
+        initialLat={locLat || 12.9716}
+        initialLng={locLng || 77.5946}
+        onConfirmLocation={handleAdminLocationPicked}
+      />
     </div>
   );
 }

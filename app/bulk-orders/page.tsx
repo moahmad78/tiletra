@@ -1,5 +1,6 @@
 import { Metadata } from "next";
 import Link from "next/link";
+import Image from "next/image";
 import {
   HardHat,
   Truck,
@@ -222,6 +223,41 @@ export default function BulkOrdersPage() {
                   <p className="text-slate-600 text-sm leading-relaxed">{card.desc}</p>
                 </div>
               ))}
+            </div>
+          </div>
+
+          {/* ── Express Site Logistics Live Showcase ── */}
+          <div className="mb-12 rounded-3xl overflow-hidden shadow-xl border border-slate-200/80 bg-white group">
+            <div className="relative aspect-[16/9] md:aspect-[21/9] w-full max-h-[460px]">
+              <Image
+                src="/images/marketing/intrihub-60min-express-delivery-bengaluru.jpg"
+                alt="Intrihub 60-Minute Site Delivery Fleet Across Bengaluru - Every Material. Every Space."
+                fill
+                className="object-cover object-center group-hover:scale-[1.02] transition-transform duration-500"
+                sizes="(max-width: 1240px) 100vw, 1240px"
+              />
+            </div>
+            <div className="p-6 sm:p-8 bg-gradient-to-r from-[#052a51] to-[#0a3e74] text-white flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
+              <div>
+                <span className="px-3 py-1 rounded-full bg-[#F26522] text-white text-[11px] font-black uppercase tracking-wider inline-block mb-2">
+                  Bengaluru Express Site Dispatch
+                </span>
+                <h3 className="text-xl sm:text-2xl font-black">
+                  Every Material. Every Space. Delivered in 60 Minutes.
+                </h3>
+                <p className="text-sm text-slate-200 mt-1 max-w-2xl">
+                  From emergency electrical wires to heavy vitrified tile pallets — our specialized Intrihub Quickcommerce fleet delivers straight to your active site across Bengaluru without project delays.
+                </p>
+              </div>
+              <a
+                href="https://wa.me/917090120211?text=Hi%2C%20I%20need%20express%20material%20delivery%20at%20my%20Bengaluru%20site"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="shrink-0 px-6 py-3.5 rounded-xl bg-[#F26522] hover:bg-[#d95a1e] text-white font-bold text-sm transition-all shadow-md active:scale-95 flex items-center gap-2"
+              >
+                <MessageCircle size={16} />
+                <span>Order for Site Dispatch</span>
+              </a>
             </div>
           </div>
 

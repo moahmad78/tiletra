@@ -167,6 +167,9 @@ export async function updateVendorProfile(
     deliveryFeeEnabled?: boolean;
     customDeliveryFee?: number | null;
     freeDeliveryThreshold?: number | null;
+    latitude?: number | null;
+    longitude?: number | null;
+    locationAccuracy?: number | null;
   }
 ) {
   try {
@@ -196,6 +199,9 @@ export async function updateVendorProfile(
         ...(input.deliveryFeeEnabled !== undefined && { deliveryFeeEnabled: input.deliveryFeeEnabled }),
         ...(input.customDeliveryFee !== undefined && { customDeliveryFee: input.customDeliveryFee }),
         ...(input.freeDeliveryThreshold !== undefined && { freeDeliveryThreshold: input.freeDeliveryThreshold }),
+        ...(input.latitude !== undefined && { latitude: input.latitude }),
+        ...(input.longitude !== undefined && { longitude: input.longitude }),
+        ...(input.locationAccuracy !== undefined && { locationAccuracy: input.locationAccuracy }),
       } as any,
     });
 

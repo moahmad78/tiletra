@@ -49,8 +49,12 @@ import {
   Save,
   Plus,
   Lock,
+  Navigation,
+  ExternalLink,
+  Compass,
 } from "lucide-react";
 import { toast } from "sonner";
+import WebMapPickerModal, { WebPickedLocation } from "@/components/maps/WebMapPickerModal";
 
 export default function VendorSettingsPage() {
   const { setVendor } = useVendorAuth();
@@ -66,7 +70,18 @@ export default function VendorSettingsPage() {
   const [uploadingField, setUploadingField] = useState<string | null>(null);
 
   // Shop Profile Data
-  const [shopData, setShopData] = useState({
+  const [shopData, setShopData] = useState<{
+    businessName: string;
+    contactEmail: string;
+    contactPhone: string;
+    businessAddress: string;
+    category: string;
+    description: string;
+    logo: string;
+    shopPhotoUrl: string;
+    latitude?: number | null;
+    longitude?: number | null;
+  }>({
     businessName: "",
     contactEmail: "",
     contactPhone: "",
@@ -75,7 +90,13 @@ export default function VendorSettingsPage() {
     description: "",
     logo: "",
     shopPhotoUrl: "",
+    latitude: null,
+    longitude: null,
   });
+
+  // Map & Location Picker States
+  const [isMapModalOpen, setIsMapModalOpen] = useState(false);
+  const [isDetectingLocation, setIsDetectingLocation] = useState(false);
 
   // Delivery & Shipping Data
   const [shippingData, setShippingData] = useState<{
@@ -145,6 +166,8 @@ export default function VendorSettingsPage() {
             description: v.description || "",
             logo: v.logo || "",
             shopPhotoUrl: v.shopPhotoUrl || "",
+            latitude: v.latitude != null ? Number(v.latitude) : null,
+            longitude: v.longitude != null ? Number(v.longitude) : null,
           });
           setShippingData({
             deliveryMethod: (v.deliveryMethod === "platform" ? "platform" : "self") as "self" | "platform",
@@ -205,6 +228,59 @@ export default function VendorSettingsPage() {
     } finally {
       setUploadingField(null);
     }
+  };
+
+  // Auto-Detect Current GPS Coordinates (Browser Geolocation)
+  const handleAutoDetectGPS = async () => {
+    if (typeof window === "undefined" || !navigator.geolocation) {
+      toast.error("Geolocation is not supported by your browser");
+      return;
+    }
+    setIsDetectingLocation(true);
+    navigator.geolocation.getCurrentPosition(
+      async (pos) => {
+        const { latitude, longitude } = pos.coords;
+        try {
+          const res = await fetch(`/api/geo/reverse-geocode?lat=${latitude}&lng=${longitude}`);
+          const data = await res.json();
+          const address = data?.address || `${latitude.toFixed(6)}, ${longitude.toFixed(6)}`;
+          setShopData((prev) => ({
+            ...prev,
+            businessAddress: address,
+            latitude,
+            longitude,
+          }));
+          toast.success("Store location auto-detected and pinned!");
+        } catch {
+          setShopData((prev) => ({
+            ...prev,
+            latitude,
+            longitude,
+          }));
+          toast.success("GPS coordinates detected!");
+        } finally {
+          setIsDetectingLocation(false);
+        }
+      },
+      (err) => {
+        setIsDetectingLocation(false);
+        console.warn("Geolocation error:", err);
+        toast.error("Please allow location permissions to auto-detect your store coordinates.");
+      },
+      { enableHighAccuracy: true, timeout: 10000 }
+    );
+  };
+
+  // Confirm Location from Interactive WebMapPickerModal
+  const handleLocationPicked = (loc: WebPickedLocation) => {
+    setShopData((prev) => ({
+      ...prev,
+      businessAddress: loc.formattedAddress || prev.businessAddress,
+      latitude: loc.latitude,
+      longitude: loc.longitude,
+    }));
+    setIsMapModalOpen(false);
+    toast.success("Shop location & pin updated successfully!");
   };
 
   // 1. Submit Shop Profile
@@ -695,17 +771,89 @@ export default function VendorSettingsPage() {
               />
             </div>
 
-            <div className="md:col-span-2">
-              <label className="block text-xs font-bold text-gray-700 uppercase tracking-wider mb-1.5">
-                Physical Store / Warehouse Address
-              </label>
+            <div className="md:col-span-2 space-y-2">
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+                <label className="block text-xs font-bold text-gray-700 uppercase tracking-wider">
+                  Physical Store / Warehouse Address *
+                </label>
+                <div className="flex items-center gap-2 flex-wrap">
+                  <button
+                    type="button"
+                    onClick={handleAutoDetectGPS}
+                    disabled={isDetectingLocation || isWorkspace}
+                    className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-emerald-50 hover:bg-emerald-100 text-emerald-800 border border-emerald-300 text-xs font-bold rounded-xl transition-all cursor-pointer disabled:opacity-50"
+                    title="Auto-detect shop location from your current device GPS"
+                  >
+                    {isDetectingLocation ? (
+                      <Loader2 size={13} className="animate-spin text-emerald-600" />
+                    ) : (
+                      <Compass size={13} className="text-emerald-700" />
+                    )}
+                    <span>{isDetectingLocation ? "Detecting GPS..." : "📍 Auto-Detect GPS"}</span>
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setIsMapModalOpen(true)}
+                    disabled={isWorkspace}
+                    className="inline-flex items-center gap-1.5 px-3.5 py-1.5 bg-gradient-to-r from-emerald-600 to-teal-700 hover:from-emerald-700 hover:to-teal-800 text-white text-xs font-bold rounded-xl shadow-xs transition-all cursor-pointer disabled:opacity-50"
+                  >
+                    <Navigation size={13} />
+                    <span>🗺️ Pin on Map (Search & Drag-Drop)</span>
+                  </button>
+                </div>
+              </div>
+
               <textarea
                 rows={2}
                 value={shopData.businessAddress}
                 onChange={(e) => setShopData({ ...shopData, businessAddress: e.target.value })}
-                placeholder="Enter shop number, street, area, city and pincode"
+                placeholder="Enter shop number, street, area, city and pincode (or select via interactive map)"
                 className="w-full bg-gray-50 border border-gray-200 rounded-xl px-4 py-2.5 text-sm font-medium text-gray-800 focus:bg-white focus:border-emerald-500 focus:outline-hidden"
               />
+
+              {/* Coordinates & Verification Status Card */}
+              {shopData.latitude && shopData.longitude ? (
+                <div className="p-3 bg-emerald-50/70 border border-emerald-200 rounded-xl flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+                  <div className="flex items-center gap-2 text-xs">
+                    <span className="w-2.5 h-2.5 rounded-full bg-emerald-600 animate-pulse shrink-0" />
+                    <span className="font-bold text-emerald-900">
+                      GPS Coordinates Pinned:
+                    </span>
+                    <span className="font-mono text-emerald-800 font-semibold">
+                      {Number(shopData.latitude).toFixed(6)}, {Number(shopData.longitude).toFixed(6)}
+                    </span>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <a
+                      href={`https://www.google.com/maps/search/?api=1&query=${shopData.latitude},${shopData.longitude}`}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="text-xs font-bold text-emerald-700 hover:text-emerald-900 hover:underline flex items-center gap-1"
+                    >
+                      <span>View on Google Maps</span>
+                      <ExternalLink size={12} />
+                    </a>
+                    {!isWorkspace && (
+                      <button
+                        type="button"
+                        onClick={() => setShopData((prev) => ({ ...prev, latitude: null, longitude: null }))}
+                        className="text-xs font-semibold text-rose-600 hover:text-rose-800 ml-2 cursor-pointer"
+                      >
+                        Reset Pin
+                      </button>
+                    )}
+                  </div>
+                </div>
+              ) : (
+                <div className="p-3 bg-amber-50/80 border border-amber-200 rounded-xl flex items-center justify-between text-xs text-amber-900">
+                  <div className="flex items-center gap-2">
+                    <AlertTriangle size={15} className="text-amber-600 shrink-0" />
+                    <span>
+                      <strong>GPS pin missing:</strong> Click <em>"Auto-Detect GPS"</em> or <em>"Pin on Map"</em> so nearby customers can discover your shop first and unlock 60-min express deliveries.
+                    </span>
+                  </div>
+                </div>
+              )}
             </div>
 
             <div className="md:col-span-2">
@@ -1645,6 +1793,15 @@ export default function VendorSettingsPage() {
           </div>
         </form>
       )}
+
+      {/* Interactive Map Picker Modal */}
+      <WebMapPickerModal
+        isOpen={isMapModalOpen}
+        onClose={() => setIsMapModalOpen(false)}
+        initialLat={shopData.latitude || 12.9716}
+        initialLng={shopData.longitude || 77.5946}
+        onConfirmLocation={handleLocationPicked}
+      />
     </div>
   );
 }

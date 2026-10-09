@@ -515,6 +515,36 @@ export default function VitrifiedTilesBuyingGuidePage() {
               <p className="text-base sm:text-lg leading-relaxed text-slate-700">
                 IntriHub is India&apos;s digital marketplace connecting architects, builders, and homeowners directly with verified ISO-certified tile manufacturing hubs in Morbi and Rajasthan. By eliminating intermediate broker markups, we deliver transparent factory-direct pricing alongside enterprise-grade logistics.
               </p>
+
+              {/* Branded Fleet Visual Banner */}
+              <div className="relative rounded-2xl overflow-hidden border border-slate-200 shadow-md my-6 group">
+                <div className="relative aspect-[16/9] md:aspect-[21/9] w-full max-h-[380px]">
+                  <Image
+                    src="/images/marketing/intrihub-60min-express-delivery-bengaluru.jpg"
+                    alt="IntriHub 60-Minute Rapid Delivery Fleet for Vitrified Tiles in Bengaluru"
+                    fill
+                    className="object-cover group-hover:scale-[1.02] transition-transform duration-500"
+                    sizes="(max-width: 1024px) 100vw, 900px"
+                  />
+                </div>
+                <div className="p-4 sm:p-5 bg-gradient-to-r from-[#052A51] to-[#093A6D] text-white flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                  <div>
+                    <span className="text-[11px] font-black uppercase text-[#F26522] tracking-wider block">
+                      Rapid Logistics Grid
+                    </span>
+                    <h4 className="text-base sm:text-lg font-bold">
+                      Every Material. Every Space. Delivered Direct to Site in 60 Minutes.
+                    </h4>
+                  </div>
+                  <Link
+                    href="/shop/tiles-stone"
+                    className="shrink-0 px-4 py-2 rounded-xl bg-[#F26522] hover:bg-[#d95a1e] text-white text-xs font-bold transition-colors inline-flex items-center gap-1.5"
+                  >
+                    <span>Order Tiles Online</span>
+                    <ArrowRight size={14} />
+                  </Link>
+                </div>
+              </div>
               
               {/* Delivery Highlights */}
               <div className="grid grid-cols-1 md:grid-cols-3 gap-5 my-6">

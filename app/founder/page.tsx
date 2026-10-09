@@ -389,6 +389,33 @@ export default function FounderPage() {
             </div>
           </div>
 
+          {/* VENDOR EMPOWERMENT GRAPHIC SHOWCASE */}
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6 items-center">
+            <div className="rounded-3xl overflow-hidden border border-slate-200/90 shadow-md bg-white group hover:shadow-xl transition-all">
+              <div className="relative aspect-square w-full">
+                <Image
+                  src="/images/marketing/vendor-sales-guarantee-partner.jpg"
+                  alt="Aapki Sale, Humari Guarantee! Sahil Sheikh's Vision for Indian Merchant Digitalization"
+                  fill
+                  className="object-cover group-hover:scale-[1.02] transition-transform duration-500"
+                  sizes="(max-width: 768px) 100vw, 550px"
+                />
+              </div>
+            </div>
+
+            <div className="rounded-3xl overflow-hidden border border-slate-200/90 shadow-md bg-white group hover:shadow-xl transition-all">
+              <div className="relative aspect-square w-full">
+                <Image
+                  src="/images/marketing/free-vendor-registration-banner.jpg"
+                  alt="Intrihub Free Vendor Registration - Digitalizing Bharat's Local Markets"
+                  fill
+                  className="object-cover group-hover:scale-[1.02] transition-transform duration-500"
+                  sizes="(max-width: 768px) 100vw, 550px"
+                />
+              </div>
+            </div>
+          </div>
+
           {/* SECTION 2: EARLY LIFE, ROOTS & EDUCATION */}
           <div className="bg-white p-6 sm:p-10 rounded-3xl border border-slate-200/80 shadow-sm">
             <div className="max-w-3xl space-y-4 mb-8">

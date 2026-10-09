@@ -32,26 +32,28 @@ Latest fresh production AAB builds ready for Google Play Store upload:
 ---
 
 ## 2. 💼 Business / Vendor App (IntriHub Business)
-* **File Name:** `intrihub-business-release-v1.0.13-code14.aab`
-* **Direct Path:** `d:\Intrihub\releases\intrihub-business-release-v1.0.13-code14.aab`
+* **File Name:** `intrihub-business-release-v1.0.14-code15.aab`
+* **Direct Path:** `d:\Intrihub\releases\intrihub-business-release-v1.0.14-code15.aab`
 * **Source Path:** `d:\Intrihub\intrihub-business\android\app\build\outputs\bundle\release\app-release.aab`
-* **Version Name:** `1.0.13`
-* **Version Code:** `14`
+* **Version Name:** `1.0.14`
+* **Version Code:** `15`
 * **Package Name:** `com.intrihub.business`
-* **File Size:** 77.71 MB
-* **Build Time:** October 08, 2026 (Fresh Production Build)
+* **File Size:** 77.74 MB (81,511,573 bytes)
+* **Build Time:** October 09, 2026 (Fresh Production Signed Build)
 
 ### 📋 Short Release Notes (Play Console):
 #### English (en-US):
 ```text
-• Multi-Variant Product Upload: Streamlined catalog creation with automated variant matrix generator.
-• Per-Variant Inventory Control: Set distinct pricing, SKU, and stock quantities on mobile.
-• Faster Media Uploads & Stability: Optimized image upload pipeline and Android 15 compatibility.
+• Google Play Policy Compliance: Integrated zero-permission Android System Photo Picker, eliminating broad storage permissions.
+• Precision Store Location: Added GPS Auto-Detect, interactive Map Pin, and live address autocomplete for store & warehouse pickup.
+• Enhanced Logistics Routing: Improved 60-minute nearest-vendor catalog discoverability and order dispatching.
+• Performance & Stability: Enhanced overall app speed and Android 15 compatibility.
 ```
 
 #### Hindi (hi-IN):
 ```text
-• मल्टी-वेरिएंट प्रोडक्ट अपलोड: ऑटोमैटिक मैट्रिक्स जनरेटर से विभिन्न साइज और फिनिश आसानी से जोड़ें।
-• प्रति-वेरिएंट स्टॉक और मूल्य नियंत्रण: मोबाइल से ही अलग-अलग SKU, कीमत और स्टॉक मैनेज करें।
-• तेज़ फोटो अपलोड और स्थिरता: सुव्यवस्थित इमेज अपलोड और Android 15 के अनुकूलन।
+• गूगल प्ले पॉलिसी कम्प्लायंस: ज़ीरो-परमिशन सिस्टम फोटो पिकर सपोर्ट (ब्रॉड स्टोरेज परमिशन हटाई गईं)।
+• सटीक स्टोर लोकेशन पिन: ऑटो-डिटेक्ट GPS, इंटरैक्टिव मैप पिन और लाइव सर्च से दुकान का सही पता सेट करें।
+• बेहतर 60-मिनट डिलीवरी राउटिंग: नज़दीकी वेंडर खोज और ऑर्डर डिस्पैच में सुधार।
+• स्पीड और स्थिरता: तेज़ परफ़ॉर्मेंस और Android 15 के लिए अनुकूलन।
 ```

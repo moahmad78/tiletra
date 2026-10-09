@@ -35,8 +35,13 @@ import {
   UploadCloud,
   X,
   Globe,
+  Crosshair,
+  Compass,
+  Navigation,
 } from "lucide-react-native";
+import * as Location from "expo-location";
 import LanguageModal from "../../src/components/LanguageModal";
+import MapPickerModal, { PickedLocation } from "../../src/components/MapPickerModal";
 import { useTranslation } from "../../src/store/i18nStore";
 import { fetchVendorDashboard, updateVendorProfile } from "../../src/api/vendor";
 import { uploadBusinessImage } from "../../src/api/auth";
@@ -70,6 +75,7 @@ export default function VendorProfileScreen() {
   const [editLng, setEditLng] = useState("");
   const [editAutoAccept, setEditAutoAccept] = useState(false);
   const [fetchingGps, setFetchingGps] = useState(false);
+  const [mapModalOpen, setMapModalOpen] = useState(false);
   const [storeLogo, setStoreLogo] = useState("");
   const [uploadingLogo, setUploadingLogo] = useState(false);
   const [saving, setSaving] = useState(false);
@@ -140,6 +146,64 @@ export default function VendorProfileScreen() {
     setEditLng(vendor?.longitude ? String(vendor.longitude) : "");
     setEditAutoAccept(Boolean(vendor?.autoAcceptOrders));
     setEditModalOpen(true);
+  };
+
+  const handleAutoDetectGPS = async () => {
+    try {
+      setFetchingGps(true);
+      const { status } = await Location.requestForegroundPermissionsAsync();
+      if (status !== "granted") {
+        Alert.alert("Permission Required", "Location permission is required to auto-detect your store GPS.");
+        setFetchingGps(false);
+        return;
+      }
+      const position = await Location.getCurrentPositionAsync({
+        accuracy: Location.Accuracy.Balanced,
+      });
+      const { latitude, longitude } = position.coords;
+      setEditLat(String(latitude));
+      setEditLng(String(longitude));
+
+      // Try reverse geocode to fill editAddress
+      try {
+        const res = await apiClient.get("/api/geo/reverse-geocode", {
+          params: { lat: latitude, lng: longitude },
+        });
+        if (res.data?.success && res.data.address) {
+          setEditAddress(res.data.address);
+        }
+      } catch {
+        try {
+          const [nativeAddr] = await Location.reverseGeocodeAsync({ latitude, longitude });
+          if (nativeAddr) {
+            const formatted = [
+              nativeAddr.street || nativeAddr.name,
+              nativeAddr.subregion || nativeAddr.district,
+              nativeAddr.city,
+              nativeAddr.postalCode,
+            ].filter(Boolean).join(", ");
+            if (formatted) setEditAddress(formatted);
+          }
+        } catch {
+          // ignore
+        }
+      }
+      Alert.alert("GPS Detected 📍", `Coordinates auto-detected: ${latitude.toFixed(4)}, ${longitude.toFixed(4)}`);
+    } catch (err: any) {
+      console.warn("Auto detect GPS error:", err);
+      Alert.alert("GPS Error", "Failed to detect current location.");
+    } finally {
+      setFetchingGps(false);
+    }
+  };
+
+  const handleLocationPicked = (loc: PickedLocation) => {
+    setEditLat(String(loc.latitude));
+    setEditLng(String(loc.longitude));
+    if (loc.formattedAddress) {
+      setEditAddress(loc.formattedAddress);
+    }
+    setMapModalOpen(false);
   };
 
   const handleSaveProfile = async () => {
@@ -485,26 +549,96 @@ export default function VendorProfileScreen() {
                 placeholderTextColor={COLORS.textTertiary}
               />
 
-              {/* F1: GPS Coordinates Section */}
-              <View style={{ marginTop: 16, padding: 12, backgroundColor: "#F8FAFC", borderRadius: 10, borderWidth: 1, borderColor: "#E2E8F0" }}>
-                <View style={{ flexDirection: "row", alignItems: "center", justifyContent: "space-between", marginBottom: 8 }}>
-                  <Text style={{ fontSize: 13, fontWeight: "800", color: COLORS.primaryDark }}>📍 Shop GPS Location</Text>
+              {/* Shop GPS Location & Map Picker Section */}
+              <View style={{ marginTop: 16, padding: 14, backgroundColor: "#F8FAFC", borderRadius: 12, borderWidth: 1, borderColor: "#E2E8F0" }}>
+                <View style={{ flexDirection: "row", alignItems: "center", justifyContent: "space-between", marginBottom: 6 }}>
+                  <Text style={{ fontSize: 13, fontWeight: "800", color: COLORS.primaryDark }}>📍 Store Dispatch GPS</Text>
                   {editLat && editLng ? (
                     <TouchableOpacity
                       onPress={() => Linking.openURL(`https://www.google.com/maps/search/?api=1&query=${editLat},${editLng}`)}
                     >
-                      <Text style={{ fontSize: 11, fontWeight: "800", color: COLORS.accentOrange }}>View on Map ↗</Text>
+                      <Text style={{ fontSize: 11, fontWeight: "800", color: COLORS.accentOrange }}>Google Maps ↗</Text>
                     </TouchableOpacity>
                   ) : null}
                 </View>
-                <Text style={{ fontSize: 11, color: COLORS.textSecondary, marginBottom: 8 }}>
-                  Enables 60-minute nearest-vendor order routing & rider pickup navigation.
+                <Text style={{ fontSize: 11, color: COLORS.textSecondary, marginBottom: 12, lineHeight: 16 }}>
+                  Auto-detect with phone GPS, drag the map pin to your dispatch gate, or search by address. Enables nearest-vendor customer routing & 60-min express deliveries.
                 </Text>
+
+                {/* 2 Action Buttons: Auto-Detect GPS & Pick on Map */}
+                <View style={{ flexDirection: "row", gap: 8, marginBottom: 12 }}>
+                  <TouchableOpacity
+                    style={{
+                      flex: 1,
+                      backgroundColor: "#ECFDF5",
+                      borderWidth: 1,
+                      borderColor: "#A7F3D0",
+                      borderRadius: 10,
+                      paddingVertical: 10,
+                      paddingHorizontal: 8,
+                      flexDirection: "row",
+                      alignItems: "center",
+                      justifyContent: "center",
+                      gap: 6,
+                    }}
+                    onPress={handleAutoDetectGPS}
+                    disabled={fetchingGps}
+                    activeOpacity={0.8}
+                  >
+                    {fetchingGps ? (
+                      <ActivityIndicator size="small" color="#059669" />
+                    ) : (
+                      <Crosshair size={16} color="#059669" />
+                    )}
+                    <Text style={{ fontSize: 12, fontWeight: "800", color: "#065F46" }}>
+                      {fetchingGps ? "Detecting..." : "Auto-Detect GPS"}
+                    </Text>
+                  </TouchableOpacity>
+
+                  <TouchableOpacity
+                    style={{
+                      flex: 1,
+                      backgroundColor: COLORS.primary,
+                      borderRadius: 10,
+                      paddingVertical: 10,
+                      paddingHorizontal: 8,
+                      flexDirection: "row",
+                      alignItems: "center",
+                      justifyContent: "center",
+                      gap: 6,
+                    }}
+                    onPress={() => setMapModalOpen(true)}
+                    activeOpacity={0.85}
+                  >
+                    <Navigation size={15} color="#FFFFFF" />
+                    <Text style={{ fontSize: 12, fontWeight: "800", color: "#FFFFFF" }}>
+                      Pick on Map
+                    </Text>
+                  </TouchableOpacity>
+                </View>
+
+                {/* Status Badge */}
+                {editLat && editLng ? (
+                  <View style={{ flexDirection: "row", alignItems: "center", backgroundColor: "#F0FDF4", padding: 8, borderRadius: 8, borderWidth: 1, borderColor: "#BBF7D0", marginBottom: 10, gap: 6 }}>
+                    <View style={{ width: 8, height: 8, borderRadius: 4, backgroundColor: "#16A34A" }} />
+                    <Text style={{ fontSize: 11, fontWeight: "700", color: "#166534", flex: 1 }}>
+                      GPS Coordinates Pinned: {Number(editLat).toFixed(4)}, {Number(editLng).toFixed(4)}
+                    </Text>
+                  </View>
+                ) : (
+                  <View style={{ flexDirection: "row", alignItems: "center", backgroundColor: "#FEF3C7", padding: 8, borderRadius: 8, borderWidth: 1, borderColor: "#FDE68A", marginBottom: 10, gap: 6 }}>
+                    <Text style={{ fontSize: 11, fontWeight: "700", color: "#92400E", flex: 1 }}>
+                      ⚠️ No GPS pin set. Tap 'Auto-Detect' or 'Pick on Map'.
+                    </Text>
+                  </View>
+                )}
+
+                {/* Manual Coords Fallback */}
                 <View style={{ flexDirection: "row", gap: 8 }}>
                   <View style={{ flex: 1 }}>
                     <Text style={{ fontSize: 11, fontWeight: "600", color: COLORS.textSecondary, marginBottom: 2 }}>Latitude</Text>
                     <TextInput
-                      style={[styles.inputBox, { height: 40 }]}
+                      style={[styles.inputBox, { height: 38, fontSize: 12 }]}
                       value={editLat}
                       onChangeText={setEditLat}
                       placeholder="e.g. 12.9716"
@@ -515,7 +649,7 @@ export default function VendorProfileScreen() {
                   <View style={{ flex: 1 }}>
                     <Text style={{ fontSize: 11, fontWeight: "600", color: COLORS.textSecondary, marginBottom: 2 }}>Longitude</Text>
                     <TextInput
-                      style={[styles.inputBox, { height: 40 }]}
+                      style={[styles.inputBox, { height: 38, fontSize: 12 }]}
                       value={editLng}
                       onChangeText={setEditLng}
                       placeholder="e.g. 77.5946"
@@ -649,6 +783,15 @@ export default function VendorProfileScreen() {
       <LanguageModal
         visible={langModalOpen}
         onClose={() => setLangModalOpen(false)}
+      />
+
+      {/* Map Picker Modal */}
+      <MapPickerModal
+        visible={mapModalOpen}
+        onClose={() => setMapModalOpen(false)}
+        initialLat={editLat ? Number(editLat) : undefined}
+        initialLng={editLng ? Number(editLng) : undefined}
+        onConfirmLocation={handleLocationPicked}
       />
     </View>
   );
