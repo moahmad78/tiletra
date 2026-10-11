@@ -20,11 +20,13 @@ import { socketService } from "../../src/store/socketStore";
 import { COLORS, SPACING, RADIUS, SHADOWS } from "../../src/constants/theme";
 import { getImageUrl } from "../../src/constants/config";
 import { Order } from "../../src/types";
+import { useTranslation } from "../../src/store/i18nStore";
 
 export default function OrdersScreen() {
   const router = useRouter();
   const queryClient = useQueryClient();
   const { isAuthenticated, user } = useAuthStore();
+  const { t } = useTranslation();
 
   const {
     data,
@@ -62,16 +64,20 @@ export default function OrdersScreen() {
     return (
       <View style={styles.centerContainer}>
         <Package size={56} color={COLORS.primary} />
-        <Text style={styles.authPromptTitle}>Sign In to View Orders</Text>
+        <Text style={styles.authPromptTitle}>
+          {t("orders.signInPrompt") || "Sign In to View Orders"}
+        </Text>
         <Text style={styles.authPromptSub}>
-          Track your shipments, check order history, and download invoices
+          {t("orders.signInPromptSub") || "Track your shipments, check order history, and download invoices"}
         </Text>
         <TouchableOpacity
           style={styles.signInBtn}
           onPress={() => router.push("/(auth)/login")}
           activeOpacity={0.8}
         >
-          <Text style={styles.signInText}>Sign In / Register</Text>
+          <Text style={styles.signInText}>
+            {t("account.signInRegister") || "Sign In / Register"}
+          </Text>
         </TouchableOpacity>
       </View>
     );
@@ -81,7 +87,7 @@ export default function OrdersScreen() {
     <View style={styles.container}>
       {/* Header */}
       <View style={styles.header}>
-        <Text style={styles.headerTitle}>My Orders</Text>
+        <Text style={styles.headerTitle}>{t("orders.title") || "My Orders"}</Text>
       </View>
 
       {isLoading ? (
@@ -181,13 +187,15 @@ export default function OrdersScreen() {
           ListEmptyComponent={
             <View style={styles.centerContainer}>
               <Package size={48} color={COLORS.textMuted} />
-              <Text style={styles.emptyTitle}>No orders yet</Text>
-              <Text style={styles.emptySub}>When you place an order, it will appear here</Text>
+              <Text style={styles.emptyTitle}>{t("orders.noOrders") || "No orders yet"}</Text>
+              <Text style={styles.emptySub}>
+                {t("orders.noOrdersSubtitle") || "When you place an order, it will appear here"}
+              </Text>
               <TouchableOpacity
                 style={styles.browseBtn}
                 onPress={() => router.push("/(tabs)/home")}
               >
-                <Text style={styles.browseText}>Browse Catalog</Text>
+                <Text style={styles.browseText}>{t("cart.startShopping") || "Browse Catalog"}</Text>
               </TouchableOpacity>
             </View>
           }

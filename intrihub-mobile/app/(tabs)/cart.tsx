@@ -12,11 +12,13 @@ import { useRouter } from "expo-router";
 import { Trash2, Plus, Minus, ShieldCheck, ArrowRight, ShoppingBag, Truck } from "lucide-react-native";
 import { useCartStore } from "../../src/store/cartStore";
 import { useAuthStore } from "../../src/store/authStore";
+import { useTranslation } from "../../src/store/i18nStore";
 import { COLORS, SPACING, RADIUS, SHADOWS } from "../../src/constants/theme";
 import { getImageUrl } from "../../src/constants/config";
 
 export default function CartScreen() {
   const router = useRouter();
+  const { t, isRTL } = useTranslation();
   const { isAuthenticated } = useAuthStore();
   const {
     items,
@@ -51,16 +53,16 @@ export default function CartScreen() {
         <View style={styles.emptyIconCircle}>
           <ShoppingBag size={48} color={COLORS.primary} />
         </View>
-        <Text style={styles.emptyTitle}>Your Cart is Empty</Text>
+        <Text style={styles.emptyTitle}>{t("cart.empty") || "Your Cart is Empty"}</Text>
         <Text style={styles.emptySubtitle}>
-          Explore tiles, sanitaryware, paints, and building supplies
+          {t("cart.emptySubtitle") || "Explore tiles, sanitaryware, paints, and building supplies"}
         </Text>
         <TouchableOpacity
           style={styles.shopNowBtn}
           onPress={() => router.push("/(tabs)/home")}
           activeOpacity={0.8}
         >
-          <Text style={styles.shopNowText}>Start Shopping</Text>
+          <Text style={styles.shopNowText}>{t("cart.startShopping") || "Start Shopping"}</Text>
         </TouchableOpacity>
       </View>
     );
@@ -70,7 +72,9 @@ export default function CartScreen() {
     <View style={styles.container}>
       {/* Header */}
       <View style={styles.header}>
-        <Text style={styles.headerTitle}>Shopping Cart ({itemCount})</Text>
+        <Text style={styles.headerTitle}>
+          {t("cart.title") || "Shopping Cart"} ({itemCount})
+        </Text>
       </View>
 
       <ScrollView style={styles.scroll} showsVerticalScrollIndicator={false}>
@@ -80,8 +84,11 @@ export default function CartScreen() {
             <Truck size={16} color={COLORS.accentGreen} />
             <Text style={styles.deliveryText}>
               {subtotal >= freeDeliveryThreshold ? (
-                <Text style={styles.greenText}>You have unlocked FREE Standard Delivery!</Text>
+                <Text style={styles.greenText}>
+                  {t("cart.unlockedFreeDelivery") || "You have unlocked FREE Standard Delivery!"}
+                </Text>
               ) : (
+                t("cart.addMoreForFreeDelivery", { amount: remainingForFreeDelivery.toLocaleString("en-IN") }) ||
                 `Add ₹${remainingForFreeDelivery.toLocaleString("en-IN")} more for FREE Delivery`
               )}
             </Text>
@@ -183,24 +190,24 @@ export default function CartScreen() {
 
         {/* Bill Summary */}
         <View style={styles.summaryCard}>
-          <Text style={styles.summaryTitle}>Price Details</Text>
+          <Text style={styles.summaryTitle}>{t("shop.price") || "Price Details"}</Text>
 
           <View style={styles.summaryRow}>
-            <Text style={styles.summaryLabel}>Total Items Subtotal</Text>
+            <Text style={styles.summaryLabel}>{t("cart.subtotal") || "Item Subtotal"}</Text>
             <Text style={styles.summaryValue}>₹{subtotal.toLocaleString("en-IN")}</Text>
           </View>
 
           <View style={styles.summaryRow}>
-            <Text style={styles.summaryLabel}>Delivery Fee</Text>
+            <Text style={styles.summaryLabel}>{t("cart.deliveryFee") || "Delivery Fee"}</Text>
             <Text style={[styles.summaryValue, deliveryFee === 0 && styles.greenText]}>
-              {deliveryFee === 0 ? "FREE" : `₹${deliveryFee}`}
+              {deliveryFee === 0 ? (t("cart.free") || "FREE") : `₹${deliveryFee}`}
             </Text>
           </View>
 
           <View style={styles.divider} />
 
           <View style={styles.summaryRow}>
-            <Text style={styles.totalLabel}>Total Payable</Text>
+            <Text style={styles.totalLabel}>{t("cart.total") || "Total Payable"}</Text>
             <Text style={styles.totalValue}>₹{total.toLocaleString("en-IN")}</Text>
           </View>
         </View>
@@ -209,7 +216,7 @@ export default function CartScreen() {
         <View style={styles.trustRow}>
           <ShieldCheck size={16} color={COLORS.primary} />
           <Text style={styles.trustText}>
-            100% Safe and Secure Payments • Authentic Products
+            {(t("auth.secureLogin") || "100% Safe and Secure Payments")} • {(t("home.damageFree") || "Authentic Products")}
           </Text>
         </View>
 
@@ -219,7 +226,7 @@ export default function CartScreen() {
       {/* Sticky Bottom Bar */}
       <View style={styles.bottomBar}>
         <View>
-          <Text style={styles.barTotalLabel}>Total Amount</Text>
+          <Text style={styles.barTotalLabel}>{t("cart.total") || "Total Amount"}</Text>
           <Text style={styles.barTotalValue}>₹{total.toLocaleString("en-IN")}</Text>
         </View>
 
@@ -229,7 +236,9 @@ export default function CartScreen() {
           activeOpacity={0.85}
         >
           <Text style={styles.checkoutText}>
-            {isAuthenticated ? "Proceed to Checkout" : "Sign In to Buy"}
+            {isAuthenticated
+              ? (t("cart.proceedCheckout") || "Proceed to Checkout")
+              : (t("auth.login") || "Sign In to Buy")}
           </Text>
           <ArrowRight size={16} color={COLORS.textWhite} />
         </TouchableOpacity>

@@ -4,25 +4,65 @@ import AsyncStorage from "@react-native-async-storage/async-storage";
 import en from "../../locales/en.json";
 import hi from "../../locales/hi.json";
 import kn from "../../locales/kn.json";
+import ta from "../../locales/ta.json";
+import te from "../../locales/te.json";
+import ml from "../../locales/ml.json";
+import mr from "../../locales/mr.json";
+import bn from "../../locales/bn.json";
+import gu from "../../locales/gu.json";
+import pa from "../../locales/pa.json";
+import ur from "../../locales/ur.json";
+import or from "../../locales/or.json";
 
-export type SupportedLanguage = "en" | "hi" | "kn";
+export type SupportedLanguage =
+  | "en"
+  | "hi"
+  | "kn"
+  | "ta"
+  | "te"
+  | "ml"
+  | "mr"
+  | "bn"
+  | "gu"
+  | "pa"
+  | "ur"
+  | "or";
 
 export interface LanguageInfo {
   code: SupportedLanguage;
   name: string;
   nativeName: string;
+  isRTL?: boolean;
 }
 
 export const SUPPORTED_LANGUAGES: LanguageInfo[] = [
   { code: "en", name: "English", nativeName: "English" },
   { code: "hi", name: "Hindi", nativeName: "हिन्दी" },
   { code: "kn", name: "Kannada", nativeName: "ಕನ್ನಡ" },
+  { code: "ta", name: "Tamil", nativeName: "தமிழ்" },
+  { code: "te", name: "Telugu", nativeName: "తెలుగు" },
+  { code: "ml", name: "Malayalam", nativeName: "മലയാളം" },
+  { code: "mr", name: "Marathi", nativeName: "मराठी" },
+  { code: "bn", name: "Bengali", nativeName: "বাংলা" },
+  { code: "gu", name: "Gujarati", nativeName: "ગુજરાતી" },
+  { code: "pa", name: "Punjabi", nativeName: "ਪੰਜਾਬੀ" },
+  { code: "ur", name: "Urdu", nativeName: "اردو", isRTL: true },
+  { code: "or", name: "Odia", nativeName: "ଓଡ଼ିଆ" },
 ];
 
 const translations: Record<SupportedLanguage, any> = {
   en,
   hi,
   kn,
+  ta,
+  te,
+  ml,
+  mr,
+  bn,
+  gu,
+  pa,
+  ur,
+  or,
 };
 
 function getNestedValue(obj: any, path: string): string | undefined {
@@ -61,7 +101,13 @@ export const useI18nStore = create<I18nState>((set, get) => ({
       const stored = await AsyncStorage.getItem(STORAGE_KEY);
       const hasSelected = await AsyncStorage.getItem(HAS_SELECTED_KEY);
 
-      const resolved = (stored === "hi" || stored === "kn" || stored === "en") ? stored : "en";
+      const validCodes = SUPPORTED_LANGUAGES.map((l) => l.code);
+      const resolved = (
+        stored && validCodes.includes(stored as SupportedLanguage)
+      )
+        ? (stored as SupportedLanguage)
+        : "en";
+
       set({
         language: resolved,
         isReady: true,
@@ -114,8 +160,24 @@ export const useI18nStore = create<I18nState>((set, get) => ({
 export function useTranslation() {
   const language = useI18nStore((s) => s.language);
   const setLanguage = useI18nStore((s) => s.setLanguage);
-  const t = useI18nStore((s) => s.t);
   const hasSelectedLanguage = useI18nStore((s) => s.hasSelectedLanguage);
+
+  // Reactive t function directly reading active language from hook subscription
+  const t = (key: string, params?: Record<string, string | number>): string => {
+    let text = getNestedValue(translations[language], key);
+    if (!text && language !== "en") {
+      text = getNestedValue(translations.en, key);
+    }
+    if (!text) {
+      text = key;
+    }
+    if (params) {
+      for (const [paramKey, paramVal] of Object.entries(params)) {
+        text = text.replace(new RegExp(`{{\\s*${paramKey}\\s*}}`, "g"), String(paramVal));
+      }
+    }
+    return text;
+  };
 
   return {
     t,

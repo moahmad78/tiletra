@@ -77,8 +77,8 @@ export async function POST(req: NextRequest) {
       });
     }
 
-    // 1. Strict IP Lockout Check (for vendor/business portal)
-    const lockoutCheck = checkVendorLoginLockout(clientIp);
+    // 1. Strict Lockout Check (per account and IP for vendor/business portal)
+    const lockoutCheck = checkVendorLoginLockout(clientIp, cleanEmail);
     if (lockoutCheck.locked) {
       const mins = Math.floor((lockoutCheck.retryAfterSeconds || 0) / 60);
       const secs = (lockoutCheck.retryAfterSeconds || 0) % 60;
@@ -147,25 +147,6 @@ export async function POST(req: NextRequest) {
       : null;
 
     if (!vendor && !vendorUser) {
-      // Record failure for brute-force enum protection
-      const failCheck = recordVendorLoginFailure(clientIp);
-      if (failCheck.locked) {
-        return mobileApiResponse(
-          {
-            success: false,
-            loginMethod: "not_found",
-            reason: "NOT_FOUND",
-            error: "Too many failed attempts. Account login blocked for 15 minutes.",
-            locked: true,
-            lockoutUntil: failCheck.lockoutUntil,
-            retryAfterSeconds: failCheck.retryAfterSeconds,
-            remainingAttempts: 0,
-            email: cleanEmail,
-          },
-          429
-        );
-      }
-
       return mobileApiResponse(
         {
           success: false,
@@ -173,7 +154,7 @@ export async function POST(req: NextRequest) {
           reason: "NOT_FOUND",
           error: "This email isn't registered as an approved vendor partner on Intrihub.",
           locked: false,
-          remainingAttempts: failCheck.remainingAttempts,
+          remainingAttempts: lockoutCheck.remainingAttempts ?? 5,
           email: cleanEmail,
         },
         403

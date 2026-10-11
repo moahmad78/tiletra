@@ -189,3 +189,19 @@ export async function updateUserProfile(data: {
   const res = await apiClient.patch("/api/mobile/auth/me", data);
   return res.data;
 }
+
+export async function resetAuthLockout(email?: string): Promise<{ success: boolean; message?: string }> {
+  const secret = process.env.EXPO_PUBLIC_RESET_LOCKOUT_SECRET || "dev-lockout-secret";
+  const res = await apiClient.post(
+    "/api/mobile/auth/reset-lockout",
+    {
+      email: email || undefined,
+    },
+    {
+      headers: {
+        "x-admin-secret": secret,
+      },
+    }
+  );
+  return res.data;
+}

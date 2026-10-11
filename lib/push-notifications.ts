@@ -9,6 +9,8 @@ export interface ExpoPushPayload {
   priority?: "default" | "normal" | "high";
   badge?: number;
   channelId?: string;
+  image?: string | null;
+  mutableContent?: boolean;
 }
 
 /**
@@ -38,6 +40,12 @@ export async function sendExpoPushNotification(payload: ExpoPushPayload): Promis
       data: payload.data || {},
       priority: payload.priority || "high",
       channelId: payload.channelId || "orders_high_importance",
+      ...(payload.image ? { image: payload.image } : {}),
+      ...(payload.mutableContent !== undefined
+        ? { mutableContent: payload.mutableContent }
+        : payload.image
+        ? { mutableContent: true }
+        : {}),
     }));
 
     const res = await fetch("https://exp.host/--/api/v2/push/send", {
@@ -132,6 +140,7 @@ export async function notifyAdminPush(params: {
 
 /**
  * Dispatches a push notification to a specific Vendor's registered devices using DeviceToken table.
+ * For "new order" events, triggers PushKit VoIP push to wake iOS CallKit and high-importance Android channel.
  */
 export async function notifyVendorPush(params: {
   vendorId?: string;
@@ -139,32 +148,73 @@ export async function notifyVendorPush(params: {
   title: string;
   body: string;
   data?: Record<string, any>;
+  isNewOrder?: boolean;
+  orderId?: string;
+  totalAmount?: number;
+  customerArea?: string;
 }) {
   try {
     let targetUserId = params.userId;
+    let targetVendorId = params.vendorId;
 
-    if (!targetUserId && params.vendorId) {
+    if (!targetUserId && targetVendorId) {
       const vendor = await prisma.vendor.findUnique({
-        where: { id: params.vendorId },
+        where: { id: targetVendorId },
         select: { ownerId: true },
       });
       targetUserId = vendor?.ownerId || undefined;
+    } else if (targetUserId && !targetVendorId) {
+      const vendor = await prisma.vendor.findFirst({
+        where: { ownerId: targetUserId },
+        select: { id: true },
+      });
+      targetVendorId = vendor?.id || undefined;
     }
 
     if (!targetUserId) return;
 
+    // 1. If it's a new order alert, dispatch VoIP push for iOS CallKit
+    if (params.isNewOrder && targetVendorId) {
+      try {
+        const { sendVoipPushToVendor } = await import("@/lib/voip-push-service");
+        await sendVoipPushToVendor({
+          vendorId: targetVendorId,
+          orderId: params.orderId || params.data?.orderId || "new_order",
+          splitId: params.data?.splitId,
+          totalAmount: params.totalAmount || params.data?.amount || 0,
+          customerArea: params.customerArea || params.data?.customerArea || "Customer Area",
+        });
+      } catch (voipErr) {
+        console.error("[notifyVendorPush] VoIP dispatch error:", voipErr);
+      }
+    }
+
+    // 2. Fetch standard device tokens (excluding ios_voip which is handled via APNs directly)
     const records = await prisma.deviceToken.findMany({
-      where: { userId: targetUserId },
+      where: {
+        userId: targetUserId,
+        platform: { not: "ios_voip" },
+      },
       select: { token: true },
     });
 
-    const tokens = records.map((r) => r.token);
+    const tokens = records.map((r: { token: string }) => r.token);
     if (tokens.length > 0) {
+      const channelId = params.isNewOrder ? "orders_high_importance" : "orders_default";
+      const sound = params.isNewOrder ? "order_alert" : "default";
+
       await sendExpoPushNotification({
         to: tokens,
         title: params.title,
         body: params.body,
-        data: params.data,
+        sound,
+        priority: "high",
+        channelId,
+        data: {
+          ...params.data,
+          isNewOrder: params.isNewOrder,
+          orderId: params.orderId || params.data?.orderId,
+        },
       });
     }
   } catch (e) {

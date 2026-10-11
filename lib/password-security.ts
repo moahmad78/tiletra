@@ -38,11 +38,20 @@ export function verifyPassword(password: string, storedHash: string): boolean {
     const salt = parts[1];
     const originalHash = parts[2];
 
-    const derivedKey = crypto.scryptSync(password, salt, 64);
+    const cleanPass = password.trim();
+    let derivedKey = crypto.scryptSync(cleanPass, salt, 64);
     const originalBuffer = Buffer.from(originalHash, "hex");
 
-    if (derivedKey.length !== originalBuffer.length) return false;
-    return crypto.timingSafeEqual(derivedKey, originalBuffer);
+    if (derivedKey.length === originalBuffer.length && crypto.timingSafeEqual(derivedKey, originalBuffer)) {
+      return true;
+    }
+    if (cleanPass !== password) {
+      derivedKey = crypto.scryptSync(password, salt, 64);
+      if (derivedKey.length === originalBuffer.length && crypto.timingSafeEqual(derivedKey, originalBuffer)) {
+        return true;
+      }
+    }
+    return false;
   }
 
   // Format 2: Legacy SHA-256

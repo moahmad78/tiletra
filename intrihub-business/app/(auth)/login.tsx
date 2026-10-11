@@ -12,7 +12,7 @@ import {
   Linking,
 } from "react-native";
 import { Image } from "expo-image";
-import { useRouter } from "expo-router";
+import { useRouter, useLocalSearchParams } from "expo-router";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import * as WebBrowser from "expo-web-browser";
 import * as AuthSession from "expo-auth-session";
@@ -37,7 +37,7 @@ import {
   EyeOff,
   KeyRound,
 } from "lucide-react-native";
-import { loginWithGoogle, sendOtp, verifyOtp, checkAuthMethod, loginWithPassword } from "../../src/api/auth";
+import { loginWithGoogle, sendOtp, verifyOtp, checkAuthMethod, loginWithPassword, resetAuthLockout } from "../../src/api/auth";
 import { apiClient, setStoredTokens, clearStoredTokens } from "../../src/api/client";
 import { useAuthStore } from "../../src/store/authStore";
 import { COLORS, SHADOWS } from "../../src/constants/theme";
@@ -52,6 +52,9 @@ const GOOGLE_ANDROID_CLIENT_ID =
   "602084779648-bdifn2cbd0n0tp3qq1elju4iqh6hvb5a.apps.googleusercontent.com";
 const GOOGLE_IOS_CLIENT_ID =
   process.env.EXPO_PUBLIC_GOOGLE_IOS_CLIENT_ID || "";
+
+const isReviewerBypassEnabled =
+  __DEV__ || process.env.EXPO_PUBLIC_ENABLE_REVIEWER_BYPASS === "true";
 
 // Official Google 4-Color 'G' Logo
 function GoogleOfficialIcon() {
@@ -79,6 +82,7 @@ function GoogleOfficialIcon() {
 
 export default function BusinessLoginScreen() {
   const router = useRouter();
+  const searchParams = useLocalSearchParams<{ error?: string }>();
   const insets = useSafeAreaInsets();
   const { setUser } = useAuthStore();
 
@@ -93,6 +97,13 @@ export default function BusinessLoginScreen() {
   const [error, setError] = useState("");
   const [timer, setTimer] = useState(60);
   const [canResend, setCanResend] = useState(false);
+
+  // Display error redirected from oauth.tsx or deep link guards
+  useEffect(() => {
+    if (searchParams?.error) {
+      setError(String(searchParams.error));
+    }
+  }, [searchParams?.error]);
 
   // Dedicated Unapproved / Not Found state
   const [unapprovedDetails, setUnapprovedDetails] = useState<{
@@ -109,6 +120,21 @@ export default function BusinessLoginScreen() {
   // Brute-force IP Lockout countdown state
   const [isLocked, setIsLocked] = useState(false);
   const [lockoutSeconds, setLockoutSeconds] = useState(0);
+  const [resettingLockout, setResettingLockout] = useState(false);
+
+  const handleAdminResetLockout = async () => {
+    setResettingLockout(true);
+    try {
+      await resetAuthLockout(email.trim());
+    } catch (e) {
+      console.warn("Reset lockout network notice:", e);
+    } finally {
+      setIsLocked(false);
+      setLockoutSeconds(0);
+      setError("");
+      setResettingLockout(false);
+    }
+  };
 
   // Countdown timer for OTP
   useEffect(() => {
@@ -144,7 +170,7 @@ export default function BusinessLoginScreen() {
   }, [isLocked, lockoutSeconds]);
 
   const handleLockoutResponse = (errData: any) => {
-    if (email.trim().toLowerCase() === "bizreview@intrihub.com") {
+    if (isReviewerBypassEnabled && email.trim().toLowerCase() === "bizreview@intrihub.com") {
       setIsLocked(false);
       setLockoutSeconds(0);
       return;
@@ -178,117 +204,8 @@ export default function BusinessLoginScreen() {
     }
   };
 
-  const processAuthUrl = async (urlStr: string) => {
-    if (
-      (urlStr.includes("intrihub-biz://") ||
-        urlStr.includes("intrihub://") ||
-        urlStr.includes("exp://") ||
-        urlStr.includes("oauth")) &&
-      urlStr.includes("accessToken=")
-    ) {
-      try {
-        WebBrowser.dismissAuthSession();
-        WebBrowser.dismissBrowser();
-      } catch {}
-
-      const queryIndex = urlStr.indexOf("?");
-      if (queryIndex !== -1) {
-        const queryString = urlStr.substring(queryIndex + 1);
-        const params = new URLSearchParams(queryString);
-        const accessToken = params.get("accessToken");
-        const refreshToken = params.get("refreshToken");
-        const userRaw = params.get("user");
-
-        if (accessToken && refreshToken && userRaw) {
-          try {
-            const userObj = JSON.parse(decodeURIComponent(userRaw));
-
-            // Verify vendor status via business auth API endpoint
-            try {
-              const bizRes = await loginWithGoogle({
-                accessToken,
-                profile: {
-                  email: userObj.email,
-                  name: userObj.name,
-                  avatar: userObj.avatar,
-                },
-              });
-
-              if (bizRes.success && bizRes.user) {
-                await setStoredTokens(accessToken, refreshToken);
-                handleRoleRouting(bizRes.user);
-                return;
-              } else if (!bizRes.success) {
-                await clearStoredTokens();
-                setError(
-                  bizRes.error ||
-                    "This email does not exist as an approved vendor account. Please sign in with your registered vendor email."
-                );
-                setStep("input");
-                return;
-              }
-            } catch (bizErr: any) {
-              const errData = bizErr?.response?.data;
-              if (errData?.reason === "NOT_FOUND" || errData?.error) {
-                await clearStoredTokens();
-                setError(
-                  errData?.error ||
-                    "This email does not exist as an approved vendor account. Please sign in with your registered vendor email."
-                );
-                setStep("input");
-                return;
-              }
-            }
-
-            // Fallback: check profile endpoint
-            try {
-              const meRes = await apiClient.get("/api/mobile/auth/me", {
-                headers: { Authorization: `Bearer ${accessToken}` },
-              });
-              if (meRes.data?.success && meRes.data?.user) {
-                await setStoredTokens(accessToken, refreshToken);
-                handleRoleRouting(meRes.data.user);
-                return;
-              }
-            } catch (meErr) {
-              console.warn("[Google OAuth] Profile fetch fallback:", meErr);
-            }
-
-            // If still unverified or role is customer
-            if (userObj.role === "vendor" || userObj.role === "admin" || userObj.role === "superadmin") {
-              await setStoredTokens(accessToken, refreshToken);
-              handleRoleRouting(userObj);
-            } else {
-              await clearStoredTokens();
-              setError("This email does not exist as an approved vendor account. Please sign in with your registered vendor email.");
-              setStep("input");
-            }
-          } catch (parseErr) {
-            console.error("[Google OAuth] Parse error:", parseErr);
-            setError("Sign-in succeeded but account data could not be parsed.");
-          }
-        }
-      }
-    }
-  };
-
-  // Deep Link listener for Google OAuth web bridge callback
-  useEffect(() => {
-    const handleDeepLink = async (event: { url: string }) => {
-      if (event?.url) {
-        await processAuthUrl(event.url);
-      }
-    };
-
-    const sub = Linking.addEventListener("url", handleDeepLink);
-    Linking.getInitialURL().then((url) => {
-      if (url) processAuthUrl(url);
-    });
-
-    return () => {
-      sub.remove();
-    };
-  }, []);
+  // Note: All app-wide deep linking is handled centrally in oauth.tsx
+  // No duplicate Linking.addEventListener is kept here to eliminate race conditions.
 
   const handleGoogleLogin = async () => {
     if (isLocked) return;
@@ -298,7 +215,7 @@ export default function BusinessLoginScreen() {
     try {
       if (Platform.OS === "web") {
         if (typeof window !== "undefined") {
-          window.location.href = "https://www.intrihub.com/api/auth/google?intent=mobile";
+          window.location.href = "https://www.intrihub.com/api/auth/google?intent=business";
         }
         return;
       }
@@ -308,7 +225,7 @@ export default function BusinessLoginScreen() {
         path: "oauth",
       });
 
-      const authUrl = `https://www.intrihub.com/api/auth/google?intent=mobile&redirect_to=${encodeURIComponent(
+      const authUrl = `https://www.intrihub.com/api/auth/google?intent=business&redirect_to=${encodeURIComponent(
         redirectUrl
       )}`;
 
@@ -325,7 +242,22 @@ export default function BusinessLoginScreen() {
       }
 
       if (result && result.type === "success" && result.url) {
-        await processAuthUrl(result.url);
+        // Hand off directly to oauth.tsx so there is strictly ONE handler
+        const queryIndex = result.url.indexOf("?");
+        if (queryIndex !== -1) {
+          const qs = result.url.substring(queryIndex + 1);
+          const sp = new URLSearchParams(qs);
+          const accessToken = sp.get("accessToken") || undefined;
+          const refreshToken = sp.get("refreshToken") || undefined;
+          const user = sp.get("user") || undefined;
+          if (accessToken && refreshToken && user) {
+            router.replace({
+              pathname: "/oauth",
+              params: { accessToken, refreshToken, user },
+            } as any);
+            return;
+          }
+        }
       }
     } catch (err: any) {
       console.error("[Google OAuth] Login error:", err);
@@ -336,14 +268,15 @@ export default function BusinessLoginScreen() {
   };
 
   const handleSendOtp = async () => {
+    if (loading) return;
     if (isLocked) return;
     if (!email.trim()) {
       setError("Please enter your business email");
       return;
     }
 
-    // Google Play Console Reviewer Direct Password Route
-    if (email.trim().toLowerCase() === "bizreview@intrihub.com") {
+    // Google Play Console Reviewer Direct Password Route (enabled in dev, preview, or with EXPO_PUBLIC_ENABLE_REVIEWER_BYPASS)
+    if (isReviewerBypassEnabled && email.trim().toLowerCase() === "bizreview@intrihub.com") {
       setStep("password");
       setPassword("");
       setError("");
@@ -530,6 +463,23 @@ export default function BusinessLoginScreen() {
                   Try again in {formatLockoutTime(lockoutSeconds)}
                 </Text>
               </View>
+
+              {__DEV__ && (
+                <TouchableOpacity
+                  style={styles.adminResetBtn}
+                  onPress={handleAdminResetLockout}
+                  disabled={resettingLockout}
+                  activeOpacity={0.8}
+                >
+                  {resettingLockout ? (
+                    <ActivityIndicator size="small" color="#DC2626" />
+                  ) : (
+                    <Text style={styles.adminResetBtnText}>
+                      ⚡ Admin / Tester Override: Clear Lockout
+                    </Text>
+                  )}
+                </TouchableOpacity>
+              )}
             </View>
           ) : null}
 
@@ -999,6 +949,23 @@ const styles = StyleSheet.create({
     color: "#991B1B",
     fontSize: 13,
     fontWeight: "800",
+  },
+  adminResetBtn: {
+    marginTop: 10,
+    backgroundColor: "#FEE2E2",
+    borderWidth: 1,
+    borderColor: "#EF4444",
+    borderStyle: "dashed",
+    paddingVertical: 8,
+    paddingHorizontal: 14,
+    borderRadius: 8,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  adminResetBtnText: {
+    color: "#B91C1C",
+    fontSize: 12,
+    fontWeight: "700",
   },
   errorBanner: {
     backgroundColor: "#FEE2E2",

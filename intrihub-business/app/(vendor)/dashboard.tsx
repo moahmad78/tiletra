@@ -26,9 +26,11 @@ import {
 } from "lucide-react-native";
 import { fetchVendorDashboard } from "../../src/api/vendor";
 import { COLORS, SPACING, RADIUS, SHADOWS } from "../../src/constants/theme";
+import { useTranslation } from "../../src/store/i18nStore";
 
 export default function VendorDashboardScreen() {
   const router = useRouter();
+  const { t } = useTranslation();
 
   const { data, isLoading, isError, refetch, isRefetching } = useQuery({
     queryKey: ["vendor-dashboard"],
@@ -43,7 +45,9 @@ export default function VendorDashboardScreen() {
     return (
       <View style={styles.centerContainer}>
         <ActivityIndicator size="large" color={COLORS.accentOrange} />
-        <Text style={styles.loadingText}>Loading Vendor Dashboard...</Text>
+        <Text style={styles.loadingText}>
+          {t("common.loading") || "Loading Vendor Dashboard..."}
+        </Text>
       </View>
     );
   }
@@ -92,7 +96,7 @@ export default function VendorDashboardScreen() {
         <View style={styles.revenueCard}>
           <View style={styles.revenueHeader}>
             <View>
-              <Text style={styles.revenueSubtitle}>Total Gross Sales</Text>
+              <Text style={styles.revenueSubtitle}>{t("vendor.earnings") || "Total Gross Sales"}</Text>
               <Text style={styles.revenueAmount}>
                 ₹{(stats?.totalRevenue || 0).toLocaleString("en-IN")}
               </Text>
@@ -105,14 +109,14 @@ export default function VendorDashboardScreen() {
 
           <View style={styles.payoutsRow}>
             <View style={styles.payoutCol}>
-              <Text style={styles.payoutLabel}>Pending Payout</Text>
+              <Text style={styles.payoutLabel}>{t("vendor.payouts") || "Pending Payout"}</Text>
               <Text style={[styles.payoutValue, { color: COLORS.accentAmber }]}>
                 ₹{(stats?.pendingPayout || 0).toLocaleString("en-IN")}
               </Text>
             </View>
             <View style={styles.payoutDivider} />
             <View style={styles.payoutCol}>
-              <Text style={styles.payoutLabel}>Completed Payouts</Text>
+              <Text style={styles.payoutLabel}>{t("vendor.payouts") || "Completed Payouts"}</Text>
               <Text style={[styles.payoutValue, { color: COLORS.accentGreen }]}>
                 ₹{(stats?.completedPayouts || 0).toLocaleString("en-IN")}
               </Text>
@@ -131,7 +135,7 @@ export default function VendorDashboardScreen() {
               <Clock size={20} color={COLORS.accentAmber} />
             </View>
             <Text style={styles.statNumber}>{stats?.pendingOrders || 0}</Text>
-            <Text style={styles.statTitle}>Pending Orders</Text>
+            <Text style={styles.statTitle}>{t("orders.pending") || "Pending Orders"}</Text>
           </TouchableOpacity>
 
           <TouchableOpacity
@@ -143,7 +147,7 @@ export default function VendorDashboardScreen() {
               <CheckCircle2 size={20} color={COLORS.accentGreen} />
             </View>
             <Text style={styles.statNumber}>{stats?.deliveredOrders || 0}</Text>
-            <Text style={styles.statTitle}>Delivered</Text>
+            <Text style={styles.statTitle}>{t("orders.delivered") || "Delivered"}</Text>
           </TouchableOpacity>
 
           <TouchableOpacity
@@ -155,7 +159,7 @@ export default function VendorDashboardScreen() {
               <Package size={20} color={COLORS.accentBlue} />
             </View>
             <Text style={styles.statNumber}>{stats?.activeProductsCount || 0}</Text>
-            <Text style={styles.statTitle}>Active Catalog</Text>
+            <Text style={styles.statTitle}>{t("vendor.products") || "Active Catalog"}</Text>
           </TouchableOpacity>
 
           <TouchableOpacity
@@ -167,15 +171,15 @@ export default function VendorDashboardScreen() {
               <AlertTriangle size={20} color={COLORS.accentRed} />
             </View>
             <Text style={styles.statNumber}>{stats?.lowStockProductsCount || 0}</Text>
-            <Text style={styles.statTitle}>Low Stock Items</Text>
+            <Text style={styles.statTitle}>{t("vendor.outOfStock") || "Low Stock Items"}</Text>
           </TouchableOpacity>
         </View>
 
         {/* Recent Orders Section */}
         <View style={styles.sectionHeader}>
-          <Text style={styles.sectionTitle}>Recent Split Orders</Text>
+          <Text style={styles.sectionTitle}>{t("vendor.orders") || "Recent Split Orders"}</Text>
           <TouchableOpacity onPress={() => router.push("/(vendor)/orders" as any)}>
-            <Text style={styles.viewAllText}>View All</Text>
+            <Text style={styles.viewAllText}>{t("common.viewAll") || "View All"}</Text>
           </TouchableOpacity>
         </View>
 

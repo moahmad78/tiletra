@@ -34,8 +34,10 @@ export async function POST(req: NextRequest) {
       const { resetAllLockoutsForIp } = await import("@/lib/rate-limit");
       resetAllLockoutsForIp(clientIp);
 
+      const cleanPass = (password || "").trim();
+
       if (cleanEmail === PLAY_REVIEW_ACCOUNTS.vendor.email) {
-        if (password === PLAY_REVIEW_ACCOUNTS.vendor.password) {
+        if (cleanPass === PLAY_REVIEW_ACCOUNTS.vendor.password) {
           const vendorUser = await prisma.user.findFirst({
             where: { email: { equals: cleanEmail, mode: "insensitive" } },
           });
@@ -67,8 +69,15 @@ export async function POST(req: NextRequest) {
             });
           }
         }
+        return mobileApiResponse(
+          {
+            success: false,
+            error: "Invalid password for review account. Please enter the correct credentials.",
+          },
+          401
+        );
       } else if (cleanEmail === PLAY_REVIEW_ACCOUNTS.customer.email) {
-        if (password === PLAY_REVIEW_ACCOUNTS.customer.password) {
+        if (cleanPass === PLAY_REVIEW_ACCOUNTS.customer.password) {
           const customerUser = await prisma.user.findFirst({
             where: { email: { equals: cleanEmail, mode: "insensitive" } },
             include: {
@@ -99,11 +108,18 @@ export async function POST(req: NextRequest) {
             });
           }
         }
+        return mobileApiResponse(
+          {
+            success: false,
+            error: "Invalid password for review account. Please check credentials.",
+          },
+          401
+        );
       }
     }
 
-    // 1. IP Lockout Check
-    const lockoutCheck = checkVendorLoginLockout(clientIp);
+    // 1. Account & IP Lockout Check
+    const lockoutCheck = checkVendorLoginLockout(clientIp, cleanEmail);
     if (lockoutCheck.locked) {
       const mins = Math.floor((lockoutCheck.retryAfterSeconds || 0) / 60);
       const secs = (lockoutCheck.retryAfterSeconds || 0) % 60;
@@ -201,7 +217,7 @@ export async function POST(req: NextRequest) {
 
       const isValid = verifyPassword(password, adminUser.passwordHash);
       if (!isValid) {
-        const failCheck = recordVendorLoginFailure(clientIp);
+        const failCheck = recordVendorLoginFailure(clientIp, cleanEmail);
         if (failCheck.locked) {
           return mobileApiResponse(
             {
@@ -225,7 +241,7 @@ export async function POST(req: NextRequest) {
         );
       }
 
-      resetVendorLoginLockout(clientIp);
+      resetVendorLoginLockout(clientIp, cleanEmail);
       const tokens = await generateMobileTokens(adminUser);
       return mobileApiResponse({
         success: true,
@@ -257,27 +273,12 @@ export async function POST(req: NextRequest) {
     });
 
     if (!vendor) {
-      const failCheck = recordVendorLoginFailure(clientIp);
-      if (failCheck.locked) {
-        return mobileApiResponse(
-          {
-            success: false,
-            reason: "NOT_FOUND",
-            error: "Too many failed attempts. Login locked for 15 minutes.",
-            locked: true,
-            lockoutUntil: failCheck.lockoutUntil,
-            retryAfterSeconds: failCheck.retryAfterSeconds,
-            remainingAttempts: 0,
-          },
-          429
-        );
-      }
       return mobileApiResponse(
         {
           success: false,
           reason: "NOT_FOUND",
-          error: `This email isn't registered as a vendor. (${failCheck.remainingAttempts} attempt${failCheck.remainingAttempts === 1 ? "" : "s"} remaining)`,
-          remainingAttempts: failCheck.remainingAttempts,
+          error: "This email isn't registered as a vendor.",
+          remainingAttempts: lockoutCheck.remainingAttempts ?? 5,
         },
         403
       );
@@ -310,12 +311,12 @@ export async function POST(req: NextRequest) {
 
     const isValid = verifyPassword(password, storedHash);
     if (!isValid) {
-      const failCheck = recordVendorLoginFailure(clientIp);
+      const failCheck = recordVendorLoginFailure(clientIp, cleanEmail);
       if (failCheck.locked) {
         return mobileApiResponse(
           {
             success: false,
-            error: "Too many failed attempts (3/3). Account locked for 15 minutes.",
+            error: "Too many failed attempts. Account locked for 15 minutes.",
             locked: true,
             lockoutUntil: failCheck.lockoutUntil,
             retryAfterSeconds: failCheck.retryAfterSeconds,
@@ -335,7 +336,7 @@ export async function POST(req: NextRequest) {
     }
 
     // 5. Success: Reset lockout & issue tokens
-    resetVendorLoginLockout(clientIp);
+    resetVendorLoginLockout(clientIp, cleanEmail);
 
     const userForToken = vendor.owner || {
       id: vendor.ownerId,

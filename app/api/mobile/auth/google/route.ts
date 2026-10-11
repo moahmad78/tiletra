@@ -22,9 +22,9 @@ export async function POST(req: NextRequest) {
       req.headers.get("x-real-ip") ||
       "127.0.0.1";
 
-    // 1. Check IP lockout for business login attempts
+    // 1. Check account & IP lockout for business login attempts
     if (isBusinessLogin) {
-      const lockoutCheck = checkVendorLoginLockout(clientIp);
+      const lockoutCheck = checkVendorLoginLockout(clientIp, clientProfile?.email);
       if (lockoutCheck.locked) {
         const mins = Math.floor((lockoutCheck.retryAfterSeconds || 0) / 60);
         const secs = (lockoutCheck.retryAfterSeconds || 0) % 60;
@@ -119,22 +119,20 @@ export async function POST(req: NextRequest) {
         });
 
         if (!matchedVendor) {
-          const failRecord = recordVendorLoginFailure(clientIp);
           return mobileApiResponse(
             {
               success: false,
               reason: "NOT_FOUND",
               error: "This Google account isn't registered as an approved vendor partner on Intrihub Business.",
               email: cleanEmail,
-              remainingAttempts: failRecord.remainingAttempts,
-              locked: failRecord.locked,
+              remainingAttempts: 5,
+              locked: false,
             },
             403
           );
         }
 
         if (matchedVendor.status !== "approved") {
-          const failRecord = recordVendorLoginFailure(clientIp);
           let reason = "UNAPPROVED";
           let msg = `Vendor account status is '${matchedVendor.status}'. Access denied before approval.`;
           if (matchedVendor.status === "pending") {
@@ -155,8 +153,8 @@ export async function POST(req: NextRequest) {
               error: msg,
               email: cleanEmail,
               vendorName: matchedVendor.businessName,
-              remainingAttempts: failRecord.remainingAttempts,
-              locked: failRecord.locked,
+              remainingAttempts: 5,
+              locked: false,
             },
             403
           );
@@ -325,8 +323,8 @@ export async function POST(req: NextRequest) {
         }
       }
 
-      // Successful business login -> reset IP lockout
-      resetVendorLoginLockout(clientIp);
+      // Successful business login -> reset lockout
+      resetVendorLoginLockout(clientIp, cleanEmail);
     }
 
     const allowedAdminEmail = (process.env.ADMIN_ALLOWED_EMAIL || "admin@intrihub.com").toLowerCase().trim();

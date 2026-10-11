@@ -68,10 +68,10 @@ export default function LanguageModal({
               <Text style={styles.title}>
                 {isFirstLaunch
                   ? "Choose Language / भाषा चुनें"
-                  : t("nav.selectLanguage")}
+                  : t("common.selectLanguage")}
               </Text>
               <Text style={styles.subtitle}>
-                Select your preferred app language • ਆਪਣੀ ਭਾਸ਼ਾ ਚੁਣੋ
+                {t("common.selectLanguagePrompt")} • अपनी भाषा चुनें
               </Text>
             </View>
             {!isFirstLaunch && (
@@ -86,7 +86,7 @@ export default function LanguageModal({
             <Search size={16} color="#94A3B8" />
             <TextInput
               style={styles.searchInput}
-              placeholder="Search language / भाषा खोजें..."
+              placeholder={t("common.searchLanguage") || "Search language / भाषा खोजें..."}
               placeholderTextColor="#94A3B8"
               value={searchQuery}
               onChangeText={setSearchQuery}
@@ -155,7 +155,7 @@ export default function LanguageModal({
               activeOpacity={0.85}
             >
               <Text style={styles.continueBtnText}>
-                Continue / આગળ વધો / آگے بڑھیں
+                {t("common.continue")} / Continue
               </Text>
             </TouchableOpacity>
           )}
@@ -168,22 +168,23 @@ export default function LanguageModal({
 const styles = StyleSheet.create({
   backdrop: {
     flex: 1,
-    backgroundColor: "rgba(2, 24, 48, 0.72)",
+    backgroundColor: "rgba(15, 23, 42, 0.65)",
     justifyContent: "center",
     alignItems: "center",
-    padding: 20,
+    paddingHorizontal: 20,
   },
   card: {
-    width: "100%",
-    maxWidth: 400,
     backgroundColor: "#FFFFFF",
     borderRadius: 24,
+    width: "100%",
+    maxWidth: 420,
+    maxHeight: "82%",
     padding: 20,
     shadowColor: "#000",
     shadowOffset: { width: 0, height: 10 },
-    shadowOpacity: 0.18,
+    shadowOpacity: 0.2,
     shadowRadius: 20,
-    elevation: 12,
+    elevation: 10,
   },
   header: {
     flexDirection: "row",
@@ -191,27 +192,27 @@ const styles = StyleSheet.create({
     marginBottom: 14,
   },
   iconCircle: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
-    backgroundColor: "#EFF6FF",
-    alignItems: "center",
+    width: 38,
+    height: 38,
+    borderRadius: 19,
+    backgroundColor: "#F0F5FA",
     justifyContent: "center",
+    alignItems: "center",
   },
   title: {
-    fontSize: 16,
-    fontWeight: "800",
+    fontSize: 17,
+    fontWeight: "700",
     color: "#052a51",
   },
   subtitle: {
-    fontSize: 11,
+    fontSize: 12,
     color: "#64748B",
     marginTop: 2,
   },
   closeBtn: {
     padding: 6,
-    borderRadius: 12,
-    backgroundColor: "#F8FAFC",
+    borderRadius: 16,
+    backgroundColor: "#F1F5F9",
   },
   searchContainer: {
     flexDirection: "row",
@@ -219,86 +220,79 @@ const styles = StyleSheet.create({
     backgroundColor: "#F8FAFC",
     borderWidth: 1,
     borderColor: "#E2E8F0",
-    borderRadius: 14,
+    borderRadius: 12,
     paddingHorizontal: 12,
     height: 42,
     marginBottom: 12,
-    gap: 8,
   },
   searchInput: {
     flex: 1,
+    marginLeft: 8,
     fontSize: 13,
-    color: "#0F172A",
-    paddingVertical: 0,
+    color: "#1E293B",
   },
   scrollArea: {
-    maxHeight: 340,
+    maxHeight: 320,
   },
   optionsList: {
-    gap: 8,
     paddingVertical: 2,
+    gap: 8,
   },
   langOption: {
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "space-between",
-    paddingVertical: 12,
     paddingHorizontal: 14,
-    borderRadius: 14,
-    borderWidth: 1.5,
-    borderColor: "#E2E8F0",
+    paddingVertical: 12,
+    borderRadius: 12,
     backgroundColor: "#F8FAFC",
+    borderWidth: 1.5,
+    borderColor: "#F1F5F9",
   },
   langOptionSelected: {
-    borderColor: "#F26522",
-    backgroundColor: "#FFF7ED",
+    backgroundColor: "#EFF6FF",
+    borderColor: "#052a51",
   },
   nativeName: {
     fontSize: 15,
-    fontWeight: "700",
+    fontWeight: "600",
     color: "#1E293B",
   },
   nativeNameSelected: {
     color: "#052a51",
-    fontWeight: "900",
+    fontWeight: "700",
   },
   langName: {
-    fontSize: 11,
+    fontSize: 12,
     color: "#64748B",
-    marginTop: 1,
+    marginTop: 2,
   },
   checkCircle: {
     width: 22,
     height: 22,
     borderRadius: 11,
-    backgroundColor: "#F26522",
-    alignItems: "center",
+    backgroundColor: "#052a51",
     justifyContent: "center",
+    alignItems: "center",
   },
   emptyState: {
     paddingVertical: 24,
     alignItems: "center",
   },
   emptyStateText: {
-    fontSize: 12,
-    color: "#64748B",
+    fontSize: 13,
+    color: "#94A3B8",
   },
   continueBtn: {
-    marginTop: 14,
-    height: 48,
     backgroundColor: "#052a51",
+    paddingVertical: 13,
     borderRadius: 14,
     alignItems: "center",
-    justifyContent: "center",
-    shadowColor: "#052a51",
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.2,
-    shadowRadius: 6,
-    elevation: 3,
+    marginTop: 14,
   },
   continueBtnText: {
     color: "#FFFFFF",
-    fontWeight: "800",
-    fontSize: 14,
+    fontSize: 15,
+    fontWeight: "700",
   },
 });
