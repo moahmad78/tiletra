@@ -31,18 +31,18 @@ export async function POST(
         OR: [{ id: orderId }, { orderId: orderId }],
         vendorId: auth.vendor.id,
       },
-      include: {
-        order: {
-          include: {
-            items: true,
-          },
-        },
-      },
     });
 
     if (!split) {
       return mobileApiResponse({ success: false, error: "Order split not found for this vendor" }, 404);
     }
+
+    const parentOrder = await prisma.order.findUnique({
+      where: { id: split.orderId },
+      include: {
+        items: true,
+      },
+    });
 
     if (split.fulfillmentStatus === "confirmed" || split.fulfillmentStatus === "delivered") {
       return mobileApiResponse(
@@ -101,12 +101,12 @@ export async function POST(
           data: { orderStatus: "Cancelled" },
         });
 
-        // Restore product stock
-        for (const item of split.order.items) {
+        // Restore product availability
+        for (const item of (parentOrder?.items || [])) {
           if (item.productId) {
             await tx.product.update({
               where: { id: item.productId },
-              data: { stock: { increment: item.quantity } },
+              data: { inStock: true },
             }).catch(() => {});
           }
         }

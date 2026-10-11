@@ -5,53 +5,54 @@ Latest fresh production AAB builds ready for Google Play Store upload:
 ---
 
 ## 1. 📱 Customer / User App (IntriHub)
-* **File Name:** `intrihub-mobile-release-v1.2.6-code19.aab`
-* **Direct Path:** `d:\Intrihub\releases\intrihub-mobile-release-v1.2.6-code19.aab`
+* **File Name:** `intrihub-mobile-release-v1.2.7-code20.aab`
+* **Direct Path:** `d:\Intrihub\releases\intrihub-mobile-release-v1.2.7-code20.aab`
 * **Source Path:** `d:\Intrihub\intrihub-mobile\android\app\build\outputs\bundle\release\app-release.aab`
-* **Version Name:** `1.2.6`
-* **Version Code:** `19`
+* **Version Name:** `1.2.7`
+* **Version Code:** `20`
 * **Package Name:** `com.intrihub.app`
-* **File Size:** 72.12 MB (75,623,896 bytes)
-* **Build Time:** October 10, 2026 (Fresh Production Signed Build)
+* **Target SDK:** Android 15 (API Level 36, TargetSdk 36)
+* **Build Time:** October 11, 2026 (Fresh Production Signed Build)
 
 ### 📋 Short Release Notes (Play Console):
 #### English (en-US):
 ```text
-• Rich Push Notifications: High-resolution visual alerts for exclusive tile discounts, festival offers, and direct cart savings.
-• Seamless Order Tracking: Real-time live status updates from vendor confirmation to 60-minute site delivery.
-• Speed & Performance: Faster catalog browsing, optimized checkout flow, and Android 15 compatibility.
+• Complete 12-Language Localization: Instant app-wide switching across Hindi, Kannada, Telugu, Tamil, Marathi, Bengali, and 6 more Indian languages.
+• Fast Site Delivery & Tracking: Real-time live status updates from order confirmation to 60-minute doorstep dispatch.
+• Speed & Performance: Optimized category catalog, smooth checkout flow, and Android 15 compatibility.
 ```
 
 #### Hindi (hi-IN):
 ```text
-• रिच नोटिफिकेशन: टाइल्स ऑफर्स और खास डिस्काउंट के लिए हाई-क्वालिटी फोटो नोटिफिकेशन सपोर्ट।
-• रियल-टाइम ऑर्डर ट्रैकिंग: ऑर्डर कन्फर्म होने से लेकर 60-मिनट डिलीवरी तक की लाइव अपडेट।
+• संपूर्ण 12 भारतीय भाषा सपोर्ट: हिंदी, कन्नड़, तेलुगु, तमिल, मराठी, बंगाली समेत 12 भाषाओं में आसान भाषा चयन।
+• रियल-टाइम ऑर्डर ट्रैकिंग: ऑर्डर कन्फर्म होने से लेकर 60-मिनट साइट डिलीवरी तक की लाइव अपडेट।
 • तेज़ स्पीड और परफ़ॉर्मेंस: आसान कैटलॉग सर्च, स्मूथ चेकआउट और Android 15 सपोर्ट।
 ```
 
 ---
 
 ## 2. 💼 Business / Vendor App (IntriHub Business)
-* **File Name:** `intrihub-business-release-v1.0.16-code17.aab`
-* **Direct Path:** `d:\Intrihub\releases\intrihub-business-release-v1.0.16-code17.aab`
+* **File Name:** `intrihub-business-release-v1.0.17-code18.aab`
+* **Direct Path:** `d:\Intrihub\releases\intrihub-business-release-v1.0.17-code18.aab`
 * **Source Path:** `d:\Intrihub\intrihub-business\android\app\build\outputs\bundle\release\app-release.aab`
-* **Version Name:** `1.0.16`
-* **Version Code:** `17`
+* **Version Name:** `1.0.17`
+* **Version Code:** `18`
 * **Package Name:** `com.intrihub.business`
-* **File Size:** 77.74 MB (81,515,947 bytes)
-* **Build Time:** October 10, 2026 (Fresh Production Signed Build)
+* **Target SDK:** Android 15 (API Level 36, TargetSdk 36)
+* **Build Time:** October 11, 2026 (Fresh Production Signed Build)
 
 ### 📋 Short Release Notes (Play Console):
 #### English (en-US):
 ```text
+• 12 Regional Languages: Multi-language support across vendor dashboard, catalog, orders, and operational settings.
 • High-Priority Order Alerts: Instant loud incoming order notifications and real-time vendor dispatch management.
-• Instant Order Response: Streamlined accept/reject flows with automated logistics routing.
-• Performance & Security: Enhanced authentication stability, zero token exposure, and Android 15 compatibility.
+• GPS Dispatch Pin & Performance: Pinpoint store dispatch coordinates on map and Android 15 compatibility.
 ```
 
 #### Hindi (hi-IN):
 ```text
+• 12 क्षेत्रीय भाषाओं का सपोर्ट: वेंडर डैशबोर्ड, कैटलॉग, ऑर्डर और सेटिंग्स अब आपकी पसंदीदा भाषा में।
 • नए ऑर्डर का हाई-अलर्ट: नए ऑर्डर पर तुरंत लाउड अलर्ट और आसान वेंडर मैनेजमेंट।
-• तेज़ ऑर्डर रिस्पॉन्स: एक टैप में आर्डर एक्सेप्ट/रिजेक्ट और ऑटोमैटिक डिलीवरी राउटिंग।
-• स्पीड और सुरक्षा: सुरक्षित लॉगिन, बेहतर स्थिरता और Android 15 के लिए अनुकूलन।
+• जीपीएस मैप लोकेशन: मैप पर अपनी दुकान की लोकेशन सेट करें और Android 15 पर स्मूथ परफ़ॉर्मेंस।
 ```
+
