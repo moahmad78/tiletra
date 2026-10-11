@@ -107,6 +107,12 @@
         }
       ],
       "./plugins/withCallKitVoIP"
-    ]
+    ],
+    "extra": {
+      "router": {},
+      "eas": {
+        "projectId": "107f8b28-48ac-4c6a-b065-8d24f2427724"
+      }
+    }
   }
 }
