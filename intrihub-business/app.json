@@ -103,7 +103,8 @@
         {
           "url": "https://o4512085765521408.ingest.us.sentry.io",
           "project": "intrihub-business",
-          "organization": "intrihub"
+          "organization": "intrihub",
+          "disableAutoUpload": true
         }
       ],
       "./plugins/withCallKitVoIP"
