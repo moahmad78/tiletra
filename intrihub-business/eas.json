@@ -16,15 +16,15 @@
     },
     "production": {
       "autoIncrement": true,
+      "env": {
+        "EXPO_PUBLIC_API_URL": "https://www.intrihub.com",
+        "EXPO_PUBLIC_ENABLE_REVIEWER_BYPASS": "true"
+      },
       "android": {
         "buildType": "app-bundle"
       },
       "ios": {
         "distribution": "store"
-      },
-      "env": {
-        "EXPO_PUBLIC_API_URL": "https://www.intrihub.com",
-        "EXPO_PUBLIC_ENABLE_REVIEWER_BYPASS": "true"
       }
     }
   },
