@@ -3,7 +3,7 @@
     "name": "Intrihub",
     "slug": "intrihub",
     "owner": "sahil_sheikh78",
-    "version": "1.2.5",
+    "version": "1.2.6",
     "orientation": "portrait",
     "icon": "./assets/icon.png",
     "scheme": "intrihub",
@@ -36,7 +36,7 @@
     },
     "android": {
       "package": "com.intrihub.app",
-      "versionCode": 18,
+      "versionCode": 19,
       "blockedPermissions": [
         "android.permission.READ_MEDIA_IMAGES",
         "android.permission.READ_MEDIA_VIDEO"
@@ -87,7 +87,8 @@
       "expo-image",
       "expo-sharing",
       "expo-splash-screen",
-      "expo-status-bar"
+      "expo-status-bar",
+      "./plugins/withNotificationServiceExtension"
     ],
     "experiments": {
       "typedRoutes": true

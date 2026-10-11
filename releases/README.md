@@ -5,55 +5,53 @@ Latest fresh production AAB builds ready for Google Play Store upload:
 ---
 
 ## 1. 📱 Customer / User App (IntriHub)
-* **File Name:** `intrihub-mobile-release-v1.2.5-code18.aab`
-* **Direct Path:** `d:\Intrihub\releases\intrihub-mobile-release-v1.2.5-code18.aab`
+* **File Name:** `intrihub-mobile-release-v1.2.6-code19.aab`
+* **Direct Path:** `d:\Intrihub\releases\intrihub-mobile-release-v1.2.6-code19.aab`
 * **Source Path:** `d:\Intrihub\intrihub-mobile\android\app\build\outputs\bundle\release\app-release.aab`
-* **Version Name:** `1.2.5`
-* **Version Code:** `18`
+* **Version Name:** `1.2.6`
+* **Version Code:** `19`
 * **Package Name:** `com.intrihub.app`
-* **File Size:** 72.12 MB
-* **Build Time:** October 08, 2026 (Fresh Production Build)
+* **File Size:** 72.12 MB (75,623,896 bytes)
+* **Build Time:** October 10, 2026 (Fresh Production Signed Build)
 
 ### 📋 Short Release Notes (Play Console):
 #### English (en-US):
 ```text
-• Performance & Stability: Enhanced loading speed, smoother transitions, and Android 15 compatibility.
-• Native Photo Picker: Secure, streamlined media selection complying with latest Google Play policies.
-• Language & UX Improvements: Updated regional language support and seamless checkout experience.
+• Rich Push Notifications: High-resolution visual alerts for exclusive tile discounts, festival offers, and direct cart savings.
+• Seamless Order Tracking: Real-time live status updates from vendor confirmation to 60-minute site delivery.
+• Speed & Performance: Faster catalog browsing, optimized checkout flow, and Android 15 compatibility.
 ```
 
 #### Hindi (hi-IN):
 ```text
-• बेहतर स्पीड और परफ़ॉर्मेंस: तेज़ लोडिंग, स्मूथ नेविगेशन और Android 15 सपोर्ट।
-• सुरक्षित फोटो पिकर: गूगल प्ले मानकों के अनुसार सुरक्षित और आसान मीडिया चयन।
-• क्षेत्रीय भाषा और यूआई सुधार: 13 भारतीय भाषाओं में बेहतर अनुभव और आसान चेकआउट।
+• रिच नोटिफिकेशन: टाइल्स ऑफर्स और खास डिस्काउंट के लिए हाई-क्वालिटी फोटो नोटिफिकेशन सपोर्ट।
+• रियल-टाइम ऑर्डर ट्रैकिंग: ऑर्डर कन्फर्म होने से लेकर 60-मिनट डिलीवरी तक की लाइव अपडेट।
+• तेज़ स्पीड और परफ़ॉर्मेंस: आसान कैटलॉग सर्च, स्मूथ चेकआउट और Android 15 सपोर्ट।
 ```
 
 ---
 
 ## 2. 💼 Business / Vendor App (IntriHub Business)
-* **File Name:** `intrihub-business-release-v1.0.14-code15.aab`
-* **Direct Path:** `d:\Intrihub\releases\intrihub-business-release-v1.0.14-code15.aab`
+* **File Name:** `intrihub-business-release-v1.0.16-code17.aab`
+* **Direct Path:** `d:\Intrihub\releases\intrihub-business-release-v1.0.16-code17.aab`
 * **Source Path:** `d:\Intrihub\intrihub-business\android\app\build\outputs\bundle\release\app-release.aab`
-* **Version Name:** `1.0.14`
-* **Version Code:** `15`
+* **Version Name:** `1.0.16`
+* **Version Code:** `17`
 * **Package Name:** `com.intrihub.business`
-* **File Size:** 77.74 MB (81,511,573 bytes)
-* **Build Time:** October 09, 2026 (Fresh Production Signed Build)
+* **File Size:** 77.74 MB (81,515,947 bytes)
+* **Build Time:** October 10, 2026 (Fresh Production Signed Build)
 
 ### 📋 Short Release Notes (Play Console):
 #### English (en-US):
 ```text
-• Google Play Policy Compliance: Integrated zero-permission Android System Photo Picker, eliminating broad storage permissions.
-• Precision Store Location: Added GPS Auto-Detect, interactive Map Pin, and live address autocomplete for store & warehouse pickup.
-• Enhanced Logistics Routing: Improved 60-minute nearest-vendor catalog discoverability and order dispatching.
-• Performance & Stability: Enhanced overall app speed and Android 15 compatibility.
+• High-Priority Order Alerts: Instant loud incoming order notifications and real-time vendor dispatch management.
+• Instant Order Response: Streamlined accept/reject flows with automated logistics routing.
+• Performance & Security: Enhanced authentication stability, zero token exposure, and Android 15 compatibility.
 ```
 
 #### Hindi (hi-IN):
 ```text
-• गूगल प्ले पॉलिसी कम्प्लायंस: ज़ीरो-परमिशन सिस्टम फोटो पिकर सपोर्ट (ब्रॉड स्टोरेज परमिशन हटाई गईं)।
-• सटीक स्टोर लोकेशन पिन: ऑटो-डिटेक्ट GPS, इंटरैक्टिव मैप पिन और लाइव सर्च से दुकान का सही पता सेट करें।
-• बेहतर 60-मिनट डिलीवरी राउटिंग: नज़दीकी वेंडर खोज और ऑर्डर डिस्पैच में सुधार।
-• स्पीड और स्थिरता: तेज़ परफ़ॉर्मेंस और Android 15 के लिए अनुकूलन।
+• नए ऑर्डर का हाई-अलर्ट: नए ऑर्डर पर तुरंत लाउड अलर्ट और आसान वेंडर मैनेजमेंट।
+• तेज़ ऑर्डर रिस्पॉन्स: एक टैप में आर्डर एक्सेप्ट/रिजेक्ट और ऑटोमैटिक डिलीवरी राउटिंग।
+• स्पीड और सुरक्षा: सुरक्षित लॉगिन, बेहतर स्थिरता और Android 15 के लिए अनुकूलन।
 ```

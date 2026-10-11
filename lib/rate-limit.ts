@@ -84,14 +84,14 @@ const DEFAULT_ATTEMPTS_WINDOW_MS = 15 * 60 * 1000; // 15 minutes window for fail
 /**
  * Checks if a key is currently locked out due to repeated failed attempts
  */
-export function isLockedOut(key: string): {
+export function isLockedOut(key: string, maxAttempts: number = 3): {
   locked: boolean;
   lockoutUntil?: number;
   retryAfterSeconds?: number;
   remainingAttempts?: number;
 } {
   const record = lockoutStore.get(key);
-  if (!record) return { locked: false, remainingAttempts: 3 };
+  if (!record) return { locked: false, remainingAttempts: maxAttempts };
 
   const now = Date.now();
 
@@ -109,18 +109,18 @@ export function isLockedOut(key: string): {
   // If previous lockout has expired, purge the record and reset
   if (record.lockoutUntil && record.lockoutUntil <= now) {
     lockoutStore.delete(key);
-    return { locked: false, remainingAttempts: 3 };
+    return { locked: false, remainingAttempts: maxAttempts };
   }
 
   // If failed attempts occurred outside the 15-minute window without locking, reset
   if (now - record.lastAttemptAt > DEFAULT_ATTEMPTS_WINDOW_MS) {
     lockoutStore.delete(key);
-    return { locked: false, remainingAttempts: 3 };
+    return { locked: false, remainingAttempts: maxAttempts };
   }
 
   return {
     locked: false,
-    remainingAttempts: Math.max(0, 3 - record.failedAttempts),
+    remainingAttempts: Math.max(0, maxAttempts - record.failedAttempts),
   };
 }
 
@@ -208,7 +208,8 @@ export function resetRateLimit(key: string): void {
 // PORTAL-SPECIFIC HELPERS (3 ATTEMPTS -> 15 MINUTES LOCKOUT)
 // ─────────────────────────────────────────────────────────────────────────────
 
-const PORTAL_LOCKOUT_MAX_ATTEMPTS = 3;
+const PORTAL_LOCKOUT_MAX_ATTEMPTS = 5; // 5 failed attempts per account/device before lockout
+const PORTAL_IP_SHARED_MAX_ATTEMPTS = 20; // 20 failed attempts before locking out an entire shared office IP
 const PORTAL_LOCKOUT_DURATION_MS = 15 * 60 * 1000; // 15 minutes
 
 /**
@@ -236,7 +237,7 @@ export function recordAdminLoginFailure(ip: string): {
   const key = `admin_login_ip:${ip || "unknown"}`;
   return recordFailedAttempt(
     key,
-    PORTAL_LOCKOUT_MAX_ATTEMPTS,
+    3,
     PORTAL_LOCKOUT_DURATION_MS
   );
 }
@@ -251,30 +252,100 @@ export function resetAdminLoginLockout(ip: string): void {
 
 /**
  * Vendor Login Lockout Check
+ * Scoped per-account (email/phone), per-(IP+account), and per-IP (shared office network)
  */
-export function checkVendorLoginLockout(ip: string): {
+export function checkVendorLoginLockout(
+  ip: string,
+  emailOrAccount?: string
+): {
   locked: boolean;
   lockoutUntil?: number;
   retryAfterSeconds?: number;
   remainingAttempts?: number;
 } {
-  const key = `vendor_login_ip:${ip || "unknown"}`;
+  const cleanIp = ip || "unknown";
+
+  if (emailOrAccount && emailOrAccount.trim()) {
+    const cleanEmail = emailOrAccount.trim().toLowerCase();
+    const accountKey = `vendor_account:${cleanEmail}`;
+    const compositeKey = `vendor_ip_account:${cleanIp}:${cleanEmail}`;
+    const ipKey = `vendor_login_ip:${cleanIp}`;
+
+    const accountCheck = isLockedOut(accountKey, PORTAL_LOCKOUT_MAX_ATTEMPTS);
+    if (accountCheck.locked) return accountCheck;
+
+    const compositeCheck = isLockedOut(compositeKey, PORTAL_LOCKOUT_MAX_ATTEMPTS);
+    if (compositeCheck.locked) return compositeCheck;
+
+    const ipCheck = isLockedOut(ipKey, PORTAL_IP_SHARED_MAX_ATTEMPTS);
+    if (ipCheck.locked) return ipCheck;
+
+    return {
+      locked: false,
+      remainingAttempts: Math.min(
+        accountCheck.remainingAttempts ?? PORTAL_LOCKOUT_MAX_ATTEMPTS,
+        compositeCheck.remainingAttempts ?? PORTAL_LOCKOUT_MAX_ATTEMPTS
+      ),
+    };
+  }
+
+  const key = `vendor_login_ip:${cleanIp}`;
   return isLockedOut(key);
 }
 
 /**
  * Record Vendor Login Failure
+ * Increments failed attempts on account, composite, and shared IP
  */
-export function recordVendorLoginFailure(ip: string): {
+export function recordVendorLoginFailure(
+  ip: string,
+  emailOrAccount?: string
+): {
   locked: boolean;
   remainingAttempts: number;
   lockoutUntil?: number;
   retryAfterSeconds?: number;
 } {
-  const key = `vendor_login_ip:${ip || "unknown"}`;
+  const cleanIp = ip || "unknown";
+
+  if (emailOrAccount && emailOrAccount.trim()) {
+    const cleanEmail = emailOrAccount.trim().toLowerCase();
+    const accountKey = `vendor_account:${cleanEmail}`;
+    const compositeKey = `vendor_ip_account:${cleanIp}:${cleanEmail}`;
+    const ipKey = `vendor_login_ip:${cleanIp}`;
+
+    // Record on account (5 attempts)
+    const accountResult = recordFailedAttempt(
+      accountKey,
+      PORTAL_LOCKOUT_MAX_ATTEMPTS,
+      PORTAL_LOCKOUT_DURATION_MS
+    );
+
+    // Record on composite IP+account (5 attempts)
+    recordFailedAttempt(
+      compositeKey,
+      PORTAL_LOCKOUT_MAX_ATTEMPTS,
+      PORTAL_LOCKOUT_DURATION_MS
+    );
+
+    // Record on shared IP (20 attempts to avoid locking shared office networks)
+    const ipResult = recordFailedAttempt(
+      ipKey,
+      PORTAL_IP_SHARED_MAX_ATTEMPTS,
+      PORTAL_LOCKOUT_DURATION_MS
+    );
+
+    if (accountResult.locked) return accountResult;
+    if (ipResult.locked) return ipResult;
+
+    return accountResult;
+  }
+
+  // Fallback for calls without email (e.g. legacy/ip-only)
+  const key = `vendor_login_ip:${cleanIp}`;
   return recordFailedAttempt(
     key,
-    PORTAL_LOCKOUT_MAX_ATTEMPTS,
+    3,
     PORTAL_LOCKOUT_DURATION_MS
   );
 }
@@ -282,53 +353,72 @@ export function recordVendorLoginFailure(ip: string): {
 /**
  * Reset Vendor Login Lockout
  */
-export function resetVendorLoginLockout(ip: string): void {
-  const key = `vendor_login_ip:${ip || "unknown"}`;
-  resetFailedAttempts(key);
+export function resetVendorLoginLockout(ip: string, emailOrAccount?: string): void {
+  const cleanIp = ip || "unknown";
+  resetFailedAttempts(`vendor_login_ip:${cleanIp}`);
+
+  if (emailOrAccount && emailOrAccount.trim()) {
+    const cleanEmail = emailOrAccount.trim().toLowerCase();
+    resetFailedAttempts(`vendor_account:${cleanEmail}`);
+    resetFailedAttempts(`vendor_ip_account:${cleanIp}:${cleanEmail}`);
+    resetFailedAttempts(`otp-fail:${cleanEmail}`);
+  }
 }
 
 /**
  * Mobile Business Auth Lockout Check
  */
-export function checkMobileAuthLockout(ip: string): {
+export function checkMobileAuthLockout(ip: string, emailOrAccount?: string): {
   locked: boolean;
   lockoutUntil?: number;
   retryAfterSeconds?: number;
   remainingAttempts?: number;
 } {
-  const key = `mobile_auth_ip:${ip || "unknown"}`;
-  return isLockedOut(key);
+  return checkVendorLoginLockout(ip, emailOrAccount);
 }
 
 /**
  * Record Mobile Business Auth Failure
  */
-export function recordMobileAuthFailure(ip: string): {
+export function recordMobileAuthFailure(ip: string, emailOrAccount?: string): {
   locked: boolean;
   remainingAttempts: number;
   lockoutUntil?: number;
   retryAfterSeconds?: number;
 } {
-  const key = `mobile_auth_ip:${ip || "unknown"}`;
-  return recordFailedAttempt(
-    key,
-    PORTAL_LOCKOUT_MAX_ATTEMPTS,
-    PORTAL_LOCKOUT_DURATION_MS
-  );
+  return recordVendorLoginFailure(ip, emailOrAccount);
 }
 
 /**
  * Reset Mobile Business Auth Lockout
  */
-export function resetMobileAuthLockout(ip: string): void {
-  const key = `mobile_auth_ip:${ip || "unknown"}`;
-  resetFailedAttempts(key);
+export function resetMobileAuthLockout(ip: string, emailOrAccount?: string): void {
+  resetVendorLoginLockout(ip, emailOrAccount);
 }
 
 export function resetAllLockoutsForIp(ip: string): void {
   resetVendorLoginLockout(ip);
   resetAdminLoginLockout(ip);
   resetMobileAuthLockout(ip);
+}
+
+/**
+ * Admin override: Clear ALL lockouts across memory
+ */
+export function clearAllLockouts(): void {
+  lockoutStore.clear();
+}
+
+/**
+ * Admin override: Clear lockout for a specific IP or email
+ */
+export function clearLockoutForTarget(target: string): void {
+  const clean = target.trim().toLowerCase();
+  for (const key of lockoutStore.keys()) {
+    if (key.includes(clean)) {
+      lockoutStore.delete(key);
+    }
+  }
 }
 
 // -----------------------------------------------------------------------------

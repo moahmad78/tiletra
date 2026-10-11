@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useState, useMemo } from "react";
 import {
   Modal,
   View,
@@ -6,8 +6,10 @@ import {
   TouchableOpacity,
   StyleSheet,
   Pressable,
+  ScrollView,
+  TextInput,
 } from "react-native";
-import { Globe, Check, X } from "lucide-react-native";
+import { Globe, Check, X, Search } from "lucide-react-native";
 import { useTranslation, SupportedLanguage } from "../store/i18nStore";
 import { COLORS, RADIUS, SHADOWS, SPACING } from "../constants/theme";
 
@@ -23,10 +25,23 @@ export default function LanguageModal({
   isFirstLaunch = false,
 }: LanguageModalProps) {
   const { language, setLanguage, languages, t } = useTranslation();
+  const [searchQuery, setSearchQuery] = useState("");
+
+  const filteredLanguages = useMemo(() => {
+    if (!searchQuery.trim()) return languages;
+    const q = searchQuery.toLowerCase().trim();
+    return languages.filter(
+      (l) =>
+        l.name.toLowerCase().includes(q) ||
+        l.nativeName.toLowerCase().includes(q)
+    );
+  }, [languages, searchQuery]);
 
   const handleSelect = (code: SupportedLanguage) => {
     setLanguage(code);
-    onClose();
+    if (!isFirstLaunch) {
+      onClose();
+    }
   };
 
   return (
@@ -48,7 +63,9 @@ export default function LanguageModal({
             </View>
             <View style={{ flex: 1, marginLeft: 10 }}>
               <Text style={styles.title}>
-                {isFirstLaunch ? "Choose Language / भाषा चुनें" : (t("nav.selectLanguage") || "Select Language")}
+                {isFirstLaunch
+                  ? "Choose Language / भाषा चुनें"
+                  : (t("nav.selectLanguage") || "Select Language")}
               </Text>
               <Text style={styles.subtitle}>
                 Select your preferred business dashboard language
@@ -61,9 +78,33 @@ export default function LanguageModal({
             )}
           </View>
 
-          {/* Options */}
-          <View style={styles.optionsList}>
-            {languages.map((l) => {
+          {/* Search bar */}
+          <View style={styles.searchContainer}>
+            <Search size={16} color={COLORS.textTertiary} />
+            <TextInput
+              style={styles.searchInput}
+              placeholder={t("common.searchLanguage") || "Search language / भाषा खोजें..."}
+              placeholderTextColor={COLORS.textTertiary}
+              value={searchQuery}
+              onChangeText={setSearchQuery}
+              autoCapitalize="none"
+              autoCorrect={false}
+            />
+            {searchQuery.length > 0 && (
+              <TouchableOpacity onPress={() => setSearchQuery("")}>
+                <X size={15} color={COLORS.textTertiary} />
+              </TouchableOpacity>
+            )}
+          </View>
+
+          {/* Scrollable Options */}
+          <ScrollView
+            style={styles.scrollArea}
+            contentContainerStyle={styles.optionsList}
+            showsVerticalScrollIndicator={true}
+            keyboardShouldPersistTaps="handled"
+          >
+            {filteredLanguages.map((l) => {
               const isSelected = language === l.code;
               return (
                 <TouchableOpacity
@@ -75,7 +116,7 @@ export default function LanguageModal({
                   onPress={() => handleSelect(l.code)}
                   activeOpacity={0.7}
                 >
-                  <View>
+                  <View style={{ flex: 1 }}>
                     <Text
                       style={[
                         styles.nativeName,
@@ -94,7 +135,14 @@ export default function LanguageModal({
                 </TouchableOpacity>
               );
             })}
-          </View>
+            {filteredLanguages.length === 0 && (
+              <View style={styles.emptyState}>
+                <Text style={styles.emptyStateText}>
+                  No languages found matching "{searchQuery}"
+                </Text>
+              </View>
+            )}
+          </ScrollView>
 
           {isFirstLaunch && (
             <TouchableOpacity
@@ -124,6 +172,7 @@ const styles = StyleSheet.create({
   card: {
     width: "100%",
     maxWidth: 380,
+    maxHeight: "82%",
     backgroundColor: COLORS.surface,
     borderRadius: RADIUS.xl,
     padding: SPACING.xl,
@@ -132,7 +181,7 @@ const styles = StyleSheet.create({
   header: {
     flexDirection: "row",
     alignItems: "center",
-    marginBottom: SPACING.lg,
+    marginBottom: SPACING.md,
   },
   iconCircle: {
     width: 40,
@@ -155,15 +204,35 @@ const styles = StyleSheet.create({
   closeBtn: {
     padding: 6,
   },
+  searchContainer: {
+    flexDirection: "row",
+    alignItems: "center",
+    backgroundColor: COLORS.background,
+    borderWidth: 1,
+    borderColor: COLORS.border,
+    borderRadius: RADIUS.md,
+    paddingHorizontal: 12,
+    height: 40,
+    marginBottom: SPACING.md,
+  },
+  searchInput: {
+    flex: 1,
+    marginLeft: 8,
+    fontSize: 13,
+    color: COLORS.text,
+  },
+  scrollArea: {
+    maxHeight: 340,
+  },
   optionsList: {
     gap: SPACING.sm,
-    marginBottom: SPACING.sm,
+    paddingVertical: 2,
   },
   langOption: {
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "space-between",
-    paddingVertical: 14,
+    paddingVertical: 12,
     paddingHorizontal: 16,
     borderRadius: RADIUS.lg,
     borderWidth: 1.5,
@@ -194,6 +263,14 @@ const styles = StyleSheet.create({
     backgroundColor: COLORS.primary,
     justifyContent: "center",
     alignItems: "center",
+  },
+  emptyState: {
+    paddingVertical: 24,
+    alignItems: "center",
+  },
+  emptyStateText: {
+    fontSize: 13,
+    color: COLORS.textTertiary,
   },
   confirmBtn: {
     backgroundColor: COLORS.accentOrange,

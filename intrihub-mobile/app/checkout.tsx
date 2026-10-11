@@ -33,9 +33,11 @@ import { AddressModal } from "../src/components/AddressModal";
 import { COLORS, SPACING, RADIUS, SHADOWS } from "../src/constants/theme";
 import { getImageUrl, API_BASE_URL } from "../src/constants/config";
 import { getAvailableDeliverySchedule, type DeliveryDayOption } from "../lib/delivery-slots";
+import { useTranslation } from "../src/store/i18nStore";
 
 export default function CheckoutScreen() {
   const router = useRouter();
+  const { t } = useTranslation();
   const { user, selectedAddress, setSelectedAddress } = useAuthStore();
   const { items, getSubtotal, getDeliveryFee, getTotal, clearCart } = useCartStore();
 
@@ -327,7 +329,7 @@ export default function CheckoutScreen() {
         <TouchableOpacity style={styles.backBtn} onPress={() => router.back()}>
           <ArrowLeft size={22} color={COLORS.textWhite} />
         </TouchableOpacity>
-        <Text style={styles.navTitle}>Checkout</Text>
+        <Text style={styles.navTitle}>{t("checkout.title") || "Checkout"}</Text>
       </View>
 
       <ScrollView style={styles.scroll} showsVerticalScrollIndicator={false}>
@@ -342,11 +344,11 @@ export default function CheckoutScreen() {
           <View style={styles.cardHeader}>
             <View style={styles.cardTitleRow}>
               <MapPin size={18} color={COLORS.primary} />
-              <Text style={styles.cardTitle}>Delivery Address</Text>
+              <Text style={styles.cardTitle}>{t("checkout.deliveryAddress") || "Delivery Address"}</Text>
             </View>
             <TouchableOpacity onPress={() => setAddressModalVisible(true)}>
               <Text style={styles.changeText}>
-                {selectedAddress ? "Change" : "Add Address"}
+                {selectedAddress ? (t("common.edit") || "Change") : (t("checkout.addNewAddress") || "Add Address")}
               </Text>
             </TouchableOpacity>
           </View>
@@ -367,7 +369,7 @@ export default function CheckoutScreen() {
               style={styles.emptyAddressPrompt}
               onPress={() => setAddressModalVisible(true)}
             >
-              <Text style={styles.emptyAddressText}>+ Tap to select delivery address</Text>
+              <Text style={styles.emptyAddressText}>+ {t("checkout.deliveryAddress") || "Tap to select delivery address"}</Text>
             </TouchableOpacity>
           )}
         </View>
@@ -377,7 +379,7 @@ export default function CheckoutScreen() {
           <View style={styles.cardHeader}>
             <View style={styles.cardTitleRow}>
               <Clock size={18} color={COLORS.primary} />
-              <Text style={styles.cardTitle}>Delivery Time</Text>
+              <Text style={styles.cardTitle}>{t("checkout.selectDeliverySlot") || "Delivery Time"}</Text>
             </View>
             <View style={styles.optionalBadge}>
               <Text style={styles.optionalBadgeText}>OPTIONAL</Text>
@@ -396,7 +398,7 @@ export default function CheckoutScreen() {
             >
               <Zap size={14} color={deliveryMode === "asap" ? "#F59E0B" : COLORS.textMuted} />
               <Text style={[styles.modeTabText, deliveryMode === "asap" && styles.modeTabTextActive]}>
-                Deliver ASAP
+                {t("checkout.deliverAsap") || "Deliver ASAP"}
               </Text>
             </TouchableOpacity>
 
@@ -407,7 +409,7 @@ export default function CheckoutScreen() {
             >
               <Calendar size={14} color={deliveryMode === "schedule" ? COLORS.textWhite : COLORS.textMuted} />
               <Text style={[styles.modeTabText, deliveryMode === "schedule" && styles.modeTabTextActive]}>
-                Schedule for later
+                {t("checkout.scheduleLater") || "Schedule for later"}
               </Text>
             </TouchableOpacity>
           </View>
@@ -557,7 +559,7 @@ export default function CheckoutScreen() {
 
         {/* Payment Method Selector */}
         <View style={styles.card}>
-          <Text style={styles.cardTitle}>Payment Method</Text>
+          <Text style={styles.cardTitle}>{t("checkout.paymentMethod") || "Payment Method"}</Text>
 
           {/* Razorpay Online */}
           <TouchableOpacity
@@ -571,7 +573,7 @@ export default function CheckoutScreen() {
               </View>
               <CreditCard size={20} color={COLORS.primary} style={{ marginLeft: 10 }} />
               <View style={{ marginLeft: 10 }}>
-                <Text style={styles.paymentName}>Online Payment</Text>
+                <Text style={styles.paymentName}>{t("checkout.onlinePayment") || "Online Payment"}</Text>
                 <Text style={styles.paymentSub}>UPI (GPay / PhonePe), Cards, NetBanking</Text>
               </View>
             </View>
@@ -589,7 +591,7 @@ export default function CheckoutScreen() {
               </View>
               <Banknote size={20} color={COLORS.accentGreen} style={{ marginLeft: 10 }} />
               <View style={{ marginLeft: 10 }}>
-                <Text style={styles.paymentName}>Cash on Delivery (COD)</Text>
+                <Text style={styles.paymentName}>{t("checkout.cashOnDelivery") || "Cash on Delivery (COD)"}</Text>
                 <Text style={styles.paymentSub}>Pay with cash/UPI upon site delivery</Text>
               </View>
             </View>
@@ -598,20 +600,20 @@ export default function CheckoutScreen() {
 
         {/* Price Breakdown */}
         <View style={styles.card}>
-          <Text style={styles.cardTitle}>Price Breakdown</Text>
+          <Text style={styles.cardTitle}>{t("shop.price") || "Price Breakdown"}</Text>
           <View style={styles.summaryRow}>
-            <Text style={styles.summaryKey}>Subtotal</Text>
+            <Text style={styles.summaryKey}>{t("cart.subtotal") || "Subtotal"}</Text>
             <Text style={styles.summaryVal}>₹{subtotal.toLocaleString("en-IN")}</Text>
           </View>
           <View style={styles.summaryRow}>
-            <Text style={styles.summaryKey}>Delivery Charges</Text>
+            <Text style={styles.summaryKey}>{t("cart.deliveryFee") || "Delivery Charges"}</Text>
             <Text style={[styles.summaryVal, deliveryFee === 0 && { color: COLORS.accentGreen }]}>
-              {deliveryFee === 0 ? "FREE" : `₹${deliveryFee}`}
+              {deliveryFee === 0 ? (t("cart.free") || "FREE") : `₹${deliveryFee}`}
             </Text>
           </View>
           <View style={styles.divider} />
           <View style={styles.summaryRow}>
-            <Text style={styles.totalKey}>Grand Total</Text>
+            <Text style={styles.totalKey}>{t("cart.total") || "Grand Total"}</Text>
             <Text style={styles.totalVal}>₹{total.toLocaleString("en-IN")}</Text>
           </View>
         </View>
@@ -619,7 +621,7 @@ export default function CheckoutScreen() {
         <View style={styles.trustBadge}>
           <ShieldCheck size={16} color={COLORS.primary} />
           <Text style={styles.trustBadgeText}>
-            Guaranteed secure transactions with 256-bit encryption
+            {t("auth.secureLogin") || "Guaranteed secure transactions"}
           </Text>
         </View>
 
@@ -629,7 +631,7 @@ export default function CheckoutScreen() {
       {/* Sticky Checkout Bottom CTA */}
       <View style={styles.bottomBar}>
         <View>
-          <Text style={styles.barTotalLabel}>Total to Pay</Text>
+          <Text style={styles.barTotalLabel}>{t("cart.total") || "Total to Pay"}</Text>
           <Text style={styles.barTotalValue}>₹{total.toLocaleString("en-IN")}</Text>
         </View>
 
@@ -643,7 +645,7 @@ export default function CheckoutScreen() {
             <ActivityIndicator color={COLORS.textWhite} />
           ) : (
             <Text style={styles.placeOrderText}>
-              {paymentMethod === "cod" ? "Place COD Order" : "Pay"}
+              {t("checkout.placeOrder") || (paymentMethod === "cod" ? "Place COD Order" : "Pay")}
             </Text>
           )}
         </TouchableOpacity>

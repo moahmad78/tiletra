@@ -2,9 +2,11 @@ import { Tabs } from "expo-router";
 import { LayoutDashboard, Package, ShoppingCart, IndianRupee, User } from "lucide-react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { COLORS } from "../../src/constants/theme";
+import { useTranslation } from "../../src/store/i18nStore";
 
 export default function VendorTabsLayout() {
   const insets = useSafeAreaInsets();
+  const { t } = useTranslation();
   const bottomInset = Math.max(insets.bottom, 12);
 
   return (
@@ -33,35 +35,35 @@ export default function VendorTabsLayout() {
       <Tabs.Screen
         name="dashboard"
         options={{
-          title: "Dashboard",
+          title: t("vendor.dashboard") || "Dashboard",
           tabBarIcon: ({ color, size }) => <LayoutDashboard size={size} color={color} />,
         }}
       />
       <Tabs.Screen
         name="products"
         options={{
-          title: "My Products",
+          title: t("vendor.products") || "My Products",
           tabBarIcon: ({ color, size }) => <Package size={size} color={color} />,
         }}
       />
       <Tabs.Screen
         name="orders"
         options={{
-          title: "Orders",
+          title: t("vendor.orders") || "Orders",
           tabBarIcon: ({ color, size }) => <ShoppingCart size={size} color={color} />,
         }}
       />
       <Tabs.Screen
         name="earnings"
         options={{
-          title: "Earnings",
+          title: t("vendor.earnings") || "Earnings",
           tabBarIcon: ({ color, size }) => <IndianRupee size={size} color={color} />,
         }}
       />
       <Tabs.Screen
         name="profile"
         options={{
-          title: "Store Profile",
+          title: t("account.profile") || "Store Profile",
           tabBarIcon: ({ color, size }) => <User size={size} color={color} />,
         }}
       />

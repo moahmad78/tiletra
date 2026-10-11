@@ -30,8 +30,9 @@ export async function POST(req: NextRequest) {
 
     // Strict pre-OTP checks for Business portal
     if (isBusinessPortal) {
-      // 1. Check IP lockout first (3 failed attempts -> 15-min lockout)
-      const lockoutCheck = checkVendorLoginLockout(clientIp);
+      const targetIdentifier = email ? email.trim() : phone ? phone.trim() : undefined;
+      // 1. Check account & IP lockout (5 failed attempts -> 15-min lockout)
+      const lockoutCheck = checkVendorLoginLockout(clientIp, targetIdentifier);
       if (lockoutCheck.locked) {
         const mins = Math.floor((lockoutCheck.retryAfterSeconds || 0) / 60);
         const secs = (lockoutCheck.retryAfterSeconds || 0) % 60;
@@ -78,29 +79,13 @@ export async function POST(req: NextRequest) {
             : null;
 
           if (!vendor && !vendorUser) {
-            const failCheck = recordVendorLoginFailure(clientIp);
-            if (failCheck.locked) {
-              return mobileApiResponse(
-                {
-                  success: false,
-                  reason: "NOT_FOUND",
-                  error: "Too many failed attempts. Account login blocked for 15 minutes.",
-                  locked: true,
-                  lockoutUntil: failCheck.lockoutUntil,
-                  retryAfterSeconds: failCheck.retryAfterSeconds,
-                  remainingAttempts: 0,
-                  email: cleanEmail,
-                },
-                429
-              );
-            }
             return mobileApiResponse(
               {
                 success: false,
                 reason: "NOT_FOUND",
                 error: "This email isn't registered as an approved vendor partner on Intrihub Business.",
                 locked: false,
-                remainingAttempts: failCheck.remainingAttempts,
+                remainingAttempts: lockoutCheck.remainingAttempts ?? 5,
                 email: cleanEmail,
               },
               403
@@ -180,29 +165,13 @@ export async function POST(req: NextRequest) {
         });
 
         if (!vendor) {
-          const failCheck = recordVendorLoginFailure(clientIp);
-          if (failCheck.locked) {
-            return mobileApiResponse(
-              {
-                success: false,
-                reason: "NOT_FOUND",
-                error: "Too many failed attempts. Account login blocked for 15 minutes.",
-                locked: true,
-                lockoutUntil: failCheck.lockoutUntil,
-                retryAfterSeconds: failCheck.retryAfterSeconds,
-                remainingAttempts: 0,
-                phone: cleanPhone,
-              },
-              429
-            );
-          }
           return mobileApiResponse(
             {
               success: false,
               reason: "NOT_FOUND",
               error: "This phone number isn't registered as an approved vendor partner on Intrihub Business.",
               locked: false,
-              remainingAttempts: failCheck.remainingAttempts,
+              remainingAttempts: lockoutCheck.remainingAttempts ?? 5,
               phone: cleanPhone,
             },
             403

@@ -3,7 +3,7 @@
     "name": "Intrihub Business",
     "slug": "intrihub-business",
     "owner": "sahil_sheikh78",
-    "version": "1.0.14",
+    "version": "1.0.16",
     "orientation": "portrait",
     "icon": "./assets/icon.png",
     "scheme": "intrihub-biz",
@@ -36,7 +36,7 @@
     },
     "android": {
       "package": "com.intrihub.business",
-      "versionCode": 15,
+      "versionCode": 17,
       "blockedPermissions": [
         "android.permission.READ_MEDIA_IMAGES",
         "android.permission.READ_MEDIA_VIDEO",
@@ -62,6 +62,20 @@
         "WAKE_LOCK",
         "USE_FULL_SCREEN_INTENT",
         "FOREGROUND_SERVICE"
+      ],
+      "intentFilters": [
+        {
+          "action": "VIEW",
+          "data": [
+            {
+              "scheme": "intrihub-biz"
+            }
+          ],
+          "category": [
+            "BROWSABLE",
+            "DEFAULT"
+          ]
+        }
       ]
     },
     "web": {
@@ -91,7 +105,8 @@
           "project": "intrihub-business",
           "organization": "intrihub"
         }
-      ]
+      ],
+      "./plugins/withCallKitVoIP"
     ]
   }
 }

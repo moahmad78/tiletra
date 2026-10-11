@@ -1,16 +1,7 @@
-import React, { useState, useEffect, useRef } from "react";
+import React, { useState, useEffect, useRef, useMemo } from "react";
 import { Animated, Text, StyleSheet, View } from "react-native";
 import { COLORS } from "../constants/theme";
-
-const DEFAULT_PHRASES = [
-  "Search vitrified tiles...",
-  "Search luxury sanitaryware...",
-  "Search tile adhesives & grouts...",
-  "Search CP bathroom fittings...",
-  "Search granite & natural stone...",
-  "Search paints & wall finishes...",
-  "Search electrical fittings...",
-];
+import { useTranslation } from "../store/i18nStore";
 
 interface AnimatedSearchPlaceholderProps {
   phrases?: string[];
@@ -18,15 +9,31 @@ interface AnimatedSearchPlaceholderProps {
 }
 
 export const AnimatedSearchPlaceholder: React.FC<AnimatedSearchPlaceholderProps> = ({
-  phrases = DEFAULT_PHRASES,
+  phrases,
   intervalMs = 2600,
 }) => {
+  const { t } = useTranslation();
+
+  const dynamicPhrases = useMemo(() => {
+    if (phrases && phrases.length > 0) return phrases;
+    return [
+      t("search.vitrifiedTiles") || "Search vitrified tiles...",
+      t("search.luxurySanitaryware") || "Search luxury sanitaryware...",
+      t("search.adhesivesGrouts") || "Search tile adhesives & grouts...",
+      t("search.cpFittings") || "Search CP bathroom fittings...",
+      t("search.graniteStone") || "Search granite & natural stone...",
+      t("search.paintsFinishes") || "Search paints & wall finishes...",
+      t("search.electricalFittings") || "Search electrical fittings...",
+    ];
+  }, [phrases, t]);
+
+  const activePhrases = dynamicPhrases;
   const [index, setIndex] = useState(0);
   const fadeAnim = useRef(new Animated.Value(1)).current;
   const translateYAnim = useRef(new Animated.Value(0)).current;
 
   useEffect(() => {
-    if (phrases.length <= 1) return;
+    if (activePhrases.length <= 1) return;
 
     const interval = setInterval(() => {
       // 1. Slide up and fade out
@@ -43,7 +50,7 @@ export const AnimatedSearchPlaceholder: React.FC<AnimatedSearchPlaceholderProps>
         }),
       ]).start(() => {
         // 2. Change text
-        setIndex((prev) => (prev + 1) % phrases.length);
+        setIndex((prev) => (prev + 1) % activePhrases.length);
         translateYAnim.setValue(8);
 
         // 3. Slide in and fade in
@@ -63,7 +70,7 @@ export const AnimatedSearchPlaceholder: React.FC<AnimatedSearchPlaceholderProps>
     }, intervalMs);
 
     return () => clearInterval(interval);
-  }, [phrases.length, intervalMs, fadeAnim, translateYAnim]);
+  }, [activePhrases, intervalMs, fadeAnim, translateYAnim]);
 
   return (
     <View style={styles.container}>
@@ -77,7 +84,7 @@ export const AnimatedSearchPlaceholder: React.FC<AnimatedSearchPlaceholderProps>
           },
         ]}
       >
-        {phrases[index]}
+        {activePhrases[index]}
       </Animated.Text>
     </View>
   );

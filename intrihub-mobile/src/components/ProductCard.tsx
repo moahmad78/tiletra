@@ -8,6 +8,8 @@ import { COLORS, SPACING, RADIUS, SHADOWS } from "../constants/theme";
 import { getImageUrl } from "../constants/config";
 import { useCartStore } from "../store/cartStore";
 import { useWishlistStore } from "../store/wishlistStore";
+import { useTranslation } from "../store/i18nStore";
+import { useTranslatedText } from "../hooks/useDynamicTranslation";
 
 interface ProductCardProps {
   product: Product;
@@ -44,6 +46,8 @@ function getPriceUnitSuffix(product: Product): string {
 
 export const ProductCard: React.FC<ProductCardProps> = ({ product, horizontal = false }) => {
   const router = useRouter();
+  const { t } = useTranslation();
+  const translatedName = useTranslatedText(product.name);
   const { items, addItem } = useCartStore();
   const { isWishlisted, toggleWishlist } = useWishlistStore();
 
@@ -123,7 +127,7 @@ export const ProductCard: React.FC<ProductCardProps> = ({ product, horizontal = 
 
         <View style={styles.horizontalInfo}>
           <Text style={styles.title} numberOfLines={1}>
-            {product.name}
+            {translatedName}
           </Text>
           <Text style={styles.specText} numberOfLines={1}>
             {specText}
@@ -134,7 +138,7 @@ export const ProductCard: React.FC<ProductCardProps> = ({ product, horizontal = 
             {unitSuffix ? <Text style={styles.unit}>/{unitSuffix}</Text> : null}
             {formattedMrp && <Text style={styles.mrp}>{formattedMrp}</Text>}
             {discountPercent > 0 && (
-              <Text style={styles.discountTextGreen}>{discountPercent}% off</Text>
+              <Text style={styles.discountTextGreen}>{discountPercent}% {t("common.off") || "off"}</Text>
             )}
           </View>
         </View>
@@ -152,7 +156,7 @@ export const ProductCard: React.FC<ProductCardProps> = ({ product, horizontal = 
         {/* Top Badges (TOP / Bestseller) */}
         {(product.isBestseller || product.isTrending) && (
           <View style={styles.topBadge}>
-            <Text style={styles.topBadgeText}>TOP</Text>
+            <Text style={styles.topBadgeText}>{t("common.top") || "TOP"}</Text>
           </View>
         )}
 
@@ -174,7 +178,7 @@ export const ProductCard: React.FC<ProductCardProps> = ({ product, horizontal = 
       {/* Info Content */}
       <View style={styles.infoWrapper}>
         <Text style={styles.title} numberOfLines={2}>
-          {product.name}
+          {translatedName}
         </Text>
         <Text style={styles.specText} numberOfLines={1}>
           {specText}
@@ -201,7 +205,7 @@ export const ProductCard: React.FC<ProductCardProps> = ({ product, horizontal = 
             <View style={styles.subPriceRow}>
               {formattedMrp && <Text style={styles.mrp}>{formattedMrp}</Text>}
               {discountPercent > 0 && (
-                <Text style={styles.discountTextGreen}>{discountPercent}% off</Text>
+                <Text style={styles.discountTextGreen}>{discountPercent}% {t("common.off") || "off"}</Text>
               )}
             </View>
           </View>

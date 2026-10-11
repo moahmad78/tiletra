@@ -36,6 +36,7 @@ import { VendorOrderSplit } from "../../src/types";
 import { COURIER_PARTNERS } from "../../src/constants/logistics";
 import { COLORS, SPACING, RADIUS, SHADOWS } from "../../src/constants/theme";
 import { printOrderInvoice } from "../../src/utils/invoicePrinter";
+import { useTranslation } from "../../src/store/i18nStore";
 
 const getCleanPhone = (phone?: string | null) => {
   if (!phone) return "";
@@ -58,6 +59,7 @@ const getCleanPhone = (phone?: string | null) => {
 export default function VendorOrdersScreen() {
   const router = useRouter();
   const queryClient = useQueryClient();
+  const { t } = useTranslation();
   const [statusFilter, setStatusFilter] = useState("all");
   const [selectedSplit, setSelectedSplit] = useState<VendorOrderSplit | null>(null);
   const [modalVisible, setModalVisible] = useState(false);
@@ -206,7 +208,7 @@ export default function VendorOrdersScreen() {
     <View style={styles.container}>
       <View style={styles.header}>
         <View style={{ flex: 1, paddingRight: 8 }}>
-          <Text style={styles.headerTitle}>Warehouse Orders</Text>
+          <Text style={styles.headerTitle}>{t("vendor.orders") || "Warehouse Orders"}</Text>
           <Text style={styles.headerSubtitle}>{orders.length} order fulfillment tasks</Text>
         </View>
 

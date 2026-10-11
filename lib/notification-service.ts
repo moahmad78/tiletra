@@ -348,6 +348,8 @@ export async function sendNotification(
     body,
     sound: "default",
     channelId,
+    image: imageUrl || undefined,
+    mutableContent: Boolean(imageUrl),
     data: payloadData,
   });
 

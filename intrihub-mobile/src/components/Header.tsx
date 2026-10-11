@@ -16,6 +16,7 @@ import { Search, Bell, MapPin, ChevronDown } from "lucide-react-native";
 import { COLORS, SPACING, RADIUS, SHADOWS } from "../constants/theme";
 import { useAuthStore } from "../store/authStore";
 import { useNotificationStore } from "../store/notificationStore";
+import { useTranslation } from "../store/i18nStore";
 import { AnimatedSearchPlaceholder } from "./AnimatedSearchPlaceholder";
 
 interface HeaderProps {
@@ -31,6 +32,7 @@ export const Header: React.FC<HeaderProps> = ({
 }) => {
   const router = useRouter();
   const insets = useSafeAreaInsets();
+  const { t, isRTL } = useTranslation();
   const { selectedAddress, isAuthenticated } = useAuthStore();
   const { unreadCount, fetchUnreadCount } = useNotificationStore();
 
@@ -74,7 +76,7 @@ export const Header: React.FC<HeaderProps> = ({
 
   const addressLabel = selectedAddress
     ? `${selectedAddress.city} - ${selectedAddress.pincode}`
-    : "Select Delivery Location";
+    : t("address.selectDeliveryLocation") || "Select Delivery Location";
 
   const topPadding = Math.max(
     insets.top + (Platform.OS === "android" ? 6 : 4),

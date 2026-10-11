@@ -264,7 +264,7 @@ export default function NotificationSettingsScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: COLORS.backgroundLight,
+    backgroundColor: COLORS.background,
   },
   header: {
     flexDirection: "row",
@@ -272,7 +272,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: SPACING.md,
     paddingTop: Platform.OS === "android" ? 44 : 54,
     paddingBottom: SPACING.md,
-    backgroundColor: COLORS.cardBg,
+    backgroundColor: COLORS.surface,
     borderBottomWidth: 1,
     borderBottomColor: COLORS.border,
   },
@@ -355,12 +355,12 @@ const styles = StyleSheet.create({
     fontWeight: "700",
   },
   settingsSection: {
-    backgroundColor: COLORS.cardBg,
+    backgroundColor: COLORS.surface,
     borderRadius: RADIUS.lg,
     padding: SPACING.md,
     borderWidth: 1,
     borderColor: COLORS.border,
-    ...SHADOWS.xs,
+    ...SHADOWS.sm,
   },
   sectionTitle: {
     fontSize: 11,

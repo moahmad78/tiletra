@@ -182,7 +182,7 @@ export default function ProfileScreen() {
     <View style={styles.container}>
       {/* Header */}
       <View style={styles.header}>
-        <Text style={styles.headerTitle}>My Account</Text>
+        <Text style={styles.headerTitle}>{t("account.title") || "My Account"}</Text>
       </View>
 
       <ScrollView style={styles.scroll} showsVerticalScrollIndicator={false}>
@@ -214,28 +214,28 @@ export default function ProfileScreen() {
                 activeOpacity={0.8}
               >
                 <Edit2 size={15} color={COLORS.primary} />
-                <Text style={styles.editProfileBtnText}>Edit</Text>
+                <Text style={styles.editProfileBtnText}>{t("common.edit") || "Edit"}</Text>
               </TouchableOpacity>
             </View>
           </View>
         ) : (
           <View style={[styles.guestCard, SHADOWS.sm]}>
-            <Text style={styles.guestTitle}>Sign In for the Best Experience</Text>
+            <Text style={styles.guestTitle}>{t("account.guestTitle") || "Sign In for the Best Experience"}</Text>
             <Text style={styles.guestSub}>
-              Manage orders, save delivery addresses, and receive fast updates
+              {t("account.guestSub") || "Manage orders, save delivery addresses, and receive fast updates"}
             </Text>
             <TouchableOpacity
               style={styles.loginBtn}
               onPress={() => router.push("/(auth)/login")}
             >
-              <Text style={styles.loginBtnText}>Sign In / Register</Text>
+              <Text style={styles.loginBtnText}>{t("account.signInRegister") || "Sign In / Register"}</Text>
             </TouchableOpacity>
           </View>
         )}
 
         {/* Section: Account Actions */}
         <View style={styles.menuGroup}>
-          <Text style={styles.groupTitle}>ACCOUNT & PREFERENCES</Text>
+          <Text style={styles.groupTitle}>{t("account.preferencesHeader") || "ACCOUNT & PREFERENCES"}</Text>
 
           {/* App Language */}
           <TouchableOpacity
@@ -261,7 +261,7 @@ export default function ProfileScreen() {
           >
             <View style={styles.menuLeft}>
               <Heart size={20} color={COLORS.accentOrange} />
-              <Text style={styles.menuLabel}>My Wishlist</Text>
+              <Text style={styles.menuLabel}>{t("account.myWishlist") || "My Wishlist"}</Text>
             </View>
             <ChevronRight size={18} color={COLORS.textMuted} />
           </TouchableOpacity>
@@ -273,7 +273,7 @@ export default function ProfileScreen() {
           >
             <View style={styles.menuLeft}>
               <Bell size={20} color={COLORS.primary} />
-              <Text style={styles.menuLabel}>Notification Settings</Text>
+              <Text style={styles.menuLabel}>{t("account.notificationSettings") || "Notification Settings"}</Text>
             </View>
             <ChevronRight size={18} color={COLORS.textMuted} />
           </TouchableOpacity>
@@ -290,7 +290,7 @@ export default function ProfileScreen() {
           >
             <View style={styles.menuLeft}>
               <MapPin size={20} color={COLORS.primary} />
-              <Text style={styles.menuLabel}>Saved Delivery Addresses</Text>
+              <Text style={styles.menuLabel}>{t("account.savedAddresses") || "Saved Delivery Addresses"}</Text>
             </View>
             <ChevronRight size={18} color={COLORS.textMuted} />
           </TouchableOpacity>
@@ -298,7 +298,7 @@ export default function ProfileScreen() {
 
         {/* Section: Help & Support */}
         <View style={styles.menuGroup}>
-          <Text style={styles.groupTitle}>HELP & CUSTOMER SUPPORT</Text>
+          <Text style={styles.groupTitle}>{t("account.helpHeader") || "HELP & CUSTOMER SUPPORT"}</Text>
 
           <TouchableOpacity
             style={styles.menuItem}
@@ -308,7 +308,7 @@ export default function ProfileScreen() {
             <View style={styles.menuLeft}>
               <Headphones size={22} color={COLORS.accentGreen} />
               <View style={{ marginLeft: 12 }}>
-                <Text style={styles.menuLabel}>24/7 Customer Support</Text>
+                <Text style={styles.menuLabel}>{t("account.callSupport") || "24/7 Customer Support"}</Text>
                 <Text style={styles.supportSubText}>WhatsApp, Helpline & FAQs</Text>
               </View>
             </View>
@@ -326,7 +326,7 @@ export default function ProfileScreen() {
             <View style={styles.menuLeft}>
               <Star size={20} color="#F59E0B" fill="#F59E0B" />
               <View style={{ marginLeft: 12 }}>
-                <Text style={styles.menuLabel}>Rate Us on Google Play</Text>
+                <Text style={styles.menuLabel}>{t("common.rating") || "Rate Us on Google Play"}</Text>
                 <Text style={styles.supportSubText}>Share your 5-star rating & feedback</Text>
               </View>
             </View>
@@ -336,7 +336,7 @@ export default function ProfileScreen() {
           <TouchableOpacity style={styles.menuItem} onPress={handlePrivacyPolicy}>
             <View style={styles.menuLeft}>
               <ShieldCheck size={20} color={COLORS.primary} />
-              <Text style={styles.menuLabel}>Privacy Policy & Terms</Text>
+              <Text style={styles.menuLabel}>{t("account.privacyPolicy") || "Privacy Policy & Terms"}</Text>
             </View>
             <ChevronRight size={18} color={COLORS.textMuted} />
           </TouchableOpacity>

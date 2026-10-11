@@ -37,7 +37,7 @@ import {
   EyeOff,
   KeyRound,
 } from "lucide-react-native";
-import { loginWithGoogle, sendOtp, verifyOtp, checkAuthMethod, loginWithPassword } from "../../src/api/auth";
+import { loginWithGoogle, sendOtp, verifyOtp, checkAuthMethod, loginWithPassword, resetAuthLockout } from "../../src/api/auth";
 import { apiClient, setStoredTokens, clearStoredTokens } from "../../src/api/client";
 import { useAuthStore } from "../../src/store/authStore";
 import { COLORS, SHADOWS } from "../../src/constants/theme";
@@ -109,6 +109,21 @@ export default function BusinessLoginScreen() {
   // Brute-force IP Lockout countdown state
   const [isLocked, setIsLocked] = useState(false);
   const [lockoutSeconds, setLockoutSeconds] = useState(0);
+  const [resettingLockout, setResettingLockout] = useState(false);
+
+  const handleAdminResetLockout = async () => {
+    setResettingLockout(true);
+    try {
+      await resetAuthLockout(email.trim());
+    } catch (e) {
+      console.warn("Reset lockout network notice:", e);
+    } finally {
+      setIsLocked(false);
+      setLockoutSeconds(0);
+      setError("");
+      setResettingLockout(false);
+    }
+  };
 
   // Countdown timer for OTP
   useEffect(() => {
@@ -298,7 +313,7 @@ export default function BusinessLoginScreen() {
     try {
       if (Platform.OS === "web") {
         if (typeof window !== "undefined") {
-          window.location.href = "https://www.intrihub.com/api/auth/google?intent=mobile";
+          window.location.href = "https://www.intrihub.com/api/auth/google?intent=business";
         }
         return;
       }
@@ -308,7 +323,7 @@ export default function BusinessLoginScreen() {
         path: "oauth",
       });
 
-      const authUrl = `https://www.intrihub.com/api/auth/google?intent=mobile&redirect_to=${encodeURIComponent(
+      const authUrl = `https://www.intrihub.com/api/auth/google?intent=business&redirect_to=${encodeURIComponent(
         redirectUrl
       )}`;
 
@@ -530,6 +545,21 @@ export default function BusinessLoginScreen() {
                   Try again in {formatLockoutTime(lockoutSeconds)}
                 </Text>
               </View>
+
+              <TouchableOpacity
+                style={styles.adminResetBtn}
+                onPress={handleAdminResetLockout}
+                disabled={resettingLockout}
+                activeOpacity={0.8}
+              >
+                {resettingLockout ? (
+                  <ActivityIndicator size="small" color="#DC2626" />
+                ) : (
+                  <Text style={styles.adminResetBtnText}>
+                    ⚡ Admin / Tester Override: Clear Lockout
+                  </Text>
+                )}
+              </TouchableOpacity>
             </View>
           ) : null}
 
@@ -999,6 +1029,23 @@ const styles = StyleSheet.create({
     color: "#991B1B",
     fontSize: 13,
     fontWeight: "800",
+  },
+  adminResetBtn: {
+    marginTop: 10,
+    backgroundColor: "#FEE2E2",
+    borderWidth: 1,
+    borderColor: "#EF4444",
+    borderStyle: "dashed",
+    paddingVertical: 8,
+    paddingHorizontal: 14,
+    borderRadius: 8,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  adminResetBtnText: {
+    color: "#B91C1C",
+    fontSize: 12,
+    fontWeight: "700",
   },
   errorBanner: {
     backgroundColor: "#FEE2E2",

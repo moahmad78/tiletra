@@ -32,8 +32,8 @@ export async function POST(req: NextRequest) {
       const { resetAllLockoutsForIp } = await import("@/lib/rate-limit");
       resetAllLockoutsForIp(clientIp);
     } else if (isBusinessLogin) {
-      // 1. Check IP lockout for business login attempts
-      const lockoutCheck = checkVendorLoginLockout(clientIp);
+      // 1. Check account & IP lockout for business login attempts
+      const lockoutCheck = checkVendorLoginLockout(clientIp, cleanEmail);
       if (lockoutCheck.locked) {
         const mins = Math.floor((lockoutCheck.retryAfterSeconds || 0) / 60);
         const secs = (lockoutCheck.retryAfterSeconds || 0) % 60;
@@ -54,7 +54,7 @@ export async function POST(req: NextRequest) {
 
     if (!otp || typeof otp !== "string") {
       if (isBusinessLogin) {
-        const failRecord = recordVendorLoginFailure(clientIp);
+        const failRecord = recordVendorLoginFailure(clientIp, cleanEmail);
         if (failRecord.locked) {
           return mobileApiResponse(
             {
@@ -79,7 +79,7 @@ export async function POST(req: NextRequest) {
 
       if (!verifyRes.success) {
         if (isBusinessLogin && !isPlayReviewerEmail(cleanEmail)) {
-          const failRecord = recordVendorLoginFailure(clientIp);
+          const failRecord = recordVendorLoginFailure(clientIp, cleanEmail);
           if (failRecord.locked) {
             return mobileApiResponse(
               {
@@ -220,8 +220,8 @@ export async function POST(req: NextRequest) {
         }
       }
 
-      // Successful business login -> reset IP lockout
-      resetVendorLoginLockout(clientIp);
+      // Successful business login -> reset lockout for IP & account
+      resetVendorLoginLockout(clientIp, cleanEmail);
     }
 
     const allowedAdminEmail = (process.env.ADMIN_ALLOWED_EMAIL || "admin@intrihub.com").toLowerCase().trim();

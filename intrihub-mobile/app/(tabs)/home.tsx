@@ -23,9 +23,11 @@ import { AddressModal } from "../../src/components/AddressModal";
 import { getCategories, getProducts } from "../../src/api/products";
 import { COLORS, SPACING, RADIUS } from "../../src/constants/theme";
 import { Product } from "../../src/types";
+import { useTranslation } from "../../src/store/i18nStore";
 
 export default function HomeScreen() {
   const router = useRouter();
+  const { t, isRTL } = useTranslation();
   const { width: windowWidth } = useWindowDimensions();
   const numColumns = windowWidth >= 900 ? 4 : windowWidth >= 600 ? 3 : 2;
   const [addressModalVisible, setAddressModalVisible] = useState(false);
@@ -44,12 +46,12 @@ export default function HomeScreen() {
 
         // Only on the root Home screen (last step) ask before closing/exiting the app
         Alert.alert(
-          "Exit IntriHub?",
-          "Are you sure you want to close the IntriHub app?",
+          t("common.exitTitle") || "Exit IntriHub?",
+          t("common.exitConfirm") || "Are you sure you want to close the IntriHub app?",
           [
-            { text: "Stay", style: "cancel" },
+            { text: t("common.stay") || "Stay", style: "cancel" },
             {
-              text: "Exit",
+              text: t("common.exit") || "Exit",
               style: "destructive",
               onPress: () => BackHandler.exitApp(),
             },
@@ -60,7 +62,7 @@ export default function HomeScreen() {
 
       const backHandler = BackHandler.addEventListener("hardwareBackPress", onBackPress);
       return () => backHandler.remove();
-    }, [router])
+    }, [router, t])
   );
 
   // 1. Fetch Categories & Banners
@@ -129,14 +131,14 @@ export default function HomeScreen() {
       {/* Categories Section with animated expand/collapse */}
       <View style={styles.sectionHeader}>
         <View>
-          <Text style={styles.sectionTitle}>Shop by Category</Text>
-          <Text style={styles.sectionSubtitle}>20+ construction & interior materials</Text>
+          <Text style={styles.sectionTitle}>{t("home.shopByCategory") || "Shop by Category"}</Text>
+          <Text style={styles.sectionSubtitle}>{t("home.heroSubtitle") || "20+ construction & interior materials"}</Text>
         </View>
         <TouchableOpacity
           style={styles.viewAllBtn}
           onPress={() => router.push("/(tabs)/categories")}
         >
-          <Text style={styles.viewAllText}>View All</Text>
+          <Text style={styles.viewAllText}>{t("common.viewAll") || "View All"}</Text>
           <ArrowRight size={14} color={COLORS.primary} />
         </TouchableOpacity>
       </View>
@@ -153,9 +155,9 @@ export default function HomeScreen() {
           <View style={styles.dealHeader}>
             <View style={styles.dealTitleRow}>
               <TrendingUp size={18} color={COLORS.accentOrange} />
-              <Text style={styles.dealTitle}>Trending This Week</Text>
+              <Text style={styles.dealTitle}>{t("home.trendingThisWeek") || "Trending This Week"}</Text>
             </View>
-            <Text style={styles.dealBadge}>UP TO 40% OFF</Text>
+            <Text style={styles.dealBadge}>{t("home.upToDiscount") || "UP TO 40% OFF"}</Text>
           </View>
 
           <FlatList
@@ -174,7 +176,7 @@ export default function HomeScreen() {
       {/* Infinite Product Catalog Section Title */}
       <View style={styles.sectionHeader}>
         <View>
-          <Text style={styles.sectionTitle}>All Materials & Supplies</Text>
+          <Text style={styles.sectionTitle}>{t("home.allMaterialsSupplies") || "All Materials & Supplies"}</Text>
         </View>
       </View>
     </View>
@@ -185,7 +187,7 @@ export default function HomeScreen() {
       return (
         <View style={styles.footerLoader}>
           <ActivityIndicator size="small" color={COLORS.primary} />
-          <Text style={styles.loadingMoreText}>Loading more products...</Text>
+          <Text style={styles.loadingMoreText}>{t("home.loadingMoreProducts") || "Loading more products..."}</Text>
         </View>
       );
     }
@@ -194,7 +196,7 @@ export default function HomeScreen() {
       return (
         <View style={styles.endOfListContainer}>
           <CheckCircle2 size={16} color={COLORS.accentGreen} />
-          <Text style={styles.endOfListText}>You've seen all available products!</Text>
+          <Text style={styles.endOfListText}>{t("home.endOfListProducts") || "You've seen all available products!"}</Text>
         </View>
       );
     }

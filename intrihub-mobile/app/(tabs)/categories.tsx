@@ -32,9 +32,11 @@ import { getCategories, getProducts } from "../../src/api/products";
 import { COLORS, SPACING, RADIUS, SHADOWS } from "../../src/constants/theme";
 import { getImageUrl } from "../../src/constants/config";
 import { Category, Product } from "../../src/types";
+import { useTranslation } from "../../src/store/i18nStore";
 
 export default function CategoriesScreen() {
   const router = useRouter();
+  const { t } = useTranslation();
   const params = useLocalSearchParams<{ focus?: string; autoFocus?: string; q?: string }>();
   const inputRef = useRef<TextInput>(null);
 
@@ -425,7 +427,7 @@ export default function CategoriesScreen() {
               ]}
               numberOfLines={1}
             >
-              {selectedCategory ? selectedCategory.name : "Categories"}
+              {selectedCategory ? selectedCategory.name : (t("nav.categories") || "Categories")}
             </Text>
           </TouchableOpacity>
 
@@ -435,7 +437,7 @@ export default function CategoriesScreen() {
             onPress={() => setActiveSort("popular")}
           >
             <Text style={[styles.sortChipText, activeSort === "popular" && styles.activeSortChipText]}>
-              Popular
+              {t("shop.popularity") || "Popular"}
             </Text>
           </TouchableOpacity>
 
@@ -444,7 +446,7 @@ export default function CategoriesScreen() {
             onPress={() => setActiveSort("price_asc")}
           >
             <Text style={[styles.sortChipText, activeSort === "price_asc" && styles.activeSortChipText]}>
-              Price: Low to High
+              {t("shop.priceLowHigh") || "Price: Low to High"}
             </Text>
           </TouchableOpacity>
 
@@ -453,7 +455,7 @@ export default function CategoriesScreen() {
             onPress={() => setActiveSort("price_desc")}
           >
             <Text style={[styles.sortChipText, activeSort === "price_desc" && styles.activeSortChipText]}>
-              Price: High to Low
+              {t("shop.priceHighLow") || "Price: High to Low"}
             </Text>
           </TouchableOpacity>
 
@@ -462,7 +464,7 @@ export default function CategoriesScreen() {
             onPress={() => setActiveSort("rating")}
           >
             <Text style={[styles.sortChipText, activeSort === "rating" && styles.activeSortChipText]}>
-              Top Rated
+              {t("shop.customerRating") || "Top Rated"}
             </Text>
           </TouchableOpacity>
         </ScrollView>
@@ -520,7 +522,7 @@ export default function CategoriesScreen() {
 
             {/* Sheet Header */}
             <View style={styles.sheetHeader}>
-              <Text style={styles.sheetTitle}>Select Category</Text>
+              <Text style={styles.sheetTitle}>{t("shop.allCategories") || "Select Category"}</Text>
               <TouchableOpacity
                 onPress={() => setModalVisible(false)}
                 hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
@@ -546,7 +548,7 @@ export default function CategoriesScreen() {
                     tempCategory === null && styles.categoryRowTextSelected,
                   ]}
                 >
-                  All Categories
+                  {t("shop.allCategories") || "All Categories"}
                 </Text>
                 {tempCategory === null && <Check size={18} color={COLORS.primary} />}
               </TouchableOpacity>
@@ -582,14 +584,14 @@ export default function CategoriesScreen() {
                 onPress={handleClearCategory}
                 activeOpacity={0.8}
               >
-                <Text style={styles.sheetClearBtnText}>Reset</Text>
+                <Text style={styles.sheetClearBtnText}>{t("common.retry") || "Reset"}</Text>
               </TouchableOpacity>
               <TouchableOpacity
                 style={styles.sheetApplyBtn}
                 onPress={handleApplyCategory}
                 activeOpacity={0.85}
               >
-                <Text style={styles.sheetApplyBtnText}>Apply Filter</Text>
+                <Text style={styles.sheetApplyBtnText}>{t("common.apply") || "Apply Filter"}</Text>
               </TouchableOpacity>
             </View>
           </View>

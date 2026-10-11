@@ -268,24 +268,28 @@ export default function VendorProfileScreen() {
   };
 
   const handleLogout = async () => {
-    Alert.alert("Log Out", "Are you sure you want to log out of Intrihub Business?", [
-      { text: "Cancel", style: "cancel" },
-      {
-        text: "Log Out",
-        style: "destructive",
-        onPress: async () => {
-          await logout();
-          router.replace("/(auth)/login" as any);
+    Alert.alert(
+      t("auth.logout") || "Log Out",
+      t("account.logoutConfirm") || "Are you sure you want to log out of Intrihub Business?",
+      [
+        { text: t("common.cancel") || "Cancel", style: "cancel" },
+        {
+          text: t("auth.logout") || "Log Out",
+          style: "destructive",
+          onPress: async () => {
+            await logout();
+            router.replace("/(auth)/login" as any);
+          },
         },
-      },
-    ]);
+      ]
+    );
   };
 
   return (
     <View style={styles.container}>
       <View style={styles.header}>
         <View style={{ flex: 1 }}>
-          <Text style={styles.headerTitle}>Vendor Profile</Text>
+          <Text style={styles.headerTitle}>{t("account.title") || "Vendor Profile"}</Text>
           <Text style={styles.headerSubtitle}>Store credentials and operational settings</Text>
         </View>
         <Image
@@ -373,7 +377,7 @@ export default function VendorProfileScreen() {
 
           <TouchableOpacity style={styles.editProfileBtn} onPress={handleOpenEdit}>
             <Edit2 size={14} color={COLORS.accentOrange} />
-            <Text style={styles.editProfileBtnText}>Edit Store Profile</Text>
+            <Text style={styles.editProfileBtnText}>{t("account.editProfile") || "Edit Store Profile"}</Text>
           </TouchableOpacity>
         </View>
 
@@ -408,7 +412,7 @@ export default function VendorProfileScreen() {
                 <Headphones size={18} color={COLORS.primary} />
               </View>
               <View style={{ flex: 1 }}>
-                <Text style={styles.menuText}>24/7 Vendor Partner Support</Text>
+                <Text style={styles.menuText}>{t("common.help") || t("account.helpSupport") || "24/7 Vendor Partner Support"}</Text>
                 <Text style={styles.menuSub}>Helpline, WhatsApp chat, FAQs & tickets</Text>
               </View>
             </View>
@@ -428,7 +432,7 @@ export default function VendorProfileScreen() {
                 <Globe size={18} color={COLORS.accentGreen} />
               </View>
               <View style={{ flex: 1 }}>
-                <Text style={styles.menuText}>{t("profile.language") || "Language / भाषा"}</Text>
+                <Text style={styles.menuText}>{t("nav.language") || "Language / भाषा"}</Text>
                 <Text style={styles.menuSub}>
                   {currentLangObj ? `${currentLangObj.nativeName} (${currentLangObj.name})` : "English"}
                 </Text>
@@ -441,7 +445,7 @@ export default function VendorProfileScreen() {
         {/* Log Out */}
         <TouchableOpacity style={styles.logoutBtn} onPress={handleLogout}>
           <LogOut size={18} color={COLORS.error} />
-          <Text style={styles.logoutText}>Log Out from Vendor Portal</Text>
+          <Text style={styles.logoutText}>{t("auth.logout") || "Log Out from Vendor Portal"}</Text>
         </TouchableOpacity>
       </ScrollView>
 

@@ -189,3 +189,10 @@ export async function updateUserProfile(data: {
   const res = await apiClient.patch("/api/mobile/auth/me", data);
   return res.data;
 }
+
+export async function resetAuthLockout(email?: string): Promise<{ success: boolean; message?: string }> {
+  const res = await apiClient.post("/api/mobile/auth/reset-lockout", {
+    email: email || undefined,
+  });
+  return res.data;
+}

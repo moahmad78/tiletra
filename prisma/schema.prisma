@@ -1651,3 +1651,16 @@ model NotificationLog {
   @@index([type])
   @@index([campaignId])
 }
+
+model TranslationCache {
+  id             String   @id @default(cuid())
+  hash           String   @unique
+  sourceText     String   @db.Text
+  targetLang     String
+  translatedText String   @db.Text
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  @@index([targetLang])
+  @@index([hash])
+}
