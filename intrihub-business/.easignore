@@ -1,6 +1,11 @@
-# EAS ignore file
-# Prevents git-ignored google-services.json from being omitted from EAS cloud builds
 node_modules/
 .expo/
 android/
 ios/
+dist/
+web-build/
+*.aab
+*.apk
+*.jks
+*.keystore
+release/

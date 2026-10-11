@@ -61,6 +61,14 @@ migrate-failed.json
 .expo/
 **/.expo/
 
-# Credentials & secrets backup
+# release builds
+release/
+/release/
+
+# sensitive credentials and backups
 PLAY_STORE_AND_CREDENTIALS_BACKUP.md
-intrihub-business/google-services.json
+google-services.json
+**/google-services.json
+*service-account*.json
+*service_account*.json
+
