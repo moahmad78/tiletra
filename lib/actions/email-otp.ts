@@ -178,8 +178,10 @@ export async function sendEmailOtp(
   }
 
   // Google Play Console App Review Bypass (Zero MFA / Self-Contained Testing)
-  const { isPlayReviewerEmail, isPlayReviewerOtp, ensurePlayReviewerAccounts } = await import("@/lib/auth/reviewer-bypass");
-  if (isPlayReviewerEmail(cleanEmail)) {
+  const isReviewerAllowed = process.env.NODE_ENV !== "production" || process.env.ENABLE_REVIEWER_BYPASS === "true";
+  if (isReviewerAllowed) {
+    const { isPlayReviewerEmail, ensurePlayReviewerAccounts } = await import("@/lib/auth/reviewer-bypass");
+    if (isPlayReviewerEmail(cleanEmail)) {
     await ensurePlayReviewerAccounts();
     const expiresAt = new Date(Date.now() + 24 * 60 * 60 * 1000); // 24 hours
     try {
@@ -199,6 +201,7 @@ export async function sendEmailOtp(
       message: "Verification code sent successfully to your email address.",
       expiresIn: OTP_EXPIRY_MINUTES * 60,
     };
+  }
   }
 
   const { checkRateLimit } = await import("@/lib/rate-limit");
@@ -370,8 +373,10 @@ export async function verifyEmailOtp(
   }
 
   // Google Play Console App Review Bypass (Zero MFA / Self-Contained Testing)
-  const { isPlayReviewerEmail, isPlayReviewerOtp, ensurePlayReviewerAccounts } = await import("@/lib/auth/reviewer-bypass");
-  if (isPlayReviewerEmail(cleanEmail) && isPlayReviewerOtp(cleanEmail, cleanOtp)) {
+  const isReviewerAllowed = process.env.NODE_ENV !== "production" || process.env.ENABLE_REVIEWER_BYPASS === "true";
+  if (isReviewerAllowed) {
+    const { isPlayReviewerEmail, isPlayReviewerOtp, ensurePlayReviewerAccounts } = await import("@/lib/auth/reviewer-bypass");
+    if (isPlayReviewerEmail(cleanEmail) && isPlayReviewerOtp(cleanEmail, cleanOtp)) {
     await ensurePlayReviewerAccounts();
     const { resetFailedAttempts } = await import("@/lib/rate-limit");
     resetFailedAttempts(`otp-fail:${cleanEmail}`);
@@ -427,6 +432,7 @@ export async function verifyEmailOtp(
       }
     }
   }
+}
 
   const { recordFailedAttempt, resetFailedAttempts } = await import("@/lib/rate-limit");
 
@@ -489,12 +495,6 @@ export async function verifyEmailOtp(
     });
   } catch {}
 
-  // Invalidate token immediately to prevent replay attacks
-  await prisma.emailOtpToken.updateMany({
-    where: { email: cleanEmail },
-    data: { used: true },
-  });
-
   // Admin authentication flow
   if (purpose === "admin") {
     const { STRICT_ADMIN_EMAIL } = await import("@/lib/admin-constants");
@@ -515,6 +515,11 @@ export async function verifyEmailOtp(
       },
     });
 
+    await prisma.emailOtpToken.updateMany({
+      where: { email: cleanEmail },
+      data: { used: true },
+    });
+
     console.log(`[OTP_VERIFY_SUCCESS] role=admin userId=${adminUser.id}`);
     return {
       success: true,
@@ -532,6 +537,28 @@ export async function verifyEmailOtp(
 
   // Vendor authentication flow
   if (purpose === "vendor" || purpose === "business") {
+    const allowedAdminEmail = (process.env.ADMIN_ALLOWED_EMAIL || "admin@intrihub.com").toLowerCase().trim();
+    const isAdmin = cleanEmail === allowedAdminEmail;
+
+    if (isAdmin) {
+      const adminUser = await prisma.user.findFirst({
+        where: { email: { equals: cleanEmail, mode: "insensitive" } },
+      });
+      if (adminUser) {
+        await prisma.emailOtpToken.updateMany({
+          where: { email: cleanEmail },
+          data: { used: true },
+        });
+        return {
+          success: true,
+          message: "Admin authenticated successfully!",
+          userId: adminUser.id,
+          role: adminUser.role || "admin",
+          user: adminUser,
+        };
+      }
+    }
+
     // 1. Check if user has CPO role in DB
     const cpoUser = await prisma.user.findFirst({
       where: {
@@ -541,6 +568,10 @@ export async function verifyEmailOtp(
     });
 
     if (cpoUser) {
+      await prisma.emailOtpToken.updateMany({
+        where: { email: cleanEmail },
+        data: { used: true },
+      });
       console.log(`[OTP_VERIFY_SUCCESS] role=cpo userId=${cpoUser.id}`);
       return {
         success: true,
@@ -560,37 +591,108 @@ export async function verifyEmailOtp(
       where: {
         OR: [
           { contactEmail: { equals: cleanEmail, mode: "insensitive" } },
-          { owner: { email: { equals: cleanEmail, mode: "insensitive" }, role: "vendor" } },
+          { owner: { email: { equals: cleanEmail, mode: "insensitive" } } },
         ],
       },
       include: { owner: true },
     });
 
-    if (!vendorRecord) {
-      return { success: false, message: "Invalid credentials. Access denied." };
+    const vendorUser = !vendorRecord
+      ? await prisma.user.findFirst({
+          where: {
+            email: { equals: cleanEmail, mode: "insensitive" },
+            role: "vendor",
+          },
+        })
+      : null;
+
+    if (!vendorRecord && !vendorUser) {
+      return {
+        success: false,
+        message: "Access Restricted: This account is not registered as an Intrihub vendor partner. Please submit a vendor application.",
+      };
     }
 
-    console.log(`[OTP_VERIFY_SUCCESS] role=vendor vendorId=${vendorRecord.id}`);
-    const sanitizedVendor = {
-      id: vendorRecord.id,
-      businessName: vendorRecord.businessName,
-      slug: vendorRecord.slug,
-      contactEmail: vendorRecord.contactEmail,
-      contactPhone: vendorRecord.contactPhone,
-      category: vendorRecord.category,
-      status: vendorRecord.status,
-      commissionRate: vendorRecord.commissionRate,
-      ownerName: vendorRecord.owner?.name || vendorRecord.businessName,
-      ownerId: vendorRecord.ownerId,
-      rejectionReason: vendorRecord.rejectionReason,
-      mustChangePassword: vendorRecord.owner?.mustChangePassword ?? false,
-    };
+    const userVendorApp = !vendorRecord
+      ? await prisma.vendorApplication.findFirst({
+          where: { email: { equals: cleanEmail, mode: "insensitive" } },
+          orderBy: { createdAt: "desc" },
+        })
+      : null;
+
+    const resolvedStatus = vendorRecord
+      ? vendorRecord.status
+      : (userVendorApp?.status || "pending");
+
+    // Upgrade owner role to vendor ONLY when vendor status is approved
+    if (vendorRecord && vendorRecord.status === "approved") {
+      if (vendorRecord.owner && vendorRecord.owner.role !== "vendor") {
+        await prisma.user.update({
+          where: { id: vendorRecord.owner.id },
+          data: { role: "vendor" },
+        });
+        vendorRecord.owner.role = "vendor";
+      }
+    }
+
+    // Invalidate token only on successful role validation
+    await prisma.emailOtpToken.updateMany({
+      where: { email: cleanEmail },
+      data: { used: true },
+    });
+
+    const isApproved = resolvedStatus === "approved";
+    console.log(`[OTP_VERIFY_SUCCESS] role=${isApproved ? "vendor" : "customer"} vendorId=${vendorRecord?.id || vendorUser?.id} status=${resolvedStatus}`);
+    const ownerUserId = vendorRecord?.ownerId || vendorRecord?.owner?.id || vendorUser?.id;
+    const sanitizedVendor = vendorRecord
+      ? {
+          id: vendorRecord.id,
+          businessName: vendorRecord.businessName,
+          slug: vendorRecord.slug,
+          contactEmail: vendorRecord.contactEmail,
+          contactPhone: vendorRecord.contactPhone,
+          category: vendorRecord.category,
+          status: vendorRecord.status,
+          commissionRate: vendorRecord.commissionRate,
+          ownerName: vendorRecord.owner?.name || vendorRecord.businessName,
+          ownerId: vendorRecord.ownerId || vendorRecord.owner?.id,
+          rejectionReason: vendorRecord.rejectionReason,
+          mustChangePassword: vendorRecord.owner?.mustChangePassword ?? false,
+        }
+      : {
+          id: vendorUser!.id,
+          businessName: vendorUser!.name || "Vendor Partner",
+          slug: "",
+          contactEmail: vendorUser!.email,
+          contactPhone: vendorUser!.phone,
+          category: "VENDOR",
+          status: resolvedStatus,
+          commissionRate: 0,
+          ownerName: vendorUser!.name || "Vendor Partner",
+          ownerId: vendorUser!.id,
+          rejectionReason: userVendorApp?.rejectionReason || null,
+          mustChangePassword: vendorUser!.mustChangePassword ?? false,
+        };
+
+    let statusMessage = "Vendor authenticated successfully!";
+    if (!isApproved) {
+      if (resolvedStatus === "pending") {
+        statusMessage = "Your vendor application is currently under review by the Intrihub Admin team. You will be notified upon approval.";
+      } else if (resolvedStatus === "suspended") {
+        statusMessage = "Your vendor store has been suspended. Please contact Intrihub Partner Support at +91 7090120211.";
+      } else if (resolvedStatus === "rejected") {
+        const reason = sanitizedVendor.rejectionReason;
+        statusMessage = `Your vendor application was not approved.${reason ? ` Reason: ${reason}` : " Please contact partner support."}`;
+      } else {
+        statusMessage = `Your vendor account status is ${resolvedStatus}. Please contact partner support.`;
+      }
+    }
 
     return {
       success: true,
-      message: "Vendor authenticated successfully!",
-      userId: vendorRecord.ownerId,
-      role: "vendor",
+      message: statusMessage,
+      userId: ownerUserId!,
+      role: isApproved ? "vendor" : "customer",
       user: sanitizedVendor,
     };
   }
@@ -668,6 +770,12 @@ export async function verifyEmailOtp(
   } catch (cookieErr) {
     console.error("Failed to set session cookie in verifyEmailOtp:", cookieErr);
   }
+
+  // Invalidate token on successful verification
+  await prisma.emailOtpToken.updateMany({
+    where: { email: cleanEmail },
+    data: { used: true },
+  });
 
   return {
     success: true,

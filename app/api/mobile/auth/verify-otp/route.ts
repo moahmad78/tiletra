@@ -25,16 +25,26 @@ export async function POST(req: NextRequest) {
 
     const cleanEmail = (email || "").trim().toLowerCase();
 
-    // 0. Dedicated Google Play Console App Review Bypass
-    const { isPlayReviewerEmail, isPlayReviewerOtp, ensurePlayReviewerAccounts } = await import("@/lib/auth/reviewer-bypass");
-    if (isPlayReviewerEmail(cleanEmail)) {
-      await ensurePlayReviewerAccounts();
-      const { resetAllLockoutsForIp } = await import("@/lib/rate-limit");
-      resetAllLockoutsForIp(clientIp);
-    } else if (isBusinessLogin) {
-      // 1. Check account & IP lockout for business login attempts
+    console.log(`[VerifyOTP:Step 1/4] Incoming verification request: purpose=${purpose}, isBusiness=${isBusinessLogin}`);
+
+    // 0. Dedicated Google Play Console App Review Bypass (development/staging or explicit bypass only)
+    const isReviewerAllowed = process.env.NODE_ENV !== "production" || process.env.ENABLE_REVIEWER_BYPASS === "true";
+    let isReviewerAccount = false;
+    if (isReviewerAllowed && cleanEmail) {
+      const { isPlayReviewerEmail, ensurePlayReviewerAccounts } = await import("@/lib/auth/reviewer-bypass");
+      if (isPlayReviewerEmail(cleanEmail)) {
+        isReviewerAccount = true;
+        await ensurePlayReviewerAccounts();
+        const { resetAllLockoutsForIp } = await import("@/lib/rate-limit");
+        resetAllLockoutsForIp(clientIp);
+      }
+    }
+
+    // 1. Check account & IP lockout for business login attempts (strictly active for ALL non-reviewer accounts)
+    if (isBusinessLogin && !isReviewerAccount) {
       const lockoutCheck = checkVendorLoginLockout(clientIp, cleanEmail);
       if (lockoutCheck.locked) {
+        console.warn(`[VerifyOTP:Lockout] Account/IP locked out, retryAfterSeconds=${lockoutCheck.retryAfterSeconds}`);
         const mins = Math.floor((lockoutCheck.retryAfterSeconds || 0) / 60);
         const secs = (lockoutCheck.retryAfterSeconds || 0) % 60;
         const timeStr = `${mins.toString().padStart(2, "0")}:${secs.toString().padStart(2, "0")}`;
@@ -77,8 +87,12 @@ export async function POST(req: NextRequest) {
       const cleanEmail = email.trim().toLowerCase();
       const verifyRes = await verifyEmailOtp(cleanEmail, otp, purpose);
 
+      console.log(`[VerifyOTP:Step 2/4] OTP verification response: success=${verifyRes.success}`);
+
       if (!verifyRes.success) {
-        if (isBusinessLogin && !isPlayReviewerEmail(cleanEmail)) {
+        console.warn(`[VerifyOTP:Step 2/4] OTP verification failed: message=${verifyRes.message}`);
+        const { isPlayReviewerEmail } = await import("@/lib/auth/reviewer-bypass");
+        if (isBusinessLogin && !(isReviewerAllowed && isPlayReviewerEmail(cleanEmail))) {
           const failRecord = recordVendorLoginFailure(clientIp, cleanEmail);
           if (failRecord.locked) {
             return mobileApiResponse(
@@ -173,17 +187,31 @@ export async function POST(req: NextRequest) {
               where: { id: matchedVendor.id },
               data: { ownerId: user.id },
             });
-            await prisma.user.update({
-              where: { id: user.id },
-              data: { role: "vendor" },
-            });
+            if (matchedVendor.status === "approved") {
+              await prisma.user.update({
+                where: { id: user.id },
+                data: { role: "vendor" },
+              });
+              user.role = "vendor";
+            }
             vendor = matchedVendor;
-            user.role = "vendor";
           }
         }
 
+        // Role upgrade ONLY when vendor is positively approved
+        if (vendor && vendor.status === "approved" && user.role !== "vendor") {
+          await prisma.user.update({
+            where: { id: user.id },
+            data: { role: "vendor" },
+          });
+          user.role = "vendor";
+        }
+
+        console.log(`[VerifyOTP:Step 3/4] Vendor association check: vendorFound=${!!vendor}, vendorStatus=${vendor?.status || "NONE"}, userRole=${user.role}`);
+
         if (!vendor) {
-          const failRecord = recordVendorLoginFailure(clientIp);
+          console.warn("[VerifyOTP:Step 3/4] Access restricted: Account not registered as vendor");
+          const failRecord = recordVendorLoginFailure(clientIp, cleanEmail);
           return mobileApiResponse(
             {
               success: false,
@@ -197,7 +225,7 @@ export async function POST(req: NextRequest) {
         }
 
         if (vendor.status !== "approved") {
-          const failRecord = recordVendorLoginFailure(clientIp);
+          const failRecord = recordVendorLoginFailure(clientIp, cleanEmail);
           let msg = "Your vendor account is not approved.";
           if (vendor.status === "pending") {
             msg = "Your vendor application is currently under review by the Intrihub Admin team. You will be notified upon approval.";
@@ -237,6 +265,8 @@ export async function POST(req: NextRequest) {
       phone: user.phone,
       name: user.name,
     });
+
+    console.log(`[VerifyOTP:Step 4/4] Success: tokens issued with effectiveRole=${effectiveRole}, userId=${user.id}`);
 
     return mobileApiResponse({
       success: true,

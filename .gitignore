@@ -61,3 +61,6 @@ migrate-failed.json
 .expo/
 **/.expo/
 
+# Credentials & secrets backup
+PLAY_STORE_AND_CREDENTIALS_BACKUP.md
+intrihub-business/google-services.json

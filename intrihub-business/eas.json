@@ -21,6 +21,10 @@
       },
       "ios": {
         "distribution": "store"
+      },
+      "env": {
+        "EXPO_PUBLIC_API_URL": "https://www.intrihub.com",
+        "EXPO_PUBLIC_ENABLE_REVIEWER_BYPASS": "true"
       }
     }
   },

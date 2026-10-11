@@ -1,5 +1,5 @@
 import { NextRequest } from "next/server";
-import { mobileApiResponse, handleMobileCorsOptions } from "@/lib/mobile-auth";
+import { mobileApiResponse, handleMobileCorsOptions, verifyJwt } from "@/lib/mobile-auth";
 import {
   resetVendorLoginLockout,
   resetAdminLoginLockout,
@@ -15,10 +15,52 @@ export async function OPTIONS() {
 
 /**
  * Admin / Tester Override Endpoint
- * Manually clears active security lockouts without having to wait out the 15-minute timer
+ * Manually clears active security lockouts without having to wait out the 15-minute timer.
+ * Requires admin authentication or secret, and is disabled in production unless ENABLE_RESET_LOCKOUT=true.
  */
 export async function POST(req: NextRequest) {
   try {
+    const isProd = process.env.NODE_ENV === "production";
+    const isExplicitlyEnabled = process.env.ENABLE_RESET_LOCKOUT === "true";
+
+    // 1. Production environment guard
+    if (isProd && !isExplicitlyEnabled) {
+      return mobileApiResponse(
+        { success: false, error: "Reset lockout endpoint is disabled in production." },
+        403
+      );
+    }
+
+    // 2. Authentication / Secret check
+    const authHeader = req.headers.get("authorization");
+    const adminSecretHeader = req.headers.get("x-admin-secret");
+    const configuredSecret = (process.env.RESET_LOCKOUT_SECRET || process.env.ADMIN_SECRET || process.env.CRON_SECRET || "").trim();
+
+    let isAuthorized = false;
+
+    if (configuredSecret) {
+      if (adminSecretHeader === configuredSecret || authHeader === `Bearer ${configuredSecret}`) {
+        isAuthorized = true;
+      }
+    } else if (!isProd && adminSecretHeader === "dev-lockout-secret") {
+      isAuthorized = true;
+    }
+
+    if (!isAuthorized && authHeader?.startsWith("Bearer ")) {
+      const token = authHeader.substring(7).trim();
+      const payload = verifyJwt(token);
+      if (payload && (payload.role === "admin" || payload.role === "superadmin")) {
+        isAuthorized = true;
+      }
+    }
+
+    if (!isAuthorized) {
+      return mobileApiResponse(
+        { success: false, error: "Unauthorized. Valid admin credentials or secret required." },
+        401
+      );
+    }
+
     const body = await req.json().catch(() => ({}));
     const { email, ip, all } = body;
 

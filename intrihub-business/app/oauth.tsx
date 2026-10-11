@@ -9,6 +9,9 @@ import { loginWithGoogle } from "../src/api/auth";
 import { useAuthStore } from "../src/store/authStore";
 import { COLORS } from "../src/constants/theme";
 
+// Global guard to ensure tokens are strictly processed once across the entire app
+let isGlobalAuthProcessing = false;
+
 export default function OAuthCallbackScreen() {
   const router = useRouter();
   const params = useLocalSearchParams<{
@@ -22,10 +25,38 @@ export default function OAuthCallbackScreen() {
 
   useEffect(() => {
     let isMounted = true;
+    let fallbackTimer: ReturnType<typeof setTimeout> | null = null;
+    console.log("[OAuth:Step 1/5] Initializing single app-wide deep-link listener in oauth.tsx");
+
+    // 0. Listen for incoming deep link intents when app is running in background (SingleTask)
+    const sub = Linking.addEventListener("url", (event) => {
+      if (!event?.url || !isMounted || processedRef.current || isGlobalAuthProcessing) return;
+      console.log("[OAuth:Step 2/5] Deep-link event received, hasTokens:", event.url.includes("accessToken="));
+      if (event.url.includes("accessToken=") && event.url.includes("refreshToken=")) {
+        const queryIndex = event.url.indexOf("?");
+        if (queryIndex !== -1) {
+          const qs = event.url.substring(queryIndex + 1);
+          const sp = new URLSearchParams(qs);
+          const a = sp.get("accessToken");
+          const r = sp.get("refreshToken");
+          const u = sp.get("user");
+          if (a && r && u) {
+            handleAuth(a, r, u);
+          }
+        }
+      }
+    });
 
     async function handleAuth(tokenAccess: string, tokenRefresh: string, rawUser: string) {
-      if (processedRef.current) return;
+      if (processedRef.current || isGlobalAuthProcessing) return;
       processedRef.current = true;
+      isGlobalAuthProcessing = true;
+      if (fallbackTimer) {
+        clearTimeout(fallbackTimer);
+        fallbackTimer = null;
+      }
+
+      console.log("[OAuth:Step 2/5] Received auth payload (hasAccessToken: true, hasRefreshToken: true)");
 
       try {
         WebBrowser.dismissAuthSession();
@@ -43,93 +74,45 @@ export default function OAuthCallbackScreen() {
         // Store tokens securely in SecureStore
         await setStoredTokens(tokenAccess, tokenRefresh);
 
-        // Verify vendor credentials via business Google auth verification
-        try {
-          const bizRes = await loginWithGoogle({
-            accessToken: tokenAccess,
-            profile: {
-              email: userObj.email,
-              name: userObj.name,
-              avatar: userObj.avatar,
-            },
-          });
-
-          if (bizRes.success && bizRes.user) {
-            if (isMounted) {
-              setUser(bizRes.user);
-              if (bizRes.user.role === "admin" || bizRes.user.role === "superadmin") {
-                router.replace("/(admin)/dashboard" as any);
-              } else {
-                router.replace("/(vendor)/dashboard" as any);
-              }
-            }
-            return;
-          } else if (!bizRes.success) {
-            await clearStoredTokens();
-            if (isMounted) {
-              router.replace({
-                pathname: "/(auth)/login",
-                params: {
-                  error:
-                    bizRes.error ||
-                    "This Google account is not registered as an approved vendor partner on Intrihub Business.",
-                },
-              } as any);
-            }
-            return;
-          }
-        } catch (bizErr: any) {
-          const errData = bizErr?.response?.data;
-          if (errData?.reason === "NOT_FOUND" || errData?.reason === "UNAPPROVED" || errData?.error) {
-            await clearStoredTokens();
-            if (isMounted) {
-              router.replace({
-                pathname: "/(auth)/login",
-                params: {
-                  error:
-                    errData?.error ||
-                    "This Google account is not registered as an approved vendor partner on Intrihub Business.",
-                },
-              } as any);
-            }
-            return;
-          }
-        }
-
-        // Fallback: check profile endpoint
+        // Verify profile endpoint directly using the mobile access token
+        console.log("[OAuth:Step 3/5] Verifying profile via /api/mobile/auth/me");
         try {
           const meRes = await apiClient.get("/api/mobile/auth/me", {
             headers: { Authorization: `Bearer ${tokenAccess}` },
           });
+          console.log(`[OAuth:Step 4/5] Profile result: status=${meRes.status}, role=${meRes.data?.user?.role || "none"}`);
           if (meRes.data?.success && meRes.data?.user) {
             const role = meRes.data.user.role;
             if (role === "vendor" || role === "admin" || role === "superadmin") {
               if (isMounted) {
                 setUser(meRes.data.user);
-                if (role === "admin" || role === "superadmin") {
-                  router.replace("/(admin)/dashboard" as any);
-                } else {
-                  router.replace("/(vendor)/dashboard" as any);
-                }
+                const target = (role === "admin" || role === "superadmin") ? "/(admin)/dashboard" : "/(vendor)/dashboard";
+                console.log(`[OAuth:Step 5/5] Routing to verified workspace: ${target}`);
+                router.replace(target as any);
               }
               return;
             }
           }
-        } catch {}
+        } catch (meErr: any) {
+          console.warn("[OAuth:Step 3/5] Profile fetch notice, status:", meErr?.response?.status || "network");
+        }
 
         // User role routing based on parsed token user
         if (userObj.role === "vendor") {
+          console.log("[OAuth:Step 5/5] Routing vendor to dashboard");
           if (isMounted) {
             setUser(userObj);
             router.replace("/(vendor)/dashboard" as any);
           }
         } else if (userObj.role === "admin" || userObj.role === "superadmin") {
+          console.log("[OAuth:Step 5/5] Routing admin to dashboard");
           if (isMounted) {
             setUser(userObj);
             router.replace("/(admin)/dashboard" as any);
           }
         } else {
           // Unapproved customer role attempting to sign into vendor console
+          console.log("[OAuth:Step 5/5] Role rejection: user is customer, not approved vendor");
           await clearStoredTokens();
           if (isMounted) {
             router.replace({
@@ -142,7 +125,7 @@ export default function OAuthCallbackScreen() {
           }
         }
       } catch (err: any) {
-        console.error("[OAuth Interceptor] Processing error:", err);
+        console.error("[OAuth:Error] Processing error: code=" + (err?.response?.status || "unknown") + ", reason=" + (err?.message || "unknown"));
         await clearStoredTokens();
         if (isMounted) {
           router.replace({
@@ -150,18 +133,22 @@ export default function OAuthCallbackScreen() {
             params: { error: "Authentication session failed. Please sign in again." },
           } as any);
         }
+      } finally {
+        isGlobalAuthProcessing = false;
       }
     }
 
     // 1. Check direct route params from Expo Router
     if (params.accessToken && params.refreshToken && params.user) {
+      console.log("[OAuth:Step 2/5] Received auth payload directly from Expo Router params");
       handleAuth(params.accessToken, params.refreshToken, params.user);
       return;
     }
 
     // 2. Check initial linking URL in case router mounted without query params populated
     Linking.getInitialURL().then((url) => {
-      if (!url || !isMounted || processedRef.current) return;
+      if (!url || !isMounted || processedRef.current || isGlobalAuthProcessing) return;
+      console.log("[OAuth:Step 2/5] getInitialURL resolved, hasTokens:", url.includes("accessToken="));
       if (url.includes("accessToken=") && url.includes("refreshToken=") && url.includes("user=")) {
         const queryIndex = url.indexOf("?");
         if (queryIndex !== -1) {
@@ -177,18 +164,21 @@ export default function OAuthCallbackScreen() {
         }
       }
 
-      // If params are missing or expired after 1.5s, return safely to login screen
-      const fallbackTimer = setTimeout(() => {
-        if (isMounted && !processedRef.current) {
+      // Safe fallback timer: only return to login if no URL/params arrived after ~6s
+      fallbackTimer = setTimeout(() => {
+        if (isMounted && !processedRef.current && !isGlobalAuthProcessing) {
+          console.log("[OAuth:Fallback] 6s timer elapsed without auth payload. Returning to login.");
           router.replace("/(auth)/login" as any);
         }
-      }, 1500);
-
-      return () => clearTimeout(fallbackTimer);
+      }, 6000);
     });
 
     return () => {
       isMounted = false;
+      if (fallbackTimer) {
+        clearTimeout(fallbackTimer);
+      }
+      sub.remove();
     };
   }, [params.accessToken, params.refreshToken, params.user]);
 
