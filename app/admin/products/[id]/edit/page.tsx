@@ -295,14 +295,16 @@ export default function EditProductPage({
           </div>
 
           <div>
-            <label className="text-xs font-bold text-[#052a51] uppercase tracking-wider block mb-1.5">
-              URL Slug
+            <label className="text-xs font-bold text-[#052a51] uppercase tracking-wider block mb-1.5 flex items-center justify-between">
+              <span>URL Slug</span>
+              <span className="text-[10px] text-emerald-600 font-medium lowercase">auto-managed by backend</span>
             </label>
             <input
               type="text"
               value={slug}
-              onChange={(e) => setSlug(e.target.value)}
-              className="w-full px-3.5 py-2.5 bg-gray-50 border border-gray-200 rounded-xl text-sm font-medium text-gray-600 focus:outline-none focus:border-[#F26522]"
+              readOnly
+              disabled
+              className="w-full px-3.5 py-2.5 bg-gray-100 border border-gray-200 rounded-xl text-sm font-mono text-gray-500 cursor-not-allowed select-all"
             />
           </div>
         </div>

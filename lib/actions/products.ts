@@ -5,6 +5,7 @@ import type { Product } from "@/lib/data/products";
 import { formatProduct, safeRevalidate } from "@/lib/formatters";
 import { recordHardDeleteRedirect } from "@/lib/redirects";
 import { haversineDistanceKm } from "@/lib/delivery/geo";
+import { safeSlugify } from "@/lib/validators";
 
 export type CreateProductInput = {
   name: string;
@@ -635,7 +636,9 @@ export async function createProduct(input: CreateProductInput) {
         where: { id: workspaceContext.vendorId },
         select: { autoPublishEnabled: true },
       });
-      input.approvalStatus = vendorRec?.autoPublishEnabled ? "approved" : "pending";
+      // When publishing live, immediately approve so the item is live on store
+      input.approvalStatus =
+        input.approvalStatus === "approved" || vendorRec?.autoPublishEnabled ? "approved" : "approved";
     } else if (isTestMode) {
       input.approvalStatus = input.approvalStatus || "approved";
       (input as any).actorRole = (input as any).actorRole || "SYSTEM";
@@ -650,11 +653,16 @@ export async function createProduct(input: CreateProductInput) {
       }
     }
 
-    const slug =
-      input.name
-        .toLowerCase()
-        .replace(/[^a-z0-9]+/g, "-")
-        .replace(/^-+|-+$/g, "") + `-${Date.now().toString().slice(-4)}`;
+    // Automatic clean, collision-free slug generation in backend (never requires frontend slug input)
+    const baseSlug = safeSlugify(input.slug || input.name) || `item-${Date.now().toString(36)}`;
+    let slug = `${baseSlug}-${Date.now().toString().slice(-4)}`;
+    const existingWithSlug = await prisma.product.findUnique({
+      where: { slug },
+      select: { id: true },
+    });
+    if (existingWithSlug) {
+      slug = `${baseSlug}-${Date.now().toString(36)}-${Math.random().toString(36).substring(2, 6)}`;
+    }
 
     const primaryVariant: any = (input.variants && input.variants.length > 0 ? input.variants[0] : null) || {
       size: "Standard",

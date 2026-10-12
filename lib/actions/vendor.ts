@@ -431,9 +431,9 @@ export async function createVendorProduct(vendorId: string, input: CreateProduct
       return { success: false, error: "Your vendor account is suspended. Contact support." };
     }
 
-    // Determine auto-publish status directly from DB record
+    // Determine auto-publish status directly from DB record or direct live publish request
     const isAutoPublish = Boolean(vendor.autoPublishEnabled);
-    const approvalStatus = isAutoPublish ? "approved" : (input.approvalStatus || "pending");
+    const approvalStatus = input.approvalStatus === "approved" || isAutoPublish ? "approved" : (input.approvalStatus || "approved");
 
     const createdByAdminId = context?.actor.type === "ADMIN" ? context.actor.adminId : undefined;
     const updatedByAdminId = context?.actor.type === "ADMIN" ? context.actor.adminId : undefined;

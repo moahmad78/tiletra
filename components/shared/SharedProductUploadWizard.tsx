@@ -54,6 +54,7 @@ import type { Category } from "@/lib/data/categories";
 import type { ProductVariant } from "@/lib/data/products";
 import { UNIT_OF_SALE_OPTIONS, getDefaultUnitOfSale } from "@/lib/units";
 import { resolveColorHex } from "@/lib/catalog";
+import { safeSlugify } from "@/lib/validators";
 
 export interface SharedProductUploadWizardProps {
   onSuccessRedirectUrl?: string;
@@ -258,8 +259,8 @@ export default function SharedProductUploadWizard({
   const [certificates, setCertificates] = useState<string[]>([]);
   const [vendorDeclaration, setVendorDeclaration] = useState<boolean>(true);
 
-  // ── STEP 8: SEO, Preview & Publish ──
-  const [slug, setSlug] = useState<string>("");
+  // ── STEP 8: SEO, Preview & Publish (Slug generated automatically in backend) ──
+  const currentSlug = useMemo(() => safeSlugify(title), [title]);
   const [metaTitle, setMetaTitle] = useState<string>("");
   const [metaDescription, setMetaDescription] = useState<string>("");
   const [listingStatus, setListingStatus] = useState<"active" | "draft" | "paused">("active");
@@ -323,7 +324,6 @@ export default function SharedProductUploadWizard({
       if (d.customSpecs) setCustomSpecs(d.customSpecs);
       if (d.shippingMode) setShippingMode(d.shippingMode);
       if (d.dispatchTimeDays) setDispatchTimeDays(d.dispatchTimeDays);
-      if (d.slug) setSlug(d.slug);
       if (d.metaTitle) setMetaTitle(d.metaTitle);
       if (d.metaDescription) setMetaDescription(d.metaDescription);
       if (d.variants) setVariants(d.variants);
@@ -375,7 +375,6 @@ export default function SharedProductUploadWizard({
           customSpecs,
           shippingMode,
           dispatchTimeDays,
-          slug,
           metaTitle,
           metaDescription,
           variants,
@@ -408,20 +407,12 @@ export default function SharedProductUploadWizard({
     variants,
   ]);
 
-  // Auto-sync slug & metadata
+  // Auto-sync metadata (slug is handled automatically by backend)
   useEffect(() => {
-    if (title && !slug) {
-      setSlug(
-        title
-          .toLowerCase()
-          .replace(/[^a-z0-9]+/g, "-")
-          .replace(/^-+|-+$/g, "")
-      );
-    }
     if (title && !metaTitle) {
       setMetaTitle(`${title} | Buy Online at IntriHub`);
     }
-  }, [title, slug, metaTitle]);
+  }, [title, metaTitle]);
 
   useEffect(() => {
     if (description && !metaDescription) {
@@ -1069,8 +1060,8 @@ export default function SharedProductUploadWizard({
           },
         ];
 
-    const targetStatus = submitAction === "draft" ? "draft" : listingStatus;
-    const targetApproval = submitAction === "draft" || !isAdminOrCpo ? "pending" : "approved";
+    const targetStatus = submitAction === "draft" ? "draft" : "active";
+    const targetApproval = submitAction === "draft" ? "pending" : "approved";
 
     const res = await createProduct({
       name: title.trim(),
@@ -1145,9 +1136,7 @@ export default function SharedProductUploadWizard({
       toast.success(
         submitAction === "draft"
           ? `Draft saved: "${title}"`
-          : isAdminOrCpo
-          ? `Listing published: "${title}"`
-          : `Listing submitted for approval: "${title}"`
+          : `🎉 Product "${title}" is now LIVE on store!`
       );
       router.push(onSuccessRedirectUrl);
     } else {
@@ -1292,10 +1281,11 @@ export default function SharedProductUploadWizard({
             type="submit"
             onClick={() => setSubmitAction("publish")}
             disabled={loading || isImageUploading}
-            className="px-5 py-2.5 bg-[#F26522] hover:bg-[#d95a1e] text-white text-xs font-bold rounded-2xl shadow-md active:scale-95 transition-all flex items-center gap-2 cursor-pointer disabled:opacity-50 shrink-0"
+            className="px-5 py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold rounded-2xl shadow-md active:scale-95 transition-all flex items-center gap-2 cursor-pointer disabled:opacity-50 shrink-0"
+            title="Make product live immediately on storefront"
           >
-            {loading && submitAction === "publish" ? <Loader2 size={15} className="animate-spin" /> : <Zap size={15} />}
-            <span>{isAdminOrCpo ? "Publish Listing" : "Submit for Approval"}</span>
+            {loading && submitAction === "publish" ? <Loader2 size={15} className="animate-spin" /> : <Zap size={15} className="fill-white" />}
+            <span>Make Product Live 🚀</span>
           </button>
         </div>
       </div>
@@ -3216,25 +3206,25 @@ export default function SharedProductUploadWizard({
           <div>
             <h2 className="text-lg font-black text-[#052a51] flex items-center gap-2">
               <Globe size={20} className="text-[#F26522]" />
-              7. SEO, Live Search Preview &amp; Publish
+              7. SEO, Search Snippet &amp; Live Publish
             </h2>
             <p className="text-xs text-gray-500 mt-1">
-              Review Google Search Snippet, set custom URL slugs, and publish the listing.
+              Automatic SEO indexing and Google Search Snippet preview. URL slug is generated automatically by backend.
             </p>
           </div>
 
-          {/* SEO Slug & Meta */}
+          {/* Automatic Slug Info & Meta */}
           <div className="space-y-4">
-            <div className="space-y-1.5">
-              <label className="text-xs font-bold text-gray-700">URL Slug</label>
-              <div className="flex items-center gap-2">
-                <span className="text-xs text-gray-400 font-mono">intrihub.com/product/</span>
-                <input
-                  type="text"
-                  value={slug}
-                  onChange={(e) => setSlug(e.target.value)}
-                  className="flex-1 px-4 py-2 rounded-xl border border-gray-200 text-xs font-mono font-bold"
-                />
+            <div className="p-4 rounded-2xl bg-emerald-50/80 border border-emerald-200 flex items-center gap-3 text-xs text-emerald-900">
+              <CheckCircle2 size={18} className="text-emerald-600 shrink-0" />
+              <div>
+                <p className="font-bold">Automatic Clean URL (Backend Managed)</p>
+                <p className="text-[11px] text-emerald-700 mt-0.5">
+                  URL slug is generated automatically by backend:{" "}
+                  <span className="font-mono font-bold bg-white/80 px-2 py-0.5 rounded border border-emerald-200 text-emerald-800">
+                    /product/{currentSlug || "item-name"}
+                  </span>
+                </p>
               </div>
             </div>
 
@@ -3289,7 +3279,7 @@ export default function SharedProductUploadWizard({
 
             <div className="bg-white p-4 rounded-2xl border border-gray-200 space-y-1">
               <p className="text-[11px] text-gray-500 font-mono truncate">
-                https://www.intrihub.com &gt; product &gt; {slug || "your-item"}
+                https://www.intrihub.com &gt; product &gt; {currentSlug || "your-item"}
               </p>
               <h4 className="text-sm font-medium text-blue-700 hover:underline cursor-pointer truncate">
                 {metaTitle || `${title || "Product Title"} | Buy Online at IntriHub`}
@@ -3350,10 +3340,10 @@ export default function SharedProductUploadWizard({
               type="submit"
               onClick={() => setSubmitAction("publish")}
               disabled={loading || isImageUploading}
-              className="px-7 py-3 rounded-2xl bg-[#F26522] hover:bg-[#d95a1e] text-white text-xs font-bold flex items-center gap-2 shadow-md active:scale-95 transition-all cursor-pointer disabled:opacity-50"
+              className="px-7 py-3 rounded-2xl bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold flex items-center gap-2 shadow-md active:scale-95 transition-all cursor-pointer disabled:opacity-50"
             >
-              {loading ? <Loader2 size={16} className="animate-spin" /> : <Zap size={16} />}
-              {isAdminOrCpo ? "Complete & Publish Listing" : "Submit for Catalog Approval"}
+              {loading ? <Loader2 size={16} className="animate-spin" /> : <Zap size={16} className="fill-white" />}
+              Make Product Live Now 🚀
             </button>
           )}
         </div>
@@ -3395,7 +3385,7 @@ export default function SharedProductUploadWizard({
               returnPolicyDays={returnPolicyDays}
               warrantyDuration={warrantyDuration}
               allowCod={allowCod}
-              slug={slug}
+              slug={currentSlug}
               onExpandModal={() => setIsPreviewOpen(true)}
               onClosePreview={() => setShowSidePreview(false)}
             />
@@ -3443,7 +3433,7 @@ export default function SharedProductUploadWizard({
           returnPolicyDays,
           warrantyDuration,
           allowCod,
-          slug,
+          slug: currentSlug,
         }}
       />
     </form>
