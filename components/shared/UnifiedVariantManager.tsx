@@ -859,8 +859,8 @@ export default function UnifiedVariantManager({
             )}
 
             {/* Variant Table */}
-            <div className="overflow-x-auto border border-gray-200/80 rounded-2xl">
-              <table className="w-full text-left border-collapse text-xs">
+            <div className="overflow-x-auto border border-gray-200/80 rounded-2xl pb-1">
+              <table className="w-full min-w-[980px] text-left border-collapse text-xs">
                 <thead>
                   <tr className="bg-gray-50 border-b border-gray-200 text-gray-500 uppercase tracking-wider text-[10px] font-bold">
                     <th className="py-3 px-3 w-10 text-center">Live</th>

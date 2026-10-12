@@ -212,9 +212,11 @@ export default function LiveSidePreviewPanel({
         {/* ========================================================= */}
         {activeTab === "card" && (
           <div className="space-y-3">
-            <div className="flex items-center justify-between text-[11px] text-gray-500 font-bold px-1">
-              <span>Customer Category &amp; Search Card:</span>
-              <span className="text-[#F26522] font-mono text-[10px]">Real Store View</span>
+            <div className="flex items-center justify-between gap-2 text-[11px] text-gray-500 font-bold px-1">
+              <span className="truncate">Store Search Card</span>
+              <span className="text-[#F26522] font-mono text-[10px] shrink-0 bg-orange-50 border border-orange-200 px-2 py-0.5 rounded-full">
+                Real Store View
+              </span>
             </div>
 
             {/* Simulated IntriHub Product Card */}
@@ -231,7 +233,7 @@ export default function LiveSidePreviewPanel({
                 />
 
                 {/* Category & Subcategory Tag on Image */}
-                <div className="absolute top-2 left-2 flex flex-col gap-1 max-w-[70%]">
+                <div className="absolute top-2 left-2 flex flex-col gap-1 max-w-[58%] z-10">
                   {categoryName && (
                     <span className="bg-[#052a51]/90 backdrop-blur-xs text-white text-[9px] font-black px-2 py-0.5 rounded-md truncate shadow-xs">
                       {categoryName}
@@ -246,7 +248,7 @@ export default function LiveSidePreviewPanel({
 
                 {/* Discount Badge */}
                 {discountPercent > 0 && (
-                  <div className="absolute top-2 right-2 bg-emerald-600 text-white text-[10px] font-black px-2 py-0.5 rounded-full shadow-md animate-in zoom-in-75">
+                  <div className="absolute top-2 right-2 bg-emerald-600 text-white text-[10px] font-black px-2 py-0.5 rounded-full shadow-md animate-in zoom-in-75 z-10 shrink-0">
                     {discountPercent}% OFF
                   </div>
                 )}

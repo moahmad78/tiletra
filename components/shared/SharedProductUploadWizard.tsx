@@ -409,13 +409,13 @@ export default function SharedProductUploadWizard({
 
   // Auto-sync metadata (slug is handled automatically by backend)
   useEffect(() => {
-    if (title && !metaTitle) {
-      setMetaTitle(`${title} | Buy Online at IntriHub`);
+    if (title.trim() && !metaTitle) {
+      setMetaTitle(title.trim());
     }
   }, [title, metaTitle]);
 
   useEffect(() => {
-    if (description && !metaDescription) {
+    if (description.trim() && !metaDescription) {
       setMetaDescription(description.slice(0, 155).replace(/\n/g, " "));
     }
   }, [description, metaDescription]);
@@ -744,8 +744,8 @@ export default function SharedProductUploadWizard({
   const completeness = useMemo(() => {
     const checks = [
       { id: "category", label: "Category selected", done: Boolean(selectedCategoryId), weight: 15, required: true },
-      { id: "title", label: "Product title provided (min 4 chars)", done: Boolean(title.trim().length >= 4), weight: 15, required: true },
-      { id: "description", label: "Product description provided", done: Boolean(description.trim().length >= 20), weight: 10, required: true },
+      { id: "title", label: "Product title provided (min 5 chars)", done: Boolean(title.trim().length >= 5), weight: 15, required: true },
+      { id: "description", label: "Product description provided (min 25 chars)", done: Boolean(description.trim().length >= 25), weight: 10, required: true },
       { id: "brand", label: "Brand identified", done: Boolean(brand && (brand !== "other" || customBrandInput.trim())), weight: 10, required: true },
       { id: "images", label: "At least 1 high-res image added", done: images.filter((img) => img && !img.includes("placeholder")).length >= 1, weight: 15, required: true },
       {
@@ -766,7 +766,14 @@ export default function SharedProductUploadWizard({
         weight: 10,
         required: true,
       },
-      { id: "declaration", label: "Vendor declaration accepted", done: Boolean(vendorDeclaration), weight: 10, required: true },
+      {
+        id: "seo",
+        label: "SEO title & description optimized",
+        done: Boolean((metaTitle.trim().length >= 8 || title.trim().length >= 8) && (metaDescription.trim().length >= 25 || description.trim().length >= 25)),
+        weight: 5,
+        required: false,
+      },
+      { id: "declaration", label: "Vendor declaration accepted", done: Boolean(vendorDeclaration), weight: 5, required: true },
     ];
 
     const totalScore = checks.reduce((acc, curr) => (curr.done ? acc + curr.weight : acc), 0);
@@ -782,6 +789,8 @@ export default function SharedProductUploadWizard({
     variants,
     sellingNum,
     stockQuantity,
+    metaTitle,
+    metaDescription,
     vendorDeclaration,
   ]);
 
@@ -1313,9 +1322,9 @@ export default function SharedProductUploadWizard({
         </div>
       </div>
 
-      {/* ── Stepper Navigation Bar (8 Steps Grid) ── */}
-      <div className="bg-white p-4 sm:p-5 rounded-3xl border border-gray-200 shadow-2xs">
-        <div className="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-8 gap-2">
+      {/* ── Stepper Navigation Bar (7 Steps Grid) ── */}
+      <div className="bg-white p-3.5 sm:p-5 rounded-3xl border border-gray-200 shadow-2xs">
+        <div className="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-7 gap-2 sm:gap-2.5">
           {stepsList.map((st) => {
             const isCompleted = currentStep > st.num;
             const isCurrent = currentStep === st.num;
@@ -1329,7 +1338,7 @@ export default function SharedProductUploadWizard({
                     setCurrentStep(st.num);
                   }
                 }}
-                className={`p-2.5 rounded-2xl border text-left transition-all flex items-center gap-2 cursor-pointer ${
+                className={`p-2 sm:p-2.5 rounded-2xl border text-left transition-all flex items-center gap-2 cursor-pointer ${
                   isCurrent
                     ? "bg-[#052a51] text-white border-[#052a51] shadow-xs"
                     : isCompleted
@@ -1348,8 +1357,10 @@ export default function SharedProductUploadWizard({
                 >
                   {isCompleted ? <Check size={12} /> : st.num}
                 </div>
-                <div className="min-w-0">
-                  <span className="text-[11px] font-bold block truncate leading-tight">{st.label}</span>
+                <div className="min-w-0 flex-1">
+                  <span className="text-[11px] font-bold block truncate leading-tight" title={st.label}>
+                    {st.label}
+                  </span>
                 </div>
               </button>
             );
@@ -2972,14 +2983,26 @@ export default function SharedProductUploadWizard({
       {/* ── STEP 4: VARIANTS MATRIX (DECIDES SINGLE VS MULTI) ── */}
       {currentStep === 4 && (
         <div className="bg-white p-6 sm:p-8 rounded-3xl border border-gray-200 shadow-2xs space-y-6 animate-in fade-in">
-          <div>
-            <h2 className="text-lg font-black text-[#052a51] flex items-center gap-2">
-              <Layers size={20} className="text-[#F26522]" />
-              4. Product Variants &amp; Matrix
-            </h2>
-            <p className="text-xs text-gray-500 mt-1">
-              Add variants for multiple colours, sizes, or weight packs. The item type is decided by this toggle.
-            </p>
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+            <div>
+              <h2 className="text-lg font-black text-[#052a51] flex items-center gap-2">
+                <Layers size={20} className="text-[#F26522]" />
+                4. Product Variants &amp; Matrix
+              </h2>
+              <p className="text-xs text-gray-500 mt-1">
+                Add variants for multiple colours, sizes, or weight packs. The item type is decided by this toggle.
+              </p>
+            </div>
+            {/* Quick table expansion toggle */}
+            <button
+              type="button"
+              onClick={() => setShowSidePreview((prev) => !prev)}
+              className="inline-flex items-center gap-2 px-3.5 py-2 rounded-xl text-xs font-bold border border-gray-200 bg-gray-50 hover:bg-gray-100 text-gray-700 cursor-pointer shadow-2xs shrink-0 self-start sm:self-auto"
+              title="Toggle Live Side Preview to give maximum width to the variants table"
+            >
+              <Sliders size={13} className="text-[#F26522]" />
+              <span>{showSidePreview ? "↔ Maximize Table Width (Hide Preview)" : "👁️ Show Live Preview"}</span>
+            </button>
           </div>
 
           {/* Variants Toggle Card */}
@@ -3229,23 +3252,52 @@ export default function SharedProductUploadWizard({
             </div>
 
             <div className="space-y-1.5">
-              <label className="text-xs font-bold text-gray-700">Meta Title</label>
+              <div className="flex items-center justify-between">
+                <label className="text-xs font-bold text-gray-700">Meta Title</label>
+                <span
+                  className={`text-[11px] font-mono font-bold ${
+                    metaTitle.length > 60 ? "text-amber-600" : "text-gray-400"
+                  }`}
+                >
+                  {metaTitle.length}/60 characters
+                </span>
+              </div>
               <input
                 type="text"
+                placeholder={title || "e.g. Premium Vitrified Floor Tiles (600x600mm)"}
                 value={metaTitle}
                 onChange={(e) => setMetaTitle(e.target.value)}
-                className="w-full px-4 py-2 rounded-xl border border-gray-200 text-xs"
+                className="w-full px-4 py-2.5 rounded-2xl border border-gray-200 text-xs font-medium focus:outline-none focus:border-[#F26522]"
               />
+              <p className="text-[11px] text-gray-400">
+                Recommended 50–60 characters. Suffix &quot;| Buy Online at IntriHub&quot; will be automatically added in search engines.
+              </p>
             </div>
 
             <div className="space-y-1.5">
-              <label className="text-xs font-bold text-gray-700">Meta Description</label>
+              <div className="flex items-center justify-between">
+                <label className="text-xs font-bold text-gray-700">Meta Description</label>
+                <span
+                  className={`text-[11px] font-mono font-bold ${
+                    metaDescription.length > 160 ? "text-amber-600" : "text-gray-400"
+                  }`}
+                >
+                  {metaDescription.length}/160 characters
+                </span>
+              </div>
               <textarea
-                rows={2}
+                rows={3}
+                placeholder={
+                  description.slice(0, 150) ||
+                  "e.g. Shop high-quality vitrified floor tiles with anti-skid coating. Direct manufacturer warranty and fast doorstep delivery."
+                }
                 value={metaDescription}
                 onChange={(e) => setMetaDescription(e.target.value)}
-                className="w-full px-4 py-2 rounded-xl border border-gray-200 text-xs"
+                className="w-full px-4 py-2.5 rounded-2xl border border-gray-200 text-xs font-medium focus:outline-none focus:border-[#F26522]"
               />
+              <p className="text-[11px] text-gray-400">
+                Recommended 120–160 characters for maximum Google click-through rate.
+              </p>
             </div>
           </div>
 
@@ -3282,7 +3334,10 @@ export default function SharedProductUploadWizard({
                 https://www.intrihub.com &gt; product &gt; {currentSlug || "your-item"}
               </p>
               <h4 className="text-sm font-medium text-blue-700 hover:underline cursor-pointer truncate">
-                {metaTitle || `${title || "Product Title"} | Buy Online at IntriHub`}
+                {(() => {
+                  const base = metaTitle.trim() || title.trim() || "Product Title";
+                  return base.includes("Buy Online at IntriHub") ? base : `${base} | Buy Online at IntriHub`;
+                })()}
               </h4>
               <p className="text-xs text-gray-600 line-clamp-2">
                 {metaDescription || description.slice(0, 150) || "Explore high-quality architectural materials at IntriHub..."}

@@ -201,7 +201,7 @@ function CpoNewProductContent() {
   // VENDOR SELECTED: RENDER WIZARD WITH ACTIVE VENDOR LOCK
   // ─────────────────────────────────────────────────────────────
   return (
-    <div className="max-w-5xl mx-auto space-y-6">
+    <div className="w-full space-y-6">
       {/* Unified Product Upload Wizard with Consolidated Header & Vendor Controls */}
       <DynamicProductUploadForm
         key={selectedVendorId}

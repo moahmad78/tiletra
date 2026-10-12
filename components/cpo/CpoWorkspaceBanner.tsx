@@ -103,8 +103,8 @@ export default function CpoWorkspaceBanner() {
 
   // Reusable ticker items for continuous seamless loop
   const activeTickerItems = (
-    <div className="flex items-center gap-6 pr-6">
-      <span className="inline-flex items-center gap-1.5 text-amber-300 font-bold">
+    <div className="flex items-center gap-6 pr-6 whitespace-nowrap shrink-0">
+      <span className="inline-flex items-center gap-1.5 text-amber-300 font-bold shrink-0">
         <Store className="w-3.5 h-3.5 text-[#F26522]" />
         <span>
           Active Vendor:{" "}
@@ -113,34 +113,34 @@ export default function CpoWorkspaceBanner() {
           </strong>
         </span>
       </span>
-      <span className="text-white/60 font-mono text-[11px] bg-black/30 px-1.5 py-0.5 rounded">
+      <span className="text-white/60 font-mono text-[11px] bg-black/30 px-1.5 py-0.5 rounded shrink-0">
         Vendor ID: {status.vendorId}
       </span>
-      <span className="text-[#F26522] font-bold">•</span>
-      <span className="text-white/90">
+      <span className="text-[#F26522] font-bold shrink-0">•</span>
+      <span className="text-white/90 shrink-0">
         All product catalog uploads, variant edits &amp; price updates are currently bound to{" "}
         <strong className="text-amber-200">{status.vendorName}</strong>
       </span>
-      <span className="text-[#F26522] font-bold">•</span>
-      <span className="inline-flex items-center gap-1.5 text-amber-200 font-mono font-bold bg-white/10 px-2 py-0.5 rounded">
+      <span className="text-[#F26522] font-bold shrink-0">•</span>
+      <span className="inline-flex items-center gap-1.5 text-amber-200 font-mono font-bold bg-white/10 px-2 py-0.5 rounded shrink-0">
         <Clock className="w-3 h-3 text-[#F26522] animate-pulse" />
         <span>Time Left: {timeFormatted}</span>
       </span>
-      <span className="text-[#F26522] font-bold">•</span>
-      <span className="inline-flex items-center gap-1 text-white/75">
+      <span className="text-[#F26522] font-bold shrink-0">•</span>
+      <span className="inline-flex items-center gap-1 text-white/75 shrink-0">
         <ShieldCheck className="w-3.5 h-3.5 text-emerald-400" />
         <span>CPO Management Session Active • All changes logged to Audit Trail</span>
       </span>
-      <span className="text-[#F26522] font-bold">•</span>
-      <span className="text-white/70">
+      <span className="text-[#F26522] font-bold shrink-0">•</span>
+      <span className="text-white/70 shrink-0">
         Click &quot;Change Vendor&quot; to switch seller or &quot;Exit&quot; to return to Global View
       </span>
-      <span className="text-[#F26522] font-bold">•</span>
+      <span className="text-[#F26522] font-bold shrink-0">•</span>
     </div>
   );
 
   const inactiveTickerItems = (
-    <div className="flex items-center gap-6 pr-6">
+    <div className="flex items-center gap-6 pr-6 whitespace-nowrap shrink-0">
       <span className="inline-flex items-center gap-1.5 text-amber-300 font-bold">
         <AlertTriangle className="w-3.5 h-3.5 text-[#F26522]" />
         <span>NO VENDOR CURRENTLY SELECTED</span>
