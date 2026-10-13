@@ -1,7 +1,22 @@
 "use client";
 
-import React, { useState, useEffect } from "react";
-import { Palette, Check, Sparkles, Plus, X, CheckSquare, Square } from "lucide-react";
+import React, { useState, useEffect, useRef } from "react";
+import {
+  Palette,
+  Check,
+  Sparkles,
+  Plus,
+  X,
+  CheckSquare,
+  Square,
+  Camera,
+  Upload,
+  Image as ImageIcon,
+  Loader2,
+  Trash2,
+} from "lucide-react";
+import { toast } from "sonner";
+import { resolveColorHex } from "@/lib/catalog";
 
 export interface StandardColorOption {
   name: string;
@@ -35,12 +50,19 @@ export const STANDARD_14_COLORS: StandardColorOption[] = [
 
 interface ColorRadioSelectorProps {
   value: string;
-  onChange: (colorName: string, colorHex?: string, colorList?: string[]) => void;
+  onChange: (
+    colorName: string,
+    colorHex?: string,
+    colorList?: string[],
+    colorImageMap?: Record<string, string>
+  ) => void;
   label?: string;
   helperText?: string;
   allowCustom?: boolean;
   nameGroup?: string;
   defaultMulti?: boolean;
+  initialColorImages?: Record<string, string>;
+  onColorImagesChange?: (colorImageMap: Record<string, string>) => void;
 }
 
 export default function ColorRadioSelector({
@@ -51,6 +73,8 @@ export default function ColorRadioSelector({
   allowCustom = true,
   nameGroup = "color-radio-group",
   defaultMulti = false,
+  initialColorImages,
+  onColorImagesChange,
 }: ColorRadioSelectorProps) {
   // Parse incoming value into an array of selected color names
   const parseColors = (val: string): string[] => {
@@ -69,6 +93,14 @@ export default function ColorRadioSelector({
   const [customColorName, setCustomColorName] = useState("");
   const [customHex, setCustomHex] = useState("#F26522");
 
+  // Colour-wise image binding
+  const [colorImages, setColorImages] = useState<Record<string, string>>(initialColorImages || {});
+  const [pendingColorForImage, setPendingColorForImage] = useState<string | null>(null);
+  const [isUploadingImage, setIsUploadingImage] = useState<boolean>(false);
+  const [manualUrlInput, setManualUrlInput] = useState<string>("");
+
+  const fileInputRef = useRef<HTMLInputElement>(null);
+
   // Keep internal list in sync if parent value changes externally
   useEffect(() => {
     const list = parseColors(value);
@@ -78,20 +110,105 @@ export default function ColorRadioSelector({
     }
   }, [value]);
 
-  const emitChange = (newList: string[]) => {
+  useEffect(() => {
+    if (initialColorImages) {
+      setColorImages(initialColorImages);
+    }
+  }, [initialColorImages]);
+
+  const emitChange = (newList: string[], updatedImages = colorImages) => {
     setSelectedList(newList);
     const joined = newList.join(", ");
-    // Find hex of first selected standard color, or fallback to customHex
     const firstStandard = STANDARD_14_COLORS.find(
       (c) => newList[0] && c.name.toLowerCase() === newList[0].toLowerCase()
     );
     const primaryHex = firstStandard?.hex || customHex;
-    onChange(joined, primaryHex, newList);
+    onChange(joined, primaryHex, newList, updatedImages);
+    if (onColorImagesChange) {
+      onColorImagesChange(updatedImages);
+    }
+  };
+
+  // Upload photo handler for a specific colour
+  const handleUploadColorImage = async (colorName: string, file: File) => {
+    if (!file) return;
+    try {
+      setIsUploadingImage(true);
+      let finalUrl = "";
+      try {
+        const fd = new FormData();
+        fd.append("file", file);
+        const res = await fetch("/api/upload", {
+          method: "POST",
+          body: fd,
+        });
+        const contentType = res.headers.get("content-type") || "";
+        if (res.ok && contentType.includes("application/json")) {
+          const data = await res.json();
+          if (data.success && data.url) {
+            finalUrl = data.url;
+          }
+        }
+      } catch (err) {
+        console.warn("Upload fetch error, using local fallback:", err);
+      }
+
+      if (!finalUrl) {
+        finalUrl = await new Promise<string>((resolve) => {
+          const reader = new FileReader();
+          reader.onload = () => resolve(reader.result as string);
+          reader.readAsDataURL(file);
+        });
+      }
+
+      const updatedMap = {
+        ...colorImages,
+        [colorName]: finalUrl,
+      };
+      setColorImages(updatedMap);
+      setPendingColorForImage(null);
+      setManualUrlInput("");
+      emitChange(selectedList, updatedMap);
+      toast.success(`Photo attached for "${colorName}"!`);
+    } catch (e) {
+      console.error(e);
+      toast.error("Failed to upload image");
+    } finally {
+      setIsUploadingImage(false);
+    }
+  };
+
+  // Attach manual URL for a colour
+  const handleAttachUrl = (colorName: string) => {
+    const trimmed = manualUrlInput.trim();
+    if (!trimmed) return;
+    const updatedMap = {
+      ...colorImages,
+      [colorName]: trimmed,
+    };
+    setColorImages(updatedMap);
+    setPendingColorForImage(null);
+    setManualUrlInput("");
+    emitChange(selectedList, updatedMap);
+    toast.success(`Photo attached for "${colorName}"!`);
+  };
+
+  // Remove photo from a colour
+  const handleRemoveColorImage = (colorName: string, e?: React.MouseEvent) => {
+    if (e) e.stopPropagation();
+    const updatedMap = { ...colorImages };
+    delete updatedMap[colorName];
+    setColorImages(updatedMap);
+    emitChange(selectedList, updatedMap);
+    toast.info(`Photo removed for "${colorName}"`);
   };
 
   // Handle single click selection
   const handleSelectSingle = (col: StandardColorOption) => {
-    emitChange([col.name]);
+    emitChange([col.name], colorImages);
+    if (!colorImages[col.name]) {
+      setPendingColorForImage(col.name);
+    }
   };
 
   // Handle multi toggle selection
@@ -102,28 +219,30 @@ export default function ColorRadioSelector({
       updated = selectedList.filter((c) => c.toLowerCase() !== colName.toLowerCase());
     } else {
       updated = [...selectedList, colName];
+      if (!colorImages[colName]) {
+        setPendingColorForImage(colName);
+      }
     }
-    emitChange(updated);
+    emitChange(updated, colorImages);
   };
 
   // Switch between Single and Multi mode
   const handleModeToggle = (multi: boolean) => {
     setIsMultiMode(multi);
     if (!multi && selectedList.length > 1) {
-      // Collapse to first selected color
-      emitChange([selectedList[0]]);
+      emitChange([selectedList[0]], colorImages);
     }
   };
 
   // Select all standard colors
   const handleSelectAll = () => {
     const allNames = STANDARD_14_COLORS.map((c) => c.name);
-    emitChange(allNames);
+    emitChange(allNames, colorImages);
   };
 
   // Clear all
   const handleClearAll = () => {
-    emitChange([]);
+    emitChange([], colorImages);
   };
 
   // Add custom color
@@ -132,18 +251,28 @@ export default function ColorRadioSelector({
     if (!trimmed) return;
     if (isMultiMode) {
       if (!selectedList.some((c) => c.toLowerCase() === trimmed.toLowerCase())) {
-        emitChange([...selectedList, trimmed]);
+        const upd = [...selectedList, trimmed];
+        emitChange(upd, colorImages);
+        if (!colorImages[trimmed]) {
+          setPendingColorForImage(trimmed);
+        }
       }
       setCustomColorName("");
     } else {
-      emitChange([trimmed]);
+      emitChange([trimmed], colorImages);
+      if (!colorImages[trimmed]) {
+        setPendingColorForImage(trimmed);
+      }
     }
   };
 
   // Remove a color chip
   const handleRemoveColor = (colName: string) => {
     const updated = selectedList.filter((c) => c.toLowerCase() !== colName.toLowerCase());
-    emitChange(updated);
+    const updatedImages = { ...colorImages };
+    delete updatedImages[colName];
+    setColorImages(updatedImages);
+    emitChange(updated, updatedImages);
   };
 
   return (
@@ -160,93 +289,145 @@ export default function ColorRadioSelector({
           )}
         </label>
 
-        {/* Mode Switcher Pill */}
-        <div className="flex items-center gap-1 p-0.5 bg-gray-100 rounded-xl border border-gray-200 self-start sm:self-auto">
-          <button
-            type="button"
-            onClick={() => handleModeToggle(false)}
-            className={`px-2.5 py-1 rounded-lg text-[11px] font-bold transition-all cursor-pointer ${
-              !isMultiMode
-                ? "bg-white text-gray-900 shadow-2xs font-extrabold"
-                : "text-gray-500 hover:text-gray-900"
-            }`}
-          >
-            Single Colour
-          </button>
-          <button
-            type="button"
-            onClick={() => handleModeToggle(true)}
-            className={`px-2.5 py-1 rounded-lg text-[11px] font-bold transition-all cursor-pointer flex items-center gap-1 ${
-              isMultiMode
-                ? "bg-[#052a51] text-white shadow-2xs font-extrabold"
-                : "text-gray-500 hover:text-gray-900"
-            }`}
-          >
-            <CheckSquare size={12} />
-            <span>Multi-Colour (Select Multiple)</span>
-          </button>
+        {/* Mode Switcher Toggle: Single vs Multi-Select */}
+        <div className="flex items-center gap-2">
+          <div className="inline-flex rounded-xl p-0.5 bg-gray-100 border border-gray-200">
+            <button
+              type="button"
+              onClick={() => handleModeToggle(false)}
+              className={`px-2.5 py-1 rounded-lg text-[11px] font-bold transition-all cursor-pointer ${
+                !isMultiMode
+                  ? "bg-white text-[#052a51] shadow-2xs"
+                  : "text-gray-500 hover:text-gray-900"
+              }`}
+            >
+              Single
+            </button>
+            <button
+              type="button"
+              onClick={() => handleModeToggle(true)}
+              className={`px-2.5 py-1 rounded-lg text-[11px] font-bold transition-all cursor-pointer flex items-center gap-1 ${
+                isMultiMode
+                  ? "bg-[#052a51] text-white shadow-2xs"
+                  : "text-gray-500 hover:text-gray-900"
+              }`}
+            >
+              <span>Multi-Select</span>
+              <span className="text-[9px] px-1 py-0.2 rounded bg-amber-400 text-gray-900 font-extrabold uppercase">
+                New
+              </span>
+            </button>
+          </div>
+
+          {/* Quick Select All / Clear All (Multi-Mode only) */}
+          {isMultiMode && (
+            <div className="flex items-center gap-1 text-[11px]">
+              <button
+                type="button"
+                onClick={handleSelectAll}
+                className="text-[#F26522] hover:underline font-bold px-1.5 py-0.5 rounded cursor-pointer"
+                title="Select all standard colours"
+              >
+                All
+              </button>
+              <span className="text-gray-300">|</span>
+              <button
+                type="button"
+                onClick={handleClearAll}
+                className="text-gray-500 hover:text-red-600 hover:underline font-medium px-1.5 py-0.5 rounded cursor-pointer"
+                title="Clear all selections"
+              >
+                Clear
+              </button>
+            </div>
+          )}
         </div>
       </div>
 
-      {/* Helper text & Quick Multi Actions */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-1.5">
-        <p className="text-[11px] text-gray-500 font-medium">
-          {isMultiMode
-            ? "Click multiple colour swatches to select all available colour variants at once."
-            : helperText}
-        </p>
-        {isMultiMode && (
-          <div className="flex items-center gap-2 text-[11px]">
-            <button
-              type="button"
-              onClick={handleSelectAll}
-              className="text-[#052a51] hover:underline font-bold cursor-pointer"
-            >
-              Select All Standard
-            </button>
-            <span className="text-gray-300">|</span>
-            <button
-              type="button"
-              onClick={handleClearAll}
-              className="text-red-600 hover:underline font-bold cursor-pointer"
-            >
-              Clear All
-            </button>
-          </div>
-        )}
-      </div>
+      {helperText && <p className="text-[11px] text-gray-500">{helperText}</p>}
 
-      {/* Selected Colors Chips Banner (When multiple or at least 1 color selected) */}
+      {/* Selected Colours Badges with Colour-Wise Photo Attachment */}
       {selectedList.length > 0 && (
-        <div className="p-2.5 rounded-2xl bg-orange-50/60 border border-orange-200 flex flex-wrap items-center gap-1.5 animate-in fade-in">
-          <span className="text-[11px] font-bold text-gray-700 mr-1 flex items-center gap-1">
-            <Check size={12} className="text-[#F26522]" /> Selected:
-          </span>
-          {selectedList.map((colName) => {
-            const std = STANDARD_14_COLORS.find(
-              (c) => c.name.toLowerCase() === colName.toLowerCase()
-            );
-            return (
-              <span
-                key={colName}
-                className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-xl bg-white border border-orange-200 text-xs font-bold text-gray-900 shadow-2xs animate-in zoom-in-95"
-              >
-                <span
-                  className="w-3 h-3 rounded-full shrink-0 border border-black/10"
-                  style={{ background: std?.gradient || std?.hex || customHex }}
-                />
-                <span>{colName}</span>
-                <button
-                  type="button"
-                  onClick={() => handleRemoveColor(colName)}
-                  className="text-gray-400 hover:text-red-600 p-0.5 rounded cursor-pointer"
-                  title="Remove this colour"
+        <div className="p-2.5 rounded-2xl bg-orange-50/60 border border-orange-200/80 space-y-2">
+          <div className="flex items-center justify-between text-[11px] font-bold text-gray-600">
+            <span>Selected Colours &amp; Photos:</span>
+            <span className="text-[10px] text-gray-400 font-medium">
+              Click &quot;+ Photo&quot; to attach colour image
+            </span>
+          </div>
+
+          <div className="flex flex-wrap items-center gap-2">
+            {selectedList.map((colName) => {
+              const matchedStandard = STANDARD_14_COLORS.find(
+                (c) => c.name.toLowerCase() === colName.toLowerCase()
+              );
+              const hex = matchedStandard?.hex || resolveColorHex(colName) || customHex;
+              const hasImage = Boolean(colorImages[colName]);
+
+              return (
+                <div
+                  key={colName}
+                  className="inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-xl bg-white border border-orange-200/90 text-xs font-bold text-gray-800 shadow-2xs"
                 >
-                  <X size={12} />
-                </button>
-              </span>
-            );
-          })}
+                  {/* Solid Swatch Dot */}
+                  <span
+                    className="w-3.5 h-3.5 rounded-full border border-black/20 shrink-0 shadow-2xs"
+                    style={{ backgroundColor: hex }}
+                  />
+
+                  <span>{colName}</span>
+
+                  {/* Photo Thumbnail or Add Photo Button */}
+                  {hasImage ? (
+                    <div className="flex items-center gap-1 pl-1 border-l border-gray-200 ml-0.5">
+                      {/* eslint-disable-next-line @next/next/no-img-element */}
+                      <img
+                        src={colorImages[colName]}
+                        alt={colName}
+                        className="w-5 h-5 rounded-md object-cover border border-emerald-400 shrink-0"
+                      />
+                      <button
+                        type="button"
+                        onClick={() => setPendingColorForImage(colName)}
+                        className="text-[10px] text-emerald-700 hover:text-emerald-800 hover:underline cursor-pointer"
+                        title="Change photo for this colour"
+                      >
+                        Change
+                      </button>
+                      <button
+                        type="button"
+                        onClick={(e) => handleRemoveColorImage(colName, e)}
+                        className="text-gray-400 hover:text-rose-600 p-0.5 rounded cursor-pointer"
+                        title="Remove photo"
+                      >
+                        <Trash2 size={11} />
+                      </button>
+                    </div>
+                  ) : (
+                    <button
+                      type="button"
+                      onClick={() => setPendingColorForImage(colName)}
+                      className="ml-1 px-1.5 py-0.5 rounded-lg bg-orange-100 hover:bg-orange-200 text-[#F26522] text-[10px] font-bold flex items-center gap-1 transition-colors cursor-pointer"
+                      title={`Upload photo for ${colName}`}
+                    >
+                      <Camera size={10} />
+                      <span>+ Photo</span>
+                    </button>
+                  )}
+
+                  {/* Remove this color button */}
+                  <button
+                    type="button"
+                    onClick={() => handleRemoveColor(colName)}
+                    className="text-gray-400 hover:text-rose-600 p-0.5 rounded cursor-pointer ml-0.5"
+                    title="Remove this colour"
+                  >
+                    <X size={12} />
+                  </button>
+                </div>
+              );
+            })}
+          </div>
         </div>
       )}
 
@@ -256,7 +437,7 @@ export default function ColorRadioSelector({
           const isSelected = selectedList.some(
             (c) => c.toLowerCase() === col.name.toLowerCase()
           );
-          const inputId = `${nameGroup}-${col.name.replace(/\s+/g, "-")}`;
+          const hasImage = Boolean(colorImages[col.name]);
 
           return (
             <button
@@ -286,7 +467,7 @@ export default function ColorRadioSelector({
                 )}
               </div>
 
-              {/* Color Swatch Dot */}
+              {/* Pure Solid Color Swatch Dot */}
               <div
                 className={`w-4 h-4 rounded-full shrink-0 shadow-2xs ${
                   col.border ? "border border-gray-300" : "border border-black/10"
@@ -294,15 +475,22 @@ export default function ColorRadioSelector({
                 style={{ background: col.gradient || col.hex }}
               />
 
-              {/* Color Name */}
-              <span
-                className={`text-[11px] truncate leading-tight ${
-                  isSelected ? "font-bold text-gray-900" : "font-medium text-gray-700"
-                }`}
-                title={col.name}
-              >
-                {col.name}
-              </span>
+              {/* Color Name & Photo Indicator */}
+              <div className="min-w-0 flex-1 flex items-center justify-between gap-1">
+                <span
+                  className={`text-[11px] truncate leading-tight ${
+                    isSelected ? "font-bold text-gray-900" : "font-medium text-gray-700"
+                  }`}
+                  title={col.name}
+                >
+                  {col.name}
+                </span>
+                {hasImage && (
+                  <span className="text-[9px] text-emerald-600 shrink-0 font-bold" title="Photo attached">
+                    📸
+                  </span>
+                )}
+              </div>
             </button>
           );
         })}
@@ -358,6 +546,163 @@ export default function ColorRadioSelector({
               >
                 <Plus size={13} />
                 <span>Add</span>
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ── 📸 COLOUR-WISE IMAGE PROMPT MODAL ── */}
+      {pendingColorForImage && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-xs animate-in fade-in">
+          <div className="bg-white rounded-3xl max-w-md w-full p-6 shadow-2xl border border-gray-100 space-y-4">
+            {/* Modal Header */}
+            <div className="flex items-start justify-between gap-3">
+              <div className="flex items-center gap-3">
+                <div
+                  className="w-9 h-9 rounded-full border border-black/15 shadow-sm shrink-0 flex items-center justify-center"
+                  style={{
+                    backgroundColor:
+                      STANDARD_14_COLORS.find(
+                        (c) => c.name.toLowerCase() === pendingColorForImage.toLowerCase()
+                      )?.hex || resolveColorHex(pendingColorForImage) || customHex,
+                  }}
+                />
+                <div>
+                  <h3 className="text-sm font-black text-[#052a51]">
+                    Add Photo for &quot;{pendingColorForImage}&quot;?
+                  </h3>
+                  <p className="text-[11px] text-gray-500">
+                    Colour-wise specific product photo (Optional)
+                  </p>
+                </div>
+              </div>
+
+              <button
+                type="button"
+                onClick={() => setPendingColorForImage(null)}
+                className="p-1.5 rounded-xl text-gray-400 hover:text-gray-700 hover:bg-gray-100 transition-colors cursor-pointer"
+                title="Close"
+              >
+                <X size={18} />
+              </button>
+            </div>
+
+            {/* Instruction Notice in Hindi/English */}
+            <div className="bg-orange-50/70 p-3.5 rounded-2xl border border-orange-200/80 text-xs text-gray-700 leading-relaxed space-y-1">
+              <p>
+                Agar aapke paas <strong>{pendingColorForImage}</strong> colour ka photo hai toh upload karein.
+              </p>
+              <p className="text-gray-500 text-[11px]">
+                Agar photo nahi hai, toh <strong>&quot;No / Skip Image&quot;</strong> karein aur aage continue karein.
+              </p>
+            </div>
+
+            {/* Existing photo if any */}
+            {colorImages[pendingColorForImage] && (
+              <div className="p-3 bg-gray-50 rounded-2xl border border-gray-200 flex items-center justify-between gap-3">
+                <div className="flex items-center gap-2.5">
+                  {/* eslint-disable-next-line @next/next/no-img-element */}
+                  <img
+                    src={colorImages[pendingColorForImage]}
+                    alt={pendingColorForImage}
+                    className="w-12 h-12 rounded-xl object-cover border border-emerald-400"
+                  />
+                  <div>
+                    <span className="text-xs font-bold text-gray-900 block">Photo Attached</span>
+                    <span className="text-[10px] text-emerald-700 font-semibold block">✓ Ready for listing</span>
+                  </div>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => handleRemoveColorImage(pendingColorForImage)}
+                  className="px-2.5 py-1 text-xs font-bold text-rose-600 hover:bg-rose-50 rounded-lg cursor-pointer"
+                >
+                  Remove
+                </button>
+              </div>
+            )}
+
+            {/* File Upload Box */}
+            <div className="space-y-3">
+              <label
+                className={`w-full border-2 border-dashed rounded-2xl p-4 flex flex-col items-center justify-center gap-2 cursor-pointer transition-colors ${
+                  isUploadingImage
+                    ? "bg-gray-50 border-gray-300"
+                    : "border-orange-200 hover:border-[#F26522] bg-orange-50/30 hover:bg-orange-50/60"
+                }`}
+              >
+                {isUploadingImage ? (
+                  <>
+                    <Loader2 size={24} className="animate-spin text-[#F26522]" />
+                    <span className="text-xs font-bold text-gray-600">Uploading photo...</span>
+                  </>
+                ) : (
+                  <>
+                    <div className="w-10 h-10 rounded-2xl bg-white text-[#F26522] flex items-center justify-center shadow-2xs border border-orange-100">
+                      <Camera size={20} />
+                    </div>
+                    <div className="text-center">
+                      <span className="text-xs font-black text-gray-900 block">
+                        Click to Upload {pendingColorForImage} Photo
+                      </span>
+                      <span className="text-[11px] text-gray-500 block">
+                        PNG, JPG, WEBP up to 5MB
+                      </span>
+                    </div>
+                  </>
+                )}
+                <input
+                  ref={fileInputRef}
+                  type="file"
+                  accept="image/*"
+                  disabled={isUploadingImage}
+                  className="hidden"
+                  onChange={(e) => {
+                    const f = e.target.files?.[0];
+                    if (f) handleUploadColorImage(pendingColorForImage, f);
+                  }}
+                />
+              </label>
+
+              {/* Or Direct Image URL Input */}
+              <div className="flex items-center gap-2">
+                <input
+                  type="url"
+                  placeholder="Or paste direct image URL (https://...)"
+                  value={manualUrlInput}
+                  onChange={(e) => setManualUrlInput(e.target.value)}
+                  className="flex-1 px-3 py-2 bg-gray-50 border border-gray-200 rounded-xl text-xs font-medium text-gray-800 focus:bg-white focus:outline-none focus:border-[#F26522]"
+                />
+                <button
+                  type="button"
+                  onClick={() => handleAttachUrl(pendingColorForImage)}
+                  disabled={!manualUrlInput.trim()}
+                  className="px-3 py-2 bg-[#052a51] hover:bg-[#073666] text-white text-xs font-bold rounded-xl transition-colors disabled:opacity-40 cursor-pointer"
+                >
+                  Save URL
+                </button>
+              </div>
+            </div>
+
+            {/* Modal Bottom Actions: Skip / No vs Confirm */}
+            <div className="flex items-center justify-end gap-2.5 pt-3 border-t border-gray-100">
+              <button
+                type="button"
+                onClick={() => setPendingColorForImage(null)}
+                className="px-4 py-2.5 rounded-xl border border-gray-200 hover:bg-gray-100 text-xs font-bold text-gray-700 transition-colors cursor-pointer"
+              >
+                ✕ No / Skip Image
+              </button>
+
+              <button
+                type="button"
+                onClick={() => fileInputRef.current?.click()}
+                disabled={isUploadingImage}
+                className="px-4 py-2.5 rounded-xl bg-[#F26522] hover:bg-[#d95517] text-white text-xs font-black transition-colors cursor-pointer shadow-xs flex items-center gap-1.5"
+              >
+                <Upload size={14} />
+                <span>Upload Photo</span>
               </button>
             </div>
           </div>

@@ -242,6 +242,8 @@ export default function SharedProductUploadWizard({
   const [customSubcategoryHeight, setCustomSubcategoryHeight] = useState<string>("");
   const [customSubcategoryWeight, setCustomSubcategoryWeight] = useState<string>("");
   const [isSavingSubcategory, setIsSavingSubcategory] = useState<boolean>(false);
+  const [colorImages, setColorImages] = useState<Record<string, string>>({});
+  const [customSubcategoryColorImages, setCustomSubcategoryColorImages] = useState<Record<string, string>>({});
   const [dynamicAttributes, setDynamicAttributes] = useState<Record<string, string>>({});
   const [customSpecs, setCustomSpecs] = useState<Array<{ key: string; value: string }>>([]);
   const [newSpecKey, setNewSpecKey] = useState<string>("");
@@ -531,6 +533,13 @@ export default function SharedProductUploadWizard({
       if (d.sku) setSku(d.sku);
       if (d.barcode) setBarcode(d.barcode);
       if (d.dynamicAttributes) setDynamicAttributes(d.dynamicAttributes);
+      if (d.colorImages) {
+        setColorImages(d.colorImages);
+      } else if (d.dynamicAttributes?.colorImages) {
+        try {
+          setColorImages(JSON.parse(d.dynamicAttributes.colorImages));
+        } catch {}
+      }
       if (d.customSpecs) setCustomSpecs(d.customSpecs);
       if (d.shippingMode) setShippingMode(d.shippingMode);
       if (d.dispatchTimeDays) setDispatchTimeDays(d.dispatchTimeDays);
@@ -584,6 +593,7 @@ export default function SharedProductUploadWizard({
         sku,
         barcode,
         dynamicAttributes,
+        colorImages,
         customSpecs,
         shippingMode,
         dispatchTimeDays,
@@ -1129,14 +1139,26 @@ export default function SharedProductUploadWizard({
           });
         }
 
-        // If colour is specified, bind to attributes
+        // If colour is specified, bind to attributes and merge color images
         if (customSubcategoryColour.trim()) {
+          const mergedColorImages = { ...colorImages, ...customSubcategoryColorImages };
+          setColorImages(mergedColorImages);
           setDynamicAttributes((prev) => ({
             ...prev,
             "Colour": customSubcategoryColour.trim(),
             "Color": customSubcategoryColour.trim(),
+            ...(Object.keys(mergedColorImages).length > 0 ? { colorImages: JSON.stringify(mergedColorImages) } : {}),
           }));
+          const addedImgs = Object.values(customSubcategoryColorImages).filter((img): img is string => Boolean(img));
+          if (addedImgs.length > 0) {
+            setImages((prev) => {
+              const existing = new Set(prev.filter((x) => x !== "/placeholders/product.svg"));
+              addedImgs.forEach((img) => existing.add(img));
+              return Array.from(existing);
+            });
+          }
         }
+        setCustomSubcategoryColorImages({});
 
         // Reset subcategory inputs
         setCustomSubcategoryName("");
@@ -1468,8 +1490,14 @@ export default function SharedProductUploadWizard({
           finish: v.finish || "Standard",
           color: v.color || "Standard",
           colorHex: v.colorHex || null,
-          image: v.image || images[0] || null,
-          images: Array.isArray(v.images) && v.images.length > 0 ? v.images : (v.image ? [v.image] : [images[0]]),
+          image: v.image || (v.color && colorImages[v.color]) || images[0] || null,
+          images: Array.isArray(v.images) && v.images.length > 0
+            ? v.images
+            : (v.image
+                ? [v.image]
+                : (v.color && colorImages[v.color]
+                    ? [colorImages[v.color]]
+                    : (images.length > 0 ? [images[0]] : []))),
           unit: v.unit || unitOfSale,
           attributeLabel: v.attributeLabel || "Option",
           attributeValue: v.attributeValue || v.size || "Standard",
@@ -1499,8 +1527,10 @@ export default function SharedProductUploadWizard({
             finish: dynamicAttributes["Surface Finish"] || dynamicAttributes["Finish"] || "Standard",
             color: dynamicAttributes["Colour"] || dynamicAttributes["Color"] || "Standard",
             colorHex: resolveColorHex(dynamicAttributes["Colour"] || dynamicAttributes["Color"] || "Standard"),
-            image: images[0] || null,
-            images: images.length > 0 ? [images[0]] : [],
+            image: (dynamicAttributes["Colour"] && colorImages[dynamicAttributes["Colour"]]) || images[0] || null,
+            images: (dynamicAttributes["Colour"] && colorImages[dynamicAttributes["Colour"]])
+              ? [colorImages[dynamicAttributes["Colour"]], ...images.filter((i) => i !== colorImages[dynamicAttributes["Colour"]])]
+              : (images.length > 0 ? [images[0]] : []),
             unit: unitOfSale,
             attributeLabel: "Option",
             attributeValue: "Standard",
@@ -2856,12 +2886,33 @@ export default function SharedProductUploadWizard({
             <div className="p-5 rounded-3xl bg-gray-50/70 border border-gray-200 space-y-3">
               <ColorRadioSelector
                 value={dynamicAttributes["Colour"] || dynamicAttributes["Color"] || ""}
-                onChange={(colorName, colorHex) => {
+                initialColorImages={colorImages}
+                onColorImagesChange={(imgs) => {
+                  setColorImages(imgs);
+                  setDynamicAttributes((prev) => ({
+                    ...prev,
+                    colorImages: JSON.stringify(imgs),
+                  }));
+                }}
+                onChange={(colorName, colorHex, colorList, newColorImages) => {
+                  if (newColorImages) {
+                    setColorImages(newColorImages);
+                    const addedImgs = Object.values(newColorImages).filter((img): img is string => Boolean(img));
+                    if (addedImgs.length > 0) {
+                      setImages((prev) => {
+                        const existing = new Set(prev.filter((x) => x !== "/placeholders/product.svg"));
+                        addedImgs.forEach((img) => existing.add(img));
+                        return Array.from(existing);
+                      });
+                    }
+                  }
                   setDynamicAttributes((prev) => ({
                     ...prev,
                     Colour: colorName,
                     Color: colorName,
                     ...(colorHex ? { ColorHex: colorHex } : {}),
+                    ...(colorList && colorList.length > 0 ? { SelectedColours: colorList.join(", ") } : {}),
+                    ...(newColorImages ? { colorImages: JSON.stringify(newColorImages) } : {}),
                   }));
                 }}
                 label="Product Colour (12+ Standard Colours Radio Buttons)"
@@ -3091,12 +3142,33 @@ export default function SharedProductUploadWizard({
                     <div className="p-4 bg-gray-50/80 rounded-2xl border border-gray-200 space-y-4">
                       <ColorRadioSelector
                         value={dynamicAttributes["Colour"] || dynamicAttributes["Color"] || ""}
-                        onChange={(colorName, colorHex) => {
+                        initialColorImages={colorImages}
+                        onColorImagesChange={(imgs) => {
+                          setColorImages(imgs);
+                          setDynamicAttributes((prev) => ({
+                            ...prev,
+                            colorImages: JSON.stringify(imgs),
+                          }));
+                        }}
+                        onChange={(colorName, colorHex, colorList, newColorImages) => {
+                          if (newColorImages) {
+                            setColorImages(newColorImages);
+                            const addedImgs = Object.values(newColorImages).filter((img): img is string => Boolean(img));
+                            if (addedImgs.length > 0) {
+                              setImages((prev) => {
+                                const existing = new Set(prev.filter((x) => x !== "/placeholders/product.svg"));
+                                addedImgs.forEach((img) => existing.add(img));
+                                return Array.from(existing);
+                              });
+                            }
+                          }
                           setDynamicAttributes((prev) => ({
                             ...prev,
                             Colour: colorName,
                             Color: colorName,
                             ...(colorHex ? { ColorHex: colorHex } : {}),
+                            ...(colorList && colorList.length > 0 ? { SelectedColours: colorList.join(", ") } : {}),
+                            ...(newColorImages ? { colorImages: JSON.stringify(newColorImages) } : {}),
                           }));
                         }}
                         label="Sub-category Colour (12+ Standard Colours Radio Buttons)"
@@ -3579,7 +3651,14 @@ export default function SharedProductUploadWizard({
                     <div className="p-3.5 bg-gray-50/70 rounded-2xl border border-gray-200 space-y-3">
                       <ColorRadioSelector
                         value={customSubcategoryColour}
-                        onChange={(colorName) => setCustomSubcategoryColour(colorName)}
+                        initialColorImages={customSubcategoryColorImages}
+                        onColorImagesChange={setCustomSubcategoryColorImages}
+                        onChange={(colorName, _hex, _list, newImgs) => {
+                          setCustomSubcategoryColour(colorName);
+                          if (newImgs) {
+                            setCustomSubcategoryColorImages(newImgs);
+                          }
+                        }}
                         label="Sub-category Colour (12+ Standard Colours Radio Buttons)"
                         helperText="Click any standard colour for single-click selection or enter custom shade"
                         allowCustom={true}
