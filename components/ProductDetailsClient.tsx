@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useMemo } from "react";
+import { useState, useEffect, useMemo, useSyncExternalStore } from "react";
 import Link from "next/link";
 import Image from "next/image";
 import { useRouter } from "next/navigation";
@@ -53,6 +53,8 @@ function formatPrice(n: number) {
   return "₹" + n.toLocaleString("en-IN");
 }
 
+const emptySubscribe = () => () => {};
+
 interface ProductDetailsClientProps {
   product: Product;
   relatedProducts: Product[];
@@ -65,6 +67,7 @@ export default function ProductDetailsClient({
   allProducts,
 }: ProductDetailsClientProps) {
   const router = useRouter();
+  const mounted = useSyncExternalStore(emptySubscribe, () => true, () => false);
   const { addItem, setBuyNowItem } = useCartStore();
   const { isWishlisted, toggleWishlist } = useWishlistStore();
 
@@ -281,8 +284,12 @@ export default function ProductDetailsClient({
 
               {/* Rating & Specifications - Only show rating badge if genuine reviews exist */}
               {(() => {
-                const avgRatingVal = (definedProduct as Record<string, unknown>).avgRating;
-                const reviewCountVal = (definedProduct as Record<string, unknown>).reviewCount;
+                const avgRatingVal = typeof (definedProduct as Record<string, unknown>).avgRating === "number"
+                  ? ((definedProduct as Record<string, unknown>).avgRating as number)
+                  : undefined;
+                const reviewCountVal = typeof (definedProduct as Record<string, unknown>).reviewCount === "number"
+                  ? ((definedProduct as Record<string, unknown>).reviewCount as number)
+                  : undefined;
                 const displayReviewCount =
                   reviewCountVal !== null && reviewCountVal !== undefined && reviewCountVal > 0
                     ? reviewCountVal

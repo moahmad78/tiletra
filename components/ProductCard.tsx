@@ -52,7 +52,7 @@ export default function ProductCard({
           <div className="relative aspect-square w-full overflow-hidden bg-gray-100">
             <SafeImage
               src={productImg}
-              variantSize={compact ? 240 : 400}
+              variantSize={400}
               alt={product.name}
               fill
               priority={priority}
