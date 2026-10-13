@@ -653,15 +653,30 @@ export async function createProduct(input: CreateProductInput) {
       }
     }
 
-    // Automatic clean, collision-free slug generation in backend (never requires frontend slug input)
+    // Automatic clean, collision-free slug generation in backend (PRD Section 5)
     const baseSlug = safeSlugify(input.slug || input.name) || `item-${Date.now().toString(36)}`;
-    let slug = `${baseSlug}-${Date.now().toString().slice(-4)}`;
+    let slug = baseSlug;
     const existingWithSlug = await prisma.product.findUnique({
       where: { slug },
       select: { id: true },
     });
     if (existingWithSlug) {
-      slug = `${baseSlug}-${Date.now().toString(36)}-${Math.random().toString(36).substring(2, 6)}`;
+      let suffix = 1;
+      while (suffix <= 100) {
+        const candidate = `${baseSlug}-${suffix}`;
+        const collision = await prisma.product.findUnique({
+          where: { slug: candidate },
+          select: { id: true },
+        });
+        if (!collision) {
+          slug = candidate;
+          break;
+        }
+        suffix++;
+      }
+      if (slug === baseSlug) {
+        slug = `${baseSlug}-${Date.now().toString(36)}`;
+      }
     }
 
     const primaryVariant: any = (input.variants && input.variants.length > 0 ? input.variants[0] : null) || {

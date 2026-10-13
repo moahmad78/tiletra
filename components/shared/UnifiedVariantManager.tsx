@@ -427,6 +427,7 @@ export default function UnifiedVariantManager({
       mrp: defaultMrp || 699,
       sqftPerBox: 16.5,
       stockBoxes: defaultStock || 50,
+      lowStockAlert: 5,
       inStock: true,
       active: true,
       isDefault: variants.length === 0,
@@ -910,7 +911,8 @@ export default function UnifiedVariantManager({
                     <th className="py-3 px-3 w-24">MRP (₹)</th>
                     <th className="py-3 px-3 w-28">Selling (₹) *</th>
                     <th className="py-3 px-3 w-24">Coverage (sqft)</th>
-                    <th className="py-3 px-3 w-24">Stock</th>
+                    <th className="py-3 px-3 w-32">Stock &amp; Status</th>
+                    <th className="py-3 px-3 w-24" title="Triggers Low Stock Alert when inventory falls below this limit (Default: 5)">🚨 Alert Limit</th>
                     <th className="py-3 px-3 w-14 text-center">Media</th>
                     <th className="py-3 px-3 w-10 text-center" title="1-Click Duplicate Variant">Copy</th>
                     <th className="py-3 px-3 w-10 text-center">Del</th>
@@ -1044,19 +1046,58 @@ export default function UnifiedVariantManager({
                           />
                         </td>
 
-                        {/* 8. Stock */}
+                        {/* 8. Stock Count & Real-Time Status Detection (PRD Section 6) */}
+                        <td className="py-3 px-3">
+                          <div className="space-y-1">
+                            <input
+                              type="number"
+                              min={0}
+                              value={v.stockBoxes ?? 50}
+                              onChange={(e) =>
+                                handleUpdateRow(idx, {
+                                  stockBoxes: Number(e.target.value),
+                                  inStock: Number(e.target.value) > 0,
+                                })
+                              }
+                              className={`w-full px-2 py-1.5 bg-white border rounded-lg text-xs font-mono font-bold focus:outline-none ${
+                                (v.stockBoxes ?? 50) === 0
+                                  ? "border-rose-400 text-rose-700 bg-rose-50/20"
+                                  : (v.stockBoxes ?? 50) <= (v.lowStockAlert ?? 5)
+                                  ? "border-amber-400 text-amber-700 bg-amber-50/20"
+                                  : "border-gray-200 text-gray-900 focus:border-[#F26522]"
+                              }`}
+                            />
+                            <div className="flex items-center">
+                              {(v.stockBoxes ?? 50) === 0 ? (
+                                <span className="text-[10px] font-black text-rose-700 bg-rose-50 px-1.5 py-0.5 rounded border border-rose-200 leading-none">
+                                  Out of Stock
+                                </span>
+                              ) : (v.stockBoxes ?? 50) <= (v.lowStockAlert ?? 5) ? (
+                                <span className="text-[10px] font-black text-amber-700 bg-amber-50 px-1.5 py-0.5 rounded border border-amber-200 leading-none">
+                                  Low Stock ⚠️
+                                </span>
+                              ) : (
+                                <span className="text-[10px] font-black text-emerald-700 bg-emerald-50 px-1.5 py-0.5 rounded border border-emerald-200 leading-none">
+                                  In Stock ✓
+                                </span>
+                              )}
+                            </div>
+                          </div>
+                        </td>
+
+                        {/* 9. Low Stock Alert Threshold Limit (PRD Section 3 & 4) */}
                         <td className="py-3 px-3">
                           <input
                             type="number"
                             min={0}
-                            value={v.stockBoxes ?? 50}
+                            value={v.lowStockAlert ?? 5}
                             onChange={(e) =>
                               handleUpdateRow(idx, {
-                                stockBoxes: Number(e.target.value),
-                                inStock: Number(e.target.value) > 0,
+                                lowStockAlert: Number(e.target.value),
                               })
                             }
-                            className="w-full px-2 py-1.5 bg-white border border-gray-200 rounded-lg text-xs font-mono font-bold text-gray-900 focus:outline-none focus:border-[#F26522]"
+                            className="w-full px-2 py-1.5 bg-white border border-gray-200 rounded-lg text-xs font-mono font-medium text-gray-600 focus:outline-none focus:border-[#F26522]"
+                            title="Triggers alert when stock is at or below this threshold (Default: 5)"
                           />
                         </td>
 

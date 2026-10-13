@@ -1954,6 +1954,17 @@ export default function SharedProductUploadWizard({
                 onChange={(e) => setTitle(e.target.value)}
                 className="w-full px-4 py-2.5 rounded-2xl border border-gray-200 text-xs font-bold focus:outline-none focus:border-[#F26522]"
               />
+              {currentSlug && (
+                <div className="flex items-center gap-1.5 pt-1 text-[11px] text-gray-500 font-mono">
+                  <span className="inline-flex items-center gap-1 text-[#052a51] font-bold text-[10px]">
+                    <Zap size={11} className="text-[#F26522] fill-[#F26522]" />
+                    Auto Slug:
+                  </span>
+                  <span className="bg-gray-100 px-2 py-0.5 rounded text-gray-700 font-bold border border-gray-200 truncate">
+                    /product/{currentSlug}
+                  </span>
+                </div>
+              )}
             </div>
 
             <div className="space-y-1.5">
