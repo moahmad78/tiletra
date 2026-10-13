@@ -18,6 +18,7 @@ import {
   Search,
   Sparkles,
   Pin,
+  Star,
 } from "lucide-react";
 import {
   getCategories,
@@ -64,13 +65,20 @@ export default function CategoryManagementComponent({
   const [submitting, setSubmitting] = useState(false);
   const [uploadingImage, setUploadingImage] = useState(false);
   const [pinnedCategoryIds, setPinnedCategoryIds] = useState<string[]>([]);
-  const [showPinnedOnly, setShowPinnedOnly] = useState<boolean>(false);
+  const [defaultCategoryId, setDefaultCategoryId] = useState<string>("");
+  const [activeFilter, setActiveFilter] = useState<"all" | "pinned" | "default">("all");
+  const [modalIsPinned, setModalIsPinned] = useState(false);
+  const [modalIsDefault, setModalIsDefault] = useState(false);
 
   useEffect(() => {
     try {
       const saved = localStorage.getItem("intrihub_cpo_pinned_categories");
       if (saved) {
         setPinnedCategoryIds(JSON.parse(saved));
+      }
+      const savedDefault = localStorage.getItem("intrihub_platform_default_category");
+      if (savedDefault) {
+        setDefaultCategoryId(savedDefault);
       }
     } catch {}
   }, []);
@@ -88,6 +96,27 @@ export default function CategoryManagementComponent({
     }
     setPinnedCategoryIds(updated);
     localStorage.setItem("intrihub_cpo_pinned_categories", JSON.stringify(updated));
+  };
+
+  const handleSetDefaultCategory = (cat: Category, e?: React.MouseEvent) => {
+    if (e) e.stopPropagation();
+    if (defaultCategoryId === cat.id) {
+      setDefaultCategoryId("");
+      localStorage.removeItem("intrihub_platform_default_category");
+      toast.info(`"${cat.name}" removed as platform default category`);
+    } else {
+      setDefaultCategoryId(cat.id);
+      localStorage.setItem("intrihub_platform_default_category", cat.id);
+      const prefPayload = {
+        categoryId: cat.id,
+        categorySlug: cat.slug,
+        categoryName: cat.name,
+        pinnedAt: new Date().toISOString(),
+      };
+      localStorage.setItem("intrihub_vendor_pinned_pref", JSON.stringify(prefPayload));
+      localStorage.setItem("intrihub_vendor_upload_pref", JSON.stringify(prefPayload));
+      toast.success(`⭐ "${cat.name}" set as Platform Default Category!`);
+    }
   };
 
   const [name, setName] = useState("");
@@ -121,6 +150,8 @@ export default function CategoryManagementComponent({
     setImage("/categories/electrical.jpg");
     setParentId(null);
     setCalculatorType("none");
+    setModalIsPinned(false);
+    setModalIsDefault(false);
     setModalOpen(true);
   };
 
@@ -132,6 +163,8 @@ export default function CategoryManagementComponent({
     setImage(cat.image || "/placeholders/product.svg");
     setParentId((cat as any).parentId || null);
     setCalculatorType(cat.calculatorType || "none");
+    setModalIsPinned(pinnedCategoryIds.includes(cat.id));
+    setModalIsDefault(defaultCategoryId === cat.id);
     setModalOpen(true);
   };
 
@@ -215,6 +248,24 @@ export default function CategoryManagementComponent({
 
       if (res.success) {
         toast.success(`Category "${name}" updated successfully!`);
+        // Sync modal pin and default settings
+        const catId = editingCategory.id;
+        if (modalIsPinned && !pinnedCategoryIds.includes(catId)) {
+          const upd = [...pinnedCategoryIds, catId];
+          setPinnedCategoryIds(upd);
+          localStorage.setItem("intrihub_cpo_pinned_categories", JSON.stringify(upd));
+        } else if (!modalIsPinned && pinnedCategoryIds.includes(catId)) {
+          const upd = pinnedCategoryIds.filter((id) => id !== catId);
+          setPinnedCategoryIds(upd);
+          localStorage.setItem("intrihub_cpo_pinned_categories", JSON.stringify(upd));
+        }
+        if (modalIsDefault) {
+          setDefaultCategoryId(catId);
+          localStorage.setItem("intrihub_platform_default_category", catId);
+        } else if (defaultCategoryId === catId) {
+          setDefaultCategoryId("");
+          localStorage.removeItem("intrihub_platform_default_category");
+        }
         setModalOpen(false);
         loadCategories();
       } else {
@@ -231,7 +282,21 @@ export default function CategoryManagementComponent({
       });
       setSubmitting(false);
 
-      if (res.success) {
+      if (res.success && res.category) {
+        toast.success(`Category "${name}" created successfully!`);
+        const catId = res.category.id;
+        if (modalIsPinned) {
+          const upd = [...pinnedCategoryIds, catId];
+          setPinnedCategoryIds(upd);
+          localStorage.setItem("intrihub_cpo_pinned_categories", JSON.stringify(upd));
+        }
+        if (modalIsDefault) {
+          setDefaultCategoryId(catId);
+          localStorage.setItem("intrihub_platform_default_category", catId);
+        }
+        setModalOpen(false);
+        loadCategories();
+      } else if (res.success) {
         toast.success(`Category "${name}" created successfully!`);
         setModalOpen(false);
         loadCategories();
@@ -246,6 +311,15 @@ export default function CategoryManagementComponent({
       const res = await deleteCategory(cat.id);
       if (res.success) {
         toast.success(`Category "${cat.name}" removed`);
+        if (defaultCategoryId === cat.id) {
+          setDefaultCategoryId("");
+          localStorage.removeItem("intrihub_platform_default_category");
+        }
+        if (pinnedCategoryIds.includes(cat.id)) {
+          const upd = pinnedCategoryIds.filter((id) => id !== cat.id);
+          setPinnedCategoryIds(upd);
+          localStorage.setItem("intrihub_cpo_pinned_categories", JSON.stringify(upd));
+        }
         loadCategories();
       } else {
         toast.error(res.error || "Failed to delete category");
@@ -254,7 +328,8 @@ export default function CategoryManagementComponent({
   };
 
   const filteredCategories = categories.filter((c) => {
-    if (showPinnedOnly && !pinnedCategoryIds.includes(c.id)) return false;
+    if (activeFilter === "pinned" && !pinnedCategoryIds.includes(c.id)) return false;
+    if (activeFilter === "default" && c.id !== defaultCategoryId) return false;
     if (!searchQuery.trim()) return true;
     const q = searchQuery.toLowerCase();
     return (
@@ -263,6 +338,8 @@ export default function CategoryManagementComponent({
       (c.description && c.description.toLowerCase().includes(q))
     );
   });
+
+  const defaultCategoryObj = categories.find((c) => c.id === defaultCategoryId);
 
   if (loading) {
     return (
@@ -318,13 +395,13 @@ export default function CategoryManagementComponent({
           />
         </div>
 
-        {/* Quick Filter Tabs: All vs Pinned */}
-        <div className="flex items-center gap-2">
+        {/* Quick Filter Tabs: All vs Pinned vs Default */}
+        <div className="flex items-center gap-2 flex-wrap">
           <button
             type="button"
-            onClick={() => setShowPinnedOnly(false)}
+            onClick={() => setActiveFilter("all")}
             className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer ${
-              !showPinnedOnly
+              activeFilter === "all"
                 ? "bg-[#052a51] text-white shadow-2xs"
                 : "bg-gray-100 text-gray-600 hover:bg-gray-200"
             }`}
@@ -333,9 +410,21 @@ export default function CategoryManagementComponent({
           </button>
           <button
             type="button"
-            onClick={() => setShowPinnedOnly(true)}
+            onClick={() => setActiveFilter("default")}
             className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer flex items-center gap-1.5 ${
-              showPinnedOnly
+              activeFilter === "default"
+                ? "bg-emerald-600 text-white shadow-2xs"
+                : "bg-emerald-50 text-emerald-900 border border-emerald-200 hover:bg-emerald-100"
+            }`}
+          >
+            <Star size={13} className="fill-current" />
+            <span>Default ({defaultCategoryId ? 1 : 0})</span>
+          </button>
+          <button
+            type="button"
+            onClick={() => setActiveFilter("pinned")}
+            className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer flex items-center gap-1.5 ${
+              activeFilter === "pinned"
                 ? "bg-amber-500 text-white shadow-2xs"
                 : "bg-amber-50 text-amber-900 border border-amber-200 hover:bg-amber-100"
             }`}
@@ -346,14 +435,50 @@ export default function CategoryManagementComponent({
         </div>
       </div>
 
+      {/* Active Default Category Info Banner */}
+      {defaultCategoryObj && (
+        <div className="bg-emerald-50/80 border border-emerald-200 rounded-2xl p-3.5 px-4 flex flex-col sm:flex-row sm:items-center justify-between gap-3 shadow-2xs animate-in fade-in">
+          <div className="flex items-center gap-2.5">
+            <div className="w-8 h-8 rounded-xl bg-emerald-600 text-white flex items-center justify-center shrink-0 shadow-2xs">
+              <Star size={16} className="fill-white" />
+            </div>
+            <div>
+              <div className="flex items-center gap-2">
+                <span className="text-xs font-black text-emerald-950">
+                  Platform Default Category: {defaultCategoryObj.name}
+                </span>
+                <span className="px-2 py-0.2 rounded-full text-[10px] font-bold bg-emerald-200/70 text-emerald-900 uppercase">
+                  Default Active
+                </span>
+              </div>
+              <p className="text-[11px] text-emerald-800 mt-0.5">
+                Automatically pre-selected for new vendor uploads and admin listing accelerators.
+              </p>
+            </div>
+          </div>
+          <button
+            type="button"
+            onClick={(e) => handleSetDefaultCategory(defaultCategoryObj, e)}
+            className="text-xs font-bold text-emerald-800 hover:text-red-600 underline cursor-pointer self-start sm:self-auto"
+          >
+            Reset Default
+          </button>
+        </div>
+      )}
+
       {/* Category Grid */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
         {filteredCategories.map((cat) => {
           const isPinned = pinnedCategoryIds.includes(cat.id);
+          const isDefault = defaultCategoryId === cat.id;
           return (
           <div
             key={cat.id}
-            className="bg-white rounded-3xl border border-gray-200/80 shadow-2xs overflow-hidden flex flex-col justify-between group hover:shadow-md transition-all"
+            className={`bg-white rounded-3xl border shadow-2xs overflow-hidden flex flex-col justify-between group hover:shadow-md transition-all ${
+              isDefault
+                ? "border-emerald-300 ring-2 ring-emerald-500/30"
+                : "border-gray-200/80"
+            }`}
           >
             <div>
               {/* Hero Image Header */}
@@ -367,20 +492,36 @@ export default function CategoryManagementComponent({
                 />
                 <div className="absolute inset-0 bg-gradient-to-t from-[#052a51]/90 via-[#052a51]/30 to-transparent" />
 
-                {/* Pin Priority Button (Top-Left) */}
-                <button
-                  type="button"
-                  onClick={(e) => handleTogglePin(cat, e)}
-                  className={`absolute top-3 left-3 px-2.5 py-1 rounded-xl text-[11px] font-black flex items-center gap-1.5 shadow-md transition-all cursor-pointer z-10 ${
-                    isPinned
-                      ? "bg-amber-500 text-white ring-2 ring-white"
-                      : "bg-white/90 hover:bg-white text-gray-700 hover:text-[#F26522] border border-gray-200"
-                  }`}
-                  title={isPinned ? "Click to unpin priority category" : "Pin as priority category"}
-                >
-                  <Pin size={12} className={isPinned ? "fill-white" : ""} />
-                  <span>{isPinned ? "Pinned Priority" : "Pin"}</span>
-                </button>
+                {/* Pin Priority & Default Buttons (Top-Left) */}
+                <div className="absolute top-3 left-3 flex items-center gap-1.5 z-10 flex-wrap max-w-[80%]">
+                  <button
+                    type="button"
+                    onClick={(e) => handleTogglePin(cat, e)}
+                    className={`px-2.5 py-1 rounded-xl text-[11px] font-black flex items-center gap-1.5 shadow-md transition-all cursor-pointer ${
+                      isPinned
+                        ? "bg-amber-500 text-white ring-2 ring-white"
+                        : "bg-white/90 hover:bg-white text-gray-700 hover:text-[#F26522] border border-gray-200"
+                    }`}
+                    title={isPinned ? "Click to unpin priority category" : "Pin as priority category"}
+                  >
+                    <Pin size={12} className={isPinned ? "fill-white" : ""} />
+                    <span>{isPinned ? "Pinned" : "Pin"}</span>
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={(e) => handleSetDefaultCategory(cat, e)}
+                    className={`px-2.5 py-1 rounded-xl text-[11px] font-black flex items-center gap-1.5 shadow-md transition-all cursor-pointer ${
+                      isDefault
+                        ? "bg-emerald-600 text-white ring-2 ring-white"
+                        : "bg-white/90 hover:bg-white text-gray-700 hover:text-emerald-700 border border-gray-200"
+                    }`}
+                    title={isDefault ? "Click to remove as platform default" : "Set as Platform Default Category"}
+                  >
+                    <Star size={12} className={isDefault ? "fill-white" : ""} />
+                    <span>{isDefault ? "⭐ Default" : "Set Default"}</span>
+                  </button>
+                </div>
 
                 <div className="absolute top-3 right-3 flex items-center gap-1.5">
                   {cat.calculatorType && cat.calculatorType !== "none" && (
@@ -662,6 +803,48 @@ export default function CategoryManagementComponent({
                 <p className="text-[10px] text-gray-500">
                   Controls automated customer calculation assistance on Product Detail Pages.
                 </p>
+              </div>
+
+              {/* Pin & Default Category Configuration Options in Modal */}
+              <div className="p-4 rounded-2xl bg-gray-50 border border-gray-200/80 space-y-3">
+                <span className="text-xs font-bold text-[#052a51] uppercase tracking-wider block">
+                  Priority &amp; Upload Defaults
+                </span>
+                <div className="space-y-2">
+                  <label className="flex items-center gap-2.5 cursor-pointer">
+                    <input
+                      type="checkbox"
+                      checked={modalIsDefault}
+                      onChange={(e) => setModalIsDefault(e.target.checked)}
+                      className="w-4 h-4 text-emerald-600 rounded border-gray-300 focus:ring-emerald-500"
+                    />
+                    <div>
+                      <span className="text-xs font-bold text-gray-900 block">
+                        ⭐ Set as Platform Default Category
+                      </span>
+                      <span className="text-[11px] text-gray-500 block">
+                        Auto-selects this category as the primary choice for new product uploads.
+                      </span>
+                    </div>
+                  </label>
+
+                  <label className="flex items-center gap-2.5 cursor-pointer">
+                    <input
+                      type="checkbox"
+                      checked={modalIsPinned}
+                      onChange={(e) => setModalIsPinned(e.target.checked)}
+                      className="w-4 h-4 text-amber-500 rounded border-gray-300 focus:ring-amber-400"
+                    />
+                    <div>
+                      <span className="text-xs font-bold text-gray-900 block">
+                        📌 Pin as Priority Category
+                      </span>
+                      <span className="text-[11px] text-gray-500 block">
+                        Highlights this category with priority badge in CPO &amp; Vendor catalog views.
+                      </span>
+                    </div>
+                  </label>
+                </div>
               </div>
 
               {/* Modal Buttons */}

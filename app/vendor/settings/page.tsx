@@ -21,6 +21,8 @@ import {
   sanitizeDeliverySlots,
   DeliverySlotDefinition,
 } from "@/lib/delivery-slots";
+import { getCategories } from "@/lib/actions/categories";
+import type { Category } from "@/lib/data/categories";
 import {
   Store,
   Phone,
@@ -52,6 +54,8 @@ import {
   Navigation,
   ExternalLink,
   Compass,
+  Pin,
+  Star,
 } from "lucide-react";
 import { toast } from "sonner";
 import WebMapPickerModal, { WebPickedLocation } from "@/components/maps/WebMapPickerModal";
@@ -97,6 +101,10 @@ export default function VendorSettingsPage() {
   // Map & Location Picker States
   const [isMapModalOpen, setIsMapModalOpen] = useState(false);
   const [isDetectingLocation, setIsDetectingLocation] = useState(false);
+
+  // Dynamic Catalog Categories & Pin Preference
+  const [categories, setCategories] = useState<Category[]>([]);
+  const [isCategoryPinnedThis, setIsCategoryPinnedThis] = useState<boolean>(false);
 
   // Delivery & Shipping Data
   const [shippingData, setShippingData] = useState<{
@@ -199,6 +207,76 @@ export default function VendorSettingsPage() {
     }
   }, [vendor?.id]);
 
+  // Load master catalog categories
+  useEffect(() => {
+    getCategories().then((cats) => {
+      if (cats && cats.length > 0) {
+        setCategories(cats);
+      }
+    });
+  }, []);
+
+  // Sync Pinned Category Preference
+  useEffect(() => {
+    try {
+      const pref =
+        localStorage.getItem("intrihub_vendor_pinned_pref") ||
+        localStorage.getItem("intrihub_vendor_upload_pref") ||
+        (vendor?.id ? localStorage.getItem(`intrihub_pinned_category_${vendor.id}`) : null);
+      if (pref) {
+        const parsed = JSON.parse(pref);
+        const currentCat = shopData.category || "General";
+        if (
+          parsed.categoryName?.toLowerCase() === currentCat.toLowerCase() ||
+          parsed.categoryId === currentCat
+        ) {
+          setIsCategoryPinnedThis(true);
+        } else {
+          setIsCategoryPinnedThis(false);
+        }
+      } else {
+        setIsCategoryPinnedThis(false);
+      }
+    } catch {}
+  }, [shopData.category, vendor?.id]);
+
+  const handleTogglePinVendorCategory = () => {
+    const currentCatName = shopData.category || "General";
+    const matchedCat = categories.find(
+      (c) =>
+        c.name.toLowerCase() === currentCatName.toLowerCase() ||
+        c.id === currentCatName ||
+        c.slug === currentCatName.toLowerCase().replace(/[^a-z0-9]+/g, "-")
+    );
+    const catId = matchedCat?.id || currentCatName;
+    const catSlug = matchedCat?.slug || currentCatName.toLowerCase().replace(/[^a-z0-9]+/g, "-");
+
+    if (isCategoryPinnedThis) {
+      localStorage.removeItem("intrihub_vendor_pinned_pref");
+      localStorage.removeItem("intrihub_vendor_upload_pref");
+      if (vendor?.id) {
+        localStorage.removeItem(`intrihub_pinned_category_${vendor.id}`);
+      }
+      setIsCategoryPinnedThis(false);
+      toast.info(`"${currentCatName}" unpinned from default upload category`);
+    } else {
+      const payload = {
+        categoryId: catId,
+        categoryName: matchedCat?.name || currentCatName,
+        categorySlug: catSlug,
+        vendorId: vendor?.id || "",
+        pinnedAt: new Date().toISOString(),
+      };
+      localStorage.setItem("intrihub_vendor_pinned_pref", JSON.stringify(payload));
+      localStorage.setItem("intrihub_vendor_upload_pref", JSON.stringify(payload));
+      if (vendor?.id) {
+        localStorage.setItem(`intrihub_pinned_category_${vendor.id}`, JSON.stringify(payload));
+      }
+      setIsCategoryPinnedThis(true);
+      toast.success(`📌 "${matchedCat?.name || currentCatName}" set & pinned as your Default Upload Category!`);
+    }
+  };
+
   // Generic File Upload Handler
   const handleFileUpload = async (file: File, targetField: string) => {
     try {
@@ -294,6 +372,22 @@ export default function VendorSettingsPage() {
 
     if (res.success && res.vendor) {
       toast.success("Shop information & storefront photo saved!");
+      if (isCategoryPinnedThis) {
+        const currentCatName = shopData.category || "General";
+        const matchedCat = categories.find(
+          (c) => c.name.toLowerCase() === currentCatName.toLowerCase() || c.id === currentCatName
+        );
+        const payload = {
+          categoryId: matchedCat?.id || currentCatName,
+          categoryName: matchedCat?.name || currentCatName,
+          categorySlug: matchedCat?.slug || currentCatName.toLowerCase().replace(/[^a-z0-9]+/g, "-"),
+          vendorId: vendor.id,
+          pinnedAt: new Date().toISOString(),
+        };
+        localStorage.setItem("intrihub_vendor_pinned_pref", JSON.stringify(payload));
+        localStorage.setItem("intrihub_vendor_upload_pref", JSON.stringify(payload));
+        localStorage.setItem(`intrihub_pinned_category_${vendor.id}`, JSON.stringify(payload));
+      }
       if (vendor?.id && setVendor) {
         setVendor({
           ...(vendor as any),
@@ -735,14 +829,65 @@ export default function VendorSettingsPage() {
                 className="w-full bg-gray-50 border border-gray-200 rounded-xl px-4 py-3 text-sm font-semibold text-gray-800 focus:bg-white focus:border-emerald-500 focus:outline-hidden"
               >
                 <option value="General">General / Multi-Category</option>
-                <option value="Electricals & Wires">Electricals & Wires</option>
-                <option value="Plumbing & Fittings">Plumbing & Fittings</option>
-                <option value="Tiles & Natural Stone">Tiles & Natural Stone</option>
-                <option value="Hardware & Tools">Hardware & Tools</option>
-                <option value="Sanitaryware & Bath">Sanitaryware & Bath</option>
-                <option value="Plywood & Laminates">Plywood & Laminates</option>
-                <option value="Paints & Waterproofing">Paints & Waterproofing</option>
+                {categories.length > 0 ? (
+                  categories.map((c) => (
+                    <option key={c.id} value={c.name}>
+                      {c.name}
+                    </option>
+                  ))
+                ) : (
+                  <>
+                    <option value="Electricals & Wires">Electricals & Wires</option>
+                    <option value="Plumbing & Fittings">Plumbing & Fittings</option>
+                    <option value="Tiles & Natural Stone">Tiles & Natural Stone</option>
+                    <option value="Hardware & Tools">Hardware & Tools</option>
+                    <option value="Sanitaryware & Bath">Sanitaryware & Bath</option>
+                    <option value="Plywood & Laminates">Plywood & Laminates</option>
+                    <option value="Paints & Waterproofing">Paints & Waterproofing</option>
+                  </>
+                )}
               </select>
+
+              {/* 📌 Category Pin & Default Upload Preference Card */}
+              <div className="mt-3 p-3.5 rounded-2xl bg-gradient-to-r from-amber-50/70 via-orange-50/50 to-amber-50/70 border border-amber-200/90 flex flex-col sm:flex-row sm:items-center justify-between gap-3 shadow-2xs">
+                <div className="flex items-start gap-2.5">
+                  <div className={`w-8 h-8 rounded-xl flex items-center justify-center shrink-0 shadow-2xs mt-0.5 ${
+                    isCategoryPinnedThis ? "bg-amber-500 text-white" : "bg-white text-gray-400 border border-amber-200"
+                  }`}>
+                    <Pin size={16} className={isCategoryPinnedThis ? "fill-white" : ""} />
+                  </div>
+                  <div>
+                    <div className="flex items-center gap-2">
+                      <span className="text-xs font-black text-gray-900">Pin as Default Upload Category</span>
+                      {isCategoryPinnedThis ? (
+                        <span className="px-2 py-0.5 rounded-full text-[10px] font-black bg-emerald-100 text-emerald-800 border border-emerald-300">
+                          ✓ Default Active
+                        </span>
+                      ) : (
+                        <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-gray-100 text-gray-500 border border-gray-200">
+                          Not Pinned
+                        </span>
+                      )}
+                    </div>
+                    <p className="text-[11px] text-gray-600 mt-0.5">
+                      Auto-selects <strong>&quot;{shopData.category || "General"}&quot;</strong> in the product upload wizard to speed up repeat listings.
+                    </p>
+                  </div>
+                </div>
+
+                <button
+                  type="button"
+                  onClick={handleTogglePinVendorCategory}
+                  className={`px-4 py-2 rounded-xl text-xs font-black flex items-center justify-center gap-1.5 transition-all cursor-pointer shrink-0 shadow-2xs active:scale-95 ${
+                    isCategoryPinnedThis
+                      ? "bg-amber-500 hover:bg-amber-600 text-white"
+                      : "bg-white hover:bg-amber-100 text-amber-900 border border-amber-300"
+                  }`}
+                >
+                  <Pin size={13} className={isCategoryPinnedThis ? "fill-white" : ""} />
+                  <span>{isCategoryPinnedThis ? "Pinned as Default" : "Pin as Default"}</span>
+                </button>
+              </div>
             </div>
 
             <div>

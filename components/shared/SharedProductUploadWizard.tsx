@@ -1911,14 +1911,14 @@ export default function SharedProductUploadWizard({
                 </div>
                 <div>
                   <div className="font-black text-gray-900 flex items-center gap-1.5">
-                    <span>Fast-Upload Preference Active</span>
+                    <span>⭐ Default Upload Category Active</span>
                     <span className="text-[10px] bg-amber-200/80 text-amber-900 font-extrabold px-1.5 py-0.2 rounded uppercase">
-                      Pinned
+                      Pinned Default
                     </span>
                   </div>
                   <p className="text-[11px] text-amber-800/90 mt-0.5">
-                    Pre-selected: <strong>{selectedCategory.name}</strong>
-                    {selectedSubcategory && <span> ➔ <strong>{selectedSubcategory.name}</strong></span>}. Sequential uploads will bypass Category selection.
+                    Default Selection: <strong>{selectedCategory.name}</strong>
+                    {selectedSubcategory && <span> ➔ <strong>{selectedSubcategory.name}</strong></span>}. Fast upload mode active.
                   </p>
                 </div>
               </div>
@@ -1938,7 +1938,7 @@ export default function SharedProductUploadWizard({
                   className="px-2.5 py-1.5 rounded-xl bg-white border border-amber-300 text-amber-800 text-[11px] font-bold hover:bg-amber-100 hover:text-rose-600 transition-colors cursor-pointer active:scale-95"
                   title="Unpin / Reset Default category preference"
                 >
-                  Unpin / Reset Default
+                  Unpin Default
                 </button>
               </div>
             </div>
@@ -2004,7 +2004,7 @@ export default function SharedProductUploadWizard({
                         }}
                       />
 
-                      {/* 📌 Quick 1-Click Pin Button on Card */}
+                      {/* 📌 Quick 1-Click Pin / Default Button on Card */}
                       <button
                         type="button"
                         onClick={(e) => handleTogglePinCategoryFor(cat.id, e)}
@@ -2016,7 +2016,7 @@ export default function SharedProductUploadWizard({
                         }`}
                       >
                         <Pin size={10} className={isThisPinned ? "fill-white" : ""} />
-                        <span>{isThisPinned ? "Pinned" : "Pin"}</span>
+                        <span>{isThisPinned ? "✓ Default" : "Pin Default"}</span>
                       </button>
 
                       {/* Selection Checkmark Badge */}
