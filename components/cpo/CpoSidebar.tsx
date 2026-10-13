@@ -1,7 +1,8 @@
 "use client";
 
+import { useState } from "react";
 import Link from "next/link";
-import { usePathname } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
 import {
   Store,
   Package,
@@ -12,7 +13,11 @@ import {
   LayoutDashboard,
   Layers,
   Trash2,
+  LogOut,
+  Loader2,
 } from "lucide-react";
+import { logoutCpo } from "@/lib/cpo/auth";
+import { toast } from "sonner";
 
 const NAV_ITEMS = [
   { href: "/cpo", label: "Dashboard", icon: LayoutDashboard, exact: true },
@@ -26,6 +31,21 @@ const NAV_ITEMS = [
 
 export default function CpoSidebar() {
   const pathname = usePathname();
+  const router = useRouter();
+  const [loggingOut, setLoggingOut] = useState(false);
+
+  const handleLogout = async () => {
+    if (loggingOut) return;
+    setLoggingOut(true);
+    try {
+      await logoutCpo();
+      toast.success("CPO logged out successfully");
+      router.push("/vendor/login");
+    } catch {
+      toast.error("Logout failed. Please try again.");
+      setLoggingOut(false);
+    }
+  };
 
   return (
     <aside className="w-64 bg-[#052a51] text-white flex flex-col shrink-0 h-full border-r border-white/10 select-none notranslate" translate="no">
@@ -77,20 +97,37 @@ export default function CpoSidebar() {
         })}
       </nav>
 
-      {/* Footer Info */}
-      <div className="p-4 border-t border-white/10 text-xs text-white/60 space-y-2">
-        <div className="flex items-center justify-between">
-          <span className="text-[11px]">Platform</span>
+      {/* Footer Info & Logout */}
+      <div className="p-3 border-t border-white/10 space-y-2">
+        <div className="flex items-center justify-between px-1">
+          <span className="text-[11px] text-white/60">Platform</span>
           <span className="font-mono text-[#F26522] text-[11px] font-bold">CPO Hub</span>
         </div>
+
         <Link
           href="/shop"
           target="_blank"
-          className="flex items-center gap-1.5 text-xs text-white/80 hover:text-[#F26522] transition-colors"
+          className="flex items-center gap-2 px-3 py-2 rounded-xl text-xs font-semibold text-white/80 bg-white/5 hover:bg-white/10 hover:text-white transition-colors"
         >
-          <ExternalLink className="w-3.5 h-3.5" />
+          <ExternalLink className="w-3.5 h-3.5 text-[#F26522]" />
           <span>View Customer Store</span>
         </Link>
+
+        {/* 🚪 CPO Logout Button */}
+        <button
+          type="button"
+          onClick={handleLogout}
+          disabled={loggingOut}
+          className="w-full flex items-center gap-2.5 px-3 py-2 rounded-xl text-xs font-bold text-red-300 hover:bg-red-500/20 hover:text-red-200 transition-colors cursor-pointer text-left disabled:opacity-50 active:scale-98"
+          title="Logout from CPO Portal"
+        >
+          {loggingOut ? (
+            <Loader2 className="w-4 h-4 animate-spin text-red-400 shrink-0" />
+          ) : (
+            <LogOut className="w-4 h-4 text-red-400 shrink-0" />
+          )}
+          <span>{loggingOut ? "Signing Out..." : "Sign Out / Logout"}</span>
+        </button>
       </div>
     </aside>
   );

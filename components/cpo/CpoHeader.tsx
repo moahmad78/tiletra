@@ -9,6 +9,7 @@ import {
   Store,
   ChevronDown,
   PlusCircle,
+  Loader2,
 } from "lucide-react";
 import { toast } from "sonner";
 import Link from "next/link";
@@ -64,14 +65,14 @@ export default function CpoHeader({ userEmail }: { userEmail?: string }) {
   }, [syncWorkspace]);
 
   const handleLogout = async () => {
+    if (loggingOut) return;
     setLoggingOut(true);
     try {
       await logoutCpo();
-      toast.success("Logged out successfully");
+      toast.success("CPO logged out successfully");
       router.push("/vendor/login");
     } catch {
-      toast.error("Logout failed");
-    } finally {
+      toast.error("Logout failed. Please try again.");
       setLoggingOut(false);
     }
   };
@@ -129,13 +130,18 @@ export default function CpoHeader({ userEmail }: { userEmail?: string }) {
           </div>
 
           <button
+            type="button"
             onClick={handleLogout}
             disabled={loggingOut}
-            className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-gray-100 hover:bg-gray-200 text-gray-700 text-xs font-semibold rounded-xl transition-colors disabled:opacity-50 cursor-pointer"
-            title="Sign Out"
+            className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-rose-50 hover:bg-rose-100 text-rose-700 border border-rose-200/80 text-xs font-bold rounded-xl transition-all disabled:opacity-50 cursor-pointer active:scale-95 shadow-2xs"
+            title="Sign Out / Logout from CPO Portal"
           >
-            <LogOut className="w-3.5 h-3.5" />
-            <span className="hidden sm:inline">Sign Out</span>
+            {loggingOut ? (
+              <Loader2 className="w-3.5 h-3.5 animate-spin text-rose-600" />
+            ) : (
+              <LogOut className="w-3.5 h-3.5 text-rose-600" />
+            )}
+            <span>{loggingOut ? "Signing Out..." : "Sign Out"}</span>
           </button>
         </div>
       </header>
