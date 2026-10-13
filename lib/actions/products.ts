@@ -506,11 +506,11 @@ export async function getHomepageSections(): Promise<{
   // Fetch candidate products in ONE single optimized database roundtrip
   const allCandidates = await getProducts({ limit: 30 });
 
-  const trending = allCandidates.filter((p) => p.isTrending || p.tags?.includes("Trending")).slice(0, 8);
-  const bestsellers = allCandidates.filter((p) => p.isBestseller).slice(0, 8);
-  const newArrivals = allCandidates.filter((p) => p.isNew || (p as any).isNewArrival).slice(0, 8);
+  const trending = allCandidates.filter((p) => p.isTrending || p.tags?.includes("Trending")).slice(0, 16);
+  const bestsellers = allCandidates.filter((p) => p.isBestseller).slice(0, 16);
+  const newArrivals = allCandidates.filter((p) => p.isNew || (p as any).isNewArrival).slice(0, 16);
 
-  const fallback = allCandidates.slice(0, 8);
+  const fallback = allCandidates.slice(0, 16);
 
   const result = {
     trending: trending.length > 0 ? trending : fallback,

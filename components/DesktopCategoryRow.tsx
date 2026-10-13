@@ -2,7 +2,7 @@
 
 import { useRef } from "react";
 import Link from "next/link";
-import { ChevronLeft, ChevronRight, ArrowRight } from "lucide-react";
+import { ChevronLeft, ChevronRight } from "lucide-react";
 import type { Category } from "@/lib/data/categories";
 import { SafeImage } from "@/components/ui/SafeImage";
 
@@ -38,14 +38,10 @@ function SafeDesktopCategoryCard({
           <div className="absolute inset-0 bg-gradient-to-t from-black/20 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
         </div>
 
-        <div className="px-1 pt-2 pb-1 flex flex-col items-center justify-between flex-1">
+        <div className="px-1 py-2 flex items-center justify-center flex-1">
           <p className="text-xs sm:text-sm font-bold text-[#052a51] group-hover:text-[#F26522] transition-colors leading-tight line-clamp-1">
             {cat.name}
           </p>
-          <span className="text-[11px] text-gray-500 font-semibold mt-1 inline-flex items-center gap-0.5 group-hover:text-[#F26522] transition-colors">
-            {cat.productCount > 0 ? `${cat.productCount} Items` : "Explore"}
-            <ArrowRight size={10} className="opacity-0 group-hover:opacity-100 transition-opacity" />
-          </span>
         </div>
       </div>
     </Link>
@@ -76,11 +72,8 @@ export default function DesktopCategoryRow({ categories }: DesktopCategoryRowPro
         {/* Section Header */}
         <div className="flex items-center justify-between mb-4">
           <div>
-            <span className="text-[11px] font-black text-[#F26522] uppercase tracking-wider">
-              Explore Building Supplies
-            </span>
             <h2 className="text-xl lg:text-2xl font-black text-[#052a51] tracking-tight">
-              Explore Tiles, Hardware &amp; Standard Construction Materials
+              Categories
             </h2>
           </div>
           <div className="flex items-center gap-2">
