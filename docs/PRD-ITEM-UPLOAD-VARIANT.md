@@ -1,24 +1,27 @@
 # 📄 Product Requirement Document (PRD)
 
 ### 📌 Document Metadata
-* **Product Name:** IntriHub Vendor & Admin App — Item Upload & Variant Module
+* **Product Name:** IntriHub Vendor & Admin App — Multi-Vendor Item Upload, Inventory & Order Routing Module
 * **Slogan Alignment:** "Every Material. Every Space."
 * **Target Platforms:** Mobile App (React Native), Mobile Web, and Desktop Admin Panel (Next.js)
-* **Core Goal:** Hardware, interior, plumbing, electrical, aur construction materials ko super-fast, responsive, aur financially transparent workflow ke saath list, draft, aur live karna.
+* **Core Goal:** Hardware, interior, plumbing, electrical, aur construction materials ko super-fast, responsive, financially transparent, aur vendor-specific inventory/order mapping ke saath manage karna.
 
 ---
 
-## 1. Executive Summary & Core Business Logic
-IntriHub marketplace par complex construction materials ke alag-alag dimensions, colors, units, aur bulk rates hote hain. Is module ka target vendor onboarding time reduce karna, dynamic master lookup expansion (`+ Add New`) allow karna, **3-Tier Financial Pricing (MRP, Sale Price, Purchase Cost)** with **Real-Time Admin Margin % Calculation**, **Promotional Badges/Tags**, **Auto-Slug Generation**, **Real-Time Stock Detection & Low-Stock Alerts**, aur **📌 Pin Default Preferences** provide karna hai.
+## 1. Executive Summary & Core Multi-Vendor Logic
+IntriHub marketplace ek multi-vendor B2B quick-commerce platform hai. Is module ka target vendor-level isolation maintain karna hai:
+* **Vendor Privacy:** Vendors ko sirf unke dwara upload kiye gaye (ya Admin dwara unhe assign kiye gaye) products hi unke dashboard/app par dikhenge.
+* **Direct Order Routing:** Jab koi customer app par order place karega, toh system product ki `vendorId` read karke order dispatch notification **sirf usi specific vendor ke panel/app** par bhejega.
+* **CPO Panel Assignment:** Admin/CPO Panel se item upload karte waqt dropdown se targeted vendor ko choose karne ka option rahega, jisse wo item directly us vendor ki account mapping mein chala jaye.
 
 ---
 
-## 2. Dynamic Roles & Financial Privacy Matrix
+## 2. Dynamic Roles, Multi-Vendor Scope & Financial Privacy Matrix
 
-| User Role | Visible Pricing & Fields | Auto-Calculated Metrics | Privacy & Security Rules |
+| User Role | Visible Inventory Scope | Order Routing Queue | Pricing Visibility & Metrics |
 | :--- | :--- | :--- | :--- |
-| **Vendor / Merchant** | • MRP (₹)<br>• Selling / Offer Price (₹)<br>• Purchase / Cost Rate (₹) | Customer Discount % `((MRP - SP)/MRP * 100)` | 🔒 **Profit Margin % is HIDDEN.** Vendor cannot view platform net margin/profit analytics. |
-| **Admin / CPO Panel** | • MRP (₹)<br>• Selling / Offer Price (₹)<br>• Purchase / Cost Rate (₹) | ⚡ **Net Profit (₹):** `SP - CP`<br>⚡ **Profit Margin (%):** `((SP - CP)/SP) * 100`<br>⚡ **Customer Discount (%):** `((MRP - SP)/MRP * 100)` | 🔓 **FULL ACCESS.** Live profit margin & discount analytics update in real-time as rates are typed. |
+| **Vendor / Merchant** | 🔒 **Only Self-Uploaded / Assigned Items** (`vendorId == currentVendor.id`) | 📦 **Self Orders Only.** Receives orders for items listed under their vendor account. | • MRP (₹)<br>• Selling Price (₹)<br>• Purchase Cost (₹)<br>🔒 **Profit Margin % is HIDDEN.** |
+| **Admin / CPO Panel** | 🌐 **Global Inventory View.** Can filter products by specific Vendor. | 🚚 **All Platform Orders.** Can track fulfillment across all Dark Stores & Vendors. | 🔓 **FULL ACCESS.**<br>⚡ Net Profit (₹)<br>⚡ Profit Margin (%)<br>⚡ Customer Discount (%) |
 
 ---
 
@@ -26,23 +29,30 @@ IntriHub marketplace par complex construction materials ke alag-alag dimensions,
 
 ```text
 ┌────────────────────────────────────────────────────────────────────────┐
-│                        STEP 1: CATEGORY SELECTION                      │
-│ [ Primary Category Dropdown  ▼ ]  [+ Add New]                           │
-│ [ Sub-Category Dropdown      ▼ ]  [+ Add New]                           │
+│                   STEP 1: VENDOR / STORE MAPPING                       │
+│ Vendor App: Auto-mapped to logged-in Vendor ID                         │
+│ CPO/Admin Panel: [ Select Target Vendor Dropdown ▼ ] [+ Add New Vendor]│
+└───────────────────────────────────┬────────────────────────────────────┘
+                                    │
+                                    ▼
+┌────────────────────────────────────────────────────────────────────────┐
+│                        STEP 2: CATEGORY SELECTION                      │
+│ [ Primary Category Dropdown  ▼ ]  [+ Add New Category]                 │
+│ [ Sub-Category Dropdown      ▼ ]  [+ Add New Sub-Cat]                  │
 │ [ 📌 Set Category Selection as Default Toggle ]                         │
 └───────────────────────────────────┬────────────────────────────────────┘
                                     │
                                     ▼
 ┌────────────────────────────────────────────────────────────────────────┐
-│                     STEP 2: PARENT ITEM DETAILS                        │
+│                     STEP 3: PARENT ITEM DETAILS                        │
 │ Product Title ──► ⚡ Auto Slug Engine (Backend/Frontend Auto-Gen)     │
-│ [ Brand Name Dropdown        ▼ ]  [+ Add New]                           │
+│ [ Brand Name Dropdown        ▼ ]  [+ Add New Brand]                 │
 │ Product Description (Expandable Text Area)                             │
 └───────────────────────────────────┬────────────────────────────────────┘
                                     │
                                     ▼
 ┌────────────────────────────────────────────────────────────────────────┐
-│             STEP 3: MULTI-VARIANT, PRICING & STOCK MANAGEMENT          │
+│             STEP 4: MULTI-VARIANT, PRICING & STOCK MANAGEMENT          │
 │ 👉 [ + Add Multi-Variant / Sub-Item ] Full-Width Touch Button          │
 │ ┌────────────────────────────────────────────────────────────────────┐ │
 │ │ Mobile Bottom-Sheet Modal:                                         │ │
@@ -64,7 +74,7 @@ IntriHub marketplace par complex construction materials ke alag-alag dimensions,
                                     │
                                     ▼
 ┌────────────────────────────────────────────────────────────────────────┐
-│                  STEP 4: BADGES & PROMOTIONAL LABELS                   │
+│                  STEP 5: BADGES & PROMOTIONAL LABELS                   │
 │ ⚡ Auto Discount Badge: [ ON / OFF ] (Calculates "% OFF" dynamically)  │
 │ Select Tags: [ 🔥 Best Seller ] [ 🏬 Factory Price ] [ ⚡ Quick Dispatch]│
 │ Custom Text Badge: [ Enter Custom Text ] Color: (•) 🔴 Red ( ) 🟢 Green│
@@ -73,7 +83,7 @@ IntriHub marketplace par complex construction materials ke alag-alag dimensions,
                                     │
                                     ▼
 ┌────────────────────────────────────────────────────────────────────────┐
-│                  STEP 5: LOGISTICS & DELIVERY SETTINGS                 │
+│                  STEP 6: LOGISTICS & DELIVERY SETTINGS                 │
 │ (•) ⚡ Instant Delivery (60-90 Mins) [DEFAULT]                          │
 │ ( ) 🚛 Custom Heavy / Bulky Dispatch (Estimated ETA Window)             │
 │ 📌 [ Pin Selected Delivery Option as Default ]                         │
@@ -81,7 +91,7 @@ IntriHub marketplace par complex construction materials ke alag-alag dimensions,
                                     │
                                     ▼
 ┌────────────────────────────────────────────────────────────────────────┐
-│                   STEP 6: RETURN & REPLACEMENT POLICY                  │
+│                   STEP 7: RETURN & REPLACEMENT POLICY                  │
 │ Return Toggle: [ ON / OFF ]                                            │
 │ If ON ──► Days, Refund/Replacement Type, Condition Notes              │
 │ 📌 [ Pin Return Policy as Default ]                                    │
@@ -89,7 +99,7 @@ IntriHub marketplace par complex construction materials ke alag-alag dimensions,
                                     │
                                     ▼
 ┌────────────────────────────────────────────────────────────────────────┐
-│                     STEP 7: STICKY MOBILE BOTTOM BAR                   │
+│                     STEP 8: STICKY MOBILE BOTTOM BAR                   │
 │ [ 💾 Save Draft ]         [ 👁️ Preview ]          [ 🚀 Publish Live ]   │
 └────────────────────────────────────────────────────────────────────────┘
 ```
@@ -99,7 +109,18 @@ IntriHub marketplace par complex construction materials ke alag-alag dimensions,
 ## 4. Technical Specifications & Database Schema (Prisma ORM)
 
 ```prisma
-// 1. MASTER LOOKUP TABLES (For Dynamic + Add New Feature)
+// 1. VENDOR / MERCHANT PROFILE
+model Vendor {
+  id           String    @id @default(uuid())
+  businessName String
+  ownerName    String
+  phone        String    @unique
+  products     Product[]
+  orders       Order[]
+  createdAt    DateTime  @default(now())
+}
+
+// 2. MASTER LOOKUP TABLES (For Dynamic + Add New Feature)
 model MasterCategory {
   id            String              @id @default(uuid())
   name          String              @unique
@@ -123,22 +144,11 @@ model MasterBrand {
   isApproved Boolean @default(true)
 }
 
-model MasterAttribute {
-  id    String        @id @default(uuid())
-  type  AttributeType // SIZE, COLOR, MATERIAL_GRADE, UNIT
-  value String
-}
-
-enum AttributeType {
-  SIZE
-  COLOR
-  MATERIAL_GRADE
-  UNIT
-}
-
-// 2. PARENT PRODUCT & VARIANT TABLES (Includes Pricing, Badges, Auto-Slug & Stock)
+// 3. PARENT PRODUCT & VARIANT TABLES (Includes vendorId Foreign Key)
 model Product {
   id               String           @id @default(uuid())
+  vendorId         String           // 🔑 Mapped to Vendor Account
+  vendor           Vendor           @relation(fields: [vendorId], references: [id])
   title            String
   slug             String           @unique // ⚡ Auto-generated from Title
   description      String?
@@ -187,7 +197,19 @@ model ProductVariant {
   updatedAt         DateTime    @updatedAt
 }
 
-// 3. USER PREFERENCES (For 📌 Pin Default Feature)
+// 4. ORDER & ORDER-ITEM MAPPING (Order Routing Engine)
+model Order {
+  id          String      @id @default(uuid())
+  orderNumber String      @unique
+  customerId  String
+  vendorId    String      // 🔑 Direct routing to assigned Vendor
+  vendor      Vendor      @relation(fields: [vendorId], references: [id])
+  totalAmount Float
+  status      OrderStatus @default(PENDING)
+  createdAt   DateTime    @default(now())
+}
+
+// 5. USER PREFERENCES (For 📌 Pin Default Feature)
 model UserPreference {
   userId            String       @id
   defaultCategoryId String?
@@ -214,45 +236,59 @@ enum ProductStatus {
   PUBLISHED
   ARCHIVED
 }
+
+enum OrderStatus {
+  PENDING
+  ACCEPTED
+  DISPATCHED
+  DELIVERED
+  CANCELLED
+}
 ```
 
 ---
 
 ## 5. System Logic & Formulas
 
-### A. Auto-Slug Engine Logic (Node.js)
+### A. Vendor Inventory Query Security (Node.js/Prisma)
 ```typescript
-function generateSlug(title: string): string {
-  return title
-    .toLowerCase()
-    .trim()
-    .replace(/[^\w\s-]/g, '') // Remove special characters
-    .replace(/[\s_-]+/g, '-') // Replace spaces with hyphen
-    .replace(/^-+|-+$/g, ''); // Trim hyphens
-}
-// Collision Example: "finolex-wire" -> "finolex-wire-1"
-```
-
-### B. Admin Profit & Discount Margin Formulas
-```typescript
-function calculateAdminMetrics(mrp: number, sellingPrice: number, costPrice: number) {
-  const netProfit = sellingPrice - costPrice;
-  const profitMarginPercentage = sellingPrice > 0 ? ((netProfit / sellingPrice) * 100).toFixed(2) : 0;
-  const customerDiscountPercentage = mrp > 0 ? (((mrp - sellingPrice) / mrp) * 100).toFixed(2) : 0;
-
-  return { netProfit, profitMarginPercentage, customerDiscountPercentage };
+// Vendor App Query: Fetch items ONLY for the logged-in vendor
+async function getVendorProducts(currentVendorId: string) {
+  return await prisma.product.findMany({
+    where: { vendorId: currentVendorId },
+    include: { variants: true }
+  });
 }
 ```
 
-### C. Low Stock Alert Logic
+### B. Order Routing Engine Rule
 ```typescript
-if (stockQuantity <= lowStockThreshold && stockQuantity > 0) {
-  stockStatus = "LOW_STOCK";
-  sendPushNotification(vendorId, `Alert: ${variantName} stock is low (${stockQuantity} left)`);
-} else if (stockQuantity === 0) {
-  stockStatus = "OUT_OF_STOCK";
-  disableAddToCartOnUserApp(variantId);
+// Customer Checkout: Create separate order items grouped by vendorId
+async function processOrderCheckout(cartItems: CartItem[], customerId: string) {
+  const groupedByVendor = groupBy(cartItems, item => item.vendorId);
+  
+  for (const [vendorId, items] of Object.entries(groupedByVendor)) {
+    const newOrder = await prisma.order.create({
+      data: {
+        vendorId: vendorId,
+        customerId: customerId,
+        totalAmount: calculateTotal(items),
+        status: "PENDING"
+      }
+    });
+    
+    // 🔔 Real-time Socket/Push Alert sent ONLY to that Vendor's App
+    sendVendorOrderPushNotification(vendorId, newOrder.id);
+  }
 }
+```
+
+### C. 3-Tier Financial Margin Formulas
+```typescript
+// Margin calculations (strictly visible to Admin / CPO only)
+const profitAmount = sellingPrice - costPrice;
+const profitMarginPercent = sellingPrice > 0 ? ((profitAmount / sellingPrice) * 100).toFixed(1) : 0;
+const customerDiscountPercent = mrp > 0 ? (((mrp - sellingPrice) / mrp) * 100).toFixed(0) : 0;
 ```
 
 ---
@@ -261,10 +297,3 @@ if (stockQuantity <= lowStockThreshold && stockQuantity > 0) {
 * **Mobile Responsive Container:** `w-full max-w-2xl mx-auto px-4 py-6`
 * **Touch Target Standard:** All Dropdowns, Inputs, and Badges must have a minimum height of `h-12` (48px) for thumb-friendly usage.
 * **Sticky Bottom Navigation:** `fixed bottom-0 left-0 right-0 z-50 bg-white border-t p-3 shadow-2xl flex gap-2`
-
----
-
-## 7. Release Milestones & Execution Plan
-* **Phase 1 (Core Engine & Responsive UI):** Mobile & Desktop form layout, Category Selection, Auto Slug generation, Draft/Publish Live status controls.
-* **Phase 2 (Pricing, Variant & Badge Matrix):** 3-Tier Pricing, Admin Real-Time Margin calculation, Mobile Bottom-Sheet for Variants, Badges & Custom Text Tags, Dynamic + Add New master tables.
-* **Phase 3 (Preferences, Logistics & Stock Engine):** 📌 Pin Default preference persistence, Custom Return Drawer, Heavy vs Instant Delivery toggle, and Automated Low-Stock Alert Notifications.

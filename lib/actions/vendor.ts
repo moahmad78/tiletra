@@ -150,6 +150,27 @@ export async function getVendorProfile(vendorId?: string) {
   }
 }
 
+// 2b. Get Active Vendors For Selection (Admin & CPO Target Mapping)
+export async function getActiveVendorsForSelection() {
+  try {
+    const vendors = await prisma.vendor.findMany({
+      where: { status: "approved" },
+      select: {
+        id: true,
+        businessName: true,
+        contactPhone: true,
+        category: true,
+        status: true,
+      },
+      orderBy: { businessName: "asc" },
+    });
+    return vendors;
+  } catch (error) {
+    console.error("Error fetching active vendors:", error);
+    return [];
+  }
+}
+
 // 3. Update Vendor Profile (scoped)
 export async function updateVendorProfile(
   vendorId: string,

@@ -51,7 +51,7 @@ import ProductWebsitePreviewModal from "@/components/shared/ProductWebsitePrevie
 import LiveSidePreviewPanel from "@/components/shared/LiveSidePreviewPanel";
 import { createProduct, checkDuplicateProduct } from "@/lib/actions/products";
 import { getCategories, createCustomCategory } from "@/lib/actions/categories";
-import { getVendorProfile } from "@/lib/actions/vendor";
+import { getVendorProfile, getActiveVendorsForSelection } from "@/lib/actions/vendor";
 import type { Category } from "@/lib/data/categories";
 import type { ProductVariant } from "@/lib/data/products";
 import { UNIT_OF_SALE_OPTIONS, getDefaultUnitOfSale } from "@/lib/units";
@@ -131,6 +131,10 @@ export default function SharedProductUploadWizard({
   // ── Vendor Context ──
   const [activeVendorId, setActiveVendorId] = useState<string | null>(initialVendorId);
   const [vendorProfile, setVendorProfile] = useState<any | null>(null);
+  const [vendorList, setVendorList] = useState<
+    Array<{ id: string; businessName: string; contactPhone?: string | null; category?: string | null; status?: string }>
+  >([]);
+  const [loadingVendors, setLoadingVendors] = useState<boolean>(false);
 
   useEffect(() => {
     setActiveVendorId(initialVendorId || null);
@@ -141,6 +145,21 @@ export default function SharedProductUploadWizard({
       getVendorProfile(activeVendorId).then((v) => setVendorProfile(v));
     }
   }, [activeVendorId]);
+
+  useEffect(() => {
+    if (isAdminOrCpo) {
+      setLoadingVendors(true);
+      getActiveVendorsForSelection()
+        .then((list) => {
+          setVendorList(list || []);
+          if (!activeVendorId && list && list.length > 0) {
+            setActiveVendorId(list[0].id);
+          }
+        })
+        .catch((err) => console.error("Error fetching active vendors:", err))
+        .finally(() => setLoadingVendors(false));
+    }
+  }, [isAdminOrCpo]);
 
   // ── STEP 1: Category & Custom Category ──
   const [categories, setCategories] = useState<CategoryWithChildren[]>([]);
@@ -996,6 +1015,10 @@ export default function SharedProductUploadWizard({
   // ── Step Validations (7 Steps) ──
   const validateStep = (step: number): boolean => {
     if (step === 1) {
+      if (isAdminOrCpo && !activeVendorId) {
+        toast.error("Please assign a Target Vendor before proceeding *");
+        return false;
+      }
       if (!selectedCategoryId) {
         toast.error("Please select a Category from the list *");
         return false;
@@ -1158,6 +1181,12 @@ export default function SharedProductUploadWizard({
   // ── Final Form Submission ──
   const handleFinalSubmit = async (e?: React.FormEvent) => {
     if (e) e.preventDefault();
+
+    if (isAdminOrCpo && !activeVendorId) {
+      toast.error("Please select a Target Vendor in Step 1 *");
+      setCurrentStep(1);
+      return;
+    }
 
     if (!selectedCategoryId) {
       toast.error("Please select a Category in Step 1 *");
@@ -1591,7 +1620,80 @@ export default function SharedProductUploadWizard({
           {/* ── STEP 1: CATEGORY (FIRST FIELD) ── */}
           {currentStep === 1 && (
         <div className="bg-white p-6 sm:p-8 rounded-3xl border border-gray-200 shadow-2xs space-y-6 animate-in fade-in">
-          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+          {/* ── STEP 1A: VENDOR OWNERSHIP & STORE MAPPING ── */}
+          {isAdminOrCpo ? (
+            <div className="p-5 rounded-2xl bg-gradient-to-r from-blue-50/80 to-indigo-50/50 border border-blue-200 space-y-3">
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+                <div>
+                  <label className="text-xs font-black uppercase tracking-wider text-[#052a51] flex items-center gap-1.5">
+                    <Store size={15} className="text-[#F26522]" />
+                    Target Vendor Assignment (Order Routing Mapping) <span className="text-red-500">*</span>
+                  </label>
+                  <p className="text-[11px] text-gray-600 mt-0.5">
+                    Select the target merchant account. Customer orders for this item will route directly to this vendor&apos;s Business App.
+                  </p>
+                </div>
+                <Link
+                  href="/admin/vendors"
+                  target="_blank"
+                  className="inline-flex items-center gap-1 text-xs font-bold text-[#F26522] hover:underline shrink-0"
+                >
+                  <Plus size={13} />
+                  <span>+ Add New Vendor</span>
+                </Link>
+              </div>
+
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 items-center">
+                <div>
+                  <select
+                    id="target-vendor-dropdown"
+                    value={activeVendorId || ""}
+                    onChange={(e) => setActiveVendorId(e.target.value)}
+                    className="w-full h-12 px-3.5 rounded-2xl border border-gray-300 bg-white text-xs font-bold text-[#052a51] focus:outline-none focus:border-[#F26522] shadow-2xs cursor-pointer"
+                  >
+                    <option value="">-- Select Target Vendor (Required) --</option>
+                    {vendorList.map((v) => (
+                      <option key={v.id} value={v.id}>
+                        {v.businessName} {v.contactPhone ? `(${v.contactPhone})` : ""} {v.category ? `• ${v.category}` : ""}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+
+                <div className="h-12 px-3.5 rounded-2xl bg-white/90 border border-blue-200 flex items-center justify-between text-xs">
+                  <span className="text-gray-500 font-medium">Mapped Vendor ID:</span>
+                  <span className="font-mono font-bold text-[#052a51] truncate max-w-[200px]">
+                    {activeVendorId ? activeVendorId : <span className="text-amber-600 font-sans">None selected</span>}
+                  </span>
+                </div>
+              </div>
+            </div>
+          ) : (
+            <div className="p-4 rounded-2xl bg-slate-50 border border-slate-200 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 rounded-xl bg-orange-100 text-[#F26522] flex items-center justify-center shrink-0">
+                  <Store size={20} />
+                </div>
+                <div>
+                  <div className="flex items-center gap-2">
+                    <span className="text-xs font-bold text-[#052a51]">Vendor Ownership Confirmed</span>
+                    <span className="px-2 py-0.5 rounded-full bg-emerald-100 text-emerald-800 text-[10px] font-black">
+                      🔒 Private Inventory Isolation
+                    </span>
+                  </div>
+                  <p className="text-xs text-gray-600 mt-0.5">
+                    Tagged to account: <span className="font-semibold text-[#052a51]">{vendorProfile?.businessName || "Your Vendor Store"}</span>{" "}
+                    {activeVendorId && <span className="font-mono text-gray-400">({activeVendorId})</span>}
+                  </p>
+                </div>
+              </div>
+              <span className="text-[11px] font-medium text-emerald-700 bg-emerald-50 px-2.5 py-1 rounded-xl border border-emerald-200 shrink-0">
+                ⚡ Orders route directly to your Business App
+              </span>
+            </div>
+          )}
+
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pt-2">
             <div>
               <h2 className="text-lg font-black text-[#052a51] flex items-center gap-2">
                 <Sliders size={20} className="text-[#F26522]" />
