@@ -56,6 +56,7 @@ import type { ProductVariant } from "@/lib/data/products";
 import { UNIT_OF_SALE_OPTIONS, getDefaultUnitOfSale } from "@/lib/units";
 import { resolveColorHex, resolveCategoryBulkImage } from "@/lib/catalog";
 import { safeSlugify } from "@/lib/validators";
+import WeightSelectorInput from "@/components/shared/WeightSelectorInput";
 
 export interface SharedProductUploadWizardProps {
   onSuccessRedirectUrl?: string;
@@ -202,6 +203,8 @@ export default function SharedProductUploadWizard({
   const [gstRate, setGstRate] = useState<number>(18);
   const [hsnCode, setHsnCode] = useState<string>("");
   const [unitOfSale, setUnitOfSale] = useState<string>("box");
+  const [isCustomUnit, setIsCustomUnit] = useState<boolean>(false);
+  const [customUnitText, setCustomUnitText] = useState<string>("");
   const [stockQuantity, setStockQuantity] = useState<string>("100");
   const [sku, setSku] = useState<string>("");
   const [barcode, setBarcode] = useState<string>("");
@@ -2578,20 +2581,56 @@ export default function SharedProductUploadWizard({
               </div>
 
               <div className="space-y-1.5">
-                <label className="text-xs font-bold text-gray-700">
-                  Unit of Sale <span className="text-red-500">*</span>
-                </label>
-                <select
-                  value={unitOfSale}
-                  onChange={(e) => setUnitOfSale(e.target.value)}
-                  className="w-full px-3.5 py-2.5 rounded-2xl border border-gray-200 text-xs font-bold text-gray-900 focus:outline-none focus:border-[#F26522] bg-white cursor-pointer"
-                >
-                  {UNIT_OF_SALE_OPTIONS.map((u) => (
-                    <option key={u.value} value={u.value}>
-                      {u.label}
-                    </option>
-                  ))}
-                </select>
+                <div className="flex items-center justify-between">
+                  <label className="text-xs font-bold text-gray-700">
+                    Unit of Sale <span className="text-red-500">*</span>
+                  </label>
+                  {isCustomUnit && (
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setIsCustomUnit(false);
+                        setUnitOfSale("box");
+                      }}
+                      className="text-[10px] text-[#F26522] hover:underline font-bold cursor-pointer"
+                    >
+                      Choose from presets
+                    </button>
+                  )}
+                </div>
+                {!isCustomUnit ? (
+                  <select
+                    value={unitOfSale}
+                    onChange={(e) => {
+                      if (e.target.value === "__custom__") {
+                        setIsCustomUnit(true);
+                        setCustomUnitText("");
+                      } else {
+                        setUnitOfSale(e.target.value);
+                      }
+                    }}
+                    className="w-full px-3.5 py-2.5 rounded-2xl border border-gray-200 text-xs font-bold text-gray-900 focus:outline-none focus:border-[#F26522] bg-white cursor-pointer"
+                  >
+                    {UNIT_OF_SALE_OPTIONS.map((u) => (
+                      <option key={u.value} value={u.value}>
+                        {u.label}
+                      </option>
+                    ))}
+                    <option value="__custom__">✏️ Custom / Type your own unit...</option>
+                  </select>
+                ) : (
+                  <input
+                    type="text"
+                    placeholder="e.g. Roll, Bundle, Ton, Drum, Pallet..."
+                    value={customUnitText}
+                    onChange={(e) => {
+                      setCustomUnitText(e.target.value);
+                      setUnitOfSale(e.target.value.trim() || "piece");
+                    }}
+                    className="w-full px-3.5 py-2.5 rounded-2xl border border-gray-200 text-xs font-bold text-gray-900 focus:outline-none focus:border-[#F26522] bg-white"
+                    autoFocus
+                  />
+                )}
               </div>
 
               <div className="space-y-1.5">
@@ -3131,15 +3170,13 @@ export default function SharedProductUploadWizard({
                             className="w-full px-2.5 py-2 rounded-xl border border-gray-200 text-xs font-medium bg-white focus:outline-none focus:border-[#F26522]"
                           />
                         </div>
-                        <div>
-                          <label className="text-[10px] font-bold text-gray-500 block mb-1">Weight (kg)</label>
-                          <input
-                            type="number"
-                            step="any"
-                            placeholder="e.g. 2.4"
+                        <div className="col-span-1">
+                          <WeightSelectorInput
+                            compact
                             value={packedWeightKg}
-                            onChange={(e) => setPackedWeightKg(e.target.value)}
-                            className="w-full px-2.5 py-2 rounded-xl border border-gray-200 text-xs font-medium bg-white focus:outline-none focus:border-[#F26522]"
+                            onChange={setPackedWeightKg}
+                            label="Weight"
+                            placeholder="e.g. 2.4"
                           />
                         </div>
                       </div>
@@ -3584,15 +3621,13 @@ export default function SharedProductUploadWizard({
                             className="w-full px-2.5 py-1.5 rounded-xl border border-gray-200 text-xs bg-white focus:outline-none focus:border-[#F26522]"
                           />
                         </div>
-                        <div>
-                          <label className="text-[10px] font-bold text-gray-500 block mb-1">Weight (kg)</label>
-                          <input
-                            type="number"
-                            step="any"
-                            placeholder="e.g. 2.4"
+                        <div className="col-span-1">
+                          <WeightSelectorInput
+                            compact
                             value={customSubcategoryWeight}
-                            onChange={(e) => setCustomSubcategoryWeight(e.target.value)}
-                            className="w-full px-2.5 py-1.5 rounded-xl border border-gray-200 text-xs bg-white focus:outline-none focus:border-[#F26522]"
+                            onChange={setCustomSubcategoryWeight}
+                            label="Weight"
+                            placeholder="e.g. 2.4"
                           />
                         </div>
                       </div>
@@ -3770,15 +3805,12 @@ export default function SharedProductUploadWizard({
                 />
               </div>
               <div className="space-y-1">
-                <label className="text-[11px] text-gray-500">Weight (kg)</label>
-                <input
-                  type="number"
-                  min="0"
-                  step="0.01"
-                  placeholder="e.g. 2.4"
+                <WeightSelectorInput
+                  compact
                   value={packedWeightKg}
-                  onChange={(e) => setPackedWeightKg(e.target.value)}
-                  className="w-full px-3 py-2 rounded-xl border border-gray-200 text-xs"
+                  onChange={setPackedWeightKg}
+                  label="Weight"
+                  placeholder="e.g. 2.4"
                 />
               </div>
             </div>
