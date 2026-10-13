@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef, useCallback } from "react";
+import { useRef } from "react";
 import Link from "next/link";
 import { ChevronLeft, ChevronRight, ArrowRight } from "lucide-react";
 import type { Category } from "@/lib/data/categories";
@@ -12,51 +12,15 @@ interface DesktopCategoryRowProps {
 
 function SafeDesktopCategoryCard({
   cat,
-  isCloned = false,
   priority = false,
 }: {
   cat: Category;
-  isCloned?: boolean;
   priority?: boolean;
 }) {
   const categoryImage = cat.image && cat.image.trim() ? cat.image : `/images/categories/cat-${cat.slug}.jpg`;
 
-  if (isCloned) {
-    return (
-      <div
-        key={`d-clone-${cat.slug}`}
-        aria-hidden="true"
-        className="shrink-0 w-[155px] sm:w-[165px] lg:w-[175px] group select-none cursor-pointer"
-      >
-        <div className="bg-white rounded-2xl p-2 border border-gray-200/90 shadow-2xs group-hover:border-[#F26522] transition-all text-center flex flex-col h-full">
-          <div className="relative w-full aspect-[4/3] rounded-xl overflow-hidden bg-gray-100 shrink-0">
-            <SafeImage
-              src={categoryImage}
-              alt={`${cat.name} Category`}
-              fill
-              className="object-cover group-hover:scale-108 transition-transform duration-300"
-              sizes="175px"
-            />
-            <div className="absolute inset-0 bg-gradient-to-t from-black/20 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
-          </div>
-
-          <div className="px-1 pt-2 pb-1 flex flex-col items-center justify-between flex-1">
-            <p className="text-xs sm:text-sm font-bold text-[#052a51] group-hover:text-[#F26522] transition-colors leading-tight line-clamp-1">
-              {cat.name}
-            </p>
-            <span className="text-[11px] text-gray-500 font-semibold mt-1 inline-flex items-center gap-0.5 group-hover:text-[#F26522] transition-colors">
-              {cat.productCount > 0 ? `${cat.productCount} Items` : "Explore"}
-              <ArrowRight size={10} className="opacity-0 group-hover:opacity-100 transition-opacity" />
-            </span>
-          </div>
-        </div>
-      </div>
-    );
-  }
-
   return (
     <Link
-      key={`d-orig-${cat.slug}`}
       href={`/shop/${cat.slug}`}
       aria-label={`Explore ${cat.name}`}
       className="shrink-0 w-[155px] sm:w-[165px] lg:w-[175px] group"
@@ -88,90 +52,26 @@ function SafeDesktopCategoryCard({
   );
 }
 
+/**
+ * DesktopCategoryRow (INP Optimized)
+ * Replaces continuous 60fps JavaScript rAF loops with GPU-accelerated native smooth scrolling.
+ * Zero CPU overhead on idle or interaction; instant response on click.
+ */
 export default function DesktopCategoryRow({ categories }: DesktopCategoryRowProps) {
   const topCategories = categories.filter((c) => !c.parentId);
-
-  const containerRef = useRef<HTMLDivElement>(null);
-  const trackRef = useRef<HTMLDivElement>(null);
-  const singleSetRef = useRef<HTMLDivElement>(null);
-
-  const posRef = useRef(0);
-  const isHoveredRef = useRef(false);
-  const isInteractingRef = useRef(false);
-  const idleTimerRef = useRef<any>(null);
-  const animFrameRef = useRef<number | null>(null);
-  const singleSetWidthRef = useRef(0);
-
-  const measureWidth = useCallback(() => {
-    if (singleSetRef.current) {
-      singleSetWidthRef.current = singleSetRef.current.scrollWidth;
-    }
-  }, []);
-
-  useEffect(() => {
-    measureWidth();
-    const timer = setTimeout(measureWidth, 200);
-    window.addEventListener("resize", measureWidth, { passive: true });
-    return () => {
-      clearTimeout(timer);
-      window.removeEventListener("resize", measureWidth);
-    };
-  }, [measureWidth]);
-
-  useEffect(() => {
-    let lastTime = performance.now();
-    const speed = 36;
-
-    const step = (now: number) => {
-      const rawDelta = (now - lastTime) / 1000;
-      const delta = Math.min(rawDelta, 0.035);
-      lastTime = now;
-
-      if (!isHoveredRef.current && !isInteractingRef.current && trackRef.current) {
-        posRef.current += speed * delta;
-
-        const setWidth = singleSetWidthRef.current || (topCategories.length * 185);
-        if (posRef.current >= setWidth) {
-          posRef.current -= setWidth;
-        }
-
-        trackRef.current.style.transform = `translate3d(-${posRef.current.toFixed(2)}px, 0, 0)`;
-      }
-
-      animFrameRef.current = requestAnimationFrame(step);
-    };
-
-    animFrameRef.current = requestAnimationFrame(step);
-
-    return () => {
-      if (animFrameRef.current) cancelAnimationFrame(animFrameRef.current);
-      if (idleTimerRef.current) clearTimeout(idleTimerRef.current);
-    };
-  }, [topCategories.length]);
-
-  const triggerUserInteraction = () => {
-    isInteractingRef.current = true;
-    if (idleTimerRef.current) clearTimeout(idleTimerRef.current);
-    idleTimerRef.current = setTimeout(() => {
-      isInteractingRef.current = false;
-    }, 2500);
-  };
+  const scrollContainerRef = useRef<HTMLDivElement>(null);
 
   const handleManualScroll = (direction: "left" | "right") => {
-    triggerUserInteraction();
-    const setWidth = singleSetWidthRef.current || (topCategories.length * 185);
+    if (!scrollContainerRef.current) return;
     const shift = 380;
-    let newPos = direction === "left" ? posRef.current - shift : posRef.current + shift;
-    while (newPos < 0) newPos += setWidth;
-    while (newPos >= setWidth) newPos -= setWidth;
-    posRef.current = newPos;
-    if (trackRef.current) {
-      trackRef.current.style.transform = `translate3d(-${newPos.toFixed(2)}px, 0, 0)`;
-    }
+    scrollContainerRef.current.scrollBy({
+      left: direction === "left" ? -shift : shift,
+      behavior: "smooth",
+    });
   };
 
   return (
-    <section id="categories" className="py-6 select-none relative group/row overflow-hidden">
+    <section id="categories" className="py-6 select-none relative group/row">
       <div className="w-full max-w-[1400px] mx-auto px-4 md:px-6 lg:px-8">
         {/* Section Header */}
         <div className="flex items-center justify-between mb-4">
@@ -201,44 +101,19 @@ export default function DesktopCategoryRow({ categories }: DesktopCategoryRowPro
           </div>
         </div>
 
-        {/* Continuous GPU Auto-Scrolling Track */}
+        {/* High-Performance Smooth Horizontal Track */}
         <div
-          ref={containerRef}
-          onMouseEnter={() => {
-            isHoveredRef.current = true;
-          }}
-          onMouseLeave={() => {
-            isHoveredRef.current = false;
-          }}
-          className="overflow-hidden py-1"
+          ref={scrollContainerRef}
+          className="overflow-x-auto scrollbar-none py-1 scroll-smooth"
         >
-          <div
-            ref={trackRef}
-            className="flex items-center will-change-transform transform-gpu"
-            style={{ transform: "translate3d(0, 0, 0)" }}
-          >
-            {/* Set 1: Measured set */}
-            <div ref={singleSetRef} className="flex items-center gap-3.5 pr-3.5 shrink-0">
-              {topCategories.map((cat, idx) => (
-                <SafeDesktopCategoryCard
-                  key={`d1-${cat.slug}`}
-                  cat={cat}
-                  isCloned={false}
-                  priority={idx < 7}
-                />
-              ))}
-            </div>
-
-            {/* Set 2: Seamless duplicated set for infinite wrap */}
-            <div className="flex items-center gap-3.5 pr-3.5 shrink-0" aria-hidden="true">
-              {topCategories.map((cat) => (
-                <SafeDesktopCategoryCard
-                  key={`d2-${cat.slug}`}
-                  cat={cat}
-                  isCloned={true}
-                />
-              ))}
-            </div>
+          <div className="flex items-center gap-3.5 pr-3.5 w-max">
+            {topCategories.map((cat, idx) => (
+              <SafeDesktopCategoryCard
+                key={`cat-${cat.slug}`}
+                cat={cat}
+                priority={idx < 7}
+              />
+            ))}
           </div>
         </div>
       </div>

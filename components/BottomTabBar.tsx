@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, useMemo } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { Home, Grid3x3, ShoppingBag, User } from "lucide-react";
@@ -11,7 +11,8 @@ import { cn } from "@/lib/utils";
 
 export default function BottomTabBar() {
   const pathname = usePathname();
-  const cartCount = useCartStore((state) => state.getTotalItems());
+  const cartItems = useCartStore((state) => state.items);
+  const cartCount = useMemo(() => cartItems.reduce((acc, item) => acc + (item.quantity || 0), 0), [cartItems]);
   const [mounted, setMounted] = useState(false);
 
   const user = useAuthStore((state) => state.user);

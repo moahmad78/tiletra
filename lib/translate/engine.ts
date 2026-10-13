@@ -7,26 +7,32 @@ const STORAGE_KEY = "site_lang";
 const GOOGTRANS_COOKIE = "googtrans";
 
 // ── 1. Global React DOM Crash Prevention Guard (FR-6) ──
-// Google Translate wraps text nodes in <font> tags. When React attempts to
-// remove or insert nodes during re-render, it throws:
-// "NotFoundError: Failed to execute 'removeChild' / 'insertBefore' on 'Node'".
-// This safety guard intercepts and prevents the crash.
+// High-performance fallback: preserves V8 fast-path for normal DOM mutations
+// and only intercepts if Google Translate wrapped text in <font> causing NotFoundError.
 if (typeof window !== "undefined" && typeof Node === "function" && Node.prototype && !(Node.prototype as any).__intrihub_dom_safe) {
   (Node.prototype as any).__intrihub_dom_safe = true;
   const originalRemoveChild = Node.prototype.removeChild;
   Node.prototype.removeChild = function <T extends Node>(child: T): T {
-    if (child && child.parentNode && child.parentNode !== this) {
-      return originalRemoveChild.call(child.parentNode, child) as T;
+    try {
+      return originalRemoveChild.call(this, child) as T;
+    } catch (err) {
+      if (child && child.parentNode && child.parentNode !== this) {
+        return originalRemoveChild.call(child.parentNode, child) as T;
+      }
+      throw err;
     }
-    return originalRemoveChild.call(this, child) as T;
   };
 
   const originalInsertBefore = Node.prototype.insertBefore;
   Node.prototype.insertBefore = function <T extends Node>(newNode: T, referenceNode: Node | null): T {
-    if (referenceNode && referenceNode.parentNode && referenceNode.parentNode !== this) {
-      return originalInsertBefore.call(referenceNode.parentNode, newNode, referenceNode) as T;
+    try {
+      return originalInsertBefore.call(this, newNode, referenceNode) as T;
+    } catch (err) {
+      if (referenceNode && referenceNode.parentNode && referenceNode.parentNode !== this) {
+        return originalInsertBefore.call(referenceNode.parentNode, newNode, referenceNode) as T;
+      }
+      throw err;
     }
-    return originalInsertBefore.call(this, newNode, referenceNode) as T;
   };
 }
 

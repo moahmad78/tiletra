@@ -189,10 +189,10 @@ export default async function RootLayout({
   return (
     <html
       lang={currentLang}
-      className={`${jakarta.variable} ${devanagari.variable} h-full antialiased scroll-smooth`}
+      className={`${jakarta.variable} ${devanagari.variable} h-full antialiased`}
     >
       <head>
-        {/* DOM Mutation Safety Patch: Prevents React 19 hydration/reconciliation crashes from Google Translate wrapping nodes in <font> */}
+        {/* DOM Mutation Safety Patch: High-performance try/catch fallback preventing React 19 reconciliation crashes if Google Translate wraps nodes in <font> without slowing down native DOM fast-paths */}
         <script
           id="dom-mutation-safety-patch"
           dangerouslySetInnerHTML={{
@@ -202,27 +202,35 @@ export default async function RootLayout({
                   Node.prototype.__intrihub_dom_safe = true;
                   var origRemoveChild = Node.prototype.removeChild;
                   Node.prototype.removeChild = function(child) {
-                    if (child && child.parentNode && child.parentNode !== this) {
-                      return origRemoveChild.call(child.parentNode, child);
+                    try {
+                      return origRemoveChild.call(this, child);
+                    } catch (err) {
+                      if (child && child.parentNode && child.parentNode !== this) {
+                        return origRemoveChild.call(child.parentNode, child);
+                      }
+                      throw err;
                     }
-                    return origRemoveChild.apply(this, arguments);
                   };
                   var origInsertBefore = Node.prototype.insertBefore;
                   Node.prototype.insertBefore = function(newNode, refNode) {
-                    if (refNode && refNode.parentNode && refNode.parentNode !== this) {
-                      return origInsertBefore.call(refNode.parentNode, newNode, refNode);
+                    try {
+                      return origInsertBefore.call(this, newNode, refNode);
+                    } catch (err) {
+                      if (refNode && refNode.parentNode && refNode.parentNode !== this) {
+                        return origInsertBefore.call(refNode.parentNode, newNode, refNode);
+                      }
+                      throw err;
                     }
-                    return origInsertBefore.apply(this, arguments);
                   };
                 }
               })();
             `,
           }}
         />
-        {/* Google Tag Manager */}
+        {/* Google Tag Manager - Loaded via lazyOnload to eliminate main-thread INP blocking during interaction */}
         <Script
           id="google-tag-manager"
-          strategy="afterInteractive"
+          strategy="lazyOnload"
           dangerouslySetInnerHTML={{
             __html: `(function(w,d,s,l,i){w[l]=w[l]||[];w[l].push({'gtm.start':
 new Date().getTime(),event:'gtm.js'});var f=d.getElementsByTagName(s)[0],
@@ -240,7 +248,7 @@ j=d.createElement(s),dl=l!='dataLayer'?'&l='+l:'';j.async=true;j.src=
         <meta name="designer" content="Sahil Sheikh (@sahil_sheikh78)" />
         <Script
           id="developer-credit"
-          strategy="afterInteractive"
+          strategy="lazyOnload"
           dangerouslySetInnerHTML={{
             __html: `console.log("%c🚀 Intrihub — Every Material. Every Space.%c\\n✨ Founded & Developed by Sahil Sheikh (@sahil_sheikh78)\\n📸 Instagram: https://instagram.com/sahil_sheikh78\\n💼 Founder & CEO | Intrihub Supply Network", "background: #052a51; color: #F26522; font-size: 14px; font-weight: 900; padding: 6px 12px; border-radius: 6px;", "color: #052a51; font-size: 12px; font-weight: 700; line-height: 1.6;");`,
           }}
@@ -261,14 +269,14 @@ j=d.createElement(s),dl=l!='dataLayer'?'&l='+l:'';j.async=true;j.src=
           fetchpriority="high"
         />
 
-        {/* Google Analytics 4 (gtag.js) */}
+        {/* Google Analytics 4 (gtag.js) - Defer to lazyOnload for zero interaction delay */}
         <Script
-          strategy="afterInteractive"
+          strategy="lazyOnload"
           src={`https://www.googletagmanager.com/gtag/js?id=${gaMeasurementId}`}
         />
         <Script
           id="google-analytics"
-          strategy="afterInteractive"
+          strategy="lazyOnload"
           dangerouslySetInnerHTML={{
             __html: `
               window.dataLayer = window.dataLayer || [];

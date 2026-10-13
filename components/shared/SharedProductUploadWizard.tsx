@@ -290,7 +290,7 @@ export default function SharedProductUploadWizard({
   const [vendorDeclaration, setVendorDeclaration] = useState<boolean>(true);
 
   // ── PINNED PREFERENCES (PRD Repeat Upload Accelerators & BUG-01 Fix) ──
-  const VENDOR_UPLOAD_PREF_KEY = "intrihub_vendor_upload_pref";
+  const VENDOR_PINNED_PREF_KEY = "intrihub_vendor_pinned_pref";
   const PINNED_CAT_KEY = `intrihub_pinned_category_${activeVendorId || "common"}`;
   const PINNED_LOGISTICS_KEY = `intrihub_pinned_logistics_${activeVendorId || "common"}`;
   const PINNED_RETURNS_KEY = `intrihub_pinned_returns_${activeVendorId || "common"}`;
@@ -303,13 +303,17 @@ export default function SharedProductUploadWizard({
 
   useEffect(() => {
     try {
-      const savedCat = localStorage.getItem(VENDOR_UPLOAD_PREF_KEY) || localStorage.getItem(PINNED_CAT_KEY);
+      const savedCat =
+        localStorage.getItem(VENDOR_PINNED_PREF_KEY) ||
+        localStorage.getItem("intrihub_vendor_upload_pref") ||
+        localStorage.getItem(PINNED_CAT_KEY);
       if (savedCat) {
         const parsed = JSON.parse(savedCat);
         if (parsed.categoryId) {
           setSelectedCategoryId((prev) => prev || parsed.categoryId);
-          if (parsed.subcategoryId) {
-            setSelectedSubcategoryId((prev) => prev || parsed.subcategoryId);
+          const subId = parsed.subCategoryId || parsed.subcategoryId;
+          if (subId) {
+            setSelectedSubcategoryId((prev) => prev || subId);
             setIsSubcategoryRevealed(true);
           }
           setIsCategoryPinned(true);
@@ -353,20 +357,23 @@ export default function SharedProductUploadWizard({
       return;
     }
     if (isCategoryPinned) {
-      localStorage.removeItem(VENDOR_UPLOAD_PREF_KEY);
+      localStorage.removeItem(VENDOR_PINNED_PREF_KEY);
+      localStorage.removeItem("intrihub_vendor_upload_pref");
       localStorage.removeItem(PINNED_CAT_KEY);
       setIsCategoryPinned(false);
       toast.info("Category unpinned from defaults");
     } else {
       const prefPayload = {
         categoryId: selectedCategoryId,
+        subCategoryId: selectedSubcategoryId || "",
+        subcategoryId: selectedSubcategoryId || "",
         categorySlug: selectedCategory?.slug || "",
         categoryName: selectedCategory?.name || "",
-        subcategoryId: selectedSubcategoryId || "",
         vendorId: activeVendorId || "",
         pinnedAt: new Date().toISOString(),
       };
-      localStorage.setItem(VENDOR_UPLOAD_PREF_KEY, JSON.stringify(prefPayload));
+      localStorage.setItem(VENDOR_PINNED_PREF_KEY, JSON.stringify(prefPayload));
+      localStorage.setItem("intrihub_vendor_upload_pref", JSON.stringify(prefPayload));
       localStorage.setItem(PINNED_CAT_KEY, JSON.stringify(prefPayload));
       setIsCategoryPinned(true);
       toast.success("📌 Pinned as Default Category for fast repeat uploads!");
@@ -651,19 +658,21 @@ export default function SharedProductUploadWizard({
 
       try {
         const rawPref =
+          localStorage.getItem("intrihub_vendor_pinned_pref") ||
           localStorage.getItem("intrihub_vendor_upload_pref") ||
           localStorage.getItem(`intrihub_pinned_category_${activeVendorId || "common"}`);
         if (rawPref) {
           const pref = JSON.parse(rawPref);
+          const subId = pref.subCategoryId || pref.subcategoryId || "";
           const matched = typedCats.find(
             (c) => c.id === pref.categoryId || c.slug === pref.categorySlug || c.slug === pref.categoryId
           );
           if (matched) {
             setSelectedCategoryId(matched.id);
             setIsCategoryPinned(true);
-            if (pref.subcategoryId) {
+            if (subId) {
               const matchedSub = matched.children?.find(
-                (ch: any) => ch.id === pref.subcategoryId || ch.slug === pref.subcategoryId
+                (ch: any) => ch.id === subId || ch.slug === subId
               );
               if (matchedSub) {
                 setSelectedSubcategoryId(matchedSub.id);
@@ -1771,14 +1780,25 @@ export default function SharedProductUploadWizard({
                   </p>
                 </div>
               </div>
-              <button
-                type="button"
-                onClick={handleTogglePinCategory}
-                className="self-start sm:self-auto px-2.5 py-1 rounded-lg bg-white border border-amber-300 text-amber-800 text-[11px] font-bold hover:bg-amber-100 hover:text-rose-600 transition-colors cursor-pointer shrink-0"
-                title="Unpin this category default preference"
-              >
-                Unpin Default
-              </button>
+              <div className="flex items-center gap-2 self-start sm:self-auto shrink-0">
+                <button
+                  type="button"
+                  onClick={() => setCurrentStep(2)}
+                  className="px-3 py-1.5 rounded-xl bg-[#052a51] text-white text-[11px] font-bold hover:bg-[#093d75] transition-all cursor-pointer flex items-center gap-1 shadow-xs active:scale-95"
+                  title="Skip Step 1 and proceed directly to Product Title & Rate details"
+                >
+                  <span>Skip to Step 2</span>
+                  <ArrowRight size={13} />
+                </button>
+                <button
+                  type="button"
+                  onClick={handleTogglePinCategory}
+                  className="px-2.5 py-1.5 rounded-xl bg-white border border-amber-300 text-amber-800 text-[11px] font-bold hover:bg-amber-100 hover:text-rose-600 transition-colors cursor-pointer active:scale-95"
+                  title="Unpin / Reset Default category preference"
+                >
+                  Unpin / Reset Default
+                </button>
+              </div>
             </div>
           )}
 
@@ -4297,12 +4317,12 @@ export default function SharedProductUploadWizard({
       </div>
 
       {/* 📱 Sticky Mobile Bottom Navigation Bar (PRD Section 2 & 5 - BUG-02 Fix) */}
-      <div className="fixed bottom-0 left-0 right-0 z-50 bg-white/95 backdrop-blur-md border-t border-gray-200 px-3 py-2 shadow-2xl flex items-center justify-between gap-2 lg:hidden">
+      <div className="fixed bottom-0 left-0 right-0 z-50 bg-white/95 backdrop-blur-md border-t border-gray-200 px-3 py-2 pb-[max(0.75rem,env(safe-area-inset-bottom))] shadow-2xl flex items-center justify-between gap-2 lg:hidden">
         <button
           type="button"
           onClick={handlePrevStep}
           disabled={currentStep === 1}
-          className="h-12 min-h-[48px] px-3.5 rounded-xl border border-gray-300 text-gray-700 bg-white text-xs font-bold flex items-center justify-center gap-1 cursor-pointer disabled:opacity-30 disabled:cursor-not-allowed active:scale-95 transition-all shrink-0"
+          className="h-12 min-h-[48px] px-3.5 rounded-xl border border-gray-300 text-gray-700 bg-white text-xs font-bold flex items-center justify-center gap-1 cursor-pointer disabled:opacity-30 disabled:cursor-not-allowed active:scale-95 transition-transform shrink-0"
         >
           <ArrowLeft size={16} />
           <span className="hidden sm:inline">Prev</span>
@@ -4311,7 +4331,7 @@ export default function SharedProductUploadWizard({
         <button
           type="button"
           onClick={handleSaveDraftManual}
-          className="h-12 min-h-[48px] px-3.5 rounded-xl border border-gray-300 bg-gray-50 text-gray-700 text-xs font-bold flex items-center justify-center gap-1.5 cursor-pointer active:scale-95 transition-all shrink-0"
+          className="h-12 min-h-[48px] px-3.5 rounded-xl border border-gray-300 bg-gray-50 text-gray-700 text-xs font-bold flex items-center justify-center gap-1.5 cursor-pointer active:scale-95 transition-transform shrink-0"
           title="Save Draft to Device"
         >
           <Save size={15} className="text-gray-500" />
@@ -4321,7 +4341,7 @@ export default function SharedProductUploadWizard({
         <button
           type="button"
           onClick={() => setIsPreviewOpen(true)}
-          className="h-12 min-h-[48px] px-3.5 rounded-xl border border-orange-200 bg-orange-50 text-[#F26522] text-xs font-black flex items-center justify-center gap-1.5 cursor-pointer active:scale-95 transition-all shrink-0"
+          className="h-12 min-h-[48px] px-3.5 rounded-xl border border-orange-200 bg-orange-50 text-[#F26522] text-xs font-black flex items-center justify-center gap-1.5 cursor-pointer active:scale-95 transition-transform shrink-0"
           title="Open Storefront Preview"
         >
           <Eye size={16} />
@@ -4332,7 +4352,7 @@ export default function SharedProductUploadWizard({
           <button
             type="button"
             onClick={handleNextStep}
-            className="h-12 min-h-[48px] flex-1 px-4 rounded-xl bg-[#052a51] text-white text-xs font-bold flex items-center justify-center gap-1.5 shadow-md active:scale-95 transition-all cursor-pointer"
+            className="h-12 min-h-[48px] flex-1 px-4 rounded-xl bg-[#052a51] text-white text-xs font-bold flex items-center justify-center gap-1.5 shadow-md active:scale-95 transition-transform cursor-pointer"
           >
             <span>Next ({currentStep}/7)</span>
             <ArrowRight size={16} />
@@ -4342,7 +4362,7 @@ export default function SharedProductUploadWizard({
             type="submit"
             onClick={() => setSubmitAction("publish")}
             disabled={loading || isImageUploading}
-            className="h-12 min-h-[48px] flex-1 px-4 rounded-xl bg-emerald-600 text-white text-xs font-black flex items-center justify-center gap-1.5 shadow-md active:scale-95 transition-all cursor-pointer disabled:opacity-50"
+            className="h-12 min-h-[48px] flex-1 px-4 rounded-xl bg-emerald-600 text-white text-xs font-black flex items-center justify-center gap-1.5 shadow-md active:scale-95 transition-transform cursor-pointer disabled:opacity-50"
           >
             {loading ? <Loader2 size={16} className="animate-spin" /> : <Zap size={16} className="fill-white" />}
             <span>Publish Live 🚀</span>
