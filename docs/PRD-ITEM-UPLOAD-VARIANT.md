@@ -3,38 +3,39 @@
 ### 📌 Document Metadata
 * **Product Name:** IntriHub Vendor & Admin App — Item Upload & Variant Module
 * **Slogan Alignment:** "Every Material. Every Space."
-* **Core Goal:** Mobile App, Tablet, aur Desktop par Vendors, CPO, aur Admins ke liye hardware, interior, plumbing, electrical, aur construction materials ko super-fast live/draft karne ka responsive & financially transparent workflow.
+* **Target Platforms:** Mobile App (React Native), Mobile Web, and Desktop Admin Panel (Next.js)
+* **Core Goal:** Hardware, interior, plumbing, electrical, aur construction materials ko super-fast, responsive, aur financially transparent workflow ke saath list, draft, aur live karna.
 
 ---
 
-## 1. Executive Summary & Objective
-IntriHub e-commerce marketplace par complex material attributes (sizes, thickness, colors, volume units, bulk pricing) hote hain. Is module ka target vendor onboarding time ko fast karna, dynamic sub-categories & variants handle karna, **3-Tier Financial Pricing Engine (MRP, Selling Price, Cost Price)** with **Real-Time Admin Profit Margin % Calculation**, mobile responsiveness, 📌 Pin Default Preferences, Auto Slug Generation, aur Real-Time Stock Detection & Alerts provide karna hai.
+## 1. Executive Summary & Core Business Logic
+IntriHub marketplace par complex construction materials ke alag-alag dimensions, colors, units, aur bulk rates hote hain. Is module ka target vendor onboarding time reduce karna, dynamic master lookup expansion (`+ Add New`) allow karna, **3-Tier Financial Pricing (MRP, Sale Price, Purchase Cost)** with **Real-Time Admin Margin % Calculation**, **Promotional Badges/Tags**, **Auto-Slug Generation**, **Real-Time Stock Detection & Low-Stock Alerts**, aur **📌 Pin Default Preferences** provide karna hai.
 
 ---
 
-## 2. Financial Pricing Engine & Privacy Access Control
+## 2. Dynamic Roles & Financial Privacy Matrix
 
-| User Role | Visible Pricing Fields | Auto-Calculated Metrics | Privacy Rule |
+| User Role | Visible Pricing & Fields | Auto-Calculated Metrics | Privacy & Security Rules |
 | :--- | :--- | :--- | :--- |
-| **Vendor / Merchant** | 1. MRP (₹)<br>2. Selling Price (₹)<br>3. Cost Price (₹) | Customer Discount % `((MRP - SP)/MRP * 100)` | **Margin % HIDDEN.** Vendor cannot see platform net margin/profit. |
-| **Admin / CPO Panel** | 1. MRP (₹)<br>2. Selling Price (₹)<br>3. Cost Price (₹) | ⚡ **Net Profit (₹):** `SP - CP`<br>⚡ **Profit Margin (%):** `((SP - CP)/SP) * 100`<br>⚡ **Customer Discount (%):** `((MRP - SP)/MRP * 100)` | **FULL ACCESS.** Real-time live profit percentage & analytics visible on form submission. |
+| **Vendor / Merchant** | • MRP (₹)<br>• Selling / Offer Price (₹)<br>• Purchase / Cost Rate (₹) | Customer Discount % `((MRP - SP)/MRP * 100)` | 🔒 **Profit Margin % is HIDDEN.** Vendor cannot view platform net margin/profit analytics. |
+| **Admin / CPO Panel** | • MRP (₹)<br>• Selling / Offer Price (₹)<br>• Purchase / Cost Rate (₹) | ⚡ **Net Profit (₹):** `SP - CP`<br>⚡ **Profit Margin (%):** `((SP - CP)/SP) * 100`<br>⚡ **Customer Discount (%):** `((MRP - SP)/MRP * 100)` | 🔓 **FULL ACCESS.** Live profit margin & discount analytics update in real-time as rates are typed. |
 
 ---
 
-## 3. End-to-End Functional Architecture & Workflow
+## 3. End-to-End Functional Architecture & Mobile Workflow
 
 ```text
 ┌────────────────────────────────────────────────────────────────────────┐
 │                        STEP 1: CATEGORY SELECTION                      │
 │ [ Primary Category Dropdown  ▼ ]  [+ Add New]                           │
 │ [ Sub-Category Dropdown      ▼ ]  [+ Add New]                           │
-│ [ 📌 Set Selection as Default Toggle ]                                │
+│ [ 📌 Set Category Selection as Default Toggle ]                         │
 └───────────────────────────────────┬────────────────────────────────────┘
                                     │
                                     ▼
 ┌────────────────────────────────────────────────────────────────────────┐
 │                     STEP 2: PARENT ITEM DETAILS                        │
-│ Product Title ──► ⚡ Auto Slug Engine (Backend Auto-Gen)               │
+│ Product Title ──► ⚡ Auto Slug Engine (Backend/Frontend Auto-Gen)     │
 │ [ Brand Name Dropdown        ▼ ]  [+ Add New]                           │
 │ Product Description (Expandable Text Area)                             │
 └───────────────────────────────────┬────────────────────────────────────┘
@@ -46,13 +47,16 @@ IntriHub e-commerce marketplace par complex material attributes (sizes, thicknes
 │ ┌────────────────────────────────────────────────────────────────────┐ │
 │ │ Mobile Bottom-Sheet Modal:                                         │ │
 │ │ • Size / Dimension Dropdown      │ Color / Shade Dropdown          │ │
-│ │ • Selling Unit Dropdown         │ 🚨 Low Stock Threshold Limit    │ │
-│ │ 💰 PRICING MATRIX:                                                 │ │
+│ │ • Selling Unit Dropdown         │ Smart Calculator Coverage       │ │
+│ │                                                                    │ │
+│ │ 💰 3-TIER PRICING MATRIX:                                          │ │
 │ │   [ MRP (₹) ]  [ Selling Price (₹) ]  [ Cost / Purchase Rate (₹) ] │ │
 │ │                                                                    │ │
-│ │ 🟢 ADMIN/CPO REAL-TIME LIVE INDICATOR (Hidden for Vendor):          │ │
-│ │   ⚡ Profit: ₹150  |  📊 Margin: 27.2%  | 🏷️ Customer Disc: 20%     │ │
-│ │ • Total Available Stock Count   │ Smart Calculator Coverage       │ │
+│ │ 🟢 ADMIN/CPO REAL-TIME INDICATOR (Hidden for Vendor):              │ │
+│ │   ⚡ Profit: ₹150  |  📊 Margin: 27.2%  | 🏷️ Customer Disc: 31%     │ │
+│ │                                                                    │ │
+│ │ 🚨 STOCK & ALERT SETTINGS:                                         │ │
+│ │   [ Total Stock Count: 150 ]   [ Low Stock Alert Threshold: 10 ]   │ │
 │ │ • Touch Multi-Image Picker Upload                                  │ │
 │ └────────────────────────────────────────────────────────────────────┘ │
 │ 👉 [ Save Variant ]  │  👉 [ 📄 Duplicate Variant Card ]              │
@@ -60,15 +64,24 @@ IntriHub e-commerce marketplace par complex material attributes (sizes, thicknes
                                     │
                                     ▼
 ┌────────────────────────────────────────────────────────────────────────┐
-│                  STEP 4: LOGISTICS & DELIVERY SETTINGS                 │
-│ (•) ⚡ Instant Delivery (60-90 Mins) [DEFAULT]                          │
-│ ( ) 🚛 Custom Heavy / Bulky Dispatch (ETA Window)                       │
-│ 📌 [ Pin Delivery Option as Default ]                                  │
+│                  STEP 4: BADGES & PROMOTIONAL LABELS                   │
+│ ⚡ Auto Discount Badge: [ ON / OFF ] (Calculates "% OFF" dynamically)  │
+│ Select Tags: [ 🔥 Best Seller ] [ 🏬 Factory Price ] [ ⚡ Quick Dispatch]│
+│ Custom Text Badge: [ Enter Custom Text ] Color: (•) 🔴 Red ( ) 🟢 Green│
+│ 📌 [ Pin Badge Selection as Default ]                                  │
 └───────────────────────────────────┬────────────────────────────────────┘
                                     │
                                     ▼
 ┌────────────────────────────────────────────────────────────────────────┐
-│                   STEP 5: RETURN & REPLACEMENT POLICY                  │
+│                  STEP 5: LOGISTICS & DELIVERY SETTINGS                 │
+│ (•) ⚡ Instant Delivery (60-90 Mins) [DEFAULT]                          │
+│ ( ) 🚛 Custom Heavy / Bulky Dispatch (Estimated ETA Window)             │
+│ 📌 [ Pin Selected Delivery Option as Default ]                         │
+└───────────────────────────────────┬────────────────────────────────────┘
+                                    │
+                                    ▼
+┌────────────────────────────────────────────────────────────────────────┐
+│                   STEP 6: RETURN & REPLACEMENT POLICY                  │
 │ Return Toggle: [ ON / OFF ]                                            │
 │ If ON ──► Days, Refund/Replacement Type, Condition Notes              │
 │ 📌 [ Pin Return Policy as Default ]                                    │
@@ -76,8 +89,8 @@ IntriHub e-commerce marketplace par complex material attributes (sizes, thicknes
                                     │
                                     ▼
 ┌────────────────────────────────────────────────────────────────────────┐
-│                     STEP 6: STICKY MOBILE BOTTOM BAR                   │
-│ [ 💾 Draft ]             [ 👁️ Preview ]          [ 🚀 Publish Live ]   │
+│                     STEP 7: STICKY MOBILE BOTTOM BAR                   │
+│ [ 💾 Save Draft ]         [ 👁️ Preview ]          [ 🚀 Publish Live ]   │
 └────────────────────────────────────────────────────────────────────────┘
 ```
 
@@ -123,11 +136,11 @@ enum AttributeType {
   UNIT
 }
 
-// 2. PARENT PRODUCT & VARIANT TABLES (Includes 3-Tier Financial Pricing & Auto Slug)
+// 2. PARENT PRODUCT & VARIANT TABLES (Includes Pricing, Badges, Auto-Slug & Stock)
 model Product {
   id               String           @id @default(uuid())
   title            String
-  slug             String           @unique // ⚡ Auto-generated from title
+  slug             String           @unique // ⚡ Auto-generated from Title
   description      String?
   categoryId       String
   subCategoryId    String
@@ -154,14 +167,22 @@ model ProductVariant {
   
   // 💰 3-TIER PRICING FIELDS
   mrp               Float       // Maximum Retail Price
-  sellingPrice      Float       // Selling/Discounted Rate for Customer
-  costPrice         Float       // Purchase/Landing Cost (For Margin Calculation)
+  sellingPrice      Float       // Sale Price for Customer
+  costPrice         Float       // Purchase/Landing Cost for Vendor
   
+  // 🚨 STOCK MANAGEMENT
   stockQuantity     Int         @default(0)
-  lowStockThreshold Int         @default(5)  // 🚨 Triggers Alert when stock <= threshold
+  lowStockThreshold Int         @default(5)  // Triggers alert when stock <= threshold
   stockStatus       StockStatus @default(IN_STOCK)
   coveragePerUnit   Float?      // For Smart Calculator (e.g., 1 box = 15.5 sq ft)
-  images            String[]    // Array of image URLs
+  
+  // 🏷️ BADGES & LABELS
+  customBadgeText   String?     // e.g., "Buy 10 Get 1 Free"
+  badgeColor        String?     // e.g., "RED", "GOLD", "GREEN"
+  tags              String[]    // Array e.g. ["BEST_SELLER", "FACTORY_PRICE"]
+  showAutoDiscount  Boolean     @default(true)
+  
+  images            String[]    // Array of Image URLs
   createdAt         DateTime    @default(now())
   updatedAt         DateTime    @updatedAt
 }
@@ -174,6 +195,7 @@ model UserPreference {
   defaultBrandId    String?
   defaultDelivery   DeliveryType @default(INSTANT)
   defaultReturnDays Int?
+  defaultTags       String[]
 }
 
 enum StockStatus {
@@ -196,26 +218,53 @@ enum ProductStatus {
 
 ---
 
-## 5. Live Profit Calculation Formulae (For Admin/CPO Dashboard)
+## 5. System Logic & Formulas
 
+### A. Auto-Slug Engine Logic (Node.js)
 ```typescript
-// Backend / Admin UI Logic
-function calculateMetrics(mrp: number, sellingPrice: number, costPrice: number) {
+function generateSlug(title: string): string {
+  return title
+    .toLowerCase()
+    .trim()
+    .replace(/[^\w\s-]/g, '') // Remove special characters
+    .replace(/[\s_-]+/g, '-') // Replace spaces with hyphen
+    .replace(/^-+|-+$/g, ''); // Trim hyphens
+}
+// Collision Example: "finolex-wire" -> "finolex-wire-1"
+```
+
+### B. Admin Profit & Discount Margin Formulas
+```typescript
+function calculateAdminMetrics(mrp: number, sellingPrice: number, costPrice: number) {
   const netProfit = sellingPrice - costPrice;
   const profitMarginPercentage = sellingPrice > 0 ? ((netProfit / sellingPrice) * 100).toFixed(2) : 0;
   const customerDiscountPercentage = mrp > 0 ? (((mrp - sellingPrice) / mrp) * 100).toFixed(2) : 0;
 
-  return {
-    netProfit,                     // e.g. ₹150
-    profitMarginPercentage,        // e.g. 27.27%
-    customerDiscountPercentage     // e.g. 20.00%
-  };
+  return { netProfit, profitMarginPercentage, customerDiscountPercentage };
+}
+```
+
+### C. Low Stock Alert Logic
+```typescript
+if (stockQuantity <= lowStockThreshold && stockQuantity > 0) {
+  stockStatus = "LOW_STOCK";
+  sendPushNotification(vendorId, `Alert: ${variantName} stock is low (${stockQuantity} left)`);
+} else if (stockQuantity === 0) {
+  stockStatus = "OUT_OF_STOCK";
+  disableAddToCartOnUserApp(variantId);
 }
 ```
 
 ---
 
-## 6. Non-Functional & UI Requirements
-1. **Responsive Input Focus:** 3 Pricing inputs (MRP, Selling Price, Cost Price) mobile screen par numerical keypad (`inputMode="decimal"`) ke saath side-by-side (3 columns) ya clean 1-column layout mein render hote hain.
-2. **Privacy Guarding:** Vendor Token API response se `costPrice` aur `profitMargin` fields frontend Redux/State ya vendor-facing DOM mein kabhi leak nahi hone chahiye.
-3. **Storage & Auto-Slug:** WebP auto-compression and unique slug collision checks (`-1`, `-2`) backend level par handle kiye gaye hain.
+## 6. CSS / Responsive Touch Target Rules
+* **Mobile Responsive Container:** `w-full max-w-2xl mx-auto px-4 py-6`
+* **Touch Target Standard:** All Dropdowns, Inputs, and Badges must have a minimum height of `h-12` (48px) for thumb-friendly usage.
+* **Sticky Bottom Navigation:** `fixed bottom-0 left-0 right-0 z-50 bg-white border-t p-3 shadow-2xl flex gap-2`
+
+---
+
+## 7. Release Milestones & Execution Plan
+* **Phase 1 (Core Engine & Responsive UI):** Mobile & Desktop form layout, Category Selection, Auto Slug generation, Draft/Publish Live status controls.
+* **Phase 2 (Pricing, Variant & Badge Matrix):** 3-Tier Pricing, Admin Real-Time Margin calculation, Mobile Bottom-Sheet for Variants, Badges & Custom Text Tags, Dynamic + Add New master tables.
+* **Phase 3 (Preferences, Logistics & Stock Engine):** 📌 Pin Default preference persistence, Custom Return Drawer, Heavy vs Instant Delivery toggle, and Automated Low-Stock Alert Notifications.

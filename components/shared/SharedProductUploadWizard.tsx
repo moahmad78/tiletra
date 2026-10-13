@@ -41,6 +41,7 @@ import {
   X,
   History,
   Pin,
+  Tag,
 } from "lucide-react";
 import { toast } from "sonner";
 import ImageUploadManager from "@/components/admin/ImageUploadManager";
@@ -229,6 +230,12 @@ export default function SharedProductUploadWizard({
   const [packedWeightKg, setPackedWeightKg] = useState<string>("");
   const [inTheBox, setInTheBox] = useState<string>("");
 
+  // ── STEP 4: Promotional Badges & Marketing Labels (PRD) ──
+  const [showAutoDiscount, setShowAutoDiscount] = useState<boolean>(true);
+  const [selectedTags, setSelectedTags] = useState<string[]>(["BEST_SELLER"]);
+  const [customBadgeText, setCustomBadgeText] = useState<string>("");
+  const [badgeColor, setBadgeColor] = useState<string>("RED");
+
   // ── STEP 5: Variants Matrix (Decides Single vs Multi) ──
   const [isMultiVariety, setIsMultiVariety] = useState<boolean>(initialListingType === "multi");
   const [variants, setVariants] = useState<ProductVariant[]>([]);
@@ -267,10 +274,12 @@ export default function SharedProductUploadWizard({
   const PINNED_CAT_KEY = `intrihub_pinned_category_${activeVendorId || "common"}`;
   const PINNED_LOGISTICS_KEY = `intrihub_pinned_logistics_${activeVendorId || "common"}`;
   const PINNED_RETURNS_KEY = `intrihub_pinned_returns_${activeVendorId || "common"}`;
+  const PINNED_BADGES_KEY = `intrihub_pinned_badges_${activeVendorId || "common"}`;
 
   const [isCategoryPinned, setIsCategoryPinned] = useState<boolean>(false);
   const [isLogisticsPinned, setIsLogisticsPinned] = useState<boolean>(false);
   const [isReturnPinned, setIsReturnPinned] = useState<boolean>(false);
+  const [isBadgePinned, setIsBadgePinned] = useState<boolean>(false);
 
   useEffect(() => {
     try {
@@ -305,8 +314,18 @@ export default function SharedProductUploadWizard({
         if (parsed.returnConditions) setReturnConditions(parsed.returnConditions);
         setIsReturnPinned(true);
       }
+
+      const savedBadges = localStorage.getItem(PINNED_BADGES_KEY);
+      if (savedBadges) {
+        const parsed = JSON.parse(savedBadges);
+        if (parsed.showAutoDiscount !== undefined) setShowAutoDiscount(parsed.showAutoDiscount);
+        if (Array.isArray(parsed.selectedTags)) setSelectedTags(parsed.selectedTags);
+        if (parsed.customBadgeText !== undefined) setCustomBadgeText(parsed.customBadgeText);
+        if (parsed.badgeColor) setBadgeColor(parsed.badgeColor);
+        setIsBadgePinned(true);
+      }
     } catch {}
-  }, [PINNED_CAT_KEY, PINNED_LOGISTICS_KEY, PINNED_RETURNS_KEY]);
+  }, [PINNED_CAT_KEY, PINNED_LOGISTICS_KEY, PINNED_RETURNS_KEY, PINNED_BADGES_KEY]);
 
   const handleTogglePinCategory = () => {
     if (!selectedCategoryId) {
@@ -354,6 +373,21 @@ export default function SharedProductUploadWizard({
       );
       setIsReturnPinned(true);
       toast.success("📌 Pinned as Default Return Policy!");
+    }
+  };
+
+  const handleTogglePinBadges = () => {
+    if (isBadgePinned) {
+      localStorage.removeItem(PINNED_BADGES_KEY);
+      setIsBadgePinned(false);
+      toast.info("Promotional badges unpinned from defaults");
+    } else {
+      localStorage.setItem(
+        PINNED_BADGES_KEY,
+        JSON.stringify({ showAutoDiscount, selectedTags, customBadgeText, badgeColor })
+      );
+      setIsBadgePinned(true);
+      toast.success("📌 Pinned as Default Promotional Badges!");
     }
   };
 
@@ -426,6 +460,10 @@ export default function SharedProductUploadWizard({
       if (d.metaTitle) setMetaTitle(d.metaTitle);
       if (d.metaDescription) setMetaDescription(d.metaDescription);
       if (d.variants) setVariants(d.variants);
+      if (d.showAutoDiscount !== undefined) setShowAutoDiscount(d.showAutoDiscount);
+      if (Array.isArray(d.selectedTags)) setSelectedTags(d.selectedTags);
+      if (d.customBadgeText !== undefined) setCustomBadgeText(d.customBadgeText);
+      if (d.badgeColor) setBadgeColor(d.badgeColor);
 
       setSavedDraftAvailable(false);
       toast.success("Saved draft restored successfully!");
@@ -475,6 +513,10 @@ export default function SharedProductUploadWizard({
         metaTitle,
         metaDescription,
         variants,
+        showAutoDiscount,
+        selectedTags,
+        customBadgeText,
+        badgeColor,
         savedAt: new Date().toISOString(),
       };
       localStorage.setItem(AUTOSAVE_KEY, JSON.stringify(payload));
@@ -523,6 +565,10 @@ export default function SharedProductUploadWizard({
           metaTitle,
           metaDescription,
           variants,
+          showAutoDiscount,
+          selectedTags,
+          customBadgeText,
+          badgeColor,
           savedAt: new Date().toISOString(),
         };
         localStorage.setItem(AUTOSAVE_KEY, JSON.stringify(payload));
@@ -551,6 +597,10 @@ export default function SharedProductUploadWizard({
     costPrice,
     stockQuantity,
     variants,
+    showAutoDiscount,
+    selectedTags,
+    customBadgeText,
+    badgeColor,
   ]);
 
   // Auto-sync metadata (slug is handled automatically by backend)
@@ -1190,6 +1240,10 @@ export default function SharedProductUploadWizard({
           isDefault: Boolean(v.isDefault),
           barcode: v.barcode || null,
           allowBackorders,
+          tags: v.tags || selectedTags,
+          customBadgeText: v.customBadgeText || (customBadgeText.trim() || null),
+          badgeColor: v.badgeColor || badgeColor,
+          showAutoDiscount: v.showAutoDiscount !== undefined ? v.showAutoDiscount : showAutoDiscount,
         }))
       : [
           {
@@ -1217,6 +1271,10 @@ export default function SharedProductUploadWizard({
             minOrderQuantity: parseInt(minOrderQuantity, 10) || 1,
             maxOrderQuantity: maxOrderQuantity ? parseInt(maxOrderQuantity, 10) : null,
             allowBackorders,
+            tags: selectedTags,
+            customBadgeText: customBadgeText.trim() || null,
+            badgeColor,
+            showAutoDiscount,
           },
         ];
 
@@ -1240,6 +1298,10 @@ export default function SharedProductUploadWizard({
       hasVariants: isMultiVariety,
       mrp: mrpNum > 0 ? mrpNum : null,
       costPrice: costNum > 0 ? costNum : null,
+      tags: selectedTags,
+      customBadgeText: customBadgeText.trim() || null,
+      badgeColor,
+      showAutoDiscount,
       vendorId: activeVendorId || null,
       manufacturer: manufacturer || null,
       condition,
@@ -1312,7 +1374,7 @@ export default function SharedProductUploadWizard({
     { num: 1, label: "Category", icon: Sliders },
     { num: 2, label: "Basic Details & Rate", icon: Info },
     { num: 3, label: "Images & Sub-category", icon: ImageIcon },
-    { num: 4, label: "Variants", icon: Layers },
+    { num: 4, label: "Variants & Badges", icon: Tag },
     { num: 5, label: "Shipping & Delivery", icon: Truck },
     { num: 6, label: "Returns & Compliance", icon: FileCheck2 },
     { num: 7, label: "SEO & Publish", icon: Eye },
@@ -3343,6 +3405,173 @@ export default function SharedProductUploadWizard({
               unitOfSale={unitOfSale}
             />
           )}
+
+          {/* 🏷️ STEP 4: PROMOTIONAL BADGES & MARKETING LABELS (PRD Specification) */}
+          <div className="p-6 rounded-3xl bg-linear-to-br from-amber-50/50 via-white to-orange-50/40 border border-orange-200/80 shadow-xs space-y-5">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-3 border-b border-orange-100">
+              <div className="flex items-center gap-2.5">
+                <div className="w-9 h-9 rounded-2xl bg-[#F26522] text-white flex items-center justify-center shadow-xs">
+                  <Tag size={18} />
+                </div>
+                <div>
+                  <h3 className="text-sm font-black text-gray-900 flex items-center gap-1.5">
+                    Promotional Badges &amp; Marketing Labels
+                  </h3>
+                  <p className="text-[11px] text-gray-500">
+                    Drive higher conversion with automated discount savings, marketplace pills, and custom promotional tags.
+                  </p>
+                </div>
+              </div>
+
+              {/* 📌 Pin Badge Preferences Default */}
+              <button
+                type="button"
+                onClick={handleTogglePinBadges}
+                className={`px-3 py-1.5 rounded-xl border text-xs font-bold transition-all flex items-center gap-1.5 cursor-pointer shrink-0 self-start sm:self-auto ${
+                  isBadgePinned
+                    ? "bg-amber-100/80 border-amber-400 text-amber-900 shadow-xs"
+                    : "bg-white border-gray-200 text-gray-600 hover:border-amber-300 hover:text-amber-800"
+                }`}
+                title="Pin your promotional badge settings as default for future listings"
+              >
+                <span>{isBadgePinned ? "📌 Badges Pinned" : "📌 Pin Badges as Default"}</span>
+              </button>
+            </div>
+
+            {/* 1. ⚡ Auto Discount Badge Toggle */}
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 p-4 rounded-2xl bg-white border border-gray-200 shadow-2xs">
+              <div className="space-y-0.5">
+                <div className="flex items-center gap-2">
+                  <span className="text-xs font-black text-gray-900">⚡ Auto Discount Savings Badge</span>
+                  {showAutoDiscount && discountPercent > 0 && (
+                    <span className="px-2 py-0.5 rounded-full text-[10px] font-black bg-emerald-600 text-white shadow-2xs animate-in fade-in">
+                      {discountPercent}% OFF LIVE
+                    </span>
+                  )}
+                </div>
+                <p className="text-[11px] text-gray-500">
+                  Automatically calculates &amp; displays customer savings badge on storefront cards when Selling Price &lt; MRP.
+                </p>
+              </div>
+
+              <label className="relative inline-flex items-center cursor-pointer shrink-0">
+                <input
+                  type="checkbox"
+                  checked={showAutoDiscount}
+                  onChange={(e) => setShowAutoDiscount(e.target.checked)}
+                  className="sr-only peer"
+                />
+                <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-emerald-600"></div>
+              </label>
+            </div>
+
+            {/* 2. Select Marketplace Tags */}
+            <div className="space-y-2.5">
+              <label className="text-xs font-black text-gray-800 uppercase tracking-wider block">
+                Select Promotional Marketplace Tags:
+              </label>
+              <div className="flex flex-wrap gap-2">
+                {[
+                  { id: "BEST_SELLER", label: "🔥 Best Seller" },
+                  { id: "FACTORY_PRICE", label: "🏬 Factory Price" },
+                  { id: "QUICK_DISPATCH", label: "⚡ Quick Dispatch" },
+                  { id: "TOP_RATED", label: "⭐ Top Rated" },
+                  { id: "PREMIUM_QUALITY", label: "🏆 Premium Quality" },
+                  { id: "ECO_FRIENDLY", label: "🌿 Eco Friendly" },
+                ].map((tag) => {
+                  const isSelected = selectedTags.includes(tag.id);
+                  return (
+                    <button
+                      key={tag.id}
+                      type="button"
+                      onClick={() => {
+                        setSelectedTags((prev) =>
+                          prev.includes(tag.id) ? prev.filter((t) => t !== tag.id) : [...prev, tag.id]
+                        );
+                      }}
+                      className={`h-10 px-3.5 rounded-xl border text-xs font-bold transition-all flex items-center gap-1.5 cursor-pointer shadow-2xs ${
+                        isSelected
+                          ? "bg-[#052a51] text-white border-[#052a51] shadow-xs"
+                          : "bg-white text-gray-700 border-gray-200 hover:bg-gray-50"
+                      }`}
+                    >
+                      <span>{tag.label}</span>
+                      {isSelected && <Check size={12} className="text-emerald-400" />}
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+
+            {/* 3. Custom Text Badge & Color Selection */}
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 pt-2">
+              <div className="space-y-1.5">
+                <label className="text-xs font-bold text-gray-700">
+                  Custom Badge Text (Optional):
+                </label>
+                <input
+                  type="text"
+                  placeholder="e.g. Buy 10 Get 1 Free, Contractor Deal"
+                  value={customBadgeText}
+                  onChange={(e) => setCustomBadgeText(e.target.value)}
+                  className="w-full px-3.5 py-2.5 rounded-xl border border-gray-200 text-xs font-medium text-gray-900 bg-white focus:outline-none focus:border-[#F26522]"
+                />
+              </div>
+
+              <div className="space-y-1.5">
+                <label className="text-xs font-bold text-gray-700">
+                  Badge Color Style:
+                </label>
+                <div className="flex flex-wrap items-center gap-2 pt-1">
+                  {[
+                    { id: "RED", label: "🔴 Red", bg: "bg-red-50 border-red-300 text-red-700" },
+                    { id: "GREEN", label: "🟢 Green", bg: "bg-emerald-50 border-emerald-300 text-emerald-700" },
+                    { id: "GOLD", label: "🟡 Gold", bg: "bg-amber-50 border-amber-300 text-amber-800" },
+                    { id: "BLUE", label: "🔵 Blue", bg: "bg-blue-50 border-blue-300 text-blue-700" },
+                    { id: "PURPLE", label: "🟣 Purple", bg: "bg-purple-50 border-purple-300 text-purple-700" },
+                  ].map((color) => {
+                    const isSelected = badgeColor === color.id;
+                    return (
+                      <button
+                        key={color.id}
+                        type="button"
+                        onClick={() => setBadgeColor(color.id)}
+                        className={`px-3 py-1.5 rounded-xl border text-xs font-bold transition-all cursor-pointer ${
+                          isSelected
+                            ? `${color.bg} ring-2 ring-[#052a51] shadow-xs`
+                            : "bg-white border-gray-200 text-gray-600 hover:bg-gray-50"
+                        }`}
+                      >
+                        {color.label}
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
+            </div>
+
+            {/* Live Custom Badge Demonstration */}
+            {customBadgeText.trim() && (
+              <div className="p-3 bg-white border border-gray-200 rounded-2xl flex items-center gap-3">
+                <span className="text-xs font-bold text-gray-500">Live Custom Badge Preview:</span>
+                <span
+                  className={`px-3 py-1 rounded-full text-xs font-black tracking-wide shadow-xs ${
+                    badgeColor === "GREEN"
+                      ? "bg-emerald-600 text-white"
+                      : badgeColor === "GOLD"
+                      ? "bg-amber-400 text-gray-900"
+                      : badgeColor === "BLUE"
+                      ? "bg-blue-600 text-white"
+                      : badgeColor === "PURPLE"
+                      ? "bg-purple-600 text-white"
+                      : "bg-red-600 text-white"
+                  }`}
+                >
+                  🏷️ {customBadgeText}
+                </span>
+              </div>
+            )}
+          </div>
         </div>
       )}
 
@@ -3880,6 +4109,10 @@ export default function SharedProductUploadWizard({
               warrantyDuration={warrantyDuration}
               allowCod={allowCod}
               slug={currentSlug}
+              tags={selectedTags}
+              customBadgeText={customBadgeText}
+              badgeColor={badgeColor}
+              showAutoDiscount={showAutoDiscount}
               onExpandModal={() => setIsPreviewOpen(true)}
               onClosePreview={() => setShowSidePreview(false)}
             />
@@ -3970,6 +4203,10 @@ export default function SharedProductUploadWizard({
           warrantyDuration,
           allowCod,
           slug: currentSlug,
+          tags: selectedTags,
+          customBadgeText,
+          badgeColor,
+          showAutoDiscount,
         }}
       />
     </form>

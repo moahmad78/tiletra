@@ -984,6 +984,13 @@ export default function UnifiedVariantManager({
                                 .join(" • ")}
                             </div>
                           )}
+                          {(v.customBadgeText || (v.tags && v.tags.length > 0)) && (
+                            <div className="mt-0.5">
+                              <span className="inline-block px-1.5 py-0.2 rounded-md bg-orange-100 text-[#F26522] text-[9px] font-bold truncate max-w-[120px]">
+                                🏷️ {v.customBadgeText || v.tags?.[0]}
+                              </span>
+                            </div>
+                          )}
                         </td>
 
                         {/* 4. SKU */}
@@ -1259,6 +1266,11 @@ export default function UnifiedVariantManager({
                             {v.isDefault && (
                               <span className="text-[9px] font-black uppercase px-1.5 py-0.5 rounded-full bg-[#052a51] text-white">
                                 Primary
+                              </span>
+                            )}
+                            {(v.customBadgeText || (v.tags && v.tags.length > 0)) && (
+                              <span className="text-[9px] font-bold px-1.5 py-0.5 rounded-full bg-orange-100 text-[#F26522] truncate max-w-[100px]">
+                                🏷️ {v.customBadgeText || v.tags?.[0]}
                               </span>
                             )}
                           </div>

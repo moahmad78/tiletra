@@ -81,10 +81,20 @@ export type CreateProductInput = {
     saleStartDate?: string | Date | null;
     saleEndDate?: string | Date | null;
     allowBackorders?: boolean;
+    // 🏷️ Badges & Marketing Labels
+    customBadgeText?: string | null;
+    badgeColor?: string | null;
+    tags?: string[];
+    showAutoDiscount?: boolean;
   }[];
   isBestseller?: boolean;
   isNew?: boolean;
   isTrending?: boolean;
+  // 🏷️ Badges & Marketing Labels (Product Level)
+  tags?: string[];
+  customBadgeText?: string | null;
+  badgeColor?: string | null;
+  showAutoDiscount?: boolean;
   manualRating?: number | null;
   manualReviewCount?: number | null;
   specs?: any;
@@ -743,8 +753,17 @@ export async function createProduct(input: CreateProductInput) {
         rating: input.manualRating !== undefined && input.manualRating !== null ? Number(input.manualRating) : 0,
         reviewCount: input.manualReviewCount !== undefined && input.manualReviewCount !== null ? Number(input.manualReviewCount) : 0,
         manualRating: input.manualRating !== undefined && input.manualRating !== null ? Number(input.manualRating) : null,
-        manualReviewCount: input.manualReviewCount !== undefined && input.manualReviewCount !== null ? Number(input.manualReviewCount) : null,
-        specs: input.specs || null,
+        specs: input.specs
+          ? {
+              ...input.specs,
+              ...(input.tags ? { tags: input.tags } : {}),
+              ...(input.customBadgeText ? { customBadgeText: input.customBadgeText } : {}),
+              ...(input.badgeColor ? { badgeColor: input.badgeColor } : {}),
+              ...(input.showAutoDiscount !== undefined ? { showAutoDiscount: input.showAutoDiscount } : {}),
+            }
+          : (input.tags || input.customBadgeText || input.badgeColor || input.showAutoDiscount !== undefined
+              ? { tags: input.tags, customBadgeText: input.customBadgeText, badgeColor: input.badgeColor, showAutoDiscount: input.showAutoDiscount }
+              : null),
         vendor: input.vendorId ? { connect: { id: input.vendorId } } : undefined,
         status: input.status || "active",
         approvalStatus: input.approvalStatus || "pending",
@@ -813,9 +832,14 @@ export async function createProduct(input: CreateProductInput) {
             attributeLabel: v.attributeLabel || null,
             attributeValue: v.attributeValue || null,
             attributes: v.attributes || null,
-            variantSpecs: v.variantSpecs
-              ? { ...v.variantSpecs, ...(v.costPrice !== undefined && v.costPrice !== null ? { costPrice: Number(v.costPrice) } : {}) }
-              : (v.costPrice !== undefined && v.costPrice !== null ? { costPrice: Number(v.costPrice) } : null),
+            variantSpecs: {
+              ...(v.variantSpecs || {}),
+              ...(v.costPrice !== undefined && v.costPrice !== null ? { costPrice: Number(v.costPrice) } : {}),
+              ...(v.customBadgeText ? { customBadgeText: v.customBadgeText } : (input.customBadgeText ? { customBadgeText: input.customBadgeText } : {})),
+              ...(v.badgeColor ? { badgeColor: v.badgeColor } : (input.badgeColor ? { badgeColor: input.badgeColor } : {})),
+              ...(v.tags ? { tags: v.tags } : (input.tags ? { tags: input.tags } : {})),
+              ...(v.showAutoDiscount !== undefined ? { showAutoDiscount: v.showAutoDiscount } : (input.showAutoDiscount !== undefined ? { showAutoDiscount: input.showAutoDiscount } : {})),
+            },
             mrp: v.mrp !== undefined && v.mrp !== null ? Number(v.mrp) : null,
             weightKg: v.weightKg !== undefined && v.weightKg !== null ? Number(v.weightKg) : 2.5,
             price: v.price !== undefined && v.price !== null ? Number(v.price) : Number(v.pricePerBox || primaryVariant.pricePerBox || 0),

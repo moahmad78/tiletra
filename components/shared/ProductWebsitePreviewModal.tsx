@@ -45,6 +45,11 @@ export interface ProductPreviewData {
   warrantyDuration?: string;
   allowCod?: boolean;
   slug?: string;
+  // 🏷️ Badges & Marketing Labels
+  tags?: string[];
+  customBadgeText?: string | null;
+  badgeColor?: string | null;
+  showAutoDiscount?: boolean;
 }
 
 interface ProductWebsitePreviewModalProps {
@@ -235,6 +240,50 @@ export default function ProductWebsitePreviewModal({
                       <span className="text-xs font-black uppercase tracking-wider text-[#F26522] bg-orange-50 px-2.5 py-1 rounded-lg inline-block mb-1.5">
                         {data.brand}
                       </span>
+                    )}
+                    {/* Promotional Badges & Tags */}
+                    {((data.tags && data.tags.length > 0) || data.customBadgeText || (data.showAutoDiscount !== false && discount > 0)) && (
+                      <div className="flex flex-wrap items-center gap-1.5 mb-2">
+                        {data.showAutoDiscount !== false && discount > 0 && (
+                          <span className="px-2.5 py-0.5 rounded-full text-[10px] font-black bg-emerald-600 text-white shadow-xs flex items-center gap-1">
+                            <span>⚡</span>
+                            <span>{discount}% OFF</span>
+                          </span>
+                        )}
+                        {data.tags?.map((t) => {
+                          const tagLabels: Record<string, { label: string; bg: string }> = {
+                            BEST_SELLER: { label: "🔥 Best Seller", bg: "bg-red-500 text-white" },
+                            FACTORY_PRICE: { label: "🏬 Factory Price", bg: "bg-amber-600 text-white" },
+                            QUICK_DISPATCH: { label: "⚡ Quick Dispatch", bg: "bg-blue-600 text-white" },
+                            TOP_RATED: { label: "⭐ Top Rated", bg: "bg-purple-600 text-white" },
+                            PREMIUM_QUALITY: { label: "🏆 Premium Quality", bg: "bg-emerald-700 text-white" },
+                            ECO_FRIENDLY: { label: "🌿 Eco Friendly", bg: "bg-teal-600 text-white" },
+                          };
+                          const conf = tagLabels[t] || { label: t, bg: "bg-gray-800 text-white" };
+                          return (
+                            <span key={t} className={`px-2.5 py-0.5 rounded-full text-[10px] font-black tracking-wide shadow-xs ${conf.bg}`}>
+                              {conf.label}
+                            </span>
+                          );
+                        })}
+                        {data.customBadgeText && (
+                          <span
+                            className={`px-2.5 py-0.5 rounded-full text-[10px] font-black tracking-wide shadow-xs ${
+                              data.badgeColor === "GREEN"
+                                ? "bg-emerald-600 text-white"
+                                : data.badgeColor === "GOLD"
+                                ? "bg-amber-400 text-gray-900 font-black"
+                                : data.badgeColor === "BLUE"
+                                ? "bg-blue-600 text-white"
+                                : data.badgeColor === "PURPLE"
+                                ? "bg-purple-600 text-white"
+                                : "bg-red-600 text-white"
+                            }`}
+                          >
+                            🏷️ {data.customBadgeText}
+                          </span>
+                        )}
+                      </div>
                     )}
                     <h1 className="text-xl sm:text-2xl font-black text-gray-900 tracking-tight leading-snug">
                       {data.name || "Product Title Preview"}

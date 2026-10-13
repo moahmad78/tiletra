@@ -54,6 +54,11 @@ export interface LiveSidePreviewProps {
   warrantyDuration?: string;
   allowCod?: boolean;
   slug?: string;
+  // 🏷️ Badges & Marketing Labels
+  tags?: string[];
+  customBadgeText?: string | null;
+  badgeColor?: string | null;
+  showAutoDiscount?: boolean;
   onExpandModal: () => void;
   onClosePreview?: () => void;
 }
@@ -88,6 +93,11 @@ export default function LiveSidePreviewPanel({
   warrantyDuration = "1 Year",
   allowCod = true,
   slug,
+  // 🏷️ Badges & Marketing Labels
+  tags = [],
+  customBadgeText,
+  badgeColor = "RED",
+  showAutoDiscount = true,
   onExpandModal,
   onClosePreview,
 }: LiveSidePreviewProps) {
@@ -247,7 +257,7 @@ export default function LiveSidePreviewPanel({
                 </div>
 
                 {/* Discount Badge */}
-                {discountPercent > 0 && (
+                {showAutoDiscount !== false && discountPercent > 0 && (
                   <div className="absolute top-2 right-2 bg-emerald-600 text-white text-[10px] font-black px-2 py-0.5 rounded-full shadow-md animate-in zoom-in-75 z-10 shrink-0">
                     {discountPercent}% OFF
                   </div>
@@ -275,6 +285,45 @@ export default function LiveSidePreviewPanel({
                   </div>
                 )}
               </div>
+
+              {/* Promotional Badges & Tags */}
+              {((tags && tags.length > 0) || customBadgeText) && (
+                <div className="flex flex-wrap items-center gap-1 pt-1">
+                  {tags.map((t) => {
+                    const tagLabels: Record<string, { label: string; bg: string }> = {
+                      BEST_SELLER: { label: "🔥 Best Seller", bg: "bg-red-500 text-white" },
+                      FACTORY_PRICE: { label: "🏬 Factory Price", bg: "bg-amber-600 text-white" },
+                      QUICK_DISPATCH: { label: "⚡ Quick Dispatch", bg: "bg-blue-600 text-white" },
+                      TOP_RATED: { label: "⭐ Top Rated", bg: "bg-purple-600 text-white" },
+                      PREMIUM_QUALITY: { label: "🏆 Premium Quality", bg: "bg-emerald-700 text-white" },
+                      ECO_FRIENDLY: { label: "🌿 Eco Friendly", bg: "bg-teal-600 text-white" },
+                    };
+                    const conf = tagLabels[t] || { label: t, bg: "bg-gray-800 text-white" };
+                    return (
+                      <span key={t} className={`px-2 py-0.5 rounded-full text-[9px] font-black tracking-wide shadow-xs ${conf.bg}`}>
+                        {conf.label}
+                      </span>
+                    );
+                  })}
+                  {customBadgeText && (
+                    <span
+                      className={`px-2 py-0.5 rounded-full text-[9px] font-black tracking-wide shadow-xs ${
+                        badgeColor === "GREEN"
+                          ? "bg-emerald-600 text-white"
+                          : badgeColor === "GOLD"
+                          ? "bg-amber-400 text-gray-900 font-black"
+                          : badgeColor === "BLUE"
+                          ? "bg-blue-600 text-white"
+                          : badgeColor === "PURPLE"
+                          ? "bg-purple-600 text-white"
+                          : "bg-red-600 text-white"
+                      }`}
+                    >
+                      🏷️ {customBadgeText}
+                    </span>
+                  )}
+                </div>
+              )}
 
               {/* Brand & Stock */}
               <div className="flex items-center justify-between text-[11px] gap-2 pt-0.5">

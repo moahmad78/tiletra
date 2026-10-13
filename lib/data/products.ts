@@ -54,6 +54,11 @@ export type ProductVariant = {
   saleStartDate?: Date | string | null;
   saleEndDate?: Date | string | null;
   allowBackorders?: boolean;
+  // 🏷️ Badges & Marketing Labels
+  customBadgeText?: string | null;
+  badgeColor?: string | null;
+  tags?: string[];
+  showAutoDiscount?: boolean;
 };
 
 export type Product = {
@@ -96,6 +101,10 @@ export type Product = {
   attributes?: ProductAttribute[];
   variants: ProductVariant[];
   priceTiers?: PriceTier[];
+  // 🏷️ Badges & Marketing Labels
+  customBadgeText?: string | null;
+  badgeColor?: string | null;
+  showAutoDiscount?: boolean;
   rating: number;
   avgRating?: number | null;
   reviewCount: number;
