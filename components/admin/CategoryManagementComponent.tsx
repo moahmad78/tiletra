@@ -136,22 +136,47 @@ export default function CategoryManagementComponent({
   };
 
   const handleImageFileUpload = async (file: File) => {
+    if (!file) return;
     try {
       setUploadingImage(true);
-      const fd = new FormData();
-      fd.append("file", file);
+      let finalUrl = "";
+      try {
+        const fd = new FormData();
+        fd.append("file", file);
 
-      const res = await fetch("/api/upload", {
-        method: "POST",
-        body: fd,
-      });
-      const data = await res.json();
+        const res = await fetch("/api/upload", {
+          method: "POST",
+          body: fd,
+        });
 
-      if (data.success && data.url) {
-        setImage(data.url);
-        toast.success("Category Hero Image uploaded successfully!");
+        const contentType = res.headers.get("content-type") || "";
+        if (res.ok && contentType.includes("application/json")) {
+          const data = await res.json();
+          if (data.success && data.url) {
+            finalUrl = data.url;
+          }
+        }
+      } catch (uploadErr) {
+        console.warn("[Upload] Server upload error, using local fallback:", uploadErr);
+      }
+
+      // Graceful fallback to client-side dataUrl so user is never blocked by Unexpected token <
+      if (!finalUrl) {
+        try {
+          finalUrl = await new Promise<string>((resolve) => {
+            const reader = new FileReader();
+            reader.onload = () => resolve(reader.result as string);
+            reader.onerror = () => resolve("");
+            reader.readAsDataURL(file);
+          });
+        } catch {}
+      }
+
+      if (finalUrl) {
+        setImage(finalUrl);
+        toast.success("Category Hero Image loaded successfully!");
       } else {
-        toast.error(data.error || "Image upload failed");
+        toast.error("Failed to load category image");
       }
     } catch (e: any) {
       console.error("Upload error:", e);

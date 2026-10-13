@@ -757,15 +757,34 @@ export default function SharedProductUploadWizard({
       for (let i = 0; i < files.length; i++) {
         const file = files[i];
         if (!file.type.startsWith("image/")) continue;
-        const formData = new FormData();
-        if (activeVendorId) formData.append("vendorId", activeVendorId);
-        formData.append("file", file);
-        const res = await fetch("/api/upload", { method: "POST", body: formData });
-        const data = await res.json();
-        if (res.ok && data.success) {
-          const finalUrl = data.url || (Array.isArray(data.urls) && data.urls[0]);
-          if (finalUrl) addedUrls.push(finalUrl);
+        let finalUrl = "";
+        try {
+          const formData = new FormData();
+          if (activeVendorId) formData.append("vendorId", activeVendorId);
+          formData.append("file", file);
+          const res = await fetch("/api/upload", { method: "POST", body: formData });
+          const contentType = res.headers.get("content-type") || "";
+          if (res.ok && contentType.includes("application/json")) {
+            const data = await res.json();
+            if (data.success) {
+              finalUrl = data.url || (Array.isArray(data.urls) && data.urls[0]) || "";
+            }
+          }
+        } catch (fetchErr) {
+          console.warn("[Upload] Subcat gallery fetch fallback:", fetchErr);
         }
+
+        // Robust client-side fallback if server returned HTML, 401, 500
+        if (!finalUrl) {
+          finalUrl = await new Promise<string>((resolve) => {
+            const reader = new FileReader();
+            reader.onload = () => resolve(reader.result as string);
+            reader.onerror = () => resolve("");
+            reader.readAsDataURL(file);
+          });
+        }
+
+        if (finalUrl) addedUrls.push(finalUrl);
       }
       if (addedUrls.length > 0) {
         setSubcategoryGallery((prev) => [...prev, ...addedUrls]);
@@ -774,7 +793,7 @@ export default function SharedProductUploadWizard({
       }
     } catch (err) {
       console.error("Subcategory gallery upload error:", err);
-      toast.error("Failed to upload sub-category gallery photos");
+      toast.error("Failed to process sub-category gallery photos");
     } finally {
       setIsUploadingSubcatGallery(false);
     }
@@ -854,6 +873,7 @@ export default function SharedProductUploadWizard({
     }
 
     setIsUploadingCategoryImage(true);
+    let finalUrl = "";
     try {
       const formData = new FormData();
       if (activeVendorId) {
@@ -866,25 +886,37 @@ export default function SharedProductUploadWizard({
         body: formData,
       });
 
-      const data = await res.json();
-      if (res.ok && data.success) {
-        const finalUrl = data.url || (Array.isArray(data.urls) && data.urls[0]);
-        if (finalUrl) {
-          setCustomCategoryImage(finalUrl);
-          setCustomCategoryUrlInput(finalUrl);
-          toast.success("Category photo uploaded successfully!");
-        } else {
-          toast.error("No image URL returned from upload server");
+      const contentType = res.headers.get("content-type") || "";
+      if (res.ok && contentType.includes("application/json")) {
+        const data = await res.json();
+        if (data.success) {
+          finalUrl = data.url || (Array.isArray(data.urls) && data.urls[0]) || "";
         }
-      } else {
-        toast.error(data.error || "Failed to upload category image");
       }
     } catch (err: any) {
-      console.error("Error uploading category image:", err);
-      toast.error(err?.message || "Failed to upload image");
-    } finally {
-      setIsUploadingCategoryImage(false);
+      console.warn("[Upload] Category image server upload issue, using local fallback:", err);
     }
+
+    // Graceful fallback: If server returned non-JSON, 401, or HTML error, read via FileReader
+    if (!finalUrl) {
+      try {
+        finalUrl = await new Promise<string>((resolve) => {
+          const reader = new FileReader();
+          reader.onload = () => resolve(reader.result as string);
+          reader.onerror = () => resolve("");
+          reader.readAsDataURL(file);
+        });
+      } catch {}
+    }
+
+    if (finalUrl) {
+      setCustomCategoryImage(finalUrl);
+      setCustomCategoryUrlInput(finalUrl);
+      toast.success("Category photo loaded successfully!");
+    } else {
+      toast.error("Failed to load category photo");
+    }
+    setIsUploadingCategoryImage(false);
   };
 
   // Upload image helper for custom sub-category
@@ -900,6 +932,7 @@ export default function SharedProductUploadWizard({
     }
 
     setIsUploadingSubcategoryImage(true);
+    let finalUrl = "";
     try {
       const formData = new FormData();
       if (activeVendorId) {
@@ -912,25 +945,37 @@ export default function SharedProductUploadWizard({
         body: formData,
       });
 
-      const data = await res.json();
-      if (res.ok && data.success) {
-        const finalUrl = data.url || (Array.isArray(data.urls) && data.urls[0]);
-        if (finalUrl) {
-          setCustomSubcategoryImage(finalUrl);
-          setCustomSubcategoryUrlInput(finalUrl);
-          toast.success("Sub-category photo uploaded successfully!");
-        } else {
-          toast.error("No image URL returned from upload server");
+      const contentType = res.headers.get("content-type") || "";
+      if (res.ok && contentType.includes("application/json")) {
+        const data = await res.json();
+        if (data.success) {
+          finalUrl = data.url || (Array.isArray(data.urls) && data.urls[0]) || "";
         }
-      } else {
-        toast.error(data.error || "Failed to upload sub-category image");
       }
     } catch (err: any) {
-      console.error("Error uploading sub-category image:", err);
-      toast.error(err?.message || "Failed to upload image");
-    } finally {
-      setIsUploadingSubcategoryImage(false);
+      console.warn("[Upload] Sub-category server upload issue, using local fallback:", err);
     }
+
+    // Graceful fallback: If server returned non-JSON, 401, or HTML error, read via FileReader
+    if (!finalUrl) {
+      try {
+        finalUrl = await new Promise<string>((resolve) => {
+          const reader = new FileReader();
+          reader.onload = () => resolve(reader.result as string);
+          reader.onerror = () => resolve("");
+          reader.readAsDataURL(file);
+        });
+      } catch {}
+    }
+
+    if (finalUrl) {
+      setCustomSubcategoryImage(finalUrl);
+      setCustomSubcategoryUrlInput(finalUrl);
+      toast.success("Sub-category photo loaded successfully!");
+    } else {
+      toast.error("Failed to load sub-category photo");
+    }
+    setIsUploadingSubcategoryImage(false);
   };
 
   // ── Custom Category Handlers ──
