@@ -59,27 +59,68 @@ export default function DesktopCategoryRow({ categories }: DesktopCategoryRowPro
   const isPausedRef = useRef(false);
   const manualPauseTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
-  // Gentle, slow infinite auto-scroll loop
+  // Gentle, slow infinite auto-scroll loop with 0 layout thrashing (INP optimized)
   useEffect(() => {
     const el = scrollContainerRef.current;
     if (!el || topCategories.length === 0) return;
 
     let animId: number;
     let lastTime: number | null = null;
+    let cachedHalfWidth = el.scrollWidth / 2;
     const speed = 36; // px per second - slow, elegant, smooth drift
+
+    const updateMetrics = () => {
+      if (el) {
+        cachedHalfWidth = el.scrollWidth / 2;
+      }
+    };
+
+    window.addEventListener("resize", updateMetrics, { passive: true });
+
+    const handleVisibility = () => {
+      if (document.hidden) {
+        isPausedRef.current = true;
+      } else {
+        isPausedRef.current = false;
+        lastTime = null;
+      }
+    };
+    document.addEventListener("visibilitychange", handleVisibility, { passive: true });
+
+    // Pause immediately on user touch or pointer down so input events are 100% unblocked (INP protection)
+    const onUserInteractionStart = () => {
+      isPausedRef.current = true;
+    };
+    const onUserInteractionEnd = () => {
+      if (manualPauseTimerRef.current) clearTimeout(manualPauseTimerRef.current);
+      manualPauseTimerRef.current = setTimeout(() => {
+        isPausedRef.current = false;
+        lastTime = null;
+      }, 1500);
+    };
+
+    el.addEventListener("pointerdown", onUserInteractionStart, { passive: true });
+    el.addEventListener("pointerup", onUserInteractionEnd, { passive: true });
+    el.addEventListener("touchstart", onUserInteractionStart, { passive: true });
+    el.addEventListener("touchend", onUserInteractionEnd, { passive: true });
+    el.addEventListener("wheel", onUserInteractionStart, { passive: true });
 
     const step = (time: number) => {
       if (lastTime !== null && !isPausedRef.current && el) {
         const delta = (time - lastTime) / 1000;
-        const scrollAmount = speed * delta;
-        el.scrollLeft += scrollAmount;
+        // Clamp to avoid jump if frame was delayed
+        const clampedDelta = Math.min(delta, 0.05);
+        const scrollAmount = speed * clampedDelta;
 
-        const maxScroll = el.scrollWidth / 2;
-        if (el.scrollLeft >= maxScroll) {
-          el.scrollLeft -= maxScroll;
-        } else if (el.scrollLeft <= 0) {
-          el.scrollLeft += maxScroll;
+        let nextScroll = el.scrollLeft + scrollAmount;
+        if (cachedHalfWidth > 0) {
+          if (nextScroll >= cachedHalfWidth) {
+            nextScroll -= cachedHalfWidth;
+          } else if (nextScroll <= 0) {
+            nextScroll += cachedHalfWidth;
+          }
         }
+        el.scrollLeft = nextScroll;
       }
       lastTime = time;
       animId = requestAnimationFrame(step);
@@ -89,6 +130,13 @@ export default function DesktopCategoryRow({ categories }: DesktopCategoryRowPro
 
     return () => {
       cancelAnimationFrame(animId);
+      window.removeEventListener("resize", updateMetrics);
+      document.removeEventListener("visibilitychange", handleVisibility);
+      el.removeEventListener("pointerdown", onUserInteractionStart);
+      el.removeEventListener("pointerup", onUserInteractionEnd);
+      el.removeEventListener("touchstart", onUserInteractionStart);
+      el.removeEventListener("touchend", onUserInteractionEnd);
+      el.removeEventListener("wheel", onUserInteractionStart);
       if (manualPauseTimerRef.current) {
         clearTimeout(manualPauseTimerRef.current);
       }

@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useMemo, useSyncExternalStore } from "react";
+import { useState, useEffect, useMemo, useSyncExternalStore, startTransition } from "react";
 import Link from "next/link";
 import Image from "next/image";
 import { useRouter } from "next/navigation";
@@ -168,33 +168,37 @@ export default function ProductDetailsClient({
 
   function handleAddToCart() {
     if (isOutOfStock) return;
-    addItem(definedProduct, selectedVariant, quantity);
-    setAddedToCart(true);
-    showCartToast(definedProduct.name, quantity);
+    startTransition(() => {
+      addItem(definedProduct, selectedVariant, quantity);
+      setAddedToCart(true);
+      showCartToast(definedProduct.name, quantity);
+    });
     setTimeout(() => setAddedToCart(false), 2000);
   }
 
   function handleBuyNow() {
     if (isOutOfStock) return;
-    // Direct checkout session with only this item (does NOT touch existing cart)
-    setBuyNowItem({
-      product: definedProduct,
-      variant: selectedVariant,
-      quantity,
-    });
-
-    if (!isAuthenticated) {
-      openLoginModal({
-        type: "buy_now",
-        data: {
-          productId: definedProduct.id,
-          variantId: selectedVariant.id,
-          quantity,
-        },
+    startTransition(() => {
+      // Direct checkout session with only this item (does NOT touch existing cart)
+      setBuyNowItem({
+        product: definedProduct,
+        variant: selectedVariant,
+        quantity,
       });
-      return;
-    }
-    router.push("/checkout?mode=direct");
+
+      if (!isAuthenticated) {
+        openLoginModal({
+          type: "buy_now",
+          data: {
+            productId: definedProduct.id,
+            variantId: selectedVariant.id,
+            quantity,
+          },
+        });
+        return;
+      }
+      router.push("/checkout?mode=direct");
+    });
   }
 
   function handleNotifyMe() {

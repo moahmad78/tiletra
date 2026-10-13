@@ -1,6 +1,6 @@
 "use client";
 
-import { useSyncExternalStore } from "react";
+import { useSyncExternalStore, startTransition } from "react";
 import Link from "next/link";
 import { Star, Heart, ShoppingBag } from "lucide-react";
 import { type Product } from "@/lib/data/products";
@@ -31,14 +31,18 @@ export default function ProductCard({
   const handleAddToCart = (e: React.MouseEvent) => {
     e.preventDefault();
     e.stopPropagation();
-    addItem(product, defaultVariant, 1);
-    showCartToast(product.name, 1);
+    startTransition(() => {
+      addItem(product, defaultVariant, 1);
+      showCartToast(product.name, 1);
+    });
   };
 
   const handleToggleWishlist = (e: React.MouseEvent) => {
     e.preventDefault();
     e.stopPropagation();
-    toggleWishlist(product);
+    startTransition(() => {
+      toggleWishlist(product);
+    });
   };
 
   return (
