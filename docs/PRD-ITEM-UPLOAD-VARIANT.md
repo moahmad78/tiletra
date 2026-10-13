@@ -68,6 +68,7 @@ IntriHub marketplace ek multi-vendor B2B quick-commerce platform hai. Is module 
 │ │ 🚨 STOCK & ALERT SETTINGS:                                         │ │
 │ │   [ Total Stock Count: 150 ]   [ Low Stock Alert Threshold: 10 ]   │ │
 │ │ • Touch Multi-Image Picker Upload                                  │ │
+│ │ • 🛡️ IntriHub Logo Anti-Theft Watermark Toggle: [ ON / OFF ]        │ │
 │ └────────────────────────────────────────────────────────────────────┘ │
 │ 👉 [ Save Variant ]  │  👉 [ 📄 Duplicate Variant Card ]              │
 └───────────────────────────────────┬────────────────────────────────────┘
@@ -289,6 +290,14 @@ async function processOrderCheckout(cartItems: CartItem[], customerId: string) {
 const profitAmount = sellingPrice - costPrice;
 const profitMarginPercent = sellingPrice > 0 ? ((profitAmount / sellingPrice) * 100).toFixed(1) : 0;
 const customerDiscountPercent = mrp > 0 ? (((mrp - sellingPrice) / mrp) * 100).toFixed(0) : 0;
+```
+
+### D. IntriHub Anti-Theft Logo Watermark Engine
+```typescript
+// Server & Client Watermark compositing
+// Automatically embeds official IntriHub logo with 65% opacity at bottom-right of product photos
+// Toggle Control: [ ON / OFF ] available right inside the item upload & gallery manager.
+const watermarkTargetWidth = Math.max(120, Math.min(480, Math.round(imageWidth * 0.28)));
 ```
 
 ---

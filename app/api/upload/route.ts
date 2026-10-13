@@ -121,6 +121,10 @@ export async function POST(req: NextRequest) {
 
     const formData = await req.formData();
     const files = (formData.getAll("file") as unknown) as File[];
+    const shouldWatermark =
+      formData.get("applyWatermark") === "true" ||
+      formData.get("watermark") === "true" ||
+      req.nextUrl.searchParams.get("watermark") === "true";
 
     let requestVendorId: string = "";
 
@@ -297,8 +301,36 @@ export async function POST(req: NextRequest) {
       } else {
         try {
           // Optimize raster image with sharp: resize to max 1600px, convert to WebP, quality 82 (PRD FR-3 & FR-9)
-          processedBuffer = await sharp(rawBuffer)
-            .resize({ width: 1600, height: 1600, fit: "inside", withoutEnlargement: true })
+          let imageSharp = sharp(rawBuffer)
+            .resize({ width: 1600, height: 1600, fit: "inside", withoutEnlargement: true });
+
+          if (shouldWatermark) {
+            try {
+              const meta = await sharp(rawBuffer).metadata();
+              const imgW = meta.width || 800;
+              const logoPath = path.resolve(process.cwd(), "public", "logo", "intri-web-logo.png");
+              const targetW = Math.max(120, Math.min(480, Math.round(imgW * 0.28)));
+
+              const watermarkBuffer = await sharp(logoPath)
+                .resize({ width: targetW, fit: "inside" })
+                .ensureAlpha()
+                .linear([1, 1, 1, 0.65], [0, 0, 0, 0])
+                .png()
+                .toBuffer();
+
+              imageSharp = imageSharp.composite([
+                {
+                  input: watermarkBuffer,
+                  gravity: "southeast",
+                  blend: "over",
+                },
+              ]);
+            } catch (wmErr) {
+              console.warn("[Upload] Watermark overlay skipped:", wmErr);
+            }
+          }
+
+          processedBuffer = await imageSharp
             .webp({ quality: 82, effort: 4 })
             .toBuffer();
           mimeType = "image/webp";

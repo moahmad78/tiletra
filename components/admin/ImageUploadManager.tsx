@@ -12,6 +12,9 @@ import {
   Trash2,
   Check,
   Plus,
+  Shield,
+  ShieldCheck,
+  Sparkles,
 } from "lucide-react";
 import { toast } from "sonner";
 
@@ -20,6 +23,7 @@ interface ImageUploadManagerProps {
   onChange: (images: string[]) => void;
   onUploadingChange?: (isUploading: boolean) => void;
   vendorId?: string | null;
+  defaultWatermark?: boolean;
 }
 
 export default function ImageUploadManager({
@@ -27,12 +31,17 @@ export default function ImageUploadManager({
   onChange,
   onUploadingChange,
   vendorId,
+  defaultWatermark = true,
 }: ImageUploadManagerProps) {
   // Modes for Primary and Gallery
   const [primaryMode, setPrimaryMode] = useState<"upload" | "link">("upload");
   const [primaryUrlInput, setPrimaryUrlInput] = useState("");
   const [galleryMode, setGalleryMode] = useState<"upload" | "link">("upload");
   const [galleryUrlInput, setGalleryUrlInput] = useState("");
+
+  // Watermark Settings (Default ON for trademark anti-theft protection)
+  const [applyWatermark, setApplyWatermark] = useState<boolean>(defaultWatermark);
+  const [isWatermarking, setIsWatermarking] = useState<boolean>(false);
 
   const [isUploading, setIsUploading] = useState(false);
   const [uploadError, setUploadError] = useState<string | null>(null);
@@ -156,6 +165,7 @@ export default function ImageUploadManager({
     if (vendorId) {
       formData.append("vendorId", vendorId);
     }
+    formData.append("applyWatermark", applyWatermark ? "true" : "false");
     for (let i = 0; i < files.length; i++) {
       formData.append("file", files[i]);
     }
@@ -255,6 +265,66 @@ export default function ImageUploadManager({
     }
   };
 
+  // ── Client-Side Canvas Watermark Engine ──
+  const applyWatermarkToDataUrl = async (imgSrc: string): Promise<string> => {
+    return new Promise((resolve) => {
+      const img = new Image();
+      img.crossOrigin = "anonymous";
+      img.onload = () => {
+        const logo = new Image();
+        logo.crossOrigin = "anonymous";
+        logo.onload = () => {
+          const canvas = document.createElement("canvas");
+          canvas.width = img.width;
+          canvas.height = img.height;
+          const ctx = canvas.getContext("2d");
+          if (!ctx) {
+            resolve(imgSrc);
+            return;
+          }
+          // Draw original image
+          ctx.drawImage(img, 0, 0);
+
+          // Calculate watermark dimensions (28% of image width, maintain logo aspect ratio)
+          const targetW = Math.max(120, Math.min(480, Math.round(img.width * 0.28)));
+          const targetH = Math.round(targetW * (logo.height / logo.width));
+          const padding = Math.max(16, Math.round(img.width * 0.03));
+          const x = img.width - targetW - padding;
+          const y = img.height - targetH - padding;
+
+          ctx.globalAlpha = 0.65;
+          ctx.drawImage(logo, x, y, targetW, targetH);
+          ctx.globalAlpha = 1.0;
+
+          resolve(canvas.toDataURL("image/webp", 0.88));
+        };
+        logo.onerror = () => resolve(imgSrc);
+        logo.src = "/logo/intri-web-logo.png";
+      };
+      img.onerror = () => resolve(imgSrc);
+      img.src = imgSrc;
+    });
+  };
+
+  const handleApplyWatermarkToExisting = async () => {
+    if (cleanImages.length === 0) return;
+    setIsWatermarking(true);
+    try {
+      const watermarkedList: string[] = [];
+      for (const src of cleanImages) {
+        const res = await applyWatermarkToDataUrl(src);
+        watermarkedList.push(res);
+      }
+      onChange(watermarkedList);
+      toast.success(`Official IntriHub logo watermark applied to ${watermarkedList.length} image(s)!`);
+    } catch (err) {
+      console.error("Watermark error:", err);
+      toast.error("Failed to apply watermark to some images.");
+    } finally {
+      setIsWatermarking(false);
+    }
+  };
+
   // Add paste event listener to support Ctrl+V anywhere in this component
   useEffect(() => {
     const handlePaste = (e: ClipboardEvent) => {
@@ -308,6 +378,80 @@ export default function ImageUploadManager({
           </button>
         </div>
       )}
+
+      {/* ── INTRIHUB LOGO WATERMARK PROTECTION CONTROL BAR ── */}
+      <div className="p-4 sm:p-4.5 rounded-3xl border transition-all bg-gradient-to-r from-orange-50/70 via-amber-50/40 to-slate-50 border-orange-200/90 shadow-2xs flex flex-col sm:flex-row sm:items-center justify-between gap-3.5">
+        <div className="flex items-start sm:items-center gap-3">
+          <div className="w-10 h-10 rounded-2xl bg-[#F26522]/10 text-[#F26522] border border-orange-200 flex items-center justify-center shrink-0 shadow-2xs">
+            <ShieldCheck size={20} />
+          </div>
+          <div>
+            <div className="flex items-center gap-2 flex-wrap">
+              <span className="text-xs font-black text-[#052a51] tracking-wide">
+                IntriHub Trademark Watermark Protection
+              </span>
+              <span
+                className={`px-2.5 py-0.5 rounded-full text-[10px] font-black uppercase tracking-wider ${
+                  applyWatermark
+                    ? "bg-emerald-100 text-emerald-800 border border-emerald-200"
+                    : "bg-gray-100 text-gray-600 border border-gray-200"
+                }`}
+              >
+                {applyWatermark ? "🛡️ WATERMARK ON" : "OFF"}
+              </span>
+            </div>
+            <p className="text-[11px] text-gray-600 mt-0.5">
+              Automatically stamps the official IntriHub logo watermark on uploaded product photos to prevent competitors &amp; unauthorized buyers from copying your listing images.
+            </p>
+          </div>
+        </div>
+
+        <div className="flex items-center gap-3 shrink-0 self-end sm:self-center">
+          {cleanImages.length > 0 && applyWatermark && (
+            <button
+              type="button"
+              onClick={handleApplyWatermarkToExisting}
+              disabled={isWatermarking}
+              className="px-3 py-1.5 rounded-xl border border-orange-300 bg-white hover:bg-orange-50 text-[#F26522] text-xs font-bold transition-all flex items-center gap-1.5 shadow-2xs cursor-pointer disabled:opacity-50"
+              title="Apply watermark immediately to all current images"
+            >
+              {isWatermarking ? <Loader2 size={13} className="animate-spin" /> : <Sparkles size={13} />}
+              <span>Watermark Current Photos</span>
+            </button>
+          )}
+
+          {/* Toggle Switch */}
+          <div className="flex items-center gap-2">
+            <span className="text-[11px] font-bold text-gray-500 hidden sm:inline">
+              {applyWatermark ? "Enabled" : "Disabled"}
+            </span>
+            <button
+              type="button"
+              role="switch"
+              aria-checked={applyWatermark}
+              onClick={() => {
+                const nextState = !applyWatermark;
+                setApplyWatermark(nextState);
+                if (nextState) {
+                  toast.success("IntriHub watermark enabled: all new uploads will have official branding.");
+                } else {
+                  toast.info("IntriHub watermark disabled.");
+                }
+              }}
+              className={`relative inline-flex h-6 w-11 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none ${
+                applyWatermark ? "bg-[#F26522]" : "bg-gray-300"
+              }`}
+              title="Toggle watermark ON or OFF"
+            >
+              <span
+                className={`pointer-events-none inline-block h-5 w-5 transform rounded-full bg-white shadow-md ring-0 transition duration-200 ease-in-out ${
+                  applyWatermark ? "translate-x-5" : "translate-x-0"
+                }`}
+              />
+            </button>
+          </div>
+        </div>
+      </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
         {/* ── 1. PRIMARY COVER IMAGE SECTION ── */}
