@@ -17,6 +17,7 @@ import {
   AlertTriangle,
   Search,
   Sparkles,
+  Pin,
 } from "lucide-react";
 import {
   getCategories,
@@ -62,6 +63,32 @@ export default function CategoryManagementComponent({
   const [editingCategory, setEditingCategory] = useState<Category | null>(null);
   const [submitting, setSubmitting] = useState(false);
   const [uploadingImage, setUploadingImage] = useState(false);
+  const [pinnedCategoryIds, setPinnedCategoryIds] = useState<string[]>([]);
+  const [showPinnedOnly, setShowPinnedOnly] = useState<boolean>(false);
+
+  useEffect(() => {
+    try {
+      const saved = localStorage.getItem("intrihub_cpo_pinned_categories");
+      if (saved) {
+        setPinnedCategoryIds(JSON.parse(saved));
+      }
+    } catch {}
+  }, []);
+
+  const handleTogglePin = (cat: Category, e?: React.MouseEvent) => {
+    if (e) e.stopPropagation();
+    const isPinned = pinnedCategoryIds.includes(cat.id);
+    let updated: string[];
+    if (isPinned) {
+      updated = pinnedCategoryIds.filter((id) => id !== cat.id);
+      toast.info(`"${cat.name}" unpinned from priority`);
+    } else {
+      updated = [...pinnedCategoryIds, cat.id];
+      toast.success(`📌 "${cat.name}" pinned as Priority Category!`);
+    }
+    setPinnedCategoryIds(updated);
+    localStorage.setItem("intrihub_cpo_pinned_categories", JSON.stringify(updated));
+  };
 
   const [name, setName] = useState("");
   const [slug, setSlug] = useState("");
@@ -202,6 +229,7 @@ export default function CategoryManagementComponent({
   };
 
   const filteredCategories = categories.filter((c) => {
+    if (showPinnedOnly && !pinnedCategoryIds.includes(c.id)) return false;
     if (!searchQuery.trim()) return true;
     const q = searchQuery.toLowerCase();
     return (
@@ -253,7 +281,7 @@ export default function CategoryManagementComponent({
       </div>
 
       {/* Search and Filters Bar */}
-      <div className="bg-white p-4 rounded-2xl border border-gray-200/80 flex items-center justify-between gap-4">
+      <div className="bg-white p-4 rounded-2xl border border-gray-200/80 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
         <div className="relative flex-1 max-w-md">
           <Search size={15} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-gray-400" />
           <input
@@ -264,14 +292,40 @@ export default function CategoryManagementComponent({
             className="w-full pl-9 pr-4 py-2 bg-gray-50 border border-gray-200 rounded-xl text-xs font-medium text-gray-800 focus:bg-white focus:outline-none focus:border-[#F26522]"
           />
         </div>
-        <span className="text-xs text-gray-400 hidden sm:inline">
-          Showing {filteredCategories.length} of {categories.length}
-        </span>
+
+        {/* Quick Filter Tabs: All vs Pinned */}
+        <div className="flex items-center gap-2">
+          <button
+            type="button"
+            onClick={() => setShowPinnedOnly(false)}
+            className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer ${
+              !showPinnedOnly
+                ? "bg-[#052a51] text-white shadow-2xs"
+                : "bg-gray-100 text-gray-600 hover:bg-gray-200"
+            }`}
+          >
+            All Categories ({categories.length})
+          </button>
+          <button
+            type="button"
+            onClick={() => setShowPinnedOnly(true)}
+            className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer flex items-center gap-1.5 ${
+              showPinnedOnly
+                ? "bg-amber-500 text-white shadow-2xs"
+                : "bg-amber-50 text-amber-900 border border-amber-200 hover:bg-amber-100"
+            }`}
+          >
+            <Pin size={13} className="fill-current" />
+            <span>Pinned Priority ({pinnedCategoryIds.length})</span>
+          </button>
+        </div>
       </div>
 
       {/* Category Grid */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
-        {filteredCategories.map((cat) => (
+        {filteredCategories.map((cat) => {
+          const isPinned = pinnedCategoryIds.includes(cat.id);
+          return (
           <div
             key={cat.id}
             className="bg-white rounded-3xl border border-gray-200/80 shadow-2xs overflow-hidden flex flex-col justify-between group hover:shadow-md transition-all"
@@ -287,6 +341,21 @@ export default function CategoryManagementComponent({
                   sizes="(max-width: 768px) 100vw, 33vw"
                 />
                 <div className="absolute inset-0 bg-gradient-to-t from-[#052a51]/90 via-[#052a51]/30 to-transparent" />
+
+                {/* Pin Priority Button (Top-Left) */}
+                <button
+                  type="button"
+                  onClick={(e) => handleTogglePin(cat, e)}
+                  className={`absolute top-3 left-3 px-2.5 py-1 rounded-xl text-[11px] font-black flex items-center gap-1.5 shadow-md transition-all cursor-pointer z-10 ${
+                    isPinned
+                      ? "bg-amber-500 text-white ring-2 ring-white"
+                      : "bg-white/90 hover:bg-white text-gray-700 hover:text-[#F26522] border border-gray-200"
+                  }`}
+                  title={isPinned ? "Click to unpin priority category" : "Pin as priority category"}
+                >
+                  <Pin size={12} className={isPinned ? "fill-white" : ""} />
+                  <span>{isPinned ? "Pinned Priority" : "Pin"}</span>
+                </button>
 
                 <div className="absolute top-3 right-3 flex items-center gap-1.5">
                   {cat.calculatorType && cat.calculatorType !== "none" && (
@@ -357,7 +426,8 @@ export default function CategoryManagementComponent({
               </div>
             </div>
           </div>
-        ))}
+          );
+        })}
       </div>
 
       {/* ── Category Add / Edit Modal ── */}

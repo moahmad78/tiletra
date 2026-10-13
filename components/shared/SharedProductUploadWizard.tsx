@@ -226,6 +226,7 @@ export default function SharedProductUploadWizard({
   const [customSubcategoryName, setCustomSubcategoryName] = useState<string>("");
   const [customSubcategoryDesc, setCustomSubcategoryDesc] = useState<string>("");
   const [customSubcategoryImage, setCustomSubcategoryImage] = useState<string>("");
+  const [customSubcategoryGallery, setCustomSubcategoryGallery] = useState<string[]>([]);
   const [customSubcategoryImageMode, setCustomSubcategoryImageMode] = useState<"upload" | "link">("upload");
   const [customSubcategoryUrlInput, setCustomSubcategoryUrlInput] = useState<string>("");
   const [isUploadingSubcategoryImage, setIsUploadingSubcategoryImage] = useState<boolean>(false);
@@ -247,6 +248,12 @@ export default function SharedProductUploadWizard({
   const [heightCm, setHeightCm] = useState<string>("");
   const [packedWeightKg, setPackedWeightKg] = useState<string>("");
   const [inTheBox, setInTheBox] = useState<string>("");
+
+  // ── Sub-category Image Gallery State & References ──
+  const [subcategoryGallery, setSubcategoryGallery] = useState<string[]>([]);
+  const [subcatGalleryUrlInput, setSubcatGalleryUrlInput] = useState<string>("");
+  const [isUploadingSubcatGallery, setIsUploadingSubcatGallery] = useState<boolean>(false);
+  const subcatGalleryFileInputRef = useRef<HTMLInputElement>(null);
 
   // ── STEP 4: Promotional Badges & Marketing Labels (PRD) ──
   const [showAutoDiscount, setShowAutoDiscount] = useState<boolean>(true);
@@ -376,6 +383,41 @@ export default function SharedProductUploadWizard({
       localStorage.setItem(PINNED_CAT_KEY, JSON.stringify(prefPayload));
       setIsCategoryPinned(true);
       toast.success("📌 Pinned as Default Category for fast repeat uploads!");
+    }
+  };
+
+  // Direct 1-Click Pin / Unpin on specific Category card (CPO & Vendor)
+  const handleTogglePinCategoryFor = (catId: string, e?: React.MouseEvent) => {
+    if (e) {
+      e.stopPropagation();
+      e.preventDefault();
+    }
+    const targetCat = categories.find((c) => c.id === catId);
+    if (!targetCat) return;
+
+    if (isCategoryPinned && selectedCategoryId === catId) {
+      localStorage.removeItem(VENDOR_PINNED_PREF_KEY);
+      localStorage.removeItem("intrihub_vendor_upload_pref");
+      localStorage.removeItem(PINNED_CAT_KEY);
+      setIsCategoryPinned(false);
+      toast.info(`"${targetCat.name}" unpinned from default category`);
+    } else {
+      setSelectedCategoryId(catId);
+      setSelectedSubcategoryId("");
+      const prefPayload = {
+        categoryId: catId,
+        subCategoryId: "",
+        subcategoryId: "",
+        categorySlug: targetCat.slug,
+        categoryName: targetCat.name,
+        vendorId: activeVendorId || "",
+        pinnedAt: new Date().toISOString(),
+      };
+      localStorage.setItem(VENDOR_PINNED_PREF_KEY, JSON.stringify(prefPayload));
+      localStorage.setItem("intrihub_vendor_upload_pref", JSON.stringify(prefPayload));
+      localStorage.setItem(PINNED_CAT_KEY, JSON.stringify(prefPayload));
+      setIsCategoryPinned(true);
+      toast.success(`📌 "${targetCat.name}" pinned as Default Category for fast uploads!`);
     }
   };
 
@@ -694,6 +736,88 @@ export default function SharedProductUploadWizard({
     return selectedCategory.children?.find((c: any) => c.id === selectedSubcategoryId) || null;
   }, [selectedCategory, selectedSubcategoryId]);
 
+  // Sub-category gallery sync effect
+  useEffect(() => {
+    if (selectedSubcategory?.image) {
+      setSubcategoryGallery((prev) => {
+        if (!prev.includes(selectedSubcategory.image)) {
+          return [selectedSubcategory.image, ...prev];
+        }
+        return prev;
+      });
+    }
+  }, [selectedSubcategory]);
+
+  // Sub-category gallery helper functions
+  const handleUploadSubcatGalleryFiles = async (files: FileList | File[]) => {
+    if (!files || files.length === 0) return;
+    setIsUploadingSubcatGallery(true);
+    const addedUrls: string[] = [];
+    try {
+      for (let i = 0; i < files.length; i++) {
+        const file = files[i];
+        if (!file.type.startsWith("image/")) continue;
+        const formData = new FormData();
+        if (activeVendorId) formData.append("vendorId", activeVendorId);
+        formData.append("file", file);
+        const res = await fetch("/api/upload", { method: "POST", body: formData });
+        const data = await res.json();
+        if (res.ok && data.success) {
+          const finalUrl = data.url || (Array.isArray(data.urls) && data.urls[0]);
+          if (finalUrl) addedUrls.push(finalUrl);
+        }
+      }
+      if (addedUrls.length > 0) {
+        setSubcategoryGallery((prev) => [...prev, ...addedUrls]);
+        setImages((prev) => [...prev.filter((img) => img !== "/placeholders/product.svg"), ...addedUrls]);
+        toast.success(`Added ${addedUrls.length} photo(s) to sub-category gallery & product gallery!`);
+      }
+    } catch (err) {
+      console.error("Subcategory gallery upload error:", err);
+      toast.error("Failed to upload sub-category gallery photos");
+    } finally {
+      setIsUploadingSubcatGallery(false);
+    }
+  };
+
+  const handleAddSubcatGalleryUrl = () => {
+    const trimmed = subcatGalleryUrlInput.trim();
+    if (!trimmed) {
+      toast.error("Please enter a valid image URL");
+      return;
+    }
+    setSubcategoryGallery((prev) => [...prev, trimmed]);
+    setImages((prev) => [...prev.filter((img) => img !== "/placeholders/product.svg"), trimmed]);
+    setSubcatGalleryUrlInput("");
+    toast.success("Photo added to sub-category gallery!");
+  };
+
+  const handleRemoveSubcatGalleryImage = (indexToRemove: number) => {
+    setSubcategoryGallery((prev) => prev.filter((_, idx) => idx !== indexToRemove));
+    toast.info("Photo removed from sub-category gallery");
+  };
+
+  const handleSetSubcatCover = (imgUrl: string) => {
+    setSubcategoryGallery((prev) => [imgUrl, ...prev.filter((u) => u !== imgUrl)]);
+    setImages((prev) => [imgUrl, ...prev.filter((u) => u !== imgUrl)]);
+    toast.success("Set as primary cover photo!");
+  };
+
+  const handleSyncSubcatToMain = () => {
+    if (subcategoryGallery.length === 0) {
+      toast.error("No photos in sub-category gallery to sync");
+      return;
+    }
+    setImages((prev) => {
+      const combined = [...prev.filter((img) => img !== "/placeholders/product.svg")];
+      subcategoryGallery.forEach((url) => {
+        if (!combined.includes(url)) combined.push(url);
+      });
+      return combined;
+    });
+    toast.success("All sub-category photos synced to primary product gallery!");
+  };
+
   const activeAttributeSchema = useMemo(() => {
     if (selectedCategory?.attributeSchema && Array.isArray(selectedCategory.attributeSchema)) {
       return selectedCategory.attributeSchema;
@@ -948,6 +1072,7 @@ export default function SharedProductUploadWizard({
 
         // Apply image if provided and primary image list is empty
         if (finalSubImage) {
+          setSubcategoryGallery([finalSubImage]);
           setImages((prev) => {
             if (!prev.includes(finalSubImage)) {
               return [finalSubImage, ...prev.filter((img) => img !== "/placeholders/product.svg")];
@@ -1803,6 +1928,7 @@ export default function SharedProductUploadWizard({
             ) : (
               filteredCategoryList.map((cat) => {
                 const isSelected = selectedCategoryId === cat.id;
+                const isThisPinned = isCategoryPinned && selectedCategoryId === cat.id;
                 const categoryCoverImage = resolveCategoryBulkImage(cat.image, cat.slug, cat.name);
                 return (
                   <button
@@ -1832,6 +1958,21 @@ export default function SharedProductUploadWizard({
                           }
                         }}
                       />
+
+                      {/* 📌 Quick 1-Click Pin Button on Card */}
+                      <button
+                        type="button"
+                        onClick={(e) => handleTogglePinCategoryFor(cat.id, e)}
+                        title={isThisPinned ? "Click to unpin default category" : "📌 Pin as Default Category"}
+                        className={`absolute top-1.5 left-1.5 px-2 py-0.5 rounded-lg text-[10px] font-black flex items-center gap-1 shadow-md transition-all cursor-pointer z-10 ${
+                          isThisPinned
+                            ? "bg-amber-500 text-white ring-2 ring-white"
+                            : "bg-white/90 hover:bg-white text-gray-700 hover:text-[#F26522] border border-gray-200"
+                        }`}
+                      >
+                        <Pin size={10} className={isThisPinned ? "fill-white" : ""} />
+                        <span>{isThisPinned ? "Pinned" : "Pin"}</span>
+                      </button>
 
                       {/* Selection Checkmark Badge */}
                       {isSelected && (
@@ -2959,65 +3100,168 @@ export default function SharedProductUploadWizard({
                       </div>
                     </div>
 
-                    {/* 4. Sub-category Specific Image */}
-                    <div className="p-3.5 bg-gray-50/80 rounded-2xl border border-gray-200 space-y-2.5">
-                      <label className="text-xs font-black text-gray-900 flex items-center justify-between">
-                        <span className="flex items-center gap-1.5">
-                          <ImageIcon size={15} className="text-[#F26522]" />
-                          <span>Sub-category Image</span>
-                        </span>
-                        <span className="text-[10px] text-gray-400">Linked to this sub-category</span>
-                      </label>
-
-                      {selectedSubcategory.image ? (
-                        <div className="flex items-center gap-3 p-3 bg-white rounded-2xl border border-orange-200">
-                          <img
-                            src={selectedSubcategory.image}
-                            alt={selectedSubcategory.name}
-                            className="w-14 h-14 rounded-xl object-cover border border-gray-200 shrink-0"
-                            onError={(e) => {
-                              (e.currentTarget as HTMLImageElement).src = "/placeholders/category.svg";
-                            }}
-                          />
-                          <div className="flex-1 min-w-0">
-                            <p className="text-xs font-black text-gray-900 truncate">
-                              {selectedSubcategory.name} Photo
-                            </p>
-                            <p className="text-[10px] text-gray-500 truncate font-mono mt-0.5">
-                              {selectedSubcategory.image}
-                            </p>
-                            <div className="flex items-center gap-3 mt-1.5">
-                              <button
-                                type="button"
-                                onClick={() => {
-                                  if (selectedSubcategory.image && !images.includes(selectedSubcategory.image)) {
-                                    setImages([selectedSubcategory.image, ...images.filter((img) => img !== "/placeholders/product.svg")]);
-                                    toast.success("Sub-category photo set as primary product image!");
-                                  } else {
-                                    toast.info("Image already included in product gallery.");
-                                  }
-                                }}
-                                className="text-[11px] font-bold text-[#F26522] hover:underline flex items-center gap-1 cursor-pointer"
-                              >
-                                <Zap size={11} /> Use as Primary Product Image
-                              </button>
-                            </div>
-                          </div>
+                    {/* 4. Sub-category Image Gallery (PRD Multi-Image Sub-category) */}
+                    <div className="p-4 bg-orange-50/40 rounded-2xl border-2 border-orange-200/80 space-y-3.5">
+                      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+                        <div>
+                          <label className="text-xs font-black text-gray-900 flex items-center gap-1.5">
+                            <ImageIcon size={15} className="text-[#F26522]" />
+                            <span>Sub-category Image Gallery</span>
+                            <span className="text-[10px] bg-[#F26522] text-white font-extrabold px-1.5 py-0.2 rounded uppercase">
+                              {subcategoryGallery.length} {subcategoryGallery.length === 1 ? "Photo" : "Photos"}
+                            </span>
+                          </label>
+                          <p className="text-[11px] text-gray-500 mt-0.5">
+                            Upload multiple photos dedicated to {selectedSubcategory.name}. All photos sync to the storefront product gallery.
+                          </p>
                         </div>
-                      ) : (
-                        <div className="p-3 bg-white rounded-2xl border border-gray-200 flex items-center justify-between">
-                          <span className="text-xs text-gray-500">
-                            No dedicated image linked to this sub-category yet.
-                          </span>
+
+                        {subcategoryGallery.length > 0 && (
                           <button
                             type="button"
-                            onClick={() => setIsAddingCustomSubcategory(true)}
-                            className="text-xs font-bold text-[#F26522] hover:underline cursor-pointer"
+                            onClick={handleSyncSubcatToMain}
+                            className="px-3 py-1.5 rounded-xl bg-[#052a51] hover:bg-[#073666] text-white text-[11px] font-bold flex items-center gap-1.5 cursor-pointer shadow-2xs self-start sm:self-auto"
+                            title="Sync all sub-category photos to primary product gallery"
                           >
-                            + Add Image via Sub-type
+                            <Zap size={12} className="text-[#F26522] fill-[#F26522]" />
+                            <span>Sync to Product Gallery</span>
                           </button>
+                        )}
+                      </div>
+
+                      {/* Gallery Thumbnails Grid */}
+                      {subcategoryGallery.length > 0 ? (
+                        <div className="grid grid-cols-2 sm:grid-cols-4 md:grid-cols-5 gap-2.5">
+                          {subcategoryGallery.map((imgUrl, idx) => {
+                            const isPrimary = idx === 0;
+                            return (
+                              <div
+                                key={`${imgUrl}-${idx}`}
+                                className={`group relative aspect-square rounded-2xl overflow-hidden border bg-white shadow-2xs transition-all ${
+                                  isPrimary ? "border-[#F26522] ring-2 ring-[#F26522]" : "border-gray-200"
+                                }`}
+                              >
+                                <img
+                                  src={imgUrl}
+                                  alt={`${selectedSubcategory.name} ${idx + 1}`}
+                                  className="w-full h-full object-cover"
+                                  onError={(e) => {
+                                    (e.currentTarget as HTMLImageElement).src = "/placeholders/category.svg";
+                                  }}
+                                />
+
+                                {/* Badge */}
+                                {isPrimary ? (
+                                  <span className="absolute top-1.5 left-1.5 px-1.5 py-0.5 bg-[#F26522] text-white text-[9px] font-black rounded-md shadow-xs">
+                                    Primary Cover
+                                  </span>
+                                ) : (
+                                  <button
+                                    type="button"
+                                    onClick={() => handleSetSubcatCover(imgUrl)}
+                                    className="absolute top-1.5 left-1.5 px-1.5 py-0.5 bg-black/60 hover:bg-[#F26522] text-white text-[9px] font-bold rounded-md opacity-0 group-hover:opacity-100 transition-opacity cursor-pointer"
+                                  >
+                                    Make Cover
+                                  </button>
+                                )}
+
+                                {/* Delete button */}
+                                <button
+                                  type="button"
+                                  onClick={() => handleRemoveSubcatGalleryImage(idx)}
+                                  className="absolute top-1.5 right-1.5 w-6 h-6 rounded-full bg-red-600/90 text-white flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity shadow-sm hover:bg-red-700 cursor-pointer"
+                                  title="Remove photo"
+                                >
+                                  <X size={12} />
+                                </button>
+                              </div>
+                            );
+                          })}
+                        </div>
+                      ) : (
+                        <div className="p-4 bg-white rounded-2xl border border-dashed border-gray-300 text-center">
+                          <ImageIcon size={24} className="mx-auto text-gray-300 mb-1" />
+                          <p className="text-xs font-bold text-gray-600">No photos in sub-category gallery yet</p>
+                          <p className="text-[10px] text-gray-400">Upload multiple photos or paste image links below</p>
                         </div>
                       )}
+
+                      {/* Add Image Controls: File Upload & URL Link */}
+                      <div className="space-y-2 pt-1">
+                        <div className="flex flex-col sm:flex-row gap-2">
+                          <input
+                            type="file"
+                            ref={subcatGalleryFileInputRef}
+                            accept="image/png,image/jpeg,image/webp,image/svg+xml"
+                            multiple
+                            onChange={(e) => {
+                              if (e.target.files) handleUploadSubcatGalleryFiles(e.target.files);
+                            }}
+                            className="hidden"
+                          />
+                          <button
+                            type="button"
+                            onClick={() => subcatGalleryFileInputRef.current?.click()}
+                            disabled={isUploadingSubcatGallery}
+                            className="px-4 py-2.5 rounded-xl border border-dashed border-[#F26522] bg-orange-50 hover:bg-orange-100 text-[#F26522] text-xs font-black flex items-center justify-center gap-2 cursor-pointer transition-colors disabled:opacity-50"
+                          >
+                            {isUploadingSubcatGallery ? (
+                              <Loader2 size={14} className="animate-spin" />
+                            ) : (
+                              <Upload size={14} />
+                            )}
+                            <span>+ Upload Sub-category Photos</span>
+                          </button>
+
+                          {/* URL Paste */}
+                          <div className="flex-1 flex gap-1.5">
+                            <input
+                              type="url"
+                              placeholder="Or paste photo URL (https://... or /images/...)"
+                              value={subcatGalleryUrlInput}
+                              onChange={(e) => setSubcatGalleryUrlInput(e.target.value)}
+                              onKeyDown={(e) => {
+                                if (e.key === "Enter") {
+                                  e.preventDefault();
+                                  handleAddSubcatGalleryUrl();
+                                }
+                              }}
+                              className="flex-1 px-3 py-2 rounded-xl border border-gray-200 text-xs bg-white focus:outline-none focus:border-[#F26522]"
+                            />
+                            <button
+                              type="button"
+                              onClick={handleAddSubcatGalleryUrl}
+                              className="px-3.5 py-2 rounded-xl bg-gray-900 text-white text-xs font-bold hover:bg-gray-800 transition-colors cursor-pointer shrink-0"
+                            >
+                              Add
+                            </button>
+                          </div>
+                        </div>
+
+                        {/* Quick preset tiles */}
+                        <div className="flex flex-wrap items-center gap-1.5 pt-1">
+                          <span className="text-[10px] font-bold text-gray-400">Presets:</span>
+                          {[
+                            { name: "Glossy White", url: "/images/categories/cat-tiles-stone.jpg" },
+                            { name: "Marble Texture", url: "/images/categories/cat-floor-tiles.jpg" },
+                            { name: "Teak Wood", url: "/images/categories/cat-plywood.jpg" },
+                            { name: "Sanitary Chrome", url: "/images/categories/cat-sanitaryware-bath.jpg" },
+                          ].map((pre) => (
+                            <button
+                              key={pre.name}
+                              type="button"
+                              onClick={() => {
+                                setSubcategoryGallery((prev) => [...prev, pre.url]);
+                                setImages((prev) => [...prev.filter((i) => i !== "/placeholders/product.svg"), pre.url]);
+                                toast.success(`Added ${pre.name} photo`);
+                              }}
+                              className="px-2 py-0.5 rounded-lg bg-white border border-gray-200 text-[10px] font-medium text-gray-700 hover:border-orange-300 hover:text-[#F26522] cursor-pointer"
+                            >
+                              + {pre.name}
+                            </button>
+                          ))}
+                        </div>
+                      </div>
                     </div>
                   </div>
                 )}
