@@ -142,7 +142,9 @@ export default function SharedProductUploadWizard({
 
   useEffect(() => {
     if (activeVendorId) {
-      getVendorProfile(activeVendorId).then((v) => setVendorProfile(v));
+      getVendorProfile(activeVendorId)
+        .then((v) => setVendorProfile(v))
+        .catch((err) => console.error("Error loading vendor profile:", err));
     }
   }, [activeVendorId]);
 
@@ -706,39 +708,43 @@ export default function SharedProductUploadWizard({
 
   // Load Categories on Mount & Auto-read Pinned Category (BUG-01 Fix)
   useEffect(() => {
-    getCategories().then((cats) => {
-      const typedCats = cats as CategoryWithChildren[];
-      setCategories(typedCats);
+    getCategories()
+      .then((cats) => {
+        const typedCats = cats as CategoryWithChildren[];
+        setCategories(typedCats);
 
-      try {
-        const rawPref =
-          localStorage.getItem("intrihub_vendor_pinned_pref") ||
-          localStorage.getItem("intrihub_vendor_upload_pref") ||
-          localStorage.getItem(`intrihub_pinned_category_${activeVendorId || "common"}`);
-        if (rawPref) {
-          const pref = JSON.parse(rawPref);
-          const subId = pref.subCategoryId || pref.subcategoryId || "";
-          const matched = typedCats.find(
-            (c) => c.id === pref.categoryId || c.slug === pref.categorySlug || c.slug === pref.categoryId
-          );
-          if (matched) {
-            setSelectedCategoryId(matched.id);
-            setIsCategoryPinned(true);
-            if (subId) {
-              const matchedSub = matched.children?.find(
-                (ch: any) => ch.id === subId || ch.slug === subId
-              );
-              if (matchedSub) {
-                setSelectedSubcategoryId(matchedSub.id);
-                setIsSubcategoryRevealed(true);
+        try {
+          const rawPref =
+            localStorage.getItem("intrihub_vendor_pinned_pref") ||
+            localStorage.getItem("intrihub_vendor_upload_pref") ||
+            localStorage.getItem(`intrihub_pinned_category_${activeVendorId || "common"}`);
+          if (rawPref) {
+            const pref = JSON.parse(rawPref);
+            const subId = pref.subCategoryId || pref.subcategoryId || "";
+            const matched = typedCats.find(
+              (c) => c.id === pref.categoryId || c.slug === pref.categorySlug || c.slug === pref.categoryId
+            );
+            if (matched) {
+              setSelectedCategoryId(matched.id);
+              setIsCategoryPinned(true);
+              if (subId) {
+                const matchedSub = matched.children?.find(
+                  (ch: any) => ch.id === subId || ch.slug === subId
+                );
+                if (matchedSub) {
+                  setSelectedSubcategoryId(matchedSub.id);
+                  setIsSubcategoryRevealed(true);
+                }
               }
             }
           }
+        } catch (err) {
+          console.error("Error pre-loading pinned category preference:", err);
         }
-      } catch (err) {
-        console.error("Error pre-loading pinned category preference:", err);
-      }
-    });
+      })
+      .catch((err) => {
+        console.error("Error loading categories:", err);
+      });
   }, [activeVendorId]);
 
   const selectedCategory = useMemo(() => {
@@ -1055,7 +1061,8 @@ export default function SharedProductUploadWizard({
         toast.error(res.error || "Failed to create category");
       }
     } catch (err: any) {
-      toast.error(err?.message || "Failed to create custom category");
+      const isHtmlErr = err?.message?.includes("<!DOCTYPE") || err?.message?.includes("Unexpected token '<'");
+      toast.error(isHtmlErr ? "Server communication issue. Please reload page or check session." : (err?.message || "Failed to create custom category"));
     } finally {
       setIsSavingCategory(false);
     }
@@ -1189,7 +1196,8 @@ export default function SharedProductUploadWizard({
         toast.error(res.error || "Failed to create sub-category");
       }
     } catch (err: any) {
-      toast.error(err?.message || "Failed to create custom sub-category");
+      const isHtmlErr = err?.message?.includes("<!DOCTYPE") || err?.message?.includes("Unexpected token '<'");
+      toast.error(isHtmlErr ? "Server communication issue. Please reload page or check session." : (err?.message || "Failed to create custom sub-category"));
     } finally {
       setIsSavingSubcategory(false);
     }
@@ -1563,92 +1571,103 @@ export default function SharedProductUploadWizard({
     const targetStatus = submitAction === "draft" ? "draft" : "active";
     const targetApproval = submitAction === "draft" ? "pending" : "approved";
 
-    const res = await createProduct({
-      name: title.trim(),
-      categoryId: selectedSubcategoryId || selectedCategoryId || null,
-      categorySlug: finalCategorySlug,
-      categoryName: finalCategoryName,
-      subcategory: productType || (selectedSubcategory ? selectedSubcategory.name : null),
-      brand: activeBrand,
-      modelNumber: modelNumber || null,
-      sku: sku || null,
-      material: dynamicAttributes["Material"] || "Standard",
-      description: description.trim(),
-      images,
-      videos: videoUrl ? [videoUrl] : [],
-      unitOfSale,
-      hasVariants: isMultiVariety,
-      mrp: mrpNum > 0 ? mrpNum : null,
-      costPrice: costNum > 0 ? costNum : null,
-      tags: selectedTags,
-      customBadgeText: customBadgeText.trim() || null,
-      badgeColor,
-      showAutoDiscount,
-      vendorId: activeVendorId || null,
-      manufacturer: manufacturer || null,
-      condition,
-      highlights,
-      keywords,
-      countryOfOrigin,
-      hsnCode: hsnCode || null,
-      gstPercent: gstRate,
-      gstRate,
-      allowBackorders,
-      minOrderQuantity: parseInt(minOrderQuantity, 10) || 1,
-      maxOrderQuantity: maxOrderQuantity ? parseInt(maxOrderQuantity, 10) : null,
-      priceTiers: priceTiers.map((pt) => ({ minQuantity: pt.minQuantity, price: pt.price })),
-      variants: formattedVariants,
-      attributes: formattedAttributes,
-      dimensions: lengthCm || widthCm || heightCm || packedWeightKg ? {
-        lengthCm: lengthCm ? parseFloat(lengthCm) : undefined,
-        widthCm: widthCm ? parseFloat(widthCm) : undefined,
-        heightCm: heightCm ? parseFloat(heightCm) : undefined,
-        packedWeightKg: packedWeightKg ? parseFloat(packedWeightKg) : undefined,
-      } : null,
-      inTheBox: inTheBox || null,
-      isBulky: shippingMode === "heavy_bulky" || shippingMode === "heavy_bulk",
-      shippingMode,
-      dispatchTimeDays: parseInt(dispatchTimeDays, 10) || 2,
-      pincodesServed: shippingCoverage === "custom_pincodes" ? pincodesServed : [],
-      freeDeliveryAbove: freeDeliveryAbove ? parseFloat(freeDeliveryAbove) : null,
-      deliveryCharge: deliveryCharge ? parseFloat(deliveryCharge) : null,
-      allowScheduledDelivery,
-      allowCod,
-      isFragile,
-      isPerishable,
-      returnPolicyDays: hasReturnPolicy ? (parseInt(returnPolicyDays, 10) || 7) : 0,
-      replacementAllowed: hasReturnPolicy ? (returnType === "replacement" || returnType === "refund_replacement") : false,
-      warrantyType,
-      warrantyDuration,
-      returnConditions: hasReturnPolicy
-        ? returnConditions
-        : "No returns or refunds accepted for this item.",
-      complianceDeclarations: {
-        ageRestriction: complianceAge,
-        hazardous: complianceHazardous,
-        hasBattery: complianceBattery,
-        isLiquid: complianceLiquid,
-      },
-      certificates,
-      vendorDeclaration,
-      metaTitle: metaTitle || null,
-      metaDescription: metaDescription || null,
-      status: targetStatus,
-      approvalStatus: targetApproval,
-    });
+    try {
+      const res = await createProduct({
+        name: title.trim(),
+        categoryId: selectedSubcategoryId || selectedCategoryId || null,
+        categorySlug: finalCategorySlug,
+        categoryName: finalCategoryName,
+        subcategory: productType || (selectedSubcategory ? selectedSubcategory.name : null),
+        brand: activeBrand,
+        modelNumber: modelNumber || null,
+        sku: sku || null,
+        material: dynamicAttributes["Material"] || "Standard",
+        description: description.trim(),
+        images,
+        videos: videoUrl ? [videoUrl] : [],
+        unitOfSale,
+        hasVariants: isMultiVariety,
+        mrp: mrpNum > 0 ? mrpNum : null,
+        costPrice: costNum > 0 ? costNum : null,
+        tags: selectedTags,
+        customBadgeText: customBadgeText.trim() || null,
+        badgeColor,
+        showAutoDiscount,
+        vendorId: activeVendorId || null,
+        manufacturer: manufacturer || null,
+        condition,
+        highlights,
+        keywords,
+        countryOfOrigin,
+        hsnCode: hsnCode || null,
+        gstPercent: gstRate,
+        gstRate,
+        allowBackorders,
+        minOrderQuantity: parseInt(minOrderQuantity, 10) || 1,
+        maxOrderQuantity: maxOrderQuantity ? parseInt(maxOrderQuantity, 10) : null,
+        priceTiers: priceTiers.map((pt) => ({ minQuantity: pt.minQuantity, price: pt.price })),
+        variants: formattedVariants,
+        attributes: formattedAttributes,
+        dimensions: lengthCm || widthCm || heightCm || packedWeightKg ? {
+          lengthCm: lengthCm ? parseFloat(lengthCm) : undefined,
+          widthCm: widthCm ? parseFloat(widthCm) : undefined,
+          heightCm: heightCm ? parseFloat(heightCm) : undefined,
+          packedWeightKg: packedWeightKg ? parseFloat(packedWeightKg) : undefined,
+        } : null,
+        inTheBox: inTheBox || null,
+        isBulky: shippingMode === "heavy_bulky" || shippingMode === "heavy_bulk",
+        shippingMode,
+        dispatchTimeDays: parseInt(dispatchTimeDays, 10) || 2,
+        pincodesServed: shippingCoverage === "custom_pincodes" ? pincodesServed : [],
+        freeDeliveryAbove: freeDeliveryAbove ? parseFloat(freeDeliveryAbove) : null,
+        deliveryCharge: deliveryCharge ? parseFloat(deliveryCharge) : null,
+        allowScheduledDelivery,
+        allowCod,
+        isFragile,
+        isPerishable,
+        returnPolicyDays: hasReturnPolicy ? (parseInt(returnPolicyDays, 10) || 7) : 0,
+        replacementAllowed: hasReturnPolicy ? (returnType === "replacement" || returnType === "refund_replacement") : false,
+        warrantyType,
+        warrantyDuration,
+        returnConditions: hasReturnPolicy
+          ? returnConditions
+          : "No returns or refunds accepted for this item.",
+        complianceDeclarations: {
+          ageRestriction: complianceAge,
+          hazardous: complianceHazardous,
+          hasBattery: complianceBattery,
+          isLiquid: complianceLiquid,
+        },
+        certificates,
+        vendorDeclaration,
+        metaTitle: metaTitle || null,
+        metaDescription: metaDescription || null,
+        status: targetStatus,
+        approvalStatus: targetApproval,
+      });
 
-    setLoading(false);
+      setLoading(false);
 
-    if (res.success) {
-      localStorage.removeItem(AUTOSAVE_KEY);
-      toast.success(
-        submitAction === "draft"
-          ? `Draft saved: "${title}"`
-          : `🎉 Product "${title}" is now LIVE on store!`
+      if (res.success) {
+        localStorage.removeItem(AUTOSAVE_KEY);
+        toast.success(
+          submitAction === "draft"
+            ? `Draft saved: "${title}"`
+            : `🎉 Product "${title}" is now LIVE on store!`
+        );
+        router.push(onSuccessRedirectUrl);
+      } else {
+        toast.error(res.error || "Failed to create product listing");
+      }
+    } catch (err: any) {
+      setLoading(false);
+      console.error("Create product failed:", err);
+      const isHtmlErr = err?.message?.includes("<!DOCTYPE") || err?.message?.includes("Unexpected token '<'");
+      toast.error(
+        isHtmlErr
+          ? "Server communication issue. Please reload page or check session."
+          : (err?.message || "Failed to create product listing")
       );
-      router.push(onSuccessRedirectUrl);
-    } else {
-      toast.error(res.error || "Failed to create product listing");
     }
   };
 

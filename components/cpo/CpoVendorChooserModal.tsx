@@ -84,7 +84,8 @@ export default function CpoVendorChooserModal({
         toast.error(res.error || "Failed to switch vendor");
       }
     } catch (err: any) {
-      toast.error(err?.message || "Failed to set active vendor");
+      const isHtmlErr = err?.message?.includes("<!DOCTYPE") || err?.message?.includes("Unexpected token '<'");
+      toast.error(isHtmlErr ? "Session or server communication issue. Please reload page." : (err?.message || "Failed to set active vendor"));
     } finally {
       setSubmittingId(null);
     }
