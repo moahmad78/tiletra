@@ -133,9 +133,9 @@ async function main() {
     },
     {
       id: "slide-2",
-      badge: "Zero Shipping Cost",
-      title: "Free Delivery Above ₹15,000",
-      subtitle: "Direct from Morbi & Bangalore factory warehouses",
+      badge: "Factory Direct",
+      title: "Morbi & Bangalore Direct Supply",
+      subtitle: "Direct factory rates for premium vitrified tiles, granite & bathware",
       cta: "Explore Catalog",
       href: "/shop",
       image: "/placeholders/product.svg",

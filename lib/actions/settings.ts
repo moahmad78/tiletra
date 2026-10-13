@@ -128,6 +128,24 @@ export async function invalidateOfferBannersCache(): Promise<void> {
   cachedBanners = null;
 }
 
+function sanitizeBanner<T extends { title?: string | null; badge?: string | null; subtitle?: string | null }>(b: T): T {
+  let title = b.title || "";
+  let badge = b.badge || "";
+  let subtitle = b.subtitle || "";
+
+  if (title.includes("15,000") || /free delivery/i.test(title)) {
+    title = "Morbi & Bangalore Direct Supply";
+  }
+  if (badge.includes("15,000") || /zero shipping/i.test(badge) || /free delivery/i.test(badge)) {
+    badge = "Factory Direct";
+  }
+  if (subtitle.includes("15,000") || /free delivery/i.test(subtitle)) {
+    subtitle = "Direct factory rates for premium vitrified tiles, granite & bathware";
+  }
+
+  return { ...b, title, badge, subtitle };
+}
+
 export async function getOfferBanners() {
   const now = Date.now();
   if (cachedBanners && now - cachedBanners.timestamp < BANNERS_CACHE_TTL) {
@@ -139,8 +157,9 @@ export async function getOfferBanners() {
       where: { isActive: true },
       orderBy: { order: "asc" },
     });
-    cachedBanners = { data: banners, timestamp: now };
-    return banners;
+    const sanitized = banners.map(sanitizeBanner);
+    cachedBanners = { data: sanitized, timestamp: now };
+    return sanitized;
   } catch (error) {
     console.error("Error fetching banners:", error);
     return [];

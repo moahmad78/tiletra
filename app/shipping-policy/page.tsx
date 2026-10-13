@@ -26,9 +26,9 @@ export default function ShippingPolicyPage() {
         <div className="p-5 bg-orange-50/80 border border-orange-200/70 rounded-2xl flex items-start gap-3.5">
           <Truck className="text-[#F26522] shrink-0 mt-0.5" size={22} />
           <div>
-            <h3 className="font-extrabold text-[#052a51] text-base">Free Delivery Above ₹15,000</h3>
+            <h3 className="font-extrabold text-[#052a51] text-base">Standard Site Delivery</h3>
             <p className="text-xs sm:text-sm text-neutral-700 mt-1 leading-relaxed">
-              Standard site freight is 100% free on qualifying cart totals. Orders below threshold incur weight-based flat logistics rates starting at ₹99.
+              Safe crate &amp; pallet logistics with doorstep offloading across Bengaluru and pan-India destinations.
             </p>
           </div>
         </div>

@@ -27,8 +27,8 @@ export const INTRIHUB_FAQS: FAQItem[] = [
   {
     id: "del-3",
     categoryId: "delivery",
-    question: "Is delivery free, or are there minimum order requirements?",
-    answer: "Standard site delivery is 100% FREE for all orders above ₹15,000. For orders below this threshold, a flat weight-based logistics fee starting from ₹99 applies. Free delivery is automatically applied in your cart upon checkout.",
+    question: "How are delivery charges calculated, and is there a minimum order requirement?",
+    answer: "Delivery charges are calculated transparently based on total consignment weight and destination distance, starting from ₹99 for small supplies. There is no minimum order requirement.",
   },
   {
     id: "del-4",
