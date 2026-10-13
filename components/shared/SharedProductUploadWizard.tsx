@@ -40,6 +40,7 @@ import {
   Box,
   X,
   History,
+  Pin,
 } from "lucide-react";
 import { toast } from "sonner";
 import ImageUploadManager from "@/components/admin/ImageUploadManager";
@@ -232,8 +233,8 @@ export default function SharedProductUploadWizard({
   const [variants, setVariants] = useState<ProductVariant[]>([]);
 
   // ── STEP 6: Shipping & Delivery ──
-  const [shippingMode, setShippingMode] = useState<string>("standard");
-  const [dispatchTimeDays, setDispatchTimeDays] = useState<string>("2");
+  const [shippingMode, setShippingMode] = useState<string>("instant");
+  const [dispatchTimeDays, setDispatchTimeDays] = useState<string>("1");
   const [shippingCoverage, setShippingCoverage] = useState<"all_india" | "custom_pincodes">("all_india");
   const [pincodesServed, setPincodesServed] = useState<string[]>([]);
   const [pincodeInput, setPincodeInput] = useState<string>("");
@@ -245,6 +246,8 @@ export default function SharedProductUploadWizard({
   const [isPerishable, setIsPerishable] = useState<boolean>(false);
 
   // ── STEP 7: Returns, Warranty & Compliance ──
+  const [hasReturnPolicy, setHasReturnPolicy] = useState<boolean>(true);
+  const [returnType, setReturnType] = useState<"replacement" | "refund_replacement">("replacement");
   const [returnPolicyDays, setReturnPolicyDays] = useState<string>("7");
   const [replacementAllowed, setReplacementAllowed] = useState<boolean>(true);
   const [warrantyType, setWarrantyType] = useState<string>("brand");
@@ -258,6 +261,100 @@ export default function SharedProductUploadWizard({
   const [complianceLiquid, setComplianceLiquid] = useState<boolean>(false);
   const [certificates, setCertificates] = useState<string[]>([]);
   const [vendorDeclaration, setVendorDeclaration] = useState<boolean>(true);
+
+  // ── PINNED PREFERENCES (PRD Repeat Upload Accelerators) ──
+  const PINNED_CAT_KEY = `intrihub_pinned_category_${activeVendorId || "common"}`;
+  const PINNED_LOGISTICS_KEY = `intrihub_pinned_logistics_${activeVendorId || "common"}`;
+  const PINNED_RETURNS_KEY = `intrihub_pinned_returns_${activeVendorId || "common"}`;
+
+  const [isCategoryPinned, setIsCategoryPinned] = useState<boolean>(false);
+  const [isLogisticsPinned, setIsLogisticsPinned] = useState<boolean>(false);
+  const [isReturnPinned, setIsReturnPinned] = useState<boolean>(false);
+
+  useEffect(() => {
+    try {
+      const savedCat = localStorage.getItem(PINNED_CAT_KEY);
+      if (savedCat) {
+        const parsed = JSON.parse(savedCat);
+        if (parsed.categoryId) {
+          setSelectedCategoryId((prev) => prev || parsed.categoryId);
+          if (parsed.subcategoryId) {
+            setSelectedSubcategoryId((prev) => prev || parsed.subcategoryId);
+            setIsSubcategoryRevealed(true);
+          }
+          setIsCategoryPinned(true);
+        }
+      }
+
+      const savedLog = localStorage.getItem(PINNED_LOGISTICS_KEY);
+      if (savedLog) {
+        const parsed = JSON.parse(savedLog);
+        if (parsed.shippingMode) setShippingMode(parsed.shippingMode);
+        if (parsed.dispatchTimeDays) setDispatchTimeDays(parsed.dispatchTimeDays);
+        if (parsed.deliveryCharge) setDeliveryCharge(parsed.deliveryCharge);
+        setIsLogisticsPinned(true);
+      }
+
+      const savedRet = localStorage.getItem(PINNED_RETURNS_KEY);
+      if (savedRet) {
+        const parsed = JSON.parse(savedRet);
+        if (parsed.hasReturnPolicy !== undefined) setHasReturnPolicy(parsed.hasReturnPolicy);
+        if (parsed.returnPolicyDays) setReturnPolicyDays(parsed.returnPolicyDays);
+        if (parsed.returnType) setReturnType(parsed.returnType);
+        if (parsed.returnConditions) setReturnConditions(parsed.returnConditions);
+        setIsReturnPinned(true);
+      }
+    } catch {}
+  }, [PINNED_CAT_KEY, PINNED_LOGISTICS_KEY, PINNED_RETURNS_KEY]);
+
+  const handleTogglePinCategory = () => {
+    if (!selectedCategoryId) {
+      toast.error("Please select a Category before pinning as default");
+      return;
+    }
+    if (isCategoryPinned) {
+      localStorage.removeItem(PINNED_CAT_KEY);
+      setIsCategoryPinned(false);
+      toast.info("Category unpinned from defaults");
+    } else {
+      localStorage.setItem(
+        PINNED_CAT_KEY,
+        JSON.stringify({ categoryId: selectedCategoryId, subcategoryId: selectedSubcategoryId || "" })
+      );
+      setIsCategoryPinned(true);
+      toast.success("📌 Pinned as Default Category for fast repeat uploads!");
+    }
+  };
+
+  const handleTogglePinLogistics = () => {
+    if (isLogisticsPinned) {
+      localStorage.removeItem(PINNED_LOGISTICS_KEY);
+      setIsLogisticsPinned(false);
+      toast.info("Logistics preference unpinned");
+    } else {
+      localStorage.setItem(
+        PINNED_LOGISTICS_KEY,
+        JSON.stringify({ shippingMode, dispatchTimeDays, deliveryCharge })
+      );
+      setIsLogisticsPinned(true);
+      toast.success("📌 Pinned as Default Delivery Preference!");
+    }
+  };
+
+  const handleTogglePinReturns = () => {
+    if (isReturnPinned) {
+      localStorage.removeItem(PINNED_RETURNS_KEY);
+      setIsReturnPinned(false);
+      toast.info("Return policy unpinned");
+    } else {
+      localStorage.setItem(
+        PINNED_RETURNS_KEY,
+        JSON.stringify({ hasReturnPolicy, returnPolicyDays, returnType, returnConditions })
+      );
+      setIsReturnPinned(true);
+      toast.success("📌 Pinned as Default Return Policy!");
+    }
+  };
 
   // ── STEP 8: SEO, Preview & Publish (Slug generated automatically in backend) ──
   const currentSlug = useMemo(() => safeSlugify(title), [title]);
@@ -1110,6 +1207,7 @@ export default function SharedProductUploadWizard({
         packedWeightKg: packedWeightKg ? parseFloat(packedWeightKg) : undefined,
       } : null,
       inTheBox: inTheBox || null,
+      isBulky: shippingMode === "heavy_bulky" || shippingMode === "heavy_bulk",
       shippingMode,
       dispatchTimeDays: parseInt(dispatchTimeDays, 10) || 2,
       pincodesServed: shippingCoverage === "custom_pincodes" ? pincodesServed : [],
@@ -1119,11 +1217,13 @@ export default function SharedProductUploadWizard({
       allowCod,
       isFragile,
       isPerishable,
-      returnPolicyDays: parseInt(returnPolicyDays, 10) || 7,
-      replacementAllowed,
+      returnPolicyDays: hasReturnPolicy ? (parseInt(returnPolicyDays, 10) || 7) : 0,
+      replacementAllowed: hasReturnPolicy ? (returnType === "replacement" || returnType === "refund_replacement") : false,
       warrantyType,
       warrantyDuration,
-      returnConditions,
+      returnConditions: hasReturnPolicy
+        ? returnConditions
+        : "No returns or refunds accepted for this item.",
       complianceDeclarations: {
         ageRestriction: complianceAge,
         hazardous: complianceHazardous,
@@ -1482,7 +1582,7 @@ export default function SharedProductUploadWizard({
           </div>
 
           {selectedCategory && (
-            <div className="p-4 rounded-2xl bg-emerald-50 border border-emerald-200 flex items-center justify-between text-xs text-emerald-900 shadow-2xs">
+            <div className="p-4 rounded-2xl bg-emerald-50 border border-emerald-200 flex flex-col sm:flex-row sm:items-center justify-between gap-3 text-xs text-emerald-900 shadow-2xs">
               <div className="flex items-center gap-3">
                 {selectedCategory.image && (
                   <img
@@ -1498,17 +1598,38 @@ export default function SharedProductUploadWizard({
                   <div className="flex items-center gap-2">
                     <CheckCircle2 size={16} className="text-emerald-600 shrink-0" />
                     <span className="font-bold text-gray-900">
-                      Active Category: <strong className="text-emerald-800">{selectedCategory.name}</strong>
+                      Active: <strong className="text-emerald-800">{selectedCategory.name}</strong>
                     </span>
+                    {selectedSubcategory && (
+                      <span className="text-[11px] bg-emerald-200/80 text-emerald-900 font-bold px-2 py-0.5 rounded-md">
+                        ↳ {selectedSubcategory.name}
+                      </span>
+                    )}
                   </div>
                   <p className="text-[11px] text-emerald-700/80 mt-0.5 line-clamp-1">
                     {selectedCategory.description || `${selectedCategory.name} products & catalog materials`}
                   </p>
                 </div>
               </div>
-              <span className="text-[11px] font-mono text-emerald-700 bg-emerald-100/80 px-2.5 py-1 rounded-md shrink-0">
-                slug: {selectedCategory.slug}
-              </span>
+
+              <div className="flex items-center gap-2 self-start sm:self-auto shrink-0">
+                <button
+                  type="button"
+                  onClick={handleTogglePinCategory}
+                  className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer flex items-center gap-1.5 border shadow-2xs ${
+                    isCategoryPinned
+                      ? "bg-emerald-600 text-white border-emerald-600"
+                      : "bg-white border-emerald-300 text-emerald-800 hover:bg-emerald-100"
+                  }`}
+                  title="Pin this category as default for future product listings"
+                >
+                  <Pin size={13} className={isCategoryPinned ? "fill-white" : ""} />
+                  <span>{isCategoryPinned ? "✓ Pinned Default Category" : "📌 Pin as Default"}</span>
+                </button>
+                <span className="text-[11px] font-mono text-emerald-700 bg-emerald-100/80 px-2 py-1 rounded-md shrink-0">
+                  slug: {selectedCategory.slug}
+                </span>
+              </div>
             </div>
           )}
 
@@ -1850,9 +1971,12 @@ export default function SharedProductUploadWizard({
           {/* Brand & Manufacturer */}
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div className="space-y-1.5">
-              <label className="text-xs font-bold text-gray-700">
-                Brand Name <span className="text-red-500">*</span>
-              </label>
+              <div className="flex items-center justify-between">
+                <label className="text-xs font-bold text-gray-700">
+                  Brand Name <span className="text-red-500">*</span>
+                </label>
+                <span className="text-[10px] text-gray-400">Select or type custom brand</span>
+              </div>
               <input
                 type="text"
                 placeholder="e.g. Kajaria, Havells, Asian Paints, Intrihub"
@@ -1861,8 +1985,30 @@ export default function SharedProductUploadWizard({
                   setBrand("other");
                   setCustomBrandInput(e.target.value);
                 }}
-                className="w-full px-4 py-2.5 rounded-2xl border border-gray-200 text-xs focus:outline-none focus:border-[#F26522]"
+                className="w-full px-4 py-2.5 rounded-2xl border border-gray-200 text-xs font-medium focus:outline-none focus:border-[#F26522]"
               />
+
+              {/* Quick Preset Brand Chips */}
+              <div className="flex flex-wrap gap-1.5 pt-1">
+                {["Kajaria", "Havells", "Asian Paints", "Jaquar", "IntriHub", "Cera", "Finolex"].map((bName) => (
+                  <button
+                    key={bName}
+                    type="button"
+                    onClick={() => {
+                      setBrand("other");
+                      setCustomBrandInput(bName);
+                      toast.info(`Selected brand: ${bName}`);
+                    }}
+                    className={`px-2 py-0.5 rounded-md text-[10px] font-bold transition-colors cursor-pointer border ${
+                      (brand === "other" ? customBrandInput : brand) === bName
+                        ? "bg-[#052a51] text-white border-[#052a51]"
+                        : "bg-gray-100 text-gray-700 border-gray-200 hover:bg-orange-50 hover:text-[#F26522]"
+                    }`}
+                  >
+                    {bName}
+                  </button>
+                ))}
+              </div>
             </div>
 
             <div className="space-y-1.5">
@@ -3070,20 +3216,100 @@ export default function SharedProductUploadWizard({
             </p>
           </div>
 
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-            <div className="space-y-1.5">
-              <label className="text-xs font-bold text-gray-700">Shipping Mode</label>
-              <select
-                value={shippingMode}
-                onChange={(e) => setShippingMode(e.target.value)}
-                className="w-full px-4 py-2.5 rounded-2xl border border-gray-200 text-xs bg-white cursor-pointer"
-              >
-                <option value="standard">Standard Ground Logistics (Surface)</option>
-                <option value="express">Express Courier / Air Freight</option>
-                <option value="heavy_bulk">Heavy Construction Truckload (Bulk)</option>
-              </select>
-            </div>
+          {/* ⚡ Instant Delivery vs 🚛 Heavy Bulky Dispatch Selection Cards (PRD Req) */}
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <label
+              className={`p-5 rounded-2xl border-2 transition-all cursor-pointer flex items-start gap-3.5 ${
+                shippingMode === "instant"
+                  ? "border-[#F26522] bg-orange-50/40 shadow-xs"
+                  : "border-gray-200 bg-white hover:border-gray-300"
+              }`}
+            >
+              <input
+                type="radio"
+                name="shippingModeRadio"
+                checked={shippingMode === "instant"}
+                onChange={() => {
+                  setShippingMode("instant");
+                  setDispatchTimeDays("1");
+                }}
+                className="mt-1 accent-[#F26522]"
+              />
+              <div className="space-y-1">
+                <div className="flex items-center gap-2">
+                  <span className="text-sm font-black text-gray-900 flex items-center gap-1.5">
+                    ⚡ Instant Delivery (60–90 Mins)
+                  </span>
+                  <span className="px-2 py-0.5 rounded-full bg-emerald-100 text-emerald-800 text-[10px] font-black uppercase">
+                    Default Fast
+                  </span>
+                </div>
+                <p className="text-xs text-gray-500">
+                  Ideal for standard hardware, adhesives, tools, and lightweight materials dispatched via local riders or bike fleet.
+                </p>
+              </div>
+            </label>
 
+            <label
+              className={`p-5 rounded-2xl border-2 transition-all cursor-pointer flex items-start gap-3.5 ${
+                shippingMode === "heavy_bulky" || shippingMode === "heavy_bulk"
+                  ? "border-[#F26522] bg-orange-50/40 shadow-xs"
+                  : "border-gray-200 bg-white hover:border-gray-300"
+              }`}
+            >
+              <input
+                type="radio"
+                name="shippingModeRadio"
+                checked={shippingMode === "heavy_bulky" || shippingMode === "heavy_bulk"}
+                onChange={() => {
+                  setShippingMode("heavy_bulky");
+                  setDispatchTimeDays("2");
+                }}
+                className="mt-1 accent-[#F26522]"
+              />
+              <div className="space-y-1">
+                <div className="flex items-center gap-2">
+                  <span className="text-sm font-black text-gray-900 flex items-center gap-1.5">
+                    🚛 Custom Heavy / Bulky Dispatch
+                  </span>
+                  <span className="px-2 py-0.5 rounded-full bg-blue-100 text-blue-800 text-[10px] font-black uppercase">
+                    ETA Window
+                  </span>
+                </div>
+                <p className="text-xs text-gray-500">
+                  For bulk pallets, cement, tiles, marble, sanitaryware, and construction truckloads with estimated 24–72 hour delivery window.
+                </p>
+              </div>
+            </label>
+          </div>
+
+          {/* 📌 Pin Selected Option as Default (PRD Req) */}
+          <div className="p-4 rounded-2xl bg-gray-50/80 border border-gray-200 flex items-center justify-between">
+            <div className="flex items-center gap-2.5">
+              <Pin size={16} className={isLogisticsPinned ? "text-[#F26522] fill-[#F26522]" : "text-gray-400"} />
+              <div>
+                <strong className="text-xs font-bold text-gray-800 block">
+                  {isLogisticsPinned ? "📌 Logistics Preference Pinned as Default" : "Pin Selected Option as Default"}
+                </strong>
+                <p className="text-[11px] text-gray-400">
+                  Automatically pre-selects this delivery mode for subsequent product uploads.
+                </p>
+              </div>
+            </div>
+            <button
+              type="button"
+              onClick={handleTogglePinLogistics}
+              className={`px-3.5 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer border ${
+                isLogisticsPinned
+                  ? "bg-orange-50 border-orange-300 text-[#F26522]"
+                  : "bg-white border-gray-300 text-gray-700 hover:bg-gray-100"
+              }`}
+            >
+              {isLogisticsPinned ? "✓ Pinned Default" : "Pin as Default"}
+            </button>
+          </div>
+
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
             <div className="space-y-1.5">
               <label className="text-xs font-bold text-gray-700">Dispatch Time (Days)</label>
               <input
@@ -3094,9 +3320,7 @@ export default function SharedProductUploadWizard({
                 className="w-full px-4 py-2.5 rounded-2xl border border-gray-200 text-xs"
               />
             </div>
-          </div>
 
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div className="space-y-1.5">
               <label className="text-xs font-bold text-gray-700">Standard Delivery Charge ₹</label>
               <input
@@ -3157,22 +3381,104 @@ export default function SharedProductUploadWizard({
             </p>
           </div>
 
-          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-            <div className="space-y-1.5">
-              <label className="text-xs font-bold text-gray-700">Return Policy (Days)</label>
-              <select
-                value={returnPolicyDays}
-                onChange={(e) => setReturnPolicyDays(e.target.value)}
-                className="w-full px-4 py-2.5 rounded-2xl border border-gray-200 text-xs bg-white cursor-pointer"
-              >
-                <option value="0">No Returns (Final Sale)</option>
-                <option value="7">7 Days Return / Replacement</option>
-                <option value="10">10 Days Return / Replacement</option>
-                <option value="15">15 Days Return / Replacement</option>
-                <option value="30">30 Days Return / Replacement</option>
-              </select>
+          {/* Return Toggle: [ ON / OFF ] (PRD Req) */}
+          <div className="p-5 rounded-3xl bg-gray-50/70 border border-gray-200 space-y-4">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 rounded-2xl bg-orange-100 text-[#F26522] flex items-center justify-center font-bold shrink-0">
+                  <RotateCcw size={20} />
+                </div>
+                <div>
+                  <h3 className="text-sm font-black text-gray-900">Return &amp; Replacement Acceptance</h3>
+                  <p className="text-xs text-gray-500">
+                    Enable if buyer is allowed to return or replace items due to damage, mismatch, or transit defects.
+                  </p>
+                </div>
+              </div>
+
+              {/* Toggle ON/OFF */}
+              <label className="relative inline-flex items-center cursor-pointer shrink-0">
+                <input
+                  type="checkbox"
+                  checked={hasReturnPolicy}
+                  onChange={(e) => setHasReturnPolicy(e.target.checked)}
+                  className="sr-only peer"
+                />
+                <div className="w-12 h-6.5 bg-gray-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[3px] after:left-[3px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-[#F26522]"></div>
+              </label>
             </div>
 
+            {hasReturnPolicy ? (
+              <div className="pt-3 border-t border-gray-200/80 space-y-4 animate-in fade-in">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                  <div className="space-y-1.5">
+                    <label className="text-xs font-bold text-gray-700">Return Window</label>
+                    <select
+                      value={returnPolicyDays}
+                      onChange={(e) => setReturnPolicyDays(e.target.value)}
+                      className="w-full px-4 py-2.5 rounded-2xl border border-gray-200 text-xs bg-white cursor-pointer"
+                    >
+                      <option value="3">3 Days Return Window</option>
+                      <option value="7">7 Days Return / Replacement (Standard)</option>
+                      <option value="10">10 Days Return / Replacement</option>
+                      <option value="15">15 Days Return / Replacement</option>
+                    </select>
+                  </div>
+
+                  <div className="space-y-1.5">
+                    <label className="text-xs font-bold text-gray-700">Resolution Type</label>
+                    <select
+                      value={returnType}
+                      onChange={(e) => setReturnType(e.target.value as any)}
+                      className="w-full px-4 py-2.5 rounded-2xl border border-gray-200 text-xs bg-white cursor-pointer"
+                    >
+                      <option value="replacement">Replacement Only (Damaged / Defective piece swapped)</option>
+                      <option value="refund_replacement">Refund or Replacement (Buyer can choose)</option>
+                    </select>
+                  </div>
+                </div>
+
+                <div className="space-y-1.5">
+                  <label className="text-xs font-bold text-gray-700">Condition Notes</label>
+                  <textarea
+                    rows={2}
+                    value={returnConditions}
+                    onChange={(e) => setReturnConditions(e.target.value)}
+                    placeholder="e.g. Item must be returned unused in original packaging with all tags and inserts intact."
+                    className="w-full px-4 py-2.5 rounded-2xl border border-gray-200 text-xs bg-white"
+                  />
+                </div>
+              </div>
+            ) : (
+              <div className="p-3 bg-amber-50/60 rounded-xl border border-amber-200/80 text-[11px] text-amber-800">
+                <strong>Non-Returnable Item (Final Sale):</strong> Buyers will be notified that this product is sold on a strict final-sale basis except for transit breakages reported within 24 hours.
+              </div>
+            )}
+
+            {/* 📌 Pin Return Policy Toggle */}
+            <div className="p-3.5 rounded-2xl bg-white border border-gray-200 flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                <Pin size={15} className={isReturnPinned ? "text-[#F26522] fill-[#F26522]" : "text-gray-400"} />
+                <span className="text-xs font-bold text-gray-700">
+                  {isReturnPinned ? "📌 Return Policy Pinned as Default" : "Pin this Return Policy as Default"}
+                </span>
+              </div>
+              <button
+                type="button"
+                onClick={handleTogglePinReturns}
+                className={`px-3 py-1 rounded-xl text-xs font-bold transition-all cursor-pointer border ${
+                  isReturnPinned
+                    ? "bg-orange-50 border-orange-300 text-[#F26522]"
+                    : "bg-white border-gray-300 text-gray-700 hover:bg-gray-100"
+                }`}
+              >
+                {isReturnPinned ? "✓ Pinned Default" : "Pin as Default"}
+              </button>
+            </div>
+          </div>
+
+          {/* Warranty & Certificates */}
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div className="space-y-1.5">
               <label className="text-xs font-bold text-gray-700">Warranty Type</label>
               <select
@@ -3196,16 +3502,6 @@ export default function SharedProductUploadWizard({
                 className="w-full px-4 py-2.5 rounded-2xl border border-gray-200 text-xs"
               />
             </div>
-          </div>
-
-          <div className="space-y-1.5">
-            <label className="text-xs font-bold text-gray-700">Return Conditions</label>
-            <textarea
-              rows={2}
-              value={returnConditions}
-              onChange={(e) => setReturnConditions(e.target.value)}
-              className="w-full px-4 py-2.5 rounded-2xl border border-gray-200 text-xs"
-            />
           </div>
 
           <div className="p-4 rounded-2xl bg-amber-50/60 border border-amber-200 flex items-start gap-3">

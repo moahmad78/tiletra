@@ -395,6 +395,46 @@ export default function UnifiedVariantManager({
     toast.success(`"${variants[index].variantName || `Variant ${index + 1}`}" set as primary display variant.`);
   };
 
+  // ── 1-CLICK DUPLICATE VARIANT (PRD Req) ──
+  const handleDuplicateRow = (index: number) => {
+    const source = variants[index];
+    if (!source) return;
+    const duplicated: ProductVariant = {
+      ...source,
+      id: `v-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`,
+      sku: source.sku ? `${source.sku}-COPY` : `SKU-${Date.now().toString().slice(-6)}`,
+      variantName: `${source.variantName || "Variant"} (Copy)`,
+      isDefault: false,
+    };
+    const next = [...variants];
+    next.splice(index + 1, 0, duplicated);
+    onChange(next);
+    toast.success(`📄 Duplicated variant "${source.variantName || "Variant"}"!`);
+  };
+
+  // ── + ADD MULTI-VARIANT / SUB-ITEM (PRD Req) ──
+  const handleAddNewSubItem = () => {
+    const newVariant: ProductVariant = {
+      id: `v-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`,
+      sku: `SKU-${Date.now().toString().slice(-6)}`,
+      variantName: `Option ${variants.length + 1}`,
+      size: "Standard",
+      finish: "Standard",
+      color: "Standard",
+      price: defaultSellingPrice || 499,
+      pricePerBox: defaultSellingPrice || 499,
+      pricePerSqft: defaultSellingPrice || 499,
+      mrp: defaultMrp || 699,
+      sqftPerBox: 16.5,
+      stockBoxes: defaultStock || 50,
+      inStock: true,
+      active: true,
+      isDefault: variants.length === 0,
+    };
+    onChange([...variants, newVariant]);
+    toast.success("Added new sub-item variant row!");
+  };
+
   // ── BULK TOOLS ──
   const handleApplyBulkPrice = () => {
     const pNum = parseFloat(bulkPriceInput);
@@ -866,13 +906,13 @@ export default function UnifiedVariantManager({
                     <th className="py-3 px-3 w-10 text-center">Live</th>
                     <th className="py-3 px-3 w-10 text-center">Primary</th>
                     <th className="py-3 px-3">Variant Combination / Name</th>
-                    <th className="py-3 px-3 w-36">SKU / Code</th>
-                    <th className="py-3 px-3 w-28">MRP (₹)</th>
-                    <th className="py-3 px-3 w-32">Selling Price (₹) *</th>
-                    <th className="py-3 px-3 w-24">Discount</th>
-                    <th className="py-3 px-3 w-28">Stock Qty</th>
-                    <th className="py-3 px-3 w-24">Low Alert</th>
-                    <th className="py-3 px-3 w-16 text-center">Media</th>
+                    <th className="py-3 px-3 w-32">SKU / Code</th>
+                    <th className="py-3 px-3 w-24">MRP (₹)</th>
+                    <th className="py-3 px-3 w-28">Selling (₹) *</th>
+                    <th className="py-3 px-3 w-24">Coverage (sqft)</th>
+                    <th className="py-3 px-3 w-24">Stock</th>
+                    <th className="py-3 px-3 w-14 text-center">Media</th>
+                    <th className="py-3 px-3 w-10 text-center" title="1-Click Duplicate Variant">Copy</th>
                     <th className="py-3 px-3 w-10 text-center">Del</th>
                   </tr>
                 </thead>
@@ -880,8 +920,6 @@ export default function UnifiedVariantManager({
                   {variants.map((v, idx) => {
                     const priceVal = v.price ?? v.pricePerBox ?? 0;
                     const mrpVal = v.mrp ?? null;
-                    const hasDiscount = mrpVal !== null && mrpVal > priceVal;
-                    const discPercent = hasDiscount && mrpVal ? Math.round(((mrpVal - priceVal) / mrpVal) * 100) : 0;
                     const isActive = v.active !== false;
 
                     return (
@@ -959,7 +997,7 @@ export default function UnifiedVariantManager({
                                 mrp: e.target.value ? Number(e.target.value) : null,
                               })
                             }
-                            placeholder="Optional"
+                            placeholder="MRP"
                             className="w-full px-2.5 py-1.5 bg-white border border-gray-200 rounded-lg text-xs font-mono font-medium text-gray-500 focus:outline-none focus:border-[#F26522]"
                           />
                         </td>
@@ -967,7 +1005,7 @@ export default function UnifiedVariantManager({
                         {/* 6. Selling Price */}
                         <td className="py-3 px-3">
                           <div className="relative">
-                            <span className="absolute left-2.5 top-1/2 -translate-y-1/2 text-xs font-bold text-[#F26522]">
+                            <span className="absolute left-2 top-1/2 -translate-y-1/2 text-xs font-bold text-[#F26522]">
                               ₹
                             </span>
                             <input
@@ -979,7 +1017,7 @@ export default function UnifiedVariantManager({
                                   price: Number(e.target.value),
                                 })
                               }
-                              className={`w-full pl-6 pr-2.5 py-1.5 bg-white border rounded-lg text-xs font-mono font-black text-gray-900 focus:outline-none ${
+                              className={`w-full pl-5 pr-2 py-1.5 bg-white border rounded-lg text-xs font-mono font-black text-gray-900 focus:outline-none ${
                                 !priceVal || priceVal <= 0
                                   ? "border-rose-400 bg-rose-50/30"
                                   : "border-gray-200 focus:border-[#F26522]"
@@ -988,15 +1026,22 @@ export default function UnifiedVariantManager({
                           </div>
                         </td>
 
-                        {/* 7. Discount % */}
-                        <td className="py-3 px-3 font-mono text-[11px]">
-                          {discPercent > 0 ? (
-                            <span className="inline-block px-1.5 py-0.5 rounded bg-emerald-50 text-emerald-700 font-bold border border-emerald-200">
-                              {discPercent}% OFF
-                            </span>
-                          ) : (
-                            <span className="text-gray-400">-</span>
-                          )}
+                        {/* 7. Smart Calculator Coverage (sqft/box) */}
+                        <td className="py-3 px-3">
+                          <input
+                            type="number"
+                            step="any"
+                            min={0}
+                            placeholder="sq.ft"
+                            value={v.sqftPerBox ?? ""}
+                            onChange={(e) =>
+                              handleUpdateRow(idx, {
+                                sqftPerBox: e.target.value ? Number(e.target.value) : undefined,
+                              })
+                            }
+                            className="w-full px-2 py-1.5 bg-white border border-gray-200 rounded-lg text-xs font-mono font-bold text-[#052a51] focus:outline-none focus:border-[#F26522]"
+                            title="Coverage area in square feet per unit/box"
+                          />
                         </td>
 
                         {/* 8. Stock */}
@@ -1011,33 +1056,18 @@ export default function UnifiedVariantManager({
                                 inStock: Number(e.target.value) > 0,
                               })
                             }
-                            className="w-full px-2.5 py-1.5 bg-white border border-gray-200 rounded-lg text-xs font-mono font-bold text-gray-900 focus:outline-none focus:border-[#F26522]"
+                            className="w-full px-2 py-1.5 bg-white border border-gray-200 rounded-lg text-xs font-mono font-bold text-gray-900 focus:outline-none focus:border-[#F26522]"
                           />
                         </td>
 
-                        {/* 9. Low Alert */}
-                        <td className="py-3 px-3">
-                          <input
-                            type="number"
-                            min={0}
-                            value={v.lowStockAlert ?? 10}
-                            onChange={(e) =>
-                              handleUpdateRow(idx, {
-                                lowStockAlert: Number(e.target.value),
-                              })
-                            }
-                            className="w-full px-2.5 py-1.5 bg-white border border-gray-200 rounded-lg text-xs font-mono font-medium text-gray-600 focus:outline-none focus:border-[#F26522]"
-                          />
-                        </td>
-
-                        {/* 10. Image Thumbnail / Fallback */}
+                        {/* 9. Image Thumbnail */}
                         <td className="py-3 px-3 text-center">
                           <div className="relative inline-block group">
                             {/* eslint-disable-next-line @next/next/no-img-element */}
                             <img
                               src={v.image || baseImages[0] || "/placeholders/product.svg"}
                               alt="thumb"
-                              className="w-8 h-8 rounded-lg object-cover border border-gray-200 bg-gray-50"
+                              className="w-7 h-7 rounded-lg object-cover border border-gray-200 bg-gray-50"
                               onError={(e) => {
                                 (e.target as any).src = "/placeholders/product.svg";
                               }}
@@ -1046,7 +1076,6 @@ export default function UnifiedVariantManager({
                               <button
                                 type="button"
                                 onClick={() => {
-                                  // Cycle to next base image
                                   const curIdx = baseImages.indexOf(v.image || "");
                                   const nextIdx = (curIdx + 1) % baseImages.length;
                                   handleUpdateRow(idx, { image: baseImages[nextIdx] });
@@ -1060,12 +1089,24 @@ export default function UnifiedVariantManager({
                           </div>
                         </td>
 
+                        {/* 10. 1-Click Duplicate Variant (PRD Req) */}
+                        <td className="py-3 px-3 text-center">
+                          <button
+                            type="button"
+                            onClick={() => handleDuplicateRow(idx)}
+                            className="p-1.5 rounded-lg text-gray-400 hover:text-[#F26522] hover:bg-orange-50 transition-colors cursor-pointer"
+                            title="1-Click Duplicate this variant (copies specs, price & stock)"
+                          >
+                            <Copy size={13} />
+                          </button>
+                        </td>
+
                         {/* 11. Delete Row */}
                         <td className="py-3 px-3 text-center">
                           <button
                             type="button"
                             onClick={() => handleDeleteRow(idx)}
-                            className="p-1 rounded-md text-gray-300 hover:text-rose-600 hover:bg-rose-50 transition-colors"
+                            className="p-1.5 rounded-lg text-gray-300 hover:text-rose-600 hover:bg-rose-50 transition-colors cursor-pointer"
                             title="Delete this variant"
                           >
                             <Trash2 size={13} />
@@ -1076,6 +1117,21 @@ export default function UnifiedVariantManager({
                   })}
                 </tbody>
               </table>
+            </div>
+
+            {/* + Add Multi-Variant / Sub-Item Button (PRD Req) */}
+            <div className="pt-2 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+              <button
+                type="button"
+                onClick={handleAddNewSubItem}
+                className="inline-flex items-center gap-2 px-4 py-2.5 rounded-2xl border-2 border-dashed border-[#F26522] bg-orange-50/60 hover:bg-orange-100 text-[#F26522] text-xs font-black transition-all cursor-pointer shadow-2xs self-start"
+              >
+                <Plus size={16} strokeWidth={2.5} />
+                <span>+ Add Multi-Variant / Sub-Item</span>
+              </button>
+              <span className="text-[11px] text-gray-400 font-medium">
+                💡 Tip: Click duplicate (<Copy size={11} className="inline text-[#F26522]" />) on any row to clone pricing &amp; coverage instantly.
+              </span>
             </div>
           </div>
         </div>
