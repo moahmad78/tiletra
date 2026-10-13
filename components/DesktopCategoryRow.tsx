@@ -1,6 +1,6 @@
 "use client";
 
-import { useRef } from "react";
+import { useRef, useEffect } from "react";
 import Link from "next/link";
 import { ChevronLeft, ChevronRight } from "lucide-react";
 import type { Category } from "@/lib/data/categories";
@@ -49,13 +49,51 @@ function SafeDesktopCategoryCard({
 }
 
 /**
- * DesktopCategoryRow (INP Optimized)
- * Replaces continuous 60fps JavaScript rAF loops with GPU-accelerated native smooth scrolling.
- * Zero CPU overhead on idle or interaction; instant response on click.
+ * DesktopCategoryRow
+ * Seamless slow auto-scrolling category marquee.
+ * Pauses on mouse hover and resumes smoothly on mouse leave.
  */
 export default function DesktopCategoryRow({ categories }: DesktopCategoryRowProps) {
   const topCategories = categories.filter((c) => !c.parentId);
   const scrollContainerRef = useRef<HTMLDivElement>(null);
+  const isPausedRef = useRef(false);
+  const manualPauseTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  // Gentle, slow infinite auto-scroll loop
+  useEffect(() => {
+    const el = scrollContainerRef.current;
+    if (!el || topCategories.length === 0) return;
+
+    let animId: number;
+    let lastTime: number | null = null;
+    const speed = 36; // px per second - slow, elegant, smooth drift
+
+    const step = (time: number) => {
+      if (lastTime !== null && !isPausedRef.current && el) {
+        const delta = (time - lastTime) / 1000;
+        const scrollAmount = speed * delta;
+        el.scrollLeft += scrollAmount;
+
+        const maxScroll = el.scrollWidth / 2;
+        if (el.scrollLeft >= maxScroll) {
+          el.scrollLeft -= maxScroll;
+        } else if (el.scrollLeft <= 0) {
+          el.scrollLeft += maxScroll;
+        }
+      }
+      lastTime = time;
+      animId = requestAnimationFrame(step);
+    };
+
+    animId = requestAnimationFrame(step);
+
+    return () => {
+      cancelAnimationFrame(animId);
+      if (manualPauseTimerRef.current) {
+        clearTimeout(manualPauseTimerRef.current);
+      }
+    };
+  }, [topCategories.length]);
 
   const handleManualScroll = (direction: "left" | "right") => {
     if (!scrollContainerRef.current) return;
@@ -64,10 +102,28 @@ export default function DesktopCategoryRow({ categories }: DesktopCategoryRowPro
       left: direction === "left" ? -shift : shift,
       behavior: "smooth",
     });
+
+    isPausedRef.current = true;
+    if (manualPauseTimerRef.current) clearTimeout(manualPauseTimerRef.current);
+    manualPauseTimerRef.current = setTimeout(() => {
+      isPausedRef.current = false;
+    }, 2000);
   };
 
+  // Duplicate categories to enable seamless infinite wrapping
+  const displayCategories = topCategories.concat(topCategories);
+
   return (
-    <section id="categories" className="py-6 select-none relative group/row">
+    <section
+      id="categories"
+      className="py-6 select-none relative group/row"
+      onMouseEnter={() => {
+        isPausedRef.current = true;
+      }}
+      onMouseLeave={() => {
+        isPausedRef.current = false;
+      }}
+    >
       <div className="w-full max-w-[1400px] mx-auto px-4 md:px-6 lg:px-8">
         {/* Section Header */}
         <div className="flex items-center justify-between mb-4">
@@ -97,12 +153,12 @@ export default function DesktopCategoryRow({ categories }: DesktopCategoryRowPro
         {/* High-Performance Smooth Horizontal Track */}
         <div
           ref={scrollContainerRef}
-          className="overflow-x-auto scrollbar-none py-1 scroll-smooth"
+          className="overflow-x-auto scrollbar-none py-1"
         >
           <div className="flex items-center gap-3.5 pr-3.5 w-max">
-            {topCategories.map((cat, idx) => (
+            {displayCategories.map((cat, idx) => (
               <SafeDesktopCategoryCard
-                key={`cat-${cat.slug}`}
+                key={`cat-${cat.slug}-${idx}`}
                 cat={cat}
                 priority={idx < 7}
               />
