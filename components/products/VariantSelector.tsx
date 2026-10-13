@@ -1,11 +1,11 @@
 "use client";
 
 import React, { useMemo } from "react";
-import Image from "next/image";
 import { Check } from "lucide-react";
 import type { Product, ProductVariant } from "@/lib/data/products";
 import { formatPrice, formatUnitLabel } from "@/lib/formatters";
 import { resolveColour } from "@/lib/colours";
+import { resolveColorHex } from "@/lib/catalog";
 
 export interface VariantSelectorProps {
   product: Product;
@@ -186,14 +186,13 @@ export default function VariantSelector({
                 const colorKey = col.toLowerCase().trim();
                 const repVariant = variants.find((v: ProductVariant) => v.color?.toLowerCase().trim() === colorKey);
                 const resolved = resolveColour(col);
-                const hex = repVariant?.colorHex || resolved.hexCode;
+                const hex = repVariant?.colorHex || resolved.hexCode || resolveColorHex(col) || "#808080";
                 const isLight = resolved.textColor === "dark";
                 const hasAnyActive = variants.some(
                   (v: ProductVariant) => v.color?.toLowerCase().trim() === colorKey && v.active !== false
                 );
                 const isColorUnavailable = !hasAnyActive;
                 const isOutOfStock = repVariant ? repVariant.stockBoxes <= 0 : false;
-                const swatchTexture = repVariant?.swatchImage || (resolved as any).swatchImage;
 
                 return (
                   <button
@@ -209,15 +208,12 @@ export default function VariantSelector({
                         : "border-gray-200 bg-white hover:border-gray-300"
                     } ${!isColorUnavailable && isOutOfStock ? "opacity-60" : ""}`}
                   >
+                    {/* Pure Original Colour Swatch */}
                     <span
-                      className="w-5 h-5 rounded-full border border-black/15 shadow-2xs flex items-center justify-center shrink-0 overflow-hidden relative"
+                      className="w-5 h-5 rounded-full border border-black/20 shadow-2xs flex items-center justify-center shrink-0 overflow-hidden relative transition-transform group-hover:scale-110"
                       style={{ backgroundColor: hex }}
+                      title={col}
                     >
-                      {swatchTexture ? (
-                        <Image src={swatchTexture} alt={col} width={20} height={20} className="w-full h-full object-cover" />
-                      ) : repVariant?.image ? (
-                        <Image src={repVariant.image} alt={col} width={20} height={20} className="w-full h-full object-cover" />
-                      ) : null}
                       {isSelected && (
                         <Check size={11} className={isLight ? "text-gray-900" : "text-white"} strokeWidth={3} />
                       )}
@@ -313,11 +309,10 @@ export default function VariantSelector({
             {variants.map((v: ProductVariant) => {
               const isSelected = selectedVariant.id === v.id;
               const resolved = resolveColour(v.color);
-              const hex = v.colorHex || resolved.hexCode;
+              const hex = v.colorHex || resolved.hexCode || resolveColorHex(v.color) || "#808080";
               const isLight = resolved.textColor === "dark";
               const isUnavailable = v.active === false;
               const isOutOfStock = v.stockBoxes <= 0;
-              const swatchTexture = v.swatchImage || (resolved as any).swatchImage;
 
               return (
                 <button
@@ -333,15 +328,12 @@ export default function VariantSelector({
                       : "border-gray-200 bg-white hover:border-gray-300"
                   } ${!isUnavailable && isOutOfStock ? "opacity-60" : ""}`}
                 >
+                  {/* Pure Original Colour Swatch */}
                   <span
-                    className="w-5 h-5 rounded-full border border-black/15 shadow-2xs flex items-center justify-center shrink-0 overflow-hidden relative"
+                    className="w-5 h-5 rounded-full border border-black/20 shadow-2xs flex items-center justify-center shrink-0 overflow-hidden relative transition-transform group-hover:scale-110"
                     style={{ backgroundColor: hex }}
+                    title={v.color}
                   >
-                    {swatchTexture ? (
-                      <Image src={swatchTexture} alt={v.color} width={20} height={20} className="w-full h-full object-cover" />
-                    ) : v.image ? (
-                      <Image src={v.image} alt={v.color} width={20} height={20} className="w-full h-full object-cover" />
-                    ) : null}
                     {isSelected && (
                       <Check size={11} className={isLight ? "text-gray-900" : "text-white"} strokeWidth={3} />
                     )}
