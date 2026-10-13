@@ -48,7 +48,6 @@ import ImageUploadManager from "@/components/admin/ImageUploadManager";
 import UnifiedVariantManager from "@/components/shared/UnifiedVariantManager";
 import ColorRadioSelector from "@/components/shared/ColorRadioSelector";
 import ProductWebsitePreviewModal from "@/components/shared/ProductWebsitePreviewModal";
-import LiveSidePreviewPanel from "@/components/shared/LiveSidePreviewPanel";
 import { createProduct, checkDuplicateProduct } from "@/lib/actions/products";
 import { getCategories, createCustomCategory } from "@/lib/actions/categories";
 import { getVendorProfile, getActiveVendorsForSelection } from "@/lib/actions/vendor";
@@ -432,7 +431,6 @@ export default function SharedProductUploadWizard({
   const [listingStatus, setListingStatus] = useState<"active" | "draft" | "paused">("active");
   const [previewDevice, setPreviewDevice] = useState<"desktop" | "mobile">("desktop");
   const [isPreviewOpen, setIsPreviewOpen] = useState<boolean>(false);
-  const [showSidePreview, setShowSidePreview] = useState<boolean>(true);
 
   // ── Draft Autosave (localStorage) ──
   const AUTOSAVE_KEY = `intrihub_product_upload_draft_${activeVendorId || "common"}`;
@@ -1464,9 +1462,7 @@ export default function SharedProductUploadWizard({
           e.preventDefault();
         }
       }}
-      className={`space-y-6 mx-auto pb-24 transition-all ${
-        showSidePreview ? "max-w-[1600px] px-2 sm:px-4" : "max-w-5xl"
-      }`}
+      className="space-y-6 max-w-5xl mx-auto pb-24 transition-all"
     >
       {/* ── Saved Draft Restore Notification Banner ── */}
       {savedDraftAvailable && (
@@ -1532,38 +1528,15 @@ export default function SharedProductUploadWizard({
         <div className="flex flex-wrap items-center gap-2.5">
           {headerVendorSlot}
 
-          {/* Live Side Preview Switcher Toggle */}
-          <button
-            type="button"
-            onClick={() => setShowSidePreview((prev) => !prev)}
-            className={`px-3.5 py-2.5 rounded-2xl text-xs font-bold transition-all flex items-center gap-2 cursor-pointer shadow-2xs shrink-0 border ${
-              showSidePreview
-                ? "bg-orange-50 border-orange-300 text-[#F26522]"
-                : "bg-white border-gray-300 text-gray-700 hover:bg-gray-50"
-            }`}
-            title="Toggle Live Side Preview Panel"
-          >
-            <span className="relative flex h-2 w-2">
-              {showSidePreview && (
-                <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
-              )}
-              <span
-                className={`relative inline-flex rounded-full h-2 w-2 ${
-                  showSidePreview ? "bg-emerald-500" : "bg-gray-400"
-                }`}
-              ></span>
-            </span>
-            <span>Live Preview {showSidePreview ? "ON" : "OFF"}</span>
-          </button>
-
+          {/* 🌐 Preview on Website Modal Button */}
           <button
             type="button"
             onClick={() => setIsPreviewOpen(true)}
-            className="px-4 py-2.5 bg-white border border-gray-300 hover:border-[#F26522] hover:text-[#F26522] text-gray-700 text-xs font-bold rounded-2xl transition-all flex items-center gap-1.5 cursor-pointer shadow-2xs shrink-0"
+            className="px-4 py-2.5 bg-white border border-gray-300 hover:border-[#F26522] hover:text-[#F26522] text-gray-700 text-xs font-bold rounded-2xl transition-all flex items-center gap-1.5 cursor-pointer shadow-2xs shrink-0 active:scale-95"
             title="Preview how this product will look on the customer website"
           >
             <Eye size={15} className="text-[#F26522]" />
-            <span>Storefront Preview</span>
+            <span>Preview on Website</span>
           </button>
 
           <button
@@ -1661,9 +1634,8 @@ export default function SharedProductUploadWizard({
         </div>
       </div>
 
-      {/* ── Main Workspace: Step Form on Left + Sticky Live Preview on Right ── */}
-      <div className="flex flex-col lg:flex-row items-start gap-6 w-full">
-        <div className="flex-1 min-w-0 space-y-6 w-full">
+      {/* ── Main Workspace: Full Width Step Form ── */}
+      <div className="w-full space-y-6">
           {/* ── STEP 1: CATEGORY (FIRST FIELD) ── */}
           {currentStep === 1 && (
         <div className="bg-white p-6 sm:p-8 rounded-3xl border border-gray-200 shadow-2xs space-y-6 animate-in fade-in">
@@ -3538,16 +3510,6 @@ export default function SharedProductUploadWizard({
                 Add variants for multiple colours, sizes, or weight packs. The item type is decided by this toggle.
               </p>
             </div>
-            {/* Quick table expansion toggle */}
-            <button
-              type="button"
-              onClick={() => setShowSidePreview((prev) => !prev)}
-              className="inline-flex items-center gap-2 px-3.5 py-2 rounded-xl text-xs font-bold border border-gray-200 bg-gray-50 hover:bg-gray-100 text-gray-700 cursor-pointer shadow-2xs shrink-0 self-start sm:self-auto"
-              title="Toggle Live Side Preview to give maximum width to the variants table"
-            >
-              <Sliders size={13} className="text-[#F26522]" />
-              <span>{showSidePreview ? "↔ Maximize Table Width (Hide Preview)" : "👁️ Show Live Preview"}</span>
-            </button>
           </div>
 
           {/* Variants Toggle Card */}
@@ -4267,53 +4229,6 @@ export default function SharedProductUploadWizard({
           )}
         </div>
       </div>
-        </div>
-
-        {/* ── Sticky Live Side Preview Column ── */}
-        {showSidePreview && (
-          <aside className="hidden lg:block w-[380px] xl:w-[420px] 2xl:w-[460px] shrink-0 sticky top-24 self-start">
-            <LiveSidePreviewPanel
-              currentStep={currentStep}
-              categoryName={selectedCategory?.name}
-              categoryImage={selectedCategory?.image}
-              subcategoryName={
-                selectedSubcategory?.name ||
-                (customSubcategoryName.trim() ? customSubcategoryName.trim() : undefined)
-              }
-              subcategoryImage={selectedSubcategory?.image || customSubcategoryImage}
-              title={title}
-              brand={brand}
-              customBrandInput={customBrandInput}
-              modelNumber={modelNumber}
-              description={description}
-              sellingPrice={sellingPrice}
-              mrp={mrp}
-              unitOfSale={unitOfSale}
-              stockQuantity={stockQuantity}
-              images={images}
-              colour={dynamicAttributes["Colour"] || dynamicAttributes["Color"] || customSubcategoryColour}
-              finish={dynamicAttributes["Surface Finish"] || dynamicAttributes["Finish"]}
-              material={dynamicAttributes["Material"]}
-              lengthCm={lengthCm || customSubcategoryLength}
-              widthCm={widthCm || customSubcategoryWidth}
-              heightCm={heightCm || customSubcategoryHeight}
-              packedWeightKg={packedWeightKg || customSubcategoryWeight}
-              highlights={highlights}
-              shippingMode={shippingMode}
-              dispatchTimeDays={dispatchTimeDays}
-              returnPolicyDays={returnPolicyDays}
-              warrantyDuration={warrantyDuration}
-              allowCod={allowCod}
-              slug={currentSlug}
-              tags={selectedTags}
-              customBadgeText={customBadgeText}
-              badgeColor={badgeColor}
-              showAutoDiscount={showAutoDiscount}
-              onExpandModal={() => setIsPreviewOpen(true)}
-              onClosePreview={() => setShowSidePreview(false)}
-            />
-          </aside>
-        )}
       </div>
 
       {/* 📱 Sticky Mobile Bottom Navigation Bar (PRD Section 2 & 5 - BUG-02 Fix) */}
