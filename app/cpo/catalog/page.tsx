@@ -686,7 +686,8 @@ function CpoCatalogContent() {
                   <th className="py-3.5 px-4">Vendor</th>
                   <th className="py-3.5 px-4">Category</th>
                   <th className="py-3.5 px-4">Variants / Options</th>
-                  <th className="py-3.5 px-4">Price (from)</th>
+                  <th className="py-3.5 px-4">MRP / Buy / Sale Rate</th>
+                  <th className="py-3.5 px-4">Profit / Margin</th>
                   <th className="py-3.5 px-4">Stock</th>
                   <th className="py-3.5 px-4">Status</th>
                   <th className="py-3.5 px-4 text-right">Actions</th>
@@ -792,9 +793,57 @@ function CpoCatalogContent() {
                         </span>
                       </td>
 
-                      {/* Price */}
-                      <td className="py-3.5 px-4 font-bold text-gray-900 font-mono">
-                        ₹{firstVariant?.pricePerBox ?? firstVariant?.pricePerSqft ?? p.pricePerSqft ?? 0}
+                      {/* MRP / Buy Rate / Sale Rate */}
+                      <td className="py-3.5 px-4">
+                        {(() => {
+                          const saleRate = firstVariant?.pricePerBox ?? firstVariant?.price ?? p.pricePerSqft ?? 0;
+                          const mrpVal = firstVariant?.mrp ?? p.mrp ?? null;
+                          const buyRate = firstVariant?.variantSpecs?.costPrice ?? p.specs?.costPrice ?? null;
+                          return (
+                            <div className="space-y-0.5 text-[11px] font-mono">
+                              {mrpVal ? (
+                                <div className="text-gray-400">
+                                  <span className="text-[10px] font-bold uppercase tracking-wide">MRP:</span>{" "}
+                                  <span className="line-through">₹{Number(mrpVal).toLocaleString("en-IN")}</span>
+                                </div>
+                              ) : null}
+                              {buyRate ? (
+                                <div className="text-amber-700">
+                                  <span className="text-[10px] font-bold uppercase tracking-wide">BUY:</span>{" "}
+                                  <span className="font-bold">₹{Number(buyRate).toLocaleString("en-IN")}</span>
+                                </div>
+                              ) : null}
+                              <div className="text-emerald-700 font-bold text-xs">
+                                <span className="text-[10px] font-bold uppercase tracking-wide">SALE:</span>{" "}
+                                ₹{Number(saleRate).toLocaleString("en-IN")}
+                              </div>
+                            </div>
+                          );
+                        })()}
+                      </td>
+
+                      {/* Profit / Margin */}
+                      <td className="py-3.5 px-4">
+                        {(() => {
+                          const saleRate = firstVariant?.pricePerBox ?? firstVariant?.price ?? p.pricePerSqft ?? 0;
+                          const buyRate = firstVariant?.variantSpecs?.costPrice ?? p.specs?.costPrice ?? null;
+                          if (!buyRate || Number(buyRate) <= 0) {
+                            return <span className="text-[11px] text-gray-400 italic">N/A</span>;
+                          }
+                          const profit = Number(saleRate) - Number(buyRate);
+                          const marginPct = Number(buyRate) > 0 ? ((profit / Number(buyRate)) * 100).toFixed(1) : "0";
+                          const isLoss = profit < 0;
+                          return (
+                            <div className="space-y-0.5">
+                              <div className={`font-bold font-mono text-xs ${isLoss ? "text-rose-600" : "text-emerald-700"}`}>
+                                {isLoss ? "−" : "+"}₹{Math.abs(profit).toLocaleString("en-IN")}
+                              </div>
+                              <div className={`text-[10px] font-bold ${isLoss ? "text-rose-500" : "text-emerald-600"}`}>
+                                {isLoss ? "" : "+"}{marginPct}% margin
+                              </div>
+                            </div>
+                          );
+                        })()}
                       </td>
 
                       {/* Stock */}

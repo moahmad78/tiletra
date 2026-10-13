@@ -236,6 +236,7 @@ export default function SharedProductUploadWizard({
   const subcategoryFileInputRef = useRef<HTMLInputElement>(null);
   const [customSubcategoryPrice, setCustomSubcategoryPrice] = useState<string>("");
   const [customSubcategoryMrp, setCustomSubcategoryMrp] = useState<string>("");
+  const [customSubcategoryCostPrice, setCustomSubcategoryCostPrice] = useState<string>("");
   const [customSubcategoryColour, setCustomSubcategoryColour] = useState<string>("");
   const [customSubcategoryLength, setCustomSubcategoryLength] = useState<string>("");
   const [customSubcategoryWidth, setCustomSubcategoryWidth] = useState<string>("");
@@ -1106,12 +1107,15 @@ export default function SharedProductUploadWizard({
 
         setSelectedSubcategoryId(res.category.id);
 
-        // Apply custom rate if provided
+        // Apply custom rate if provided (SALE Rate, MRP, BUY Rate)
         if (customSubcategoryPrice.trim()) {
           setSellingPrice(customSubcategoryPrice.trim());
         }
         if (customSubcategoryMrp.trim()) {
           setMrp(customSubcategoryMrp.trim());
+        }
+        if (customSubcategoryCostPrice.trim()) {
+          setCostPrice(customSubcategoryCostPrice.trim());
         }
 
         // Apply custom dimensions if provided
@@ -1167,6 +1171,7 @@ export default function SharedProductUploadWizard({
         setCustomSubcategoryUrlInput("");
         setCustomSubcategoryPrice("");
         setCustomSubcategoryMrp("");
+        setCustomSubcategoryCostPrice("");
         setCustomSubcategoryColour("");
         setCustomSubcategoryLength("");
         setCustomSubcategoryWidth("");
@@ -2559,10 +2564,13 @@ export default function SharedProductUploadWizard({
               Rate Details &amp; Base Inventory
             </h3>
 
-            {/* 3-Tier Financial Pricing Grid */}
+            {/* 3-Tier Financial Pricing Grid: MRP, BUY Rate, SALE Rate */}
             <div className="grid grid-cols-1 sm:grid-cols-3 md:grid-cols-5 gap-3.5">
               <div className="space-y-1.5">
-                <label className="text-xs font-bold text-gray-700">MRP (Max Retail) ₹</label>
+                <label className="text-xs font-bold text-gray-700 flex items-center justify-between">
+                  <span>1. MRP (Max Retail) ₹</span>
+                  <span className="text-[10px] text-gray-400 font-semibold">Printed Price</span>
+                </label>
                 <input
                   type="number"
                   inputMode="decimal"
@@ -2576,27 +2584,9 @@ export default function SharedProductUploadWizard({
               </div>
 
               <div className="space-y-1.5">
-                <label className="text-xs font-bold text-gray-700">
-                  Selling Price ₹ <span className="text-red-500">*</span>
-                </label>
-                <input
-                  type="number"
-                  inputMode="decimal"
-                  min="0"
-                  step="0.01"
-                  placeholder="e.g. 1199"
-                  value={sellingPrice}
-                  onChange={(e) => setSellingPrice(e.target.value)}
-                  className="w-full px-3.5 py-2.5 rounded-2xl border border-gray-200 text-xs font-mono font-black text-[#052a51] focus:outline-none focus:border-[#F26522] bg-white"
-                />
-                {discountPercent > 0 && (
-                  <span className="text-[10px] text-emerald-600 font-bold block">{discountPercent}% OFF MRP</span>
-                )}
-              </div>
-
-              <div className="space-y-1.5">
-                <label className="text-xs font-bold text-gray-700">
-                  Cost / Purchase Rate ₹
+                <label className="text-xs font-bold text-amber-800 flex items-center justify-between">
+                  <span>2. BUY Rate ₹</span>
+                  <span className="text-[10px] text-amber-600 font-semibold">Hame Mila</span>
                 </label>
                 <input
                   type="number"
@@ -2606,8 +2596,32 @@ export default function SharedProductUploadWizard({
                   placeholder="e.g. 850"
                   value={costPrice}
                   onChange={(e) => setCostPrice(e.target.value)}
-                  className="w-full px-3.5 py-2.5 rounded-2xl border border-gray-200 text-xs font-mono font-semibold text-gray-700 focus:outline-none focus:border-[#F26522] bg-white"
+                  className="w-full px-3.5 py-2.5 rounded-2xl border border-amber-300 text-xs font-mono font-bold text-amber-950 focus:outline-none focus:border-[#F26522] bg-amber-50/30"
+                  title="Hame kitne me mil rha hai (Sourcing / landing cost from supplier)"
                 />
+                <span className="text-[10px] text-amber-700 font-medium block">
+                  Kitne me mil rha hai
+                </span>
+              </div>
+
+              <div className="space-y-1.5">
+                <label className="text-xs font-bold text-[#052a51] flex items-center justify-between">
+                  <span>3. SALE Rate ₹ <span className="text-red-500">*</span></span>
+                  <span className="text-[10px] text-blue-600 font-semibold">Selling Price</span>
+                </label>
+                <input
+                  type="number"
+                  inputMode="decimal"
+                  min="0"
+                  step="0.01"
+                  placeholder="e.g. 1199"
+                  value={sellingPrice}
+                  onChange={(e) => setSellingPrice(e.target.value)}
+                  className="w-full px-3.5 py-2.5 rounded-2xl border border-blue-300 text-xs font-mono font-black text-[#052a51] focus:outline-none focus:border-[#F26522] bg-blue-50/20"
+                />
+                {discountPercent > 0 && (
+                  <span className="text-[10px] text-emerald-600 font-bold block">{discountPercent}% OFF MRP</span>
+                )}
               </div>
 
               <div className="space-y-1.5">
@@ -3083,25 +3097,7 @@ export default function SharedProductUploadWizard({
                       <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
                         <div>
                           <label className="text-[11px] font-bold text-gray-600 block mb-1">
-                            Selling Price (₹) <span className="text-red-500">*</span>
-                          </label>
-                          <div className="relative">
-                            <span className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 font-bold text-xs">₹</span>
-                            <input
-                              type="number"
-                              inputMode="decimal"
-                              min="0"
-                              step="0.01"
-                              placeholder="e.g. 1250"
-                              value={sellingPrice}
-                              onChange={(e) => setSellingPrice(e.target.value)}
-                              className="w-full pl-7 pr-3 py-2.5 rounded-xl border border-gray-200 text-xs font-mono font-black text-[#052a51] bg-white focus:outline-none focus:border-[#F26522]"
-                            />
-                          </div>
-                        </div>
-                        <div>
-                          <label className="text-[11px] font-bold text-gray-600 block mb-1">
-                            Maximum Retail Price (MRP ₹)
+                            1. MRP (Max Retail ₹)
                           </label>
                           <div className="relative">
                             <span className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 font-bold text-xs">₹</span>
@@ -3118,11 +3114,11 @@ export default function SharedProductUploadWizard({
                           </div>
                         </div>
                         <div>
-                          <label className="text-[11px] font-bold text-gray-600 block mb-1">
-                            Cost Price (₹)
+                          <label className="text-[11px] font-bold text-amber-800 block mb-1">
+                            2. BUY Rate (Hame Mila ₹)
                           </label>
                           <div className="relative">
-                            <span className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 font-bold text-xs">₹</span>
+                            <span className="absolute left-3 top-1/2 -translate-y-1/2 text-amber-600 font-bold text-xs">₹</span>
                             <input
                               type="number"
                               inputMode="decimal"
@@ -3131,11 +3127,59 @@ export default function SharedProductUploadWizard({
                               placeholder="e.g. 850"
                               value={costPrice}
                               onChange={(e) => setCostPrice(e.target.value)}
-                              className="w-full pl-7 pr-3 py-2.5 rounded-xl border border-gray-200 text-xs font-mono font-semibold text-gray-700 bg-white focus:outline-none focus:border-[#F26522]"
+                              className="w-full pl-7 pr-3 py-2.5 rounded-xl border border-amber-300 text-xs font-mono font-bold text-amber-950 bg-amber-50/30 focus:outline-none focus:border-[#F26522]"
+                              title="Hame kitne me mil rha hai (Purchase rate from vendor)"
+                            />
+                          </div>
+                        </div>
+                        <div>
+                          <label className="text-[11px] font-bold text-[#052a51] block mb-1">
+                            3. SALE Rate (₹) <span className="text-red-500">*</span>
+                          </label>
+                          <div className="relative">
+                            <span className="absolute left-3 top-1/2 -translate-y-1/2 text-blue-500 font-bold text-xs">₹</span>
+                            <input
+                              type="number"
+                              inputMode="decimal"
+                              min="0"
+                              step="0.01"
+                              placeholder="e.g. 1250"
+                              value={sellingPrice}
+                              onChange={(e) => setSellingPrice(e.target.value)}
+                              className="w-full pl-7 pr-3 py-2.5 rounded-xl border border-blue-300 text-xs font-mono font-black text-[#052a51] bg-blue-50/20 focus:outline-none focus:border-[#F26522]"
                             />
                           </div>
                         </div>
                       </div>
+
+                      {/* Live Profit / Loss Calculation Pill for Sub-category */}
+                      {(sellingNum > 0 || costNum > 0) && (
+                        <div className="pt-2 flex flex-wrap items-center justify-between gap-2 text-xs border-t border-orange-200/60">
+                          <div className="flex items-center gap-2">
+                            <span className="font-bold text-gray-700">Procurement Margin:</span>
+                            {costNum > 0 && sellingNum > 0 ? (
+                              <span
+                                className={`px-2.5 py-0.5 rounded-full font-black font-mono text-[11px] ${
+                                  sellingNum >= costNum
+                                    ? "bg-emerald-100 text-emerald-800 border border-emerald-300"
+                                    : "bg-rose-100 text-rose-800 border border-rose-300 animate-pulse"
+                                }`}
+                              >
+                                {sellingNum >= costNum
+                                  ? `+₹${(sellingNum - costNum).toFixed(2)} Profit (${profitMarginPercent}% Margin)`
+                                  : `⚠️ -₹${(costNum - sellingNum).toFixed(2)} Loss!`}
+                              </span>
+                            ) : (
+                              <span className="text-gray-400 text-[11px]">Enter both Buy Rate &amp; Sale Rate</span>
+                            )}
+                          </div>
+                          {mrpNum > sellingNum && (
+                            <span className="text-[11px] text-emerald-700 font-semibold">
+                              Customer Saves: ₹{(mrpNum - sellingNum).toFixed(2)} ({discountPercent}% OFF)
+                            </span>
+                          )}
+                        </div>
+                      )}
                     </div>
 
                     {/* 2. Sub-category Colour & Finish */}
@@ -3613,27 +3657,30 @@ export default function SharedProductUploadWizard({
                       )}
                     </div>
 
-                    {/* Custom Rate / Pricing (Selling Price & MRP) */}
-                    <div className="p-3 bg-gray-50/70 rounded-2xl border border-gray-200 space-y-2">
-                      <label className="text-xs font-bold text-gray-700 flex items-center gap-1.5">
-                        <IndianRupee size={14} className="text-[#F26522]" />
-                        Sub-category Rate &amp; Price
-                      </label>
-                      <div className="grid grid-cols-2 gap-3">
+                    {/* Custom Rate / Pricing: MRP, BUY Rate, SALE Rate */}
+                    <div className="p-3 bg-gray-50/70 rounded-2xl border border-gray-200 space-y-2.5">
+                      <div className="flex items-center justify-between">
+                        <label className="text-xs font-bold text-gray-700 flex items-center gap-1.5">
+                          <IndianRupee size={14} className="text-[#F26522]" />
+                          <span>Sub-category Financial Rates &amp; Profit</span>
+                        </label>
+                        {parseFloat(customSubcategoryPrice) > 0 && parseFloat(customSubcategoryCostPrice) > 0 && (
+                          <span
+                            className={`text-[10px] font-black font-mono px-2 py-0.5 rounded-full ${
+                              parseFloat(customSubcategoryPrice) >= parseFloat(customSubcategoryCostPrice)
+                                ? "bg-emerald-100 text-emerald-800"
+                                : "bg-rose-100 text-rose-800"
+                            }`}
+                          >
+                            {parseFloat(customSubcategoryPrice) >= parseFloat(customSubcategoryCostPrice)
+                              ? `+₹${(parseFloat(customSubcategoryPrice) - parseFloat(customSubcategoryCostPrice)).toFixed(2)} Profit`
+                              : `⚠️ -₹${(parseFloat(customSubcategoryCostPrice) - parseFloat(customSubcategoryPrice)).toFixed(2)} Loss`}
+                          </span>
+                        )}
+                      </div>
+                      <div className="grid grid-cols-1 sm:grid-cols-3 gap-2.5">
                         <div>
-                          <label className="text-[11px] font-bold text-gray-600 block mb-1">Selling Price (₹)</label>
-                          <input
-                            type="number"
-                            min="0"
-                            step="0.01"
-                            placeholder="e.g. 1250"
-                            value={customSubcategoryPrice}
-                            onChange={(e) => setCustomSubcategoryPrice(e.target.value)}
-                            className="w-full px-3 py-2 rounded-xl border border-gray-200 text-xs font-mono font-bold text-[#052a51] bg-white focus:outline-none focus:border-[#F26522]"
-                          />
-                        </div>
-                        <div>
-                          <label className="text-[11px] font-bold text-gray-600 block mb-1">MRP (₹)</label>
+                          <label className="text-[11px] font-bold text-gray-600 block mb-1">1. MRP (Max Retail ₹)</label>
                           <input
                             type="number"
                             min="0"
@@ -3642,6 +3689,31 @@ export default function SharedProductUploadWizard({
                             value={customSubcategoryMrp}
                             onChange={(e) => setCustomSubcategoryMrp(e.target.value)}
                             className="w-full px-3 py-2 rounded-xl border border-gray-200 text-xs font-mono font-bold text-gray-700 bg-white focus:outline-none focus:border-[#F26522]"
+                          />
+                        </div>
+                        <div>
+                          <label className="text-[11px] font-bold text-amber-800 block mb-1">2. BUY Rate (Hame Mila ₹)</label>
+                          <input
+                            type="number"
+                            min="0"
+                            step="0.01"
+                            placeholder="e.g. 850"
+                            value={customSubcategoryCostPrice}
+                            onChange={(e) => setCustomSubcategoryCostPrice(e.target.value)}
+                            className="w-full px-3 py-2 rounded-xl border border-amber-300 text-xs font-mono font-bold text-amber-950 bg-amber-50/30 focus:outline-none focus:border-[#F26522]"
+                            title="Hame kitne me mil rha hai (Purchase rate from vendor)"
+                          />
+                        </div>
+                        <div>
+                          <label className="text-[11px] font-bold text-[#052a51] block mb-1">3. SALE Rate (₹) *</label>
+                          <input
+                            type="number"
+                            min="0"
+                            step="0.01"
+                            placeholder="e.g. 1250"
+                            value={customSubcategoryPrice}
+                            onChange={(e) => setCustomSubcategoryPrice(e.target.value)}
+                            className="w-full px-3 py-2 rounded-xl border border-blue-300 text-xs font-mono font-bold text-[#052a51] bg-blue-50/20 focus:outline-none focus:border-[#F26522]"
                           />
                         </div>
                       </div>

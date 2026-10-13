@@ -913,11 +913,11 @@ export default function UnifiedVariantManager({
                     <th className="py-3 px-3 w-10 text-center">Primary</th>
                     <th className="py-3 px-3">Variant Combination / Name</th>
                     <th className="py-3 px-3 w-32">SKU / Code</th>
-                    <th className="py-3 px-3 w-24">MRP (₹)</th>
-                    <th className="py-3 px-3 w-28">Selling (₹) *</th>
-                    <th className="py-3 px-3 w-24">Cost / CP (₹)</th>
+                    <th className="py-3 px-3 w-24" title="Maximum Retail Price">1. MRP (₹)</th>
+                    <th className="py-3 px-3 w-28" title="Customer Selling Price (Sale Rate)">2. SALE Rate (₹) *</th>
+                    <th className="py-3 px-3 w-24" title="Hame kitne me mil rha hai (Purchase / Landing Cost)">3. BUY Rate (₹)</th>
                     {isAdminOrCpo && (
-                      <th className="py-3 px-3 w-28 text-right" title="Real-Time Profit & Margin % for Platform Admin">⚡ Margin</th>
+                      <th className="py-3 px-3 w-28 text-right" title="Real-Time Profit & Margin % (Sale Rate - Buy Rate)">⚡ Profit / Margin</th>
                     )}
                     <th className="py-3 px-3 w-24">Coverage (sqft)</th>
                     <th className="py-3 px-3 w-32">Stock &amp; Status</th>
@@ -1298,10 +1298,10 @@ export default function UnifiedVariantManager({
                       </div>
                     </div>
 
-                    {/* Middle Grid: 3-Tier Pricing (MRP, Selling Price, Cost Price) */}
+                    {/* Middle Grid: 3-Tier Pricing (MRP, SALE Rate, BUY Rate) */}
                     <div className="grid grid-cols-3 gap-2 pt-1">
                       <div className="p-2 rounded-xl bg-gray-50 border border-gray-100 space-y-1">
-                        <label className="text-[9px] font-bold text-gray-500 uppercase block truncate">MRP (₹)</label>
+                        <label className="text-[9px] font-bold text-gray-500 uppercase block truncate">1. MRP (₹)</label>
                         <input
                           type="number"
                           min={0}
@@ -1316,8 +1316,8 @@ export default function UnifiedVariantManager({
                         />
                       </div>
 
-                      <div className="p-2 rounded-xl bg-gray-50 border border-gray-100 space-y-1">
-                        <label className="text-[9px] font-bold text-gray-700 uppercase block truncate">Selling (₹) *</label>
+                      <div className="p-2 rounded-xl bg-blue-50/40 border border-blue-200 space-y-1">
+                        <label className="text-[9px] font-bold text-blue-900 uppercase block truncate">2. SALE Rate (₹) *</label>
                         <input
                           type="number"
                           min={0}
@@ -1329,12 +1329,12 @@ export default function UnifiedVariantManager({
                               pricePerBox: Number(e.target.value),
                             })
                           }
-                          className="w-full px-2 py-1.5 bg-white border border-gray-200 rounded-lg text-xs font-mono font-black text-[#052a51] focus:outline-none focus:border-[#F26522]"
+                          className="w-full px-2 py-1.5 bg-white border border-blue-300 rounded-lg text-xs font-mono font-black text-[#052a51] focus:outline-none focus:border-[#F26522]"
                         />
                       </div>
 
-                      <div className="p-2 rounded-xl bg-gray-50 border border-gray-100 space-y-1">
-                        <label className="text-[9px] font-bold text-gray-500 uppercase block truncate">Cost / CP (₹)</label>
+                      <div className="p-2 rounded-xl bg-amber-50/40 border border-amber-200 space-y-1">
+                        <label className="text-[9px] font-bold text-amber-900 uppercase block truncate">3. BUY Rate (₹)</label>
                         <input
                           type="number"
                           min={0}
@@ -1345,7 +1345,8 @@ export default function UnifiedVariantManager({
                               costPrice: e.target.value ? Number(e.target.value) : undefined,
                             })
                           }
-                          className="w-full px-2 py-1.5 bg-white border border-gray-200 rounded-lg text-xs font-mono font-medium text-gray-700 focus:outline-none focus:border-[#F26522]"
+                          className="w-full px-2 py-1.5 bg-white border border-amber-300 rounded-lg text-xs font-mono font-bold text-amber-950 focus:outline-none focus:border-[#F26522]"
+                          title="Hame kitne me mil rha hai"
                         />
                       </div>
                     </div>

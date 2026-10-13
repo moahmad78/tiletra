@@ -756,14 +756,19 @@ export async function createProduct(input: CreateProductInput) {
         specs: input.specs
           ? {
               ...input.specs,
+              ...(input.costPrice !== undefined && input.costPrice !== null ? { costPrice: Number(input.costPrice) } : {}),
               ...(input.tags ? { tags: input.tags } : {}),
               ...(input.customBadgeText ? { customBadgeText: input.customBadgeText } : {}),
               ...(input.badgeColor ? { badgeColor: input.badgeColor } : {}),
               ...(input.showAutoDiscount !== undefined ? { showAutoDiscount: input.showAutoDiscount } : {}),
             }
-          : (input.tags || input.customBadgeText || input.badgeColor || input.showAutoDiscount !== undefined
-              ? { tags: input.tags, customBadgeText: input.customBadgeText, badgeColor: input.badgeColor, showAutoDiscount: input.showAutoDiscount }
-              : null),
+          : {
+              ...(input.costPrice !== undefined && input.costPrice !== null ? { costPrice: Number(input.costPrice) } : {}),
+              ...(input.tags ? { tags: input.tags } : {}),
+              ...(input.customBadgeText ? { customBadgeText: input.customBadgeText } : {}),
+              ...(input.badgeColor ? { badgeColor: input.badgeColor } : {}),
+              ...(input.showAutoDiscount !== undefined ? { showAutoDiscount: input.showAutoDiscount } : {}),
+            },
         vendor: input.vendorId ? { connect: { id: input.vendorId } } : undefined,
         status: input.status || "active",
         approvalStatus: input.approvalStatus || "pending",

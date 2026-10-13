@@ -210,6 +210,9 @@ export function formatProduct(dbProduct: any): Product {
     variantSpecs: v.variantSpecs || null,
     weightKg: v.weightKg ? Number(v.weightKg) : null,
     mrp: v.mrp ? Number(v.mrp) : null,
+    costPrice: (v as any).variantSpecs?.costPrice !== undefined && (v as any).variantSpecs?.costPrice !== null
+      ? Number((v as any).variantSpecs.costPrice)
+      : ((v as any).costPrice !== undefined && (v as any).costPrice !== null ? Number((v as any).costPrice) : null),
     price: v.price !== null && v.price !== undefined ? Number(v.price) : Number(v.pricePerBox || 0),
     pricePerBox: Number(v.pricePerBox || v.price || 0),
     pricePerSqft: Number(v.pricePerSqft || 0),
@@ -279,6 +282,11 @@ export function formatProduct(dbProduct: any): Product {
     hasVariants: Boolean(dbProduct.hasVariants),
     gstRate: dbProduct.gstRate !== undefined && dbProduct.gstRate !== null ? Number(dbProduct.gstRate) : (dbProduct.gstPercent ? Number(dbProduct.gstPercent) : 18),
     mrp: dbProduct.mrp ? Number(dbProduct.mrp) : null,
+    costPrice: (dbProduct as any).specs?.costPrice !== undefined && (dbProduct as any).specs?.costPrice !== null
+      ? Number((dbProduct as any).specs.costPrice)
+      : ((dbProduct as any).costPrice !== undefined && (dbProduct as any).costPrice !== null
+          ? Number((dbProduct as any).costPrice)
+          : (variants[0]?.costPrice ?? null)),
     pricePerSqft: dbProduct.pricePerSqft ? Number(dbProduct.pricePerSqft) : undefined,
     attributes,
     images: Array.isArray(dbProduct.images) && dbProduct.images.length > 0 && dbProduct.images[0] && dbProduct.images[0] !== "/placeholders/product.svg"

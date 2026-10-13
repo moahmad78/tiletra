@@ -588,13 +588,10 @@ export default function ColorRadioSelector({
               </button>
             </div>
 
-            {/* Instruction Notice in Hindi/English */}
-            <div className="bg-orange-50/70 p-3.5 rounded-2xl border border-orange-200/80 text-xs text-gray-700 leading-relaxed space-y-1">
+            {/* Instruction Notice */}
+            <div className="bg-orange-50/70 p-3 rounded-2xl border border-orange-200/80 text-xs text-gray-700 leading-relaxed">
               <p>
-                Agar aapke paas <strong>{pendingColorForImage}</strong> colour ka photo hai toh upload karein.
-              </p>
-              <p className="text-gray-500 text-[11px]">
-                Agar photo nahi hai, toh <strong>&quot;No / Skip Image&quot;</strong> karein aur aage continue karein.
+                Upload a photo for <strong>&quot;{pendingColorForImage}&quot;</strong> or click <strong>&quot;Skip&quot;</strong> to continue.
               </p>
             </div>
 
