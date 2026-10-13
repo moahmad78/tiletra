@@ -241,17 +241,6 @@ const SEED_OFFER_BANNERS: AdminOfferBanner[] = [
     isActive: true,
   },
   {
-    id: "slide-2",
-    badge: "Zero Shipping Cost",
-    title: "Free Delivery Above ₹15,000",
-    subtitle: "Safe box packing & direct doorstep transit",
-    cta: "Explore Tiles",
-    href: "/shop",
-    image: "/placeholders/product.svg",
-    bgGradient: "from-[#0c3966]/95 via-[#052a51]/85 to-transparent",
-    isActive: true,
-  },
-  {
     id: "slide-3",
     badge: "Confidence First",
     title: "Order a Tile Sample Box",
@@ -328,7 +317,7 @@ export const useAdminStore = create<AdminStore>()(
       coupons: SEED_COUPONS,
       offerBanners: SEED_OFFER_BANNERS,
       heroContent: {
-        badge: "Free delivery above ₹15,000",
+        badge: "Every Material. Every Space.",
         headline: "Every Material. Every Space.",
         subheadline: "India's premier interior & construction supply platform — tiles, electrical, plumbing, hardware & finishes delivered directly to your site.",
         ctaText: "Shop All Tiles",

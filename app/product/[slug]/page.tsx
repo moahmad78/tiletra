@@ -135,9 +135,16 @@ export default async function ProductPage({
     notFound();
   }
 
-  const relatedProducts = allProducts
-    .filter((p) => p.categorySlug === product.categorySlug && p.id !== product.id)
-    .slice(0, 6);
+  const categoryRelated = allProducts.filter(
+    (p) => p.categorySlug === product.categorySlug && p.id !== product.id
+  );
+  const otherCategoryPool = allProducts.filter(
+    (p) => p.id !== product.id && p.categorySlug !== product.categorySlug
+  );
+  const relatedProducts = [
+    ...categoryRelated,
+    ...otherCategoryPool,
+  ].slice(0, categoryRelated.length >= 12 ? 12 : 6);
 
   const productExtra = product as Record<string, unknown>;
   const fallbackPrice =

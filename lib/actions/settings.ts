@@ -297,7 +297,7 @@ export async function getHomepageAnnouncements() {
 
   return {
     enabled: true,
-    text: "🚚 Free Doorstep Pallet Freight on Orders Above ₹15,000 across Bangalore | Factory Direct Rates",
+    text: "🚚 Direct Doorstep Pallet Freight across Bangalore | Factory Direct Rates",
     linkText: "Shop Deals",
     linkHref: "/shop",
   };

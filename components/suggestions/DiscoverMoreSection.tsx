@@ -1,10 +1,12 @@
 "use client";
 
-import { useState, useEffect, useMemo, useRef } from "react";
+import { useMemo, useSyncExternalStore } from "react";
 import Link from "next/link";
 import { ArrowRight } from "lucide-react";
 import CompactProductCard from "@/components/CompactProductCard";
 import { products as defaultProducts, type Product } from "@/lib/data/products";
+
+const emptySubscribe = () => () => {};
 
 interface DiscoverMoreSectionProps {
   currentProductId?: string;
@@ -19,12 +21,9 @@ export default function DiscoverMoreSection({
   title = "Suggested for You",
   catalog = defaultProducts,
 }: DiscoverMoreSectionProps) {
-  const [mounted, setMounted] = useState(false);
-  const [allSuggestedProducts, setAllSuggestedProducts] = useState<Product[]>([]);
+  const mounted = useSyncExternalStore(emptySubscribe, () => true, () => false);
 
-  useEffect(() => {
-    setMounted(true);
-
+  const allSuggestedProducts = useMemo(() => {
     const excludedSet = new Set([
       ...(currentProductId ? [currentProductId] : []),
       ...excludedProductIds,
@@ -34,7 +33,7 @@ export default function DiscoverMoreSection({
       (p) => !excludedSet.has(p.id) && !excludedSet.has(p.slug)
     );
 
-    if (pool.length === 0) return;
+    if (pool.length === 0) return [];
 
     // Group by category to ensure rich cross-category variety
     const categoryMap = new Map<string, Product[]>();
@@ -45,11 +44,19 @@ export default function DiscoverMoreSection({
       categoryMap.set(catKey, list);
     }
 
-    // Shuffle inside each category bucket
-    const categoriesArray = Array.from(categoryMap.keys()).sort(() => Math.random() - 0.5);
+    // Deterministic shuffle using id hash for pure rendering
+    const hash = (str: string) => {
+      let h = 0;
+      for (let i = 0; i < str.length; i++) {
+        h = (h * 31 + str.charCodeAt(i)) & 0x7fffffff;
+      }
+      return h;
+    };
+
+    const categoriesArray = Array.from(categoryMap.keys()).sort((a, b) => hash(a) - hash(b));
     const categoryQueues = categoriesArray.map((catKey) => {
       const items = [...(categoryMap.get(catKey) || [])];
-      return items.sort(() => Math.random() - 0.5);
+      return items.sort((a, b) => hash(a.id) - hash(b.id));
     });
 
     // Round-robin selection across diverse categories so all products are included
@@ -65,7 +72,7 @@ export default function DiscoverMoreSection({
       }
     }
 
-    setAllSuggestedProducts(shuffled);
+    return shuffled;
   }, [catalog, currentProductId, excludedProductIds]);
 
   if (!mounted || allSuggestedProducts.length === 0) return null;
@@ -93,8 +100,8 @@ export default function DiscoverMoreSection({
       {/* ── 1. Horizontal Left-Right Swipe Slider ── */}
       <div className="flex gap-2.5 sm:gap-3 overflow-x-auto snap-x snap-mandatory pt-1 pb-2 no-scrollbar scroll-smooth">
         {horizontalProducts.map((product) => (
-          <div key={`h-${product.id}`} className="snap-start shrink-0">
-            <CompactProductCard product={product} />
+          <div key={`h-${product.id}`} className="snap-start shrink-0 w-[150px] sm:w-[165px] md:w-[175px] xl:w-[calc((100%-60px)/6)]">
+            <CompactProductCard product={product} className="w-full h-full" />
           </div>
         ))}
       </div>
@@ -112,7 +119,7 @@ export default function DiscoverMoreSection({
       </div>
 
       {/* ── 2. All Suggested Items Grid (Phone & Desktop) ── */}
-      <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-4 gap-2.5 sm:gap-3.5">
+      <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-2.5 sm:gap-3">
         {allSuggestedProducts.map((product) => (
           <div key={`g-${product.id}`} className="h-full">
             <CompactProductCard product={product} className="w-full h-full" />

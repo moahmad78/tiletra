@@ -47,16 +47,6 @@ const DEFAULT_DESKTOP_SLIDES: BannerSlide[] = [
     image: "/images/banners/banner-slide-3.jpg",
     accentColor: "#2F7A4F",
   },
-  {
-    id: "slide-4",
-    badge: "Fast Freight Across Bangalore",
-    headline: "Direct Factory Pricing. Zero Middlemen.",
-    subtext: "Free specialized freight delivery on all orders above ₹15,000 with 100% breakage protection.",
-    ctaText: "Explore Catalog",
-    ctaHref: "/shop",
-    image: "/images/banners/banner-slide-2.jpg",
-    accentColor: "#F26522",
-  },
 ];
 
 function BannerSlideItem({

@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useMemo } from "react";
+import { useState, useEffect, useMemo, useSyncExternalStore } from "react";
 import Link from "next/link";
 import Image from "next/image";
 import { useRouter } from "next/navigation";
@@ -53,6 +53,8 @@ function formatPrice(n: number) {
   return "₹" + n.toLocaleString("en-IN");
 }
 
+const emptySubscribe = () => () => {};
+
 interface ProductDetailsClientProps {
   product: Product;
   relatedProducts: Product[];
@@ -65,6 +67,7 @@ export default function ProductDetailsClient({
   allProducts,
 }: ProductDetailsClientProps) {
   const router = useRouter();
+  const mounted = useSyncExternalStore(emptySubscribe, () => true, () => false);
   const { addItem, setBuyNowItem } = useCartStore();
   const { isWishlisted, toggleWishlist } = useWishlistStore();
 
@@ -85,8 +88,6 @@ export default function ProductDetailsClient({
   const [roomSqft, setRoomSqft] = useState<string>("");
   const [addedToCart, setAddedToCart] = useState(false);
   const [specsOpen, setSpecsOpen] = useState(true);
-  const [reviewsOpen, setReviewsOpen] = useState(false);
-  const [mounted, setMounted] = useState(false);
   const [notifySuccess, setNotifySuccess] = useState(false);
   const [showNotifyModal, setShowNotifyModal] = useState(false);
   const [notifyContact, setNotifyContact] = useState("");
@@ -112,6 +113,18 @@ export default function ProductDetailsClient({
 
     return ["/placeholders/product.svg"];
   }, [definedProduct.images, definedProduct.variants, selectedVariant.image]);
+
+  // Ensure Similar Products always has at least 6 items to completely fill the 6-column grid row
+  const displayedRelatedProducts = useMemo(() => {
+    const primary = (relatedProducts || []).filter((p) => p.id !== definedProduct.id);
+    const targetCount = primary.length >= 12 ? 12 : 6;
+    if (primary.length >= targetCount) {
+      return primary.slice(0, targetCount);
+    }
+    const usedIds = new Set([definedProduct.id, ...primary.map((p) => p.id)]);
+    const fallbackProducts = (allProducts || []).filter((p) => !usedIds.has(p.id));
+    return [...primary, ...fallbackProducts].slice(0, targetCount);
+  }, [relatedProducts, definedProduct.id, allProducts]);
 
   const handleSelectVariant = (v: ProductVariant) => {
     setSelectedVariant(v);
@@ -148,7 +161,6 @@ export default function ProductDetailsClient({
   const totalCostForRoom = boxesNeeded ? boxesNeeded * selectedVariant.pricePerBox : null;
 
   useEffect(() => {
-    setMounted(true);
     trackProductView(definedProduct.id);
   }, [definedProduct.id]);
 
@@ -208,8 +220,8 @@ export default function ProductDetailsClient({
     selectedVariant.sqftPerBox > 0
       ? selectedVariant.sqftPerBox
       : definedProduct.unitOfSale === "roll"
-      ? 57
-      : 40;
+        ? 57
+        : 40;
 
   const isTileProduct =
     definedProduct.categorySlug?.includes("tile") ||
@@ -272,23 +284,27 @@ export default function ProductDetailsClient({
 
               {/* Rating & Specifications - Only show rating badge if genuine reviews exist */}
               {(() => {
-                const avgRatingVal = (definedProduct as any).avgRating;
-                const reviewCountVal = (definedProduct as any).reviewCount;
+                const avgRatingVal = typeof (definedProduct as Record<string, unknown>).avgRating === "number"
+                  ? ((definedProduct as Record<string, unknown>).avgRating as number)
+                  : undefined;
+                const reviewCountVal = typeof (definedProduct as Record<string, unknown>).reviewCount === "number"
+                  ? ((definedProduct as Record<string, unknown>).reviewCount as number)
+                  : undefined;
                 const displayReviewCount =
                   reviewCountVal !== null && reviewCountVal !== undefined && reviewCountVal > 0
                     ? reviewCountVal
                     : definedProduct.manualReviewCount !== null && definedProduct.manualReviewCount !== undefined && definedProduct.manualReviewCount > 0
-                    ? definedProduct.manualReviewCount
-                    : 0;
+                      ? definedProduct.manualReviewCount
+                      : 0;
 
                 const displayRating =
                   avgRatingVal !== null && avgRatingVal !== undefined && avgRatingVal > 0
                     ? avgRatingVal
                     : definedProduct.manualRating !== null && definedProduct.manualRating !== undefined && definedProduct.manualRating > 0
-                    ? definedProduct.manualRating
-                    : definedProduct.rating && definedProduct.rating > 0
-                    ? definedProduct.rating
-                    : 0;
+                      ? definedProduct.manualRating
+                      : definedProduct.rating && definedProduct.rating > 0
+                        ? definedProduct.rating
+                        : 0;
 
                 return (
                   <div className="flex items-center gap-3 mt-2.5 flex-wrap">
@@ -415,15 +431,14 @@ export default function ProductDetailsClient({
                 id="add-to-cart-btn"
                 onClick={handleAddToCart}
                 disabled={isOutOfStock || definedProduct.status === "discontinued"}
-                className={`flex-1 min-w-0 h-12 px-3 sm:px-4 font-bold text-xs sm:text-sm rounded-full flex items-center justify-center gap-1.5 transition-all active:scale-95 shadow-md cursor-pointer whitespace-nowrap ${
-                  addedToCart
+                className={`flex-1 min-w-0 h-12 px-3 sm:px-4 font-bold text-xs sm:text-sm rounded-full flex items-center justify-center gap-1.5 transition-all active:scale-95 shadow-md cursor-pointer whitespace-nowrap ${addedToCart
                     ? "bg-[#2F7A4F] text-white"
                     : definedProduct.status === "discontinued"
-                    ? "bg-gray-200 text-gray-400 cursor-not-allowed"
-                    : isOutOfStock
-                    ? "bg-gray-200 text-gray-400 cursor-not-allowed"
-                    : "bg-[#F26522] text-white hover:bg-[#d95a1e]"
-                }`}
+                      ? "bg-gray-200 text-gray-400 cursor-not-allowed"
+                      : isOutOfStock
+                        ? "bg-gray-200 text-gray-400 cursor-not-allowed"
+                        : "bg-[#F26522] text-white hover:bg-[#d95a1e]"
+                  }`}
               >
                 {addedToCart ? (
                   <>
@@ -691,8 +706,8 @@ export default function ProductDetailsClient({
           <ReviewSection productId={definedProduct.id} productName={definedProduct.name} />
         </div>
 
-        {/* ── Related Products (Same Category) ── */}
-        {relatedProducts.length > 0 && (
+        {/* ── Related Products (Same Category + Backfilled to Full 6-Card Row) ── */}
+        {displayedRelatedProducts.length > 0 && (
           <div className="mt-14 mb-8 bg-white rounded-3xl p-5 sm:p-7 border border-gray-200/80 shadow-2xs space-y-4 sm:space-y-5">
             <div className="flex items-center justify-between gap-2">
               <h2 className="text-base sm:text-lg font-black text-[#052a51] tracking-tight">
@@ -709,16 +724,16 @@ export default function ProductDetailsClient({
 
             {/* Mobile Swipeable Slider */}
             <div className="md:hidden flex gap-3 overflow-x-auto snap-x snap-mandatory pt-1 pb-2 scrollbar-none">
-              {relatedProducts.map((p) => (
+              {displayedRelatedProducts.map((p) => (
                 <div key={p.id} className="snap-start shrink-0">
                   <CompactProductCard product={p} />
                 </div>
               ))}
             </div>
 
-            {/* Desktop Grid Layout */}
+            {/* Desktop Grid Layout (6 columns fully filled) */}
             <div className="hidden md:grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-6 gap-4 pt-1">
-              {relatedProducts.map((p) => (
+              {displayedRelatedProducts.map((p) => (
                 <CompactProductCard key={p.id} product={p} className="w-full h-full" />
               ))}
             </div>
@@ -729,7 +744,7 @@ export default function ProductDetailsClient({
         <div className="mt-10 mb-8">
           <DiscoverMoreSection
             currentProductId={definedProduct.id}
-            excludedProductIds={relatedProducts.map((p) => p.id)}
+            excludedProductIds={displayedRelatedProducts.map((p) => p.id)}
             catalog={allProducts}
           />
         </div>
@@ -755,13 +770,12 @@ export default function ProductDetailsClient({
           <button
             onClick={handleAddToCart}
             disabled={isOutOfStock}
-            className={`flex-1 min-w-0 h-11 px-2.5 sm:px-3 font-bold text-xs rounded-xl active:scale-95 flex items-center justify-center gap-1 shadow-sm transition-all cursor-pointer whitespace-nowrap ${
-              addedToCart
+            className={`flex-1 min-w-0 h-11 px-2.5 sm:px-3 font-bold text-xs rounded-xl active:scale-95 flex items-center justify-center gap-1 shadow-sm transition-all cursor-pointer whitespace-nowrap ${addedToCart
                 ? "bg-[#2F7A4F] text-white"
                 : isOutOfStock
-                ? "bg-gray-200 text-gray-400 cursor-not-allowed"
-                : "bg-[#F26522] text-white hover:bg-[#d95a1e]"
-            }`}
+                  ? "bg-gray-200 text-gray-400 cursor-not-allowed"
+                  : "bg-[#F26522] text-white hover:bg-[#d95a1e]"
+              }`}
           >
             {addedToCart ? (
               <>

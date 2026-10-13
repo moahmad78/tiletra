@@ -28,16 +28,6 @@ const DEFAULT_SLIDES: MobileBannerSlide[] = [
     image: "/images/banners/banner-slide-1.jpg",
   },
   {
-    id: "slide-2",
-    badge: "Zero Shipping Cost",
-    title: "Free Delivery Above ₹15,000",
-    subtitle: "Safe packaging & direct doorstep transit",
-    cta: "Explore Catalog",
-    href: "/shop",
-    bgGradient: "from-[#0c3966]/95 via-[#052a51]/85 to-transparent",
-    image: "/images/banners/banner-slide-2.jpg",
-  },
-  {
     id: "slide-3",
     badge: "Confidence First",
     title: "Order Material Samples",
@@ -121,7 +111,7 @@ export default function OfferBanner({ slides }: { slides?: MobileBannerSlide[] }
   const [current, setCurrent] = useState(0);
   const [touchStart, setTouchStart] = useState<number | null>(null);
   const [touchEnd, setTouchEnd] = useState<number | null>(null);
-  const timerRef = useRef<any>(null);
+  const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
   // Auto-advance
   useEffect(() => {

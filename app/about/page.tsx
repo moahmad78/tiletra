@@ -526,7 +526,7 @@ export default function AboutPage() {
                   </div>
                   <div className="flex items-center gap-2.5 p-2.5 rounded-xl bg-white/5 border border-white/10 backdrop-blur-xs">
                     <CheckCircle2 size={16} className="text-[#1E9E6B] shrink-0" />
-                    <span>Free Above ₹15,000</span>
+                    <span>Direct Doorstep Transit</span>
                   </div>
                   <div className="flex items-center gap-2.5 p-2.5 rounded-xl bg-white/5 border border-white/10 backdrop-blur-xs col-span-2 sm:col-span-1">
                     <BadgeCheck size={16} className="text-amber-300 shrink-0" />

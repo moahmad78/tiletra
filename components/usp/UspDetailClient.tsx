@@ -289,7 +289,7 @@ export default function UspDetailClient({ usp }: UspDetailClientProps) {
                 </li>
                 <li className="flex items-center gap-2">
                   <span className="w-1.5 h-1.5 rounded-full bg-amber-400" />
-                  <span>Free freight on orders above ₹15,000</span>
+                  <span>Factory direct pricing with zero middlemen</span>
                 </li>
                 <li className="flex items-center gap-2">
                   <span className="w-1.5 h-1.5 rounded-full bg-blue-400" />
