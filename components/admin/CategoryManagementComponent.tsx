@@ -25,19 +25,25 @@ import {
   deleteCategory,
 } from "@/lib/actions/categories";
 import type { Category } from "@/lib/data/categories";
+import { resolveCategoryBulkImage } from "@/lib/catalog";
 import { toast } from "sonner";
 
 // High-resolution curated hero banners for instant 1-click selection
 const CURATED_HERO_PRESETS = [
-  { name: "Electrical & Wires", url: "/categories/electrical.jpg" },
-  { name: "Plumbing & Pipes", url: "/categories/plumbing.jpg" },
-  { name: "Sanitaryware & Bath", url: "/categories/sanitaryware.jpg" },
-  { name: "Tiles & Stone", url: "/categories/tiles.jpg" },
-  { name: "Lighting & Fixtures", url: "/categories/lighting.jpg" },
-  { name: "Hardware & Fittings", url: "/categories/hardware.jpg" },
-  { name: "Plywood & Laminates", url: "/categories/plywood.jpg" },
-  { name: "Paints & Waterproofing", url: "/categories/paints.jpg" },
-  { name: "Adhesives & Chemicals", url: "/categories/hardware.jpg" },
+  { name: "Cement & Concrete", url: "/images/categories/cat-cement-concrete.jpg" },
+  { name: "Steel & Rebar", url: "/images/categories/cat-steel-rebar.jpg" },
+  { name: "Bricks & Blocks", url: "/images/categories/cat-bricks-blocks.jpg" },
+  { name: "Sand & Aggregates", url: "/images/categories/cat-sand-aggregates.jpg" },
+  { name: "Roofing & Sheets", url: "/images/categories/cat-roofing-sheets.jpg" },
+  { name: "Electrical & Wires", url: "/images/categories/cat-electrical.jpg" },
+  { name: "Plumbing & Pipes", url: "/images/categories/cat-plumbing.jpg" },
+  { name: "Sanitaryware & Bath", url: "/images/categories/cat-sanitaryware-bath.jpg" },
+  { name: "Tiles & Stone", url: "/images/categories/cat-tiles-stone.jpg" },
+  { name: "Lighting & Fixtures", url: "/images/categories/cat-lighting.jpg" },
+  { name: "Hardware & Fittings", url: "/images/categories/cat-hardware.webp" },
+  { name: "Plywood & Laminates", url: "/images/categories/cat-plywood.jpg" },
+  { name: "Paints & Finishes", url: "/images/categories/cat-paint-finishes.jpg" },
+  { name: "Tools & Safety", url: "/images/categories/cat-tools-consumables.jpg" },
 ];
 
 interface CategoryManagementComponentProps {
@@ -274,7 +280,7 @@ export default function CategoryManagementComponent({
               {/* Hero Image Header */}
               <div className="relative h-44 w-full bg-gray-100 overflow-hidden">
                 <Image
-                  src={cat.image || "/placeholders/product.svg"}
+                  src={resolveCategoryBulkImage(cat.image, cat.slug, cat.name)}
                   alt={cat.name}
                   fill
                   className="object-cover group-hover:scale-105 transition-transform duration-500"

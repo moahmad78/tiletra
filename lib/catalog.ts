@@ -297,3 +297,108 @@ export function resolveColorHex(colorName?: string | null): string {
   const c = (hash & 0x00ffffff).toString(16).toUpperCase();
   return "#" + "00000".substring(0, 6 - c.length) + c;
 }
+
+/**
+ * High-definition local bulk construction & interior category assets on solid white/neutral background.
+ * Prevents any broken Unsplash URLs, dead links, or mismatched placeholders.
+ */
+export const BULK_CATEGORY_IMAGES: Record<string, string> = {
+  "cement-concrete": "/images/categories/cat-cement-concrete.jpg",
+  "steel-rebar": "/images/categories/cat-steel-rebar.jpg",
+  "bricks-blocks": "/images/categories/cat-bricks-blocks.jpg",
+  "sand-aggregates": "/images/categories/cat-sand-aggregates.jpg",
+  "roofing-sheets": "/images/categories/cat-roofing-sheets.jpg",
+  "site-tools-safety": "/images/categories/cat-tools-consumables.jpg",
+  "tools-consumables": "/images/categories/cat-tools-consumables.jpg",
+  "tiles-flooring": "/images/categories/cat-tiles-stone.jpg",
+  "floor-tiles": "/images/categories/cat-tiles-stone.jpg",
+  "tiles-stone": "/images/categories/cat-tiles-stone.jpg",
+  "flooring": "/images/categories/cat-flooring.jpg",
+  "plywood-laminates-surfaces": "/images/categories/cat-plywood.jpg",
+  "plywood": "/images/categories/cat-plywood.jpg",
+  "wall-surface": "/images/categories/cat-wall-surface.jpg",
+  "hardware-fasteners": "/images/categories/cat-hardware.webp",
+  "hardware-fittings": "/images/categories/cat-hardware-fittings.jpg",
+  "hardware": "/images/categories/cat-hardware.webp",
+  "lights-lighting": "/images/categories/cat-lighting.jpg",
+  "lighting": "/images/categories/cat-lighting.jpg",
+  "kitchen-wardrobe-fittings": "/images/categories/cat-kitchen-wardrobe.jpg",
+  "kitchen-wardrobe": "/images/categories/cat-kitchen-wardrobe.jpg",
+  "paint-finishes": "/images/categories/cat-paint-finishes.jpg",
+  "glass-mirrors-profiles": "/images/categories/cat-glass-mirror.jpg",
+  "glass-mirror": "/images/categories/cat-glass-mirror.jpg",
+  "ceiling-drywall": "/images/categories/cat-false-ceiling.jpg",
+  "false-ceiling": "/images/categories/cat-false-ceiling.jpg",
+  "electricals-wires": "/images/categories/cat-electrical.jpg",
+  "electrical": "/images/categories/cat-electrical.jpg",
+  "plumbing-tanks": "/images/categories/cat-plumbing.jpg",
+  "plumbing": "/images/categories/cat-plumbing.jpg",
+  "sanitaryware-bath": "/images/categories/cat-sanitaryware-bath.jpg",
+  "plumbing-sanitary": "/images/categories/cat-plumbing-sanitary.jpg",
+  "doors-windows-locks": "/images/categories/cat-doors-windows.jpg",
+  "doors-windows": "/images/categories/cat-doors-windows.jpg",
+  "aluminum-doors": "/images/categories/cat-aluminum-doors.jpg",
+  "waterproofing-adhesives": "/images/categories/cat-adhesives-sealants-waterproofing.jpg",
+  "adhesives-sealants-waterproofing": "/images/categories/cat-adhesives-sealants-waterproofing.jpg",
+  "solar-energy": "/images/categories/cat-solar-energy.jpg",
+  "fans-ventilation": "/images/categories/cat-fans-ventilation.jpg",
+  "furniture": "/images/categories/cat-furniture.jpg",
+  "safety-fire": "/images/categories/cat-safety-fire.jpg",
+  "smart-home": "/images/categories/cat-smart-home.jpg",
+  "decor-accessories": "/images/categories/cat-decor-accessories.jpg",
+  "curtains-blinds": "/images/categories/cat-curtains-blinds.jpg",
+  "office-commercial": "/images/categories/cat-office-commercial.jpg",
+  "outdoor-landscape": "/images/categories/cat-outdoor-landscape.jpg",
+  "wallpaper": "/images/categories/cat-wallpaper.jpg",
+  "granite": "/images/categories/cat-granite.jpg",
+};
+
+/**
+ * Resolves a reliable first-party category image path.
+ * Guarantees a clean white/neutral background bulk assortment image and never breaks on dead URLs.
+ */
+export function resolveCategoryBulkImage(
+  image?: string | null,
+  slug?: string | null,
+  name?: string | null
+): string {
+  // 1. If explicit local category image provided and not placeholder
+  if (image && typeof image === "string" && image.trim()) {
+    const clean = image.trim();
+    if (
+      !clean.includes("placeholder") &&
+      !clean.includes("unsplash.com") &&
+      !clean.includes("via.placeholder") &&
+      (clean.startsWith("/images/categories/") || clean.startsWith("/images/"))
+    ) {
+      return clean;
+    }
+  }
+
+  // 2. Direct slug lookup
+  if (slug) {
+    const cleanSlug = slug.toLowerCase().trim();
+    if (BULK_CATEGORY_IMAGES[cleanSlug]) {
+      return BULK_CATEGORY_IMAGES[cleanSlug];
+    }
+    for (const [key, path] of Object.entries(BULK_CATEGORY_IMAGES)) {
+      if (cleanSlug.includes(key) || key.includes(cleanSlug)) {
+        return path;
+      }
+    }
+  }
+
+  // 3. Name keyword matching
+  if (name) {
+    const lowerName = name.toLowerCase();
+    for (const [key, path] of Object.entries(BULK_CATEGORY_IMAGES)) {
+      const parts = key.split("-");
+      if (parts.some((p) => p.length >= 3 && lowerName.includes(p))) {
+        return path;
+      }
+    }
+  }
+
+  return "/images/placeholder-category.svg";
+}
+
