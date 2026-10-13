@@ -13,10 +13,6 @@ import {
   ZoomOut,
   RotateCcw,
   X,
-  ShoppingCart,
-  Zap,
-  Check,
-  Bell,
   Sparkles,
 } from "lucide-react";
 import { toast } from "sonner";
@@ -31,12 +27,12 @@ export interface ProductImageGalleryProps {
   onSelectImage: (index: number) => void;
   isWishlisted: boolean;
   onToggleWishlist: () => void;
-  isOutOfStock: boolean;
-  addedToCart: boolean;
-  onAddToCart: () => void;
-  onBuyNow: () => void;
-  onNotifyMe: () => void;
-  notifySuccess: boolean;
+  isOutOfStock?: boolean;
+  addedToCart?: boolean;
+  onAddToCart?: () => void;
+  onBuyNow?: () => void;
+  onNotifyMe?: () => void;
+  notifySuccess?: boolean;
 }
 
 export default function ProductImageGallery({
@@ -380,56 +376,6 @@ export default function ProductImageGallery({
         </div>
       </div>
 
-      {/* ── Flipkart Iconic Action Buttons Directly Below Image (Desktop) ── */}
-      <div className="hidden md:grid grid-cols-2 gap-2.5 sm:gap-3 w-full pt-1">
-        <button
-          type="button"
-          onClick={onAddToCart}
-          disabled={isOutOfStock || product.status === "discontinued"}
-          className={`h-12 sm:h-13 px-4 font-extrabold text-xs sm:text-sm rounded-xl flex items-center justify-center gap-2 transition-all active:scale-98 shadow-sm cursor-pointer ${
-            addedToCart
-              ? "bg-[#2F7A4F] text-white shadow-emerald-500/20"
-              : product.status === "discontinued" || isOutOfStock
-              ? "bg-gray-200 text-gray-400 cursor-not-allowed"
-              : "bg-[#FF9F00] hover:bg-[#f09300] text-white shadow-orange-500/20"
-          }`}
-        >
-          {addedToCart ? (
-            <>
-              <Check size={18} className="shrink-0" />
-              <span>ADDED TO CART</span>
-            </>
-          ) : isOutOfStock ? (
-            <span>OUT OF STOCK</span>
-          ) : (
-            <>
-              <ShoppingCart size={18} className="shrink-0" />
-              <span>ADD TO CART</span>
-            </>
-          )}
-        </button>
-
-        {isOutOfStock ? (
-          <button
-            type="button"
-            onClick={onNotifyMe}
-            className="h-12 sm:h-13 px-4 font-extrabold text-xs sm:text-sm rounded-xl flex items-center justify-center gap-2 bg-[#052a51] text-white hover:bg-[#041f3d] active:scale-98 transition-all shadow-sm cursor-pointer"
-          >
-            <Bell size={18} className="text-[#F26522] shrink-0" />
-            <span>{notifySuccess ? "NOTIFIED!" : "NOTIFY ME"}</span>
-          </button>
-        ) : (
-          <button
-            type="button"
-            onClick={onBuyNow}
-            disabled={product.status === "discontinued"}
-            className="h-12 sm:h-13 px-4 font-extrabold text-xs sm:text-sm rounded-xl flex items-center justify-center gap-2 bg-[#FB641B] hover:bg-[#e75713] text-white active:scale-98 transition-all shadow-sm shadow-orange-600/20 disabled:opacity-40 cursor-pointer"
-          >
-            <Zap size={18} className="fill-white shrink-0" />
-            <span>BUY NOW</span>
-          </button>
-        )}
-      </div>
 
       {/* ── Flipkart Fullscreen Lightbox Modal (High-Res Inspector) ── */}
       {lightboxOpen && (

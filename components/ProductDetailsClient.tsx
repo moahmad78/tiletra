@@ -237,12 +237,6 @@ export default function ProductDetailsClient({
               onSelectImage={setActiveImage}
               isWishlisted={mounted && wishlisted}
               onToggleWishlist={() => toggleWishlist(definedProduct)}
-              isOutOfStock={isOutOfStock}
-              addedToCart={addedToCart}
-              onAddToCart={handleAddToCart}
-              onBuyNow={handleBuyNow}
-              onNotifyMe={handleNotifyMe}
-              notifySuccess={notifySuccess}
             />
           </div>
 
