@@ -13,268 +13,319 @@ export type Category = {
   calculatorType?: CalculatorType;
   calculatorInputType?: "area" | "length" | "none";
   attributeSchema?: any;
+  children?: any[];
 };
 
 export const categories: Category[] = [
-  // ── 1. ELECTRICAL ──────────────────────────────────
+  // ── 1. CEMENT & CONCRETE ─────────────────────────────
   {
-    id: "cat-1",
-    name: "Electrical",
-    slug: "electrical",
-    description: "Certified wires, modular switches, MCBs, distribution boards & conduit piping.",
-    image: "/images/categories/cat-electrical.jpg",
+    id: "cat-cement-concrete",
+    name: "Cement & Concrete",
+    slug: "cement-concrete",
+    description: "OPC/PPC grade cement bags, ready-mix concrete, admixtures, curing compounds & site mixes.",
+    image: "/images/categories/cat-cement-concrete.jpg",
+    productCount: 4,
+    featured: true,
+    icon: "Package",
+    calculatorType: "none",
+  },
+  // ── 2. STEEL & REBAR ─────────────────────────────────
+  {
+    id: "cat-steel-rebar",
+    name: "Steel & Rebar",
+    slug: "steel-rebar",
+    description: "Fe 550D TMT reinforcement bars, MS angles, binding wire, steel mesh & structural beams.",
+    image: "/images/categories/cat-steel-rebar.jpg",
     productCount: 2,
     featured: true,
-    icon: "Zap",
+    icon: "Layers",
     calculatorType: "none",
   },
-  // ── 2. LIGHTING ────────────────────────────────────
+  // ── 3. BRICKS & BLOCKS ───────────────────────────────
   {
-    id: "cat-2",
-    name: "Lighting",
-    slug: "lighting",
-    description: "Decorative chandeliers, pendant lights, recessed COB downlights, LED strips & profile lights.",
-    image: "/images/categories/cat-lighting.jpg",
-    productCount: 0,
+    id: "cat-bricks-blocks",
+    name: "Bricks & Blocks",
+    slug: "bricks-blocks",
+    description: "Red kiln-burnt clay bricks, lightweight AAC fly-ash blocks, concrete solid blocks & pavers.",
+    image: "/images/categories/cat-bricks-blocks.jpg",
+    productCount: 3,
     featured: true,
-    icon: "Sun",
+    icon: "Square",
     calculatorType: "none",
   },
-  // ── 3. TILES & STONE ───────────────────────────────
+  // ── 4. SAND & AGGREGATES ─────────────────────────────
   {
-    id: "cat-3",
-    name: "Tiles & Stone",
-    slug: "tiles-stone",
-    description: "Vitrified tiles, ceramic, Italian marble, polished granite slabs & stone cladding.",
+    id: "cat-sand-aggregates",
+    name: "Sand & Aggregates",
+    slug: "sand-aggregates",
+    description: "Manufactured M-sand, plastering P-sand, 10mm/20mm coarse aggregate gravel & stone dust.",
+    image: "/images/categories/cat-sand-aggregates.jpg",
+    productCount: 2,
+    featured: true,
+    icon: "Boxes",
+    calculatorType: "none",
+  },
+  // ── 5. ROOFING & SHEETS ──────────────────────────────
+  {
+    id: "cat-roofing-sheets",
+    name: "Roofing & Sheets",
+    slug: "roofing-sheets",
+    description: "Color coated profile roofing sheets, galvanized GI corrugated sheets, polycarbonate & FRP panels.",
+    image: "/images/categories/cat-roofing-sheets.jpg",
+    productCount: 2,
+    featured: true,
+    icon: "Building",
+    calculatorType: "none",
+  },
+  // ── 6. SITE TOOLS & SAFETY ───────────────────────────
+  {
+    id: "cat-site-tools-safety",
+    name: "Site Tools & Safety",
+    slug: "site-tools-safety",
+    description: "Construction safety helmets, high-vis vests, steel-toe boots, scaffolding, power tools & mason trowels.",
+    image: "/images/categories/cat-tools-consumables.jpg",
+    productCount: 3,
+    featured: true,
+    icon: "ShieldAlert",
+    calculatorType: "none",
+  },
+  // ── 7. TILES & FLOORING ──────────────────────────────
+  {
+    id: "cat-tiles-flooring",
+    name: "Tiles & Flooring",
+    slug: "tiles-flooring",
+    description: "Vitrified floor tiles, glazed wall tiles, natural marble, polished granite & SPC planks.",
     image: "/images/categories/cat-tiles-stone.jpg",
-    productCount: 6,
+    productCount: 12,
     featured: true,
     icon: "Grid",
     calculatorType: "none",
   },
-  // ── 4. PAINT & FINISHES ────────────────────────────
+  // ── 8. PLYWOOD, LAMINATES & SURFACES ─────────────────
   {
-    id: "cat-4",
-    name: "Paint & Finishes",
+    id: "cat-plywood-laminates-surfaces",
+    name: "Plywood, Laminates & Surfaces",
+    slug: "plywood-laminates-surfaces",
+    description: "BWP marine plywood, commercial MR ply, decorative sunmica laminates, veneers & acrylic sheets.",
+    image: "/images/categories/cat-plywood.jpg",
+    productCount: 4,
+    featured: true,
+    icon: "Layers",
+    calculatorType: "none",
+  },
+  // ── 9. HARDWARE & FASTENERS ──────────────────────────
+  {
+    id: "cat-hardware-fasteners",
+    name: "Hardware & Fasteners",
+    slug: "hardware-fasteners",
+    description: "SS 304 screws, anchor bolts, hydraulic soft-close hinges, drawer channels & precision fasteners.",
+    image: "/images/categories/cat-hardware.webp",
+    productCount: 5,
+    featured: true,
+    icon: "Wrench",
+    calculatorType: "none",
+  },
+  // ── 10. LIGHTS & LIGHTING ────────────────────────────
+  {
+    id: "cat-lights-lighting",
+    name: "Lights & Lighting",
+    slug: "lights-lighting",
+    description: "Architectural recessed COB downlights, LED magnetic tracks, profile strip lights, chandeliers & smart fixtures.",
+    image: "/images/categories/cat-lighting.jpg",
+    productCount: 6,
+    featured: true,
+    icon: "Sun",
+    calculatorType: "none",
+  },
+  // ── 11. KITCHEN & WARDROBE FITTINGS ──────────────────
+  {
+    id: "cat-kitchen-wardrobe-fittings",
+    name: "Kitchen & Wardrobe Fittings",
+    slug: "kitchen-wardrobe-fittings",
+    description: "Modular kitchen tandem drawers, SS wire pull-out baskets, corner carousels & wardrobe organizers.",
+    image: "/images/categories/cat-kitchen-wardrobe.jpg",
+    productCount: 3,
+    featured: true,
+    icon: "Package",
+    calculatorType: "none",
+  },
+  // ── 12. PAINTS & FINISHES ────────────────────────────
+  {
+    id: "cat-paint-finishes",
+    name: "Paints & Finishes",
     slug: "paint-finishes",
-    description: "Luxury interior emulsions, exterior weatherproof paints, primers, textures & wood polishes.",
+    description: "Luxury interior emulsions, exterior weatherproof paints, acrylic wall putty, primers & wood coatings.",
     image: "/images/categories/cat-paint-finishes.jpg",
-    productCount: 0,
+    productCount: 8,
     featured: true,
     icon: "Palette",
     calculatorType: "none",
   },
-  // ── 5. FALSE CEILING ───────────────────────────────
+  // ── 13. GLASS, MIRRORS & PROFILES ────────────────────
   {
-    id: "cat-5",
-    name: "False Ceiling",
-    slug: "false-ceiling",
-    description: "Gypsum false ceiling boards, POP molding plaster, GI channel grids & acoustic ceiling tiles.",
-    image: "/images/categories/cat-false-ceiling.jpg",
-    productCount: 0,
-    featured: true,
-    icon: "Square",
-  },
-  // ── 6. FLOORING ────────────────────────────────────
-  {
-    id: "cat-6",
-    name: "Flooring",
-    slug: "flooring",
-    description: "Wooden laminate flooring, SPC/LVP waterproof planks, engineered hardwood & vinyl rolls.",
-    image: "/images/categories/cat-flooring.jpg",
-    productCount: 0,
-    featured: true,
-    icon: "Layers",
-  },
-  // ── 7. DOORS & WINDOWS ─────────────────────────────
-  {
-    id: "cat-7",
-    name: "Doors & Windows",
-    slug: "doors-windows",
-    description: "Solid flush doors, UPVC/aluminum window sections, sliding profiles & hardware kits.",
-    image: "/images/categories/cat-doors-windows.jpg",
-    productCount: 1,
-    featured: true,
-    icon: "DoorOpen",
-  },
-  // ── 8. GLASS & MIRROR ──────────────────────────────
-  {
-    id: "cat-8",
-    name: "Glass & Mirror",
-    slug: "glass-mirror",
-    description: "Toughened partition glass, LED smart touch vanity mirrors, shower cubicles & glass fittings.",
+    id: "cat-glass-mirrors-profiles",
+    name: "Glass, Mirrors & Profiles",
+    slug: "glass-mirrors-profiles",
+    description: "Toughened architectural partition glass, LED smart touch vanity mirrors, shower enclosures & aluminum glass profiles.",
     image: "/images/categories/cat-glass-mirror.jpg",
-    productCount: 0,
+    productCount: 4,
     featured: true,
     icon: "Maximize",
+    calculatorType: "none",
   },
-  // ── 9. HARDWARE & FITTINGS ─────────────────────────
+  // ── 14. CEILING & DRYWALL ────────────────────────────
   {
-    id: "cat-9",
-    name: "Hardware & Fittings",
-    slug: "hardware-fittings",
-    description: "SS 304 screws, soft-close hydraulic hinges, mortise locks, handles & drawer slides.",
-    image: "/images/categories/cat-hardware-fittings.jpg",
-    productCount: 2,
+    id: "cat-ceiling-drywall",
+    name: "Ceiling & Drywall",
+    slug: "ceiling-drywall",
+    description: "Gypsum plasterboards, POP false ceiling molding plaster, GI perimeter channels & acoustic panels.",
+    image: "/images/categories/cat-false-ceiling.jpg",
+    productCount: 3,
     featured: true,
-    icon: "Wrench",
+    icon: "Square",
+    calculatorType: "none",
   },
-  // ── 10. FURNITURE ──────────────────────────────────
+  // ── 15. ELECTRICALS & WIRES ──────────────────────────
   {
-    id: "cat-10",
-    name: "Furniture",
-    slug: "furniture",
-    description: "Living room, dining & bedroom furniture, ergonomic seating, study tables & storage.",
-    image: "/images/categories/cat-furniture.jpg",
-    productCount: 0,
+    id: "cat-electricals-wires",
+    name: "Electricals & Wires",
+    slug: "electricals-wires",
+    description: "Flame-retardant copper house wires, modular switch plates, MCBs, distribution boards & conduit pipes.",
+    image: "/images/categories/cat-electrical.jpg",
+    productCount: 5,
     featured: true,
-    icon: "Armchair",
+    icon: "Zap",
+    calculatorType: "none",
   },
-  // ── 11. KITCHEN & WARDROBE ─────────────────────────
+  // ── 16. PLUMBING & TANKS ─────────────────────────────
   {
-    id: "cat-11",
-    name: "Kitchen & Wardrobe",
-    slug: "kitchen-wardrobe",
-    description: "Modular kitchen wire baskets, tandem drawer boxes, pantry units & wardrobe organizers.",
-    image: "/images/categories/cat-kitchen-wardrobe.jpg",
-    productCount: 0,
-    featured: true,
-    icon: "Package",
-  },
-  // ── 12. PLUMBING & SANITARY ────────────────────────
-  {
-    id: "cat-12",
-    name: "Plumbing & Sanitary",
-    slug: "plumbing-sanitary",
-    description: "CPVC/UPVC pipes, brass mixer faucets, washbasins, ceramic water closets & bath fittings.",
-    image: "/images/categories/cat-plumbing-sanitary.jpg",
-    productCount: 2,
+    id: "cat-plumbing-tanks",
+    name: "Plumbing & Tanks",
+    slug: "plumbing-tanks",
+    description: "CPVC/UPVC water supply pipes, overhead multi-layer water tanks, pressure booster pumps, ball valves & drainage.",
+    image: "/images/categories/cat-plumbing.jpg",
+    productCount: 6,
     featured: true,
     icon: "Droplets",
+    calculatorType: "none",
   },
-  // ── 13. WALL & SURFACE ─────────────────────────────
+  // ── 17. SANITARYWARE & BATH ──────────────────────────
   {
-    id: "cat-13",
-    name: "Wall & Surface",
-    slug: "wall-surface",
-    description: "Designer non-woven wallpapers, 3D charcoal fluted wall slats, louvers & PVC wall panels.",
-    image: "/images/categories/cat-wall-surface.jpg",
-    productCount: 1,
+    id: "cat-sanitaryware-bath",
+    name: "Sanitaryware & Bath",
+    slug: "sanitaryware-bath",
+    description: "Rimless wall-hung water closets, countertop designer basins, brass diverter mixers, overhead showers & luxury bath fittings.",
+    image: "/images/categories/cat-sanitaryware-bath.jpg",
+    productCount: 7,
     featured: true,
-    icon: "Wallpaper",
+    icon: "Sparkles",
+    calculatorType: "none",
   },
-  // ── 14. DECOR & ACCESSORIES ────────────────────────
+  // ── 18. DOORS, WINDOWS & LOCKS ───────────────────────
   {
-    id: "cat-14",
-    name: "Decor & Accessories",
-    slug: "decor-accessories",
-    description: "Wall art, metal planters, decorative vases, table accents, rugs & ambient interior styling.",
-    image: "/images/categories/cat-decor-accessories.jpg",
-    productCount: 0,
+    id: "cat-doors-windows-locks",
+    name: "Doors, Windows & Locks",
+    slug: "doors-windows-locks",
+    description: "Flush wood doors, UPVC soundproof sliding windows, smart biometric digital locks & mortise handle sets.",
+    image: "/images/categories/cat-doors-windows.jpg",
+    productCount: 4,
     featured: true,
-    icon: "Palette",
+    icon: "DoorOpen",
+    calculatorType: "none",
   },
-  // ── 15. CURTAINS & BLINDS ──────────────────────────
+  // ── 19. WATERPROOFING & ADHESIVES ────────────────────
   {
-    id: "cat-15",
-    name: "Curtains & Blinds",
-    slug: "curtains-blinds",
-    description: "Motorized smart curtain tracks, zebra & roller blinds, blackout fabrics and designer rods.",
-    image: "/images/categories/cat-curtains-blinds.jpg",
-    productCount: 0,
-    featured: true,
-    icon: "Sliders",
-  },
-  // ── 16. OFFICE & COMMERCIAL ────────────────────────
-  {
-    id: "cat-16",
-    name: "Office & Commercial",
-    slug: "office-commercial",
-    description: "Workstations, acoustic desk dividers, office conference tables, reception desks & task chairs.",
-    image: "/images/categories/cat-office-commercial.jpg",
-    productCount: 0,
-    featured: true,
-    icon: "Building",
-  },
-  // ── 17. OUTDOOR & LANDSCAPE ────────────────────────
-  {
-    id: "cat-17",
-    name: "Outdoor & Landscape",
-    slug: "outdoor-landscape",
-    description: "Heavy-duty parking pavers, 35mm UV artificial turf, outdoor composite decking & fencing.",
-    image: "/images/categories/cat-outdoor-landscape.jpg",
-    productCount: 0,
-    featured: true,
-    icon: "Trees",
-  },
-  // ── 18. SMART HOME ─────────────────────────────────
-  {
-    id: "cat-18",
-    name: "Smart Home",
-    slug: "smart-home",
-    description: "Smart touch switches, WiFi curtain motors, voice-controlled ambient lighting & smart hubs.",
-    image: "/images/categories/cat-smart-home.jpg",
-    productCount: 0,
-    featured: true,
-    icon: "Cpu",
-  },
-  // ── 19. SAFETY & FIRE ──────────────────────────────
-  {
-    id: "cat-19",
-    name: "Safety & Fire",
-    slug: "safety-fire",
-    description: "Smart biometric door locks, HD WiFi CCTV cameras, fire extinguishers & smoke detectors.",
-    image: "/images/categories/cat-safety-fire.jpg",
-    productCount: 0,
+    id: "cat-waterproofing-adhesives",
+    name: "Waterproofing & Adhesives",
+    slug: "waterproofing-adhesives",
+    description: "Polymer-modified tile adhesives, epoxy grouts, terrace liquid waterproofing membranes & silicone sealants.",
+    image: "/images/categories/cat-adhesives-sealants-waterproofing.jpg",
+    productCount: 14,
     featured: true,
     icon: "ShieldAlert",
+    calculatorType: "none",
   },
-  // ── 20. TOOLS & CONSUMABLES ────────────────────────
+  // ── 20. SOLAR & ENERGY ───────────────────────────────
   {
-    id: "cat-20",
-    name: "Tools & Consumables",
-    slug: "tools-consumables",
-    description: "Power tools, measuring tapes, diamond cutting blades, safety gear, fasteners & site supplies.",
-    image: "/images/categories/cat-tools-consumables.jpg",
-    productCount: 0,
+    id: "cat-solar-energy",
+    name: "Solar & Energy",
+    slug: "solar-energy",
+    description: "High-efficiency monocrystalline solar panels, on-grid/hybrid inverters, lithium solar batteries & mounting kits.",
+    image: "/images/categories/cat-solar-energy.jpg",
+    productCount: 3,
     featured: true,
-    icon: "Hammer",
+    icon: "Sun",
+    calculatorType: "none",
   },
-
-  // ── SUBCATEGORIES ──────────────────────────────────
+  // ── 21. FANS & VENTILATION ───────────────────────────
   {
-    id: "cat-sub-plywood",
-    name: "Plywood & Laminates",
-    slug: "plywood",
-    description: "BWP marine ply, commercial MR plywood, MDF, HDHMR boards & decorative laminates.",
-    image: "/images/categories/cat-plywood.jpg",
-    productCount: 2,
-    featured: false,
-    parentId: "cat-10",
+    id: "cat-fans-ventilation",
+    name: "Fans & Ventilation",
+    slug: "fans-ventilation",
+    description: "BLDC energy-efficient decorative ceiling fans, low-noise exhaust fans, inline duct fans & ventilation louvers.",
+    image: "/images/categories/cat-fans-ventilation.jpg",
+    productCount: 4,
+    featured: true,
+    icon: "Wind",
+    calculatorType: "none",
   },
+  // ── 22. HOME DECOR ───────────────────────────────────
   {
-    id: "cat-sub-adhesives",
-    name: "Adhesives, Sealants & Waterproofing",
-    slug: "adhesives-sealants-waterproofing",
-    description: "Polymer tile adhesive, epoxy grout, sanitary silicone & terrace waterproofing membranes.",
-    image: "/images/categories/cat-adhesives-sealants-waterproofing.jpg",
-    productCount: 0,
-    featured: false,
-    parentId: "cat-20",
+    id: "cat-home-decor",
+    name: "Home Decor",
+    slug: "home-decor",
+    description: "Luxury wall art, metal planter stands, ambient decorative lighting, floor rugs & curated interior styling pieces.",
+    image: "/images/categories/cat-decor-accessories.jpg",
+    productCount: 5,
+    featured: true,
+    icon: "Palette",
+    calculatorType: "none",
   },
 ];
 
 export function getCategoryBySlug(slug: string): Category | undefined {
-  if (slug === "floor-tiles" || slug === "granite" || slug === "outdoor-tiles") return categories.find((c) => c.slug === "tiles-stone");
-  if (slug === "plumbing") return categories.find((c) => c.slug === "plumbing-sanitary");
-  if (slug === "hardware") return categories.find((c) => c.slug === "hardware-fittings");
-  if (slug === "ceiling-pop") return categories.find((c) => c.slug === "false-ceiling");
-  if (slug === "aluminum-doors") return categories.find((c) => c.slug === "doors-windows");
-  if (slug === "glass-glazing") return categories.find((c) => c.slug === "glass-mirror");
-  if (slug === "wallpaper") return categories.find((c) => c.slug === "wall-surface");
-  if (slug === "security-safety") return categories.find((c) => c.slug === "safety-fire");
-  if (slug === "outdoor-landscaping") return categories.find((c) => c.slug === "outdoor-landscape");
-  if (slug === "wall-finishes-paint") return categories.find((c) => c.slug === "paint-finishes");
+  if (slug === "floor-tiles" || slug === "tiles-stone" || slug === "granite" || slug === "flooring") {
+    return categories.find((c) => c.slug === "tiles-flooring");
+  }
+  if (slug === "electrical") {
+    return categories.find((c) => c.slug === "electricals-wires");
+  }
+  if (slug === "lighting") {
+    return categories.find((c) => c.slug === "lights-lighting");
+  }
+  if (slug === "plumbing") {
+    return categories.find((c) => c.slug === "plumbing-tanks");
+  }
+  if (slug === "plumbing-sanitary") {
+    return categories.find((c) => c.slug === "sanitaryware-bath");
+  }
+  if (slug === "hardware" || slug === "hardware-fittings") {
+    return categories.find((c) => c.slug === "hardware-fasteners");
+  }
+  if (slug === "ceiling-pop" || slug === "false-ceiling") {
+    return categories.find((c) => c.slug === "ceiling-drywall");
+  }
+  if (slug === "doors-windows" || slug === "aluminum-doors") {
+    return categories.find((c) => c.slug === "doors-windows-locks");
+  }
+  if (slug === "glass-mirror" || slug === "glass-glazing") {
+    return categories.find((c) => c.slug === "glass-mirrors-profiles");
+  }
+  if (slug === "plywood" || slug === "wall-surface" || slug === "wallpaper") {
+    return categories.find((c) => c.slug === "plywood-laminates-surfaces");
+  }
+  if (slug === "adhesives-sealants-waterproofing") {
+    return categories.find((c) => c.slug === "waterproofing-adhesives");
+  }
+  if (slug === "kitchen-wardrobe") {
+    return categories.find((c) => c.slug === "kitchen-wardrobe-fittings");
+  }
+  if (slug === "decor-accessories" || slug === "curtains-blinds") {
+    return categories.find((c) => c.slug === "home-decor");
+  }
+  if (slug === "tools-consumables" || slug === "safety-fire") {
+    return categories.find((c) => c.slug === "site-tools-safety");
+  }
 
   return categories.find((c) => c.slug === slug);
 }

@@ -24,6 +24,7 @@ export async function getCategories(options?: { forceRefresh?: boolean }): Promi
 
   try {
     const dbCategories = await prisma.category.findMany({
+      where: { parentId: null },
       include: {
         children: {
           include: {
