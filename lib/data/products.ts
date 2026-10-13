@@ -36,6 +36,7 @@ export type ProductVariant = {
   weightKg?: number | null; // in kg (e.g. 2.5, 18, 4)
   mrp?: number | null; // List price / MRP in INR
   price?: number | null; // Direct selling price
+  costPrice?: number | null; // Landing / purchase cost (For Margin Calculation)
   pricePerBox: number; // in INR (price for selling unit / pack / box / can / sheet)
   pricePerSqft: number; // base / equivalent unit price
   sqftPerBox: number; // conversion factor / coverage
@@ -85,6 +86,7 @@ export type Product = {
   allowDecimals?: boolean;
   decimalPrecision?: number;
   mrp?: number | null; // Product level MRP
+  costPrice?: number | null; // Product level Cost Price (For Margin Calculation)
   pricePerSqft?: number; // Base / equivalent unit price
   grade?: string | null;
   series?: string | null;

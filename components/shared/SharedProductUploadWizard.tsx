@@ -176,9 +176,10 @@ export default function SharedProductUploadWizard({
   const [duplicateWarning, setDuplicateWarning] = useState<string | null>(null);
   const [checkingDuplicate, setCheckingDuplicate] = useState<boolean>(false);
 
-  // Rate & Stock details
+  // Rate & Stock details (3-Tier Pricing: MRP, Selling Price, Cost Price)
   const [mrp, setMrp] = useState<string>("");
   const [sellingPrice, setSellingPrice] = useState<string>("");
+  const [costPrice, setCostPrice] = useState<string>("");
   const [gstRate, setGstRate] = useState<number>(18);
   const [hsnCode, setHsnCode] = useState<string>("");
   const [unitOfSale, setUnitOfSale] = useState<string>("box");
@@ -411,6 +412,7 @@ export default function SharedProductUploadWizard({
       if (d.videoUrl) setVideoUrl(d.videoUrl);
       if (d.mrp) setMrp(d.mrp);
       if (d.sellingPrice) setSellingPrice(d.sellingPrice);
+      if (d.costPrice) setCostPrice(d.costPrice);
       if (d.gstRate !== undefined) setGstRate(d.gstRate);
       if (d.hsnCode) setHsnCode(d.hsnCode);
       if (d.unitOfSale) setUnitOfSale(d.unitOfSale);
@@ -459,6 +461,7 @@ export default function SharedProductUploadWizard({
         videoUrl,
         mrp,
         sellingPrice,
+        costPrice,
         gstRate,
         hsnCode,
         unitOfSale,
@@ -506,6 +509,7 @@ export default function SharedProductUploadWizard({
           videoUrl,
           mrp,
           sellingPrice,
+          costPrice,
           gstRate,
           hsnCode,
           unitOfSale,
@@ -544,6 +548,7 @@ export default function SharedProductUploadWizard({
     images,
     mrp,
     sellingPrice,
+    costPrice,
     stockQuantity,
     variants,
   ]);
@@ -876,10 +881,13 @@ export default function SharedProductUploadWizard({
     }
   };
 
-  // Price & Discount calculations
+  // 3-Tier Pricing & Discount / Margin calculations (PRD Financial Pricing Engine)
   const sellingNum = parseFloat(sellingPrice) || 0;
   const mrpNum = parseFloat(mrp) || 0;
+  const costNum = parseFloat(costPrice) || 0;
   const discountPercent = mrpNum > sellingNum && mrpNum > 0 ? Math.round(((mrpNum - sellingNum) / mrpNum) * 100) : 0;
+  const netProfit = sellingNum - costNum;
+  const profitMarginPercent = sellingNum > 0 ? ((netProfit / sellingNum) * 100).toFixed(1) : "0";
 
   // Completeness calculation
   const completeness = useMemo(() => {
@@ -1169,6 +1177,7 @@ export default function SharedProductUploadWizard({
           attributeLabel: v.attributeLabel || "Option",
           attributeValue: v.attributeValue || v.size || "Standard",
           mrp: v.mrp !== undefined && v.mrp !== null ? Number(v.mrp) : mrpNum || null,
+          costPrice: v.costPrice !== undefined && v.costPrice !== null ? Number(v.costPrice) : costNum > 0 ? costNum : null,
           price: Number(v.price || v.pricePerBox || sellingNum),
           pricePerBox: Number(v.pricePerBox || v.price || sellingNum),
           pricePerSqft: Number(v.pricePerSqft || v.price || sellingNum),
@@ -1195,6 +1204,7 @@ export default function SharedProductUploadWizard({
             attributeLabel: "Option",
             attributeValue: "Standard",
             mrp: mrpNum > 0 ? mrpNum : null,
+            costPrice: costNum > 0 ? costNum : null,
             price: sellingNum,
             pricePerBox: sellingNum,
             pricePerSqft: sellingNum,
@@ -1229,6 +1239,7 @@ export default function SharedProductUploadWizard({
       unitOfSale,
       hasVariants: isMultiVariety,
       mrp: mrpNum > 0 ? mrpNum : null,
+      costPrice: costNum > 0 ? costNum : null,
       vendorId: activeVendorId || null,
       manufacturer: manufacturer || null,
       condition,
@@ -1969,7 +1980,7 @@ export default function SharedProductUploadWizard({
               2. Basic Details &amp; Rate Details
             </h2>
             <p className="text-xs text-gray-500 mt-1">
-              Provide product title, brand, description, rate details (MRP, Selling Price), and inventory stock.
+              Provide product title, brand, description, 3-tier financial pricing (MRP, Selling Price, Cost Rate), and inventory stock.
             </p>
           </div>
 
@@ -2099,11 +2110,13 @@ export default function SharedProductUploadWizard({
               Rate Details &amp; Base Inventory
             </h3>
 
-            <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
+            {/* 3-Tier Financial Pricing Grid */}
+            <div className="grid grid-cols-1 sm:grid-cols-3 md:grid-cols-5 gap-3.5">
               <div className="space-y-1.5">
                 <label className="text-xs font-bold text-gray-700">MRP (Max Retail) ₹</label>
                 <input
                   type="number"
+                  inputMode="decimal"
                   min="0"
                   step="0.01"
                   placeholder="e.g. 1499"
@@ -2119,6 +2132,7 @@ export default function SharedProductUploadWizard({
                 </label>
                 <input
                   type="number"
+                  inputMode="decimal"
                   min="0"
                   step="0.01"
                   placeholder="e.g. 1199"
@@ -2129,6 +2143,22 @@ export default function SharedProductUploadWizard({
                 {discountPercent > 0 && (
                   <span className="text-[10px] text-emerald-600 font-bold block">{discountPercent}% OFF MRP</span>
                 )}
+              </div>
+
+              <div className="space-y-1.5">
+                <label className="text-xs font-bold text-gray-700">
+                  Cost / Purchase Rate ₹
+                </label>
+                <input
+                  type="number"
+                  inputMode="decimal"
+                  min="0"
+                  step="0.01"
+                  placeholder="e.g. 850"
+                  value={costPrice}
+                  onChange={(e) => setCostPrice(e.target.value)}
+                  className="w-full px-3.5 py-2.5 rounded-2xl border border-gray-200 text-xs font-mono font-semibold text-gray-700 focus:outline-none focus:border-[#F26522] bg-white"
+                />
               </div>
 
               <div className="space-y-1.5">
@@ -2161,6 +2191,42 @@ export default function SharedProductUploadWizard({
                 />
               </div>
             </div>
+
+            {/* Admin / CPO Real-Time Profit Calculation (Strictly Hidden for Vendors) */}
+            {isAdminOrCpo && sellingNum > 0 && costNum > 0 ? (
+              <div className="p-3 bg-emerald-50 border border-emerald-200 rounded-2xl flex flex-wrap items-center justify-between gap-3 text-xs">
+                <div className="flex flex-wrap items-center gap-2">
+                  <span className="px-2 py-0.5 rounded-full bg-emerald-600 text-white text-[10px] font-black uppercase tracking-wider">
+                    ⚡ Admin Profit Engine
+                  </span>
+                  <span className="text-emerald-900 font-bold">
+                    Net Profit: <strong className="font-mono text-emerald-700">₹{netProfit.toFixed(2)}</strong>
+                  </span>
+                  <span className="text-emerald-300">|</span>
+                  <span className="text-emerald-900 font-bold">
+                    Profit Margin: <strong className="font-mono text-emerald-700">{profitMarginPercent}%</strong>
+                  </span>
+                  {discountPercent > 0 && (
+                    <>
+                      <span className="text-emerald-300">|</span>
+                      <span className="text-emerald-900 font-bold">
+                        Customer Discount: <strong className="font-mono text-emerald-700">{discountPercent}%</strong>
+                      </span>
+                    </>
+                  )}
+                </div>
+                <span className="text-[10px] text-emerald-700 italic">
+                  (Confidential: Margin metrics are hidden from Vendors)
+                </span>
+              </div>
+            ) : !isAdminOrCpo && mrpNum > 0 && sellingNum > 0 ? (
+              <div className="p-2.5 bg-gray-50 border border-gray-200 rounded-2xl flex items-center justify-between text-xs">
+                <span className="text-gray-600 font-medium">Customer Pricing Offer:</span>
+                <span className="font-bold text-emerald-700">
+                  {discountPercent > 0 ? `${discountPercent}% Customer Discount vs MRP` : "Selling at MRP"}
+                </span>
+              </div>
+            ) : null}
 
             <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 pt-2">
               <div className="space-y-1.5">
@@ -2508,7 +2574,7 @@ export default function SharedProductUploadWizard({
                           </span>
                         )}
                       </div>
-                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                      <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
                         <div>
                           <label className="text-[11px] font-bold text-gray-600 block mb-1">
                             Selling Price (₹) <span className="text-red-500">*</span>
@@ -2517,6 +2583,7 @@ export default function SharedProductUploadWizard({
                             <span className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 font-bold text-xs">₹</span>
                             <input
                               type="number"
+                              inputMode="decimal"
                               min="0"
                               step="0.01"
                               placeholder="e.g. 1250"
@@ -2534,12 +2601,31 @@ export default function SharedProductUploadWizard({
                             <span className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 font-bold text-xs">₹</span>
                             <input
                               type="number"
+                              inputMode="decimal"
                               min="0"
                               step="0.01"
                               placeholder="e.g. 1500"
                               value={mrp}
                               onChange={(e) => setMrp(e.target.value)}
                               className="w-full pl-7 pr-3 py-2.5 rounded-xl border border-gray-200 text-xs font-mono font-bold text-gray-700 bg-white focus:outline-none focus:border-[#F26522]"
+                            />
+                          </div>
+                        </div>
+                        <div>
+                          <label className="text-[11px] font-bold text-gray-600 block mb-1">
+                            Cost Price (₹)
+                          </label>
+                          <div className="relative">
+                            <span className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 font-bold text-xs">₹</span>
+                            <input
+                              type="number"
+                              inputMode="decimal"
+                              min="0"
+                              step="0.01"
+                              placeholder="e.g. 850"
+                              value={costPrice}
+                              onChange={(e) => setCostPrice(e.target.value)}
+                              className="w-full pl-7 pr-3 py-2.5 rounded-xl border border-gray-200 text-xs font-mono font-semibold text-gray-700 bg-white focus:outline-none focus:border-[#F26522]"
                             />
                           </div>
                         </div>
@@ -3238,7 +3324,7 @@ export default function SharedProductUploadWizard({
               </div>
               <p className="text-sm font-black text-gray-800">Single Standalone Item Active</p>
               <p className="text-xs text-gray-500 max-w-md mx-auto">
-                This item will sell as a single standalone product using the rate details (Selling Price: <strong>₹{sellingPrice || "0"}</strong>, MRP: <strong>₹{mrp || "0"}</strong>, Stock: <strong>{stockQuantity || "100"} {unitOfSale}</strong>) configured in Step 2.
+                This item will sell as a single standalone product using the rate details (Selling Price: <strong>₹{sellingPrice || "0"}</strong>, MRP: <strong>₹{mrp || "0"}</strong>, Cost: <strong>₹{costPrice || "0"}</strong>, Stock: <strong>{stockQuantity || "100"} {unitOfSale}</strong>) configured in Step 2.
               </p>
             </div>
           ) : (
@@ -3251,6 +3337,8 @@ export default function SharedProductUploadWizard({
               baseImages={images}
               defaultSellingPrice={sellingNum > 0 ? sellingNum : 499}
               defaultMrp={mrpNum > 0 ? mrpNum : 699}
+              defaultCostPrice={costNum > 0 ? costNum : undefined}
+              isAdminOrCpo={isAdminOrCpo}
               defaultStock={parseInt(stockQuantity, 10) || 50}
               unitOfSale={unitOfSale}
             />

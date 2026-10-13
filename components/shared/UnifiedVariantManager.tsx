@@ -43,9 +43,11 @@ export interface UnifiedVariantManagerProps {
   baseImages?: string[];
   defaultSellingPrice?: number;
   defaultMrp?: number;
+  defaultCostPrice?: number;
   defaultStock?: number;
   unitOfSale?: string;
   readOnly?: boolean;
+  isAdminOrCpo?: boolean;
 }
 
 export interface AttributeSelection {
@@ -96,9 +98,11 @@ export default function UnifiedVariantManager({
   baseImages = [],
   defaultSellingPrice = 499,
   defaultMrp = 699,
+  defaultCostPrice,
   defaultStock = 50,
   unitOfSale = "box",
   readOnly = false,
+  isAdminOrCpo = false,
 }: UnifiedVariantManagerProps) {
   // Attribute Options from DB
   const [dbOptions, setDbOptions] = useState<AttributeOptionItem[]>([]);
@@ -425,6 +429,7 @@ export default function UnifiedVariantManager({
       pricePerBox: defaultSellingPrice || 499,
       pricePerSqft: defaultSellingPrice || 499,
       mrp: defaultMrp || 699,
+      costPrice: defaultCostPrice !== undefined ? defaultCostPrice : Math.round((defaultSellingPrice || 499) * 0.75),
       sqftPerBox: 16.5,
       stockBoxes: defaultStock || 50,
       lowStockAlert: 5,
@@ -910,6 +915,10 @@ export default function UnifiedVariantManager({
                     <th className="py-3 px-3 w-32">SKU / Code</th>
                     <th className="py-3 px-3 w-24">MRP (₹)</th>
                     <th className="py-3 px-3 w-28">Selling (₹) *</th>
+                    <th className="py-3 px-3 w-24">Cost / CP (₹)</th>
+                    {isAdminOrCpo && (
+                      <th className="py-3 px-3 w-28 text-right" title="Real-Time Profit & Margin % for Platform Admin">⚡ Margin</th>
+                    )}
                     <th className="py-3 px-3 w-24">Coverage (sqft)</th>
                     <th className="py-3 px-3 w-32">Stock &amp; Status</th>
                     <th className="py-3 px-3 w-24" title="Triggers Low Stock Alert when inventory falls below this limit (Default: 5)">🚨 Alert Limit</th>
@@ -1027,6 +1036,56 @@ export default function UnifiedVariantManager({
                             />
                           </div>
                         </td>
+
+                        {/* Cost Price / Purchase Rate (PRD Section 2) */}
+                        <td className="py-3 px-3">
+                          <div className="relative">
+                            <span className="absolute left-2 top-1/2 -translate-y-1/2 text-gray-400 font-mono text-[11px]">
+                              ₹
+                            </span>
+                            <input
+                              type="number"
+                              min={0}
+                              placeholder="Cost"
+                              value={v.costPrice !== undefined && v.costPrice !== null ? v.costPrice : ""}
+                              onChange={(e) =>
+                                handleUpdateRow(idx, {
+                                  costPrice: e.target.value ? Number(e.target.value) : undefined,
+                                })
+                              }
+                              className="w-full pl-5 pr-2 py-1.5 bg-white border border-gray-200 rounded-lg text-xs font-mono font-medium text-gray-700 focus:outline-none focus:border-[#F26522]"
+                              title="Purchase / landing cost (Used for admin profit margin calculation)"
+                            />
+                          </div>
+                        </td>
+
+                        {/* 🟢 Admin/CPO Live Profit Margin Metric (PRD Section 2 & 5 - Hidden for Vendor) */}
+                        {isAdminOrCpo && (
+                          <td className="py-3 px-3 text-right font-mono">
+                            {(() => {
+                              const cp = Number(v.costPrice || 0);
+                              const sp = Number(v.price || v.pricePerBox || 0);
+                              if (sp > 0 && cp > 0) {
+                                const profit = sp - cp;
+                                const margin = ((profit / sp) * 100).toFixed(1);
+                                const isPositive = profit >= 0;
+                                return (
+                                  <div className="flex flex-col items-end">
+                                    <span className={`text-[11px] font-black ${isPositive ? "text-emerald-700" : "text-rose-600"}`}>
+                                      {isPositive ? "+" : ""}₹{profit.toLocaleString("en-IN")}
+                                    </span>
+                                    <span className={`text-[9px] font-black px-1.5 py-0.5 rounded ${
+                                      Number(margin) >= 20 ? "bg-emerald-100 text-emerald-800" : Number(margin) > 0 ? "bg-amber-100 text-amber-800" : "bg-rose-100 text-rose-800"
+                                    }`}>
+                                      {margin}% margin
+                                    </span>
+                                  </div>
+                                );
+                              }
+                              return <span className="text-[10px] text-gray-400 font-mono">-</span>;
+                            })()}
+                          </td>
+                        )}
 
                         {/* 7. Smart Calculator Coverage (sqft/box) */}
                         <td className="py-3 px-3">
@@ -1227,13 +1286,30 @@ export default function UnifiedVariantManager({
                       </div>
                     </div>
 
-                    {/* Middle Grid: Price, MRP, Stock, Alert Limit */}
-                    <div className="grid grid-cols-2 gap-2.5 pt-1">
-                      <div className="p-2.5 rounded-xl bg-gray-50 border border-gray-100 space-y-1">
-                        <label className="text-[10px] font-bold text-gray-500 uppercase block">Selling Price (₹) *</label>
+                    {/* Middle Grid: 3-Tier Pricing (MRP, Selling Price, Cost Price) */}
+                    <div className="grid grid-cols-3 gap-2 pt-1">
+                      <div className="p-2 rounded-xl bg-gray-50 border border-gray-100 space-y-1">
+                        <label className="text-[9px] font-bold text-gray-500 uppercase block truncate">MRP (₹)</label>
                         <input
                           type="number"
                           min={0}
+                          placeholder="MRP"
+                          value={mrpVal || ""}
+                          onChange={(e) =>
+                            handleUpdateRow(idx, {
+                              mrp: e.target.value ? Number(e.target.value) : undefined,
+                            })
+                          }
+                          className="w-full px-2 py-1.5 bg-white border border-gray-200 rounded-lg text-xs font-mono font-bold text-gray-700 focus:outline-none focus:border-[#F26522]"
+                        />
+                      </div>
+
+                      <div className="p-2 rounded-xl bg-gray-50 border border-gray-100 space-y-1">
+                        <label className="text-[9px] font-bold text-gray-700 uppercase block truncate">Selling (₹) *</label>
+                        <input
+                          type="number"
+                          min={0}
+                          placeholder="Selling"
                           value={priceVal || ""}
                           onChange={(e) =>
                             handleUpdateRow(idx, {
@@ -1241,25 +1317,69 @@ export default function UnifiedVariantManager({
                               pricePerBox: Number(e.target.value),
                             })
                           }
-                          className="w-full px-2.5 py-1.5 bg-white border border-gray-200 rounded-lg text-xs font-mono font-black text-gray-900 focus:outline-none focus:border-[#F26522]"
+                          className="w-full px-2 py-1.5 bg-white border border-gray-200 rounded-lg text-xs font-mono font-black text-[#052a51] focus:outline-none focus:border-[#F26522]"
                         />
                       </div>
 
-                      <div className="p-2.5 rounded-xl bg-gray-50 border border-gray-100 space-y-1">
-                        <label className="text-[10px] font-bold text-gray-500 uppercase block">MRP (₹)</label>
+                      <div className="p-2 rounded-xl bg-gray-50 border border-gray-100 space-y-1">
+                        <label className="text-[9px] font-bold text-gray-500 uppercase block truncate">Cost / CP (₹)</label>
                         <input
                           type="number"
                           min={0}
-                          value={mrpVal || ""}
+                          placeholder="Cost"
+                          value={v.costPrice !== undefined && v.costPrice !== null ? v.costPrice : ""}
                           onChange={(e) =>
                             handleUpdateRow(idx, {
-                              mrp: e.target.value ? Number(e.target.value) : undefined,
+                              costPrice: e.target.value ? Number(e.target.value) : undefined,
                             })
                           }
-                          className="w-full px-2.5 py-1.5 bg-white border border-gray-200 rounded-lg text-xs font-mono font-bold text-gray-700 focus:outline-none focus:border-[#F26522]"
+                          className="w-full px-2 py-1.5 bg-white border border-gray-200 rounded-lg text-xs font-mono font-medium text-gray-700 focus:outline-none focus:border-[#F26522]"
                         />
                       </div>
+                    </div>
 
+                    {/* 🟢 Live Metrics Indicator: Admin Margin vs Vendor Customer Discount */}
+                    {(() => {
+                      const cp = Number(v.costPrice || 0);
+                      const sp = Number(priceVal || 0);
+                      const mp = Number(mrpVal || 0);
+                      const profit = sp - cp;
+                      const margin = sp > 0 && cp > 0 ? ((profit / sp) * 100).toFixed(1) : null;
+                      const disc = mp > 0 && mp > sp ? Math.round(((mp - sp) / mp) * 100) : null;
+
+                      if (isAdminOrCpo && (sp > 0 || cp > 0)) {
+                        return (
+                          <div className="p-2 rounded-xl bg-orange-50/70 border border-orange-200/80 flex items-center justify-between text-[10px] font-mono">
+                            <span className="font-bold text-[#052a51]">
+                              ⚡ Profit: <strong className={profit >= 0 ? "text-emerald-700" : "text-rose-600"}>{profit >= 0 ? "+" : ""}₹{profit.toLocaleString("en-IN")}</strong>
+                            </span>
+                            {margin && (
+                              <span className="font-black text-emerald-800 bg-emerald-100 px-1.5 py-0.5 rounded">
+                                📊 Margin: {margin}%
+                              </span>
+                            )}
+                            {disc !== null && (
+                              <span className="text-gray-500 font-bold">
+                                🏷️ {disc}% OFF
+                              </span>
+                            )}
+                          </div>
+                        );
+                      }
+
+                      if (!isAdminOrCpo && disc !== null) {
+                        return (
+                          <div className="p-1.5 rounded-lg bg-emerald-50 border border-emerald-200 text-[10px] font-bold text-emerald-700 text-center">
+                            🏷️ Customer Discount: {disc}% OFF MRP
+                          </div>
+                        );
+                      }
+
+                      return null;
+                    })()}
+
+                    {/* Stock & Alert Grid */}
+                    <div className="grid grid-cols-2 gap-2.5">
                       <div className="p-2.5 rounded-xl bg-gray-50 border border-gray-100 space-y-1">
                         <label className="text-[10px] font-bold text-gray-500 uppercase block">Stock Count</label>
                         <input

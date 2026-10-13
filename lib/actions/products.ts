@@ -36,6 +36,7 @@ export type CreateProductInput = {
   allowDecimals?: boolean;
   decimalPrecision?: number;
   mrp?: number | null;
+  costPrice?: number | null; // Landing / purchase cost (For Margin Calculation)
   grade?: string | null;
   series?: string | null;
   warranty?: string | null;
@@ -62,6 +63,7 @@ export type CreateProductInput = {
     attributes?: Record<string, any> | null;
     variantSpecs?: any;
     mrp?: number | null;
+    costPrice?: number | null; // Landing / purchase cost (For Margin Calculation)
     weightKg?: number | null;
     price?: number | null;
     pricePerBox?: number;
@@ -811,7 +813,9 @@ export async function createProduct(input: CreateProductInput) {
             attributeLabel: v.attributeLabel || null,
             attributeValue: v.attributeValue || null,
             attributes: v.attributes || null,
-            variantSpecs: v.variantSpecs || null,
+            variantSpecs: v.variantSpecs
+              ? { ...v.variantSpecs, ...(v.costPrice !== undefined && v.costPrice !== null ? { costPrice: Number(v.costPrice) } : {}) }
+              : (v.costPrice !== undefined && v.costPrice !== null ? { costPrice: Number(v.costPrice) } : null),
             mrp: v.mrp !== undefined && v.mrp !== null ? Number(v.mrp) : null,
             weightKg: v.weightKg !== undefined && v.weightKg !== null ? Number(v.weightKg) : 2.5,
             price: v.price !== undefined && v.price !== null ? Number(v.price) : Number(v.pricePerBox || primaryVariant.pricePerBox || 0),

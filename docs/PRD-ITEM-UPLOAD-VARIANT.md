@@ -3,26 +3,25 @@
 ### 📌 Document Metadata
 * **Product Name:** IntriHub Vendor & Admin App — Item Upload & Variant Module
 * **Slogan Alignment:** "Every Material. Every Space."
-* **Core Goal:** Mobile App, Tablet, aur Desktop par Vendors, CPO, aur Admins ke liye hardware, interior, plumbing, electrical, aur construction materials ko super-fast live/draft karne ka responsive workflow.
+* **Core Goal:** Mobile App, Tablet, aur Desktop par Vendors, CPO, aur Admins ke liye hardware, interior, plumbing, electrical, aur construction materials ko super-fast live/draft karne ka responsive & financially transparent workflow.
 
 ---
 
 ## 1. Executive Summary & Objective
-IntriHub e-commerce marketplace par complex material attributes (sizes, thickness, colors, volume units, bulk pricing) hote hain. Is module ka target mobile responsiveness, fast vendor onboarding, dynamic variants, dynamic master lookup expansion (+ Add New), 📌 Pin Default Preferences, Auto Slug Generation, aur Real-Time Stock Detection & Alerts provide karna hai.
+IntriHub e-commerce marketplace par complex material attributes (sizes, thickness, colors, volume units, bulk pricing) hote hain. Is module ka target vendor onboarding time ko fast karna, dynamic sub-categories & variants handle karna, **3-Tier Financial Pricing Engine (MRP, Selling Price, Cost Price)** with **Real-Time Admin Profit Margin % Calculation**, mobile responsiveness, 📌 Pin Default Preferences, Auto Slug Generation, aur Real-Time Stock Detection & Alerts provide karna hai.
 
 ---
 
-## 2. Responsive Mobile & App UI Strategy
+## 2. Financial Pricing Engine & Privacy Access Control
 
-### 📱 Key Mobile UX Principles
-1. **Single-Column Stacked Layout:** Mobile screens (React Native / Mobile Web) par saare fields 100% full width (`w-full`) ek column mein auto-adjust honge (`grid-cols-1 md:grid-cols-2 lg:grid-cols-3`).
-2. **Sticky Bottom Action Sheet:** Draft, Preview, aur Publish Live buttons hamesha screen ke bottom par pinned rahenge (`fixed bottom-0 left-0 right-0 z-50 bg-white border-t p-3 shadow-lg flex gap-2`) taaki user ko scroll na karna pade.
-3. **Card-Based Mobile Table:** Desktop par dikhne wala Variant Summary Table mobile screen par **Swipeable / Stacked Cards** (`block md:hidden`) mein convert ho jayega.
-4. **Touch-Friendly Controls:** Dropdowns, `+ Add New` Modals, aur Pin Icons 48px+ touch targets ke saath honge taaki thumb-use easy ho.
+| User Role | Visible Pricing Fields | Auto-Calculated Metrics | Privacy Rule |
+| :--- | :--- | :--- | :--- |
+| **Vendor / Merchant** | 1. MRP (₹)<br>2. Selling Price (₹)<br>3. Cost Price (₹) | Customer Discount % `((MRP - SP)/MRP * 100)` | **Margin % HIDDEN.** Vendor cannot see platform net margin/profit. |
+| **Admin / CPO Panel** | 1. MRP (₹)<br>2. Selling Price (₹)<br>3. Cost Price (₹) | ⚡ **Net Profit (₹):** `SP - CP`<br>⚡ **Profit Margin (%):** `((SP - CP)/SP) * 100`<br>⚡ **Customer Discount (%):** `((MRP - SP)/MRP * 100)` | **FULL ACCESS.** Real-time live profit percentage & analytics visible on form submission. |
 
 ---
 
-## 3. End-to-End Functional Architecture & Mobile Workflow
+## 3. End-to-End Functional Architecture & Workflow
 
 ```text
 ┌────────────────────────────────────────────────────────────────────────┐
@@ -42,22 +41,21 @@ IntriHub e-commerce marketplace par complex material attributes (sizes, thicknes
                                     │
                                     ▼
 ┌────────────────────────────────────────────────────────────────────────┐
-│                   STEP 3: MULTI-VARIANT & STOCK MANAGEMENT             │
+│             STEP 3: MULTI-VARIANT, PRICING & STOCK MANAGEMENT          │
 │ 👉 [ + Add Multi-Variant / Sub-Item ] Full-Width Touch Button          │
 │ ┌────────────────────────────────────────────────────────────────────┐ │
 │ │ Mobile Bottom-Sheet Modal:                                         │ │
 │ │ • Size / Dimension Dropdown      │ Color / Shade Dropdown          │ │
-│ │ • Selling Unit Dropdown         │ Price, MRP & Stock Count        │ │
-│ │ • 🚨 Low Stock Threshold Limit  │ Smart Calculator Coverage       │ │
+│ │ • Selling Unit Dropdown         │ 🚨 Low Stock Threshold Limit    │ │
+│ │ 💰 PRICING MATRIX:                                                 │ │
+│ │   [ MRP (₹) ]  [ Selling Price (₹) ]  [ Cost / Purchase Rate (₹) ] │ │
+│ │                                                                    │ │
+│ │ 🟢 ADMIN/CPO REAL-TIME LIVE INDICATOR (Hidden for Vendor):          │ │
+│ │   ⚡ Profit: ₹150  |  📊 Margin: 27.2%  | 🏷️ Customer Disc: 20%     │ │
+│ │ • Total Available Stock Count   │ Smart Calculator Coverage       │ │
 │ │ • Touch Multi-Image Picker Upload                                  │ │
 │ └────────────────────────────────────────────────────────────────────┘ │
 │ 👉 [ Save Variant ]  │  👉 [ 📄 Duplicate Variant Card ]              │
-│                                                                        │
-│ 📱 Mobile Variant Card View (Responsive Table Alternative):            │
-│ ┌────────────────────────────────────────────────────────────────────┐ │
-│ │ 🖼️ Img │ 600x600mm | Glossy White | ₹550 | Stock: 150              │ │
-│ │ [ ✏️ Edit ]   [ 🗑️ Delete ]   [ 📄 Duplicate ]                      │ │
-│ └────────────────────────────────────────────────────────────────────┘ │
 └───────────────────────────────────┬────────────────────────────────────┘
                                     │
                                     ▼
@@ -86,7 +84,6 @@ IntriHub e-commerce marketplace par complex material attributes (sizes, thicknes
 ---
 
 ## 4. Technical Specifications & Database Schema (Prisma ORM)
-Code snippet architecture supporting Auto Slug, Master Lookups, Parent Products, Variants with Stock Thresholds, and User Preference Defaults:
 
 ```prisma
 // 1. MASTER LOOKUP TABLES (For Dynamic + Add New Feature)
@@ -126,7 +123,7 @@ enum AttributeType {
   UNIT
 }
 
-// 2. PARENT PRODUCT & VARIANT TABLES (Includes Auto Slug & Stock Detection)
+// 2. PARENT PRODUCT & VARIANT TABLES (Includes 3-Tier Financial Pricing & Auto Slug)
 model Product {
   id               String           @id @default(uuid())
   title            String
@@ -154,8 +151,12 @@ model ProductVariant {
   size              String?     // e.g., "600x600mm"
   color             String?     // e.g., "Glossy White"
   unit              String      // e.g., "Box", "Meter"
-  mrp               Float
-  sellingPrice      Float
+  
+  // 💰 3-TIER PRICING FIELDS
+  mrp               Float       // Maximum Retail Price
+  sellingPrice      Float       // Selling/Discounted Rate for Customer
+  costPrice         Float       // Purchase/Landing Cost (For Margin Calculation)
+  
   stockQuantity     Int         @default(0)
   lowStockThreshold Int         @default(5)  // 🚨 Triggers Alert when stock <= threshold
   stockStatus       StockStatus @default(IN_STOCK)
@@ -195,18 +196,26 @@ enum ProductStatus {
 
 ---
 
-## 5. CSS / Tailwind Responsive Rules (For Mobile & Web)
-- **Container Fluidity:** `max-w-4xl mx-auto px-4 sm:px-6 lg:px-8`
-- **Grid Breakpoints:** Single column on mobile (`grid-cols-1`), 2 columns on tablet (`md:grid-cols-2`), 3 columns on desktop (`lg:grid-cols-3`).
-- **Sticky Navigation Bar:** `fixed bottom-0 left-0 right-0 z-50 bg-white border-t p-3 shadow-lg flex gap-2`
-- **Touch Optimization:** Inputs/Buttons min-height `h-12` (48px) with `rounded-xl` for smooth tap targets.
+## 5. Live Profit Calculation Formulae (For Admin/CPO Dashboard)
+
+```typescript
+// Backend / Admin UI Logic
+function calculateMetrics(mrp: number, sellingPrice: number, costPrice: number) {
+  const netProfit = sellingPrice - costPrice;
+  const profitMarginPercentage = sellingPrice > 0 ? ((netProfit / sellingPrice) * 100).toFixed(2) : 0;
+  const customerDiscountPercentage = mrp > 0 ? (((mrp - sellingPrice) / mrp) * 100).toFixed(2) : 0;
+
+  return {
+    netProfit,                     // e.g. ₹150
+    profitMarginPercentage,        // e.g. 27.27%
+    customerDiscountPercentage     // e.g. 20.00%
+  };
+}
+```
 
 ---
 
-## 6. Auto Slug & Stock Detection Engine Rules
-### Auto Slug Generation:
-- `"Finolex 4mm Wire"` ──► `"finolex-4mm-wire"` (Automated slug with collision check `-1`, `-2`).
-
-### Stock Alert Detection:
-- When `stockQuantity <= lowStockThreshold`, trigger push notification & mark variant as `LOW_STOCK`.
-- When `stockQuantity == 0`, mark variant as `OUT_OF_STOCK` & disable cart button on user app.
+## 6. Non-Functional & UI Requirements
+1. **Responsive Input Focus:** 3 Pricing inputs (MRP, Selling Price, Cost Price) mobile screen par numerical keypad (`inputMode="decimal"`) ke saath side-by-side (3 columns) ya clean 1-column layout mein render hote hain.
+2. **Privacy Guarding:** Vendor Token API response se `costPrice` aur `profitMargin` fields frontend Redux/State ya vendor-facing DOM mein kabhi leak nahi hone chahiye.
+3. **Storage & Auto-Slug:** WebP auto-compression and unique slug collision checks (`-1`, `-2`) backend level par handle kiye gaye hain.
