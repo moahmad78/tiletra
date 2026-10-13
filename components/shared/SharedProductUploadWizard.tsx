@@ -438,6 +438,50 @@ export default function SharedProductUploadWizard({
     toast.info("Draft discarded");
   };
 
+  const handleSaveDraftManual = () => {
+    try {
+      const payload = {
+        title,
+        selectedCategoryId,
+        selectedSubcategoryId,
+        productType,
+        isMultiVariety,
+        brand,
+        customBrandInput,
+        manufacturer,
+        modelNumber,
+        description,
+        highlights,
+        keywords,
+        countryOfOrigin,
+        condition,
+        images,
+        videoUrl,
+        mrp,
+        sellingPrice,
+        gstRate,
+        hsnCode,
+        unitOfSale,
+        stockQuantity,
+        sku,
+        barcode,
+        dynamicAttributes,
+        customSpecs,
+        shippingMode,
+        dispatchTimeDays,
+        metaTitle,
+        metaDescription,
+        variants,
+        savedAt: new Date().toISOString(),
+      };
+      localStorage.setItem(AUTOSAVE_KEY, JSON.stringify(payload));
+      setLastSavedTime(new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }));
+      toast.success("💾 Draft progress saved to local storage!");
+    } catch {
+      toast.error("Failed to save draft progress");
+    }
+  };
+
   // 30s Autosave timer
   useEffect(() => {
     const timer = setInterval(() => {
@@ -3755,16 +3799,58 @@ export default function SharedProductUploadWizard({
         )}
       </div>
 
-      {/* Mobile Floating Live Preview Button */}
-      <div className="fixed bottom-6 right-6 z-40 lg:hidden">
+      {/* 📱 Sticky Mobile Bottom Navigation Bar (PRD Section 2 & 5) */}
+      <div className="fixed bottom-0 left-0 right-0 z-50 bg-white/95 backdrop-blur-md border-t border-gray-200 px-3 py-2.5 shadow-2xl flex items-center justify-between gap-2 lg:hidden">
+        <button
+          type="button"
+          onClick={handlePrevStep}
+          disabled={currentStep === 1}
+          className="h-11 px-3.5 rounded-xl border border-gray-300 text-gray-700 bg-white text-xs font-bold flex items-center justify-center gap-1 cursor-pointer disabled:opacity-30 disabled:cursor-not-allowed shrink-0"
+        >
+          <ArrowLeft size={15} />
+          <span className="hidden sm:inline">Prev</span>
+        </button>
+
+        <button
+          type="button"
+          onClick={handleSaveDraftManual}
+          className="h-11 px-3 rounded-xl border border-gray-300 bg-gray-50 text-gray-700 text-xs font-bold flex items-center justify-center gap-1.5 cursor-pointer active:scale-95 shrink-0"
+          title="Save Draft to Device"
+        >
+          <Save size={14} className="text-gray-500" />
+          <span className="hidden xs:inline">Draft</span>
+        </button>
+
         <button
           type="button"
           onClick={() => setIsPreviewOpen(true)}
-          className="px-4 py-2.5 bg-[#052a51] text-white text-xs font-black rounded-full shadow-2xl flex items-center gap-2 border-2 border-[#F26522] cursor-pointer active:scale-95 transition-all"
+          className="h-11 px-3.5 rounded-xl border border-orange-200 bg-orange-50 text-[#F26522] text-xs font-black flex items-center justify-center gap-1.5 cursor-pointer active:scale-95 shrink-0"
+          title="Open Storefront Preview"
         >
-          <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
-          <span>Live Preview</span>
+          <Eye size={15} />
+          <span>Preview</span>
         </button>
+
+        {currentStep < 7 ? (
+          <button
+            type="button"
+            onClick={handleNextStep}
+            className="h-11 flex-1 px-4 rounded-xl bg-[#052a51] text-white text-xs font-bold flex items-center justify-center gap-1.5 shadow-md active:scale-95 transition-all cursor-pointer"
+          >
+            <span>Next ({currentStep}/7)</span>
+            <ArrowRight size={15} />
+          </button>
+        ) : (
+          <button
+            type="submit"
+            onClick={() => setSubmitAction("publish")}
+            disabled={loading || isImageUploading}
+            className="h-11 flex-1 px-4 rounded-xl bg-emerald-600 text-white text-xs font-black flex items-center justify-center gap-1.5 shadow-md active:scale-95 transition-all cursor-pointer disabled:opacity-50"
+          >
+            {loading ? <Loader2 size={15} className="animate-spin" /> : <Zap size={15} className="fill-white" />}
+            <span>Publish Live 🚀</span>
+          </button>
+        )}
       </div>
 
       {/* Product Storefront Website Preview Modal */}

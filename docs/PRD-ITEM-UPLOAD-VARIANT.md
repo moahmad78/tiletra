@@ -3,62 +3,69 @@
 ### 📌 Document Metadata
 * **Product Name:** IntriHub Vendor & Admin App — Item Upload & Variant Module
 * **Slogan Alignment:** "Every Material. Every Space."
-* **Core Goal:** Vendors, CPO, aur Admins ke liye hardware, interior, plumbing, electrical, aur construction materials ko high speed aur flexibility ke saath live/draft karne ka seamless workflow.
+* **Core Goal:** Mobile App, Tablet, aur Desktop par Vendors, CPO, aur Admins ke liye hardware, interior, plumbing, electrical, aur construction materials ko super-fast live/draft karne ka responsive workflow.
 
 ---
 
 ## 1. Executive Summary & Objective
-IntriHub e-commerce marketplace par complex material attributes (sizes, thickness, colors, volume units, bulk pricing) hote hain. Is module ka target vendor onboarding time ko fast karna, dynamic sub-categories & variants handle karna, dynamic master lookup expansion (+ Add New) allow karna, 📌 Pin Default Preference features, **Auto Slug Generation from Title/Heading**, aur **Real-Time Stock Detection & Automated Low-Stock Alerts** provide karna hai.
+IntriHub e-commerce marketplace par complex material attributes (sizes, thickness, colors, volume units, bulk pricing) hote hain. Is module ka target mobile responsiveness, fast vendor onboarding, dynamic variants, dynamic master lookup expansion (+ Add New), 📌 Pin Default Preferences, Auto Slug Generation, aur Real-Time Stock Detection & Alerts provide karna hai.
 
 ---
 
-## 2. Core User Stories & Roles
+## 2. Responsive Mobile & App UI Strategy
 
-| Role | User Story |
-| :--- | :--- |
-| **Vendor / Merchant** | Main seller jo bulk inventory list karta hai, fast repeating uploads karta hai, aur automatic slug creation & stock alerts chahta hai. |
-| **CPO / Catalog Manager** | Main admin jo brand/category taxonomy clean rakhta hai aur custom master data approve/manage karta hai. |
-| **Contractor / Customer** | End-buyer jo precise size, color, coverage, delivery ETA, aur real-time stock availability ke hisaab se correct product select karta hai. |
+### 📱 Key Mobile UX Principles
+1. **Single-Column Stacked Layout:** Mobile screens (React Native / Mobile Web) par saare fields 100% full width (`w-full`) ek column mein auto-adjust honge (`grid-cols-1 md:grid-cols-2 lg:grid-cols-3`).
+2. **Sticky Bottom Action Sheet:** Draft, Preview, aur Publish Live buttons hamesha screen ke bottom par pinned rahenge (`fixed bottom-0 left-0 right-0 z-50 bg-white border-t p-3 shadow-lg flex gap-2`) taaki user ko scroll na karna pade.
+3. **Card-Based Mobile Table:** Desktop par dikhne wala Variant Summary Table mobile screen par **Swipeable / Stacked Cards** (`block md:hidden`) mein convert ho jayega.
+4. **Touch-Friendly Controls:** Dropdowns, `+ Add New` Modals, aur Pin Icons 48px+ touch targets ke saath honge taaki thumb-use easy ho.
 
 ---
 
-## 3. End-to-End Functional Architecture & Workflow
+## 3. End-to-End Functional Architecture & Mobile Workflow
 
 ```text
 ┌────────────────────────────────────────────────────────────────────────┐
 │                        STEP 1: CATEGORY SELECTION                      │
-│ Primary Category Dropdown  │ Sub-Category Dropdown │ 📌 Pin Default     │
-│ [+ Add New Category]      │ [+ Add New Sub-Cat]   │                    │
+│ [ Primary Category Dropdown  ▼ ]  [+ Add New]                           │
+│ [ Sub-Category Dropdown      ▼ ]  [+ Add New]                           │
+│ [ 📌 Set Selection as Default Toggle ]                                │
 └───────────────────────────────────┬────────────────────────────────────┘
                                     │
                                     ▼
 ┌────────────────────────────────────────────────────────────────────────┐
 │                     STEP 2: PARENT ITEM DETAILS                        │
-│ Product Title ──► ⚡ Auto Slug Engine (Backend/Frontend Auto-Gen)     │
-│ Brand Name (+ Add New) │ Product Description                           │
+│ Product Title ──► ⚡ Auto Slug Engine (Backend Auto-Gen)               │
+│ [ Brand Name Dropdown        ▼ ]  [+ Add New]                           │
+│ Product Description (Expandable Text Area)                             │
 └───────────────────────────────────┬────────────────────────────────────┘
                                     │
                                     ▼
 ┌────────────────────────────────────────────────────────────────────────┐
 │                   STEP 3: MULTI-VARIANT & STOCK MANAGEMENT             │
-│ 👉 [ + Add Multi-Variant / Sub-Item ] Button                           │
+│ 👉 [ + Add Multi-Variant / Sub-Item ] Full-Width Touch Button          │
 │ ┌────────────────────────────────────────────────────────────────────┐ │
-│ │ Variant Modal / Form / Table:                                      │ │
-│ │ • Size / Dimension (+ Add New)  │ Color / Shade (+ Add New)        │ │
-│ │ • Selling Unit (+ Add New)      │ Selling Price & MRP              │ │
-│ │ • Total Available Stock Count   │ 🚨 Low Stock Alert Threshold Limit│ │
-│ │ • Variant Images Upload         │ Stock Count & SKU                │ │
-│ │ • Smart Calculator Coverage     │ B2B Tier Pricing (Bulk)          │ │
+│ │ Mobile Bottom-Sheet Modal:                                         │ │
+│ │ • Size / Dimension Dropdown      │ Color / Shade Dropdown          │ │
+│ │ • Selling Unit Dropdown         │ Price, MRP & Stock Count        │ │
+│ │ • 🚨 Low Stock Threshold Limit  │ Smart Calculator Coverage       │ │
+│ │ • Touch Multi-Image Picker Upload                                  │ │
 │ └────────────────────────────────────────────────────────────────────┘ │
-│ 👉 [ Save Sub-Item ]  │  👉 [ 📄 Duplicate Variant ]                   │
+│ 👉 [ Save Variant ]  │  👉 [ 📄 Duplicate Variant Card ]              │
+│                                                                        │
+│ 📱 Mobile Variant Card View (Responsive Table Alternative):            │
+│ ┌────────────────────────────────────────────────────────────────────┐ │
+│ │ 🖼️ Img │ 600x600mm | Glossy White | ₹550 | Stock: 150              │ │
+│ │ [ ✏️ Edit ]   [ 🗑️ Delete ]   [ 📄 Duplicate ]                      │ │
+│ └────────────────────────────────────────────────────────────────────┘ │
 └───────────────────────────────────┬────────────────────────────────────┘
                                     │
                                     ▼
 ┌────────────────────────────────────────────────────────────────────────┐
 │                  STEP 4: LOGISTICS & DELIVERY SETTINGS                 │
 │ (•) ⚡ Instant Delivery (60-90 Mins) [DEFAULT]                          │
-│ ( ) 🚛 Custom Heavy / Bulky Dispatch (Estimated ETA Window)             │
-│ 📌 [ Pin Selected Option as Default ]                                  │
+│ ( ) 🚛 Custom Heavy / Bulky Dispatch (ETA Window)                       │
+│ 📌 [ Pin Delivery Option as Default ]                                  │
 └───────────────────────────────────┬────────────────────────────────────┘
                                     │
                                     ▼
@@ -71,15 +78,15 @@ IntriHub e-commerce marketplace par complex material attributes (sizes, thicknes
                                     │
                                     ▼
 ┌────────────────────────────────────────────────────────────────────────┐
-│                         STEP 6: BOTTOM ACTION BAR                      │
-│ [ 💾 Save to Draft ]        [ 👁️ Preview ]       [ 🚀 Publish Live ]   │
+│                     STEP 6: STICKY MOBILE BOTTOM BAR                   │
+│ [ 💾 Draft ]             [ 👁️ Preview ]          [ 🚀 Publish Live ]   │
 └────────────────────────────────────────────────────────────────────────┘
 ```
 
 ---
 
 ## 4. Technical Specifications & Database Schema (Prisma ORM)
-Below is the database architecture to support Auto Slug, Master Lookups, Parent Products, Variants with Stock Thresholds, and User Preference Defaults:
+Code snippet architecture supporting Auto Slug, Master Lookups, Parent Products, Variants with Stock Thresholds, and User Preference Defaults:
 
 ```prisma
 // 1. MASTER LOOKUP TABLES (For Dynamic + Add New Feature)
@@ -188,36 +195,18 @@ enum ProductStatus {
 
 ---
 
-## 5. Auto Slug Generation Engine Rules (Node.js / Backend Logic)
-### Title-to-Slug Conversion:
-Jaise hi user Product Title/Heading enter karta hai, system automatically slug format karta hai:
-- Lowercase conversion.
-- Special characters remove honge.
-- Spaces ko `-` (dash) se replace kiya jayega.
-- Example: `"Finolex 4mm Copper Wire (Red)"` ──► `"finolex-4mm-copper-wire-red"`
-
-### Unique Slug Collision Handling:
-Agar exact same slug pehle se DB mein exist karta hai, toh backend automatically incremental suffix add kar dega:
-- Example: `"finolex-4mm-copper-wire-red-1"`, `"finolex-4mm-copper-wire-red-2"`
+## 5. CSS / Tailwind Responsive Rules (For Mobile & Web)
+- **Container Fluidity:** `max-w-4xl mx-auto px-4 sm:px-6 lg:px-8`
+- **Grid Breakpoints:** Single column on mobile (`grid-cols-1`), 2 columns on tablet (`md:grid-cols-2`), 3 columns on desktop (`lg:grid-cols-3`).
+- **Sticky Navigation Bar:** `fixed bottom-0 left-0 right-0 z-50 bg-white border-t p-3 shadow-lg flex gap-2`
+- **Touch Optimization:** Inputs/Buttons min-height `h-12` (48px) with `rounded-xl` for smooth tap targets.
 
 ---
 
-## 6. Stock Detection & Notification Trigger Rules
-### Low Stock Detection Logic:
-When `stockQuantity <= lowStockThreshold`:
-- System automatically sets `stockStatus = LOW_STOCK`.
-- Push Notification / Alert trigger hoti hai Dark Store / Vendor ke liye.
-- Variant ko Vendor / CPO dashboard mein **Orange Warning Badge (Low Stock ⚠️)** se highlight kiya jata hai.
+## 6. Auto Slug & Stock Detection Engine Rules
+### Auto Slug Generation:
+- `"Finolex 4mm Wire"` ──► `"finolex-4mm-wire"` (Automated slug with collision check `-1`, `-2`).
 
-### Out of Stock Logic:
-When `stockQuantity == 0`:
-- System automatically sets `stockStatus = OUT_OF_STOCK`.
-- Storefront aur apps par **"Out of Stock / Restocking Soon" (Red Badge)** display hota hai.
-- Disables "Add to Cart" for that specific variant to avoid unfulfillable orders.
-
----
-
-## 7. Non-Functional Requirements (NFRs)
-- **Performance:** Form validation, auto slug generation, aur variant array manipulation frontend/backend par under 100ms execute honi chahiye.
-- **Storage & Optimisation:** Images ko WebP format mein auto-compress karke CDN / local upload endpoint par store kiya jaye.
-- **Master Data Sanitization:** `+ Add New` se add kiye gaye attributes baseline DB mein sanitize hoke auto-capitalize aur trim hon taaki duplicates na banein (e.g., `"600x600 mm"` vs `"600x600mm"`).
+### Stock Alert Detection:
+- When `stockQuantity <= lowStockThreshold`, trigger push notification & mark variant as `LOW_STOCK`.
+- When `stockQuantity == 0`, mark variant as `OUT_OF_STOCK` & disable cart button on user app.

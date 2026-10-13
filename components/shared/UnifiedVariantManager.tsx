@@ -899,8 +899,8 @@ export default function UnifiedVariantManager({
               </div>
             )}
 
-            {/* Variant Table */}
-            <div className="overflow-x-auto border border-gray-200/80 rounded-2xl pb-1">
+            {/* Variant Table (Desktop View) */}
+            <div className="hidden md:block overflow-x-auto border border-gray-200/80 rounded-2xl pb-1">
               <table className="w-full min-w-[980px] text-left border-collapse text-xs">
                 <thead>
                   <tr className="bg-gray-50 border-b border-gray-200 text-gray-500 uppercase tracking-wider text-[10px] font-bold">
@@ -1158,6 +1158,186 @@ export default function UnifiedVariantManager({
                   })}
                 </tbody>
               </table>
+            </div>
+
+            {/* 📱 Mobile Variant Card View (Responsive Table Alternative - PRD Section 2 & 3) */}
+            <div className="block md:hidden space-y-3">
+              {variants.map((v, idx) => {
+                const priceVal = v.price ?? v.pricePerBox ?? 0;
+                const mrpVal = v.mrp ?? null;
+                const isActive = v.active !== false;
+                const stockVal = v.stockBoxes ?? 50;
+                const alertVal = v.lowStockAlert ?? 5;
+
+                return (
+                  <div
+                    key={v.id || idx}
+                    className={`p-4 rounded-2xl border transition-all space-y-3 ${
+                      !isActive
+                        ? "bg-gray-50/70 border-gray-200 opacity-60"
+                        : v.isDefault
+                        ? "bg-orange-50/30 border-[#F26522] shadow-xs"
+                        : "bg-white border-gray-200 shadow-2xs"
+                    }`}
+                  >
+                    {/* Top Row: Thumbnail + Title + Live Status */}
+                    <div className="flex items-start justify-between gap-3">
+                      <div className="flex items-center gap-3 min-w-0">
+                        {/* eslint-disable-next-line @next/next/no-img-element */}
+                        <img
+                          src={v.image || baseImages[0] || "/placeholders/product.svg"}
+                          alt="thumb"
+                          className="w-12 h-12 rounded-xl object-cover border border-gray-200 bg-gray-50 shrink-0"
+                          onError={(e) => {
+                            (e.target as any).src = "/placeholders/product.svg";
+                          }}
+                        />
+                        <div className="min-w-0">
+                          <div className="flex items-center gap-1.5 flex-wrap">
+                            <span className="text-xs font-black text-gray-900 truncate">
+                              {v.variantName || `${v.size || "Standard"} / ${v.color || "Standard"}`}
+                            </span>
+                            {v.isDefault && (
+                              <span className="text-[9px] font-black uppercase px-1.5 py-0.5 rounded-full bg-[#052a51] text-white">
+                                Primary
+                              </span>
+                            )}
+                          </div>
+                          <p className="text-[11px] font-mono text-gray-400 truncate mt-0.5">
+                            SKU: {v.sku || "N/A"}
+                          </p>
+                        </div>
+                      </div>
+
+                      {/* Stock Status Badge */}
+                      <div className="shrink-0 text-right">
+                        {stockVal === 0 ? (
+                          <span className="text-[10px] font-black text-rose-700 bg-rose-50 px-2 py-0.5 rounded-full border border-rose-200">
+                            Out of Stock
+                          </span>
+                        ) : stockVal <= alertVal ? (
+                          <span className="text-[10px] font-black text-amber-700 bg-amber-50 px-2 py-0.5 rounded-full border border-amber-200">
+                            Low Stock ⚠️
+                          </span>
+                        ) : (
+                          <span className="text-[10px] font-black text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded-full border border-emerald-200">
+                            In Stock ✓
+                          </span>
+                        )}
+                      </div>
+                    </div>
+
+                    {/* Middle Grid: Price, MRP, Stock, Alert Limit */}
+                    <div className="grid grid-cols-2 gap-2.5 pt-1">
+                      <div className="p-2.5 rounded-xl bg-gray-50 border border-gray-100 space-y-1">
+                        <label className="text-[10px] font-bold text-gray-500 uppercase block">Selling Price (₹) *</label>
+                        <input
+                          type="number"
+                          min={0}
+                          value={priceVal || ""}
+                          onChange={(e) =>
+                            handleUpdateRow(idx, {
+                              price: Number(e.target.value),
+                              pricePerBox: Number(e.target.value),
+                            })
+                          }
+                          className="w-full px-2.5 py-1.5 bg-white border border-gray-200 rounded-lg text-xs font-mono font-black text-gray-900 focus:outline-none focus:border-[#F26522]"
+                        />
+                      </div>
+
+                      <div className="p-2.5 rounded-xl bg-gray-50 border border-gray-100 space-y-1">
+                        <label className="text-[10px] font-bold text-gray-500 uppercase block">MRP (₹)</label>
+                        <input
+                          type="number"
+                          min={0}
+                          value={mrpVal || ""}
+                          onChange={(e) =>
+                            handleUpdateRow(idx, {
+                              mrp: e.target.value ? Number(e.target.value) : undefined,
+                            })
+                          }
+                          className="w-full px-2.5 py-1.5 bg-white border border-gray-200 rounded-lg text-xs font-mono font-bold text-gray-700 focus:outline-none focus:border-[#F26522]"
+                        />
+                      </div>
+
+                      <div className="p-2.5 rounded-xl bg-gray-50 border border-gray-100 space-y-1">
+                        <label className="text-[10px] font-bold text-gray-500 uppercase block">Stock Count</label>
+                        <input
+                          type="number"
+                          min={0}
+                          value={stockVal}
+                          onChange={(e) =>
+                            handleUpdateRow(idx, {
+                              stockBoxes: Number(e.target.value),
+                              inStock: Number(e.target.value) > 0,
+                            })
+                          }
+                          className="w-full px-2.5 py-1.5 bg-white border border-gray-200 rounded-lg text-xs font-mono font-bold text-gray-900 focus:outline-none focus:border-[#F26522]"
+                        />
+                      </div>
+
+                      <div className="p-2.5 rounded-xl bg-gray-50 border border-gray-100 space-y-1">
+                        <label className="text-[10px] font-bold text-gray-500 uppercase block">🚨 Alert Limit</label>
+                        <input
+                          type="number"
+                          min={0}
+                          value={alertVal}
+                          onChange={(e) =>
+                            handleUpdateRow(idx, {
+                              lowStockAlert: Number(e.target.value),
+                            })
+                          }
+                          className="w-full px-2.5 py-1.5 bg-white border border-gray-200 rounded-lg text-xs font-mono font-bold text-gray-700 focus:outline-none focus:border-[#F26522]"
+                        />
+                      </div>
+                    </div>
+
+                    {/* Bottom Action Strip: Duplicate, Primary, Active Toggle, Delete */}
+                    <div className="flex items-center justify-between pt-2 border-t border-gray-100">
+                      <div className="flex items-center gap-2">
+                        <label className="flex items-center gap-1.5 text-[11px] font-bold text-gray-700 cursor-pointer">
+                          <input
+                            type="checkbox"
+                            checked={isActive}
+                            onChange={(e) => handleUpdateRow(idx, { active: e.target.checked })}
+                            className="w-4 h-4 accent-[#F26522] rounded"
+                          />
+                          <span>Live</span>
+                        </label>
+                        {!v.isDefault && (
+                          <button
+                            type="button"
+                            onClick={() => handleSetDefaultVariant(idx)}
+                            className="text-[11px] font-bold text-blue-600 hover:text-blue-800 ml-2 cursor-pointer"
+                          >
+                            Set Primary
+                          </button>
+                        )}
+                      </div>
+
+                      <div className="flex items-center gap-1">
+                        <button
+                          type="button"
+                          onClick={() => handleDuplicateRow(idx)}
+                          className="px-2.5 py-1.5 rounded-lg border border-orange-200 bg-orange-50 text-[#F26522] text-xs font-bold flex items-center gap-1 cursor-pointer active:scale-95 transition-all"
+                          title="1-Click Duplicate this variant"
+                        >
+                          <Copy size={12} />
+                          <span>Duplicate</span>
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => handleDeleteRow(idx)}
+                          className="p-1.5 rounded-lg text-gray-400 hover:text-rose-600 hover:bg-rose-50 cursor-pointer"
+                          title="Delete variant"
+                        >
+                          <Trash2 size={15} />
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+                );
+              })}
             </div>
 
             {/* + Add Multi-Variant / Sub-Item Button (PRD Req) */}
