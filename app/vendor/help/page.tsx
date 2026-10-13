@@ -134,7 +134,7 @@ export default function VendorHelpPage() {
           </div>
         </div>
 
-        {/* 2. COO Operations & Logistics Card (Gulshan) */}
+        {/* 2. COO Operations & Logistics Card (Gulshan Ali) */}
         <div className="bg-gradient-to-b from-blue-500/10 to-white rounded-3xl p-6 border border-blue-200 shadow-2xs hover:shadow-md transition-all flex flex-col justify-between group">
           <div className="space-y-3">
             <div className="w-12 h-12 rounded-2xl bg-blue-50 text-[#052a51] flex items-center justify-center group-hover:scale-105 transition-transform">
@@ -144,7 +144,7 @@ export default function VendorHelpPage() {
               <span className="px-2 py-0.5 rounded-md bg-[#052a51] text-white text-[9px] font-black uppercase tracking-wider">
                 Chief Operating Officer
               </span>
-              <h3 className="font-black text-gray-900 text-base mt-1">Gulshan</h3>
+              <h3 className="font-black text-gray-900 text-base mt-1">Gulshan Ali</h3>
               <p className="text-[11px] font-bold text-blue-700">Operations & Logistics Desk</p>
               <p className="text-xs text-gray-500 mt-1">
                 Vendor relations, warehouse logistics, freight tracking & ground operations.
@@ -161,7 +161,7 @@ export default function VendorHelpPage() {
 
           <div className="grid grid-cols-2 gap-2 mt-4">
             <a
-              href={`https://wa.me/917090120211?text=${encodeURIComponent(`Hi Gulshan (COO), I am reaching out regarding vendor store "${vendor?.businessName || "My Store"}" (ID: ${vendor?.id || "N/A"}). I need assistance with logistics/operations: `)}`}
+              href={`https://wa.me/917090120211?text=${encodeURIComponent(`Hi Gulshan Ali (COO), I am reaching out regarding vendor store "${vendor?.businessName || "My Store"}" (ID: ${vendor?.id || "N/A"}). I need assistance with logistics/operations: `)}`}
               target="_blank"
               rel="noopener noreferrer"
               className="py-2.5 px-3 rounded-xl bg-[#052a51] hover:bg-[#0a3e74] text-white text-[11px] font-bold transition-colors flex items-center justify-center gap-1.5 shadow-xs cursor-pointer"

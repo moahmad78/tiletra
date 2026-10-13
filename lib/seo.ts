@@ -594,7 +594,7 @@ export function generateLeadershipPersonSchemas() {
     {
       "@context": "https://schema.org",
       "@type": "Person",
-      name: "Gulshan",
+      name: "Gulshan Ali",
       jobTitle: "Chief Operating Officer (COO)",
       worksFor: {
         "@id": `${BASE_SITE_URL}/#organization`,

@@ -37,7 +37,7 @@ export const LEADERSHIP_TEAM: LeadershipMember[] = [
     isFounder: true,
   },
   {
-    name: "Gulshan",
+    name: "Gulshan Ali",
     role: "Chief Operating Officer (COO)",
     email: "gulshan@intrihub.com",
     bio: "Managing vendor relations, supply chain logistics, and ground operations to ensure lightning-fast execution.",
@@ -61,7 +61,7 @@ export const CORE_DEPARTMENTS: DepartmentContact[] = [
   {
     department: "Operations & Logistics",
     email: "gulshan@intrihub.com",
-    lead: "Gulshan",
+    lead: "Gulshan Ali",
     role: "Chief Operating Officer (COO)",
     description: "Freight tracking, warehouse distribution, fleet routing & delivery updates.",
   },
@@ -86,8 +86,8 @@ export const CONTACT_PERSONS: ContactPerson[] = [
     isFounder: true,
   },
   {
-    name: "Gulshan",
-    shortName: "Gulshan (COO)",
+    name: "Gulshan Ali",
+    shortName: "Gulshan Ali (COO)",
     role: "Chief Operating Officer | Operations & Logistics",
     email: "gulshan@intrihub.com",
     phone: "+91 70901 20211",

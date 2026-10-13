@@ -377,12 +377,12 @@ export default function AdminSettingsPage() {
                 <p className="text-[11px] text-gray-600">Phone: +91 70901 20211</p>
               </div>
 
-              {/* Gulshan */}
+              {/* Gulshan Ali */}
               <div className="p-3.5 bg-blue-50/70 border border-blue-200/80 rounded-xl text-xs space-y-1">
                 <span className="px-1.5 py-0.5 rounded bg-[#052a51] text-white text-[9px] font-black uppercase tracking-wider">
                   Chief Operating Officer
                 </span>
-                <p className="font-black text-[#052a51] text-sm">Gulshan</p>
+                <p className="font-black text-[#052a51] text-sm">Gulshan Ali</p>
                 <p className="text-[11px] text-blue-800 font-bold">Operations & Logistics</p>
                 <p className="text-[11px] text-gray-600">Email: gulshan@intrihub.com</p>
                 <p className="text-[11px] text-gray-600">Phone: +91 70901 20211</p>

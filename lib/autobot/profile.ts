@@ -52,7 +52,7 @@ const INTRIHUB_DEFAULT_PROMPT = `Aap Intrihub (Tiletra) ke Senior Customer Suppo
 - Support Helpline:
   • WhatsApp & Phone: +91 70901 20211
   • Email: support@intrihub.com | vendor@intrihub.com
-  • Leadership: Sahil Sheikh (Founder & CEO), Gulshan (COO), Vishal Poddar (CPO)`;
+  • Leadership: Sahil Sheikh (Founder & CEO), Gulshan Ali (COO), Vishal Poddar (CPO)`;
 
 export { INTRIHUB_DEFAULT_PROMPT };
 

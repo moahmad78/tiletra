@@ -85,7 +85,7 @@ export default function AboutPage() {
       employee: [
         {
           "@type": "Person",
-          name: "Gulshan",
+          name: "Gulshan Ali",
           jobTitle: "Chief Operating Officer (COO)",
           email: "gulshan@intrihub.com",
           description:
