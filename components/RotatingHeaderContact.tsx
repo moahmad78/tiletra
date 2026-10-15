@@ -3,7 +3,29 @@
 import { useState, useEffect, useRef } from "react";
 import { Phone } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
-import { CONTACT_PERSONS } from "@/lib/data/contacts";
+
+import { PHONE_DISPLAY, PHONE_TEL } from "@/lib/siteConfig";
+
+const ROTATING_HELPLINE_ITEMS = [
+  {
+    id: "helpline",
+    label: "Toll-Free Helpline",
+    phone: PHONE_DISPLAY,
+    tel: PHONE_TEL,
+  },
+  {
+    id: "support",
+    label: "Customer Support",
+    phone: PHONE_DISPLAY,
+    tel: PHONE_TEL,
+  },
+  {
+    id: "orders",
+    label: "Order & Dispatch Desk",
+    phone: PHONE_DISPLAY,
+    tel: PHONE_TEL,
+  },
+];
 
 export default function RotatingHeaderContact() {
   const [index, setIndex] = useState(0);
@@ -17,14 +39,14 @@ export default function RotatingHeaderContact() {
   useEffect(() => {
     const timer = setInterval(() => {
       if (!isHoveredRef.current) {
-        setIndex((prev) => (prev + 1) % CONTACT_PERSONS.length);
+        setIndex((prev) => (prev + 1) % ROTATING_HELPLINE_ITEMS.length);
       }
     }, 3500);
 
     return () => clearInterval(timer);
   }, []);
 
-  const contact = CONTACT_PERSONS[index];
+  const item = ROTATING_HELPLINE_ITEMS[index];
 
   return (
     <div
@@ -33,24 +55,28 @@ export default function RotatingHeaderContact() {
       className="flex items-center gap-1.5 h-6 overflow-hidden select-none"
     >
       <Phone size={13} className="text-[#F26522] shrink-0" />
-      <span className="text-white/60 text-xs hidden lg:inline">Helpline:</span>
-      <div className="relative h-5 min-w-[190px] overflow-hidden flex items-center">
+      <div className="relative h-5 min-w-[215px] overflow-hidden flex items-center">
         <AnimatePresence mode="wait">
           <motion.a
-            key={contact.tel}
-            href={`tel:${contact.tel}`}
+            key={item.id}
+            href={item.tel.startsWith("tel:") ? item.tel : `tel:${item.tel}`}
             initial={{ opacity: 0, y: 10 }}
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0, y: -10 }}
             transition={{ duration: 0.3 }}
-            className="text-white hover:text-[#F26522] transition-colors font-bold tracking-wide text-xs flex items-center gap-1 whitespace-nowrap notranslate"
+            className="text-white hover:text-[#F26522] transition-colors font-bold tracking-wide text-xs flex items-center gap-1.5 whitespace-nowrap notranslate"
             translate="no"
           >
-            <span className="text-[#F26522] font-extrabold notranslate" translate="no">{contact.shortName}:</span>
-            <span className="notranslate" translate="no">{contact.phone}</span>
+            <span className="text-[#F26522] font-extrabold notranslate" translate="no">
+              {item.label}:
+            </span>
+            <span className="text-white font-bold notranslate" translate="no">
+              {item.phone}
+            </span>
           </motion.a>
         </AnimatePresence>
       </div>
     </div>
   );
 }
+

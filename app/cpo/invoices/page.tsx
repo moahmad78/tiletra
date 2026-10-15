@@ -1,7 +1,7 @@
 import TaxInvoiceGenerator from "@/components/admin/TaxInvoiceGenerator";
 
 export const metadata = {
-  title: "Tax Invoice Generator | IntriHub CPO",
+  title: "Tax Invoice Generator - CPO",
   description: "Official sequential tax invoice generator for marketplace vendors and manual orders",
 };
 

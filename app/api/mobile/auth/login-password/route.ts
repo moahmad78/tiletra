@@ -180,6 +180,17 @@ export async function POST(req: NextRequest) {
         );
       }
 
+      if (body.pushToken && typeof body.pushToken === "string") {
+        try {
+          await (prisma as any).user.update({
+            where: { id: customerUser.id },
+            data: { pushToken: body.pushToken.trim() },
+          });
+        } catch (tokErr) {
+          console.warn("Could not save pushToken on password login:", tokErr);
+        }
+      }
+
       const tokens = await generateMobileTokens(customerUser);
       return mobileApiResponse({
         success: true,

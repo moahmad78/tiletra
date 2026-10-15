@@ -32,7 +32,7 @@ export const revalidate = 3600; // 1-hour ISR revalidation
 
 const PAGE_TITLE = "Buy Building Materials Online";
 const PAGE_DESCRIPTION =
-  "Order 100% genuine building & construction materials online in Bengaluru. Direct manufacturer pricing on cement, TMT steel, CPVC plumbing, vitrified tiles, electricals, false ceiling, and hardware. Fast 60-minute site delivery with GST invoice.";
+  "Order verified building & construction materials online in Bengaluru. Direct manufacturer pricing on cement, TMT steel, CPVC plumbing, vitrified tiles, electricals, false ceiling, and hardware. Fast 60-minute site delivery with GST invoice.";
 const CANONICAL_URL = getCanonicalUrl("/building-materials-online");
 
 export const metadata: Metadata = {
@@ -257,7 +257,7 @@ export default function BuildingMaterialsOnlinePage() {
         <span className="hidden sm:inline text-amber-900">•</span>
         <span className="hidden sm:inline">3-7 Days Express Pan-India Delivery</span>
         <span className="hidden md:inline text-amber-900">•</span>
-        <span className="hidden md:inline">100% Genuine Brands with GST Invoices</span>
+        <span className="hidden md:inline">verified, authentic Brands with GST Invoices</span>
       </div>
 
       <main className="flex-grow">
@@ -363,7 +363,7 @@ export default function BuildingMaterialsOnlinePage() {
                     </div>
                     <div className="flex items-center justify-between text-xs text-slate-700 font-semibold">
                       <span className="flex items-center gap-1.5"><ShieldCheck className="w-4 h-4 text-purple-600" /> Direct Factory Guarantee</span>
-                      <span>100% Genuine with Warranty</span>
+                      <span>verified, authentic with Warranty</span>
                     </div>
                   </div>
                 </div>
@@ -515,7 +515,7 @@ export default function BuildingMaterialsOnlinePage() {
                   </li>
                   <li className="flex items-start gap-2.5">
                     <span className="text-emerald-600 font-bold">✓</span>
-                    <span><strong>100% Genuine Certification:</strong> Standard factory-sealed packaging with ISI, ISO, and manufacturer test certificates.</span>
+                    <span><strong>verified, authentic Certification:</strong> Standard factory-sealed packaging with ISI, ISO, and manufacturer test certificates.</span>
                   </li>
                   <li className="flex items-start gap-2.5">
                     <span className="text-emerald-600 font-bold">✓</span>

@@ -126,7 +126,10 @@ export function getSafeDeploymentStatus() {
     adminAuthConfigured: Boolean(process.env.ADMIN_SESSION_SECRET),
     vendorAuthConfigured: Boolean(process.env.VENDOR_SESSION_SECRET),
     jwtConfigured: Boolean(process.env.JWT_SECRET || process.env.NEXTAUTH_SECRET),
-    emailProviderConfigured: Boolean(process.env.RESEND_API_KEY || process.env.SMTP_HOST),
+    emailProviderConfigured: Boolean(
+      process.env.SMTP_HOST ||
+      process.env.EMAIL_SERVER_HOST
+    ),
     paymentConfigured: Boolean(process.env.RAZORPAY_KEY_SECRET),
     storageConfigured: Boolean(process.env.BLOB_READ_WRITE_TOKEN),
   };

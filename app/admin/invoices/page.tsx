@@ -1,7 +1,7 @@
 import TaxInvoiceGenerator from "@/components/admin/TaxInvoiceGenerator";
 
 export const metadata = {
-  title: "Tax Invoice Generator | IntriHub Admin",
+  title: "Tax Invoice Generator - Admin",
   description: "Official sequential tax invoice generator for online and manual orders",
 };
 

@@ -2,8 +2,27 @@ import axios from "axios";
 import * as SecureStore from "expo-secure-store";
 import { Platform } from "react-native";
 
-export const API_BASE_URL =
+const rawApiUrl =
   process.env.EXPO_PUBLIC_API_URL || "https://www.intrihub.com";
+export const API_BASE_URL = rawApiUrl.replace(/\/api\/?$/, "").replace(/\/+$/, "");
+
+export function getImageUrl(
+  imagePath?: string | null,
+  fallback = "https://images.unsplash.com/photo-1595428774223-ef52624120d2?w=400"
+): string {
+  if (!imagePath || typeof imagePath !== "string") return fallback;
+  const trimmed = imagePath.trim();
+  if (!trimmed) return fallback;
+  if (
+    trimmed.startsWith("http://") ||
+    trimmed.startsWith("https://") ||
+    trimmed.startsWith("data:") ||
+    trimmed.startsWith("file://")
+  ) {
+    return trimmed;
+  }
+  return `${API_BASE_URL}${trimmed.startsWith("/") ? "" : "/"}${trimmed}`;
+}
 
 const ACCESS_TOKEN_KEY = "intrihub_biz_access_token";
 const REFRESH_TOKEN_KEY = "intrihub_biz_refresh_token";

@@ -57,8 +57,17 @@ export async function sendAdminWebOtp(email: string): Promise<{
   const cleanEmail = (email || "").trim().toLowerCase();
   const allowedAdminEmail = (process.env.ADMIN_ALLOWED_EMAIL || "admin@intrihub.com").toLowerCase().trim();
 
-  // 2. Strict single email check
-  if (!cleanEmail || cleanEmail !== allowedAdminEmail) {
+  // 2. Strict database-level role and existence check
+  const adminUser = await prisma.user.findFirst({
+    where: {
+      email: { equals: cleanEmail, mode: "insensitive" },
+      role: { in: ["admin", "ADMIN", "superadmin"] },
+    },
+  });
+
+  const isAuthorizedAdmin = Boolean(adminUser && cleanEmail === allowedAdminEmail);
+
+  if (!cleanEmail || !isAuthorizedAdmin) {
     const failCheck = recordAdminLoginFailure(clientIp);
     await securityLogger.logAuthAttempt({
       type: "login",
@@ -66,7 +75,9 @@ export async function sendAdminWebOtp(email: string): Promise<{
       identifier: cleanEmail || "unknown",
       ip: clientIp,
       role: "admin",
-      reason: failCheck.locked ? "Too many failed attempts. Admin login locked 15m." : "Invalid admin email.",
+      reason: failCheck.locked
+        ? "Too many failed attempts. Admin login locked 15m."
+        : "Access Denied: Email not registered with ADMIN role.",
     });
     if (failCheck.locked) {
       return {
@@ -81,7 +92,7 @@ export async function sendAdminWebOtp(email: string): Promise<{
       success: false,
       locked: false,
       remainingAttempts: failCheck.remainingAttempts,
-      message: `Invalid admin credentials. (${failCheck.remainingAttempts} attempt${failCheck.remainingAttempts === 1 ? "" : "s"} remaining before 15-min lockout)`,
+      message: `Access Denied: Email not registered with ADMIN role. (${failCheck.remainingAttempts} attempt${failCheck.remainingAttempts === 1 ? "" : "s"} remaining before 15-min lockout)`,
     };
   }
 
@@ -127,7 +138,15 @@ export async function verifyAdminWebOtp(email: string, otp: string): Promise<{
   const cleanEmail = (email || "").trim().toLowerCase();
   const allowedAdminEmail = (process.env.ADMIN_ALLOWED_EMAIL || "admin@intrihub.com").toLowerCase().trim();
 
-  if (cleanEmail !== allowedAdminEmail) {
+  // Strict database check for ADMIN role
+  const adminUser = await prisma.user.findFirst({
+    where: {
+      email: { equals: cleanEmail, mode: "insensitive" },
+      role: { in: ["admin", "ADMIN", "superadmin"] },
+    },
+  });
+
+  if (!adminUser || cleanEmail !== allowedAdminEmail) {
     const failCheck = recordAdminLoginFailure(clientIp);
     if (failCheck.locked) {
       return {
@@ -142,7 +161,7 @@ export async function verifyAdminWebOtp(email: string, otp: string): Promise<{
       success: false,
       locked: false,
       remainingAttempts: failCheck.remainingAttempts,
-      message: `Invalid credentials. (${failCheck.remainingAttempts} attempt${failCheck.remainingAttempts === 1 ? "" : "s"} remaining)`,
+      message: `Access Denied: User is not registered with ADMIN role. (${failCheck.remainingAttempts} attempt${failCheck.remainingAttempts === 1 ? "" : "s"} remaining)`,
     };
   }
 
@@ -219,6 +238,145 @@ export async function verifyAdminWebOtp(email: string, otp: string): Promise<{
   };
 }
 
+/**
+ * Web portal Admin Email + Password Login
+ */
+export async function loginAdminWithPassword(
+  email: string,
+  password: string
+): Promise<{
+  success: boolean;
+  message: string;
+  locked?: boolean;
+  remainingAttempts?: number;
+  retryAfterSeconds?: number;
+  user?: { id: string; name: string; email: string; role: string };
+}> {
+  const clientIp = await getClientIp();
+
+  // 1. Check IP lockout
+  const lockout = checkAdminLoginLockout(clientIp);
+  if (lockout.locked) {
+    const minutes = Math.ceil((lockout.retryAfterSeconds || 900) / 60);
+    return {
+      success: false,
+      locked: true,
+      remainingAttempts: 0,
+      retryAfterSeconds: lockout.retryAfterSeconds,
+      message: `Too many failed login attempts. Security lockout active. Please retry in ${minutes} minute(s).`,
+    };
+  }
+
+  const cleanEmail = (email || "").trim().toLowerCase();
+  const allowedAdminEmail = (process.env.ADMIN_ALLOWED_EMAIL || "admin@intrihub.com").toLowerCase().trim();
+
+  // 2. Query admin user from database
+  const adminUser = await prisma.user.findFirst({
+    where: {
+      OR: [
+        { email: { equals: cleanEmail, mode: "insensitive" } },
+        cleanEmail === allowedAdminEmail ? { email: { equals: allowedAdminEmail, mode: "insensitive" } } : {},
+      ],
+      role: "admin",
+    },
+  });
+
+  const isAllowedEmail = cleanEmail === allowedAdminEmail || adminUser !== null;
+  if (!isAllowedEmail) {
+    const failCheck = recordAdminLoginFailure(clientIp);
+    if (failCheck.locked) {
+      return {
+        success: false,
+        locked: true,
+        remainingAttempts: 0,
+        retryAfterSeconds: failCheck.retryAfterSeconds,
+        message: "Too many failed attempts (3/3). Account locked for 15 minutes.",
+      };
+    }
+    return {
+      success: false,
+      remainingAttempts: failCheck.remainingAttempts,
+      message: `Invalid admin credentials. (${failCheck.remainingAttempts} attempt(s) remaining)`,
+    };
+  }
+
+  const storedHash = adminUser?.passwordHash;
+  if (!storedHash) {
+    return {
+      success: false,
+      message: "Password login is not set up for this admin account. Please use Email OTP to sign in.",
+    };
+  }
+
+  const isValid = verifyPassword(password, storedHash);
+  if (!isValid) {
+    const failCheck = recordAdminLoginFailure(clientIp);
+    if (failCheck.locked) {
+      return {
+        success: false,
+        locked: true,
+        remainingAttempts: 0,
+        retryAfterSeconds: failCheck.retryAfterSeconds,
+        message: "Too many failed attempts (3/3). Account locked for 15 minutes.",
+      };
+    }
+    return {
+      success: false,
+      remainingAttempts: failCheck.remainingAttempts,
+      message: `Invalid password. (${failCheck.remainingAttempts} attempt(s) remaining)`,
+    };
+  }
+
+  // 3. Reset lockout on success
+  resetAdminLoginLockout(clientIp);
+  await securityLogger.logAuthAttempt({
+    type: "login",
+    status: "success",
+    identifier: cleanEmail,
+    ip: clientIp,
+    role: "admin",
+    userId: adminUser?.id || "admin-root",
+  });
+
+  const userId = adminUser?.id || "admin-root";
+  const adminToken = generateAdminSessionToken(userId, cleanEmail);
+  const cookieStore = await cookies();
+  cookieStore.set("intrihub_admin_token", adminToken, {
+    httpOnly: true,
+    secure: process.env.NODE_ENV === "production",
+    sameSite: "lax",
+    path: "/",
+    maxAge: 60 * 60 * 24 * 7,
+  });
+  cookieStore.set(
+    "intrihub_admin_session",
+    JSON.stringify({
+      userId,
+      email: cleanEmail,
+      role: "admin",
+      verifiedAt: new Date().toISOString(),
+    }),
+    {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === "production",
+      sameSite: "lax",
+      path: "/",
+      maxAge: 60 * 60 * 24 * 7,
+    }
+  );
+
+  return {
+    success: true,
+    message: "Admin authenticated successfully!",
+    user: {
+      id: userId,
+      name: adminUser?.name || "Super Admin",
+      email: cleanEmail,
+      role: "admin",
+    },
+  };
+}
+
 // ─────────────────────────────────────────────────────────────────────────────
 // 2. VENDOR WEB PORTAL AUTHENTICATION
 // ─────────────────────────────────────────────────────────────────────────────
@@ -266,10 +424,13 @@ export async function checkVendorLoginMethod(email: string): Promise<{
   const isAdmin = cleanEmail === allowedAdminEmail;
 
   if (isAdmin) {
+    const adminUser = await prisma.user.findFirst({
+      where: { email: { equals: cleanEmail, mode: "insensitive" } },
+    });
     return {
       success: true,
       loginMethod: "otp",
-      vendorName: "Super Admin",
+      vendorName: adminUser?.name || "Super Admin",
     };
   }
 
@@ -337,7 +498,7 @@ export async function checkVendorLoginMethod(email: string): Promise<{
     if (vendor.status === "pending") {
       return {
         success: false,
-        loginMethod: (vendor.loginMethod as any) || "otp",
+        loginMethod: "otp",
         reason: "PENDING_APPROVAL",
         vendorName: vendor.businessName,
         message: "Your vendor partner application is currently under review by our onboarding team.",
@@ -347,7 +508,7 @@ export async function checkVendorLoginMethod(email: string): Promise<{
     if (vendor.status === "suspended") {
       return {
         success: false,
-        loginMethod: (vendor.loginMethod as any) || "otp",
+        loginMethod: "otp",
         reason: "SUSPENDED",
         vendorName: vendor.businessName,
         message: "Your vendor partner account has been suspended or deactivated. Please contact partner support.",
@@ -357,7 +518,7 @@ export async function checkVendorLoginMethod(email: string): Promise<{
     if (vendor.status === "rejected") {
       return {
         success: false,
-        loginMethod: (vendor.loginMethod as any) || "otp",
+        loginMethod: "otp",
         reason: "REJECTED",
         vendorName: vendor.businessName,
         rejectionReason: vendor.rejectionReason,
@@ -366,12 +527,9 @@ export async function checkVendorLoginMethod(email: string): Promise<{
     }
   }
 
-  const isPasswordMethod =
-    vendor?.loginMethod === "password" && Boolean(vendor?.passwordHash || vendor?.owner?.passwordHash);
-
   return {
     success: true,
-    loginMethod: isPasswordMethod ? "password" : "otp",
+    loginMethod: "otp",
     vendorName: vendor?.businessName || vendorUser?.name || "Vendor Partner",
   };
 }
@@ -409,86 +567,86 @@ export async function sendVendorWebOtp(email: string): Promise<{
 
   const allowedAdminEmail = (process.env.ADMIN_ALLOWED_EMAIL || "admin@intrihub.com").toLowerCase().trim();
   const isAdmin = cleanEmail === allowedAdminEmail;
+  let resolvedVendorName = isAdmin ? "Super Admin" : "Vendor Partner";
 
-  // 2. Check vendor record in DB
-  if (!isAdmin) {
-    const vendor = await prisma.vendor.findFirst({
-      where: {
-        OR: [
-          { contactEmail: { equals: cleanEmail, mode: "insensitive" } },
-          { owner: { email: { equals: cleanEmail, mode: "insensitive" } } },
-        ],
-      },
-      include: { owner: true },
-    });
+  // 1b. Check if user is CPO in local PostgreSQL User table
+  const cpoUser = await prisma.user.findFirst({
+    where: {
+      email: { equals: cleanEmail, mode: "insensitive" },
+      role: { in: ["cpo", "CPO"] },
+    },
+  });
 
-    const vendorUser = !vendor
-      ? await prisma.user.findFirst({
-          where: {
-            email: { equals: cleanEmail, mode: "insensitive" },
-            role: "vendor",
-          },
-        })
-      : null;
+  // 2. Check vendor record in PostgreSQL Vendor table
+  const vendor = await prisma.vendor.findFirst({
+    where: {
+      OR: [
+        { contactEmail: { equals: cleanEmail, mode: "insensitive" } },
+        { owner: { email: { equals: cleanEmail, mode: "insensitive" } } },
+      ],
+    },
+    include: { owner: true },
+  });
 
-    const cpoUser = (!vendor && !vendorUser)
-      ? await prisma.user.findFirst({
-          where: {
-            email: { equals: cleanEmail, mode: "insensitive" },
-            role: { equals: "cpo", mode: "insensitive" },
-          },
-        })
-      : null;
-
-    if (!vendor && !vendorUser && !cpoUser) {
-      const failCheck = recordVendorLoginFailure(clientIp);
-      if (failCheck.locked) {
-        return {
-          success: false,
-          locked: true,
-          reason: "LOCKED_OUT",
-          remainingAttempts: 0,
-          retryAfterSeconds: failCheck.retryAfterSeconds,
-          message: "Too many failed attempts (3/3). Account locked for 15 minutes.",
-        };
-      }
+  if (cpoUser) {
+    resolvedVendorName = cpoUser.name || "Chief Product Officer";
+  } else if (isAdmin) {
+    resolvedVendorName = "Super Admin";
+  } else if (!vendor) {
+    const failCheck = recordVendorLoginFailure(clientIp);
+    if (failCheck.locked) {
       return {
         success: false,
-        locked: false,
-        reason: "NOT_FOUND",
-        remainingAttempts: failCheck.remainingAttempts,
-        message: `This email isn't registered as an approved vendor partner on Intrihub. (${failCheck.remainingAttempts} attempt${failCheck.remainingAttempts === 1 ? "" : "s"} remaining before lockout)`,
+        locked: true,
+        reason: "LOCKED_OUT",
+        remainingAttempts: 0,
+        retryAfterSeconds: failCheck.retryAfterSeconds,
+        message: "Too many failed attempts (3/3). Account locked for 15 minutes.",
+      };
+    }
+    return {
+      success: false,
+      locked: false,
+      reason: "NOT_FOUND",
+      remainingAttempts: failCheck.remainingAttempts,
+      message: "Access Denied: Email not registered as a vendor.",
+    };
+  } else {
+    resolvedVendorName = vendor.businessName || vendor.owner?.name || "Vendor Partner";
+
+    if (vendor.status === "pending") {
+      return {
+        success: false,
+        reason: "PENDING_APPROVAL",
+        vendorName: vendor.businessName,
+        message: "Your vendor partner application is currently under review by our onboarding team.",
       };
     }
 
-    if (vendor) {
-      if (vendor.status === "pending") {
-        return {
-          success: false,
-          reason: "PENDING_APPROVAL",
-          vendorName: vendor.businessName,
-          message: "Your vendor partner application is currently under review by our onboarding team.",
-        };
-      }
+    if (vendor.status === "suspended") {
+      return {
+        success: false,
+        reason: "SUSPENDED",
+        vendorName: vendor.businessName,
+        message: "Access Denied: Your vendor account has been suspended or deactivated. Please contact partner support.",
+      };
+    }
 
-      if (vendor.status === "suspended") {
-        return {
-          success: false,
-          reason: "SUSPENDED",
-          vendorName: vendor.businessName,
-          message: "Your vendor partner account has been suspended or deactivated. Please contact partner support.",
-        };
-      }
+    if (vendor.status === "rejected") {
+      return {
+        success: false,
+        reason: "REJECTED",
+        vendorName: vendor.businessName,
+        rejectionReason: vendor.rejectionReason,
+        message: `Access Denied: Your vendor application was not approved.${vendor.rejectionReason ? ` Reason: ${vendor.rejectionReason}` : " Please contact partner support."}`,
+      };
+    }
 
-      if (vendor.status === "rejected") {
-        return {
-          success: false,
-          reason: "REJECTED",
-          vendorName: vendor.businessName,
-          rejectionReason: vendor.rejectionReason,
-          message: `Your vendor application was not approved.${vendor.rejectionReason ? ` Reason: ${vendor.rejectionReason}` : " Please contact partner support."}`,
-        };
-      }
+    if (vendor.status !== "approved") {
+      return {
+        success: false,
+        message: `Access Denied: Vendor account status is ${vendor.status}. Only approved vendors may sign in.`,
+      };
     }
   }
 
@@ -504,6 +662,7 @@ export async function sendVendorWebOtp(email: string): Promise<{
   return {
     success: true,
     message: `6-digit verification code sent to ${cleanEmail}.`,
+    vendorName: resolvedVendorName,
   };
 }
 
@@ -579,18 +738,22 @@ export async function verifyVendorWebOtp(email: string, otp: string): Promise<{
     const { CPO_SESSION_COOKIE } = await import("@/lib/config/cpo-permissions");
     const cpoToken = await generateCpoSessionToken(cpoUser.id, cpoUser.email || cleanEmail);
 
-    const cookieStore = await cookies();
-    cookieStore.set(CPO_SESSION_COOKIE, cpoToken, {
-      httpOnly: true,
-      secure: process.env.NODE_ENV === "production",
-      sameSite: "lax",
-      path: "/",
-      maxAge: 60 * 60 * 24 * 7, // 7 days
-    });
+    try {
+      const cookieStore = await cookies();
+      cookieStore.set(CPO_SESSION_COOKIE, cpoToken, {
+        httpOnly: true,
+        secure: process.env.NODE_ENV === "production",
+        sameSite: "lax",
+        path: "/",
+        maxAge: 60 * 60 * 24 * 7, // 7 days
+      });
 
-    const headerList = await headers();
-    const userAgent = headerList.get("user-agent") || undefined;
-    await sendCpoNewDeviceAlert(cpoUser.email || cleanEmail, clientIp, userAgent);
+      const headerList = await headers();
+      const userAgent = headerList.get("user-agent") || undefined;
+      await sendCpoNewDeviceAlert(cpoUser.email || cleanEmail, clientIp, userAgent);
+    } catch (cookieErr) {
+      console.warn("[verifyVendorWebOtp] Non-request context cookie error:", cookieErr);
+    }
 
     return {
       success: true,
@@ -630,7 +793,14 @@ export async function verifyVendorWebOtp(email: string, otp: string): Promise<{
   if (!vendorRecord) {
     return {
       success: false,
-      message: "No active vendor profile found for this account.",
+      message: "Access Denied: Email not registered as a vendor.",
+    };
+  }
+
+  if (vendorRecord.status !== "approved") {
+    return {
+      success: false,
+      message: `Access Denied: Vendor account status is ${vendorRecord.status}. Only approved vendors may sign in.`,
     };
   }
 
@@ -702,7 +872,10 @@ export async function loginVendorWithPassword(
   locked?: boolean;
   remainingAttempts?: number;
   retryAfterSeconds?: number;
+  redirectTo?: string;
+  role?: string;
   vendor?: any;
+  user?: any;
 }> {
   const clientIp = await getClientIp();
 
@@ -728,8 +901,111 @@ export async function loginVendorWithPassword(
     return { success: false, message: "Password cannot exceed 128 characters." };
   }
 
+  // 1b. Check if CPO account
+  const cpoUser = await prisma.user.findFirst({
+    where: {
+      email: { equals: cleanEmail, mode: "insensitive" },
+      role: { equals: "cpo", mode: "insensitive" },
+    },
+  });
+
+  if (cpoUser) {
+    if (!cpoUser.passwordHash) {
+      return {
+        success: false,
+        message: "Password login is not enabled for this CPO account. Please use Email OTP.",
+      };
+    }
+
+    const isValid = verifyPassword(password, cpoUser.passwordHash);
+    if (!isValid) {
+      const failCheck = recordVendorLoginFailure(clientIp);
+      if (failCheck.locked) {
+        return {
+          success: false,
+          locked: true,
+          remainingAttempts: 0,
+          retryAfterSeconds: failCheck.retryAfterSeconds,
+          message: "Too many failed attempts (3/3). Account locked for 15 minutes.",
+        };
+      }
+      return {
+        success: false,
+        remainingAttempts: failCheck.remainingAttempts,
+        message: `Invalid password. (${failCheck.remainingAttempts} attempt(s) remaining)`,
+      };
+    }
+
+    resetVendorLoginLockout(clientIp);
+    const { generateCpoSessionToken, sendCpoNewDeviceAlert } = await import("@/lib/cpo/auth");
+    const { CPO_SESSION_COOKIE } = await import("@/lib/config/cpo-permissions");
+    const cpoToken = await generateCpoSessionToken(cpoUser.id, cpoUser.email || cleanEmail);
+
+    const cookieStore = await cookies();
+    cookieStore.set(CPO_SESSION_COOKIE, cpoToken, {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === "production",
+      sameSite: "lax",
+      path: "/",
+      maxAge: 60 * 60 * 24 * 7,
+    });
+
+    const headerList = await headers();
+    const userAgent = headerList.get("user-agent") || undefined;
+    await sendCpoNewDeviceAlert(cpoUser.email || cleanEmail, clientIp, userAgent);
+
+    return {
+      success: true,
+      message: "CPO authenticated successfully! Redirecting to CPO Panel.",
+      redirectTo: "/cpo",
+      role: "cpo",
+      user: {
+        id: cpoUser.id,
+        email: cpoUser.email,
+        name: cpoUser.name || "Chief Product Officer",
+        role: "cpo",
+      },
+    };
+  }
+
+  // 1c. Check if Admin account
+  const allowedAdminEmail = (process.env.ADMIN_ALLOWED_EMAIL || "admin@intrihub.com").toLowerCase().trim();
+  const isAdmin = cleanEmail === allowedAdminEmail;
+  if (isAdmin) {
+    const adminUser = await prisma.user.findFirst({
+      where: { email: { equals: cleanEmail, mode: "insensitive" } },
+    });
+    if (adminUser?.passwordHash) {
+      const isValid = verifyPassword(password, adminUser.passwordHash);
+      if (isValid) {
+        resetVendorLoginLockout(clientIp);
+        const adminToken = generateAdminSessionToken(adminUser.id, cleanEmail);
+        const cookieStore = await cookies();
+        cookieStore.set("intrihub_admin_token", adminToken, {
+          httpOnly: true,
+          secure: process.env.NODE_ENV === "production",
+          sameSite: "lax",
+          path: "/",
+          maxAge: 60 * 60 * 24 * 7,
+        });
+        return {
+          success: true,
+          message: "Admin authenticated successfully! Redirecting to Admin Panel.",
+          redirectTo: "/admin",
+          role: "admin",
+          user: {
+            id: adminUser.id,
+            email: cleanEmail,
+            name: adminUser.name || "Super Admin",
+            role: "admin",
+          },
+        };
+      }
+    }
+  }
+
   // 2. Fetch vendor record
-  const vendor = await prisma.vendor.findFirst({
+  let vendor = await prisma.vendor.findFirst({
     where: {
       OR: [
         { contactEmail: { equals: cleanEmail, mode: "insensitive" } },
@@ -739,7 +1015,16 @@ export async function loginVendorWithPassword(
     include: { owner: true },
   });
 
-  if (!vendor) {
+  const vendorUser = !vendor
+    ? await prisma.user.findFirst({
+        where: {
+          email: { equals: cleanEmail, mode: "insensitive" },
+          role: "vendor",
+        },
+      })
+    : null;
+
+  if (!vendor && !vendorUser) {
     const failCheck = recordVendorLoginFailure(clientIp);
     if (failCheck.locked) {
       return {
@@ -753,20 +1038,12 @@ export async function loginVendorWithPassword(
     return {
       success: false,
       remainingAttempts: failCheck.remainingAttempts,
-      message: `Invalid email or password. (${failCheck.remainingAttempts} attempt${failCheck.remainingAttempts === 1 ? "" : "s"} remaining)`,
+      message: `Invalid email or password. (${failCheck.remainingAttempts} attempt(s) remaining)`,
     };
   }
 
-  // 3. Status check
-  if (vendor.status !== "approved") {
-    return {
-      success: false,
-      message: `Your vendor account status is '${vendor.status}'. Access is restricted to approved vendors.`,
-    };
-  }
-
-  // 4. Verify password
-  const storedHash = vendor.passwordHash || vendor.owner?.passwordHash;
+  // Verify password against vendor or owner or vendorUser
+  const storedHash = vendor?.passwordHash || vendor?.owner?.passwordHash || vendorUser?.passwordHash;
   if (!storedHash) {
     return {
       success: false,
@@ -789,7 +1066,7 @@ export async function loginVendorWithPassword(
     return {
       success: false,
       remainingAttempts: failCheck.remainingAttempts,
-      message: `Invalid password. (${failCheck.remainingAttempts} attempt${failCheck.remainingAttempts === 1 ? "" : "s"} remaining before lockout)`,
+      message: `Invalid password. (${failCheck.remainingAttempts} attempt(s) remaining before lockout)`,
     };
   }
 
@@ -797,13 +1074,14 @@ export async function loginVendorWithPassword(
   resetVendorLoginLockout(clientIp);
 
   // 6. Set secure HTTP-only vendor session cookie & signed HMAC token
+  const vendorId = vendor?.id || vendorUser?.id || "vendor-id";
+  const ownerId = vendor?.ownerId || vendorUser?.id || "owner-id";
+  const contactEmail = vendor?.contactEmail || vendorUser?.email || cleanEmail;
+  const businessName = vendor?.businessName || vendorUser?.name || "Vendor Partner";
+
   try {
     const cookieStore = await cookies();
-    const vendorToken = generateVendorSessionToken(
-      vendor.id,
-      vendor.ownerId,
-      vendor.contactEmail || cleanEmail
-    );
+    const vendorToken = generateVendorSessionToken(vendorId, ownerId, contactEmail);
     cookieStore.set("intrihub_vendor_token", vendorToken, {
       httpOnly: true,
       secure: process.env.NODE_ENV === "production",
@@ -814,10 +1092,10 @@ export async function loginVendorWithPassword(
     cookieStore.set(
       "intrihub_vendor_session",
       JSON.stringify({
-        vendorId: vendor.id,
-        ownerId: vendor.ownerId,
-        businessName: vendor.businessName,
-        contactEmail: vendor.contactEmail,
+        vendorId,
+        ownerId,
+        businessName,
+        contactEmail,
         role: "vendor",
         verifiedAt: new Date().toISOString(),
       }),
@@ -834,20 +1112,22 @@ export async function loginVendorWithPassword(
   return {
     success: true,
     message: "Vendor authenticated successfully!",
+    redirectTo: "/vendor",
+    role: "vendor",
     vendor: {
-      id: vendor.id,
-      businessName: vendor.businessName,
-      slug: vendor.slug,
-      contactEmail: vendor.contactEmail,
-      contactPhone: vendor.contactPhone,
-      category: vendor.category,
-      status: vendor.status,
-      commissionRate: vendor.commissionRate,
-      ownerName: vendor.owner?.name || vendor.businessName,
-      ownerId: vendor.ownerId,
-      rejectionReason: vendor.rejectionReason,
+      id: vendorId,
+      businessName,
+      slug: vendor?.slug || "vendor",
+      contactEmail,
+      contactPhone: vendor?.contactPhone,
+      category: vendor?.category,
+      status: vendor?.status || "approved",
+      commissionRate: vendor?.commissionRate,
+      ownerName: vendor?.owner?.name || businessName,
+      ownerId,
+      rejectionReason: vendor?.rejectionReason,
       mustChangePassword: false,
-      loginMethod: vendor.loginMethod,
+      loginMethod: vendor?.loginMethod || "password",
     },
   };
 }

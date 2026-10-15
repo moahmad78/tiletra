@@ -36,7 +36,7 @@
     },
     "android": {
       "package": "com.intrihub.app",
-      "versionCode": 25,
+      "versionCode": 26,
       "blockedPermissions": [
         "android.permission.READ_MEDIA_IMAGES",
         "android.permission.READ_MEDIA_VIDEO"

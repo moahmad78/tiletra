@@ -4,8 +4,8 @@ import { BASE_SITE_URL } from "@/lib/seo";
 import { BUYING_GUIDES } from "@/lib/guides-data";
 import { products as defaultProducts } from "@/lib/data/products";
 import { categories as defaultCategories } from "@/lib/data/categories";
-import { SEO_LOCATIONS } from "@/lib/data/seo-locations";
 import { SEO_PAGES_SEED_DATA } from "@/prisma/seed-seo-pages";
+import { SEO_PAGES_BATCH2_DATA } from "@/prisma/seed-seo-pages-batch2";
 import { getApprovedSitemapLocationRoutes } from "@/lib/seo-quality-gate";
 import { getCategorySeo } from "@/lib/data/category-seo";
 import { USP_ITEMS } from "@/lib/data/usps";
@@ -109,6 +109,18 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     {
       url: `${BASE_SITE_URL}/guides/diwali-home-renovation-2026-materials-checklist`,
       lastModified: new Date("2026-10-08T00:00:00.000Z"),
+      changeFrequency: "weekly",
+      priority: 0.9,
+    },
+    {
+      url: `${BASE_SITE_URL}/guides/hardware-material-online-buying-guide-india`,
+      lastModified: new Date("2026-10-14T00:00:00.000Z"),
+      changeFrequency: "weekly",
+      priority: 0.9,
+    },
+    {
+      url: `${BASE_SITE_URL}/guides/hardware-shop-online-marketing-ecommerce-guide`,
+      lastModified: new Date("2026-10-14T00:00:00.000Z"),
       changeFrequency: "weekly",
       priority: 0.9,
     },
@@ -254,7 +266,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
       }) ?? Promise.resolve([])).catch(() => []),
     ]);
 
-    const seoPages = SEO_PAGES_SEED_DATA;
+    const seoPages = [...SEO_PAGES_SEED_DATA, ...SEO_PAGES_BATCH2_DATA];
 
     // Buying Guide Routes (from database with static fallback)
     const resolvedGuides =

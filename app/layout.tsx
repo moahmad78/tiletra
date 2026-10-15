@@ -55,7 +55,7 @@ export const metadata: Metadata = {
   metadataBase: new URL(BASE_SITE_URL),
   referrer: "no-referrer-when-downgrade",
   title: {
-    default: "IntriHub – Every Material. Every Space.",
+    default: "IntriHub | Building Materials Online, 60-Minute Delivery in Bengaluru",
     template: "%s | IntriHub",
   },
   description:
@@ -241,16 +241,15 @@ j=d.createElement(s),dl=l!='dataLayer'?'&l='+l:'';j.async=true;j.src=
         />
         {/* End Google Tag Manager */}
 
-        {/* Developed & Founded by Sahil Sheikh | Instagram: @sahil_sheikh78 | Founder & Lead Architect */}
-        <meta name="author" content="Sahil Sheikh (@sahil_sheikh78)" />
-        <meta name="founder" content="Sahil Sheikh (@sahil_sheikh78)" />
-        <meta name="developer" content="Sahil Sheikh (@sahil_sheikh78)" />
-        <meta name="designer" content="Sahil Sheikh (@sahil_sheikh78)" />
+        {/* IntriHub Pvt Ltd | Official Platform */}
+        <meta name="author" content="IntriHub Pvt Ltd" />
+        <meta name="publisher" content="IntriHub Pvt Ltd" />
+        <meta name="copyright" content="IntriHub Pvt Ltd" />
         <Script
-          id="developer-credit"
+          id="brand-credit"
           strategy="lazyOnload"
           dangerouslySetInnerHTML={{
-            __html: `console.log("%c🚀 Intrihub — Every Material. Every Space.%c\\n✨ Founded & Developed by Sahil Sheikh (@sahil_sheikh78)\\n📸 Instagram: https://instagram.com/sahil_sheikh78\\n💼 Founder & CEO | Intrihub Supply Network", "background: #052a51; color: #F26522; font-size: 14px; font-weight: 900; padding: 6px 12px; border-radius: 6px;", "color: #052a51; font-size: 12px; font-weight: 700; line-height: 1.6;");`,
+            __html: `console.log("%c🚀 Intrihub — Every Material. Every Space.%c\\n🏢 IntriHub Pvt Ltd\\n📸 Instagram: https://instagram.com/intrihub_\\n💼 Every Material. Every Space.", "background: #052a51; color: #F26522; font-size: 14px; font-weight: 900; padding: 6px 12px; border-radius: 6px;", "color: #052a51; font-size: 12px; font-weight: 700; line-height: 1.6;");`,
           }}
         />
 

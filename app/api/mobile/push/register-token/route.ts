@@ -21,6 +21,17 @@ export async function POST(req: NextRequest) {
       return mobileApiResponse({ success: false, error: "User ID is required" }, 400);
     }
 
+    // 1. Update User table directly
+    try {
+      await (prisma as any).user.update({
+        where: { id: userId },
+        data: { pushToken: token },
+      });
+    } catch (uErr) {
+      console.warn("Could not save pushToken directly to User table:", uErr);
+    }
+
+    // 2. Upsert into MobilePushToken
     const record = await (prisma as any).mobilePushToken.upsert({
       where: { token },
       update: {
@@ -36,6 +47,28 @@ export async function POST(req: NextRequest) {
         deviceId: deviceId || undefined,
       },
     });
+
+    // 3. Upsert into DeviceToken
+    try {
+      await prisma.deviceToken.upsert({
+        where: { token },
+        update: {
+          userId,
+          role: user?.role || "customer",
+          platform,
+          lastSeenAt: new Date(),
+        },
+        create: {
+          userId,
+          role: user?.role || "customer",
+          platform,
+          token,
+          lastSeenAt: new Date(),
+        },
+      });
+    } catch (dErr) {
+      console.warn("DeviceToken upsert warning:", dErr);
+    }
 
     return mobileApiResponse({
       success: true,

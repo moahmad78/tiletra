@@ -24,6 +24,7 @@ import {
   MapPin,
   Truck,
   LogOut,
+  Trash2,
   ShieldCheck,
   Headphones,
   ExternalLink,
@@ -285,6 +286,30 @@ export default function VendorProfileScreen() {
     );
   };
 
+  const handleDeleteAccount = () => {
+    Alert.alert(
+      "Delete Vendor Account",
+      "Are you sure you want to permanently delete your vendor account and data? This action cannot be undone.",
+      [
+        { text: t("common.cancel") || "Cancel", style: "cancel" },
+        {
+          text: "Delete My Account",
+          style: "destructive",
+          onPress: async () => {
+            try {
+              await apiClient.delete("/api/mobile/auth/me");
+              await logout();
+              Alert.alert("Account Deleted", "Your account has been deleted.");
+              router.replace("/(auth)/login" as any);
+            } catch (err: any) {
+              Alert.alert("Error", err?.response?.data?.error || "Failed to delete account. Please contact support.");
+            }
+          },
+        },
+      ]
+    );
+  };
+
   return (
     <View style={styles.container}>
       <View style={styles.header}>
@@ -446,6 +471,15 @@ export default function VendorProfileScreen() {
         <TouchableOpacity style={styles.logoutBtn} onPress={handleLogout}>
           <LogOut size={18} color={COLORS.error} />
           <Text style={styles.logoutText}>{t("auth.logout") || "Log Out from Vendor Portal"}</Text>
+        </TouchableOpacity>
+
+        {/* Delete Account (Apple App Store Requirement) */}
+        <TouchableOpacity
+          style={[styles.logoutBtn, { marginTop: 10, borderColor: "#FEE2E2", backgroundColor: "#FEF2F2" }]}
+          onPress={handleDeleteAccount}
+        >
+          <Trash2 size={18} color="#DC2626" />
+          <Text style={[styles.logoutText, { color: "#DC2626" }]}>Delete Vendor Account</Text>
         </TouchableOpacity>
       </ScrollView>
 

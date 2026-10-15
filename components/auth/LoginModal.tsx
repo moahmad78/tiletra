@@ -28,7 +28,7 @@ export default function LoginModal() {
   const [tab, setTab] = useState<LoginTab>("choose");
   const [step, setStep] = useState<OtpStep>("input");
 
-  // Email flow
+  // Email OTP flow
   const [email, setEmail] = useState("");
 
   // Shared OTP state (6 digits)
@@ -51,6 +51,23 @@ export default function LoginModal() {
       setCanResend(false);
     }
   }, [isLoginModalOpen]);
+
+  // Listen for OAuth error in URL on mount
+  useEffect(() => {
+    if (typeof window !== "undefined") {
+      const urlParams = new URLSearchParams(window.location.search);
+      const authErr = urlParams.get("auth_error");
+      if (authErr) {
+        if (authErr === "google_not_configured") {
+          toast.error("Google sign-in is temporarily disabled. Please log in with email OTP.");
+        } else {
+          toast.error(`Sign in notice: ${authErr.replace(/_/g, " ")}. Please try email OTP.`);
+        }
+        const cleanUrl = window.location.pathname;
+        window.history.replaceState({}, "", cleanUrl);
+      }
+    }
+  }, []);
 
   // Countdown timer
   useEffect(() => {
@@ -101,7 +118,6 @@ export default function LoginModal() {
 
   const handleGoogleOAuth = () => {
     closeLoginModal();
-    // Build intent param so the callback can redirect appropriately after login
     const intent = pendingIntent?.type || "";
     const params = new URLSearchParams();
     if (intent) params.set("intent", intent);
@@ -109,7 +125,6 @@ export default function LoginModal() {
       params.set("redirect_to", window.location.pathname + window.location.search);
     }
     const qs = params.toString() ? `?${params.toString()}` : "";
-    // Full page redirect to our OAuth initiate route
     window.location.href = `/api/auth/google${qs}`;
   };
 
@@ -142,7 +157,6 @@ export default function LoginModal() {
 
   const handleOtpChange = (index: number, val: string) => {
     if (val.length > 1) {
-      // Paste handling
       const digits = val.replace(/\D/g, "").slice(0, 6).split("");
       const next = [...otp];
       digits.forEach((d, i) => { if (i < 6) next[i] = d; });
@@ -191,7 +205,13 @@ export default function LoginModal() {
     setOtp(["", "", "", "", "", ""]);
 
     const res = await sendEmailOtp(email.trim().toLowerCase());
-    if (res.success) toast.success("New OTP sent to " + email);
+    if (res.success) {
+      toast.success("New OTP sent to " + email);
+    } else {
+      toast.error(res.message || "Failed to resend verification code");
+      setCanResend(true);
+      setTimer(0);
+    }
   };
 
   // ─── UI ───────────────────────────────────────────────────────────────────
@@ -205,7 +225,7 @@ export default function LoginModal() {
     tab === "choose"
       ? "Choose how you'd like to continue. Your orders and saved addresses will be linked to your account."
       : step === "input"
-        ? "Choose how you'd like to continue. Your orders and saved addresses will be linked to your account."
+        ? "We will email you a 6-digit one-time password to verify your account."
         : `Code sent to ${email}`;
 
   return (
@@ -308,7 +328,7 @@ export default function LoginModal() {
                   <div className="flex-grow border-t border-gray-200" />
                 </div>
 
-                {/* Email */}
+                {/* Email OTP */}
                 <button
                   id="login-email-btn"
                   type="button"
@@ -318,7 +338,7 @@ export default function LoginModal() {
                   <div className="w-8 h-8 rounded-xl bg-[#052a51]/10 flex items-center justify-center shrink-0">
                     <Mail size={16} className="text-[#052a51]" />
                   </div>
-                  <span className="text-[14px]">Continue with Email</span>
+                  <span className="text-[14px]">Continue with Email OTP</span>
                   <ArrowRight size={16} className="ml-auto text-gray-400" />
                 </button>
 
@@ -366,7 +386,7 @@ export default function LoginModal() {
             )}
 
             {/* ── OTP STEP (Email OTP verification) ── */}
-            {step === "otp" && (
+            {tab === "email" && step === "otp" && (
               <div className="space-y-5">
                 <div className="flex items-center justify-between">
                   <span className="text-xs font-bold text-[#052a51]">

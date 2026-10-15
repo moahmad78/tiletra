@@ -691,7 +691,7 @@ function AccountPageContent() {
             </h3>
 
             <a
-              href="https://wa.me/917090120211?text=Hi%20Gulshan%20Ali,%20I%20need%20assistance%20with%20my%20Intrihub%20order%20or%20delivery"
+              href="https://wa.me/917090120211?text=Hi%20Customer%20Support,%20I%20need%20assistance%20with%20my%20Intrihub%20order%20or%20delivery"
               target="_blank"
               rel="noopener noreferrer"
               className="w-full flex items-center justify-between p-3 rounded-2xl hover:bg-gray-50 active:bg-gray-100 transition-colors"
@@ -699,8 +699,8 @@ function AccountPageContent() {
               <div className="flex items-center gap-3">
                 <MessageCircle size={18} className="text-[#25D366]" />
                 <div>
-                  <p className="text-xs font-bold text-[#052a51]">Operations & Logistics (Gulshan Ali)</p>
-                  <p className="text-[10px] text-gray-400">+91 70901 20211 · gulshan@intrihub.com</p>
+                  <p className="text-xs font-bold text-[#052a51]">Customer Support & Operations</p>
+                  <p className="text-[10px] text-gray-400">+91 70901 20211 · support@intrihub.com</p>
                 </div>
               </div>
               <ArrowRight size={14} className="text-gray-400" />

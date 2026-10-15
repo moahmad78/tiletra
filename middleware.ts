@@ -18,7 +18,7 @@ const SUSPICIOUS_PROBE_REGEX =
 const SCRAPER_BOT_REGEX =
   /(python-requests|scrapy|bytespider|go-http-client|curl\/|wget\/|httpx|aiohttp|headlesschrome|zgrab|masscan|sqlmap)/i;
 
-export function proxy(request: NextRequest) {
+export function middleware(request: NextRequest) {
   const hostHeader = request.headers.get("x-forwarded-host") || request.headers.get("host") || "";
   const host = hostHeader.split(",")[0].trim().toLowerCase().split(":")[0];
   const pathname = request.nextUrl.pathname;
@@ -190,11 +190,55 @@ export function proxy(request: NextRequest) {
     });
   }
 
-  // 8. Legacy SEO 301 redirects for discontinued/aliased paths (GSC validation & link health)
+  // 8. Clean URL slug redirects & legacy SEO 301 redirects
+  let decodedPath = pathname;
+  try {
+    decodedPath = decodeURIComponent(pathname);
+  } catch {
+    decodedPath = pathname;
+  }
+
+  // Handle broken slugs with en-dash, pipe, brand name, double hyphens, or uppercase
+  if (
+    decodedPath.includes("–") ||
+    decodedPath.includes("—") ||
+    decodedPath.includes("|") ||
+    decodedPath.includes("electrical-material-provider") ||
+    (!pathname.startsWith("/api") && !pathname.startsWith("/_next") && /[A-Z]/.test(pathname))
+  ) {
+    if (decodedPath.includes("electrical-material-provider")) {
+      return NextResponse.redirect("https://www.intrihub.com/electrical-material-provider-india", {
+        status: 301,
+        headers: {
+          "Cache-Control": "public, max-age=31536000, immutable",
+        },
+      });
+    }
+
+    if (!pathname.startsWith("/api") && !pathname.startsWith("/_next")) {
+      const cleanSlug = decodedPath
+        .toLowerCase()
+        .replace(/[–—|]/g, "-")
+        .replace(/-?intrihub-?/g, "-")
+        .replace(/[^a-z0-9/_-]+/g, "-")
+        .replace(/-+/g, "-")
+        .replace(/\/-(?=[^/])/g, "/")
+        .replace(/-+$/, "");
+
+      if (cleanSlug !== pathname) {
+        return NextResponse.redirect(`https://www.intrihub.com${cleanSlug}${search}`, {
+          status: 301,
+          headers: {
+            "Cache-Control": "public, max-age=31536000, immutable",
+          },
+        });
+      }
+    }
+  }
+
   const cleanPath = pathname.toLowerCase().replace(/\/+$/, "");
   const LEGACY_301_REDIRECTS: Record<string, string> = {
     "/locations": "https://www.intrihub.com/areas",
-    "/inspiration": "https://www.intrihub.com/shop",
     "/designs": "https://www.intrihub.com/shop",
     "/shop/sahil": "https://www.intrihub.com/shop",
     "/shop/paints-finishes": "https://www.intrihub.com/shop/paint-finishes",
@@ -205,6 +249,7 @@ export function proxy(request: NextRequest) {
     "/shop/sanitaryware": "https://www.intrihub.com/shop/plumbing-sanitary",
     "/shop/granite-marble": "https://www.intrihub.com/shop/tiles-stone",
     "/shop/tile-adhesives": "https://www.intrihub.com/shop/adhesives-sealants-waterproofing",
+    "/electrical-material-provider-pan-india": "https://www.intrihub.com/electrical-material-provider-india",
   };
 
   if (LEGACY_301_REDIRECTS[cleanPath]) {
@@ -242,5 +287,6 @@ export const config = {
   ],
 };
 
-export const middleware = proxy;
+export const proxy = middleware;
+export default middleware;
 

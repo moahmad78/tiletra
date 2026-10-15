@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getAuthenticatedUser } from "@/lib/auth-helpers";
 import { prisma } from "@/lib/prisma";
-import { put } from "@vercel/blob";
+import { writeFile, mkdir } from "fs/promises";
 import crypto from "crypto";
 import { handleMobileCorsOptions } from "@/lib/mobile-auth";
 import {
@@ -172,20 +172,16 @@ export async function POST(
       // Safe clean extension from detected signature
       const cleanExt = magicCheck.detectedExt || (isImage ? ".jpg" : ".mp4");
       const uniqueId = crypto.randomUUID();
-      const blobPathname = `reviews/${reviewId}/${uniqueId}${cleanExt}`;
-
       let mediaUrl = "";
 
-      // Check if Vercel Blob token is present
-      const blobToken = process.env.BLOB_READ_WRITE_TOKEN;
-      if (blobToken) {
-        const blobResult = await put(blobPathname, file, {
-          access: "public",
-          token: blobToken,
-        });
-        mediaUrl = blobResult.url;
-      } else {
-        // Fallback for local development / testing
+      try {
+        const uploadDir = path.resolve(process.cwd(), "public", "uploads", "reviews", reviewId);
+        await mkdir(uploadDir, { recursive: true });
+        const filePath = path.join(uploadDir, `${uniqueId}${cleanExt}`);
+        await writeFile(filePath, buffer);
+        mediaUrl = `/uploads/reviews/${reviewId}/${uniqueId}${cleanExt}`;
+      } catch (writeErr) {
+        // Fallback to Base64 Data URI if disk is read-only
         const base64 = buffer.toString("base64");
         mediaUrl = `data:${mime};base64,${base64}`;
       }

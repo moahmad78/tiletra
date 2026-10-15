@@ -1,4 +1,5 @@
 import crypto from "crypto";
+import bcrypt from "bcryptjs";
 
 /**
  * Maximum allowed password length to prevent Long Password Denial of Service (DoS)
@@ -7,7 +8,7 @@ import crypto from "crypto";
 export const MAX_PASSWORD_LENGTH = 128;
 
 /**
- * Hash password securely using Node.js native crypto.scrypt.
+ * Hash password securely using industry-standard bcrypt (cost factor 10).
  * Guards against unbounded input length.
  */
 export function hashPassword(password: string): string {
@@ -18,27 +19,41 @@ export function hashPassword(password: string): string {
     throw new Error(`Password exceeds maximum allowed length of ${MAX_PASSWORD_LENGTH} characters`);
   }
 
-  const salt = crypto.randomBytes(16).toString("hex");
-  const derivedKey = crypto.scryptSync(password, salt, 64);
-  return `scrypt:${salt}:${derivedKey.toString("hex")}`;
+  return bcrypt.hashSync(password, 10);
 }
 
 /**
- * Verify password against stored hash (supports modern scrypt and legacy sha256).
- * Rejects oversized passwords in O(1) time without performing expensive scrypt key derivation.
+ * Verify password against stored hash (supports bcrypt, modern scrypt, and legacy sha256).
+ * Rejects oversized passwords in O(1) time without performing expensive key derivation.
  */
 export function verifyPassword(password: string, storedHash: string): boolean {
   if (!password || !storedHash || typeof password !== "string") return false;
   if (password.length > MAX_PASSWORD_LENGTH) return false;
 
-  // Format 1: Modern scrypt:salt:derivedKey
+  const cleanPass = password.trim();
+
+  // Format 1: Bcrypt ($2a$, $2b$, $2y$)
+  if (
+    storedHash.startsWith("$2a$") ||
+    storedHash.startsWith("$2b$") ||
+    storedHash.startsWith("$2y$")
+  ) {
+    try {
+      if (bcrypt.compareSync(cleanPass, storedHash)) return true;
+      if (cleanPass !== password && bcrypt.compareSync(password, storedHash)) return true;
+      return false;
+    } catch {
+      return false;
+    }
+  }
+
+  // Format 2: Modern scrypt:salt:derivedKey
   if (storedHash.startsWith("scrypt:")) {
     const parts = storedHash.split(":");
     if (parts.length !== 3) return false;
     const salt = parts[1];
     const originalHash = parts[2];
 
-    const cleanPass = password.trim();
     let derivedKey = crypto.scryptSync(cleanPass, salt, 64);
     const originalBuffer = Buffer.from(originalHash, "hex");
 
@@ -54,8 +69,8 @@ export function verifyPassword(password: string, storedHash: string): boolean {
     return false;
   }
 
-  // Format 2: Legacy SHA-256
-  const sha256Hash = crypto.createHash("sha256").update(password.trim()).digest("hex");
+  // Format 3: Legacy SHA-256
+  const sha256Hash = crypto.createHash("sha256").update(cleanPass).digest("hex");
   const storedBuffer = Buffer.from(storedHash, "utf8");
   const candidateBuffer = Buffer.from(sha256Hash, "utf8");
 

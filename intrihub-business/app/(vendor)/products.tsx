@@ -31,6 +31,7 @@ import {
 } from "../../src/api/vendor";
 import { Product } from "../../src/types";
 import { COLORS, SPACING, RADIUS, SHADOWS } from "../../src/constants/theme";
+import { getImageUrl } from "../../src/api/client";
 
 export default function VendorProductsScreen() {
   const router = useRouter();
@@ -92,10 +93,7 @@ export default function VendorProductsScreen() {
 
   const renderProductItem = ({ item }: { item: Product }) => {
     const isActive = item.status === "active";
-    const firstImage =
-      item.images && item.images.length > 0
-        ? item.images[0]
-        : "https://images.unsplash.com/photo-1595428774223-ef52624120d2?w=400";
+    const firstImage = getImageUrl(item.images?.[0]);
 
     return (
       <View style={styles.productCard}>

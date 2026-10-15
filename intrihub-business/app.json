@@ -98,15 +98,6 @@
       "expo-splash-screen",
       "expo-status-bar",
       "expo-web-browser",
-      [
-        "@sentry/react-native/expo",
-        {
-          "url": "https://o4512085765521408.ingest.us.sentry.io",
-          "project": "intrihub-business",
-          "organization": "intrihub",
-          "disableAutoUpload": true
-        }
-      ],
       "./plugins/withCallKitVoIP"
     ],
     "extra": {

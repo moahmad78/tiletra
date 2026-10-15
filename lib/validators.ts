@@ -90,12 +90,17 @@ export function validateUPI(vpa: string | null | undefined): boolean {
 /**
  * Safe slugification utility without nested or anchored quantifier backtracking.
  * Replaces risky `(^-|-$)+` with strictly linear boundary trimming.
+ * Strips brand names ("intrihub"), unicode symbols, en-dash, em-dash, pipes,
+ * and collapses multiple hyphens into single hyphens.
  */
 export function safeSlugify(text: string | null | undefined): string {
   if (!text || typeof text !== "string") return "";
   return text
     .toLowerCase()
     .trim()
+    .replace(/[–—|]/g, "-")
+    .replace(/\bintrihub(-com)?\b/gi, "")
     .replace(/[^a-z0-9]+/g, "-")
+    .replace(/-+/g, "-")
     .replace(/^-+|-+$/g, "");
 }

@@ -84,7 +84,7 @@ d:\Intrihub\
 - **Payment Processing**: **Razorpay** SDK (`razorpay: ^2.9.8`) on Web; native `react-native-razorpay` bridge on mobile. Payments verified via cryptographic HMAC signatures against webhook and checkout secrets.
 - **Push Notifications**: **Expo Push API** (`https://exp.host/--/api/v2/push/send`) dispatched by `lib/push-notifications.ts` using tokens stored in the database.
 - **Real-Time Sockets**: Standalone Express Socket.IO server (`socket-server/index.js`) listening on port 4001, bridged via HTTP `POST /emit` from Next.js backend (`lib/socket-server-emit.ts`). Clients connect to rooms `order_{orderId}`, `vendor_{vendorId}`, and `admin-room`.
-- **Email Delivery**: **Resend** transactional email API configured via secret in `.env` (`RESEND_API_KEY`) for customer/vendor 6-digit OTP codes and invoices.
+- **Email Delivery**: **Titan Mail** SMTP direct email delivery configured via `nodemailer` using credentials in `.env` (`SMTP_HOST`, `SMTP_PORT`, `SMTP_USER`, `SMTP_PASS`) for customer/vendor 6-digit OTP codes and alerts.
 - **WhatsApp Integration**: Meta Cloud API integration in `lib/autobot/whatsapp.ts` sending outbound template messages using credentials stored in `.env`.
 
 ---

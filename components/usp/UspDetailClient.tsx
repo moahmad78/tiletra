@@ -93,7 +93,7 @@ export default function UspDetailClient({ usp }: UspDetailClientProps) {
             {/* Primary Top CTA */}
             <div className="pt-3">
               <Link
-                href="https://intrihub.com/"
+                href="/"
                 className="inline-flex items-center gap-2 px-6 py-3 rounded-xl bg-[#F26522] hover:bg-[#d95a1e] text-white font-black text-sm transition-all shadow-lg shadow-orange-500/25 hover:-translate-y-0.5 active:scale-95"
               >
                 <span>Start Shopping on IntriHub</span>
@@ -205,7 +205,7 @@ export default function UspDetailClient({ usp }: UspDetailClientProps) {
               </p>
               <div className="pt-2">
                 <Link
-                  href="https://intrihub.com/"
+                  href="/"
                   className="inline-flex items-center gap-2 px-8 py-3.5 rounded-xl bg-[#F26522] hover:bg-[#d95a1e] text-white font-black text-sm md:text-base transition-all shadow-lg hover:scale-105 active:scale-95"
                 >
                   <span>Start Shopping on IntriHub</span>

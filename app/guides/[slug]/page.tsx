@@ -38,13 +38,14 @@ export async function generateMetadata({
 
   if (!guide) {
     return {
-      title: "Guide Not Found | IntriHub",
+      title: "Guide Not Found",
       description: "Explore interior & construction material guides on IntriHub.",
     };
   }
 
   const canonicalUrl = getCanonicalUrl(`/guides/${guide.slug}`);
-  const title = guide.metaTitle || `${guide.title} | IntriHub Guide`;
+  const rawTitle = guide.metaTitle || guide.title;
+  const title = rawTitle.replace(/\s*[|•-]\s*IntriHub.*$/i, "").trim();
   const description =
     guide.metaDescription ||
     guide.excerpt ||

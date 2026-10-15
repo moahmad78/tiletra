@@ -24,6 +24,7 @@ import {
 import { toast } from "sonner";
 import { useQuoteModal } from "@/components/QuoteModalProvider";
 import { CONTACT_PERSONS, CORE_DEPARTMENTS } from "@/lib/data/contacts";
+import { PHONE_DISPLAY, PHONE_TEL, PHONE_WA } from "@/lib/siteConfig";
 import SectionHeader from "./SectionHeader";
 
 const SUPPORT_CATEGORIES = [
@@ -94,13 +95,13 @@ export default function Contact() {
             </div>
 
             <a
-              href="https://wa.me/917090120211?text=Hi%20Intrihub,%20I%20need%20urgent%20building%20materials%20for%20my%20site."
+              href={`${PHONE_WA}?text=Hi%20Intrihub,%20I%20need%20urgent%20building%20materials%20for%20my%20site.`}
               target="_blank"
               rel="noopener noreferrer"
               className="w-full h-11 bg-[#1E9E6B] hover:bg-emerald-600 text-white text-xs font-black rounded-xl flex items-center justify-center gap-2 shadow-xs transition-all active:scale-95"
             >
               <MessageCircle size={15} />
-              <span>Chat on WhatsApp (+91 70901 20211)</span>
+              <span>Chat on WhatsApp ({PHONE_DISPLAY})</span>
             </a>
           </motion.div>
 
@@ -126,11 +127,11 @@ export default function Contact() {
             </div>
 
             <a
-              href="tel:+917090120211"
+              href={PHONE_TEL}
               className="w-full h-11 bg-white/10 hover:bg-white/15 border border-white/20 text-white text-xs font-bold rounded-xl flex items-center justify-center gap-2 transition-all active:scale-95"
             >
               <Phone size={14} className="text-[#F26522]" />
-              <span>Call Dispatch (+91 70901 20211)</span>
+              <span>Call Dispatch ({PHONE_DISPLAY})</span>
             </a>
           </motion.div>
 

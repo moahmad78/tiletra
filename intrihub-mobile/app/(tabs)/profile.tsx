@@ -32,6 +32,8 @@ import {
   X,
   Check,
   Bell,
+  LogOut,
+  Trash2,
 } from "lucide-react-native";
 import { useAuthStore } from "../../src/store/authStore";
 import { getProfile, updateProfile, uploadAvatarImage } from "../../src/api/auth";
@@ -176,6 +178,49 @@ export default function ProfileScreen() {
 
   const handlePrivacyPolicy = () => {
     router.push("/privacy" as any);
+  };
+
+  const handleLogout = () => {
+    Alert.alert(
+      t("auth.logout") || "Log Out",
+      t("account.logoutConfirm") || "Are you sure you want to log out of your account?",
+      [
+        { text: t("common.cancel") || "Cancel", style: "cancel" },
+        {
+          text: t("auth.logout") || "Log Out",
+          style: "destructive",
+          onPress: async () => {
+            await logout();
+            router.replace("/(tabs)/home");
+          },
+        },
+      ]
+    );
+  };
+
+  const handleDeleteAccount = () => {
+    Alert.alert(
+      "Delete Account",
+      "Are you sure you want to permanently delete your account and personal data? This action cannot be undone.",
+      [
+        { text: t("common.cancel") || "Cancel", style: "cancel" },
+        {
+          text: "Delete My Account",
+          style: "destructive",
+          onPress: async () => {
+            try {
+              const { apiClient } = await import("../../src/api/client");
+              await apiClient.delete("/api/mobile/auth/me");
+              await logout();
+              Alert.alert("Account Deleted", "Your account has been deleted.");
+              router.replace("/(tabs)/home");
+            } catch (err: any) {
+              Alert.alert("Error", err?.response?.data?.error || "Failed to delete account. Please contact support.");
+            }
+          },
+        },
+      ]
+    );
   };
 
   return (
@@ -340,6 +385,26 @@ export default function ProfileScreen() {
             </View>
             <ChevronRight size={18} color={COLORS.textMuted} />
           </TouchableOpacity>
+
+          {isAuthenticated && (
+            <>
+              <TouchableOpacity style={styles.menuItem} onPress={handleLogout}>
+                <View style={styles.menuLeft}>
+                  <LogOut size={20} color={COLORS.error} />
+                  <Text style={[styles.menuLabel, { color: COLORS.error }]}>{t("auth.logout") || "Log Out"}</Text>
+                </View>
+                <ChevronRight size={18} color={COLORS.textMuted} />
+              </TouchableOpacity>
+
+              <TouchableOpacity style={styles.menuItem} onPress={handleDeleteAccount}>
+                <View style={styles.menuLeft}>
+                  <Trash2 size={20} color="#DC2626" />
+                  <Text style={[styles.menuLabel, { color: "#DC2626" }]}>Delete Account</Text>
+                </View>
+                <ChevronRight size={18} color={COLORS.textMuted} />
+              </TouchableOpacity>
+            </>
+          )}
         </View>
 
         <View style={styles.appInfo}>

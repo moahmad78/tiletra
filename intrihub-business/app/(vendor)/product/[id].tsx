@@ -20,6 +20,7 @@ import {
   deleteVendorProduct,
 } from "../../../src/api/vendor";
 import { COLORS, SPACING, RADIUS, SHADOWS } from "../../../src/constants/theme";
+import { getImageUrl } from "../../../src/api/client";
 
 export default function EditProductScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
@@ -100,7 +101,7 @@ export default function EditProductScreen() {
   }
 
   const product = data?.product;
-  const mainImage = product?.images?.[0] || "https://images.unsplash.com/photo-1595428774223-ef52624120d2?w=400";
+  const mainImage = getImageUrl(product?.images?.[0]);
 
   return (
     <View style={styles.container}>

@@ -23,6 +23,7 @@ import Header from "@/components/Header";
 import Footer from "@/components/Footer";
 import ProductCard from "@/components/ProductCard";
 import type { Product } from "@/lib/data/products";
+import { PHONE_DISPLAY, PHONE_TEL, PHONE_WA } from "@/lib/siteConfig";
 
 export interface SeoLandingPageData {
   id: string;
@@ -67,7 +68,7 @@ export default function SeoLandingPageClient({
       case "LOCAL":
         return { label: "Bengaluru Site Delivery Hub", color: "bg-emerald-50 text-emerald-800 border-emerald-200" };
       case "PRICE_INTENT":
-        return { label: "Live Sourcing Price Index", color: "bg-amber-50 text-amber-800 border-amber-200" };
+        return { label: "Material Price Guide", color: "bg-amber-50 text-amber-800 border-amber-200" };
       case "TREND":
         return { label: "Architectural & Interior Trend", color: "bg-purple-50 text-purple-800 border-purple-200" };
       default:
@@ -139,13 +140,6 @@ export default function SeoLandingPageClient({
                     {pageData.locality.toUpperCase()}, BENGALURU
                   </span>
                 )}
-
-                {pageData.pageType === "PRICE_INTENT" && (
-                  <span className="inline-flex items-center gap-1 px-3 py-1 rounded-full text-xs font-semibold bg-amber-50 text-amber-800 border border-amber-200">
-                    <Clock size={12} />
-                    Verified: {formattedDate}
-                  </span>
-                )}
               </div>
 
               {/* H1 Title */}
@@ -168,14 +162,14 @@ export default function SeoLandingPageClient({
                   <span>Browse In-Stock Materials</span>
                 </a>
                 <a
-                  href={`https://wa.me/919264920211?text=${encodeURIComponent(
+                  href={`${PHONE_WA}?text=${encodeURIComponent(
                     `Hello IntriHub, I am interested in sourcing ${pageData.targetKeyword} for my project.`
                   )}`}
                   target="_blank"
                   rel="noopener noreferrer"
                   className="px-5 py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs sm:text-sm rounded-xl transition-all shadow-sm flex items-center gap-2 active:scale-95"
                 >
-                  <span>Chat on WhatsApp (+91 92649 20211)</span>
+                  <span>Chat on WhatsApp ({PHONE_DISPLAY})</span>
                 </a>
               </div>
             </div>
@@ -211,9 +205,9 @@ export default function SeoLandingPageClient({
                     <div className="mt-6 p-4 rounded-xl bg-amber-50/80 border border-amber-200/90 text-amber-900 text-xs sm:text-sm flex items-start gap-3">
                       <Info size={18} className="text-amber-700 shrink-0 mt-0.5" />
                       <div>
-                        <strong className="block font-bold mb-0.5">Real-Time Price & Quantity Note:</strong>
+                        <strong className="block font-bold mb-0.5">Indicative Price Note:</strong>
                         <p className="leading-relaxed text-amber-800">
-                          Prices displayed in this index reflect prevailing Bangalore factory rates as of {formattedDate}. Final project rates fluctuate based on order volume, thickness/gauge specifications, and delivery site logistics. Live rates with applicable GST tax invoices are confirmed directly upon cart checkout.
+                          Prices are indicative and may change. Please confirm the current rate before ordering. Final project rates depend on order volume, thickness/gauge specifications, and delivery site logistics.
                         </p>
                       </div>
                     </div>
@@ -431,10 +425,10 @@ export default function SeoLandingPageClient({
                         Direct Desk & Escalation
                       </span>
                       <a
-                        href="tel:+919264920211"
+                        href={PHONE_TEL}
                         className="text-[#052a51] hover:text-[#F26522] font-bold text-sm transition-colors block"
                       >
-                        +91 92649 20211
+                        {PHONE_DISPLAY}
                       </a>
                     </div>
 
@@ -443,20 +437,20 @@ export default function SeoLandingPageClient({
                         Website URL
                       </span>
                       <Link
-                        href="https://intrihub.com"
+                        href="https://www.intrihub.com"
                         className="text-slate-600 hover:text-[#F26522] text-xs font-semibold"
                       >
-                        https://intrihub.com
+                        https://www.intrihub.com
                       </Link>
                     </div>
                   </div>
 
                   <a
-                    href="tel:+919264920211"
+                    href={PHONE_TEL}
                     className="w-full py-2.5 px-4 rounded-xl bg-[#052a51] hover:bg-[#0a3a6c] text-white text-xs font-bold flex items-center justify-center gap-2 transition-colors active:scale-95"
                   >
                     <Phone size={14} />
-                    <span>Call Support (+91 92649 20211)</span>
+                    <span>Call Support ({PHONE_DISPLAY})</span>
                   </a>
                 </div>
 

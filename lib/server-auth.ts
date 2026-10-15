@@ -1,4 +1,4 @@
-﻿import { cookies } from "next/headers";
+import { cookies } from "next/headers";
 import crypto from "crypto";
 
 function getAdminSecret(): string {
@@ -238,6 +238,119 @@ export async function getAuthenticatedVendor(): Promise<{
         vendorId: verified.vendorId,
         ownerId: verified.ownerId,
         email: verified.email,
+      };
+    }
+    return null;
+  } catch {
+    return null;
+  }
+}
+
+function getAuthSecret(): string {
+  const secret =
+    process.env.JWT_SECRET ||
+    process.env.NEXTAUTH_SECRET ||
+    process.env.ADMIN_SESSION_SECRET ||
+    process.env.VENDOR_SESSION_SECRET;
+  if (!secret) {
+    if (process.env.NODE_ENV === "production") {
+      return "intrihub-prod-customer-session-secret-fallback";
+    }
+    return "intrihub-dev-customer-secure-key";
+  }
+  return secret;
+}
+
+/**
+ * Generate a signed HMAC-SHA256 session token for authenticated customer / user
+ */
+export function generateCustomerSessionToken(
+  userId: string,
+  emailOrPhone: string,
+  role = "customer"
+): string {
+  const payload = JSON.stringify({
+    userId,
+    sub: userId,
+    emailOrPhone: emailOrPhone.toLowerCase().trim(),
+    role,
+    iat: Date.now(),
+    exp: Date.now() + SESSION_TTL_MS,
+  });
+  const base64Payload = Buffer.from(payload).toString("base64url");
+  const signature = crypto
+    .createHmac("sha256", getAuthSecret())
+    .update(base64Payload)
+    .digest("base64url");
+  return `${base64Payload}.${signature}`;
+}
+
+/**
+ * Verify customer session token with constant-time signature comparison and expiration check
+ */
+export function verifyCustomerSessionToken(token: string): {
+  valid: boolean;
+  userId?: string;
+  emailOrPhone?: string;
+  role?: string;
+} {
+  if (!token || typeof token !== "string" || !token.includes(".")) {
+    return { valid: false };
+  }
+
+  const [base64Payload, signature] = token.split(".");
+  if (!base64Payload || !signature) return { valid: false };
+
+  const expectedSignature = crypto
+    .createHmac("sha256", getAuthSecret())
+    .update(base64Payload)
+    .digest("base64url");
+
+  const sigBuf = Buffer.from(signature);
+  const expBuf = Buffer.from(expectedSignature);
+
+  if (sigBuf.length !== expBuf.length || !crypto.timingSafeEqual(sigBuf, expBuf)) {
+    return { valid: false };
+  }
+
+  try {
+    const payload = JSON.parse(Buffer.from(base64Payload, "base64url").toString("utf8"));
+    if (payload.exp && payload.exp < Date.now()) {
+      return { valid: false }; // Expired session
+    }
+    return {
+      valid: true,
+      userId: payload.userId || payload.sub,
+      emailOrPhone: payload.emailOrPhone,
+      role: payload.role || "customer",
+    };
+  } catch {
+    return { valid: false };
+  }
+}
+
+/**
+ * Helper to retrieve currently authenticated customer/user details from signed session token
+ */
+export async function getCustomerSession(): Promise<{
+  userId: string;
+  emailOrPhone: string;
+  role: string;
+} | null> {
+  try {
+    const cookieStore = await cookies();
+    const token =
+      cookieStore.get("intrihub_token")?.value ||
+      cookieStore.get("next-auth.session-token")?.value ||
+      cookieStore.get("__Secure-next-auth.session-token")?.value;
+    if (!token) return null;
+
+    const verified = verifyCustomerSessionToken(token);
+    if (verified.valid && verified.userId && verified.emailOrPhone) {
+      return {
+        userId: verified.userId,
+        emailOrPhone: verified.emailOrPhone,
+        role: verified.role || "customer",
       };
     }
     return null;

@@ -216,3 +216,43 @@ export async function PATCH(req: NextRequest) {
     );
   }
 }
+
+export async function DELETE(req: NextRequest) {
+  try {
+    const user = await getAuthenticatedMobileUser(req);
+    if (!user) {
+      return mobileApiResponse({ success: false, error: "Unauthorized" }, 401);
+    }
+
+    if (user.role === "admin") {
+      return mobileApiResponse(
+        { success: false, error: "Super Admin accounts cannot be deleted." },
+        403
+      );
+    }
+
+    const timestamp = Date.now();
+    await prisma.user.update({
+      where: { id: user.id },
+      data: {
+        phone: `${user.phone}_deleted_${timestamp}`,
+        email: user.email ? `${user.email}_deleted_${timestamp}` : null,
+        name: "Deleted Account",
+        avatar: null,
+        passwordHash: null,
+      },
+    });
+
+    return mobileApiResponse({
+      success: true,
+      message: "Your account and personal data have been scheduled for deletion.",
+    });
+  } catch (err: any) {
+    console.error("Mobile account deletion error:", err);
+    return mobileApiResponse(
+      { success: false, error: err?.message || "Failed to delete account." },
+      500
+    );
+  }
+}
+

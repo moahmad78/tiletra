@@ -83,7 +83,7 @@ export async function POST(req: NextRequest) {
               {
                 success: false,
                 reason: "NOT_FOUND",
-                error: "This email isn't registered as an approved vendor partner on Intrihub Business.",
+                error: "Access Denied: Email not registered as a vendor.",
                 locked: false,
                 remainingAttempts: lockoutCheck.remainingAttempts ?? 5,
                 email: cleanEmail,

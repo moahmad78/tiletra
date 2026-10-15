@@ -14,7 +14,10 @@ import {
   Clock,
 } from "lucide-react";
 import { useAdminAuth } from "@/lib/admin-auth";
-import { sendAdminWebOtp, verifyAdminWebOtp } from "@/lib/actions/web-portal-auth";
+import {
+  sendAdminWebOtp,
+  verifyAdminWebOtp,
+} from "@/lib/actions/web-portal-auth";
 import { toast } from "sonner";
 import Link from "next/link";
 import AuthSupportWidget from "@/components/auth/AuthSupportWidget";
@@ -33,14 +36,14 @@ export default function AdminLoginPage() {
   // Auth Step: "email" (Step 1) | "otp" (Step 2)
   const [step, setStep] = useState<"email" | "otp">("email");
 
-  // Step 1 state
+  // Form state
   const [email, setEmail] = useState("");
   const [loading, setLoading] = useState(false);
   const [errorMessage, setErrorMessage] = useState("");
   const [isLockedOut, setIsLockedOut] = useState(false);
   const [lockoutTimer, setLockoutTimer] = useState<number>(0);
 
-  // Step 2 state (OTP)
+  // OTP state
   const [otpDigits, setOtpDigits] = useState(["", "", "", "", "", ""]);
   const [otpLoading, setOtpLoading] = useState(false);
   const [resendCooldown, setResendCooldown] = useState(60);
@@ -158,7 +161,6 @@ export default function AdminLoginPage() {
     if (clean && index < 5) {
       inputRefs.current[index + 1]?.focus();
     } else if (clean && index === 5) {
-      // Automatically submit when the 6th digit is entered
       const fullCode = nextDigits.join("");
       if (fullCode.length === 6) {
         handleOtpSubmit(undefined, fullCode);
@@ -213,7 +215,6 @@ export default function AdminLoginPage() {
       if (res.success && res.user) {
         toast.success("Admin identity verified! Welcome to Super Admin Console.");
         setSession(res.user);
-        // Direct location redirect guarantees fresh HTTP cookies & prevents client hydration race conditions
         window.location.href = "/admin";
       } else {
         if (res.locked) {
@@ -238,70 +239,53 @@ export default function AdminLoginPage() {
   // ── Resend OTP ───────────────────────────────────────────────────────────
   const handleResendOtp = async () => {
     if (resendCooldown > 0 || otpLoading) return;
-    setOtpLoading(true);
     setErrorMessage("");
+    setOtpDigits(["", "", "", "", "", ""]);
+
+    const cleanEmail = email.trim().toLowerCase();
+    setOtpLoading(true);
 
     try {
-      const res = await sendAdminWebOtp(email.trim().toLowerCase());
-
+      const res = await sendAdminWebOtp(cleanEmail);
       if (res.success) {
-        toast.success("A new 6-digit security code has been sent!");
+        toast.success("New verification code dispatched to your admin email.");
         setResendCooldown(60);
-        setOtpDigits(["", "", "", "", "", ""]);
-        inputRefs.current[0]?.focus();
       } else {
-        if (res.locked) {
-          setIsLockedOut(true);
-          setLockoutTimer(res.retryAfterSeconds || 900);
-          setStep("email");
-        }
-        setErrorMessage(res.message);
         toast.error(res.message);
+        setErrorMessage(res.message);
       }
     } catch {
-      toast.error("Failed to resend OTP code.");
+      toast.error("Failed to resend code.");
     } finally {
       setOtpLoading(false);
     }
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center p-4 bg-gradient-to-br from-[#052a51] via-[#031d38] to-[#02152b]">
-      <div className="w-full max-w-md bg-white rounded-3xl p-8 sm:p-10 shadow-2xl border border-white/10 relative overflow-hidden">
-        {/* Subtle orange ambient blur */}
-        <div className="absolute top-0 right-0 w-48 h-48 bg-[#F26522]/10 rounded-full blur-2xl pointer-events-none" />
+    <div className="min-h-screen bg-[#052a51] flex flex-col justify-center items-center p-4 relative overflow-hidden selection:bg-[#F26522] selection:text-white">
+      {/* Background Decorative Blobs */}
+      <div className="absolute top-0 -left-20 w-96 h-96 bg-[#F26522]/10 rounded-full blur-3xl pointer-events-none" />
+      <div className="absolute bottom-0 -right-20 w-96 h-96 bg-blue-500/10 rounded-full blur-3xl pointer-events-none" />
 
-        {/* Brand Header */}
-        <div className="text-center mb-8 relative">
-          <Link
-            href="/"
-            title="Intrihub Home"
-            className="inline-flex items-center gap-2.5 bg-[#052a51]/5 hover:bg-[#052a51]/10 border border-[#052a51]/10 px-4 py-2.5 rounded-2xl shadow-xs mb-4 transition-all group"
-          >
-            {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img
-              src="/logo/intri-web-logo.png"
-              alt="Intrihub Logo"
-              width={140}
-              height={36}
-              className="h-8 w-auto object-contain transition-transform group-hover:scale-105"
-            />
-            <span className="text-[10px] font-black uppercase tracking-widest px-2.5 py-1 bg-[#052a51] rounded-md text-white shadow-xs">
-              Super Admin
-            </span>
-          </Link>
-
-          <div className="flex items-center justify-center gap-1.5 mb-1">
-            <ShieldCheck size={18} className="text-[#F26522]" />
-            <h1 className="text-xl sm:text-2xl font-black text-[#052a51]">
-              {step === "email" ? "Admin Security Gateway" : "Two-Factor Verification"}
-            </h1>
+      {/* Main Glass Card */}
+      <div className="w-full max-w-md bg-white rounded-3xl shadow-2xl border border-gray-100 p-8 sm:p-10 relative z-10">
+        {/* Header Branding */}
+        <div className="text-center mb-6">
+          <div className="inline-flex items-center justify-center w-14 h-14 bg-gradient-to-br from-[#052a51] to-[#031d38] rounded-2xl text-white shadow-lg mb-4 ring-4 ring-orange-50">
+            <Lock size={26} className="text-[#F26522]" />
+          </div>
+          <h1 className="text-2xl font-black text-[#052a51] tracking-tight">
+            Intrihub Admin Portal
+          </h1>
+          <div className="flex items-center justify-center gap-1.5 mt-1 text-xs font-semibold text-[#F26522]">
+            <ShieldCheck size={14} />
+            <span>Password-less Security OTP</span>
           </div>
 
-          <p className="text-xs text-gray-500 max-w-xs mx-auto">
+          <p className="text-xs text-gray-500 max-w-xs mx-auto mt-2">
             {step === "email"
-              ? "Strict OTP Gated: Restricted exclusively to authorized admin personnel"
-              : `Enter the 6-digit code sent to ${email || "your email"}`}
+              ? "Restricted to authorized super admin personnel. Enter your registered email to receive a 6-digit access code."
+              : `Enter the 6-digit security code sent to ${email || "your email"}`}
           </p>
         </div>
 
@@ -312,7 +296,7 @@ export default function AdminLoginPage() {
             <div>
               <p className="font-extrabold text-amber-950">Security Lockout Active</p>
               <p className="mt-0.5 text-amber-800 leading-relaxed">
-                Too many failed attempts recorded (3/3). For system security, access from this network is locked.
+                Too many failed attempts recorded. For system security, access is temporarily locked.
                 {lockoutTimer > 0 ? (
                   <span className="block mt-1 font-bold text-amber-950">
                     ⏱ Retry allowed in {formatLockoutTime(lockoutTimer)}
@@ -333,7 +317,7 @@ export default function AdminLoginPage() {
           </div>
         )}
 
-        {/* ── STEP 1: EMAIL REQUEST FORM ─────────────────────────────────── */}
+        {/* ── STEP 1: REQUEST OTP ── */}
         {step === "email" ? (
           <form onSubmit={handleEmailSubmit} className="space-y-4">
             <div>
@@ -351,7 +335,7 @@ export default function AdminLoginPage() {
                   value={email}
                   disabled={isLockedOut}
                   onChange={(e) => setEmail(e.target.value)}
-                  placeholder="Enter your authorized admin email"
+                  placeholder="admin@intrihub.com"
                   className="w-full pl-10 pr-4 py-3 bg-gray-50 border border-gray-200 rounded-xl text-sm font-semibold text-[#052a51] focus:outline-none focus:border-[#F26522] focus:bg-white transition-all shadow-2xs disabled:bg-gray-100 disabled:text-gray-400"
                 />
               </div>
@@ -387,7 +371,7 @@ export default function AdminLoginPage() {
             </button>
           </form>
         ) : (
-          /* ── STEP 2: OTP VERIFICATION FORM ────────────────────────────── */
+          /* ── STEP 2: VERIFY CODE ── */
           <form onSubmit={handleOtpSubmit} className="space-y-5">
             <div>
               <div className="flex items-center justify-between mb-2">
@@ -400,7 +384,7 @@ export default function AdminLoginPage() {
                     setStep("email");
                     setErrorMessage("");
                   }}
-                  className="text-xs text-[#F26522] hover:underline font-bold flex items-center gap-1"
+                  className="text-xs text-[#F26522] hover:underline font-bold flex items-center gap-1 cursor-pointer"
                 >
                   <ArrowLeft size={12} />
                   Change Email
@@ -456,7 +440,7 @@ export default function AdminLoginPage() {
                 type="button"
                 onClick={handleResendOtp}
                 disabled={resendCooldown > 0 || otpLoading || isLockedOut}
-                className="text-xs font-bold text-gray-500 hover:text-[#052a51] disabled:text-gray-400 inline-flex items-center gap-1.5 transition-colors disabled:cursor-not-allowed"
+                className="text-xs font-bold text-gray-500 hover:text-[#052a51] disabled:text-gray-400 inline-flex items-center gap-1.5 transition-colors disabled:cursor-not-allowed cursor-pointer"
               >
                 <RefreshCw
                   size={13}
@@ -482,7 +466,6 @@ export default function AdminLoginPage() {
         </div>
       </div>
 
-      {/* Floating Support Button strictly on Admin Login Screen */}
       <AuthSupportWidget portalType="admin" />
     </div>
   );

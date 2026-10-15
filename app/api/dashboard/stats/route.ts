@@ -32,9 +32,9 @@ export async function GET() {
       .limit(500);
 
     const totalMessages = messages?.length || 0;
-    const aiMessages = messages?.filter((m) => m.sender === "ai").length || 0;
-    const humanMessages = messages?.filter((m) => m.sender === "human_agent").length || 0;
-    const customerMessages = messages?.filter((m) => m.sender === "customer").length || 0;
+    const aiMessages = messages?.filter((m: any) => m.sender === "ai").length || 0;
+    const humanMessages = messages?.filter((m: any) => m.sender === "human_agent").length || 0;
+    const customerMessages = messages?.filter((m: any) => m.sender === "customer").length || 0;
 
     const totalOutbound = aiMessages + humanMessages;
     const aiResolutionRate = totalOutbound > 0 ? Math.round((aiMessages / totalOutbound) * 100) : (totalChats && totalChats > 0 ? 90 : 0);

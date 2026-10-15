@@ -179,6 +179,34 @@ export async function getAuthenticatedAdmin(req: Request | NextRequest) {
   return { user };
 }
 
+export async function getAuthenticatedVendor(req: NextRequest) {
+  const user = await getAuthenticatedMobileUser(req);
+  if (!user) {
+    return { error: "Unauthorized", status: 401 as const };
+  }
+  if (user.role !== "vendor" && user.role !== "admin") {
+    return { error: "Forbidden: Vendor access required", status: 403 as const };
+  }
+
+  let vendor = await prisma.vendor.findUnique({
+    where: { ownerId: user.id },
+  });
+
+  if (!vendor) {
+    vendor = await prisma.vendor.findFirst({
+      where: {
+        OR: [{ contactPhone: user.phone }, { contactEmail: user.email || "" }],
+      },
+    });
+  }
+
+  if (!vendor) {
+    return { error: "Vendor profile not found for this account", status: 404 as const };
+  }
+
+  return { user, vendor };
+}
+
 /**
  * Returns JSON response with standard CORS headers for mobile clients.
  */

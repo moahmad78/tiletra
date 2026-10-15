@@ -5,7 +5,7 @@ const MAX_PAYLOAD_BYTES = 2048; // 2KB payload cap
 const MAX_ERROR_LOG_ENTRIES = 500;
 
 // In-memory ring buffer for quick diagnostic summary
-export interface ImageErrorEntry {
+interface ImageErrorEntry {
   url: string;
   page: string;
   connectionType: string;
@@ -13,7 +13,7 @@ export interface ImageErrorEntry {
   timestamp: string;
 }
 
-export const recentImageErrors: ImageErrorEntry[] = [];
+const recentImageErrors: ImageErrorEntry[] = [];
 
 export async function POST(req: NextRequest) {
   try {

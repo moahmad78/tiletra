@@ -375,7 +375,7 @@ export const BUYING_GUIDES: BuyingGuide[] = [
   },
   {
     slug: "how-intrihub-delivers-materials-in-60-minutes",
-    title: "How IntriHub Delivers Building & Interior Materials in 60 Minutes Across Bangalore",
+    title: "60-Minute Building & Interior Material Delivery in Bangalore",
     shortDescription:
       "A deep dive into IntriHub's quick-commerce logistics network: hyper-local dark stores, automated dispatch, palletized transport, and zero-breakage construction supplies delivery.",
     category: "Quick Commerce & Logistics",
@@ -423,7 +423,7 @@ export const BUYING_GUIDES: BuyingGuide[] = [
   },
   {
     slug: "founders-note-why-we-started-intrihub",
-    title: "Founder's Note: Why We Started IntriHub to Revolutionize Building & Interior Supplies",
+    title: "Founder's Note: Transforming Building & Interior Procurement",
     shortDescription:
       "Our founding vision: eliminating middlemen markups, ending project delays with 60-minute delivery, and creating India's most transparent interior materials marketplace.",
     category: "Company & Vision",
@@ -605,6 +605,182 @@ export const BUYING_GUIDES: BuyingGuide[] = [
       "hardware",
       "false-ceiling",
       "granite",
+      "adhesives-sealants-waterproofing",
+    ],
+  },
+  {
+    slug: "hardware-material-online-buying-guide-india",
+    title: "Hardware Material Online in India: A Practical Buying Guide",
+    shortDescription:
+      "Buy hardware material online in India: what to check, how to compare prices, mistakes to avoid, and fast delivery in Bengaluru.",
+    category: "Guides / Hardware & Tools",
+    readTime: "6 min read",
+    publishedAt: "2026-10-14T00:00:00.000Z",
+    updatedAt: "2026-10-14T00:00:00.000Z",
+    image: "/images/categories/cat-hardware-fittings.jpg",
+    author: "IntriHub",
+    summary:
+      "A practical buying guide to ordering hardware material online in India. Learn what to check before ordering, hardware by room and job, common mistakes, and how to get 60-minute delivery in Bengaluru.",
+    sections: [
+      {
+        heading: "1. What counts as hardware material",
+        content: [
+          "Hardware covers the small and mid-sized items that hold a home together. Common categories include fasteners (screws, nuts, bolts, anchors), door and window hardware (hinges, handles, locks), cabinet hardware (channels, hinges, knobs), hand and power tools, plumbing fittings, adhesives, and electrical conduits.",
+        ],
+      },
+      {
+        heading: "2. Why people now buy hardware online",
+        content: [
+          "Compare options in one place instead of walking shop to shop. Clear listings provide sizes, materials, and finishes in writing. Direct site delivery saves transport hassle, and you can order small batches stage-by-stage as work progresses.",
+        ],
+      },
+      {
+        heading: "3. What to check before you order",
+        content: [
+          "Always verify size and dimensions, material and rust-resistant finish, trusted brands for daily-use locks, quantity with a 5-10% buffer, compatibility with existing cutouts, return terms, and ensure you receive a proper tax invoice.",
+        ],
+      },
+      {
+        heading: "4. Hardware by room and job",
+        content: [
+          "Tailor your orders to the specific room: cabinetry requires hinges, channels, and soft-close fittings; door replacement requires lock sets, stoppers, and tower bolts; bathroom repairs require SS-304 taps, couplings, and water-resistant sealants.",
+        ],
+      },
+      {
+        heading: "5. Common mistakes",
+        content: [
+          "Avoid ordering without measuring, choosing the cheapest option for heavy-use locks, using mild steel in wet areas, running out of extra fasteners mid-job, or skipping the invoice.",
+        ],
+      },
+      {
+        heading: "6. How IntriHub helps",
+        content: [
+          "IntriHub brings hardware, electricals, plumbing, tiles, and plywood together for one-order site procurement with 60-minute delivery in Bengaluru and 3-7 day pan-India shipping.",
+        ],
+      },
+    ],
+    faqs: [
+      {
+        question: "Can I buy hardware material online in India?",
+        answer:
+          "Yes. You can order fasteners, door and cabinet hardware, tools, plumbing and electrical accessories online. Check size, material and return terms before ordering.",
+      },
+      {
+        question: "What should I check before buying hardware online?",
+        answer:
+          "Check size and dimensions, material and finish, brand, quantity, compatibility with existing parts, return terms, and keep the invoice.",
+      },
+      {
+        question: "How much extra should I order for screws and bolts?",
+        answer:
+          "Commonly 5 to 10% extra, since small fasteners get lost or damaged.",
+      },
+      {
+        question: "Can I get hardware delivered quickly in Bengaluru?",
+        answer:
+          "Yes. IntriHub offers 60-minute delivery in Bengaluru. Outside Bengaluru, delivery currently takes 3 to 7 days.",
+      },
+      {
+        question: "Which material is best for bathroom and outdoor hardware?",
+        answer:
+          "Rust-resistant materials such as stainless steel or brass are commonly used for wet and outdoor areas.",
+      },
+    ],
+    relatedCategorySlugs: [
+      "hardware-fasteners",
+      "tools-consumables",
+      "doors-windows",
+      "kitchen-wardrobe",
+      "plumbing-sanitary",
+      "electrical",
+      "adhesives-sealants-waterproofing",
+    ],
+  },
+  {
+    slug: "hardware-shop-online-marketing-ecommerce-guide",
+    title: "Hardware Shop Online: How Hardware Dukan Owners Can Sell Online and Grow",
+    shortDescription:
+      "Own a hardware shop? Learn how to sell hardware material online, get found on Google and grow with ecommerce, step by step.",
+    category: "Guides / Business & Selling",
+    readTime: "7 min read",
+    publishedAt: "2026-10-14T00:00:00.000Z",
+    updatedAt: "2026-10-14T00:00:00.000Z",
+    image: "/images/categories/cat-hardware.webp",
+    author: "IntriHub",
+    summary:
+      "A step-by-step roadmap for hardware shop owners to take their dukan online, set up Google Business Profile, market locally, and start selling through ecommerce marketplaces.",
+    sections: [
+      {
+        heading: "1. Why go online",
+        content: [
+          "Customers search on their phones before visiting. An online listing works around the clock, expands your reach beyond your street, taps into high-frequency repeat purchases, and turns your existing stock into an online advantage.",
+        ],
+      },
+      {
+        heading: "2. Seven steps to get started",
+        content: [
+          "List products with clear search-friendly names and sizes, take clean photos with scale, organize into logical customer categories, maintain current prices, establish local courier delivery, claim your Google Business Profile, and use WhatsApp for rapid counter orders.",
+        ],
+      },
+      {
+        heading: "3. Selling on a marketplace or your own website",
+        content: [
+          "Marketplaces offer immediate buyer traffic and minimal setup overhead, making them ideal for initial sales. A dedicated website provides full brand control for long-term equity.",
+        ],
+      },
+      {
+        heading: "4. Hardware dukan ko online kaise laayein (Hinglish quick guide)",
+        content: [
+          "Apne top 20-30 products ki list banayein, photos lein, Google Business Profile banayein, WhatsApp counter fast rakhein, aur online marketplace par listing shuru karein.",
+        ],
+      },
+      {
+        heading: "5. Selling on IntriHub",
+        content: [
+          "IntriHub enables hardware, electrical, plumbing, and building material store owners to connect with homeowners, contractors, and builders across Bengaluru and India.",
+        ],
+      },
+      {
+        heading: "6. Mistakes to avoid",
+        content: [
+          "Avoid vague product names, outdated pricing, poor lighting in photos, delayed WhatsApp responses, unaddressed Google reviews, or trying to digitize the entire warehouse at once.",
+        ],
+      },
+    ],
+    faqs: [
+      {
+        question: "How can I sell hardware material online?",
+        answer:
+          "List your products with clear names, sizes and photos, set a delivery plan, create a Google Business Profile, and start on a marketplace or your own website.",
+      },
+      {
+        question: "Do I need my own website to sell online?",
+        answer:
+          "No. Many hardware shops start on a marketplace, learn what sells, and build their own website later.",
+      },
+      {
+        question: "How do I make my hardware shop show up on Google?",
+        answer:
+          "Create a Google Business Profile with correct name, address, phone, hours, photos and categories, and collect genuine customer reviews.",
+      },
+      {
+        question: "What hardware items sell best online?",
+        answer:
+          "Fasteners, door and cabinet hardware, tools, plumbing fittings, adhesives and electrical accessories are common repeat purchases. Check your own sales to see what works for you.",
+      },
+      {
+        question: "Hardware dukan online kaise shuru karein?",
+        answer:
+          "Pehle apne top 20 se 30 items ki clear list aur photos banayein, Google Business Profile banayein, WhatsApp par jaldi reply dein, aur marketplace par listing se shuru karein.",
+      },
+    ],
+    relatedCategorySlugs: [
+      "hardware-fasteners",
+      "tools-consumables",
+      "doors-windows",
+      "kitchen-wardrobe",
+      "plumbing-sanitary",
+      "electrical",
       "adhesives-sealants-waterproofing",
     ],
   },

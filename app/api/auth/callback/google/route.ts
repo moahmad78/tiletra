@@ -3,6 +3,11 @@ import { prisma } from "@/lib/prisma";
 import crypto from "crypto";
 import { getAuthBaseUrl, getOAuthSecret } from "@/lib/auth-url";
 import { generateMobileTokens } from "@/lib/mobile-auth";
+import {
+  generateCustomerSessionToken,
+  generateAdminSessionToken,
+  generateVendorSessionToken,
+} from "@/lib/server-auth";
 
 const GOOGLE_TOKEN_URL = "https://oauth2.googleapis.com/token";
 const GOOGLE_USERINFO_URL = "https://www.googleapis.com/oauth2/v3/userinfo";
@@ -371,20 +376,88 @@ export async function GET(request: NextRequest) {
       redirectTo = stateRedirectTo;
     }
 
-    const response = NextResponse.redirect(`${baseUrl}${redirectTo}?google_session=${encoded}`);
+    const sessionToken = generateCustomerSessionToken(
+      user.id,
+      user.email || user.phone || "",
+      user.role || "customer"
+    );
+
+    const isSecure = baseUrl.startsWith("https://");
+    const sep = redirectTo.includes("?") ? "&" : "?";
+    const response = NextResponse.redirect(`${baseUrl}${redirectTo}${sep}google_session=${encoded}`);
 
     // Clear the CSRF state cookie
     response.cookies.set("oauth_state", "", { maxAge: 0, path: "/" });
 
-    // Set persistent session cookie
-    const isSecure = baseUrl.startsWith("https://");
-    response.cookies.set("intrihub_session", encoded, {
-      httpOnly: false,
+    // Set signed customer session token for server/API auth
+    response.cookies.set("intrihub_token", sessionToken, {
+      httpOnly: true,
       secure: isSecure,
       sameSite: "lax",
       maxAge: 60 * 60 * 24 * 7, // 7 days
       path: "/",
     });
+
+    // Set NextAuth session cookie for NextAuth compatibility
+    response.cookies.set("next-auth.session-token", sessionToken, {
+      httpOnly: true,
+      secure: isSecure,
+      sameSite: "lax",
+      maxAge: 60 * 60 * 24 * 7,
+      path: "/",
+    });
+    if (isSecure) {
+      response.cookies.set("__Secure-next-auth.session-token", sessionToken, {
+        httpOnly: true,
+        secure: true,
+        sameSite: "lax",
+        maxAge: 60 * 60 * 24 * 7,
+        path: "/",
+      });
+    }
+
+    // Set client-accessible session cookie for frontend state hydration
+    response.cookies.set("intrihub_session", encoded, {
+      httpOnly: false,
+      secure: isSecure,
+      sameSite: "lax",
+      maxAge: 60 * 60 * 24 * 7,
+      path: "/",
+    });
+
+    // If admin or vendor, also set their role-specific signed tokens
+    if (user.role === "admin" || user.role === "superadmin") {
+      const adminToken = generateAdminSessionToken(user.id, user.email || "");
+      response.cookies.set("intrihub_admin_token", adminToken, {
+        httpOnly: true,
+        secure: isSecure,
+        sameSite: "lax",
+        maxAge: 60 * 60 * 24 * 7,
+        path: "/",
+      });
+    }
+
+    if (user.role === "vendor") {
+      const vendorRecord = await prisma.vendor.findFirst({
+        where: {
+          OR: [
+            { ownerId: user.id },
+            { contactEmail: { equals: user.email || "", mode: "insensitive" } },
+          ],
+        },
+      });
+      if (vendorRecord) {
+        const vendorToken = generateVendorSessionToken(vendorRecord.id, user.id, user.email || "");
+        response.cookies.set("intrihub_vendor_token", vendorToken, {
+          httpOnly: true,
+          secure: isSecure,
+          sameSite: "lax",
+          maxAge: 60 * 60 * 24 * 7,
+          path: "/",
+        });
+      }
+    }
+
     // Clear old legacy cookie
     response.cookies.set("tiletra_session", "", { maxAge: 0, path: "/" });
 

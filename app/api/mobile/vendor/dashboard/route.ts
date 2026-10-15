@@ -1,38 +1,10 @@
 import { NextRequest } from "next/server";
 import { prisma } from "@/lib/prisma";
-import { getAuthenticatedMobileUser, mobileApiResponse, handleMobileCorsOptions } from "@/lib/mobile-auth";
+import { getAuthenticatedMobileUser, getAuthenticatedVendor, mobileApiResponse, handleMobileCorsOptions } from "@/lib/mobile-auth";
 import { getVendorDashboardStats } from "@/lib/actions/vendor";
 
 export async function OPTIONS() {
   return handleMobileCorsOptions();
-}
-
-export async function getAuthenticatedVendor(req: NextRequest) {
-  const user = await getAuthenticatedMobileUser(req);
-  if (!user) {
-    return { error: "Unauthorized", status: 401 };
-  }
-  if (user.role !== "vendor" && user.role !== "admin") {
-    return { error: "Forbidden: Vendor access required", status: 403 };
-  }
-
-  let vendor = await prisma.vendor.findUnique({
-    where: { ownerId: user.id },
-  });
-
-  if (!vendor) {
-    vendor = await prisma.vendor.findFirst({
-      where: {
-        OR: [{ contactPhone: user.phone }, { contactEmail: user.email || "" }],
-      },
-    });
-  }
-
-  if (!vendor) {
-    return { error: "Vendor profile not found for this account", status: 404 };
-  }
-
-  return { user, vendor };
 }
 
 export async function GET(req: NextRequest) {

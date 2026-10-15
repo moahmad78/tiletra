@@ -105,6 +105,35 @@ export async function createOrder(input: CreateOrderInput) {
         vendorId?: string | null;
       }> = [];
 
+      // Step A: Pre-check inventory across all items for Automatic Acceptance vs Manual Fallback
+      let allItemsInStock = true;
+      let stockReviewNotes = "";
+
+      for (const item of input.items) {
+        const boxQty = Math.max(1, parseInt(String(item.boxQuantity || (item as any).quantity || (item as any).boxes || 1), 10));
+        if (item.variantId && item.variantId !== "default") {
+          const variantCheck = await tx.productVariant.findUnique({
+            where: { id: item.variantId },
+            include: { product: { select: { name: true, inStock: true } } },
+          });
+          if (variantCheck) {
+            if (variantCheck.stockBoxes < boxQty) {
+              allItemsInStock = false;
+              stockReviewNotes = `Item "${variantCheck.product?.name || item.productName}" has only ${variantCheck.stockBoxes} in stock (requested ${boxQty})`;
+            }
+          }
+        } else if (item.productId) {
+          const productCheck = await tx.product.findUnique({
+            where: { id: item.productId },
+            select: { name: true, inStock: true },
+          });
+          if (productCheck && productCheck.inStock === false) {
+            allItemsInStock = false;
+            stockReviewNotes = `Item "${productCheck.name}" is marked out of stock`;
+          }
+        }
+      }
+
       for (const item of input.items) {
         const boxQty = Math.max(1, parseInt(String(item.boxQuantity || (item as any).quantity || (item as any).boxes || 1), 10));
         let pricePerBox = item.pricePerBox || (item as any).unitPrice || 0;
@@ -122,12 +151,6 @@ export async function createOrder(input: CreateOrderInput) {
 
           if (variant) {
             itemVendorId = variant.product?.vendorId || null;
-            if (variant.stockBoxes < boxQty) {
-              const pName = variant.product?.name || item.productName;
-              throw new Error(
-                `Insufficient stock for "${pName}". Only ${variant.stockBoxes} left in stock (requested ${boxQty}).`
-              );
-            }
 
             // Server-derived price (cannot be manipulated by client)
             pricePerBox =
@@ -142,24 +165,27 @@ export async function createOrder(input: CreateOrderInput) {
               "Standard";
             if (!itemImage && variant.image) itemImage = variant.image;
 
-            const updatedVariant = await tx.productVariant.update({
-              where: { id: item.variantId },
-              data: {
-                stockBoxes: { decrement: boxQty },
-                inStock: variant.stockBoxes - boxQty > 0,
-              },
-            });
-
-            // If this variant reached 0, check if all variants are out of stock
-            if (updatedVariant.stockBoxes <= 0 && variant.productId) {
-              const remainingStock = await tx.productVariant.findFirst({
-                where: { productId: variant.productId, stockBoxes: { gt: 0 } },
+            // AUTOMATIC ACCEPTANCE: Deduct stock atomically in DB if all items in stock
+            if (allItemsInStock && variant.stockBoxes >= boxQty) {
+              const updatedVariant = await tx.productVariant.update({
+                where: { id: item.variantId },
+                data: {
+                  stockBoxes: { decrement: boxQty },
+                  inStock: variant.stockBoxes - boxQty > 0,
+                },
               });
-              if (!remainingStock) {
-                await tx.product.update({
-                  where: { id: variant.productId },
-                  data: { inStock: false },
+
+              // If this variant reached 0, check if all variants are out of stock
+              if (updatedVariant.stockBoxes <= 0 && variant.productId) {
+                const remainingStock = await tx.productVariant.findFirst({
+                  where: { productId: variant.productId, stockBoxes: { gt: 0 } },
                 });
+                if (!remainingStock) {
+                  await tx.product.update({
+                    where: { id: variant.productId },
+                    data: { inStock: false },
+                  });
+                }
               }
             }
           }
@@ -585,14 +611,17 @@ export async function createOrder(input: CreateOrderInput) {
           }
         }
 
-        const isEligible = check7;
+        // Stock availability is the primary decider for automatic acceptance
+        const isEligible = allItemsInStock && (check1 || input.paymentMethod === "COD");
         const readyBy = isEligible ? new Date(now.getTime() + readyMinutes * 60 * 1000) : null;
         const cancelExpires = isEligible ? new Date(now.getTime() + cancelWindowMinutes * 60 * 1000) : null;
 
         splitEvaluations.set(vId, {
           isEligible,
-          reason: isEligible ? "All eligibility checks passed" : failReason,
-          status: isEligible ? "confirmed" : "awaiting_vendor",
+          reason: isEligible
+            ? "AUTOMATIC_ACCEPTANCE: Inventory stock verified & deducted"
+            : (stockReviewNotes || failReason || "MANUAL_FALLBACK: Low or out of stock items requiring vendor confirmation"),
+          status: isEligible ? "confirmed" : "pending_vendor_approval",
           readyBy,
           cancelWindowExpiresAt: cancelExpires,
           acceptedAt: isEligible ? now : null,
@@ -601,43 +630,26 @@ export async function createOrder(input: CreateOrderInput) {
 
       // Determine parent order status and auto-accept fields
       let parentAutoAccepted = false;
-      let parentOrderStatus = "Awaiting Vendor";
+      let parentOrderStatus = "PENDING_VENDOR_APPROVAL";
       let parentAutoAcceptReason = "";
       let parentConfirmedAt: Date | null = null;
       let parentReadyBy: Date | null = null;
       let parentCancelWindowExpiresAt: Date | null = null;
 
-      if (vendorSubtotals.size > 0) {
-        const allSplitsEligible = Array.from(splitEvaluations.values()).every((s) => s.isEligible);
-        if (allSplitsEligible) {
-          parentAutoAccepted = true;
-          parentOrderStatus = "Confirmed";
-          parentAutoAcceptReason = "All eligibility checks passed";
-          parentConfirmedAt = now;
-          parentReadyBy = new Date(now.getTime() + readyMinutes * 60 * 1000);
-          parentCancelWindowExpiresAt = new Date(now.getTime() + cancelWindowMinutes * 60 * 1000);
-        } else {
-          parentAutoAccepted = false;
-          parentOrderStatus = "Awaiting Vendor";
-          const failedSplit = Array.from(splitEvaluations.values()).find((s) => !s.isEligible);
-          parentAutoAcceptReason = failedSplit ? failedSplit.reason : "Manual acceptance required";
-        }
+      if (allItemsInStock) {
+        // AUTOMATIC ACCEPTANCE: Stock quantity >= ordered quantity
+        parentAutoAccepted = true;
+        parentOrderStatus = "Confirmed";
+        parentAutoAcceptReason = "AUTOMATIC_ACCEPTANCE: Inventory stock verified & deducted";
+        parentConfirmedAt = now;
+        parentReadyBy = new Date(now.getTime() + readyMinutes * 60 * 1000);
+        parentCancelWindowExpiresAt = new Date(now.getTime() + cancelWindowMinutes * 60 * 1000);
       } else {
-        // Fallback for orders without vendor assignment
-        const paymentOk = input.paymentMethod === "COD" || (finalPaymentStatus === "Paid" && finalPaymentCollected);
-        const codOk = input.paymentMethod !== "COD" || customerCompletedOrdersCount > 0 || calculatedTotal <= codAutoAcceptCap;
-        if (storeAutoAccept && paymentOk && codOk) {
-          parentAutoAccepted = true;
-          parentOrderStatus = "Confirmed";
-          parentAutoAcceptReason = "All eligibility checks passed";
-          parentConfirmedAt = now;
-          parentReadyBy = new Date(now.getTime() + readyMinutes * 60 * 1000);
-          parentCancelWindowExpiresAt = new Date(now.getTime() + cancelWindowMinutes * 60 * 1000);
-        } else {
-          parentAutoAccepted = false;
-          parentOrderStatus = "Awaiting Vendor";
-          parentAutoAcceptReason = paymentOk ? "Manual verification required" : "Unverified online payment";
-        }
+        // MANUAL FALLBACK: Low stock or out-of-stock
+        parentAutoAccepted = false;
+        parentOrderStatus = "PENDING_VENDOR_APPROVAL";
+        parentAutoAcceptReason = stockReviewNotes || "MANUAL_FALLBACK: Low or out of stock items requiring vendor confirmation";
+        parentConfirmedAt = null;
       }
 
       // ── Create Parent Order & Items inside transaction ──
@@ -868,16 +880,18 @@ export async function createOrder(input: CreateOrderInput) {
         console.warn("[createOrder] Cart reminder cancel error:", e);
       }
 
-      // Dispatch Mobile Push Notification to Customer
+      // Dispatch Mobile Push Notification to Customer (Flipkart/Zomato style)
       try {
-        const { sendPushToUser } = await import("@/lib/push-notifications");
-        await sendPushToUser(order.userId, {
-          title: order.isScheduled ? `Order #${order.id} Confirmed (Scheduled)` : `Order #${order.id} Confirmed!`,
-          body: order.isScheduled
-            ? `Your order for ₹${order.total.toLocaleString("en-IN")} is scheduled for delivery on ${order.deliverySlot}.`
-            : `Your order for ₹${order.total.toLocaleString("en-IN")} has been placed successfully.`,
-          data: { orderId: order.id, type: "order_placed", isScheduled: order.isScheduled ? "true" : "false" },
-        });
+        const { sendCustomerOrderStatusPush, sendPushToUser } = await import("@/lib/push-notifications");
+        if (order.autoAccepted) {
+          await sendCustomerOrderStatusPush(order.userId, order.id, "CONFIRMED", { total: order.total });
+        } else {
+          await sendPushToUser(order.userId, {
+            title: `Order #${order.id} Placed (Stock Verification)`,
+            body: `Your order for ₹${order.total.toLocaleString("en-IN")} is pending vendor approval due to stock verification.`,
+            data: { orderId: order.id, type: "PENDING_VENDOR_APPROVAL", status: "PENDING_VENDOR_APPROVAL" },
+          });
+        }
       } catch (e) {
         console.warn("Customer mobile push notification error:", e);
       }
@@ -889,28 +903,43 @@ export async function createOrder(input: CreateOrderInput) {
 
       // Notify Super Admins
       await notifyAdminPush({
-        title: order.isScheduled ? `New Scheduled Order Received ⏰` : `New Order Received 🚀`,
-        body: order.isScheduled
-          ? `Order #${order.id} (Scheduled: ${order.deliverySlot}) for ₹${order.total.toLocaleString("en-IN")} placed by ${order.customerName}.`
-          : `Order #${order.id} for ₹${order.total.toLocaleString("en-IN")} placed by ${order.customerName}.`,
-        data: { orderId: order.id, type: "new_order" },
+        title: order.autoAccepted ? `⚡ Order #${order.id} Auto-Accepted 🚀` : `🔔 Order #${order.id} Awaiting Approval ⏰`,
+        body: `Order #${order.id} for ₹${order.total.toLocaleString("en-IN")} placed by ${order.customerName} (${order.orderStatus}).`,
+        data: { orderId: order.id, type: order.autoAccepted ? "ORDER_AUTO_ACCEPTED" : "PENDING_VENDOR_APPROVAL" },
       });
 
       // Notify Vendors for each assigned split
       const splits = await prisma.vendorOrderSplit.findMany({
         where: { orderId: order.id },
-        select: { vendorId: true, subtotal: true },
+        select: { vendorId: true, subtotal: true, autoAccepted: true },
       });
 
       for (const split of splits) {
-        await notifyVendorPush({
-          vendorId: split.vendorId,
-          title: order.isScheduled ? `New Scheduled Order Assigned ⏰` : `New Order Assigned 📦`,
-          body: order.isScheduled
-            ? `Order #${order.id} scheduled for ${order.deliverySlot} has items assigned to your store.`
-            : `Order #${order.id} has items assigned to your store for fulfillment.`,
-          data: { orderId: order.id, type: "vendor_order_assigned" },
-        });
+        if (split.autoAccepted) {
+          // Quick Success Chime: Auto-Accepted & Ready to Pack
+          await notifyVendorPush({
+            vendorId: split.vendorId,
+            title: "⚡ New Order Auto-Accepted & Ready to Pack!",
+            body: `Order #${order.id} (₹${split.subtotal.toLocaleString("en-IN")}) auto-confirmed from in-stock inventory. Ready to pack!`,
+            data: { orderId: order.id, type: "ORDER_AUTO_ACCEPTED", requiresManualApproval: false },
+            isAutoAccepted: true,
+            requiresManualApproval: false,
+            isNewOrder: true,
+            totalAmount: split.subtotal,
+          });
+        } else {
+          // Loud Ringing Chime: Manual Approval Required
+          await notifyVendorPush({
+            vendorId: split.vendorId,
+            title: "🔔 Ringing Alert: Manual Order Approval Required!",
+            body: `Order #${order.id} (₹${split.subtotal.toLocaleString("en-IN")}) requires your manual confirmation due to stock allocation.`,
+            data: { orderId: order.id, type: "PENDING_VENDOR_APPROVAL", requiresManualApproval: true },
+            isAutoAccepted: false,
+            requiresManualApproval: true,
+            isNewOrder: true,
+            totalAmount: split.subtotal,
+          });
+        }
       }
     } catch (e) {
       console.warn("Vendor/Admin push notification error:", e);

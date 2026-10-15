@@ -63,7 +63,14 @@ export async function POST(req: Request) {
 
     if (!vendor) {
       recordFailedAttempt(`vendor-auth:${query}`, 5, 15 * 60 * 1000);
-      return NextResponse.json({ error: "Invalid credentials. Please check your email or password." }, { status: 401 });
+      return NextResponse.json({ error: "Access Denied: Email not registered as a vendor." }, { status: 401 });
+    }
+
+    if (vendor.status !== "approved") {
+      return NextResponse.json(
+        { error: `Access Denied: Vendor account status is ${vendor.status}. Only approved vendors may sign in.` },
+        { status: 403 }
+      );
     }
 
     // 3. Strict Password Verification (No bypass if passwordHash is missing)

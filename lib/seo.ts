@@ -1,9 +1,14 @@
-/**
- * Intrihub SEO Architecture & Structured Data Engine
- * Compliant with Google Search, Google Shopping, Sitelinks Searchbox & Schema.org standards
- */
+import {
+  SITE_URL,
+  PHONE_SCHEMA,
+  PHONE_DISPLAY,
+  EMAIL,
+  ADDRESS,
+  SOCIAL_LINKS,
+  SITE_CONFIG,
+} from "./siteConfig";
 
-export const BASE_SITE_URL = "https://www.intrihub.com";
+export const BASE_SITE_URL = SITE_URL;
 
 /**
  * Serializes structured data into safe JSON-LD string with script tag injection escaping
@@ -43,22 +48,14 @@ export function generateRootGraphSchema() {
         "@type": ["Organization", "OnlineStore"],
         "@id": `${BASE_SITE_URL}/#organization`,
         name: "IntriHub",
-        alternateName: [
-          "IntriHub",
-          "Intrihub Quickcommerce",
-          "Intrihub.com",
-          "IntriHub QuickCommerce",
-          "Intrihub India",
-          "Intrihub Bengaluru",
-          "India's First Local Trade Digitalizer",
-        ],
+        alternateName: ["IntriHub", "Intrihub.com", "IntriHub Quickcommerce"],
         legalName: "IntriHub Quickcommerce",
         slogan: "Every Material. Every Space.",
         url: BASE_SITE_URL,
         logo: `${BASE_SITE_URL}/logo/intri-web-logo.png`,
         image: `${BASE_SITE_URL}/images/intrihub-og-image.jpg`,
         description:
-          "IntriHub is India's first company founded by Sahil Sheikh to completely digitalize local markets, hardware stores, and traditional trades, helping them scale sales and bridge the gap with modern quick-commerce infrastructure.",
+          "Marketplace for building and interior materials (tiles, electrical, plumbing, plywood, hardware, furniture) with 60-minute delivery in Bengaluru and 3 to 7 day delivery across India.",
         foundingDate: "2026",
         founder: {
           "@id": `${BASE_SITE_URL}/#founder`,
@@ -78,27 +75,22 @@ export function generateRootGraphSchema() {
           "Indian Retail Modernization",
           "Empowering Local Indian Vendors",
         ],
-        email: "support@intrihub.com",
-        telephone: "+91 92649 20211",
-        sameAs: [
-          "https://www.instagram.com/intrihub_/",
-          "https://www.linkedin.com/company/intrihub",
-          "https://www.facebook.com/intrihub",
-          "https://www.indiamart.com/intrihub/",
-          "https://maps.google.com/?cid=intrihub",
-        ],
+        email: EMAIL,
+        telephone: PHONE_SCHEMA,
+        sameAs: SOCIAL_LINKS,
         address: {
           "@type": "PostalAddress",
-          streetAddress: "41, 10th A Cross Rd, Janapriya Layout, Begur",
-          addressLocality: "Bengaluru",
-          addressRegion: "Karnataka",
-          postalCode: "560114",
-          addressCountry: "IN",
+          streetAddress: ADDRESS.streetAddress,
+          addressLocality: ADDRESS.addressLocality,
+          addressRegion: ADDRESS.addressRegion,
+          postalCode: ADDRESS.postalCode,
+          addressCountry: ADDRESS.addressCountry,
         },
+        areaServed: ["Bengaluru", "India"],
         contactPoint: [
           {
             "@type": "ContactPoint",
-            telephone: "+91 92649 20211",
+            telephone: PHONE_SCHEMA,
             contactType: "customer service",
             areaServed: "IN",
             availableLanguage: ["en", "hi", "kn"],
@@ -140,23 +132,21 @@ export function generateRootGraphSchema() {
         "@id": `${BASE_SITE_URL}/#localbusiness`,
         name: "IntriHub",
         description:
-          "India's instant building materials and interior supplies quick-commerce store in Begur, Bengaluru, empowering local trades.",
+          "Marketplace for building and interior materials (tiles, electrical, plumbing, plywood, hardware, furniture) with 60-minute delivery in Bengaluru and 3 to 7 day delivery across India.",
         image: `${BASE_SITE_URL}/images/intrihub-og-image.jpg`,
         url: BASE_SITE_URL,
-        telephone: "+91-70901-20211",
+        telephone: PHONE_SCHEMA,
+        email: EMAIL,
         priceRange: "₹₹",
         address: {
           "@type": "PostalAddress",
-          streetAddress: "41, 10th A Cross Rd, Janapriya Layout, Begur",
-          addressLocality: "Bengaluru",
-          addressRegion: "Karnataka",
-          postalCode: "560114",
-          addressCountry: "IN",
+          streetAddress: ADDRESS.streetAddress,
+          addressLocality: ADDRESS.addressLocality,
+          addressRegion: ADDRESS.addressRegion,
+          postalCode: ADDRESS.postalCode,
+          addressCountry: ADDRESS.addressCountry,
         },
-        areaServed: [
-          { "@type": "City", name: "Bengaluru" },
-          { "@type": "Country", name: "India" },
-        ],
+        areaServed: ["Bengaluru", "India"],
         parentOrganization: {
           "@id": `${BASE_SITE_URL}/#organization`,
         },
@@ -808,16 +798,17 @@ export function generateSeoKeywordPageSchemas(opts: {
     "@id": `${BASE_SITE_URL}/#store`,
     name: "IntriHub",
     description: "Building Materials Store and Interior Materials Supplier in Begur, Bengaluru",
-    url: "https://intrihub.com",
-    telephone: "+91 92649 20211",
+    url: BASE_SITE_URL,
+    telephone: PHONE_SCHEMA,
     priceRange: "₹₹",
     image: `${BASE_SITE_URL}/images/intrihub-og-image.jpg`,
     address: {
       "@type": "PostalAddress",
-      streetAddress: "Begur",
-      addressLocality: "Bengaluru",
-      addressRegion: "Karnataka",
-      addressCountry: "IN",
+      streetAddress: ADDRESS.streetAddress,
+      addressLocality: ADDRESS.addressLocality,
+      addressRegion: ADDRESS.addressRegion,
+      postalCode: ADDRESS.postalCode,
+      addressCountry: ADDRESS.addressCountry,
     },
     areaServed: localityName
       ? [

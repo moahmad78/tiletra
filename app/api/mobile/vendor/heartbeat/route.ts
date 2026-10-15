@@ -1,7 +1,7 @@
 import { NextRequest } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { mobileApiResponse, handleMobileCorsOptions } from "@/lib/mobile-auth";
-import { getAuthenticatedVendor } from "../dashboard/route";
+import { getAuthenticatedVendor } from "@/lib/mobile-auth";
 
 export async function OPTIONS() {
   return handleMobileCorsOptions();

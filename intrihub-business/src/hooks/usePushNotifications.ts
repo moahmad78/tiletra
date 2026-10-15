@@ -53,34 +53,43 @@ export function usePushNotifications() {
       }
     });
 
-    // 1. Notification received while app is foregrounded - navigate to order screen
-    notificationListener.current = Notifications.addNotificationReceivedListener(
-      (notification) => {
-        console.log("Push notification received in foreground:", notification);
-        const data = notification.request.content.data;
-        if (data?.orderId || data?.id) {
-          const targetOrderId = data.orderId || data.id;
-          try {
-            router.push({
-              pathname: "/(tabs)/orders",
-              params: { orderId: targetOrderId },
-            } as any);
-          } catch (e) {
-            console.error("Error routing foreground order notification:", e);
-          }
-        } else if (data?.screen) {
-          try {
-            if (data.id) {
-              router.push({ pathname: data.screen, params: { id: data.id } } as any);
-            } else {
-              router.push(data.screen as any);
+      // 1. Notification received while app is foregrounded - trigger ringing chime / auto-accepted alert
+      notificationListener.current = Notifications.addNotificationReceivedListener(
+        (notification) => {
+          console.log("Push notification received in foreground:", notification);
+          const data = notification.request.content.data;
+          const isAutoAccepted = data?.isAutoAccepted === true || data?.type === "ORDER_AUTO_ACCEPTED";
+          const requiresManualApproval = data?.requiresManualApproval === true || data?.type === "PENDING_VENDOR_APPROVAL";
+
+          if (data?.orderId || data?.id) {
+            const targetOrderId = data.orderId || data.id;
+            try {
+              const { triggerAlert } = require("../store/orderAlertStore").useOrderAlertStore.getState();
+              triggerAlert({
+                orderId: targetOrderId,
+                splitId: data.splitId,
+                customerName: data.customerName,
+                totalAmount: data.amount || data.totalAmount ? Number(data.amount || data.totalAmount) : undefined,
+                isAutoAccepted,
+                requiresManualApproval,
+                warning: data.warning,
+              });
+            } catch (e) {
+              console.error("Error triggering order alert modal:", e);
             }
-          } catch (e) {
-            console.error("Error deep-linking foreground push notification:", e);
+          } else if (data?.screen) {
+            try {
+              if (data.id) {
+                router.push({ pathname: data.screen, params: { id: data.id } } as any);
+              } else {
+                router.push(data.screen as any);
+              }
+            } catch (e) {
+              console.error("Error deep-linking foreground push notification:", e);
+            }
           }
         }
-      }
-    );
+      );
 
     // 2. Notification response received (user tapped notification from Lock Screen / Tray)
     responseListener.current = Notifications.addNotificationResponseReceivedListener(

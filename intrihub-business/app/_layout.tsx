@@ -19,8 +19,8 @@ import { usePushNotifications } from "../src/hooks/usePushNotifications";
 import AnimatedSplashScreen from "../src/components/AnimatedSplashScreen";
 import AppUpdateModal from "../src/components/AppUpdateModal";
 import LanguageModal from "../src/components/LanguageModal";
+import IncomingOrderAlertModal from "../src/components/IncomingOrderAlertModal";
 import { useI18nStore } from "../src/store/i18nStore";
-import * as Sentry from "@sentry/react-native";
 import { COLORS } from "../src/constants/theme";
 
 // Suppress non-fatal dev CLI connection warning from popping up on screen
@@ -29,55 +29,7 @@ LogBox.ignoreLogs([
 ]);
 
 // Keep native splash screen visible while app JS bundle loads
-// Must be called BEFORE Sentry.init() to ensure splash stays up if Sentry hangs
 SplashScreen.preventAutoHideAsync().catch(() => {});
-
-function redactSensitiveData(str: string): string {
-  if (!str || typeof str !== "string") return str;
-  return str
-    .replace(/(accessToken=)[^&]+/gi, "$1[REDACTED]")
-    .replace(/(refreshToken=)[^&]+/gi, "$1[REDACTED]")
-    .replace(/(user=)[^&]+/gi, "$1[REDACTED]")
-    .replace(/(password=)[^&]+/gi, "$1[REDACTED]")
-    .replace(/(otp=)[^&]+/gi, "$1[REDACTED]")
-    .replace(/(token=)[^&]+/gi, "$1[REDACTED]");
-}
-
-// Initialize Sentry crash reporting - wrapped in try/catch to prevent
-// native module mismatch from crashing the app on release builds
-try {
-  Sentry.init({
-    dsn: "https://1cbe738f4586b8e9bb9d55840396ee51@o4512085765521408.ingest.us.sentry.io/4512085786558464",
-    tracesSampleRate: 1.0,
-    debug: false,
-    beforeBreadcrumb: (breadcrumb) => {
-      if (breadcrumb.data?.url) {
-        breadcrumb.data.url = redactSensitiveData(breadcrumb.data.url);
-      }
-      if (breadcrumb.message) {
-        breadcrumb.message = redactSensitiveData(breadcrumb.message);
-      }
-      return breadcrumb;
-    },
-    beforeSend: (event) => {
-      if (event.request?.url) {
-        event.request.url = redactSensitiveData(event.request.url);
-      }
-      if (event.breadcrumbs) {
-        event.breadcrumbs = event.breadcrumbs.map((b) => {
-          if (b.data?.url) b.data.url = redactSensitiveData(b.data.url);
-          if (b.message) b.message = redactSensitiveData(b.message);
-          return b;
-        });
-      }
-      return event;
-    },
-    // Prevent Sentry from crashing the app if native init fails
-    onReady: () => {},
-  });
-} catch (e) {
-  console.warn("Sentry init failed (non-fatal):", e);
-}
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -218,6 +170,9 @@ function RootLayout() {
 
           {/* In-App Update Popup & Notification Dispatcher */}
           <AppUpdateModal />
+
+          {/* Real-time Order Chime & Ringing Alert Modal */}
+          <IncomingOrderAlertModal />
 
           {/* First launch language selection modal */}
           <LanguageModal

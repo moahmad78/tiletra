@@ -2,6 +2,7 @@ import React, { useState, useEffect } from "react";
 import { View, Text, StyleSheet, ViewStyle, TextStyle } from "react-native";
 import { Image } from "expo-image";
 import { COLORS } from "../constants/theme";
+import { getImageUrl } from "../api/client";
 
 interface UserAvatarProps {
   uri?: string | null;
@@ -43,7 +44,8 @@ export default function UserAvatar({
     ...style,
   };
 
-  const hasValidUri = Boolean(uri && typeof uri === "string" && uri.trim().startsWith("http"));
+  const resolvedUri = uri && typeof uri === "string" && uri.trim() ? getImageUrl(uri.trim()) : "";
+  const hasValidUri = Boolean(resolvedUri && (resolvedUri.startsWith("http://") || resolvedUri.startsWith("https://")));
 
   if (!hasValidUri || hasError) {
     return (
@@ -58,7 +60,7 @@ export default function UserAvatar({
   return (
     <View style={containerStyle}>
       <Image
-        source={{ uri: uri!.trim() }}
+        source={{ uri: resolvedUri }}
         style={{ width: size, height: size, borderRadius }}
         contentFit="cover"
         cachePolicy="memory-disk"

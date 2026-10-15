@@ -1,6 +1,10 @@
 import { NextRequest } from "next/server";
 import { getAuthenticatedMobileUser } from "@/lib/mobile-auth";
-import { verifyAdminSessionToken, verifyVendorSessionToken } from "@/lib/server-auth";
+import {
+  verifyAdminSessionToken,
+  verifyVendorSessionToken,
+  verifyCustomerSessionToken,
+} from "@/lib/server-auth";
 import { prisma } from "@/lib/prisma";
 
 export interface AuthenticatedUserContext {
@@ -69,6 +73,36 @@ export async function getAuthenticatedUser(
             select: { id: true, name: true, email: true, phone: true, role: true },
           });
           if (vendorOwner) return vendorOwner;
+        }
+      }
+
+      // 2c. CPO signed session token
+      const cpoToken = cookiesMap.get("intrihub_cpo_token");
+      if (cpoToken) {
+        const { verifyCpoSessionToken } = await import("@/lib/cpo/auth");
+        const verified = await verifyCpoSessionToken(cpoToken);
+        if (verified.valid && verified.userId) {
+          const cpoUser = await prisma.user.findUnique({
+            where: { id: verified.userId },
+            select: { id: true, name: true, email: true, phone: true, role: true },
+          });
+          if (cpoUser) return cpoUser;
+        }
+      }
+
+      // 2d. Customer signed session token (intrihub_token or next-auth session token)
+      const customerToken =
+        cookiesMap.get("intrihub_token") ||
+        cookiesMap.get("next-auth.session-token") ||
+        cookiesMap.get("__Secure-next-auth.session-token");
+      if (customerToken) {
+        const verified = verifyCustomerSessionToken(customerToken);
+        if (verified.valid && verified.userId) {
+          const customerUser = await prisma.user.findUnique({
+            where: { id: verified.userId },
+            select: { id: true, name: true, email: true, phone: true, role: true },
+          });
+          if (customerUser) return customerUser;
         }
       }
     }

@@ -39,8 +39,8 @@ export async function generateMetadata({
     }
 
     return {
-      title: "Category Not Found | IntriHub",
-      description: "Explore interior and construction products across top categories on Intrihub.",
+      title: "Category Not Found",
+      description: "Explore interior and construction products across top categories on IntriHub.",
       robots: {
         index: false,
         follow: false,

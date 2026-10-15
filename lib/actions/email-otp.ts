@@ -2,19 +2,11 @@
 
 import crypto from "crypto";
 import { prisma } from "@/lib/prisma";
-import { Resend } from "resend";
-import nodemailer from "nodemailer";
+import { deliverEmail, getFormattedFromEmail, maskEmail } from "@/lib/mail";
 
-const resend = process.env.RESEND_API_KEY ? new Resend(process.env.RESEND_API_KEY) : null;
+export { deliverEmail, getFormattedFromEmail, maskEmail };
 
-function getFormattedFromEmail(): string {
-  const envFrom = (process.env.EMAIL_FROM || "").replace(/['"]/g, "").trim();
-  if (!envFrom || envFrom.includes("onboarding@resend.dev")) return "Intrihub <noreply@intrihub.com>";
-  if (envFrom.includes("<") && envFrom.includes(">")) return envFrom;
-  return `Intrihub <${envFrom}>`;
-}
-
-const OTP_EXPIRY_MINUTES = 5; // 5 minutes standard per PRD
+const OTP_EXPIRY_MINUTES = 10; // 10 minutes standard per security & OTP configuration requirement
 
 export type OtpPurpose = "customer" | "admin" | "vendor" | "business";
 
@@ -23,90 +15,128 @@ function generateSecureOtp(): string {
   return crypto.randomInt(100000, 1000000).toString();
 }
 
-function maskEmail(email: string): string {
-  const parts = email.split("@");
-  if (parts.length !== 2) return "***";
-  const name = parts[0];
-  const domain = parts[1];
-  const maskedName = name.length <= 2 ? name[0] + "***" : name.slice(0, 2) + "***" + name.slice(-1);
-  return `${maskedName}@${domain}`;
-}
+async function setWebAuthCookies(
+  user: {
+    id: string;
+    email?: string | null;
+    phone?: string | null;
+    name?: string | null;
+    avatar?: string | null;
+    phoneVerified?: boolean;
+    createdAt?: Date | string;
+  },
+  role: string,
+  vendorId?: string
+) {
+  try {
+    const { cookies } = await import("next/headers");
+    const {
+      generateCustomerSessionToken,
+      generateAdminSessionToken,
+      generateVendorSessionToken,
+    } = await import("@/lib/server-auth");
 
-// ─── Universal Multi-Transport Email Sender ───────────────────────────────────
+    const cookieStore = await cookies();
+    const isProd = process.env.NODE_ENV === "production";
+    const emailOrPhone = user.email || user.phone || "";
 
-export async function deliverEmail({
-  to,
-  subject,
-  html,
-}: {
-  to: string;
-  subject: string;
-  html: string;
-}): Promise<{ success: boolean; provider: string; error?: string }> {
-  // Transport 1: SMTP via Nodemailer (if configured in environment)
-  if (process.env.SMTP_HOST && process.env.SMTP_USER) {
-    try {
-      console.log(`[EMAIL_SEND_STARTED] transport=SMTP to=${maskEmail(to)} host=${process.env.SMTP_HOST}`);
-      const transporter = nodemailer.createTransport({
-        host: process.env.SMTP_HOST,
-        port: parseInt(process.env.SMTP_PORT || "587", 10),
-        secure: process.env.SMTP_SECURE === "true" || process.env.SMTP_PORT === "465",
-        auth: {
-          user: process.env.SMTP_USER,
-          pass: process.env.SMTP_PASSWORD || process.env.SMTP_PASS,
-        },
+    // 1. Signed customer session token (for server actions & API endpoints)
+    const custToken = generateCustomerSessionToken(user.id, emailOrPhone, role);
+    cookieStore.set("intrihub_token", custToken, {
+      httpOnly: true,
+      secure: isProd,
+      sameSite: "lax",
+      maxAge: 60 * 60 * 24 * 7,
+      path: "/",
+    });
+
+    // 2. NextAuth compatibility cookies
+    cookieStore.set("next-auth.session-token", custToken, {
+      httpOnly: true,
+      secure: isProd,
+      sameSite: "lax",
+      maxAge: 60 * 60 * 24 * 7,
+      path: "/",
+    });
+    if (isProd) {
+      cookieStore.set("__Secure-next-auth.session-token", custToken, {
+        httpOnly: true,
+        secure: true,
+        sameSite: "lax",
+        maxAge: 60 * 60 * 24 * 7,
+        path: "/",
       });
-
-      await transporter.sendMail({
-        from: process.env.SMTP_FROM || getFormattedFromEmail(),
-        to,
-        subject,
-        html,
-      });
-
-      console.log(`[EMAIL_PROVIDER_RESPONSE] transport=SMTP status=delivered to=${maskEmail(to)}`);
-      return { success: true, provider: "smtp" };
-    } catch (smtpErr: any) {
-      console.error(`[EMAIL_PROVIDER_RESPONSE] transport=SMTP error=${smtpErr?.message}`);
-      // Fall through to Resend if available
     }
-  }
 
-  // Transport 2: Resend API
-  const resendApiKey = process.env.RESEND_API_KEY;
-  if (resendApiKey) {
-    try {
-      const activeResend = new Resend(resendApiKey);
-      const fromAddress = getFormattedFromEmail();
-      console.log(`[EMAIL_SEND_STARTED] transport=Resend to=${maskEmail(to)} from=${fromAddress}`);
-      const { data, error } = await activeResend.emails.send({
-        from: fromAddress,
-        to,
-        subject,
-        html,
+    // 3. Client-accessible JSON session payload for instant Zustand store hydration
+    const sessionPayload = JSON.stringify({
+      userId: user.id,
+      name: user.name,
+      email: user.email,
+      avatar: user.avatar,
+      phone: user.phone,
+      phoneVerified: Boolean(user.phoneVerified),
+      createdAt: user.createdAt
+        ? new Date(user.createdAt).toISOString()
+        : new Date().toISOString(),
+    });
+    const encodedSession = Buffer.from(sessionPayload).toString("base64url");
+    cookieStore.set("intrihub_session", encodedSession, {
+      httpOnly: false,
+      secure: isProd,
+      sameSite: "lax",
+      maxAge: 60 * 60 * 24 * 7,
+      path: "/",
+    });
+
+    // 4. Role-specific signed cookies
+    if (role === "admin" || role === "superadmin") {
+      const adminToken = generateAdminSessionToken(user.id, user.email || "");
+      cookieStore.set("intrihub_admin_token", adminToken, {
+        httpOnly: true,
+        secure: isProd,
+        sameSite: "lax",
+        maxAge: 60 * 60 * 24 * 7,
+        path: "/",
       });
-
-      if (error) {
-        console.error(`[EMAIL_PROVIDER_RESPONSE] transport=Resend status=rejected error=${error.message || JSON.stringify(error)}`);
-        return { success: false, provider: "resend", error: error.message || "Failed to send email via Resend" };
+    } else if (role === "vendor" && vendorId) {
+      const vendorToken = generateVendorSessionToken(
+        vendorId,
+        user.id,
+        user.email || ""
+      );
+      cookieStore.set("intrihub_vendor_token", vendorToken, {
+        httpOnly: true,
+        secure: isProd,
+        sameSite: "lax",
+        maxAge: 60 * 60 * 24 * 7,
+        path: "/",
+      });
+    } else if (role === "cpo") {
+      try {
+        const { generateCpoSessionToken } = await import("@/lib/cpo/auth");
+        const { CPO_SESSION_COOKIE } = await import(
+          "@/lib/config/cpo-permissions"
+        );
+        const cpoToken = await generateCpoSessionToken(user.id, user.email || "");
+        cookieStore.set(CPO_SESSION_COOKIE, cpoToken, {
+          httpOnly: true,
+          secure: isProd,
+          sameSite: "lax",
+          maxAge: 60 * 60 * 24 * 7,
+          path: "/",
+        });
+      } catch (cpoErr) {
+        console.error("Failed to generate CPO session token:", cpoErr);
       }
-
-      console.log(`[EMAIL_PROVIDER_RESPONSE] transport=Resend status=accepted messageId=${data?.id}`);
-      return { success: true, provider: "resend" };
-    } catch (resendErr: any) {
-      console.error(`[EMAIL_PROVIDER_RESPONSE] transport=Resend error=${resendErr?.message}`);
-      return { success: false, provider: "resend", error: resendErr?.message || "Resend execution failure" };
     }
+  } catch (err) {
+    console.warn("[setWebAuthCookies] Non-request context or cookie error:", err);
   }
-
-  // No email credentials configured: development mode warning
-  if (process.env.NODE_ENV !== "production") {
-    console.warn(`[EMAIL_SEND_STARTED] transport=dev_fallback to=${maskEmail(to)} (No live email credentials provided)`);
-    return { success: true, provider: "dev_fallback" };
-  }
-
-  return { success: false, provider: "none", error: "No email delivery provider configured" };
 }
+
+// ─── Email Delivery Layer (Titan Mail SMTP via lib/mail.ts) ───────────────────
+// deliverEmail is imported and re-exported from @/lib/mail above.
 
 // ─── Send OTP ────────────────────────────────────────────────────────────────
 
@@ -126,43 +156,41 @@ export async function sendEmailOtp(
   // Strict role-based verification before generating or sending any OTP
   if (purpose === "admin") {
     const { STRICT_ADMIN_EMAIL } = await import("@/lib/admin-constants");
-    if (cleanEmail !== STRICT_ADMIN_EMAIL.toLowerCase()) {
-      return { success: false, message: "Invalid credentials. Access denied." };
+    const adminUser = await prisma.user.findFirst({
+      where: {
+        email: { equals: cleanEmail, mode: "insensitive" },
+        role: { in: ["admin", "ADMIN", "superadmin"] },
+      },
+    });
+
+    if (!adminUser || cleanEmail !== STRICT_ADMIN_EMAIL.toLowerCase()) {
+      return { success: false, message: "Access Denied: Unauthorized admin credentials. User is not registered with ADMIN role." };
     }
   } else if (purpose === "vendor" || purpose === "business") {
     const allowedAdminEmail = (process.env.ADMIN_ALLOWED_EMAIL || "admin@intrihub.com").toLowerCase().trim();
     const isAdmin = cleanEmail === allowedAdminEmail;
 
     if (!isAdmin) {
-      const vendorRecord = await prisma.vendor.findFirst({
+      const cpoUser = await prisma.user.findFirst({
         where: {
-          OR: [
-            { contactEmail: { equals: cleanEmail, mode: "insensitive" } },
-            { owner: { email: { equals: cleanEmail, mode: "insensitive" } } },
-          ],
+          email: { equals: cleanEmail, mode: "insensitive" },
+          role: { in: ["cpo", "CPO"] },
         },
       });
 
-      const vendorUser = !vendorRecord
-        ? await prisma.user.findFirst({
+      const vendorRecord = !cpoUser
+        ? await prisma.vendor.findFirst({
             where: {
-              email: { equals: cleanEmail, mode: "insensitive" },
-              role: "vendor",
+              OR: [
+                { contactEmail: { equals: cleanEmail, mode: "insensitive" } },
+                { owner: { email: { equals: cleanEmail, mode: "insensitive" } } },
+              ],
             },
           })
         : null;
 
-      const cpoUser = (!vendorRecord && !vendorUser)
-        ? await prisma.user.findFirst({
-            where: {
-              email: { equals: cleanEmail, mode: "insensitive" },
-              role: { equals: "cpo", mode: "insensitive" },
-            },
-          })
-        : null;
-
-      if (!vendorRecord && !vendorUser && !cpoUser) {
-        return { success: false, message: "This email isn't registered as an approved vendor partner." };
+      if (!vendorRecord && !cpoUser) {
+        return { success: false, message: "Access Denied: Email not registered as a vendor." };
       }
 
       if (vendorRecord && vendorRecord.status !== "approved") {
@@ -171,7 +199,7 @@ export async function sendEmailOtp(
           message:
             vendorRecord.status === "pending"
               ? "Your vendor application is currently under review."
-              : `Your vendor account status is ${vendorRecord.status}.`,
+              : `Access Denied: Vendor account status is ${vendorRecord.status}.`,
         };
       }
     }
@@ -245,8 +273,9 @@ export async function sendEmailOtp(
       },
     });
     console.log(`[OTP_STORAGE_SUCCESS] email=${maskEmail(cleanEmail)} expiresIn=${OTP_EXPIRY_MINUTES * 60}s`);
-  } catch (dbErr: any) {
-    console.error(`[OTP_STORAGE_FAILED] email=${maskEmail(cleanEmail)} error=${dbErr?.message}`);
+  } catch (dbErr: unknown) {
+    const err = dbErr as { message?: string } | null;
+    console.error(`[OTP_STORAGE_FAILED] email=${maskEmail(cleanEmail)} error=${err?.message}`);
     return {
       success: false,
       message: "Failed to initialize verification code. Database error occurred.",
@@ -362,6 +391,7 @@ export async function verifyEmailOtp(
   email: string,
   otp: string,
   purpose: OtpPurpose = "customer"
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
 ): Promise<{ success: boolean; message: string; userId?: string; role?: string; user?: any }> {
   const cleanEmail = (email || "").trim().toLowerCase();
   const cleanOtp = (otp || "").trim();
@@ -499,26 +529,30 @@ export async function verifyEmailOtp(
   if (purpose === "admin") {
     const { STRICT_ADMIN_EMAIL } = await import("@/lib/admin-constants");
     if (cleanEmail !== STRICT_ADMIN_EMAIL.toLowerCase()) {
-      return { success: false, message: "Invalid credentials. Access denied." };
+      return { success: false, message: "Access Denied: Unauthorized admin credentials." };
     }
 
-    const adminUser = await prisma.user.upsert({
-      where: { email: cleanEmail },
-      update: { emailVerified: true, role: "admin", authProvider: "email" },
-      create: {
-        email: cleanEmail,
-        phone: `email_${cleanEmail.replace(/[^a-z0-9]/gi, "_")}`,
-        name: "Super Admin",
-        role: "admin",
-        emailVerified: true,
-        authProvider: "email",
+    const adminUser = await prisma.user.findFirst({
+      where: {
+        email: { equals: cleanEmail, mode: "insensitive" },
+        role: { in: ["admin", "ADMIN", "superadmin"] },
       },
+    });
+
+    if (!adminUser) {
+      return { success: false, message: "Access Denied: User is not registered with ADMIN role." };
+    }
+
+    await prisma.user.update({
+      where: { id: adminUser.id },
+      data: { emailVerified: true },
     });
 
     await prisma.emailOtpToken.updateMany({
       where: { email: cleanEmail },
       data: { used: true },
     });
+    await setWebAuthCookies(adminUser, "admin");
 
     console.log(`[OTP_VERIFY_SUCCESS] role=admin userId=${adminUser.id}`);
     return {
@@ -549,6 +583,7 @@ export async function verifyEmailOtp(
           where: { email: cleanEmail },
           data: { used: true },
         });
+        await setWebAuthCookies(adminUser, adminUser.role || "admin");
         return {
           success: true,
           message: "Admin authenticated successfully!",
@@ -572,6 +607,7 @@ export async function verifyEmailOtp(
         where: { email: cleanEmail },
         data: { used: true },
       });
+      await setWebAuthCookies(cpoUser, "cpo");
       console.log(`[OTP_VERIFY_SUCCESS] role=cpo userId=${cpoUser.id}`);
       return {
         success: true,
@@ -609,7 +645,7 @@ export async function verifyEmailOtp(
     if (!vendorRecord && !vendorUser) {
       return {
         success: false,
-        message: "Access Restricted: This account is not registered as an Intrihub vendor partner. Please submit a vendor application.",
+        message: "Access Denied: Email not registered as a vendor.",
       };
     }
 
@@ -688,6 +724,14 @@ export async function verifyEmailOtp(
       }
     }
 
+    if (isApproved && sanitizedVendor.id && ownerUserId) {
+      await setWebAuthCookies(
+        { id: ownerUserId, email: cleanEmail, name: sanitizedVendor.businessName },
+        "vendor",
+        sanitizedVendor.id
+      );
+    }
+
     return {
       success: true,
       message: statusMessage,
@@ -708,6 +752,7 @@ export async function verifyEmailOtp(
 
   const autoEmailAvatar = cleanEmail ? `https://unavatar.io/${encodeURIComponent(cleanEmail)}?fallback=false` : null;
 
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   let user: any;
   if (existingUser) {
     user = await prisma.user.update({
@@ -745,31 +790,17 @@ export async function verifyEmailOtp(
 
   console.log(`[OTP_VERIFY_SUCCESS] role=customer userId=${user.id}`);
 
-  // Set persistent session cookie on server response for instant hydration
+  // Set persistent session cookies on server response for instant hydration & auth
   const cleanAvatar = user.avatar || autoEmailAvatar || undefined;
-  const sessionPayload = JSON.stringify({
-    userId: user.id,
+  await setWebAuthCookies({
+    id: user.id,
     name: user.name,
     email: user.email,
     avatar: cleanAvatar,
     phone: user.phone,
     phoneVerified: user.phoneVerified,
-    createdAt: user.createdAt.toISOString(),
-  });
-  const encodedSession = Buffer.from(sessionPayload).toString("base64url");
-  try {
-    const { cookies } = await import("next/headers");
-    const cookieStore = await cookies();
-    cookieStore.set("intrihub_session", encodedSession, {
-      httpOnly: false,
-      secure: process.env.NODE_ENV === "production",
-      sameSite: "lax",
-      maxAge: 60 * 60 * 24 * 7, // 7 days
-      path: "/",
-    });
-  } catch (cookieErr) {
-    console.error("Failed to set session cookie in verifyEmailOtp:", cookieErr);
-  }
+    createdAt: user.createdAt,
+  }, user.role || "customer");
 
   // Invalidate token on successful verification
   await prisma.emailOtpToken.updateMany({

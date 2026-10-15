@@ -258,6 +258,17 @@ export async function POST(req: NextRequest) {
       effectiveRole = "customer";
     }
 
+    if (body.pushToken && typeof body.pushToken === "string") {
+      try {
+        await (prisma as any).user.update({
+          where: { id: user.id },
+          data: { pushToken: body.pushToken.trim() },
+        });
+      } catch (tokErr) {
+        console.warn("Could not save pushToken on verify-otp:", tokErr);
+      }
+    }
+
     const tokens = generateMobileTokens({
       id: user.id,
       role: effectiveRole,

@@ -160,6 +160,14 @@ export async function updateVendorOrderStatus(
   return res.data;
 }
 
+export async function rejectVendorOrder(
+  splitId: string,
+  reason = "out_of_stock"
+): Promise<{ success: boolean; message?: string; error?: string }> {
+  const res = await apiClient.post(`/api/mobile/vendor/orders/${splitId}/reject`, { reason });
+  return res.data;
+}
+
 // 4. Categories Picker
 export async function fetchVendorCategories(): Promise<{
   success: boolean;

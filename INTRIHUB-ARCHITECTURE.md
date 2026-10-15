@@ -30,7 +30,7 @@ graph TD
     subgraph DataServices ["Persistent Storage & Third-Party APIs"]
         PostgresDB[("PostgreSQL Database (Prisma ORM)")]
         RazorpayGateway["Razorpay Payment Gateway"]
-        ResendMail["Resend OTP & Email Engine"]
+        TitanMail["Titan Mail SMTP OTP & Email Engine"]
         ExpoPush["Expo Push Notification Service"]
     end
 
@@ -48,7 +48,7 @@ graph TD
 
     ServiceLayer --> PostgresDB
     ServiceLayer --> RazorpayGateway
-    ServiceLayer --> ResendMail
+    ServiceLayer --> TitanMail
     ServiceLayer --> ExpoPush
     ServiceLayer -->|Trigger Broadcasts| SocketEngine
 ```
@@ -65,7 +65,7 @@ graph TD
   - Mobile: HMAC-SHA256 signed Bearer tokens with 3-attempt/15-minute brute-force lockout
 - **Payment Processing**: **Razorpay** SDK with webhook and client-side signature verification
 - **Real-Time Layer**: Persistent **Socket.IO** server running alongside Next.js
-- **Email Delivery**: **Resend** transactional email API for OTP verification and invoices
+- **Email Delivery**: **Titan Mail** SMTP direct email delivery via Nodemailer for OTP verification and alerts
 - **Push Notifications**: **Expo Server SDK** for device push dispatch
 - **Hosting**: **Vercel** (Global Edge CDN + Serverless Next.js, mapped to `intrihub.com` / `www.intrihub.com`)
 
@@ -104,7 +104,7 @@ Intrihub/
 ├── lib/                                 # Shared Business Logic & Infrastructure
 │   ├── actions/                         # Core domain actions (reused across Web & Mobile)
 │   │   ├── admin-vendor.ts              # Admin approval workflows & KYC actions
-│   │   ├── email-otp.ts                 # OTP generation, Resend dispatch, and verification
+│   │   ├── email-otp.ts                 # OTP generation, Titan Mail SMTP dispatch, and verification
 │   │   ├── orders.ts                    # Order creation, inventory deduction, split logic
 │   │   ├── payouts.ts                   # Financial settlements and payout calculations
 │   │   ├── products.ts                  # Catalog CRUD, search, and category taxonomy
@@ -298,7 +298,10 @@ sequenceDiagram
 | `NEXT_PUBLIC_APP_URL` | Public web storefront base URL |
 | `MOBILE_JWT_SECRET` | HMAC-SHA256 signing secret for mobile Bearer access tokens |
 | `ADMIN_ALLOWED_EMAIL` | Whitelisted email for Super Admin permissions (`admin@intrihub.com`) |
-| `RESEND_API_KEY` | Transactional email API key for 6-digit OTP delivery |
+| `SMTP_HOST` | Titan Mail SMTP host (`smtp.titan.email`) |
+| `SMTP_PORT` | Titan Mail SSL port (`465`) |
+| `SMTP_USER` | Titan Mail authenticated mailbox (`info@intrihub.com`) |
+| `SMTP_PASS` | Titan Mail mailbox password for authenticated dispatch |
 | `RAZORPAY_KEY_ID` | Razorpay public key ID for checkout initialization |
 | `RAZORPAY_KEY_SECRET` | Razorpay webhook & verification secret key |
 | `EXPO_ACCESS_TOKEN` | Expo Server SDK token for push notification dispatch |

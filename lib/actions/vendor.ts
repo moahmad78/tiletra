@@ -1245,6 +1245,33 @@ export async function updateVendorFulfillmentStatus(
       console.warn("Parent order tracking sync warning:", parentSyncErr);
     }
 
+    // Real-time Push Notification Dispatch to Customer App (Flipkart/Zomato style)
+    try {
+      const parentOrder = await prisma.order.findUnique({
+        where: { id: existing.orderId },
+        select: { userId: true, total: true },
+      });
+
+      if (parentOrder?.userId) {
+        const { sendCustomerOrderStatusPush } = await import("@/lib/push-notifications");
+        if (isConfirmed) {
+          await sendCustomerOrderStatusPush(parentOrder.userId, existing.orderId, "CONFIRMED", { total: parentOrder.total });
+        } else if (isReadyForPickup || normalizedStatus === "packed") {
+          await sendCustomerOrderStatusPush(parentOrder.userId, existing.orderId, "PACKED", { total: parentOrder.total });
+        } else if (normalizedStatus === "dispatched" || normalizedStatus === "out_for_delivery") {
+          await sendCustomerOrderStatusPush(parentOrder.userId, existing.orderId, "DISPATCHED", {
+            total: parentOrder.total,
+            courierName: updateData.courierName,
+            trackingNumber: updateData.trackingNumber,
+          });
+        } else if (isDelivered) {
+          await sendCustomerOrderStatusPush(parentOrder.userId, existing.orderId, "DELIVERED", { total: parentOrder.total });
+        }
+      }
+    } catch (pushErr) {
+      console.warn("Customer status push notification warning:", pushErr);
+    }
+
     // Real-Time Socket Broadcast to customer and admin rooms
     try {
       const { emitSocketEvent } = await import("@/lib/socket-server-emit");

@@ -1,12 +1,10 @@
 "use server";
 
 import { prisma } from "@/lib/prisma";
-import { Resend } from "resend";
+import { deliverEmail } from "@/lib/actions/email-otp";
 import { cookies } from "next/headers";
 import { STRICT_ADMIN_EMAIL } from "@/lib/admin-constants";
 
-const resend = new Resend(process.env.RESEND_API_KEY);
-const FROM_EMAIL = process.env.EMAIL_FROM || "Intrihub Security <noreply@intrihub.com>";
 const OTP_EXPIRY_MINUTES = 10;
 
 function getAdminPassword(): string {
@@ -90,41 +88,51 @@ export async function validateAdminCredentialsAndSendOtp(formData: {
     },
   });
 
-  // 6. Send 2FA email to moahmadmail92@gmail.com
+  // 6. Send 2FA email using universal deliverEmail
   try {
-    if (process.env.RESEND_API_KEY) {
-      await resend.emails.send({
-        from: FROM_EMAIL,
-        to: cleanEmail,
-        subject: "🔒 Super Admin 2FA Login Code — Intrihub",
-        html: `
-          <div style="font-family: Arial, sans-serif; max-width: 500px; margin: 0 auto; padding: 32px 24px; background: #052a51; color: #ffffff; border-radius: 20px;">
-            <div style="text-align: center; margin-bottom: 24px;">
-              <div style="display: inline-block; background: #ffffff; padding: 10px 22px; border-radius: 12px; margin-bottom: 12px; box-shadow: 0 4px 12px rgba(0,0,0,0.15);">
-                <a href="https://www.intrihub.com" target="_blank" style="text-decoration: none; display: block;">
-                  <img src="https://www.intrihub.com/logo/intri-web-logo.png" alt="Intrihub" width="150" height="38" style="display: block; margin: 0 auto; height: 38px; width: auto; max-width: 160px; border: 0; outline: none; text-decoration: none;" />
-                </a>
-              </div>
-              <p style="color: #94a3b8; font-size: 13px; margin: 0; font-weight: 600; letter-spacing: 0.5px;">Admin Security Portal (2FA)</p>
+    const delivery = await deliverEmail({
+      to: cleanEmail,
+      subject: "🔒 Super Admin 2FA Login Code — Intrihub",
+      html: `
+        <div style="font-family: Arial, sans-serif; max-width: 500px; margin: 0 auto; padding: 32px 24px; background: #052a51; color: #ffffff; border-radius: 20px;">
+          <div style="text-align: center; margin-bottom: 24px;">
+            <div style="display: inline-block; background: #ffffff; padding: 10px 22px; border-radius: 12px; margin-bottom: 12px; box-shadow: 0 4px 12px rgba(0,0,0,0.15);">
+              <a href="https://www.intrihub.com" target="_blank" style="text-decoration: none; display: block;">
+                <img src="https://www.intrihub.com/logo/intri-web-logo.png" alt="Intrihub" width="150" height="38" style="display: block; margin: 0 auto; height: 38px; width: auto; max-width: 160px; border: 0; outline: none; text-decoration: none;" />
+              </a>
             </div>
-            
-            <div style="background: #ffffff; color: #052a51; border-radius: 16px; padding: 28px; text-align: center; box-shadow: 0 4px 20px rgba(0,0,0,0.15);">
-              <p style="font-size: 14px; font-weight: 600; color: #475569; margin: 0 0 12px 0;">Your 6-Digit Admin Verification Code:</p>
-              <div style="font-size: 36px; font-weight: 900; letter-spacing: 8px; color: #F26522; background: #fff7ed; border: 2px dashed #F26522; border-radius: 12px; padding: 14px; margin: 0 auto 16px auto;">
-                ${otp}
-              </div>
-              <p style="font-size: 12px; color: #64748b; margin: 0;">This code is valid for <strong>10 minutes</strong>. Never share this code with anyone.</p>
-            </div>
-            
-            <div style="text-align: center; margin-top: 24px; border-top: 1px solid rgba(255,255,255,0.1); padding-top: 16px;">
-              <p style="font-size: 11px; color: #94a3b8; margin: 0 0 6px 0;">IntriHub&apos;s only official website is <a href="https://www.intrihub.com" style="color:#ffffff;font-weight:bold;text-decoration:underline;">www.intrihub.com</a>. We are not affiliated with any other website using a similar name.</p>
-              <p style="font-size: 10px; color: #64748b; margin: 0;">If you did not initiate this admin login attempt, please secure your credentials immediately.</p>
-            </div>
+            <p style="color: #94a3b8; font-size: 13px; margin: 0; font-weight: 600; letter-spacing: 0.5px;">Admin Security Portal (2FA)</p>
           </div>
-        `,
-      });
-    } else {
-      console.log(`[DEV 2FA OTP for ${cleanEmail}]: ${otp}`);
+          
+          <div style="background: #ffffff; color: #052a51; border-radius: 16px; padding: 28px; text-align: center; box-shadow: 0 4px 20px rgba(0,0,0,0.15);">
+            <p style="font-size: 14px; font-weight: 600; color: #475569; margin: 0 0 12px 0;">Your 6-Digit Admin Verification Code:</p>
+            <div style="font-size: 36px; font-weight: 900; letter-spacing: 8px; color: #F26522; background: #fff7ed; border: 2px dashed #F26522; border-radius: 12px; padding: 14px; margin: 0 auto 16px auto;">
+              ${otp}
+            </div>
+            <p style="font-size: 12px; color: #64748b; margin: 0;">This code is valid for <strong>10 minutes</strong>. Never share this code with anyone.</p>
+          </div>
+          
+          <div style="text-align: center; margin-top: 24px; border-top: 1px solid rgba(255,255,255,0.1); padding-top: 16px;">
+            <p style="font-size: 11px; color: #94a3b8; margin: 0 0 6px 0;">IntriHub&apos;s only official website is <a href="https://www.intrihub.com" style="color:#ffffff;font-weight:bold;text-decoration:underline;">www.intrihub.com</a>. We are not affiliated with any other website using a similar name.</p>
+            <p style="font-size: 10px; color: #64748b; margin: 0;">If you did not initiate this admin login attempt, please secure your credentials immediately.</p>
+          </div>
+        </div>
+      `,
+    });
+
+    if (!delivery.success) {
+      if (process.env.NODE_ENV !== "production") {
+        console.warn(`[DEV 2FA OTP for ${cleanEmail}]: ${otp} (dev fallback active)`);
+        return {
+          success: true,
+          step: "otp_required",
+          message: `[DEV] 2FA security code simulated for ${cleanEmail}. Check server console.`,
+        };
+      }
+      return {
+        success: false,
+        message: delivery.error || "Failed to dispatch 2FA email. Please verify mail service configuration.",
+      };
     }
 
     return {
@@ -132,7 +140,7 @@ export async function validateAdminCredentialsAndSendOtp(formData: {
       step: "otp_required",
       message: `2FA security code sent to ${cleanEmail}. Please enter the OTP to proceed.`,
     };
-  } catch (err: any) {
+  } catch (err: unknown) {
     console.error("Error sending admin 2FA email:", err);
     return {
       success: false,

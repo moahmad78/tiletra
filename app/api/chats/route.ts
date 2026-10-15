@@ -63,7 +63,7 @@ export async function GET() {
       }
     }
 
-    const enrichedChats = (chats || []).map((chat) => {
+    const enrichedChats = (chats || []).map((chat: any) => {
       const cleanPhone = (chat.customer_phone || "").replace(/\D/g, "");
       const last10 = cleanPhone.slice(-10);
 

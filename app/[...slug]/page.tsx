@@ -9,6 +9,9 @@ import SeoLandingPageClient, {
 import { getProducts } from "@/lib/actions/products";
 import type { Product } from "@/lib/data/products";
 import { SEO_PAGES_SEED_DATA } from "@/prisma/seed-seo-pages";
+import { SEO_PAGES_BATCH2_DATA } from "@/prisma/seed-seo-pages-batch2";
+
+const ALL_SEO_PAGES = [...SEO_PAGES_SEED_DATA, ...SEO_PAGES_BATCH2_DATA];
 
 export const revalidate = 3600; // 1 hour ISR revalidation
 
@@ -17,7 +20,7 @@ interface PageProps {
 }
 
 export async function generateStaticParams() {
-  return SEO_PAGES_SEED_DATA.map((item) => ({
+  return ALL_SEO_PAGES.map((item) => ({
     slug: item.slug.split("/"),
   }));
 }
@@ -51,8 +54,8 @@ async function getSeoPageData(slug: string) {
     // fallback
   }
 
-  // Fallback to SEO_PAGES_SEED_DATA
-  const seedMatch = SEO_PAGES_SEED_DATA.find((p) => p.slug === slug);
+  // Fallback to static seed data
+  const seedMatch = ALL_SEO_PAGES.find((p) => p.slug === slug);
   if (seedMatch) {
     return {
       page: {
@@ -76,7 +79,7 @@ async function getSeoPageData(slug: string) {
     };
   }
 
-  const aliasSeed = SEO_PAGES_SEED_DATA.find((p) => p.aliases?.includes(slug));
+  const aliasSeed = ALL_SEO_PAGES.find((p) => p.aliases?.includes(slug));
   if (aliasSeed) {
     return { page: null, redirectUrl: `${BASE_SITE_URL}/${aliasSeed.slug}` };
   }
@@ -101,14 +104,14 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
 
   if (!page || !page.isPublished) {
     return {
-      title: "IntriHub – Every Material. Every Space.",
+      title: "Page Not Found",
       robots: { index: false, follow: false },
     };
   }
 
   const canonicalUrl = `${BASE_SITE_URL}/${page.slug}`;
   const rawTitle = page.title || "";
-  let cleanTitle = rawTitle.replace(/\s*\|\s*Intrihub/gi, "").trim();
+  let cleanTitle = rawTitle.replace(/\s*[|•-]\s*Intrihub.*$/gi, "").trim();
   if (cleanTitle.length > 48) {
     cleanTitle = cleanTitle.slice(0, 48).trim().replace(/[,\-:|—\s]+$/, "");
   }

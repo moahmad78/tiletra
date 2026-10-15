@@ -35,7 +35,7 @@ const ORIGINAL_SEO_PAGES: SeedSeoPageItem[] = [
 
 Discover our curated premium collection including anti skid bathroom tiles, competitive kitchen wall tiles price, and precision-cut digital vitrified tiles 600x600. For areas demanding resilient durability, we stock polished porcelain tiles online, partner with certified ceramic wall tiles suppliers, and deliver heavy duty parking tiles engineered for vehicular loads.
 
-Elevate your interiors with glossy finish living room tiles, weather-resistant outdoor elevation tiles online, and warm rustic wooden look tiles price. For commercial developments and large projects, IntriHub provides grand slab tiles for commercial interior, affordable flooring materials online, marble look tiles wholesale, and exclusive mosaic and designer tiles India with 60-minute site delivery in Bengaluru.`,
+Elevate your interiors with glossy finish living room tiles, weather-resistant outdoor elevation tiles online, and warm rustic wooden look tiles price. For commercial developments and large projects, IntriHub provides grand slab tiles for commercial interior, affordable flooring materials online, marble look tiles marketplace, and exclusive mosaic and designer tiles India with 60-minute site delivery in Bengaluru.`,
     faqItems: [
       {
         question: "What tile sizes and finishes are available for delivery in Bangalore?",
@@ -69,7 +69,7 @@ Elevate your interiors with glossy finish living room tiles, weather-resistant o
 
 Pair your wood panels with premium architectural hardware fittings, door locks and handles online, heavy duty drawer channels, hydraulic hinges for kitchen cabinets, tower bolts and door stoppers, glass fittings and patch locks, and modular kitchen hardware online from Hettich, Godrej, and Dorset.
 
-Ensure lasting durability with multi-purpose construction adhesives, structural silicone sealant online, PU foam and waterproofing chemicals, drywall screws and fasteners, and edge banding tape for plywood. Complete modern aesthetics with safety locks for main doors, furniture fittings wholesale India, charcoal panels for interior wall, acoustic panels online price, synthetic wood louvers online, and primer and wall putty supplies.`,
+Ensure lasting durability with multi-purpose construction adhesives, structural silicone sealant online, PU foam and waterproofing chemicals, drywall screws and fasteners, and edge banding tape for plywood. Complete modern aesthetics with safety locks for main doors, furniture fittings supplier India, charcoal panels for interior wall, acoustic panels online price, synthetic wood louvers online, and primer and wall putty supplies.`,
     faqItems: [
       {
         question: "What is the difference between IS:710 and IS:303 plywood?",
@@ -101,9 +101,9 @@ Ensure lasting durability with multi-purpose construction adhesives, structural 
     h1: "Commercial & Residential Electrical Supplies Online",
     introContent: `Electrical infrastructure forms the vital backbone of every residential and commercial development. At IntriHub, shop certified electrical wiring materials online, best modular switches and plates price, and genuine copper electrical wires online from top ISI-certified brands including Havells, Polycab, Finolex, and Schneider Electric.
 
-Our electrical catalog spans commercial lighting fixtures wholesale, circuit breakers MCB distribution box units, electrical conduits and fittings, and heavy-duty industrial electrical supplies India. Equip your buildings with energy-efficient LED panel lights online store, heavy duty electrical cables, smart switches for home interior automation, and electrical safety devices online.
+Our electrical catalog spans commercial lighting fixtures supplier, circuit breakers MCB distribution box units, electrical conduits and fittings, and heavy-duty industrial electrical supplies India. Equip your buildings with energy-efficient LED panel lights online store, heavy duty electrical cables, smart switches for home interior automation, and electrical safety devices online.
 
-Contractors and electricians can source multi-strand copper wire price, waterproof outdoor lights online, modular switchboards wholesale, and flexible pipe electrical accessories with instant site dispatch and B2B GST invoicing across Karnataka.`,
+Contractors and electricians can source multi-strand copper wire price, waterproof outdoor lights online, modular switchboards supplier, and flexible pipe electrical accessories with instant site dispatch and B2B GST invoicing across Karnataka.`,
     faqItems: [
       {
         question: "What gauge wires are needed for household room wiring?",
@@ -129,11 +129,11 @@ Contractors and electricians can source multi-strand copper wire price, waterpro
     aliases: ["plumbing-materials-online", "plumbing-supplies-store"],
     pageType: SeoPageType.CATEGORY,
     category: "plumbing",
-    targetKeyword: "plumbing materials wholesale price",
+    targetKeyword: "plumbing materials supplier price",
     title: "Heavy-Duty Plumbing Systems & Sanitaryware Online | IntriHub",
-    metaDescription: "Get plumbing materials wholesale price, reliable PVC pipes and fittings online, CPVC pipes for hot water supply & UPVC plumbing systems price.",
+    metaDescription: "Get plumbing materials supplier price, reliable PVC pipes and fittings online, CPVC pipes for hot water supply & UPVC plumbing systems price.",
     h1: "Heavy-Duty Plumbing Systems & Sanitaryware Online",
-    introContent: `A leak-free, long-lasting water management system requires specification-grade pipes and precision-engineered fixtures. At IntriHub, get plumbing materials wholesale price, reliable PVC pipes and fittings online, CPVC pipes for hot water supply, and competitive UPVC plumbing systems price from Astral, Supreme, and Finolex.
+    introContent: `A leak-free, long-lasting water management system requires specification-grade pipes and precision-engineered fixtures. At IntriHub, get plumbing materials supplier price, reliable PVC pipes and fittings online, CPVC pipes for hot water supply, and competitive UPVC plumbing systems price from Astral, Supreme, and Finolex.
 
 For luxury and residential bathrooms, we connect you with certified bathroom sanitaryware suppliers, wall mixer and faucet online, one piece commode and washbasin configurations, and concealed cistern flush tank units from Kohler, Jaquar, Hindware, and Cera.
 
@@ -169,7 +169,7 @@ Equip kitchens and utility areas with kitchen sink stainless steel online, drain
     h1: "Architectural Hardware Fittings & Door Locks Online",
     introContent: `Hardware and architectural fittings are the essential moving parts that define the daily comfort, safety, and longevity of your interiors. At IntriHub, browse premium architectural hardware fittings, door locks and handles online, heavy duty drawer channels, hydraulic hinges for kitchen cabinets, tower bolts and door stoppers, glass fittings and patch locks, and modular kitchen hardware online.
 
-We stock industrial-grade multi-purpose construction adhesives, structural silicone sealant online, PU foam and waterproofing chemicals, drywall screws and fasteners, edge banding tape for plywood, safety locks for main doors, and furniture fittings wholesale India with fast site dispatch across Bengaluru.`,
+We stock industrial-grade multi-purpose construction adhesives, structural silicone sealant online, PU foam and waterproofing chemicals, drywall screws and fasteners, edge banding tape for plywood, safety locks for main doors, and furniture fittings supplier India with fast site dispatch across Bengaluru.`,
     faqItems: [
       {
         question: "What stainless steel grade is recommended for hinges in coastal or humid areas?",
@@ -543,8 +543,8 @@ Create modern, spa-like bathrooms with IntriHub's specialized moisture-resistant
     category: "plywood",
     targetKeyword: "marine plywood",
     title: "Marine Plywood Online — IS:710 Waterproof Sheets",
-    metaDescription: "Buy genuine IS:710 marine plywood online in India. 100% boiling water proof, high-density hardwood core, anti-termite guarantee with direct site delivery.",
-    h1: "Marine Plywood Online — 100% Boiling Water Proof (IS:710) Panels",
+    metaDescription: "Buy genuine IS:710 marine plywood online in India. boiling water proof (BWP) grade, high-density hardwood core, anti-termite guarantee with direct site delivery.",
+    h1: "Marine Plywood Online — boiling water proof (BWP) grade (IS:710) Panels",
     introContent: `Marine plywood represents the gold standard of engineered wood durability, originally formulated to construct boat hulls subjected to continuous saltwater immersion. In contemporary interior construction, genuine IS:710 Marine Grade Plywood is essential for modular kitchen under-sink cabinets, bathroom vanity casework, exterior door shutters, and terrace furniture framing. IntriHub supplies builders and interior contractors with certified BWP Marine plywood sheets online.
 
 Every genuine Marine ply sheet in our inventory is bonded using undiluted Phenol Formaldehyde (PF) synthetic resin cured under intense hydraulic hot-press pressure. This cross-linked polymer bond withstands 72 continuous hours of boiling water testing without delamination, swelling, or structural weakness. Composed of 100% seasoned hardwood veneers, our marine panels resist cyclic moisture changes and high screw withdrawal stresses.
@@ -733,9 +733,9 @@ Upgrade your interiors with modern modular switch plates and ergonomic accessori
     category: "plumbing",
     targetKeyword: "CPVC pipes",
     title: "CPVC Pipes Online — SDR 11 & 13.5 Water Lines | IntriHub",
-    metaDescription: "Buy certified lead-free CPVC pipes and fittings online in India. High-temperature hot/cold plumbing pipes with direct site delivery across Bangalore.",
+    metaDescription: "Buy lead-free compliant CPVC pipes and fittings online in India. High-temperature hot/cold plumbing pipes with direct site delivery across Bangalore.",
     h1: "CPVC Pipes Online — High-Pressure Potable Water Plumbing Systems",
-    introContent: `Chlorinated Polyvinyl Chloride (CPVC) is the premier piping material for concealed hot and cold potable water distribution in modern residential and commercial buildings. Produced through chemical chlorination of standard PVC resin, CPVC offers elevated glass transition temperatures and superior tensile strength, comfortably handling pressurized domestic water up to 93°C. IntriHub supplies certified lead-free CPVC piping systems online.
+    introContent: `Chlorinated Polyvinyl Chloride (CPVC) is the premier piping material for concealed hot and cold potable water distribution in modern residential and commercial buildings. Produced through chemical chlorination of standard PVC resin, CPVC offers elevated glass transition temperatures and superior tensile strength, comfortably handling pressurized domestic water up to 93°C. IntriHub supplies lead-free compliant CPVC piping systems online.
 
 Our CPVC catalog centers on SDR 11 (Class 1) and SDR 13.5 (Class 2) pipes compliant with IS:15778 and ASTM D2846 specifications. Because CPVC is completely inert and mirror-smooth internally, it eliminates calcification scaling, maintains consistent water pressure, and resists bacterial biofilm formation throughout its 50-year design life. Unlike metal galvanized iron pipes, CPVC never rusts, pits, or leaches metallic odors into drinking water.
 
@@ -1055,7 +1055,7 @@ From our central facility in Begur, our rapid logistics fleet reaches HSR Layout
 
 Every panel, tile carton, and sanitary fixture is inspected for zero surface flaws and transported with protective corner guards. Experience transparent trade pricing, batch-consistent supply for multi-room interior projects, and dedicated WhatsApp project support (+91 92649 20211) for fast-track site execution across HSR Layout.
 
-HSR Layout is renowned for upscale modern homes, trendy commercial cafes, and high-spec corporate offices requiring top-tier interior finishing materials. IntriHub supplies HSR Layout's interior designers, architects, and modular contractors with calibrated marine plywood, designer Italian-look tiles, architectural door hardware, and energy-efficient lighting. Our rapid delivery service covers all sectors from Sector 1 to Sector 7, ensuring bespoke joinery and luxury surface materials reach your site in pristine condition with factory-direct pricing.
+HSR Layout is renowned for upscale modern homes, trendy commercial cafes, and high-spec corporate offices requiring top-tier interior finishing materials. IntriHub supplies HSR Layout's interior designers, architects, and modular contractors with calibrated marine plywood, designer Italian-look tiles, architectural door hardware, and energy-efficient lighting. Our rapid delivery service covers all sectors from Sector 1 to Sector 7, ensuring bespoke joinery and luxury surface materials reach your site in pristine condition with transparent trade pricing.
 
 IntriHub is the preferred interior materials partner for design studios and contractors throughout HSR Layout. We supply high-end decorative laminates, marine plywood, designer tiles, and architectural hardware that meet the rigorous standards of premium residential and commercial spaces. Benefit from prompt doorstep delivery across all sectors of HSR Layout with complete quality guarantees. Our localized dispatch hubs guarantee timely morning deliveries that align with building society unloading hours and civic traffic rules. Partner with IntriHub for transparent communication, reliable unloading support, and complete material accountability right at your construction gate.`,
     faqItems: [
@@ -1207,11 +1207,11 @@ Our specialized material delivery network across Bangalore is built to eliminate
     h1: "Interior Material Supplier in Bangalore — Complete Turnkey Sourcing",
     introContent: `Executing high-end residential and commercial interior projects across Bangalore requires seamless coordination across multiple material categories: calibrated plywood, high-pressure decorative laminates, architectural hardware, vitreous sanitaryware, designer tiles, and luxury paints. Sourcing through fragmented retail stores results in mismatched deliveries, variable quality grades, and administrative chaos. IntriHub serves as Bangalore's unified digital interior material supplier.
 
-Headquartered in Begur, we connect turnkey interior design studios, modular manufacturing units, and architectural contractors directly with ISO-certified production plants. Our catalog eliminates multi-tier middleman markups, ensuring that trade professionals receive factory-direct pricing with complete input tax credit (ITC) documentation on every invoice.
+Headquartered in Begur, we connect turnkey interior design studios, modular manufacturing units, and architectural contractors directly with ISO-certified production plants. Our catalog eliminates multi-tier middleman markups, ensuring that trade professionals receive transparent trade pricing with complete input tax credit (ITC) documentation on every invoice.
 
-We enforce stringent quality control across our supply chain: 100% boiling water proof marine plywood with zero core gaps, soft-close hardware tested for 100,000 cycles, rectified-edge vitrified tiles, and low-VOC paints. Benefit from centralized project billing, technical consultation, and express site delivery across Bengaluru within 60 to 90 minutes.
+We enforce stringent quality control across our supply chain: boiling water proof (BWP) grade marine plywood with zero core gaps, soft-close hardware tested for 100,000 cycles, rectified-edge vitrified tiles, and low-VOC paints. Benefit from centralized project billing, technical consultation, and express site delivery across Bengaluru within 60 to 90 minutes.
 
-As Bangalore's leading tech-driven interior materials supplier, IntriHub brings together premium surfaces, structural wood panels, electrical circuits, and sanitary fittings under one unified procurement platform. We serve turnkey contractors, interior design studios, and private homeowners across Bangalore with audited quality standards, wholesale-direct price transparency, and express delivery. From initial concept drawings to final site handover, our materials consultants ensure your projects finish with superior durability and aesthetic elegance.
+As Bangalore's leading tech-driven interior materials supplier, IntriHub brings together premium surfaces, structural wood panels, electrical circuits, and sanitary fittings under one unified procurement platform. We serve turnkey contractors, interior design studios, and private homeowners across Bangalore with audited quality standards, transparent trade pricing, and express delivery. From initial concept drawings to final site handover, our materials consultants ensure your projects finish with superior durability and aesthetic elegance.
 
 Transform your interior projects with IntriHub's extensive catalog of verified materials, transparent pricing, and rapid delivery across Bangalore. We collaborate closely with designers, project managers, and carpenters to ensure every phase of construction proceeds with top-tier supplies. Request a custom quote or order online for direct-to-site fulfillment. Our localized dispatch hubs guarantee timely morning deliveries that align with building society unloading hours and civic traffic rules. Partner with IntriHub for transparent communication, reliable unloading support, and complete material accountability right at your construction gate. Contact our technical materials consulting desk today to discuss your bill of quantities, schedule a sample viewing, or arrange staged deliveries directly to your Bangalore site.`,
     faqItems: [
@@ -1437,13 +1437,13 @@ Calculate your exact wall finishing costs with IntriHub's transparent square-foo
     title: "CPVC Pipe Price List — SDR 11 & 13.5 Meter Rates",
     metaDescription: "Check the latest CPVC pipe price list in India for 1/2\", 3/4\", 1\", and 1.25\" pipes. Direct factory rates for SDR 11 and SDR 13.5 hot/cold plumbing pipes.",
     h1: "CPVC Pipe Price List — Verified Rates for Plumbing Lines & Fittings",
-    introContent: `Plumbing contractors and plumbing consultants require transparent, up-to-date CPVC pipe rate cards to prepare accurate plumbing bill-of-quantities (BOQ) for residential and commercial builds. CPVC pricing is determined by resin polymer grades, wall thickness class (SDR 11 Class 1 vs. SDR 13.5 Class 2), nominal pipe diameter, and raw compound chlorination indices. IntriHub publishes verified factory rates to simplify plumbing estimation.
+    introContent: `Plumbing contractors and plumbing consultants require transparent, up-to-date CPVC pipe rate cards to prepare accurate plumbing bill-of-quantities (BOQ) for residential and commercial builds. CPVC pricing is determined by resin polymer grades, wall thickness class (SDR 11 Class 1 vs. SDR 13.5 Class 2), nominal pipe diameter, and raw compound chlorination indices. IntriHub publishes indicative trade rates to simplify plumbing estimation.
 
 For standard concealed bathroom supply, 3/4 inch (20mm) SDR 11 CPVC pipes typically trade between ₹65 and ₹95 per meter (approx. ₹195 to ₹285 per 3-meter length), providing a robust 28 kg/cm² pressure rating for pressurized hot and cold water. Compact 1/2 inch (15mm) pipes range from ₹48 to ₹72 per meter, while larger 1 inch (25mm) main riser lines range from ₹110 to ₹160 per meter.
 
-Transition fittings featuring integrated brass threads (such as brass male/female thread adapters and brass elbow drop ears) range from ₹85 to ₹250 each depending on size. IntriHub supplies certified lead-free CPVC systems direct from audited manufacturers, delivering across Bengaluru within 60 to 90 minutes with verified HSN-coded GST tax invoices.
+Transition fittings featuring integrated brass threads (such as brass male/female thread adapters and brass elbow drop ears) range from ₹85 to ₹250 each depending on size. IntriHub supplies lead-free compliant CPVC systems direct from trusted manufacturers, delivering across Bengaluru within 60 to 90 minutes with verified HSN-coded GST tax invoices.
 
-Planning a dependable plumbing budget requires comprehensive cost visibility across pipe lengths, wall thickness schedules (SDR 11 vs SDR 13.5), and necessary transition fittings like brass elbows and tees. IntriHub provides structured, transparent CPVC price lists reflecting current resin pricing. We deliver full plumbing bundles directly to Bangalore job sites with wholesale-level price transparency, helping plumbing contractors quote projects competitively without sacrificing material durability.
+Planning a dependable plumbing budget requires comprehensive cost visibility across pipe lengths, wall thickness schedules (SDR 11 vs SDR 13.5), and necessary transition fittings like brass elbows and tees. IntriHub provides structured, transparent CPVC price lists reflecting current resin pricing. We deliver full plumbing bundles directly to Bangalore job sites with trade-level price transparency, helping plumbing contractors quote projects competitively without sacrificing material durability.
 
 Access updated CPVC piping and fitting price lists directly on IntriHub. We help plumbing contractors calculate bill-of-materials costs accurately with transparent unit pricing on pipes, brass fittings, and solvent cements. Benefit from volume project discounts and dependable on-site delivery for your next plumbing installation. For larger multi-unit developments and commercial contracting tenders, our estimating team provides tailored commercial quotations with scheduled delivery tranches, fixed-period price locks, and dedicated logistics coordinators to safeguard your project cash flow.`,
     faqItems: [
@@ -1475,13 +1475,13 @@ Access updated CPVC piping and fitting price lists directly on IntriHub. We help
     title: "Electrical Wire Price Per Meter — Copper Wire Rates",
     metaDescription: "Compare electrical wire prices per meter and per 90m coil in India. Verified rates for 1.0, 1.5, 2.5, 4.0 & 6.0 sq.mm FRLS copper wires with fast delivery.",
     h1: "Electrical Wire Price Per Meter — Current FRLS Copper Coil Rates",
-    introContent: `Budgeting for electrical installation in a home or office requires accurate knowledge of copper wire prices per meter and per 90-meter coil. Copper cable pricing is closely tied to international London Metal Exchange (LME) copper spot rates, PVC insulation resin grades, and flame-retardant (FRLS) chemical additives. IntriHub publishes verified, transparent wire rates direct from certified cable manufacturing facilities.
+    introContent: `Budgeting for electrical installation in a home or office requires accurate knowledge of copper wire prices per meter and per 90-meter coil. Copper cable pricing is closely tied to international London Metal Exchange (LME) copper spot rates, PVC insulation resin grades, and flame-retardant (FRLS) chemical additives. IntriHub publishes verified, transparent wire rates from trusted cable manufacturing brands.
 
 Currently in the Indian market, 1.5 sq.mm FRLS copper wire (the standard gauge for lighting and ceiling fan circuits) trades between ₹14 and ₹22 per meter, translating to approximately ₹1,300 to ₹1,950 per 90-meter coil. Heavy-duty 2.5 sq.mm wire for general power outlets ranges from ₹22 to ₹34 per meter (approx. ₹2,000 to ₹3,050 per 90m coil).
 
-For high-load appliances like air conditioners, instant water geysers, and kitchen induction hobs, 4.0 sq.mm wire ranges between ₹34 and ₹52 per meter (approx. ₹3,100 to ₹4,650 per 90m coil), while 6.0 sq.mm service wires trade between ₹52 and ₹78 per meter. IntriHub supplies 100% electrolytic grade copper wires with tamper-proof packaging, delivering across Bengaluru in 60 to 90 minutes with full GST invoices.
+For high-load appliances like air conditioners, instant water geysers, and kitchen induction hobs, 4.0 sq.mm wire ranges between ₹34 and ₹52 per meter (approx. ₹3,100 to ₹4,650 per 90m coil), while 6.0 sq.mm service wires trade between ₹52 and ₹78 per meter. IntriHub supplies high-conductivity electrolytic copper wires with tamper-proof packaging, delivering across Bengaluru in 60 to 90 minutes with full GST invoices.
 
-Copper commodity market swings directly influence electrical wire coil prices, making clear per-meter pricing vital for accurate MEP estimates. IntriHub publishes transparent, competitive coil rates for 90-meter and 180-meter boxes across 1.0, 1.5, 2.5, 4.0, and 6.0 sq.mm cross-sections. All wires feature 99.97% pure electrolytic copper and FRLS flame retardancy, offering optimal long-term electrical conductivity, energy savings, and safety at manufacturer-direct rates.
+Copper commodity market swings directly influence electrical wire coil prices, making clear per-meter pricing vital for accurate MEP estimates. IntriHub publishes transparent, competitive coil rates for 90-meter and 180-meter boxes across 1.0, 1.5, 2.5, 4.0, and 6.0 sq.mm cross-sections. All wires feature 99.97% pure electrolytic copper and FRLS flame retardancy, offering optimal long-term electrical conductivity, energy savings, and safety at competitive marketplace rates.
 
 Monitor copper wire pricing trends with IntriHub's reliable per-meter and per-coil rate breakdowns. We provide certified FRLS wiring from top manufacturers at direct trade rates, ensuring your residential or commercial electrical projects stay safe, compliant, and cost-effective. Order online for swift doorstep delivery in Bangalore. Furthermore, all electrical consignments include verified batch test certificates, manufacturer warranty cards, and tamper-evident packaging. We maintain close communication with your site electricians to ensure smooth conduit installation and safe panel commissioning.`,
     faqItems: [
