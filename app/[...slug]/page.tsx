@@ -1,16 +1,19 @@
 import { Metadata } from "next";
 import { notFound, permanentRedirect, redirect } from "next/navigation";
 import { prisma } from "@/lib/prisma";
-import { BASE_SITE_URL, generateSeoKeywordPageSchemas } from "@/lib/seo";
+import { BASE_SITE_URL, generateSeoKeywordPageSchemas, generateHomepageFaqSchema } from "@/lib/seo";
 import JsonLd from "@/components/JsonLd";
 import SeoLandingPageClient, {
   type SeoLandingPageData,
 } from "@/components/seo/SeoLandingPageClient";
-import { getProducts } from "@/lib/actions/products";
+import HomeClient from "@/components/HomeClient";
+import { getCategories } from "@/lib/actions/categories";
+import { getProducts, getHomepageSections } from "@/lib/actions/products";
+import { getOfferBanners } from "@/lib/actions/settings";
 import type { Product } from "@/lib/data/products";
 import { SEO_PAGES_SEED_DATA } from "@/prisma/seed-seo-pages";
 import { SEO_PAGES_BATCH2_DATA } from "@/prisma/seed-seo-pages-batch2";
-import { SEO_KEYWORDS } from "@/lib/seo-keywords";
+import { SEO_KEYWORDS, getKeywordBySlug } from "@/lib/seo-keywords";
 
 const ALL_SEO_PAGES = [...SEO_PAGES_SEED_DATA, ...SEO_PAGES_BATCH2_DATA];
 
@@ -89,46 +92,44 @@ async function getSeoPageData(slug: string) {
     return { page: null, redirectUrl: `${BASE_SITE_URL}/${aliasSeed.slug}` };
   }
 
-  // Fallback to high-intent QuickCommerce / Dukan SEO keywords
-  const keywordMatch = SEO_KEYWORDS.find((k) => k.slug === slug);
-  if (keywordMatch) {
-    return {
-      page: {
-        id: `kw-${keywordMatch.slug}`,
-        slug: keywordMatch.slug,
-        aliases: [],
-        pageType: "CATEGORY",
-        category: "Hardware",
-        locality: keywordMatch.slug.includes("bangalore") ? "Bengaluru" : null,
-        targetKeyword: keywordMatch.h1Text || keywordMatch.title,
-        title: keywordMatch.title,
-        metaDescription: keywordMatch.desc,
-        h1: keywordMatch.h1Text || keywordMatch.title,
-        introContent: `<p>${keywordMatch.desc} Build better and deliver faster with IntriHub quick commerce material delivery.</p>`,
-        faqItems: [
-          {
-            q: `How fast is delivery for ${keywordMatch.title.split("|")[0].trim()}?`,
-            a: "We offer express on-site delivery in Bengaluru and surrounding construction sites.",
-          },
-          {
-            q: "Can I order building & hardware materials online?",
-            a: "Yes, IntriHub provides a full online catalog of hardware, sanitaryware, electricals, tiles, and plywood.",
-          },
-        ],
-        productFilter: { category: "Hardware" },
-        isPublished: true,
-        updatedAt: new Date("2026-10-16"),
-      },
-      redirectUrl: null,
-    };
-  }
-
   return { page: null, redirectUrl: null };
 }
 
 export async function generateMetadata({ params }: PageProps): Promise<Metadata> {
   const { slug: rawSlug } = await params;
   const slug = Array.isArray(rawSlug) ? rawSlug.join("/") : rawSlug;
+
+  const keywordItem = getKeywordBySlug(slug);
+  if (keywordItem) {
+    return {
+      title: keywordItem.title,
+      description: keywordItem.desc,
+      alternates: {
+        canonical: `${BASE_SITE_URL}/${keywordItem.slug}`,
+      },
+      openGraph: {
+        title: keywordItem.title,
+        description: keywordItem.desc,
+        url: `${BASE_SITE_URL}/${keywordItem.slug}`,
+        siteName: "IntriHub",
+        type: "website",
+        images: [
+          {
+            url: `${BASE_SITE_URL}/images/intrihub-og-image.jpg`,
+            width: 1200,
+            height: 630,
+            alt: keywordItem.title,
+          },
+        ],
+      },
+      twitter: {
+        card: "summary_large_image",
+        title: keywordItem.title,
+        description: keywordItem.desc,
+        images: [`${BASE_SITE_URL}/images/intrihub-og-image.jpg`],
+      },
+    };
+  }
 
   const { page, redirectUrl } = await getSeoPageData(slug);
 
@@ -199,6 +200,35 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
 export default async function SeoLandingPage({ params }: PageProps) {
   const { slug: rawSlug } = await params;
   const slug = Array.isArray(rawSlug) ? rawSlug.join("/") : rawSlug;
+
+  // Intercept the 20 SEO keywords to render the exact Homepage UI
+  const keywordItem = getKeywordBySlug(slug);
+  if (keywordItem) {
+    const [categories, sections, banners] = await Promise.all([
+      getCategories(),
+      getHomepageSections(),
+      getOfferBanners(),
+    ]);
+
+    const { trending, bestsellers, newArrivals } = sections;
+    const faqSchema = generateHomepageFaqSchema();
+
+    return (
+      <>
+        <JsonLd data={faqSchema} id={`homepage-faq-${keywordItem.slug}`} />
+        <h1 className="sr-only">
+          {keywordItem.h1Text || keywordItem.title}
+        </h1>
+        <HomeClient
+          categories={categories}
+          trending={trending}
+          bestsellers={bestsellers}
+          newArrivals={newArrivals}
+          banners={banners}
+        />
+      </>
+    );
+  }
 
   // 1. Direct Slug Lookup & Alias Lookup
   const { page, redirectUrl } = await getSeoPageData(slug);
