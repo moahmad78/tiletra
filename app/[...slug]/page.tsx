@@ -10,6 +10,7 @@ import { getProducts } from "@/lib/actions/products";
 import type { Product } from "@/lib/data/products";
 import { SEO_PAGES_SEED_DATA } from "@/prisma/seed-seo-pages";
 import { SEO_PAGES_BATCH2_DATA } from "@/prisma/seed-seo-pages-batch2";
+import { SEO_KEYWORDS } from "@/lib/seo-keywords";
 
 const ALL_SEO_PAGES = [...SEO_PAGES_SEED_DATA, ...SEO_PAGES_BATCH2_DATA];
 
@@ -20,9 +21,13 @@ interface PageProps {
 }
 
 export async function generateStaticParams() {
-  return ALL_SEO_PAGES.map((item) => ({
+  const seedParams = ALL_SEO_PAGES.map((item) => ({
     slug: item.slug.split("/"),
   }));
+  const keywordParams = SEO_KEYWORDS.map((item) => ({
+    slug: item.slug.split("/"),
+  }));
+  return [...seedParams, ...keywordParams];
 }
 
 async function getSeoPageData(slug: string) {
@@ -82,6 +87,40 @@ async function getSeoPageData(slug: string) {
   const aliasSeed = ALL_SEO_PAGES.find((p) => p.aliases?.includes(slug));
   if (aliasSeed) {
     return { page: null, redirectUrl: `${BASE_SITE_URL}/${aliasSeed.slug}` };
+  }
+
+  // Fallback to high-intent QuickCommerce / Dukan SEO keywords
+  const keywordMatch = SEO_KEYWORDS.find((k) => k.slug === slug);
+  if (keywordMatch) {
+    return {
+      page: {
+        id: `kw-${keywordMatch.slug}`,
+        slug: keywordMatch.slug,
+        aliases: [],
+        pageType: "CATEGORY",
+        category: "Hardware",
+        locality: keywordMatch.slug.includes("bangalore") ? "Bengaluru" : null,
+        targetKeyword: keywordMatch.h1Text || keywordMatch.title,
+        title: keywordMatch.title,
+        metaDescription: keywordMatch.desc,
+        h1: keywordMatch.h1Text || keywordMatch.title,
+        introContent: `<p>${keywordMatch.desc} Build better and deliver faster with IntriHub quick commerce material delivery.</p>`,
+        faqItems: [
+          {
+            q: `How fast is delivery for ${keywordMatch.title.split("|")[0].trim()}?`,
+            a: "We offer express on-site delivery in Bengaluru and surrounding construction sites.",
+          },
+          {
+            q: "Can I order building & hardware materials online?",
+            a: "Yes, IntriHub provides a full online catalog of hardware, sanitaryware, electricals, tiles, and plywood.",
+          },
+        ],
+        productFilter: { category: "Hardware" },
+        isPublished: true,
+        updatedAt: new Date("2026-10-16"),
+      },
+      redirectUrl: null,
+    };
   }
 
   return { page: null, redirectUrl: null };

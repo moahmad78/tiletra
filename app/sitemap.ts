@@ -9,6 +9,7 @@ import { SEO_PAGES_BATCH2_DATA } from "@/prisma/seed-seo-pages-batch2";
 import { getApprovedSitemapLocationRoutes } from "@/lib/seo-quality-gate";
 import { getCategorySeo } from "@/lib/data/category-seo";
 import { USP_ITEMS } from "@/lib/data/usps";
+import { SEO_KEYWORDS } from "@/lib/seo-keywords";
 
 export const revalidate = 3600; // Revalidate every 1 hour
 
@@ -360,6 +361,14 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
         priority: page.pageType === "CATEGORY" ? 0.8 : 0.6,
       }));
 
+    // QuickCommerce & Local Dukan SEO Keywords
+    const seoKeywordRoutes: MetadataRoute.Sitemap = SEO_KEYWORDS.map((item) => ({
+      url: `${BASE_SITE_URL}/${item.slug}`,
+      lastModified: new Date(),
+      changeFrequency: "weekly" as const,
+      priority: 0.85,
+    }));
+
     // Deduplicate entries by canonical URL and filter out non-public/private/test URLs
     const allRoutes = [
       ...staticRoutes,
@@ -368,6 +377,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
       ...locationRoutes,
       ...productRoutes,
       ...seoLandingRoutes,
+      ...seoKeywordRoutes,
     ];
 
     const uniqueMap = new Map<string, MetadataRoute.Sitemap[number]>();
@@ -430,6 +440,13 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
       priority: 0.85,
     }));
 
+    const fallbackSeoKeywordRoutes: MetadataRoute.Sitemap = SEO_KEYWORDS.map((item) => ({
+      url: `${BASE_SITE_URL}/${item.slug}`,
+      lastModified: new Date(),
+      changeFrequency: "weekly" as const,
+      priority: 0.85,
+    }));
+
     const allFallback = [
       ...staticRoutes,
       ...fallbackGuideRoutes,
@@ -437,6 +454,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
       ...fallbackLocationRoutes,
       ...fallbackProductRoutes,
       ...fallbackSeoRoutes,
+      ...fallbackSeoKeywordRoutes,
     ];
 
     const uniqueMap = new Map<string, MetadataRoute.Sitemap[number]>();
