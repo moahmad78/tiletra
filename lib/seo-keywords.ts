@@ -21,6 +21,20 @@ export interface KeywordSEO {
 }
 
 export const SEO_KEYWORDS: KeywordSEO[] = [
+  // Short Direct Keyword Slugs
+  { 
+    slug: "hardwaredukan", 
+    title: "Hardware Dukan Online | Fast Site Delivery - IntriHub", 
+    desc: "Aapki apni digital hardware dukan. Order building materials, tools, plumbing & electrical hardware online.",
+    h1Text: "India's Online Hardware Dukan"
+  },
+  { 
+    slug: "hardwareshop", 
+    title: "Hardware Shop Online | Buy Construction Supplies - IntriHub", 
+    desc: "Order hardware materials online from trusted digital hardware shop. Express delivery for tools, electricals & plumbing.",
+    h1Text: "Digital Hardware Shop for Every Material & Every Space"
+  },
+
   // Dukan Focus
   { 
     slug: "online-hardware-dukan", 
