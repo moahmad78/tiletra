@@ -5,18 +5,22 @@ import { io, Socket } from "socket.io-client";
 
 let socketInstance: Socket | null = null;
 
+const SOCKET_URL =
+  process.env.NEXT_PUBLIC_SOCKET_URL ||
+  (typeof window !== "undefined" && window.location.hostname === "localhost"
+    ? "http://localhost:4000"
+    : undefined);
+
 export function getSocket(): Socket {
   if (!socketInstance) {
-    const socketUrl = process.env.NEXT_PUBLIC_SOCKET_URL || undefined;
-
-    socketInstance = io(socketUrl, {
+    socketInstance = io(SOCKET_URL, {
       path: "/socket.io",
       autoConnect: true,
       reconnection: true,
-      reconnectionAttempts: 2,
-      reconnectionDelay: 5000,
-      transports: ["polling", "websocket"],
-      timeout: 5000,
+      reconnectionAttempts: 5,
+      reconnectionDelay: 3000,
+      transports: ["websocket", "polling"],
+      timeout: 10000,
     });
 
     socketInstance.on("connect", () => {
@@ -24,7 +28,6 @@ export function getSocket(): Socket {
     });
 
     socketInstance.on("connect_error", (err) => {
-      // Quiet warning for serverless / fallback environments
       if (process.env.NODE_ENV === "development") {
         console.warn("[SOCKET CONNECT NOTICE]:", err.message);
       }
@@ -37,6 +40,9 @@ export function getSocket(): Socket {
 
   return socketInstance;
 }
+
+// Direct singleton socket export (SSR-safe)
+export const socket = typeof window !== "undefined" ? getSocket() : (null as unknown as Socket);
 
 /**
  * Custom React Hook for Real-time Socket.IO Subscriptions
