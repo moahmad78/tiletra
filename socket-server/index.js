@@ -112,6 +112,16 @@ io.on('connection', (socket) => {
     }
   });
 
+  // Client action trigger & live broadcast
+  socket.on('client-action', (data) => {
+    console.log('[CLIENT ACTION RECEIVED]:', data);
+    io.emit('update-stats', {
+      message: 'Data updated at ' + new Date().toLocaleTimeString(),
+      data,
+      timestamp: new Date().toISOString(),
+    });
+  });
+
   socket.on('disconnect', (reason) => {
     console.log(`[CLIENT DISCONNECTED] ID: ${socket.id} (Reason: ${reason})`);
   });
