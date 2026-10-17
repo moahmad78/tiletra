@@ -2,7 +2,17 @@ const express = require('express');
 const http = require('http');
 const { Server } = require('socket.io');
 const cors = require('cors');
+const helmet = require('helmet');
 require('dotenv').config();
+
+// Global Anti-Crash Protectors (Prevent Unhandled Exceptions from killing the server)
+process.on('uncaughtException', (err) => {
+  console.error('[FATAL UNCAUGHT EXCEPTION]:', err);
+});
+
+process.on('unhandledRejection', (reason, promise) => {
+  console.error('[UNHANDLED REJECTION]:', reason);
+});
 
 const app = express();
 const server = http.createServer(app);
@@ -12,7 +22,11 @@ const CORS_ORIGINS = process.env.CORS_ORIGIN
   ? process.env.CORS_ORIGIN.split(',').map((o) => o.trim())
   : ['https://intrihub.com', 'https://www.intrihub.com', 'http://localhost:3000', 'http://127.0.0.1:3000'];
 
-// Setup Express Middleware
+// Setup Express Security & Middleware
+app.use(helmet({
+  contentSecurityPolicy: false, // Let Next.js and Cloudflare manage full CSP
+  crossOriginResourcePolicy: { policy: "cross-origin" }
+}));
 app.use(cors({ origin: CORS_ORIGINS }));
 app.use(express.json());
 

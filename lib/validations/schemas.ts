@@ -3,6 +3,54 @@ import { sanitizeHtml, sanitizeString, sanitizeFilename } from "@/lib/sanitizati
 import { validatePhone, validatePincode, validateEmail } from "@/lib/validators";
 
 /**
+ * Disposable/temporary email domains list to prevent bot spam and protect SMTP reputation
+ */
+const DISPOSABLE_EMAIL_DOMAINS = new Set([
+  "mailinator.com",
+  "10minutemail.com",
+  "tempmail.com",
+  "guerrillamail.com",
+  "throwawaymail.com",
+  "yopmail.com",
+  "sharklasers.com",
+  "getairmail.com",
+  "dispostable.com",
+  "trashmail.com",
+  "fakeinbox.com",
+  "temp-mail.org",
+  "mohmal.com",
+  "crazymailing.com",
+]);
+
+/**
+ * Strict Email Schema for Auth & OTP dispatch
+ */
+export const strictEmailSchema = z
+  .string()
+  .min(5, "Email is too short.")
+  .max(254, "Email exceeds maximum length.")
+  .trim()
+  .toLowerCase()
+  .refine((val) => validateEmail(val), {
+    message: "Invalid email format.",
+  })
+  .refine((val) => {
+    const domain = val.split("@")[1];
+    return !DISPOSABLE_EMAIL_DOMAINS.has(domain);
+  }, {
+    message: "Temporary/disposable email addresses are not allowed.",
+  });
+
+export function validateStrictEmail(email: unknown): { valid: boolean; email?: string; error?: string } {
+  const result = strictEmailSchema.safeParse(email);
+  if (!result.success) {
+    const issueMsg = result.error.issues?.[0]?.message || (result.error as any).errors?.[0]?.message || "Invalid email address.";
+    return { valid: false, error: issueMsg };
+  }
+  return { valid: true, email: result.data };
+}
+
+/**
  * Address Input Validation Schema
  */
 export const addressInputSchema = z.object({

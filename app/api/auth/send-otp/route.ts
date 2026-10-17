@@ -1,6 +1,8 @@
 import { NextRequest, NextResponse } from "next/server";
 import { sendEmailOtp, OtpPurpose } from "@/lib/actions/email-otp";
-import { validateEmail } from "@/lib/validators";
+import { validateStrictEmail } from "@/lib/validations/schemas";
+import { checkRateLimit } from "@/lib/rate-limit";
+import { verifyTurnstileToken } from "@/lib/turnstile";
 
 export async function OPTIONS() {
   return new NextResponse(null, {
@@ -25,30 +27,53 @@ export async function GET() {
 
 export async function POST(req: NextRequest) {
   try {
+    const clientIp =
+      req.headers.get("x-forwarded-for")?.split(",")[0]?.trim() ||
+      req.headers.get("x-real-ip") ||
+      "127.0.0.1";
+
+    // 1. Per-IP Rate Limiting (Defense against bot email-flooding attacks)
+    // Max 5 OTP send requests per hour per IP address
+    const ipRateCheck = checkRateLimit(`otp_send_ip:${clientIp}`, 5, 60 * 60 * 1000);
+    if (!ipRateCheck.allowed) {
+      console.warn(`[API_SEND_OTP_RATE_LIMITED] ip=${clientIp} exceeded 5 OTP requests/hour`);
+      return NextResponse.json(
+        {
+          success: false,
+          error: "Too many verification requests from this device/network. Please try again after 1 hour.",
+        },
+        { status: 429 }
+      );
+    }
+
     const body = await req.json().catch(() => ({}));
-    const { email, purpose = "customer", lang = "en" } = body;
+    const { email, purpose = "customer", lang = "en", turnstileToken } = body;
 
-    if (!email || typeof email !== "string") {
+    // 2. Bot Protection (Cloudflare Turnstile verification)
+    const turnstileCheck = await verifyTurnstileToken(turnstileToken, clientIp);
+    if (!turnstileCheck.success) {
       return NextResponse.json(
-        { success: false, error: "Please provide a valid email address." },
-        { status: 400 }
+        { success: false, error: turnstileCheck.error || "Bot verification failed." },
+        { status: 403 }
       );
     }
 
-    const cleanEmail = email.trim().toLowerCase();
-    if (!validateEmail(cleanEmail)) {
+    // 3. Strict Zod Email Validation & Disposable Domain Blocking
+    const emailValidation = validateStrictEmail(email);
+    if (!emailValidation.valid || !emailValidation.email) {
       return NextResponse.json(
-        { success: false, error: "Invalid email format." },
+        { success: false, error: emailValidation.error || "Please enter a valid email address." },
         { status: 400 }
       );
     }
+    const cleanEmail = emailValidation.email;
 
     const validPurposes: OtpPurpose[] = ["customer", "admin", "vendor", "business"];
     const resolvedPurpose: OtpPurpose = validPurposes.includes(purpose as OtpPurpose)
       ? (purpose as OtpPurpose)
       : "customer";
 
-    console.log(`[API_SEND_OTP] Request received for email=${cleanEmail} purpose=${resolvedPurpose}`);
+    console.log(`[API_SEND_OTP] Request received for email=${cleanEmail} purpose=${resolvedPurpose} ip=${clientIp}`);
 
     const result = await sendEmailOtp(cleanEmail, resolvedPurpose, lang);
 

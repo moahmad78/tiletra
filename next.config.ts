@@ -2,12 +2,12 @@ import type { NextConfig } from "next";
 
 const cspHeader = `
   default-src 'self';
-  script-src 'self' 'unsafe-eval' 'unsafe-inline' https://www.googletagmanager.com https://checkout.razorpay.com https://translate.google.com https://translate.googleapis.com https://translate-pa.googleapis.com https://www.gstatic.com https://*.gstatic.com;
+  script-src 'self' 'unsafe-eval' 'unsafe-inline' https://challenges.cloudflare.com https://www.googletagmanager.com https://checkout.razorpay.com https://translate.google.com https://translate.googleapis.com https://translate-pa.googleapis.com https://www.gstatic.com https://*.gstatic.com;
   style-src 'self' 'unsafe-inline' https://fonts.googleapis.com https://translate.google.com https://translate.googleapis.com https://www.gstatic.com https://*.gstatic.com;
   img-src 'self' blob: data: https: https://*.googleusercontent.com https://lh3.googleusercontent.com https://unavatar.io https://translate.google.com https://translate.googleapis.com https://www.gstatic.com https://*.gstatic.com;
   font-src 'self' data: https://fonts.gstatic.com https://www.gstatic.com https://*.gstatic.com;
-  connect-src 'self' https://*.googletagmanager.com https://*.google-analytics.com https://*.analytics.google.com https://api.razorpay.com https://lumberjack.razorpay.com https://*.intrihub.com wss://*.intrihub.com http://localhost:* ws://localhost:* https://translate.google.com https://translate.googleapis.com https://translate-pa.googleapis.com https://www.gstatic.com https://*.gstatic.com https://*.googleusercontent.com https://lh3.googleusercontent.com https://unavatar.io;
-  frame-src 'self' https://www.googletagmanager.com https://api.razorpay.com https://translate.google.com;
+  connect-src 'self' https://challenges.cloudflare.com https://*.googletagmanager.com https://*.google-analytics.com https://*.analytics.google.com https://api.razorpay.com https://lumberjack.razorpay.com https://*.intrihub.com wss://*.intrihub.com http://localhost:* ws://localhost:* https://translate.google.com https://translate.googleapis.com https://translate-pa.googleapis.com https://www.gstatic.com https://*.gstatic.com https://*.googleusercontent.com https://lh3.googleusercontent.com https://unavatar.io;
+  frame-src 'self' https://challenges.cloudflare.com https://www.googletagmanager.com https://api.razorpay.com https://translate.google.com;
   object-src 'none';
   base-uri 'self';
   form-action 'self';
@@ -15,6 +15,10 @@ const cspHeader = `
 
 const nextConfig: NextConfig = {
   poweredByHeader: false,
+  productionBrowserSourceMaps: false,
+  compiler: {
+    removeConsole: process.env.NODE_ENV === "production" ? { exclude: ["error", "warn"] } : false,
+  },
   images: {
     unoptimized: true,
     dangerouslyAllowSVG: true,

@@ -28,6 +28,27 @@ export async function POST(req: NextRequest) {
       );
     }
 
+    // IP-level rate limiting on mobile OTP send (Max 5 per hour per IP)
+    const { checkRateLimit } = await import("@/lib/rate-limit");
+    const ipRateCheck = checkRateLimit(`mobile_otp_ip:${clientIp}`, 5, 60 * 60 * 1000);
+    if (!ipRateCheck.allowed) {
+      return mobileApiResponse(
+        { success: false, error: "Too many verification requests from this device. Please try again later." },
+        429
+      );
+    }
+
+    if (email) {
+      const { validateStrictEmail } = await import("@/lib/validations/schemas");
+      const emailValidation = validateStrictEmail(email);
+      if (!emailValidation.valid || !emailValidation.email) {
+        return mobileApiResponse(
+          { success: false, error: emailValidation.error || "Please provide a valid email address." },
+          400
+        );
+      }
+    }
+
     // Strict pre-OTP checks for Business portal
     if (isBusinessPortal) {
       const targetIdentifier = email ? email.trim() : phone ? phone.trim() : undefined;
