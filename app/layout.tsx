@@ -14,6 +14,7 @@ import AppInstallPrompt from "@/components/pwa/AppInstallPrompt";
 import { Toaster } from "sonner";
 import { LanguageProvider } from "@/components/translate/LanguageProvider";
 import GoogleTranslateBootstrap from "@/components/translate/GoogleTranslateBootstrap";
+import RealtimeGlobalSync from "@/components/realtime/RealtimeGlobalSync";
 
 import Script from "next/script";
 
@@ -326,6 +327,7 @@ j=d.createElement(s),dl=l!='dataLayer'?'&l='+l:'';j.async=true;j.src=
         <LanguageProvider>
           <QuoteModalProvider>
             {children}
+            <RealtimeGlobalSync />
             <CartDrawer />
             <AddToCartToast />
             <BottomTabBar />
