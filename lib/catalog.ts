@@ -104,6 +104,47 @@ export const CATALOG_UNITS = [
   "ton",
 ];
 
+export const DIMENSION_UNITS = ["mm", "cm", "inch", "feet"] as const;
+export type DimensionUnit = (typeof DIMENSION_UNITS)[number];
+
+export const CATALOG_THICKNESSES = [
+  "4 mm",
+  "6 mm",
+  "8 mm",
+  "9 mm",
+  "10 mm",
+  "12 mm",
+  "15 mm",
+  "16 mm",
+  "18 mm",
+  "19 mm",
+  "20 mm",
+  "25 mm",
+  "30 mm",
+  "32 mm",
+  "0.5 inch",
+  "0.75 inch",
+  "1.0 inch",
+  "1.5 inch",
+  "Custom Thickness",
+];
+
+export function convertDimensionToCm(value: number, unit: "mm" | "cm" | "inch" | "feet"): number {
+  if (isNaN(value) || value <= 0) return 0;
+  switch (unit) {
+    case "mm":
+      return Number((value / 10).toFixed(2));
+    case "cm":
+      return value;
+    case "inch":
+      return Number((value * 2.54).toFixed(2));
+    case "feet":
+      return Number((value * 30.48).toFixed(2));
+    default:
+      return value;
+  }
+}
+
 export const CATALOG_DIMENSIONS = [
   // Tiles & Slabs
   "600x600 mm (2x2 ft)",

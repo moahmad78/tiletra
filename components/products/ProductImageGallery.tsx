@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useState, useRef, useEffect, useCallback } from "react";
+import { createPortal } from "react-dom";
 import {
   ChevronLeft,
   ChevronRight,
@@ -50,6 +51,11 @@ export default function ProductImageGallery({
   onNotifyMe,
   notifySuccess,
 }: ProductImageGalleryProps) {
+  const [mounted, setMounted] = useState(false);
+  useEffect(() => {
+    setMounted(true);
+  }, []);
+
   const safeImages = images && images.length > 0 ? images : ["/placeholders/product.svg"];
   const currentIdx = Math.min(Math.max(0, activeImage), safeImages.length - 1);
   const activeImageUrl = safeImages[currentIdx] || safeImages[0];
@@ -85,6 +91,17 @@ export default function ProductImageGallery({
     setLightboxZoom(1);
     setPanOffset({ x: 0, y: 0 });
   };
+
+  // Prevent background scroll when popup is open
+  useEffect(() => {
+    if (lightboxOpen) {
+      const orig = document.body.style.overflow;
+      document.body.style.overflow = "hidden";
+      return () => {
+        document.body.style.overflow = orig;
+      };
+    }
+  }, [lightboxOpen]);
 
   const handlePrevImage = useCallback(() => {
     onSelectImage((currentIdx - 1 + safeImages.length) % safeImages.length);
@@ -377,27 +394,36 @@ export default function ProductImageGallery({
       </div>
 
 
-      {/* ── Flipkart Fullscreen Lightbox Modal (High-Res Inspector) ── */}
-      {lightboxOpen && (
-        <div className="fixed inset-0 z-50 bg-black/95 backdrop-blur-md flex flex-col justify-between p-3 sm:p-6 animate-in fade-in duration-200">
+      {/* ── Fullscreen Lightbox Modal (Mounted via Portal to prevent any sticky sidebar overlap) ── */}
+      {mounted && lightboxOpen && typeof document !== "undefined" && createPortal(
+        <div
+          role="dialog"
+          aria-modal="true"
+          aria-label="Product Image Preview"
+          className="fixed inset-0 z-[999999] bg-black/92 backdrop-blur-md flex flex-col justify-between p-3 sm:p-6 animate-in fade-in duration-200 select-none"
+          onClick={(e) => {
+            if (e.target === e.currentTarget) closeLightbox();
+          }}
+        >
           {/* Header Bar */}
-          <div className="flex items-center justify-between text-white pb-3 border-b border-white/10">
-            <div className="flex items-center gap-3">
-              <h2 className="text-sm sm:text-base font-bold truncate max-w-[240px] sm:max-w-md">
+          <div className="flex items-center justify-between text-white pb-3 border-b border-white/10 z-20 shrink-0">
+            <div className="flex items-center gap-3 min-w-0 pr-2">
+              <h2 className="text-sm sm:text-base font-bold truncate max-w-[200px] sm:max-w-md text-white">
                 {product.name}
               </h2>
-              <span className="text-xs text-gray-400 font-semibold px-2 py-0.5 rounded-full bg-white/10">
+              <span className="text-xs text-gray-300 font-semibold px-2.5 py-0.5 rounded-full bg-white/15 shrink-0">
                 {currentIdx + 1} of {safeImages.length}
               </span>
             </div>
 
-            {/* Controls: Zoom In, Zoom Out, Reset, Close */}
-            <div className="flex items-center gap-2">
+            {/* Controls: Zoom In, Zoom Out, Reset, Cut / Close Button */}
+            <div className="flex items-center gap-1.5 sm:gap-2 shrink-0">
               <button
                 type="button"
                 onClick={() => setLightboxZoom((prev) => Math.min(prev + 0.5, 3))}
                 aria-label="Zoom in"
-                className="p-2 rounded-lg bg-white/10 hover:bg-white/20 text-white transition-colors cursor-pointer"
+                title="Zoom In (+)"
+                className="p-2 rounded-xl bg-white/10 hover:bg-white/20 text-white transition-colors cursor-pointer"
               >
                 <ZoomIn size={18} />
               </button>
@@ -405,7 +431,8 @@ export default function ProductImageGallery({
                 type="button"
                 onClick={() => setLightboxZoom((prev) => Math.max(prev - 0.5, 1))}
                 aria-label="Zoom out"
-                className="p-2 rounded-lg bg-white/10 hover:bg-white/20 text-white transition-colors cursor-pointer"
+                title="Zoom Out (-)"
+                className="p-2 rounded-xl bg-white/10 hover:bg-white/20 text-white transition-colors cursor-pointer"
               >
                 <ZoomOut size={18} />
               </button>
@@ -416,17 +443,22 @@ export default function ProductImageGallery({
                   setPanOffset({ x: 0, y: 0 });
                 }}
                 aria-label="Reset zoom"
-                className="p-2 rounded-lg bg-white/10 hover:bg-white/20 text-white transition-colors cursor-pointer"
+                title="Reset Zoom"
+                className="p-2 rounded-xl bg-white/10 hover:bg-white/20 text-white transition-colors cursor-pointer"
               >
                 <RotateCcw size={18} />
               </button>
+
+              {/* Prominent Cut / Close Button */}
               <button
                 type="button"
                 onClick={closeLightbox}
-                aria-label="Close photo viewer"
-                className="p-2 rounded-lg bg-white/20 hover:bg-white/30 text-white transition-colors ml-2 cursor-pointer"
+                aria-label="Close photo preview"
+                title="Cut / Close (Esc)"
+                className="flex items-center gap-1.5 px-3.5 py-2 rounded-xl bg-red-600 hover:bg-red-700 active:scale-95 text-white font-bold text-xs sm:text-sm shadow-lg transition-all ml-1.5 cursor-pointer ring-2 ring-red-400/40"
               >
-                <X size={20} />
+                <X size={18} strokeWidth={2.5} />
+                <span className="font-extrabold tracking-wide">Cut / Close</span>
               </button>
             </div>
           </div>
@@ -434,6 +466,9 @@ export default function ProductImageGallery({
           {/* Center Stage Image with Drag/Pan support when zoomed */}
           <div
             className="relative flex-1 w-full flex items-center justify-center overflow-hidden my-3 cursor-grab active:cursor-grabbing"
+            onClick={(e) => {
+              if (e.target === e.currentTarget) closeLightbox();
+            }}
             onMouseDown={(e) => {
               if (lightboxZoom > 1) {
                 setIsDragging(true);
@@ -452,7 +487,7 @@ export default function ProductImageGallery({
             onMouseLeave={() => setIsDragging(false)}
           >
             <div
-              className="relative max-w-full max-h-[75vh] aspect-square w-[550px] sm:w-[650px] lg:w-[750px] transition-transform duration-100 ease-out"
+              className="relative max-w-full max-h-[76vh] aspect-square w-[550px] sm:w-[680px] lg:w-[820px] transition-transform duration-100 ease-out flex items-center justify-center pointer-events-none"
               style={{
                 transform: `scale(${lightboxZoom}) translate(${panOffset.x / lightboxZoom}px, ${panOffset.y / lightboxZoom}px)`,
               }}
@@ -463,29 +498,35 @@ export default function ProductImageGallery({
                 alt={product.name}
                 fill
                 priority
-                className="object-contain pointer-events-none select-none"
+                className="object-contain select-none drop-shadow-2xl"
                 sizes="100vw"
               />
             </div>
 
-            {/* Chevrons */}
+            {/* Navigation Chevrons */}
             {safeImages.length > 1 && (
               <>
                 <button
                   type="button"
-                  onClick={handlePrevImage}
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    handlePrevImage();
+                  }}
                   aria-label="Previous image"
-                  className="absolute left-4 top-1/2 -translate-y-1/2 w-11 h-11 rounded-full bg-white/20 hover:bg-white/40 text-white flex items-center justify-center backdrop-blur-md transition-all cursor-pointer"
+                  className="absolute left-3 sm:left-6 top-1/2 -translate-y-1/2 w-11 h-11 sm:w-12 sm:h-12 rounded-full bg-white/20 hover:bg-white/40 active:scale-95 text-white flex items-center justify-center backdrop-blur-md transition-all cursor-pointer shadow-lg z-20"
                 >
-                  <ChevronLeft size={24} />
+                  <ChevronLeft size={26} />
                 </button>
                 <button
                   type="button"
-                  onClick={handleNextImage}
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    handleNextImage();
+                  }}
                   aria-label="Next image"
-                  className="absolute right-4 top-1/2 -translate-y-1/2 w-11 h-11 rounded-full bg-white/20 hover:bg-white/40 text-white flex items-center justify-center backdrop-blur-md transition-all cursor-pointer"
+                  className="absolute right-3 sm:right-6 top-1/2 -translate-y-1/2 w-11 h-11 sm:w-12 sm:h-12 rounded-full bg-white/20 hover:bg-white/40 active:scale-95 text-white flex items-center justify-center backdrop-blur-md transition-all cursor-pointer shadow-lg z-20"
                 >
-                  <ChevronRight size={24} />
+                  <ChevronRight size={26} />
                 </button>
               </>
             )}
@@ -493,7 +534,7 @@ export default function ProductImageGallery({
 
           {/* Bottom Thumbnails Strip in Lightbox */}
           {safeImages.length > 1 && (
-            <div className="flex items-center justify-center gap-2 overflow-x-auto py-2 scrollbar-none">
+            <div className="flex items-center justify-center gap-2 overflow-x-auto py-2 scrollbar-none shrink-0 z-20">
               {safeImages.map((img, i) => {
                 const isSelected = currentIdx === i;
                 return (
@@ -504,18 +545,18 @@ export default function ProductImageGallery({
                       onSelectImage(i);
                       setPanOffset({ x: 0, y: 0 });
                     }}
-                    className={`relative w-14 h-14 rounded-lg overflow-hidden border-2 transition-all shrink-0 cursor-pointer p-0.5 bg-black/40 ${
-                      isSelected ? "border-[#F26522] scale-105" : "border-white/20 opacity-60 hover:opacity-100"
+                    className={`relative w-14 h-14 sm:w-16 sm:h-16 rounded-xl overflow-hidden border-2 transition-all shrink-0 cursor-pointer p-0.5 bg-black/40 ${
+                      isSelected ? "border-[#F26522] ring-2 ring-[#F26522]/40 scale-105" : "border-white/20 opacity-60 hover:opacity-100"
                     }`}
                   >
-                    <div className="relative w-full h-full rounded overflow-hidden">
+                    <div className="relative w-full h-full rounded-lg overflow-hidden">
                       <SafeImage
                         src={img}
                         variantSize={400}
                         alt={`Thumbnail ${i + 1}`}
                         fill
                         className="object-cover"
-                        sizes="56px"
+                        sizes="64px"
                       />
                     </div>
                   </button>
@@ -523,7 +564,8 @@ export default function ProductImageGallery({
               })}
             </div>
           )}
-        </div>
+        </div>,
+        document.body
       )}
     </div>
   );

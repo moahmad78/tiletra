@@ -58,6 +58,8 @@ export async function createVendorProduct(data: {
   material?: string;
   finish?: string;
   size?: string;
+  thickness?: string;
+  selectedColors?: string[];
   usage?: string;
   look?: string;
   weightKg?: number;

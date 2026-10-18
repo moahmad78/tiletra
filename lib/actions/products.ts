@@ -18,6 +18,7 @@ export type CreateProductInput = {
   modelNumber?: string | null;
   sku?: string | null;
   material: string;
+  thickness?: string | null;
   description: string;
   shortDescription?: string | null;
   images: string[];
@@ -54,6 +55,7 @@ export type CreateProductInput = {
     finish?: any;
     color?: string;
     colorHex?: string | null;
+    thickness?: string | null;
     swatchImage?: string | null;
     image?: string | null;
     images?: string[];
@@ -730,7 +732,7 @@ export async function createProduct(input: CreateProductInput) {
         finish: primaryVariant.finish || "Standard",
         size: primaryVariant.size || "Standard",
         pricePerSqft: Number(primaryVariant.pricePerSqft || primaryVariant.price || primaryVariant.pricePerBox || 100),
-        thickness: "Standard",
+        thickness: input.thickness || primaryVariant.thickness || "Standard",
         usage: "Interior / Project",
         look: input.name,
         grade: input.grade || null,
@@ -756,6 +758,7 @@ export async function createProduct(input: CreateProductInput) {
         specs: input.specs
           ? {
               ...input.specs,
+              ...(input.thickness ? { thickness: input.thickness } : {}),
               ...(input.costPrice !== undefined && input.costPrice !== null ? { costPrice: Number(input.costPrice) } : {}),
               ...(input.tags ? { tags: input.tags } : {}),
               ...(input.customBadgeText ? { customBadgeText: input.customBadgeText } : {}),
@@ -763,6 +766,7 @@ export async function createProduct(input: CreateProductInput) {
               ...(input.showAutoDiscount !== undefined ? { showAutoDiscount: input.showAutoDiscount } : {}),
             }
           : {
+              ...(input.thickness ? { thickness: input.thickness } : {}),
               ...(input.costPrice !== undefined && input.costPrice !== null ? { costPrice: Number(input.costPrice) } : {}),
               ...(input.tags ? { tags: input.tags } : {}),
               ...(input.customBadgeText ? { customBadgeText: input.customBadgeText } : {}),
@@ -839,6 +843,7 @@ export async function createProduct(input: CreateProductInput) {
             attributes: v.attributes || null,
             variantSpecs: {
               ...(v.variantSpecs || {}),
+              ...(v.thickness ? { thickness: v.thickness } : input.thickness ? { thickness: input.thickness } : {}),
               ...(v.costPrice !== undefined && v.costPrice !== null ? { costPrice: Number(v.costPrice) } : {}),
               ...(v.customBadgeText ? { customBadgeText: v.customBadgeText } : (input.customBadgeText ? { customBadgeText: input.customBadgeText } : {})),
               ...(v.badgeColor ? { badgeColor: v.badgeColor } : (input.badgeColor ? { badgeColor: input.badgeColor } : {})),
@@ -1215,6 +1220,7 @@ export async function updateProduct(id: string, input: Partial<CreateProductInpu
       }
     }
     if (input.material) updateData.material = input.material;
+    if (input.thickness !== undefined) updateData.thickness = input.thickness;
     if (input.images) updateData.images = input.images;
     if (input.videos !== undefined) updateData.videos = input.videos;
     if (input.isBestseller !== undefined) updateData.isBestseller = input.isBestseller;
@@ -1270,48 +1276,85 @@ export async function updateProduct(id: string, input: Partial<CreateProductInpu
     if (input.isFeatured !== undefined) updateData.isFeatured = Boolean(input.isFeatured);
     if (input.scheduledPublishDate !== undefined) updateData.scheduledPublishDate = input.scheduledPublishDate ? new Date(input.scheduledPublishDate) : null;
 
+    const productImages = Array.isArray(input.images)
+      ? input.images.filter((img) => typeof img === "string" && img.trim() !== "" && !img.includes("placeholder"))
+      : (Array.isArray(existing.images) ? (existing.images as string[]).filter((img) => typeof img === "string" && img.trim() !== "" && !img.includes("placeholder")) : []);
+    const validProductImagesSet = new Set(productImages);
+
     if (input.variants && input.variants.length > 0) {
       await prisma.productVariant.deleteMany({ where: { productId: id } });
       updateData.variants = {
-        create: input.variants.map((v, vIdx) => ({
-          sku: v.sku || null,
-          variantName: v.variantName || null,
-          size: v.size || "Standard",
-          finish: v.finish || "Standard",
-          color: v.color || "Standard",
-          colorHex: v.colorHex || null,
-          swatchImage: v.swatchImage || null,
-          image: v.image || (Array.isArray(v.images) && v.images[0] ? v.images[0] : (input.images?.[0] ?? null)),
-          images: Array.isArray(v.images) && v.images.length > 0 ? v.images : (v.image ? [v.image] : []),
-          unit: v.unit || input.sellingUnit || input.unitOfSale || "box",
-          attributeLabel: v.attributeLabel || null,
-          attributeValue: v.attributeValue || null,
-          attributes: v.attributes || null,
-          variantSpecs: v.variantSpecs || null,
-          mrp: v.mrp !== undefined && v.mrp !== null ? Number(v.mrp) : null,
-          weightKg: v.weightKg !== undefined && v.weightKg !== null ? Number(v.weightKg) : 2.5,
-          price: v.price !== undefined && v.price !== null ? Number(v.price) : Number(v.pricePerBox || 0),
-          pricePerBox: Number(v.pricePerBox || v.price || 0),
-          pricePerSqft: Number(v.pricePerSqft || 0),
-          sqftPerBox: Number(v.sqftPerBox || 1),
-          piecesPerBox: v.piecesPerBox ? Number(v.piecesPerBox) : 4,
-          stockBoxes: Number(v.stockBoxes ?? 50),
-          active: v.active !== undefined ? Boolean(v.active) : true,
-          lowStockAlert: v.lowStockAlert !== undefined && v.lowStockAlert !== null ? Number(v.lowStockAlert) : 10,
-          minOrderQuantity: v.minOrderQuantity !== undefined && v.minOrderQuantity !== null ? Number(v.minOrderQuantity) : 1,
-          maxOrderQuantity: v.maxOrderQuantity !== undefined && v.maxOrderQuantity !== null ? Number(v.maxOrderQuantity) : null,
-          isDefault: v.isDefault !== undefined ? Boolean(v.isDefault) : vIdx === 0,
-          barcode: v.barcode || null,
-          salePrice: v.salePrice !== undefined && v.salePrice !== null ? Number(v.salePrice) : null,
-          saleStartDate: v.saleStartDate ? new Date(v.saleStartDate) : null,
-          saleEndDate: v.saleEndDate ? new Date(v.saleEndDate) : null,
-          allowBackorders: Boolean(v.allowBackorders),
-          inStock: true,
-        })),
+        create: input.variants.map((v, vIdx) => {
+          let varImage = v.image || (Array.isArray(v.images) && v.images[0] ? v.images[0] : null);
+          let varImagesList = Array.isArray(v.images) && v.images.length > 0 ? v.images : (varImage ? [varImage] : []);
+
+          if (productImages.length > 0) {
+            if (!varImage || !validProductImagesSet.has(varImage)) {
+              varImage = productImages[0];
+            }
+            varImagesList = varImagesList.filter((img) => validProductImagesSet.has(img));
+            if (varImagesList.length === 0 && varImage) {
+              varImagesList = [varImage];
+            }
+          }
+
+          return {
+            sku: v.sku || null,
+            variantName: v.variantName || null,
+            size: v.size || "Standard",
+            finish: v.finish || "Standard",
+            color: v.color || "Standard",
+            colorHex: v.colorHex || null,
+            swatchImage: v.swatchImage || null,
+            image: varImage,
+            images: varImagesList,
+            unit: v.unit || input.sellingUnit || input.unitOfSale || "box",
+            attributeLabel: v.attributeLabel || null,
+            attributeValue: v.attributeValue || null,
+            attributes: v.attributes || null,
+            variantSpecs: v.variantSpecs || null,
+            mrp: v.mrp !== undefined && v.mrp !== null ? Number(v.mrp) : null,
+            weightKg: v.weightKg !== undefined && v.weightKg !== null ? Number(v.weightKg) : 2.5,
+            price: v.price !== undefined && v.price !== null ? Number(v.price) : Number(v.pricePerBox || 0),
+            pricePerBox: Number(v.pricePerBox || v.price || 0),
+            pricePerSqft: Number(v.pricePerSqft || 0),
+            sqftPerBox: Number(v.sqftPerBox || 1),
+            piecesPerBox: v.piecesPerBox ? Number(v.piecesPerBox) : 4,
+            stockBoxes: Number(v.stockBoxes ?? 50),
+            active: v.active !== undefined ? Boolean(v.active) : true,
+            lowStockAlert: v.lowStockAlert !== undefined && v.lowStockAlert !== null ? Number(v.lowStockAlert) : 10,
+            minOrderQuantity: v.minOrderQuantity !== undefined && v.minOrderQuantity !== null ? Number(v.minOrderQuantity) : 1,
+            maxOrderQuantity: v.maxOrderQuantity !== undefined && v.maxOrderQuantity !== null ? Number(v.maxOrderQuantity) : null,
+            isDefault: v.isDefault !== undefined ? Boolean(v.isDefault) : vIdx === 0,
+            barcode: v.barcode || null,
+            salePrice: v.salePrice !== undefined && v.salePrice !== null ? Number(v.salePrice) : null,
+            saleStartDate: v.saleStartDate ? new Date(v.saleStartDate) : null,
+            saleEndDate: v.saleEndDate ? new Date(v.saleEndDate) : null,
+            allowBackorders: Boolean(v.allowBackorders),
+            inStock: true,
+          };
+        }),
       };
       updateData.finish = input.variants[0].finish || "Standard";
       updateData.size = input.variants[0].size || "Standard";
       updateData.pricePerSqft = input.variants[0].pricePerSqft || 0;
+    } else if (input.images && productImages.length > 0) {
+      // If variants are not supplied in update payload, sanitize existing variants in DB
+      const existingVariants = await prisma.productVariant.findMany({ where: { productId: id } });
+      for (const ev of existingVariants) {
+        const needsImageFix = ev.image && !validProductImagesSet.has(ev.image);
+        const rawList = Array.isArray(ev.images) ? (ev.images as string[]) : [];
+        const cleanedList = rawList.filter((img) => validProductImagesSet.has(img));
+        if (needsImageFix || cleanedList.length !== rawList.length) {
+          await prisma.productVariant.update({
+            where: { id: ev.id },
+            data: {
+              image: productImages[0],
+              images: cleanedList.length > 0 ? cleanedList : [productImages[0]],
+            },
+          });
+        }
+      }
     }
 
     if (input.attributes) {
@@ -1374,6 +1417,9 @@ export async function updateProduct(id: string, input: Partial<CreateProductInpu
     safeRevalidate("/shop");
     safeRevalidate(`/shop/${updated.categorySlug}`);
     safeRevalidate(`/product/${updated.slug}`);
+    if (existing.slug && existing.slug !== updated.slug) {
+      safeRevalidate(`/product/${existing.slug}`);
+    }
     safeRevalidate("/admin/products");
     safeRevalidate("/admin/product-approvals");
     safeRevalidate("/vendor/products");

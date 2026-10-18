@@ -46,6 +46,8 @@ import {
   CATALOG_DIMENSIONS,
   CATALOG_FINISHES,
   CATALOG_MATERIALS,
+  CATALOG_THICKNESSES,
+  DIMENSION_UNITS,
   resolveColorHex,
 } from "../../src/constants/catalog";
 import ColorPalettePickerModal from "../../src/components/ColorPalettePickerModal";
@@ -55,6 +57,7 @@ interface VariantFormItem {
   color: string;
   colorHex?: string;
   size: string;
+  thickness?: string;
   finish: string;
   pricePerBox: string;
   pricePerSqft: string;
@@ -79,6 +82,8 @@ export default function AddProductScreen() {
   const [isBulky, setIsBulky] = useState(false);
   const [description, setDescription] = useState("");
   const [size, setSize] = useState("600x600 mm (2x2 ft)");
+  const [thickness, setThickness] = useState("9 mm");
+  const [selectedColors, setSelectedColors] = useState<string[]>(["Alaska White"]);
   const [finish, setFinish] = useState("Glossy");
   const [material, setMaterial] = useState("Glazed Vitrified (GVT)");
   const [images, setImages] = useState<string[]>([]);
@@ -92,6 +97,7 @@ export default function AddProductScreen() {
       color: "Alaska White",
       colorHex: resolveColorHex("Alaska White"),
       size: "600x600 mm (2x2 ft)",
+      thickness: "9 mm",
       finish: "Glossy",
       pricePerBox: "750",
       pricePerSqft: "45",
@@ -101,19 +107,22 @@ export default function AddProductScreen() {
 
   // Dropdown Picker Modal State
   const [dropdownType, setDropdownType] = useState<
-    "category" | "unit" | "size" | "finish" | "material" | "variant_size" | "variant_finish" | null
+    "category" | "unit" | "size" | "thickness" | "finish" | "material" | "variant_size" | "variant_thickness" | "variant_finish" | null
   >(null);
   const [dropdownVariantIdx, setDropdownVariantIdx] = useState<number | null>(null);
+  const [dimensionUnitFilter, setDimensionUnitFilter] = useState<"all" | "feet" | "inch" | "mm" | "cm">("all");
   const [customOptionInput, setCustomOptionInput] = useState("");
   const [dropdownSearch, setDropdownSearch] = useState("");
 
   // Rich Color Palette Picker Modal State (Solid, Gradient, Spectrum)
   const [colorPickerOpen, setColorPickerOpen] = useState(false);
   const [colorPickerVariantIdx, setColorPickerVariantIdx] = useState<number | null>(null);
+  const [isPrimaryColorPicker, setIsPrimaryColorPicker] = useState(false);
 
   // Custom Local Master Options
   const [customUnits, setCustomUnits] = useState<string[]>([]);
   const [customSizes, setCustomSizes] = useState<string[]>([]);
+  const [customThicknesses, setCustomThicknesses] = useState<string[]>([]);
   const [customFinishes, setCustomFinishes] = useState<string[]>([]);
   const [customMaterials, setCustomMaterials] = useState<string[]>([]);
 
@@ -138,6 +147,7 @@ export default function AddProductScreen() {
 
   const allUnits = Array.from(new Set([...CATALOG_UNITS, ...customUnits]));
   const allSizes = Array.from(new Set([...CATALOG_DIMENSIONS, ...customSizes]));
+  const allThicknesses = Array.from(new Set([...CATALOG_THICKNESSES, ...customThicknesses]));
   const allFinishes = Array.from(new Set([...CATALOG_FINISHES, ...customFinishes]));
   const allMaterials = Array.from(new Set([...CATALOG_MATERIALS, ...customMaterials]));
 
@@ -236,6 +246,7 @@ export default function AddProductScreen() {
         color: defaultColor,
         colorHex: resolveColorHex(defaultColor),
         size: size || "600x600 mm (2x2 ft)",
+        thickness: thickness || "9 mm",
         finish: finish || "Glossy",
         pricePerBox: pricePerBox || "750",
         pricePerSqft: pricePerSqft || "45",
@@ -288,6 +299,11 @@ export default function AddProductScreen() {
       setSize(val);
       setCustomOptionInput("");
       setDropdownType(null);
+    } else if (dropdownType === "thickness") {
+      setCustomThicknesses((prev) => Array.from(new Set([...prev, val])));
+      setThickness(val);
+      setCustomOptionInput("");
+      setDropdownType(null);
     } else if (dropdownType === "finish") {
       setCustomFinishes((prev) => Array.from(new Set([...prev, val])));
       setFinish(val);
@@ -303,12 +319,31 @@ export default function AddProductScreen() {
       handleUpdateVariant(dropdownVariantIdx, "size", val);
       setCustomOptionInput("");
       setDropdownType(null);
+    } else if (dropdownType === "variant_thickness" && dropdownVariantIdx !== null) {
+      setCustomThicknesses((prev) => Array.from(new Set([...prev, val])));
+      handleUpdateVariant(dropdownVariantIdx, "thickness", val);
+      setCustomOptionInput("");
+      setDropdownType(null);
     } else if (dropdownType === "variant_finish" && dropdownVariantIdx !== null) {
       setCustomFinishes((prev) => Array.from(new Set([...prev, val])));
       handleUpdateVariant(dropdownVariantIdx, "finish", val);
       setCustomOptionInput("");
       setDropdownType(null);
     }
+  };
+
+  const handleTogglePrimaryColor = (colorName: string) => {
+    setSelectedColors((prev) => {
+      if (prev.includes(colorName)) {
+        if (prev.length <= 1) {
+          Alert.alert("Notice", "At least one colour must remain selected.");
+          return prev;
+        }
+        return prev.filter((c) => c !== colorName);
+      } else {
+        return [...prev, colorName];
+      }
+    });
   };
 
   const handleSubmit = () => {
@@ -340,12 +375,14 @@ export default function AddProductScreen() {
       stockBoxes: parseInt(stockBoxes, 10) || 0,
       description: description.trim(),
       size,
+      thickness,
+      selectedColors: selectedColors.length > 0 ? selectedColors : undefined,
       finish,
       material,
       weightKg: parsedWeight,
       isBulky,
       images: allImages,
-      variants: hasVariants ? variants : undefined,
+      variants: hasVariants ? variants.map((v) => ({ ...v, thickness: v.thickness || thickness })) : undefined,
     });
   };
 
@@ -425,7 +462,7 @@ export default function AddProductScreen() {
           </TouchableOpacity>
 
           {/* 3. Dimensions / Size Dropdown */}
-          <Text style={[styles.inputLabel, { marginTop: 14 }]}>Dimensions / Size</Text>
+          <Text style={[styles.inputLabel, { marginTop: 14 }]}>Dimensions / Size (feet, inch, mm, cm)</Text>
           <TouchableOpacity
             style={styles.dropdownSelectBox}
             onPress={() => {
@@ -441,6 +478,117 @@ export default function AddProductScreen() {
             </View>
             <ChevronDown size={18} color="#64748B" />
           </TouchableOpacity>
+
+          {/* Thickness Dropdown & Presets */}
+          <View style={{ flexDirection: "row", justifyContent: "space-between", alignItems: "center", marginTop: 14 }}>
+            <Text style={styles.inputLabel}>Thickness *</Text>
+            <Text style={{ fontSize: 10, color: "#94A3B8" }}>Depth / Gauge</Text>
+          </View>
+          <TouchableOpacity
+            style={styles.dropdownSelectBox}
+            onPress={() => {
+              setDropdownType("thickness");
+              setCustomOptionInput("");
+              setDropdownSearch("");
+            }}
+            activeOpacity={0.85}
+          >
+            <View style={{ flexDirection: "row", alignItems: "center", gap: 8, flex: 1 }}>
+              <Ruler size={16} color="#052A51" />
+              <Text style={styles.dropdownSelectText}>{thickness || "Select Thickness"}</Text>
+            </View>
+            <ChevronDown size={18} color="#64748B" />
+          </TouchableOpacity>
+
+          {/* Quick Thickness Presets */}
+          <ScrollView horizontal showsHorizontalScrollIndicator={false} style={{ marginTop: 8 }} contentContainerStyle={{ gap: 6 }}>
+            {["4 mm", "6 mm", "8 mm", "9 mm", "10 mm", "12 mm", "15 mm", "18 mm", "20 mm", "25 mm", "0.5 inch", "0.75 inch", "1.0 inch"].map((thk) => {
+              const isSel = thickness === thk;
+              return (
+                <TouchableOpacity
+                  key={thk}
+                  style={[styles.quickChip, isSel && styles.quickChipActive]}
+                  onPress={() => setThickness(thk)}
+                >
+                  <Text style={[styles.quickChipText, isSel && styles.quickChipTextActive]}>{thk}</Text>
+                </TouchableOpacity>
+              );
+            })}
+          </ScrollView>
+
+          {/* Primary Colours (Multi-Select) */}
+          <View style={{ flexDirection: "row", justifyContent: "space-between", alignItems: "center", marginTop: 14 }}>
+            <Text style={styles.inputLabel}>Product Colours (Multi-Select)</Text>
+            <TouchableOpacity
+              style={{ flexDirection: "row", alignItems: "center", gap: 4 }}
+              onPress={() => {
+                setIsPrimaryColorPicker(true);
+                setColorPickerVariantIdx(null);
+                setColorPickerOpen(true);
+              }}
+            >
+              <Palette size={13} color="#F26522" />
+              <Text style={{ fontSize: 11, fontWeight: "800", color: "#F26522" }}>Custom Palette</Text>
+            </TouchableOpacity>
+          </View>
+
+          {/* Selected Colors Chips */}
+          <View style={{ flexDirection: "row", flexWrap: "wrap", gap: 6, marginTop: 4 }}>
+            {selectedColors.map((col) => {
+              const hex = resolveColorHex(col);
+              return (
+                <View
+                  key={col}
+                  style={{
+                    flexDirection: "row",
+                    alignItems: "center",
+                    backgroundColor: "#F1F5F9",
+                    paddingVertical: 4,
+                    paddingHorizontal: 8,
+                    borderRadius: 16,
+                    gap: 6,
+                    borderWidth: 1,
+                    borderColor: "#CBD5E1",
+                  }}
+                >
+                  <View style={{ width: 12, height: 12, borderRadius: 6, backgroundColor: hex, borderWidth: 1, borderColor: "#94A3B8" }} />
+                  <Text style={{ fontSize: 11, fontWeight: "700", color: "#052A51" }}>{col}</Text>
+                  <TouchableOpacity onPress={() => handleTogglePrimaryColor(col)}>
+                    <X size={12} color="#64748B" />
+                  </TouchableOpacity>
+                </View>
+              );
+            })}
+          </View>
+
+          {/* Quick Standard Colour Swatches */}
+          <ScrollView horizontal showsHorizontalScrollIndicator={false} style={{ marginTop: 8 }} contentContainerStyle={{ gap: 6 }}>
+            {CATALOG_COLOURS.slice(0, 16).map((c) => {
+              const isSelected = selectedColors.includes(c.name);
+              return (
+                <TouchableOpacity
+                  key={c.name}
+                  style={{
+                    flexDirection: "row",
+                    alignItems: "center",
+                    paddingVertical: 5,
+                    paddingHorizontal: 8,
+                    borderRadius: 12,
+                    borderWidth: 1,
+                    borderColor: isSelected ? "#052A51" : "#E2E8F0",
+                    backgroundColor: isSelected ? "#E2E8F0" : "#FFFFFF",
+                    gap: 5,
+                  }}
+                  onPress={() => handleTogglePrimaryColor(c.name)}
+                >
+                  <View style={{ width: 12, height: 12, borderRadius: 6, backgroundColor: c.hexCode, borderWidth: 1, borderColor: "#CBD5E1" }} />
+                  <Text style={{ fontSize: 10, fontWeight: isSelected ? "800" : "600", color: "#1E293B" }}>
+                    {c.name}
+                  </Text>
+                </TouchableOpacity>
+              );
+            })}
+          </ScrollView>
 
           {/* 4. Finish / Look Dropdown */}
           <Text style={[styles.inputLabel, { marginTop: 14 }]}>Finish / Look</Text>
@@ -715,10 +863,10 @@ export default function AddProductScreen() {
                       </TouchableOpacity>
                     </View>
 
-                    {/* Dimensions & Finish Dropdowns for Variant */}
+                    {/* Dimensions, Thickness & Finish Dropdowns for Variant */}
                     <View style={[styles.twoCol, { marginTop: 8 }]}>
-                      <View style={{ flex: 1 }}>
-                        <Text style={styles.variantLabel}>Dimension / Size</Text>
+                      <View style={{ flex: 1.1 }}>
+                        <Text style={styles.variantLabel}>Dimension</Text>
                         <TouchableOpacity
                           style={styles.variantDropdownBtn}
                           onPress={() => {
@@ -735,8 +883,26 @@ export default function AddProductScreen() {
                         </TouchableOpacity>
                       </View>
 
-                      <View style={{ flex: 1 }}>
-                        <Text style={styles.variantLabel}>Finish / Look</Text>
+                      <View style={{ flex: 0.9 }}>
+                        <Text style={styles.variantLabel}>Thickness</Text>
+                        <TouchableOpacity
+                          style={styles.variantDropdownBtn}
+                          onPress={() => {
+                            setDropdownType("variant_thickness");
+                            setDropdownVariantIdx(idx);
+                            setCustomOptionInput("");
+                            setDropdownSearch("");
+                          }}
+                        >
+                          <Text style={styles.variantDropdownText} numberOfLines={1}>
+                            {v.thickness || thickness || "Select"}
+                          </Text>
+                          <ChevronDown size={14} color="#64748B" />
+                        </TouchableOpacity>
+                      </View>
+
+                      <View style={{ flex: 0.9 }}>
+                        <Text style={styles.variantLabel}>Finish</Text>
                         <TouchableOpacity
                           style={styles.variantDropdownBtn}
                           onPress={() => {
@@ -839,6 +1005,8 @@ export default function AddProductScreen() {
                   ? "Select Unit of Sale"
                   : dropdownType === "size" || dropdownType === "variant_size"
                   ? "Select Size / Dimension"
+                  : dropdownType === "thickness" || dropdownType === "variant_thickness"
+                  ? "Select Material Thickness"
                   : dropdownType === "finish" || dropdownType === "variant_finish"
                   ? "Select Surface Finish"
                   : "Select Material"}
@@ -872,6 +1040,39 @@ export default function AddProductScreen() {
                 placeholder="Type to filter..."
               />
             </View>
+
+            {/* Dimension Unit Filter Pills (feet, inch, mm, cm) */}
+            {(dropdownType === "size" || dropdownType === "variant_size") && (
+              <View style={{ flexDirection: "row", gap: 6, marginVertical: 6 }}>
+                {(["all", "feet", "inch", "mm", "cm"] as const).map((unitTab) => {
+                  const isSel = dimensionUnitFilter === unitTab;
+                  return (
+                    <TouchableOpacity
+                      key={unitTab}
+                      style={{
+                        paddingVertical: 4,
+                        paddingHorizontal: 9,
+                        borderRadius: 8,
+                        backgroundColor: isSel ? "#052A51" : "#F1F5F9",
+                        borderWidth: 1,
+                        borderColor: isSel ? "#052A51" : "#CBD5E1",
+                      }}
+                      onPress={() => setDimensionUnitFilter(unitTab)}
+                    >
+                      <Text
+                        style={{
+                          fontSize: 10,
+                          fontWeight: "800",
+                          color: isSel ? "#FFFFFF" : "#475569",
+                        }}
+                      >
+                        {unitTab === "all" ? "All Units" : unitTab}
+                      </Text>
+                    </TouchableOpacity>
+                  );
+                })}
+              </View>
+            )}
 
             {/* List of Options */}
             <ScrollView style={{ maxHeight: 320 }} contentContainerStyle={{ gap: 4, paddingVertical: 4 }}>
@@ -921,7 +1122,16 @@ export default function AddProductScreen() {
                   })
               ) : dropdownType === "size" || dropdownType === "variant_size" ? (
                 allSizes
-                  .filter((s) => s.toLowerCase().includes(dropdownSearch.toLowerCase()))
+                  .filter((s) => {
+                    const matchesSearch = s.toLowerCase().includes(dropdownSearch.toLowerCase());
+                    if (!matchesSearch) return false;
+                    if (dimensionUnitFilter === "all") return true;
+                    if (dimensionUnitFilter === "feet") return s.toLowerCase().includes("ft") || s.toLowerCase().includes("feet");
+                    if (dimensionUnitFilter === "inch") return s.toLowerCase().includes("in") || s.toLowerCase().includes("inch");
+                    if (dimensionUnitFilter === "mm") return s.toLowerCase().includes("mm");
+                    if (dimensionUnitFilter === "cm") return s.toLowerCase().includes("cm");
+                    return true;
+                  })
                   .map((s) => {
                     const currentVal = dropdownType === "size" ? size : dropdownVariantIdx !== null ? variants[dropdownVariantIdx]?.size : "";
                     const isSelected = currentVal === s;
@@ -940,6 +1150,32 @@ export default function AddProductScreen() {
                       >
                         <Text style={[styles.dropdownItemText, isSelected && styles.dropdownItemTextSelected]}>
                           {s}
+                        </Text>
+                        {isSelected && <Check size={16} color="#052A51" />}
+                      </TouchableOpacity>
+                    );
+                  })
+              ) : dropdownType === "thickness" || dropdownType === "variant_thickness" ? (
+                allThicknesses
+                  .filter((thk) => thk.toLowerCase().includes(dropdownSearch.toLowerCase()))
+                  .map((thk) => {
+                    const currentVal = dropdownType === "thickness" ? thickness : dropdownVariantIdx !== null ? variants[dropdownVariantIdx]?.thickness : "";
+                    const isSelected = currentVal === thk;
+                    return (
+                      <TouchableOpacity
+                        key={thk}
+                        style={[styles.dropdownItemRow, isSelected && styles.dropdownItemRowSelected]}
+                        onPress={() => {
+                          if (dropdownType === "thickness") {
+                            setThickness(thk);
+                          } else if (dropdownVariantIdx !== null) {
+                            handleUpdateVariant(dropdownVariantIdx, "thickness", thk);
+                          }
+                          setDropdownType(null);
+                        }}
+                      >
+                        <Text style={[styles.dropdownItemText, isSelected && styles.dropdownItemTextSelected]}>
+                          {thk}
                         </Text>
                         {isSelected && <Check size={16} color="#052A51" />}
                       </TouchableOpacity>
@@ -1004,15 +1240,30 @@ export default function AddProductScreen() {
         onClose={() => {
           setColorPickerOpen(false);
           setColorPickerVariantIdx(null);
+          setIsPrimaryColorPicker(false);
         }}
         onSelectColor={(colorName, colorHex) => {
-          if (colorPickerVariantIdx !== null) {
+          if (isPrimaryColorPicker) {
+            handleTogglePrimaryColor(colorName);
+          } else if (colorPickerVariantIdx !== null) {
             handleUpdateVariant(colorPickerVariantIdx, "color", colorName);
             handleUpdateVariant(colorPickerVariantIdx, "colorHex", colorHex);
           }
         }}
-        currentColorName={colorPickerVariantIdx !== null ? variants[colorPickerVariantIdx]?.color : ""}
-        currentColorHex={colorPickerVariantIdx !== null ? variants[colorPickerVariantIdx]?.colorHex : "#F26522"}
+        currentColorName={
+          isPrimaryColorPicker
+            ? selectedColors[0] || ""
+            : colorPickerVariantIdx !== null
+            ? variants[colorPickerVariantIdx]?.color
+            : ""
+        }
+        currentColorHex={
+          isPrimaryColorPicker
+            ? resolveColorHex(selectedColors[0] || "Alaska White")
+            : colorPickerVariantIdx !== null
+            ? variants[colorPickerVariantIdx]?.colorHex
+            : "#F26522"
+        }
       />
     </View>
   );
@@ -1409,5 +1660,25 @@ const styles = StyleSheet.create({
     fontSize: 10.5,
     marginTop: 2,
     lineHeight: 14,
+  },
+  quickChip: {
+    paddingVertical: 5,
+    paddingHorizontal: 9,
+    borderRadius: 8,
+    backgroundColor: "#F8FAFC",
+    borderWidth: 1,
+    borderColor: "#CBD5E1",
+  },
+  quickChipActive: {
+    backgroundColor: "#052A51",
+    borderColor: "#052A51",
+  },
+  quickChipText: {
+    fontSize: 10,
+    fontWeight: "700",
+    color: "#475569",
+  },
+  quickChipTextActive: {
+    color: "#FFFFFF",
   },
 });

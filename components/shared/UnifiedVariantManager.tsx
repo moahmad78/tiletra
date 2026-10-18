@@ -51,8 +51,8 @@ export interface UnifiedVariantManagerProps {
 }
 
 export interface AttributeSelection {
-  type: "unit" | "colour" | "dimension" | "custom";
-  name: string; // e.g., "Size/Weight", "Colour", "Dimension", "Grade", "Material"
+  type: "unit" | "colour" | "dimension" | "thickness" | "custom";
+  name: string; // e.g., "Size/Weight", "Colour", "Dimension", "Thickness", "Grade", "Material"
   values: string[]; // selected values, e.g. ["1 kg", "5 kg", "20 kg"]
 }
 
@@ -120,7 +120,7 @@ export default function UnifiedVariantManager({
   // Custom option addition modal/popover
   const [newOptionModal, setNewOptionModal] = useState<{
     open: boolean;
-    type: "unit" | "colour" | "dimension" | "custom";
+    type: "unit" | "colour" | "dimension" | "thickness" | "custom";
     name: string;
     value: string;
     hex?: string;
@@ -183,17 +183,55 @@ export default function UnifiedVariantManager({
     }
   }, [variants.length]);
 
-  // Available options filtered by type
+  // Available options filtered by type (with robust fallbacks)
   const getOptionsForType = (type: string, name?: string) => {
-    return dbOptions.filter((opt) => {
+    const filtered = dbOptions.filter((opt) => {
       if (opt.type !== type) return false;
       if (type === "custom" && name && opt.name.toLowerCase() !== name.toLowerCase()) return false;
       return true;
     });
+
+    if (filtered.length > 0) return filtered;
+
+    // Fallbacks if database options haven't synced yet
+    if (type === "thickness") {
+      return [
+        "4 mm", "6 mm", "8 mm", "9 mm", "10 mm", "12 mm", "15 mm", "16 mm",
+        "18 mm", "19 mm", "20 mm", "25 mm", "30 mm", "32 mm", "0.5 inch", "0.75 inch", "1.0 inch"
+      ].map((val, idx) => ({
+        id: `fb-thick-${idx}`,
+        scope: "global" as const,
+        type: "thickness" as const,
+        name: "Thickness",
+        value: val,
+        displayOrder: idx,
+        isActive: true,
+        createdAt: new Date(),
+      }));
+    }
+
+    if (type === "dimension") {
+      return [
+        "600x600 mm (2x2 ft)", "600x1200 mm (2x4 ft)", "800x1600 mm (2.6x5.2 ft)",
+        "300x450 mm (1x1.5 ft)", "8x4 ft", "7x4 ft", "7x3 ft",
+        "0.5 inch (15mm)", "0.75 inch (20mm)", "1.0 inch (25mm)", "60x60 cm", "30x60 cm"
+      ].map((val, idx) => ({
+        id: `fb-dim-${idx}`,
+        scope: "global" as const,
+        type: "dimension" as const,
+        name: "Dimension",
+        value: val,
+        displayOrder: idx,
+        isActive: true,
+        createdAt: new Date(),
+      }));
+    }
+
+    return [];
   };
 
   // Add an attribute dimension (Max 3)
-  const handleAddAttribute = (type: "unit" | "colour" | "dimension" | "custom", customName?: string) => {
+  const handleAddAttribute = (type: "unit" | "colour" | "dimension" | "thickness" | "custom", customName?: string) => {
     if (activeAttributes.length >= 3) {
       toast.error("Maximum 3 attributes per product allowed");
       return;
@@ -205,6 +243,8 @@ export default function UnifiedVariantManager({
         ? "Colour"
         : type === "dimension"
         ? "Dimension"
+        : type === "thickness"
+        ? "Thickness"
         : customName || "Material";
 
     if (activeAttributes.some((a) => a.name.toLowerCase() === defaultName.toLowerCase())) {
@@ -304,6 +344,7 @@ export default function UnifiedVariantManager({
       const sizeValue = attrMap["Size / Quantity"] || attrMap["Dimension"] || combo[0];
       const colorValue = attrMap["Colour"] || "Default";
       const colorHex = colorValue !== "Default" ? resolveColorHex(colorValue) : null;
+      const thicknessValue = attrMap["Thickness"] || null;
 
       // Check if an existing variant matches this combination
       const existing = variants.find(
@@ -317,6 +358,10 @@ export default function UnifiedVariantManager({
           ...existing,
           variantName,
           attributes: attrMap,
+          variantSpecs: {
+            ...((existing as any).variantSpecs || {}),
+            ...(thicknessValue ? { thickness: thicknessValue } : {}),
+          },
           active: existing.active !== undefined ? existing.active : true,
         };
       }
@@ -339,6 +384,10 @@ export default function UnifiedVariantManager({
         images: fallbackImage ? [fallbackImage] : [],
         unit: unitOfSale,
         attributes: attrMap,
+        thickness: thicknessValue,
+        variantSpecs: {
+          ...(thicknessValue ? { thickness: thicknessValue } : {}),
+        },
         price: defaultSellingPrice,
         pricePerBox: defaultSellingPrice,
         mrp: defaultMrp,
@@ -649,7 +698,16 @@ export default function UnifiedVariantManager({
                         onClick={() => handleAddAttribute("dimension")}
                         className="px-2.5 py-1 rounded-lg bg-gray-100 hover:bg-[#052a51] hover:text-white text-gray-700 text-[11px] font-bold transition-colors cursor-pointer"
                       >
-                        + Dimension
+                        + Dimension (ft/in/mm/cm)
+                      </button>
+                    )}
+                    {!activeAttributes.some((a) => a.type === "thickness") && (
+                      <button
+                        type="button"
+                        onClick={() => handleAddAttribute("thickness")}
+                        className="px-2.5 py-1 rounded-lg bg-gray-100 hover:bg-[#052a51] hover:text-white text-gray-700 text-[11px] font-bold transition-colors cursor-pointer"
+                      >
+                        + Thickness
                       </button>
                     )}
                     <button
@@ -1524,16 +1582,69 @@ export default function UnifiedVariantManager({
 
               <div>
                 <label className="text-xs font-bold text-gray-700 block mb-1">
-                  Option Value (e.g. 25 kg, SS 304, Forest Green)
+                  Option Value (e.g. 25 kg, 600x600 mm, 9 mm)
                 </label>
                 <input
                   type="text"
                   value={newOptionModal.value}
                   onChange={(e) => setNewOptionModal({ ...newOptionModal, value: e.target.value })}
-                  placeholder="e.g. 25 kg, SS 304, Grade A"
+                  placeholder={
+                    newOptionModal.type === "thickness"
+                      ? "e.g. 9 mm, 12 mm, 18 mm, 0.5 inch"
+                      : newOptionModal.type === "dimension"
+                      ? "e.g. 600x600 mm, 2x2 ft, 8x4 ft, 1 inch"
+                      : "e.g. 25 kg, SS 304, Grade A"
+                  }
                   className="w-full px-3 py-2 bg-gray-50 border border-gray-200 rounded-xl text-xs font-bold focus:bg-white focus:border-[#F26522]"
                 />
               </div>
+
+              {newOptionModal.type === "thickness" && (
+                <div className="space-y-1">
+                  <span className="text-[10px] font-bold text-gray-500">Quick Thickness Presets:</span>
+                  <div className="flex flex-wrap gap-1">
+                    {["4 mm", "6 mm", "8 mm", "9 mm", "10 mm", "12 mm", "16 mm", "18 mm", "19 mm", "20 mm", "25 mm", "0.5 inch", "1.0 inch"].map((thk) => (
+                      <button
+                        key={thk}
+                        type="button"
+                        onClick={() => setNewOptionModal({ ...newOptionModal, value: thk })}
+                        className={`text-[10px] px-2 py-0.5 rounded-md border font-semibold ${
+                          newOptionModal.value === thk
+                            ? "bg-[#052a51] text-white border-[#052a51]"
+                            : "bg-gray-100 text-gray-700 hover:bg-gray-200 border-gray-200"
+                        }`}
+                      >
+                        {thk}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {newOptionModal.type === "dimension" && (
+                <div className="space-y-1">
+                  <span className="text-[10px] font-bold text-gray-500">Choose Dimension Unit / Format:</span>
+                  <div className="flex flex-wrap gap-1">
+                    {["feet (ft)", "inch (in)", "mm", "cm"].map((u) => (
+                      <button
+                        key={u}
+                        type="button"
+                        onClick={() => {
+                          const unitClean = u.split(" ")[0];
+                          if (!newOptionModal.value) {
+                            setNewOptionModal({ ...newOptionModal, value: unitClean });
+                          } else {
+                            setNewOptionModal({ ...newOptionModal, value: `${newOptionModal.value} ${unitClean}`.trim() });
+                          }
+                        }}
+                        className="text-[10px] px-2 py-0.5 rounded-md bg-orange-50 text-[#F26522] border border-orange-200 font-bold hover:bg-orange-100"
+                      >
+                        +{u}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              )}
 
               {newOptionModal.type === "colour" && (
                 <div>

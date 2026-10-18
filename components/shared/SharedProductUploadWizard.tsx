@@ -54,7 +54,7 @@ import { getVendorProfile, getActiveVendorsForSelection } from "@/lib/actions/ve
 import type { Category } from "@/lib/data/categories";
 import type { ProductVariant } from "@/lib/data/products";
 import { UNIT_OF_SALE_OPTIONS, getDefaultUnitOfSale } from "@/lib/units";
-import { resolveColorHex, resolveCategoryBulkImage } from "@/lib/catalog";
+import { resolveColorHex, resolveCategoryBulkImage, CATALOG_THICKNESSES, convertDimensionToCm } from "@/lib/catalog";
 import { safeSlugify } from "@/lib/validators";
 import WeightSelectorInput from "@/components/shared/WeightSelectorInput";
 
@@ -244,6 +244,8 @@ export default function SharedProductUploadWizard({
   const [customSubcategoryWidth, setCustomSubcategoryWidth] = useState<string>("");
   const [customSubcategoryHeight, setCustomSubcategoryHeight] = useState<string>("");
   const [customSubcategoryWeight, setCustomSubcategoryWeight] = useState<string>("");
+  const [customSubcategoryThickness, setCustomSubcategoryThickness] = useState<string>("9mm");
+  const [customSubcategoryDimensionUnit, setCustomSubcategoryDimensionUnit] = useState<"mm" | "cm" | "inch" | "feet">("cm");
   const [isSavingSubcategory, setIsSavingSubcategory] = useState<boolean>(false);
   const [colorImages, setColorImages] = useState<Record<string, string>>({});
   const [customSubcategoryColorImages, setCustomSubcategoryColorImages] = useState<Record<string, string>>({});
@@ -254,6 +256,12 @@ export default function SharedProductUploadWizard({
   const [lengthCm, setLengthCm] = useState<string>("");
   const [widthCm, setWidthCm] = useState<string>("");
   const [heightCm, setHeightCm] = useState<string>("");
+  const [dimensionUnit, setDimensionUnit] = useState<"mm" | "cm" | "inch" | "feet">("cm");
+  const [rawLength, setRawLength] = useState<string>("");
+  const [rawWidth, setRawWidth] = useState<string>("");
+  const [rawHeight, setRawHeight] = useState<string>("");
+  const [thickness, setThickness] = useState<string>("9mm");
+  const [thicknessUnit, setThicknessUnit] = useState<string>("mm");
   const [packedWeightKg, setPackedWeightKg] = useState<string>("");
   const [inTheBox, setInTheBox] = useState<string>("");
 
@@ -1125,18 +1133,35 @@ export default function SharedProductUploadWizard({
           setCostPrice(customSubcategoryCostPrice.trim());
         }
 
-        // Apply custom dimensions if provided
+        // Apply custom dimensions & unit if provided
         if (customSubcategoryLength.trim()) {
-          setLengthCm(customSubcategoryLength.trim());
+          const lNum = parseFloat(customSubcategoryLength.trim());
+          const convertedL = convertDimensionToCm(lNum, customSubcategoryDimensionUnit);
+          setLengthCm(String(convertedL));
+          setRawLength(customSubcategoryLength.trim());
         }
         if (customSubcategoryWidth.trim()) {
-          setWidthCm(customSubcategoryWidth.trim());
+          const wNum = parseFloat(customSubcategoryWidth.trim());
+          const convertedW = convertDimensionToCm(wNum, customSubcategoryDimensionUnit);
+          setWidthCm(String(convertedW));
+          setRawWidth(customSubcategoryWidth.trim());
         }
         if (customSubcategoryHeight.trim()) {
-          setHeightCm(customSubcategoryHeight.trim());
+          const hNum = parseFloat(customSubcategoryHeight.trim());
+          const convertedH = convertDimensionToCm(hNum, customSubcategoryDimensionUnit);
+          setHeightCm(String(convertedH));
+          setRawHeight(customSubcategoryHeight.trim());
         }
+        setDimensionUnit(customSubcategoryDimensionUnit);
         if (customSubcategoryWeight.trim()) {
           setPackedWeightKg(customSubcategoryWeight.trim());
+        }
+        if (customSubcategoryThickness.trim()) {
+          setThickness(customSubcategoryThickness.trim());
+          setDynamicAttributes((prev) => ({
+            ...prev,
+            Thickness: customSubcategoryThickness.trim(),
+          }));
         }
 
         // Apply image if provided and primary image list is empty
@@ -1495,6 +1520,10 @@ export default function SharedProductUploadWizard({
       ...customSpecs,
     ];
 
+    if (thickness && !formattedAttributes.some((a) => a.key.toLowerCase() === "thickness")) {
+      formattedAttributes.push({ key: "Thickness", value: thickness });
+    }
+
     const formattedVariants = isMultiVariety
       ? variants.map((v) => ({
           sku: v.sku || null,
@@ -1582,6 +1611,7 @@ export default function SharedProductUploadWizard({
         modelNumber: modelNumber || null,
         sku: sku || null,
         material: dynamicAttributes["Material"] || "Standard",
+        thickness: thickness || dynamicAttributes["Thickness"] || "Standard",
         description: description.trim(),
         images,
         videos: videoUrl ? [videoUrl] : [],
@@ -2795,6 +2825,90 @@ export default function SharedProductUploadWizard({
                 />
               </div>
             </div>
+
+            {/* Primary Product Thickness */}
+            <div className="pt-3 border-t border-gray-100 space-y-2">
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-1">
+                <label className="text-xs font-black text-gray-800 flex items-center gap-1.5">
+                  <Sliders size={14} className="text-[#F26522]" />
+                  <span>Item Thickness (Primary)</span>
+                  <span className="text-[10px] text-gray-400 font-normal">
+                    (Standard or custom material thickness)
+                  </span>
+                </label>
+                <div className="flex items-center gap-1">
+                  <span className="text-[10px] font-bold text-gray-400">Unit:</span>
+                  <div className="inline-flex rounded-lg bg-gray-100 p-0.5 border border-gray-200">
+                    {(["mm", "cm", "inch", "gauge"] as const).map((u) => (
+                      <button
+                        key={u}
+                        type="button"
+                        onClick={() => {
+                          setThicknessUnit(u);
+                          if (thickness) {
+                            const num = thickness.replace(/[^0-9.]/g, "");
+                            if (num) setThickness(`${num} ${u}`);
+                          }
+                        }}
+                        className={`px-2 py-0.5 rounded text-[10px] font-bold transition-all cursor-pointer ${
+                          thicknessUnit === u
+                            ? "bg-[#052a51] text-white shadow-2xs"
+                            : "text-gray-600 hover:text-gray-900"
+                        }`}
+                      >
+                        {u}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              </div>
+
+              {/* Quick Thickness Presets */}
+              <div className="flex flex-wrap items-center gap-1.5">
+                {[
+                  "4 mm", "6 mm", "8 mm", "9 mm", "10 mm", "12 mm", "15 mm", "16 mm",
+                  "18 mm", "19 mm", "20 mm", "25 mm", "30 mm", "32 mm", "0.5 inch", "0.75 inch", "1.0 inch"
+                ].map((preset) => {
+                  const isSelected = thickness === preset || thickness === preset.replace(" ", "");
+                  return (
+                    <button
+                      key={preset}
+                      type="button"
+                      onClick={() => {
+                        setThickness(preset);
+                        setDynamicAttributes((prev) => ({
+                          ...prev,
+                          Thickness: preset,
+                        }));
+                      }}
+                      className={`px-2.5 py-1 rounded-xl text-xs font-bold border transition-all cursor-pointer ${
+                        isSelected
+                          ? "bg-[#052a51] text-white border-[#052a51] shadow-2xs"
+                          : "bg-gray-50 text-gray-700 border-gray-200 hover:bg-gray-100"
+                      }`}
+                    >
+                      {preset}
+                    </button>
+                  );
+                })}
+              </div>
+
+              <div className="flex items-center gap-2 max-w-sm pt-0.5">
+                <input
+                  type="text"
+                  placeholder="Or type custom thickness (e.g. 14 mm, 1.25 inch)..."
+                  value={thickness}
+                  onChange={(e) => {
+                    setThickness(e.target.value);
+                    setDynamicAttributes((prev) => ({
+                      ...prev,
+                      Thickness: e.target.value,
+                    }));
+                  }}
+                  className="flex-1 px-3 py-1.5 rounded-xl border border-gray-200 text-xs font-semibold focus:outline-none focus:border-[#F26522] bg-white"
+                />
+              </div>
+            </div>
           </div>
 
           {/* Highlights & Keywords */}
@@ -2919,6 +3033,9 @@ export default function SharedProductUploadWizard({
             <div className="p-5 rounded-3xl bg-gray-50/70 border border-gray-200 space-y-3">
               <ColorRadioSelector
                 value={dynamicAttributes["Colour"] || dynamicAttributes["Color"] || ""}
+                defaultMulti={true}
+                label="Primary Product Colours (Multi-Colour Selection Supported)"
+                helperText="Choose one or multiple colours for this product. You can bind specific photos to each colour."
                 initialColorImages={colorImages}
                 onColorImagesChange={(imgs) => {
                   setColorImages(imgs);
@@ -2948,8 +3065,6 @@ export default function SharedProductUploadWizard({
                     ...(newColorImages ? { colorImages: JSON.stringify(newColorImages) } : {}),
                   }));
                 }}
-                label="Product Colour (12+ Standard Colours Radio Buttons)"
-                helperText="Click any standard colour for single-click selection or enter custom shade"
                 allowCustom={true}
                 nameGroup="primary-colour-selector"
               />
@@ -3204,6 +3319,7 @@ export default function SharedProductUploadWizard({
                     {/* 2. Sub-category Colour & Finish */}
                     <div className="p-4 bg-gray-50/80 rounded-2xl border border-gray-200 space-y-4">
                       <ColorRadioSelector
+                        defaultMulti={true}
                         value={dynamicAttributes["Colour"] || dynamicAttributes["Color"] || ""}
                         initialColorImages={colorImages}
                         onColorImagesChange={(imgs) => {
@@ -3234,8 +3350,8 @@ export default function SharedProductUploadWizard({
                             ...(newColorImages ? { colorImages: JSON.stringify(newColorImages) } : {}),
                           }));
                         }}
-                        label="Sub-category Colour (12+ Standard Colours Radio Buttons)"
-                        helperText="Click any standard colour for single-click selection or enter custom shade"
+                        label="Sub-category Colour (Multi-Select & Standard Radio Buttons)"
+                        helperText="Select one or multiple standard colours, or enter custom shade"
                         allowCustom={true}
                         nameGroup="subcategory-colour-selector"
                       />
@@ -3265,45 +3381,99 @@ export default function SharedProductUploadWizard({
                       </div>
                     </div>
 
-                    {/* 3. Sub-category Item Dimensions & Packaging */}
-                    <div className="p-3.5 bg-gray-50/80 rounded-2xl border border-gray-200 space-y-2.5">
-                      <label className="text-xs font-black text-gray-900 flex items-center gap-1.5">
-                        <Package size={15} className="text-[#F26522]" />
-                        <span>Sub-category Dimensions &amp; Packaging</span>
-                      </label>
+                    {/* 3. Sub-category Item Dimensions, Thickness & Packaging */}
+                    <div className="p-3.5 bg-gray-50/80 rounded-2xl border border-gray-200 space-y-3">
+                      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-1.5">
+                        <label className="text-xs font-black text-gray-900 flex items-center gap-1.5">
+                          <Package size={15} className="text-[#F26522]" />
+                          <span>Sub-category Dimensions &amp; Packaging</span>
+                        </label>
+                        <div className="flex items-center gap-1">
+                          <span className="text-[10px] font-bold text-gray-400">Unit:</span>
+                          <div className="inline-flex rounded-lg bg-gray-100 p-0.5 border border-gray-200">
+                            {(["mm", "cm", "inch", "feet"] as const).map((u) => (
+                              <button
+                                key={u}
+                                type="button"
+                                onClick={() => {
+                                  setDimensionUnit(u);
+                                  if (rawLength) setLengthCm(String(convertDimensionToCm(Number(rawLength), u)));
+                                  if (rawWidth) setWidthCm(String(convertDimensionToCm(Number(rawWidth), u)));
+                                  if (rawHeight) setHeightCm(String(convertDimensionToCm(Number(rawHeight), u)));
+                                }}
+                                className={`px-2 py-0.5 rounded text-[10px] font-bold transition-all cursor-pointer ${
+                                  dimensionUnit === u
+                                    ? "bg-[#052a51] text-white shadow-2xs"
+                                    : "text-gray-600 hover:text-gray-900"
+                                }`}
+                              >
+                                {u}
+                              </button>
+                            ))}
+                          </div>
+                        </div>
+                      </div>
+
                       <div className="grid grid-cols-2 sm:grid-cols-4 gap-2.5">
                         <div>
-                          <label className="text-[10px] font-bold text-gray-500 block mb-1">Length (cm)</label>
+                          <label className="text-[10px] font-bold text-gray-500 block mb-1">
+                            Length ({dimensionUnit})
+                          </label>
                           <input
                             type="number"
                             step="any"
-                            placeholder="e.g. 60"
-                            value={lengthCm}
-                            onChange={(e) => setLengthCm(e.target.value)}
+                            placeholder={dimensionUnit === "feet" ? "e.g. 2" : dimensionUnit === "inch" ? "e.g. 24" : dimensionUnit === "mm" ? "e.g. 600" : "e.g. 60"}
+                            value={rawLength || lengthCm}
+                            onChange={(e) => {
+                              const val = e.target.value;
+                              setRawLength(val);
+                              setLengthCm(val ? String(convertDimensionToCm(Number(val), dimensionUnit)) : "");
+                            }}
                             className="w-full px-2.5 py-2 rounded-xl border border-gray-200 text-xs font-medium bg-white focus:outline-none focus:border-[#F26522]"
                           />
+                          {dimensionUnit !== "cm" && lengthCm && (
+                            <span className="text-[9px] text-gray-400 block mt-0.5 font-mono">≈ {Number(lengthCm).toFixed(1)} cm</span>
+                          )}
                         </div>
                         <div>
-                          <label className="text-[10px] font-bold text-gray-500 block mb-1">Width (cm)</label>
+                          <label className="text-[10px] font-bold text-gray-500 block mb-1">
+                            Width ({dimensionUnit})
+                          </label>
                           <input
                             type="number"
                             step="any"
-                            placeholder="e.g. 60"
-                            value={widthCm}
-                            onChange={(e) => setWidthCm(e.target.value)}
+                            placeholder={dimensionUnit === "feet" ? "e.g. 2" : dimensionUnit === "inch" ? "e.g. 24" : dimensionUnit === "mm" ? "e.g. 600" : "e.g. 60"}
+                            value={rawWidth || widthCm}
+                            onChange={(e) => {
+                              const val = e.target.value;
+                              setRawWidth(val);
+                              setWidthCm(val ? String(convertDimensionToCm(Number(val), dimensionUnit)) : "");
+                            }}
                             className="w-full px-2.5 py-2 rounded-xl border border-gray-200 text-xs font-medium bg-white focus:outline-none focus:border-[#F26522]"
                           />
+                          {dimensionUnit !== "cm" && widthCm && (
+                            <span className="text-[9px] text-gray-400 block mt-0.5 font-mono">≈ {Number(widthCm).toFixed(1)} cm</span>
+                          )}
                         </div>
                         <div>
-                          <label className="text-[10px] font-bold text-gray-500 block mb-1">Height/Thick (cm)</label>
+                          <label className="text-[10px] font-bold text-gray-500 block mb-1">
+                            Height/Thick ({dimensionUnit})
+                          </label>
                           <input
                             type="number"
                             step="any"
-                            placeholder="e.g. 0.9"
-                            value={heightCm}
-                            onChange={(e) => setHeightCm(e.target.value)}
+                            placeholder={dimensionUnit === "mm" ? "e.g. 9" : "e.g. 0.9"}
+                            value={rawHeight || heightCm}
+                            onChange={(e) => {
+                              const val = e.target.value;
+                              setRawHeight(val);
+                              setHeightCm(val ? String(convertDimensionToCm(Number(val), dimensionUnit)) : "");
+                            }}
                             className="w-full px-2.5 py-2 rounded-xl border border-gray-200 text-xs font-medium bg-white focus:outline-none focus:border-[#F26522]"
                           />
+                          {dimensionUnit !== "cm" && heightCm && (
+                            <span className="text-[9px] text-gray-400 block mt-0.5 font-mono">≈ {Number(heightCm).toFixed(1)} cm</span>
+                          )}
                         </div>
                         <div className="col-span-1">
                           <WeightSelectorInput
@@ -3312,6 +3482,52 @@ export default function SharedProductUploadWizard({
                             onChange={setPackedWeightKg}
                             label="Weight"
                             placeholder="e.g. 2.4"
+                          />
+                        </div>
+                      </div>
+
+                      {/* Sub-category Thickness Selection */}
+                      <div className="pt-2 border-t border-gray-200/60 space-y-1.5">
+                        <div className="flex items-center justify-between">
+                          <label className="text-[11px] font-bold text-gray-700 flex items-center gap-1">
+                            <Sliders size={12} className="text-[#F26522]" />
+                            <span>Sub-category Thickness</span>
+                          </label>
+                          <span className="text-[10px] text-gray-400 font-mono">Current: {thickness || "Standard"}</span>
+                        </div>
+                        <div className="flex flex-wrap items-center gap-1">
+                          {["4 mm", "6 mm", "8 mm", "9 mm", "10 mm", "12 mm", "15 mm", "18 mm", "20 mm", "25 mm", "0.5 inch", "0.75 inch", "1.0 inch"].map((thk) => {
+                            const isSel = thickness === thk || thickness === thk.replace(" ", "");
+                            return (
+                              <button
+                                key={thk}
+                                type="button"
+                                onClick={() => {
+                                  setThickness(thk);
+                                  setDynamicAttributes((prev) => ({ ...prev, Thickness: thk }));
+                                }}
+                                className={`px-2 py-0.5 rounded-lg text-[10px] font-bold transition-all cursor-pointer border ${
+                                  isSel
+                                    ? "bg-[#F26522] border-[#F26522] text-white shadow-2xs"
+                                    : "bg-white border-gray-200 text-gray-700 hover:border-gray-300"
+                                }`}
+                              >
+                                {thk}
+                              </button>
+                            );
+                          })}
+                        </div>
+                        <div className="pt-1">
+                          <input
+                            type="text"
+                            placeholder="Or type custom thickness (e.g. 14 mm, 1.25 inch, 18 gauge)"
+                            value={thickness}
+                            onChange={(e) => {
+                              const val = e.target.value;
+                              setThickness(val);
+                              setDynamicAttributes((prev) => ({ ...prev, Thickness: val }));
+                            }}
+                            className="w-full px-2.5 py-1.5 rounded-xl border border-gray-200 text-xs bg-white focus:outline-none focus:border-[#F26522]"
                           />
                         </div>
                       </div>
@@ -3741,6 +3957,7 @@ export default function SharedProductUploadWizard({
                     {/* Colour & Dimensions */}
                     <div className="p-3.5 bg-gray-50/70 rounded-2xl border border-gray-200 space-y-3">
                       <ColorRadioSelector
+                        defaultMulti={true}
                         value={customSubcategoryColour}
                         initialColorImages={customSubcategoryColorImages}
                         onColorImagesChange={setCustomSubcategoryColorImages}
@@ -3750,42 +3967,75 @@ export default function SharedProductUploadWizard({
                             setCustomSubcategoryColorImages(newImgs);
                           }
                         }}
-                        label="Sub-category Colour (12+ Standard Colours Radio Buttons)"
-                        helperText="Click any standard colour for single-click selection or enter custom shade"
+                        label="Sub-category Colour (Standard & Multi-Select Colours)"
+                        helperText="Select one or multiple standard colours, or enter custom shade"
                         allowCustom={true}
                         nameGroup="modal-subcat-colour-selector"
                       />
 
+                      {/* Dimensions Unit Switcher & Inputs */}
+                      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-1.5 pt-1">
+                        <label className="text-[11px] font-bold text-gray-700 flex items-center gap-1">
+                          <Package size={13} className="text-[#F26522]" />
+                          <span>Sub-category Dimensions &amp; Packaging</span>
+                        </label>
+                        <div className="flex items-center gap-1">
+                          <span className="text-[10px] font-bold text-gray-400">Unit:</span>
+                          <div className="inline-flex rounded-lg bg-gray-100 p-0.5 border border-gray-200">
+                            {(["mm", "cm", "inch", "feet"] as const).map((u) => (
+                              <button
+                                key={u}
+                                type="button"
+                                onClick={() => setCustomSubcategoryDimensionUnit(u)}
+                                className={`px-2 py-0.5 rounded text-[10px] font-bold transition-all cursor-pointer ${
+                                  customSubcategoryDimensionUnit === u
+                                    ? "bg-[#052a51] text-white shadow-2xs"
+                                    : "text-gray-600 hover:text-gray-900"
+                                }`}
+                              >
+                                {u}
+                              </button>
+                            ))}
+                          </div>
+                        </div>
+                      </div>
+
                       {/* Dimensions: Length, Width, Height, Weight */}
                       <div className="grid grid-cols-2 sm:grid-cols-4 gap-2.5">
                         <div>
-                          <label className="text-[10px] font-bold text-gray-500 block mb-1">Length (cm)</label>
+                          <label className="text-[10px] font-bold text-gray-500 block mb-1">
+                            Length ({customSubcategoryDimensionUnit})
+                          </label>
                           <input
                             type="number"
                             step="any"
-                            placeholder="e.g. 60"
+                            placeholder={customSubcategoryDimensionUnit === "feet" ? "e.g. 2" : customSubcategoryDimensionUnit === "inch" ? "e.g. 24" : customSubcategoryDimensionUnit === "mm" ? "e.g. 600" : "e.g. 60"}
                             value={customSubcategoryLength}
                             onChange={(e) => setCustomSubcategoryLength(e.target.value)}
                             className="w-full px-2.5 py-1.5 rounded-xl border border-gray-200 text-xs bg-white focus:outline-none focus:border-[#F26522]"
                           />
                         </div>
                         <div>
-                          <label className="text-[10px] font-bold text-gray-500 block mb-1">Width (cm)</label>
+                          <label className="text-[10px] font-bold text-gray-500 block mb-1">
+                            Width ({customSubcategoryDimensionUnit})
+                          </label>
                           <input
                             type="number"
                             step="any"
-                            placeholder="e.g. 60"
+                            placeholder={customSubcategoryDimensionUnit === "feet" ? "e.g. 2" : customSubcategoryDimensionUnit === "inch" ? "e.g. 24" : customSubcategoryDimensionUnit === "mm" ? "e.g. 600" : "e.g. 60"}
                             value={customSubcategoryWidth}
                             onChange={(e) => setCustomSubcategoryWidth(e.target.value)}
                             className="w-full px-2.5 py-1.5 rounded-xl border border-gray-200 text-xs bg-white focus:outline-none focus:border-[#F26522]"
                           />
                         </div>
                         <div>
-                          <label className="text-[10px] font-bold text-gray-500 block mb-1">Height (cm)</label>
+                          <label className="text-[10px] font-bold text-gray-500 block mb-1">
+                            Height/Thick ({customSubcategoryDimensionUnit})
+                          </label>
                           <input
                             type="number"
                             step="any"
-                            placeholder="e.g. 0.9"
+                            placeholder={customSubcategoryDimensionUnit === "mm" ? "e.g. 9" : "e.g. 0.9"}
                             value={customSubcategoryHeight}
                             onChange={(e) => setCustomSubcategoryHeight(e.target.value)}
                             className="w-full px-2.5 py-1.5 rounded-xl border border-gray-200 text-xs bg-white focus:outline-none focus:border-[#F26522]"
@@ -3798,6 +4048,45 @@ export default function SharedProductUploadWizard({
                             onChange={setCustomSubcategoryWeight}
                             label="Weight"
                             placeholder="e.g. 2.4"
+                          />
+                        </div>
+                      </div>
+
+                      {/* Modal Subcategory Thickness Presets */}
+                      <div className="pt-2 border-t border-gray-200/60 space-y-1.5">
+                        <div className="flex items-center justify-between">
+                          <label className="text-[10px] font-bold text-gray-700 flex items-center gap-1">
+                            <Sliders size={11} className="text-[#F26522]" />
+                            <span>Sub-category Thickness</span>
+                          </label>
+                          <span className="text-[10px] text-gray-400 font-mono">Current: {customSubcategoryThickness || "Standard"}</span>
+                        </div>
+                        <div className="flex flex-wrap items-center gap-1">
+                          {["4 mm", "6 mm", "8 mm", "9 mm", "10 mm", "12 mm", "15 mm", "18 mm", "20 mm", "25 mm", "0.5 inch", "0.75 inch", "1.0 inch"].map((thk) => {
+                            const isSel = customSubcategoryThickness === thk || customSubcategoryThickness === thk.replace(" ", "");
+                            return (
+                              <button
+                                key={thk}
+                                type="button"
+                                onClick={() => setCustomSubcategoryThickness(thk)}
+                                className={`px-2 py-0.5 rounded-lg text-[10px] font-bold transition-all cursor-pointer border ${
+                                  isSel
+                                    ? "bg-[#F26522] border-[#F26522] text-white shadow-2xs"
+                                    : "bg-white border-gray-200 text-gray-700 hover:border-gray-300"
+                                }`}
+                              >
+                                {thk}
+                              </button>
+                            );
+                          })}
+                        </div>
+                        <div className="pt-0.5">
+                          <input
+                            type="text"
+                            placeholder="Or type custom thickness (e.g. 14 mm, 1.25 inch)"
+                            value={customSubcategoryThickness}
+                            onChange={(e) => setCustomSubcategoryThickness(e.target.value)}
+                            className="w-full px-2.5 py-1.5 rounded-xl border border-gray-200 text-xs bg-white focus:outline-none focus:border-[#F26522]"
                           />
                         </div>
                       </div>
@@ -3934,45 +4223,99 @@ export default function SharedProductUploadWizard({
 
           {/* Dimensions & Packaging */}
           <div className="space-y-3 pt-4 border-t border-gray-100">
-            <label className="text-xs font-black text-gray-800 uppercase tracking-wider block">
-              Item Dimensions &amp; Packaging
-            </label>
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-1.5">
+              <label className="text-xs font-black text-gray-800 uppercase tracking-wider block">
+                Item Dimensions, Thickness &amp; Packaging
+              </label>
+              <div className="flex items-center gap-1">
+                <span className="text-[10px] font-bold text-gray-400">Dimension Unit:</span>
+                <div className="inline-flex rounded-lg bg-gray-100 p-0.5 border border-gray-200">
+                  {(["mm", "cm", "inch", "feet"] as const).map((u) => (
+                    <button
+                      key={u}
+                      type="button"
+                      onClick={() => {
+                        setDimensionUnit(u);
+                        if (rawLength) setLengthCm(String(convertDimensionToCm(Number(rawLength), u)));
+                        if (rawWidth) setWidthCm(String(convertDimensionToCm(Number(rawWidth), u)));
+                        if (rawHeight) setHeightCm(String(convertDimensionToCm(Number(rawHeight), u)));
+                      }}
+                      className={`px-2 py-0.5 rounded text-[10px] font-bold transition-all cursor-pointer ${
+                        dimensionUnit === u
+                          ? "bg-[#052a51] text-white shadow-2xs"
+                          : "text-gray-600 hover:text-gray-900"
+                      }`}
+                    >
+                      {u}
+                    </button>
+                  ))}
+                </div>
+              </div>
+            </div>
+
             <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
               <div className="space-y-1">
-                <label className="text-[11px] text-gray-500">Length (cm)</label>
+                <label className="text-[11px] text-gray-500">
+                  Length ({dimensionUnit})
+                </label>
                 <input
                   type="number"
                   min="0"
-                  step="0.1"
-                  placeholder="e.g. 60"
-                  value={lengthCm}
-                  onChange={(e) => setLengthCm(e.target.value)}
+                  step="any"
+                  placeholder={dimensionUnit === "feet" ? "e.g. 2" : dimensionUnit === "inch" ? "e.g. 24" : dimensionUnit === "mm" ? "e.g. 600" : "e.g. 60"}
+                  value={rawLength || lengthCm}
+                  onChange={(e) => {
+                    const val = e.target.value;
+                    setRawLength(val);
+                    setLengthCm(val ? String(convertDimensionToCm(Number(val), dimensionUnit)) : "");
+                  }}
                   className="w-full px-3 py-2 rounded-xl border border-gray-200 text-xs"
                 />
+                {dimensionUnit !== "cm" && lengthCm && (
+                  <span className="text-[9px] text-gray-400 block font-mono">≈ {Number(lengthCm).toFixed(1)} cm</span>
+                )}
               </div>
               <div className="space-y-1">
-                <label className="text-[11px] text-gray-500">Width (cm)</label>
+                <label className="text-[11px] text-gray-500">
+                  Width ({dimensionUnit})
+                </label>
                 <input
                   type="number"
                   min="0"
-                  step="0.1"
-                  placeholder="e.g. 60"
-                  value={widthCm}
-                  onChange={(e) => setWidthCm(e.target.value)}
+                  step="any"
+                  placeholder={dimensionUnit === "feet" ? "e.g. 2" : dimensionUnit === "inch" ? "e.g. 24" : dimensionUnit === "mm" ? "e.g. 600" : "e.g. 60"}
+                  value={rawWidth || widthCm}
+                  onChange={(e) => {
+                    const val = e.target.value;
+                    setRawWidth(val);
+                    setWidthCm(val ? String(convertDimensionToCm(Number(val), dimensionUnit)) : "");
+                  }}
                   className="w-full px-3 py-2 rounded-xl border border-gray-200 text-xs"
                 />
+                {dimensionUnit !== "cm" && widthCm && (
+                  <span className="text-[9px] text-gray-400 block font-mono">≈ {Number(widthCm).toFixed(1)} cm</span>
+                )}
               </div>
               <div className="space-y-1">
-                <label className="text-[11px] text-gray-500">Height (cm)</label>
+                <label className="text-[11px] text-gray-500">
+                  Height/Thick ({dimensionUnit})
+                </label>
                 <input
                   type="number"
                   min="0"
-                  step="0.1"
-                  placeholder="e.g. 0.9"
-                  value={heightCm}
-                  onChange={(e) => setHeightCm(e.target.value)}
+                  step="any"
+                  placeholder={dimensionUnit === "mm" ? "e.g. 9" : "e.g. 0.9"}
+                  value={rawHeight || heightCm}
+                  onChange={(e) => {
+                    const val = e.target.value;
+                    setRawHeight(val);
+                    setHeightCm(val ? String(convertDimensionToCm(Number(val), dimensionUnit)) : "");
+                  }}
                   className="w-full px-3 py-2 rounded-xl border border-gray-200 text-xs"
                 />
+                {dimensionUnit !== "cm" && heightCm && (
+                  <span className="text-[9px] text-gray-400 block font-mono">≈ {Number(heightCm).toFixed(1)} cm</span>
+                )}
               </div>
               <div className="space-y-1">
                 <WeightSelectorInput
@@ -3982,6 +4325,39 @@ export default function SharedProductUploadWizard({
                   label="Weight"
                   placeholder="e.g. 2.4"
                 />
+              </div>
+            </div>
+
+            {/* Thickness presets */}
+            <div className="pt-2 border-t border-gray-100 space-y-1.5">
+              <div className="flex items-center justify-between">
+                <label className="text-[11px] font-bold text-gray-700 flex items-center gap-1">
+                  <Sliders size={12} className="text-[#F26522]" />
+                  <span>Item Thickness</span>
+                </label>
+                <span className="text-[10px] text-gray-400 font-mono">Current: {thickness || "Standard"}</span>
+              </div>
+              <div className="flex flex-wrap items-center gap-1">
+                {["4 mm", "6 mm", "8 mm", "9 mm", "10 mm", "12 mm", "15 mm", "18 mm", "20 mm", "25 mm", "0.5 inch", "0.75 inch", "1.0 inch"].map((thk) => {
+                  const isSel = thickness === thk || thickness === thk.replace(" ", "");
+                  return (
+                    <button
+                      key={thk}
+                      type="button"
+                      onClick={() => {
+                        setThickness(thk);
+                        setDynamicAttributes((prev) => ({ ...prev, Thickness: thk }));
+                      }}
+                      className={`px-2 py-0.5 rounded-lg text-[10px] font-bold transition-all cursor-pointer border ${
+                        isSel
+                          ? "bg-[#F26522] border-[#F26522] text-white shadow-2xs"
+                          : "bg-white border-gray-200 text-gray-700 hover:border-gray-300"
+                      }`}
+                    >
+                      {thk}
+                    </button>
+                  );
+                })}
               </div>
             </div>
           </div>

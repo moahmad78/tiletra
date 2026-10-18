@@ -92,21 +92,34 @@ export default function ProductDetailsClient({
   const [showNotifyModal, setShowNotifyModal] = useState(false);
   const [notifyContact, setNotifyContact] = useState("");
 
-  // Dynamic gallery images including variant specific images
+  // Dynamic gallery images strictly respecting active product photos
   const allGalleryImages = useMemo(() => {
     const raw =
       definedProduct.images && definedProduct.images.length > 0
-        ? definedProduct.images.filter(Boolean)
+        ? definedProduct.images.filter(
+            (img): img is string => Boolean(img && typeof img === "string" && !img.includes("placeholder"))
+          )
         : [];
 
+    const validRawSet = new Set(raw);
+
+    // If product has explicit photos, variant images must only come from the active product photos
     const variantImages = (definedProduct.variants || [])
       .map((v) => v.image)
-      .filter((img): img is string => Boolean(img && typeof img === "string"));
+      .filter((img): img is string => Boolean(img && typeof img === "string" && !img.includes("placeholder")));
+
+    const allowedVariantImages = raw.length > 0
+      ? variantImages.filter((img) => validRawSet.has(img))
+      : variantImages;
+
+    const allowedSelectedImage = selectedVariant.image && (raw.length === 0 || validRawSet.has(selectedVariant.image))
+      ? selectedVariant.image
+      : null;
 
     const combined = Array.from(new Set([
-      ...(selectedVariant.image ? [selectedVariant.image] : []),
+      ...(allowedSelectedImage ? [allowedSelectedImage] : []),
       ...raw,
-      ...variantImages,
+      ...allowedVariantImages,
     ]));
 
     if (combined.length > 0) return combined;

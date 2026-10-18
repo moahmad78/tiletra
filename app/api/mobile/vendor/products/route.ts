@@ -77,6 +77,33 @@ export async function POST(req: NextRequest) {
     const numStock = stockBoxes ? Number(stockBoxes) : 50;
     const imgList = Array.isArray(images) ? images : images ? [images] : [];
 
+    const incomingVariants = Array.isArray(body.variants) && body.variants.length > 0
+      ? body.variants.map((v: any) => ({
+          size: v.size || size || "600x600mm",
+          finish: v.finish || finish || "Glossy",
+          color: v.color || look || "Standard",
+          pricePerSqft: Number(v.pricePerSqft) || numPrice,
+          pricePerBox: Number(v.pricePerBox) || (numPrice * 16),
+          sqftPerBox: 16,
+          stockBoxes: Number(v.stockBoxes) || numStock,
+          mrp: Number(v.mrp) || numMrp,
+          thickness: v.thickness || thickness || "9mm",
+          image: v.image || undefined,
+        }))
+      : [
+          {
+            size: size || "600x600mm",
+            finish: finish || "Glossy",
+            color: look || (body.selectedColors && body.selectedColors[0]) || "Standard",
+            pricePerSqft: numPrice,
+            pricePerBox: numPrice * 16,
+            sqftPerBox: 16,
+            stockBoxes: numStock,
+            mrp: numMrp,
+            thickness: thickness || "9mm",
+          },
+        ];
+
     const res = await createVendorProduct(auth.vendor.id, {
       name: name.trim(),
       categoryId: categoryId || undefined,
@@ -88,22 +115,12 @@ export async function POST(req: NextRequest) {
       description: description?.trim() || "",
       images: imgList,
       status: status || "active",
-      variants: [
-        {
-          size: size || "600x600mm",
-          finish: finish || "Glossy",
-          color: look || "Standard",
-          pricePerSqft: numPrice,
-          pricePerBox: numPrice * 16,
-          sqftPerBox: 16,
-          stockBoxes: numStock,
-          mrp: numMrp,
-        },
-      ],
+      variants: incomingVariants,
       specs: {
         thickness: thickness || "9mm",
         usage: usage || "Indoor / Commercial",
         look: look || "Modern",
+        ...(body.selectedColors && Array.isArray(body.selectedColors) ? { colours: body.selectedColors.join(", ") } : {}),
       },
     });
 

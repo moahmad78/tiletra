@@ -220,16 +220,21 @@ export default function CpoEditProductPage() {
         coverageRate: !isNaN(parseFloat(coverageRate)) && parseFloat(coverageRate) > 0 ? parseFloat(coverageRate) : null,
         piecesPerBox: !isNaN(parseInt(piecesPerBox, 10)) && parseInt(piecesPerBox, 10) > 0 ? parseInt(piecesPerBox, 10) : null,
         wastageFactor: (parseFloat(wastagePercent) || 10) / 100 + 1.0,
-        variants: variants.map((v) => ({
-          sku: v.sku || null,
-          variantName: v.variantName || v.attributeValue || v.size || "Standard",
-          size: v.size || "Standard",
-          finish: v.finish || "Glossy",
-          color: v.color || "Standard",
-          colorHex: v.colorHex || null,
-          swatchImage: v.swatchImage || null,
-          image: v.image || images[0] || null,
-          images: Array.isArray(v.images) && v.images.length > 0 ? v.images : (v.image ? [v.image] : (images[0] ? [images[0]] : [])),
+        variants: variants.map((v) => {
+          const cleanImg = v.image && validImages.includes(v.image) ? v.image : (validImages[0] || null);
+          const cleanImages = Array.isArray(v.images) && v.images.length > 0
+            ? v.images.filter((img: string) => validImages.includes(img))
+            : (cleanImg ? [cleanImg] : []);
+          return {
+            sku: v.sku || null,
+            variantName: v.variantName || v.attributeValue || v.size || "Standard",
+            size: v.size || "Standard",
+            finish: v.finish || "Glossy",
+            color: v.color || "Standard",
+            colorHex: v.colorHex || null,
+            swatchImage: v.swatchImage || null,
+            image: cleanImg,
+            images: cleanImages.length > 0 ? cleanImages : (cleanImg ? [cleanImg] : []),
           unit: v.unit || unitOfSale,
           attributeLabel: v.attributeLabel || null,
           attributeValue: v.attributeValue || null,
@@ -247,7 +252,8 @@ export default function CpoEditProductPage() {
           maxOrderQuantity: v.maxOrderQuantity ?? null,
           isDefault: Boolean(v.isDefault),
           barcode: v.barcode || null,
-        })),
+        };
+      }),
         status: "active",
         approvalStatus: "approved",
       });

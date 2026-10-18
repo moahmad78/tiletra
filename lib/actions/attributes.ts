@@ -7,7 +7,7 @@ export interface AttributeOptionItem {
   id: string;
   scope: "global" | "vendor";
   vendorId?: string | null;
-  type: "unit" | "colour" | "dimension" | "custom";
+  type: "unit" | "colour" | "dimension" | "thickness" | "custom";
   name: string;
   value: string;
   meta?: any;
@@ -59,11 +59,40 @@ const DEFAULT_PRESET_COLOURS = [
 ];
 
 const DEFAULT_PRESET_DIMENSIONS = [
-  { name: "Dimension Unit", value: "mm", meta: { type: "dimension_unit" } },
-  { name: "Dimension Unit", value: "cm", meta: { type: "dimension_unit" } },
-  { name: "Dimension Unit", value: "m", meta: { type: "dimension_unit" } },
-  { name: "Dimension Unit", value: "inch", meta: { type: "dimension_unit" } },
-  { name: "Dimension Unit", value: "ft", meta: { type: "dimension_unit" } },
+  { name: "Dimension Unit", value: "feet", meta: { type: "dimension_unit", unit: "feet" } },
+  { name: "Dimension Unit", value: "inch", meta: { type: "dimension_unit", unit: "inch" } },
+  { name: "Dimension Unit", value: "mm", meta: { type: "dimension_unit", unit: "mm" } },
+  { name: "Dimension Unit", value: "cm", meta: { type: "dimension_unit", unit: "cm" } },
+  { name: "Standard Size", value: "600x600 mm (2x2 ft)", meta: { unit: "mm" } },
+  { name: "Standard Size", value: "600x1200 mm (2x4 ft)", meta: { unit: "mm" } },
+  { name: "Standard Size", value: "800x1600 mm (2.6x5.2 ft)", meta: { unit: "mm" } },
+  { name: "Standard Size", value: "300x450 mm (1x1.5 ft)", meta: { unit: "mm" } },
+  { name: "Standard Size", value: "8x4 ft", meta: { unit: "feet" } },
+  { name: "Standard Size", value: "7x4 ft", meta: { unit: "feet" } },
+  { name: "Standard Size", value: "7x3 ft", meta: { unit: "feet" } },
+  { name: "Standard Size", value: "0.5 inch (15mm)", meta: { unit: "inch" } },
+  { name: "Standard Size", value: "0.75 inch (20mm)", meta: { unit: "inch" } },
+  { name: "Standard Size", value: "1.0 inch (25mm)", meta: { unit: "inch" } },
+];
+
+const DEFAULT_PRESET_THICKNESS = [
+  { name: "Thickness", value: "4 mm", meta: { unit: "mm" } },
+  { name: "Thickness", value: "6 mm", meta: { unit: "mm" } },
+  { name: "Thickness", value: "8 mm", meta: { unit: "mm" } },
+  { name: "Thickness", value: "9 mm", meta: { unit: "mm" } },
+  { name: "Thickness", value: "10 mm", meta: { unit: "mm" } },
+  { name: "Thickness", value: "12 mm", meta: { unit: "mm" } },
+  { name: "Thickness", value: "15 mm", meta: { unit: "mm" } },
+  { name: "Thickness", value: "16 mm", meta: { unit: "mm" } },
+  { name: "Thickness", value: "18 mm", meta: { unit: "mm" } },
+  { name: "Thickness", value: "19 mm", meta: { unit: "mm" } },
+  { name: "Thickness", value: "20 mm", meta: { unit: "mm" } },
+  { name: "Thickness", value: "25 mm", meta: { unit: "mm" } },
+  { name: "Thickness", value: "30 mm", meta: { unit: "mm" } },
+  { name: "Thickness", value: "32 mm", meta: { unit: "mm" } },
+  { name: "Thickness", value: "0.5 inch", meta: { unit: "inch" } },
+  { name: "Thickness", value: "0.75 inch", meta: { unit: "inch" } },
+  { name: "Thickness", value: "1.0 inch", meta: { unit: "inch" } },
 ];
 
 const DEFAULT_CUSTOM_ATTRIBUTES = [
@@ -114,6 +143,14 @@ export async function ensureDefaultAttributeOptions() {
           meta: d.meta,
           displayOrder: i,
         })),
+        ...DEFAULT_PRESET_THICKNESS.map((t, i) => ({
+          scope: "global",
+          type: "thickness",
+          name: t.name,
+          value: t.value,
+          meta: t.meta,
+          displayOrder: i,
+        })),
         ...DEFAULT_CUSTOM_ATTRIBUTES.map((ca, i) => ({
           scope: "global",
           type: "custom",
@@ -139,7 +176,7 @@ export async function ensureDefaultAttributeOptions() {
  */
 export async function getAttributeOptions(params?: {
   vendorId?: string | null;
-  type?: "unit" | "colour" | "dimension" | "custom";
+  type?: "unit" | "colour" | "dimension" | "thickness" | "custom";
 }) {
   try {
     await ensureDefaultAttributeOptions();
@@ -176,7 +213,7 @@ export async function getAttributeOptions(params?: {
         id: opt.id,
         scope: opt.scope as "global" | "vendor",
         vendorId: opt.vendorId,
-        type: opt.type as "unit" | "colour" | "dimension" | "custom",
+        type: opt.type as "unit" | "colour" | "dimension" | "thickness" | "custom",
         name: opt.name,
         value: opt.value,
         meta: opt.meta,
@@ -196,10 +233,10 @@ export async function getAttributeOptions(params?: {
 }
 
 /**
- * Add a new custom attribute option (unit, colour, dimension, or custom name/value)
+ * Add a new custom attribute option (unit, colour, dimension, thickness, or custom name/value)
  */
 export async function createAttributeOption(data: {
-  type: "unit" | "colour" | "dimension" | "custom";
+  type: "unit" | "colour" | "dimension" | "thickness" | "custom";
   name: string;
   value: string;
   meta?: any;

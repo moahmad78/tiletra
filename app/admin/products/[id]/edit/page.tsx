@@ -150,8 +150,16 @@ export default function EditProductPage({
       }
     }
 
+    const validImages = images.filter((img) => img && img.trim() && !img.includes("placeholder"));
+    const primaryImg = validImages[0] || images[0] || null;
+
     const mappedVariants = variants.map((v: any, index) => {
       const price = Number(v.price ?? v.pricePerBox ?? 0);
+      const cleanImg = v.image && validImages.includes(v.image) ? v.image : primaryImg;
+      const cleanImages = Array.isArray(v.images) && v.images.length > 0
+        ? v.images.filter((img: string) => validImages.includes(img))
+        : (cleanImg ? [cleanImg] : []);
+
       return {
         id: v.id,
         variantName: v.variantName || v.size || `Variant ${index + 1}`,
@@ -160,8 +168,8 @@ export default function EditProductPage({
         color: v.color || "Standard",
         colorHex: v.colorHex || null,
         swatchImage: v.swatchImage || null,
-        image: v.image || (Array.isArray(v.images) && v.images[0]) || null,
-        images: Array.isArray(v.images) ? v.images : (v.image ? [v.image] : []),
+        image: cleanImg,
+        images: cleanImages.length > 0 ? cleanImages : (cleanImg ? [cleanImg] : []),
         unit: v.unit || unitOfSale,
         attributeLabel: v.attributeLabel || null,
         attributeValue: v.attributeValue || null,

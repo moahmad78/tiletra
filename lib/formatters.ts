@@ -5,6 +5,8 @@ export async function safeRevalidate(path: string) {
     if (typeof window === "undefined") {
       const { revalidatePath } = await import("next/cache");
       revalidatePath(path);
+      revalidatePath(path, "page");
+      revalidatePath(path, "layout");
     }
   } catch {
     // Graceful no-op when called outside Next.js request context
@@ -192,42 +194,63 @@ export function formatUnitName(unitOfSale?: string | null): string {
 }
 
 export function formatProduct(dbProduct: any): Product {
-  const variants: ProductVariant[] = (dbProduct.variants || []).map((v: any) => ({
-    id: v.id,
-    sku: v.sku || null,
-    variantName: v.variantName || null,
-    size: v.size || "Standard",
-    finish: (v.finish as Finish) || "Glossy",
-    color: v.color || "Standard",
-    colorHex: v.colorHex || null,
-    swatchImage: v.swatchImage || null,
-    image: v.image || (Array.isArray(v.images) && v.images.length > 0 ? v.images[0] : null),
-    images: Array.isArray(v.images) && v.images.length > 0 ? v.images : (v.image ? [v.image] : []),
-    unit: v.unit || null,
-    attributeLabel: v.attributeLabel || null,
-    attributeValue: v.attributeValue || null,
-    attributes: v.attributes || null,
-    variantSpecs: v.variantSpecs || null,
-    weightKg: v.weightKg ? Number(v.weightKg) : null,
-    mrp: v.mrp ? Number(v.mrp) : null,
-    costPrice: (v as any).variantSpecs?.costPrice !== undefined && (v as any).variantSpecs?.costPrice !== null
-      ? Number((v as any).variantSpecs.costPrice)
-      : ((v as any).costPrice !== undefined && (v as any).costPrice !== null ? Number((v as any).costPrice) : null),
-    price: v.price !== null && v.price !== undefined ? Number(v.price) : Number(v.pricePerBox || 0),
-    pricePerBox: Number(v.pricePerBox || v.price || 0),
-    pricePerSqft: Number(v.pricePerSqft || 0),
-    sqftPerBox: Number(v.sqftPerBox || 1),
-    piecesPerBox: v.piecesPerBox ? Number(v.piecesPerBox) : 4,
-    stockBoxes: Number(v.stockBoxes ?? 50),
-    inStock: v.inStock ?? true,
-    active: v.active !== undefined ? Boolean(v.active) : true,
-    lowStockAlert: v.lowStockAlert !== undefined && v.lowStockAlert !== null ? Number(v.lowStockAlert) : 10,
-    minOrderQuantity: v.minOrderQuantity !== undefined && v.minOrderQuantity !== null ? Number(v.minOrderQuantity) : 1,
-    maxOrderQuantity: v.maxOrderQuantity !== undefined && v.maxOrderQuantity !== null ? Number(v.maxOrderQuantity) : null,
-    isDefault: Boolean(v.isDefault),
-    barcode: v.barcode || null,
-    priceTiers: v.priceTiers || [],
-  }));
+  const rawProductImages = Array.isArray(dbProduct.images) && dbProduct.images.length > 0 && dbProduct.images[0] && dbProduct.images[0] !== "/placeholders/product.svg"
+    ? dbProduct.images.filter((img: string) => typeof img === "string" && img.trim() !== "" && !img.includes("placeholder"))
+    : [];
+  const rawImagesSet = new Set(rawProductImages);
+
+  const variants: ProductVariant[] = (dbProduct.variants || []).map((v: any) => {
+    const rawVImg = v.image || (Array.isArray(v.images) && v.images.length > 0 ? v.images[0] : null);
+    // If the product has explicit active photos, variants must not reference old deleted images
+    const cleanVImage = rawProductImages.length > 0
+      ? (rawVImg && rawImagesSet.has(rawVImg) ? rawVImg : rawProductImages[0])
+      : rawVImg;
+
+    const rawVImagesList = Array.isArray(v.images) && v.images.length > 0
+      ? v.images.filter((img: string) => typeof img === "string" && img.trim() !== "")
+      : (cleanVImage ? [cleanVImage] : []);
+
+    const cleanVImages = rawProductImages.length > 0
+      ? rawVImagesList.filter((img: string) => rawImagesSet.has(img))
+      : rawVImagesList;
+
+    return {
+      id: v.id,
+      sku: v.sku || null,
+      variantName: v.variantName || null,
+      size: v.size || "Standard",
+      finish: (v.finish as Finish) || "Glossy",
+      color: v.color || "Standard",
+      colorHex: v.colorHex || null,
+      swatchImage: v.swatchImage || null,
+      image: cleanVImage || (cleanVImages.length > 0 ? cleanVImages[0] : null),
+      images: cleanVImages.length > 0 ? cleanVImages : (cleanVImage ? [cleanVImage] : []),
+      unit: v.unit || null,
+      attributeLabel: v.attributeLabel || null,
+      attributeValue: v.attributeValue || null,
+      attributes: v.attributes || null,
+      variantSpecs: v.variantSpecs || null,
+      weightKg: v.weightKg ? Number(v.weightKg) : null,
+      mrp: v.mrp ? Number(v.mrp) : null,
+      costPrice: (v as any).variantSpecs?.costPrice !== undefined && (v as any).variantSpecs?.costPrice !== null
+        ? Number((v as any).variantSpecs.costPrice)
+        : ((v as any).costPrice !== undefined && (v as any).costPrice !== null ? Number((v as any).costPrice) : null),
+      price: v.price !== null && v.price !== undefined ? Number(v.price) : Number(v.pricePerBox || 0),
+      pricePerBox: Number(v.pricePerBox || v.price || 0),
+      pricePerSqft: Number(v.pricePerSqft || 0),
+      sqftPerBox: Number(v.sqftPerBox || 1),
+      piecesPerBox: v.piecesPerBox ? Number(v.piecesPerBox) : 4,
+      stockBoxes: Number(v.stockBoxes ?? 50),
+      inStock: v.inStock ?? true,
+      active: v.active !== undefined ? Boolean(v.active) : true,
+      lowStockAlert: v.lowStockAlert !== undefined && v.lowStockAlert !== null ? Number(v.lowStockAlert) : 10,
+      minOrderQuantity: v.minOrderQuantity !== undefined && v.minOrderQuantity !== null ? Number(v.minOrderQuantity) : 1,
+      maxOrderQuantity: v.maxOrderQuantity !== undefined && v.maxOrderQuantity !== null ? Number(v.maxOrderQuantity) : null,
+      isDefault: Boolean(v.isDefault),
+      barcode: v.barcode || null,
+      priceTiers: v.priceTiers || [],
+    };
+  });
 
   // Fallback variant if none exists
   if (variants.length === 0) {
