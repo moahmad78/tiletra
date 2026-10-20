@@ -14,6 +14,7 @@ import { getCategories } from "@/lib/actions/categories";
 import type { Category } from "@/lib/data/categories";
 import type { Product } from "@/lib/data/products";
 import { resolveColorHex } from "@/lib/catalog";
+import ProductEditChoiceModal from "@/components/shared/ProductEditChoiceModal";
 import {
   Plus,
   Search,
@@ -42,6 +43,7 @@ export default function VendorProductsPage() {
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState("");
   const [filterTab, setFilterTab] = useState<"all" | "active" | "paused" | "pending" | "rejected">("all");
+  const [editingProductForChoice, setEditingProductForChoice] = useState<Product | null>(null);
 
   const loadData = async () => {
     if (!vendor?.id) return;
@@ -367,13 +369,14 @@ export default function VendorProductsPage() {
                       {/* Actions */}
                       <td className="py-3.5 px-4 text-right">
                         <div className="flex items-center justify-end gap-1.5">
-                          <Link
-                            href={`/vendor/products/${p.id}/edit`}
+                          <button
+                            type="button"
+                            onClick={() => setEditingProductForChoice(p)}
                             className="p-1.5 text-gray-500 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-colors cursor-pointer"
-                            title="Edit Listing (Full Editor & Multi-Variety)"
+                            title="Edit Product (Instant 3-Rates/Stock or Full Customizer)"
                           >
                             <Edit size={15} />
-                          </Link>
+                          </button>
                           {isApproved && !isPaused && (
                             <Link
                               href={`/product/${p.slug}`}
@@ -404,6 +407,18 @@ export default function VendorProductsPage() {
 
       {/* Admin Transparency & Activity Section */}
       {vendor?.id && <AdminActivitySection vendorId={vendor.id} />}
+
+      {/* Product Edit Choice Modal (Instant Update vs Custom Update) */}
+      <ProductEditChoiceModal
+        isOpen={Boolean(editingProductForChoice)}
+        onClose={() => setEditingProductForChoice(null)}
+        product={editingProductForChoice as any}
+        editUrl={editingProductForChoice ? `/vendor/products/${editingProductForChoice.id}/edit` : ""}
+        onSuccess={() => {
+          loadData();
+          setEditingProductForChoice(null);
+        }}
+      />
     </div>
   );
 }

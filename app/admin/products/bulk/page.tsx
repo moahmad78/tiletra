@@ -784,7 +784,7 @@ export default function BulkProductImportPage() {
         {/* ── Step 4: 1-Click Import Action ── */}
         <div className="pt-4 border-t border-gray-100 flex flex-col sm:flex-row items-center justify-between gap-4">
           <div className="text-xs text-gray-500">
-            <strong>Ready to import:</strong> {parsedProducts.length} product(s) will be created directly in your Neon Cloud Database.
+            <strong>Ready to import:</strong> {parsedProducts.length} product(s) will be created directly in your database.
           </div>
 
           <button

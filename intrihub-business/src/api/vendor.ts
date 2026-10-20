@@ -225,3 +225,35 @@ export async function updateVendorProfile(data: {
   return res.data;
 }
 
+// 7. Vendor Online Status
+export async function fetchVendorStatus(): Promise<{
+  success: boolean;
+  vendor?: {
+    id: string;
+    isOnline: boolean;
+    autoAcceptOrders: boolean;
+    lastHeartbeatAt?: string;
+  };
+  error?: string;
+}> {
+  const res = await apiClient.get("/api/mobile/vendor/status");
+  return res.data;
+}
+
+export async function updateVendorStatus(data: {
+  isOnline?: boolean;
+  autoAcceptOrders?: boolean;
+}): Promise<{
+  success: boolean;
+  vendor?: {
+    id: string;
+    isOnline: boolean;
+    autoAcceptOrders: boolean;
+  };
+  message?: string;
+  error?: string;
+}> {
+  const res = await apiClient.patch("/api/mobile/vendor/status", data);
+  return res.data;
+}
+

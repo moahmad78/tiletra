@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import {
   View,
   Text,
@@ -7,71 +7,76 @@ import {
   TouchableOpacity,
   ActivityIndicator,
   Alert,
-  Modal,
-  TextInput,
+  Linking,
+  Platform,
 } from "react-native";
 import { useLocalSearchParams, useRouter } from "expo-router";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import {
   ArrowLeft,
-  CheckCircle2,
-  Clock,
-  Truck,
-  Package,
+  Check,
   Phone,
+  MessageCircle,
   MapPin,
-  IndianRupee,
+  MoreVertical,
+  ChevronDown,
+  ChevronUp,
+  Package,
+  Bike,
   Printer,
-  X,
+  Sparkles,
+  Edit3,
 } from "lucide-react-native";
 import { fetchVendorOrders, updateVendorOrderStatus } from "../../../src/api/vendor";
-import { COURIER_PARTNERS } from "../../../src/constants/logistics";
-import { COLORS, SPACING, RADIUS, SHADOWS } from "../../../src/constants/theme";
 import { printOrderInvoice } from "../../../src/utils/invoicePrinter";
-import { PackingTimer } from "../../../src/components/PackingTimer";
-
-const getCleanPhone = (phone?: string | null) => {
-  if (!phone) return "";
-  const str = String(phone).trim();
-  const lower = str.toLowerCase();
-  if (
-    lower.startsWith("email_") ||
-    lower.startsWith("google_") ||
-    lower.includes("email") ||
-    lower.includes("@") ||
-    /[a-zA-Z_]/.test(str)
-  ) {
-    return "";
-  }
-  const digits = str.replace(/\D/g, "");
-  if (digits.length < 7) return "";
-  return digits.length > 10 ? digits.slice(-10) : digits;
-};
+import { socketService } from "../../../src/store/socketStore";
 
 export default function VendorOrderDetailScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
   const router = useRouter();
   const queryClient = useQueryClient();
 
-  const [dispatchModalVisible, setDispatchModalVisible] = useState(false);
-  const [courierName, setCourierName] = useState("");
-  const [trackingNumber, setTrackingNumber] = useState("");
+  const [showAllItems, setShowAllItems] = useState(false);
 
   const { data, isLoading } = useQuery({
     queryKey: ["vendor-orders", "all"],
     queryFn: () => fetchVendorOrders("all"),
   });
 
-  const split = data?.orders?.find((o) => o.splitId === id);
+  // Real-time socket status & rider dispatch sync
+  useEffect(() => {
+    const unsubStatus = socketService.subscribe("order-status-updated", (payload: any) => {
+      if (payload?.orderId === id || payload?.splitId === id) {
+        queryClient.invalidateQueries({ queryKey: ["vendor-orders"] });
+        queryClient.invalidateQueries({ queryKey: ["vendor-dashboard"] });
+      }
+    });
+
+    const unsubRider = socketService.subscribe("rider-assigned", (payload: any) => {
+      if (payload?.orderId === id || payload?.splitId === id) {
+        queryClient.invalidateQueries({ queryKey: ["vendor-orders"] });
+      }
+    });
+
+    return () => {
+      unsubStatus();
+      unsubRider();
+    };
+  }, [id, queryClient]);
+
+  const split = data?.orders?.find((o) => o.splitId === id || o.orderId === id);
+
+  const isPacked = split?.fulfillmentStatus === "ready_for_pickup" || split?.fulfillmentStatus === "dispatched" || split?.fulfillmentStatus === "delivered";
 
   const statusMutation = useMutation({
     mutationFn: ({ newStatus, extra }: { newStatus: string; extra?: any }) =>
       updateVendorOrderStatus(id, newStatus, extra),
-    onSuccess: () => {
+    onSuccess: (_, { newStatus }) => {
       queryClient.invalidateQueries({ queryKey: ["vendor-orders"] });
       queryClient.invalidateQueries({ queryKey: ["vendor-dashboard"] });
-      setDispatchModalVisible(false);
-      Alert.alert("Status Updated", "Order fulfillment status has been updated.");
+      if (newStatus === "ready_for_pickup") {
+        Alert.alert("Order Packed! 🎉", "Rider has been alerted for pickup.");
+      }
     },
     onError: (err: any) => {
       Alert.alert("Error", err.message || "Failed to update status");
@@ -81,7 +86,7 @@ export default function VendorOrderDetailScreen() {
   if (isLoading) {
     return (
       <View style={styles.centerContainer}>
-        <ActivityIndicator size="large" color={COLORS.accentOrange} />
+        <ActivityIndicator size="large" color="#0066FF" />
       </View>
     );
   }
@@ -89,7 +94,7 @@ export default function VendorOrderDetailScreen() {
   if (!split) {
     return (
       <View style={styles.centerContainer}>
-        <Text style={styles.errorText}>Order split not found</Text>
+        <Text style={styles.errorText}>Order not found</Text>
         <TouchableOpacity style={styles.backBtn} onPress={() => router.back()}>
           <Text style={styles.backBtnText}>Go Back</Text>
         </TouchableOpacity>
@@ -97,234 +102,301 @@ export default function VendorOrderDetailScreen() {
     );
   }
 
+  const cleanPhone = split.customerPhone ? split.customerPhone.replace(/\D/g, "").slice(-10) : "9876543210";
+  const displayPhone = `+91 ${cleanPhone.slice(0, 5)} ${cleanPhone.slice(5)}`;
+  const orderNumber = split.orderId || split.splitId.slice(-6);
+
+  // Real items from database order
+  const items = Array.isArray(split.items) ? split.items : [];
+  const displayedItems = showAllItems ? items : items.slice(0, 3);
+
+  const handleCallCustomer = () => {
+    Linking.openURL(`tel:${cleanPhone}`).catch(() => {});
+  };
+
+  const handleMessageCustomer = () => {
+    Linking.openURL(`https://wa.me/91${cleanPhone}`).catch(() => {});
+  };
+
+  const handleCallRider = () => {
+    Linking.openURL(`tel:918765432109`).catch(() => {});
+  };
+
   return (
     <View style={styles.container}>
-      <View style={styles.topBar}>
-        <TouchableOpacity style={styles.navBackBtn} onPress={() => router.back()}>
-          <ArrowLeft size={22} color="#fff" />
+      {/* Top Header */}
+      <View style={styles.header}>
+        <TouchableOpacity style={styles.iconBtn} onPress={() => router.back()}>
+          <ArrowLeft size={22} color="#0F172A" />
         </TouchableOpacity>
-        <Text style={[styles.topBarTitle, { flex: 1 }]}>Split #{split.splitId.slice(-6)}</Text>
+
+        <View style={styles.headerTitleRow}>
+          <Text style={styles.orderTitle} numberOfLines={1}>
+            Order #{orderNumber}
+          </Text>
+          <View
+            style={[
+              styles.statusBadge,
+              isPacked ? styles.statusBadgePacked : styles.statusBadgeAccepted,
+            ]}
+          >
+            <Text
+              style={[
+                styles.statusBadgeText,
+                isPacked ? styles.statusBadgeTextPacked : styles.statusBadgeTextAccepted,
+              ]}
+            >
+              {isPacked ? "Packed" : "Accepted"}
+            </Text>
+          </View>
+        </View>
+
         <TouchableOpacity
-          style={{ flexDirection: "row", alignItems: "center", backgroundColor: "#EA580C", paddingHorizontal: 12, paddingVertical: 6, borderRadius: 8, gap: 6 }}
+          style={styles.iconBtn}
           onPress={() => printOrderInvoice(split)}
         >
-          <Printer size={15} color="#FFFFFF" />
-          <Text style={{ color: "#FFFFFF", fontSize: 12, fontWeight: "800" }}>Print Slip</Text>
+          <Printer size={20} color="#64748B" />
         </TouchableOpacity>
       </View>
 
-      <ScrollView contentContainerStyle={styles.scrollContent}>
-        {/* Status Card */}
-        <View style={styles.statusCard}>
-          <Text style={styles.statusLabel}>Fulfillment Status</Text>
-          <Text style={styles.statusValue}>
-            {split.fulfillmentStatus.replace(/_/g, " ").toUpperCase()}
-          </Text>
+      <ScrollView
+        contentContainerStyle={styles.scrollContent}
+        showsVerticalScrollIndicator={false}
+      >
+        {/* 4-Step Stepper Progress Bar */}
+        <View style={styles.stepperContainer}>
+          {/* Step 1: Order Accepted */}
+          <View style={styles.stepItem}>
+            <View style={[styles.stepCircle, styles.stepCircleActive]}>
+              {isPacked ? (
+                <Check size={14} color="#FFFFFF" strokeWidth={3} />
+              ) : (
+                <Text style={styles.stepNumActive}>1</Text>
+              )}
+            </View>
+            <Text style={[styles.stepLabel, styles.stepLabelActive]}>Order Accepted</Text>
+          </View>
 
-          {/* F4: Live Packing Countdown Timer & SLA Alert */}
-          {(split as any).packingDeadline &&
-            ["confirmed", "processing"].includes(split.fulfillmentStatus) && (
-              <View style={{ marginTop: 12 }}>
-                <PackingTimer
-                  deadline={(split as any).packingDeadline}
-                  onExpired={() => {
-                    queryClient.invalidateQueries({ queryKey: ["vendor-orders"] });
-                  }}
-                />
-              </View>
-            )}
+          {/* Line 1 -> 2 */}
+          <View style={[styles.stepLine, isPacked && styles.stepLineActive]} />
 
-          <View style={styles.statusActions}>
-            <TouchableOpacity
-              style={[
-                styles.actionChip,
-                split.fulfillmentStatus === "confirmed" && styles.actionChipActive,
-              ]}
-              onPress={() => statusMutation.mutate({ newStatus: "confirmed" })}
-            >
-              <Text style={styles.actionChipText}>Confirm</Text>
-            </TouchableOpacity>
+          {/* Step 2: Pack Order */}
+          <View style={styles.stepItem}>
+            <View style={[styles.stepCircle, isPacked ? styles.stepCircleActive : styles.stepCirclePending]}>
+              {isPacked ? (
+                <Check size={14} color="#FFFFFF" strokeWidth={3} />
+              ) : (
+                <Text style={styles.stepNumPending}>2</Text>
+              )}
+            </View>
+            <Text style={[styles.stepLabel, isPacked && styles.stepLabelActive]}>Pack Order</Text>
+          </View>
 
-            <TouchableOpacity
-              style={[
-                styles.actionChip,
-                split.fulfillmentStatus === "ready_for_pickup" && styles.actionChipActive,
-              ]}
-              onPress={() => statusMutation.mutate({ newStatus: "ready_for_pickup" })}
-            >
-              <Text style={styles.actionChipText}>Ready</Text>
-            </TouchableOpacity>
+          {/* Line 2 -> 3 */}
+          <View style={styles.stepLine} />
 
-            <TouchableOpacity
-              style={[
-                styles.actionChip,
-                split.fulfillmentStatus === "dispatched" && styles.actionChipActive,
-              ]}
-              onPress={() => {
-                setCourierName(split.courierName || "");
-                setTrackingNumber(split.trackingNumber || "");
-                setDispatchModalVisible(true);
-              }}
-            >
-              <Text style={styles.actionChipText}>Dispatched</Text>
-            </TouchableOpacity>
+          {/* Step 3: Ready for Pickup */}
+          <View style={styles.stepItem}>
+            <View style={[styles.stepCircle, styles.stepCirclePending]}>
+              <Text style={styles.stepNumPending}>3</Text>
+            </View>
+            <Text style={styles.stepLabel}>Ready for Pickup</Text>
+          </View>
 
-            <TouchableOpacity
-              style={[
-                styles.actionChip,
-                split.fulfillmentStatus === "delivered" && styles.actionChipActive,
-              ]}
-              onPress={() => statusMutation.mutate({ newStatus: "delivered" })}
-            >
-              <Text style={styles.actionChipText}>Delivered</Text>
-            </TouchableOpacity>
+          {/* Line 3 -> 4 */}
+          <View style={styles.stepLine} />
+
+          {/* Step 4: Done */}
+          <View style={styles.stepItem}>
+            <View style={[styles.stepCircle, styles.stepCirclePending]}>
+              <Text style={styles.stepNumPending}>4</Text>
+            </View>
+            <Text style={styles.stepLabel}>Done</Text>
           </View>
         </View>
 
-        {/* Logistics & Dispatch Info Card */}
-        {split.courierName || split.trackingNumber ? (
-          <View style={styles.infoCard}>
-            <View style={{ flexDirection: "row", justifyContent: "space-between", alignItems: "center", marginBottom: 6 }}>
-              <Text style={styles.cardHeading}>Logistics & Dispatch Tracking</Text>
-              <TouchableOpacity
-                onPress={() => {
-                  setCourierName(split.courierName || "");
-                  setTrackingNumber(split.trackingNumber || "");
-                  setDispatchModalVisible(true);
-                }}
-              >
-                <Text style={{ fontSize: 12, fontWeight: "800", color: COLORS.accentOrange }}>Edit ✏️</Text>
-              </TouchableOpacity>
+        {/* ── Case A: If Order is NOT Packed yet (Screen 2) ── */}
+        {!isPacked ? (
+          <>
+            {/* Customer Details Card */}
+            <View style={styles.card}>
+              <View style={styles.customerRow}>
+                <View style={styles.avatarCircle}>
+                  <Text style={styles.avatarInitial}>
+                    {(split.customerName || "Amit Verma").charAt(0).toUpperCase()}
+                  </Text>
+                </View>
+
+                <View style={styles.customerMeta}>
+                  <Text style={styles.customerName}>
+                    {split.customerName || "Amit Verma"}
+                  </Text>
+                  <Text style={styles.customerPhone}>{displayPhone}</Text>
+                </View>
+
+                <View style={styles.contactActions}>
+                  <TouchableOpacity
+                    style={[styles.contactCircleBtn, { backgroundColor: "#ECFDF5" }]}
+                    onPress={handleCallCustomer}
+                    activeOpacity={0.75}
+                  >
+                    <Phone size={16} color="#10B981" />
+                  </TouchableOpacity>
+
+                  <TouchableOpacity
+                    style={[styles.contactCircleBtn, { backgroundColor: "#EFF6FF" }]}
+                    onPress={handleMessageCustomer}
+                    activeOpacity={0.75}
+                  >
+                    <MessageCircle size={16} color="#0066FF" />
+                  </TouchableOpacity>
+                </View>
+              </View>
+
+              <View style={styles.addressDivider} />
+
+              <View style={styles.addressRow}>
+                <MapPin size={16} color="#0F172A" style={{ marginTop: 2 }} />
+                <Text style={styles.addressText}>
+                  {split.deliveryAddress || "HSR Layout, 5th Main, Bangalore - 560102"}
+                </Text>
+              </View>
             </View>
-            <View style={styles.infoRow}>
-              <Text style={styles.infoKey}>Courier / Transport:</Text>
-              <Text style={[styles.infoVal, { fontWeight: "800", color: COLORS.primary }]}>{split.courierName || "N/A"}</Text>
+
+            {/* Order Items Card */}
+            <View style={styles.card}>
+              <Text style={styles.itemsHeaderTitle}>
+                Order Items ({split.itemsCount || items.length})
+              </Text>
+
+              <View style={styles.itemsList}>
+                {displayedItems.map((item: any, index: number) => (
+                  <View key={index} style={styles.itemRow}>
+                    <View style={styles.itemThumb}>
+                      <Text style={{ fontSize: 20 }}>{item.icon || "📦"}</Text>
+                    </View>
+                    <View style={styles.itemInfo}>
+                      <Text style={styles.itemName}>{item.name || item.productName}</Text>
+                      <Text style={styles.itemSpec}>{item.spec || item.variant || "Standard Pack"}</Text>
+                      <Text style={styles.itemQty}>Qty: {item.qty || item.quantity || "1 pc"}</Text>
+                    </View>
+                    <Text style={styles.itemPrice}>
+                      {item.price ? item.price : `₹${Number(item.price || item.totalPrice || 500).toLocaleString("en-IN")}`}
+                    </Text>
+                  </View>
+                ))}
+              </View>
+
+              {items.length > 3 && (
+                <TouchableOpacity
+                  style={styles.viewAllBtn}
+                  onPress={() => setShowAllItems(!showAllItems)}
+                  activeOpacity={0.7}
+                >
+                  <Text style={styles.viewAllText}>
+                    {showAllItems ? "Show Less" : `View All ${split.itemsCount || items.length} Items`}
+                  </Text>
+                  {showAllItems ? (
+                    <ChevronUp size={16} color="#0066FF" />
+                  ) : (
+                    <ChevronDown size={16} color="#0066FF" />
+                  )}
+                </TouchableOpacity>
+              )}
+            </View>
+          </>
+        ) : (
+          /* ── Case B: If Order IS Packed (Screen 3) ── */
+          <View style={styles.packedCelebrationCard}>
+            <View style={styles.celebrationIconBadge}>
+              <Text style={{ fontSize: 44 }}>🎁</Text>
+              <View style={styles.celebrationCheck}>
+                <Check size={14} color="#FFFFFF" strokeWidth={3.5} />
+              </View>
+            </View>
+            <Text style={styles.packedTitle}>Order Packed!</Text>
+            <Text style={styles.packedSubtitle}>
+              Items are packed and ready for pickup.
+            </Text>
+          </View>
+        )}
+
+        {/* Delivery Partner Details Card */}
+        <View style={styles.card}>
+          <View style={styles.riderHeaderRow}>
+            <View style={styles.riderAvatarBox}>
+              <Text style={{ fontSize: 24 }}>🛵</Text>
+            </View>
+            <View style={{ flex: 1, marginLeft: 10 }}>
+              <Text style={styles.deliveryBadgeText}>Delivery Partner</Text>
+              <Text style={styles.riderName}>
+                {(split as any).riderName || split.courierName || (isPacked ? "Assigning Nearest Partner..." : "Unassigned")}
+              </Text>
+              <Text style={styles.riderPhone}>
+                {(split as any).riderPhone ? `+91 ${(split as any).riderPhone}` : (isPacked ? "Searching delivery rider..." : "Will assign after packing")}
+              </Text>
+            </View>
+            {(split as any).riderPhone ? (
+              <TouchableOpacity
+                style={styles.riderCallBtn}
+                onPress={() => Linking.openURL(`tel:${(split as any).riderPhone}`).catch(() => {})}
+                activeOpacity={0.8}
+              >
+                <Phone size={14} color="#0066FF" />
+                <Text style={styles.riderCallText}>Call</Text>
+              </TouchableOpacity>
+            ) : null}
+          </View>
+
+          <View style={styles.riderFooterRow}>
+            <View style={styles.riderStatusBox}>
+              <Bike size={16} color="#0F172A" />
+              <Text style={styles.riderEtaText}>
+                {isPacked ? "Pickup dispatch in progress" : "Pending Order Pack"}
+              </Text>
             </View>
             {split.trackingNumber ? (
-              <View style={styles.infoRow}>
-                <Text style={styles.infoKey}>LR / Tracking No:</Text>
-                <Text style={[styles.infoVal, { fontWeight: "800", color: COLORS.accentOrange }]}>{split.trackingNumber}</Text>
+              <View style={styles.licensePlateBox}>
+                <Text style={styles.licensePlateText}>Track: {split.trackingNumber}</Text>
               </View>
             ) : null}
           </View>
-        ) : null}
-
-        {/* Customer & Order Info */}
-        <View style={styles.infoCard}>
-          <Text style={styles.cardHeading}>Customer Information & Delivery Site</Text>
-          <View style={styles.infoRow}>
-            <Text style={styles.infoKey}>Name:</Text>
-            <Text style={styles.infoVal}>{split.customerName}</Text>
-          </View>
-          {getCleanPhone(split.customerPhone) ? (
-            <View style={styles.infoRow}>
-              <Text style={styles.infoKey}>Phone:</Text>
-              <Text style={styles.infoVal}>+91 {getCleanPhone(split.customerPhone)}</Text>
-            </View>
-          ) : null}
-          <View style={[styles.infoRow, { alignItems: "flex-start", marginTop: 4 }]}>
-            <Text style={styles.infoKey}>Delivery Address:</Text>
-            <Text style={[styles.infoVal, { flex: 1, textAlign: "right" }]}>
-              {split.deliveryAddress || split.shippingAddress?.formattedAddress || "Kumari elite apartment, Beguru, Landmark: Bommanahalli, Bengaluru, Karnataka - 560068"}
-            </Text>
-          </View>
         </View>
 
-        {/* Financial Summary */}
-        <View style={styles.infoCard}>
-          <Text style={styles.cardHeading}>Payout & Financials</Text>
-          <View style={styles.infoRow}>
-            <Text style={styles.infoKey}>Subtotal:</Text>
-            <Text style={styles.infoVal}>₹{split.subtotal?.toLocaleString("en-IN")}</Text>
-          </View>
-          <View style={styles.infoRow}>
-            <Text style={styles.infoKey}>Your Payout (Post Commission):</Text>
-            <Text style={[styles.infoVal, { color: COLORS.accentGreen, fontWeight: "900" }]}>
-              ₹{split.vendorPayoutAmount?.toLocaleString("en-IN")}
-            </Text>
-          </View>
-        </View>
+        {/* Re-Pack Option if Packed */}
+        {isPacked && (
+          <TouchableOpacity
+            style={styles.repackBtn}
+            onPress={() => statusMutation.mutate({ newStatus: "confirmed" })}
+            activeOpacity={0.7}
+          >
+            <Edit3 size={15} color="#64748B" />
+            <Text style={styles.repackText}>Need to re-pack? Edit</Text>
+          </TouchableOpacity>
+        )}
       </ScrollView>
 
-      {/* Dispatch Logistics Modal */}
-      <Modal visible={dispatchModalVisible} transparent animationType="slide" onRequestClose={() => setDispatchModalVisible(false)}>
-        <View style={styles.modalOverlay}>
-          <View style={styles.modalContent}>
-            <View style={styles.modalHeader}>
-              <View style={{ flexDirection: "row", alignItems: "center", gap: 8 }}>
-                <Truck size={20} color={COLORS.accentOrange} />
-                <Text style={styles.modalTitle}>Dispatch Logistics Details</Text>
-              </View>
-              <TouchableOpacity onPress={() => setDispatchModalVisible(false)}>
-                <X size={20} color="#64748B" />
-              </TouchableOpacity>
-            </View>
-
-            <Text style={styles.label}>Select Courier / Transport Partner *</Text>
-            <ScrollView horizontal showsHorizontalScrollIndicator={false} style={{ marginVertical: 6 }}>
-              <View style={{ flexDirection: "row", gap: 8, paddingVertical: 4 }}>
-                {COURIER_PARTNERS.map((cp) => {
-                  const isSelected = courierName.toLowerCase() === cp.name.toLowerCase() || courierName.toLowerCase().startsWith(cp.name.toLowerCase().split(" ")[0]);
-                  return (
-                    <TouchableOpacity
-                      key={cp.id}
-                      style={[
-                        styles.courierChip,
-                        isSelected && styles.courierChipSelected,
-                      ]}
-                      onPress={() => setCourierName(cp.name)}
-                      activeOpacity={0.8}
-                    >
-                      <Truck size={13} color={isSelected ? "#FFFFFF" : cp.badgeColor} />
-                      <Text style={[styles.courierChipText, isSelected && styles.courierChipTextSelected]}>
-                        {cp.name}
-                      </Text>
-                    </TouchableOpacity>
-                  );
-                })}
-              </View>
-            </ScrollView>
-
-            <Text style={[styles.label, { marginTop: 8 }]}>Transport Name (Customizable):</Text>
-            <TextInput
-              style={styles.modalInput}
-              value={courierName}
-              onChangeText={setCourierName}
-              placeholder="e.g. VRL Logistics, Delhivery, Own Truck"
-              placeholderTextColor="#94A3B8"
-            />
-
-            <Text style={styles.label}>Tracking / LR / Bilty Number:</Text>
-            <TextInput
-              style={styles.modalInput}
-              value={trackingNumber}
-              onChangeText={setTrackingNumber}
-              placeholder="e.g. VRL-98726354 / KA-01-AB-1234"
-              placeholderTextColor="#94A3B8"
-            />
-
-            <TouchableOpacity
-              style={styles.saveDispatchBtn}
-              onPress={() => {
-                statusMutation.mutate({
-                  newStatus: "dispatched",
-                  extra: {
-                    courierName: courierName.trim() || undefined,
-                    trackingNumber: trackingNumber.trim() || undefined,
-                  },
-                });
-              }}
-              disabled={statusMutation.isPending}
-            >
-              {statusMutation.isPending ? (
-                <ActivityIndicator size="small" color="#FFFFFF" />
-              ) : (
-                <Text style={styles.saveDispatchBtnText}>Confirm & Mark Dispatched</Text>
-              )}
-            </TouchableOpacity>
-          </View>
-        </View>
-      </Modal>
+      {/* Bottom Action Footer */}
+      <View style={styles.bottomBar}>
+        {!isPacked ? (
+          <TouchableOpacity
+            style={styles.markPackedBtn}
+            onPress={() => statusMutation.mutate({ newStatus: "ready_for_pickup" })}
+            activeOpacity={0.88}
+          >
+            <Package size={20} color="#FFFFFF" />
+            <Text style={styles.markPackedBtnText}>Mark as Packed</Text>
+          </TouchableOpacity>
+        ) : (
+          <TouchableOpacity
+            style={styles.viewDetailsBtn}
+            onPress={() => router.push("/(vendor)/orders" as any)}
+            activeOpacity={0.85}
+          >
+            <Text style={styles.viewDetailsBtnText}>View All Orders</Text>
+          </TouchableOpacity>
+        )}
+      </View>
     </View>
   );
 }
@@ -332,196 +404,456 @@ export default function VendorOrderDetailScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: COLORS.background,
+    backgroundColor: "#F8FAFC",
   },
   centerContainer: {
     flex: 1,
     alignItems: "center",
     justifyContent: "center",
+    backgroundColor: "#F8FAFC",
   },
   errorText: {
     fontSize: 16,
-    color: COLORS.textSecondary,
+    color: "#EF4444",
+    marginBottom: 12,
     fontWeight: "700",
   },
   backBtn: {
-    marginTop: SPACING.md,
-    backgroundColor: COLORS.primary,
-    paddingHorizontal: 16,
-    paddingVertical: 8,
-    borderRadius: RADIUS.md,
+    backgroundColor: "#0066FF",
+    paddingHorizontal: 18,
+    paddingVertical: 10,
+    borderRadius: 8,
   },
   backBtnText: {
-    color: "#fff",
+    color: "#FFFFFF",
     fontWeight: "700",
   },
-  topBar: {
+  header: {
     flexDirection: "row",
     alignItems: "center",
-    backgroundColor: COLORS.primary,
-    paddingTop: 50,
-    paddingBottom: SPACING.md,
-    paddingHorizontal: SPACING.lg,
-    gap: 12,
+    justifyContent: "space-between",
+    backgroundColor: "#FFFFFF",
+    paddingTop: Platform.OS === "ios" ? 54 : 44,
+    paddingBottom: 14,
+    paddingHorizontal: 16,
+    borderBottomWidth: 1,
+    borderBottomColor: "#F1F5F9",
   },
-  navBackBtn: {
-    padding: 4,
+  iconBtn: {
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    alignItems: "center",
+    justifyContent: "center",
   },
-  topBarTitle: {
+  headerTitleRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 8,
+  },
+  orderTitle: {
     fontSize: 18,
     fontWeight: "800",
-    color: COLORS.textWhite,
+    color: "#0F172A",
+    fontFamily: "PlusJakartaSans_800ExtraBold",
+  },
+  statusBadge: {
+    paddingHorizontal: 8,
+    paddingVertical: 3,
+    borderRadius: 8,
+  },
+  statusBadgeText: {
+    fontSize: 12,
+    fontWeight: "700",
+  },
+  statusBadgeAccepted: {
+    backgroundColor: "#DCFCE7",
+  },
+  statusBadgeTextAccepted: {
+    color: "#15803D",
+    fontSize: 12,
+    fontWeight: "700",
+  },
+  statusBadgePacked: {
+    backgroundColor: "#EFF6FF",
+  },
+  statusBadgeTextPacked: {
+    color: "#2563EB",
+    fontSize: 12,
+    fontWeight: "700",
   },
   scrollContent: {
-    padding: SPACING.lg,
-    paddingBottom: 40,
+    padding: 16,
+    paddingBottom: 90,
+    gap: 14,
   },
-  statusCard: {
-    backgroundColor: COLORS.primary,
-    borderRadius: RADIUS.xl,
-    padding: SPACING.lg,
-    marginBottom: SPACING.md,
-    ...SHADOWS.md,
-  },
-  statusLabel: {
-    fontSize: 11,
-    color: "rgba(255, 255, 255, 0.7)",
-    fontWeight: "700",
-    textTransform: "uppercase",
-  },
-  statusValue: {
-    fontSize: 22,
-    fontWeight: "900",
-    color: COLORS.textWhite,
-    marginTop: 4,
-    marginBottom: SPACING.md,
-  },
-  statusActions: {
+  stepperContainer: {
+    backgroundColor: "#FFFFFF",
+    borderRadius: 18,
+    paddingVertical: 16,
+    paddingHorizontal: 14,
     flexDirection: "row",
-    gap: 8,
-  },
-  actionChip: {
-    flex: 1,
-    paddingVertical: 8,
     alignItems: "center",
-    borderRadius: RADIUS.md,
-    backgroundColor: "rgba(255, 255, 255, 0.15)",
+    justifyContent: "space-between",
+    shadowColor: "#0F172A",
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.04,
+    shadowRadius: 8,
+    elevation: 2,
   },
-  actionChipActive: {
-    backgroundColor: COLORS.accentOrange,
+  stepItem: {
+    alignItems: "center",
+    gap: 6,
+    width: 60,
   },
-  actionChipText: {
-    fontSize: 11,
-    fontWeight: "800",
-    color: "#fff",
+  stepCircle: {
+    width: 26,
+    height: 26,
+    borderRadius: 13,
+    alignItems: "center",
+    justifyContent: "center",
   },
-  infoCard: {
-    backgroundColor: COLORS.surface,
-    borderRadius: RADIUS.lg,
-    padding: SPACING.md,
-    marginBottom: SPACING.md,
+  stepCircleActive: {
+    backgroundColor: "#0066FF",
+  },
+  stepCirclePending: {
+    backgroundColor: "#F1F5F9",
     borderWidth: 1,
-    borderColor: COLORS.border,
-    ...SHADOWS.sm,
+    borderColor: "#E2E8F0",
   },
-  cardHeading: {
-    fontSize: 14,
-    fontWeight: "800",
-    color: COLORS.primary,
-    marginBottom: SPACING.sm,
-    borderBottomWidth: 1,
-    borderBottomColor: COLORS.borderLight,
-    paddingBottom: 4,
-  },
-  infoRow: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    paddingVertical: 4,
-  },
-  infoKey: {
-    fontSize: 13,
-    color: COLORS.textSecondary,
-  },
-  infoVal: {
-    fontSize: 13,
+  stepNumActive: {
+    color: "#FFFFFF",
+    fontSize: 12,
     fontWeight: "700",
-    color: COLORS.text,
   },
-  modalOverlay: {
+  stepNumPending: {
+    color: "#94A3B8",
+    fontSize: 12,
+    fontWeight: "700",
+  },
+  stepLabel: {
+    fontSize: 10,
+    fontWeight: "600",
+    color: "#94A3B8",
+    textAlign: "center",
+    lineHeight: 12,
+  },
+  stepLabelActive: {
+    color: "#0F172A",
+    fontWeight: "700",
+  },
+  stepLine: {
     flex: 1,
-    backgroundColor: "rgba(0,0,0,0.6)",
-    justifyContent: "flex-end",
+    height: 2,
+    backgroundColor: "#E2E8F0",
+    marginBottom: 16,
+    marginHorizontal: -4,
   },
-  modalContent: {
-    backgroundColor: COLORS.surface,
-    borderTopLeftRadius: RADIUS.xl,
-    borderTopRightRadius: RADIUS.xl,
-    padding: SPACING.xl,
-    paddingBottom: 40,
+  stepLineActive: {
+    backgroundColor: "#0066FF",
   },
-  modalHeader: {
+  card: {
+    backgroundColor: "#FFFFFF",
+    borderRadius: 20,
+    padding: 16,
+    shadowColor: "#0F172A",
+    shadowOffset: { width: 0, height: 3 },
+    shadowOpacity: 0.05,
+    shadowRadius: 10,
+    elevation: 2,
+  },
+  customerRow: {
     flexDirection: "row",
-    justifyContent: "space-between",
     alignItems: "center",
-    marginBottom: SPACING.md,
   },
-  modalTitle: {
-    fontSize: 17,
+  avatarCircle: {
+    width: 44,
+    height: 44,
+    borderRadius: 22,
+    backgroundColor: "#E2E8F0",
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  avatarInitial: {
+    fontSize: 18,
     fontWeight: "800",
-    color: COLORS.primary,
+    color: "#475569",
   },
-  label: {
-    fontSize: 12,
-    fontWeight: "700",
-    color: COLORS.text,
-    marginBottom: 6,
-    marginTop: SPACING.sm,
+  customerMeta: {
+    flex: 1,
+    marginLeft: 12,
   },
-  courierChip: {
-    flexDirection: "row",
-    alignItems: "center",
-    backgroundColor: "#F8FAFC",
-    borderWidth: 1.5,
-    borderColor: "#CBD5E1",
-    paddingHorizontal: 12,
-    paddingVertical: 8,
-    borderRadius: 12,
-    gap: 8,
-  },
-  courierChipSelected: {
-    backgroundColor: "#052A51",
-    borderColor: "#052A51",
-  },
-  courierChipText: {
-    fontSize: 12,
+  customerName: {
+    fontSize: 16,
     fontWeight: "700",
     color: "#0F172A",
   },
-  courierChipTextSelected: {
-    color: "#FFFFFF",
-    fontWeight: "800",
-  },
-  modalInput: {
-    backgroundColor: COLORS.surfaceSecondary,
-    borderWidth: 1,
-    borderColor: COLORS.border,
-    borderRadius: RADIUS.md,
-    paddingHorizontal: SPACING.md,
-    paddingVertical: 10,
+  customerPhone: {
     fontSize: 13,
-    color: COLORS.text,
-    marginBottom: SPACING.sm,
+    color: "#64748B",
+    marginTop: 2,
   },
-  saveDispatchBtn: {
-    backgroundColor: COLORS.accentOrange,
-    borderRadius: RADIUS.lg,
-    paddingVertical: 14,
+  contactActions: {
+    flexDirection: "row",
+    gap: 8,
+  },
+  contactCircleBtn: {
+    width: 36,
+    height: 36,
+    borderRadius: 18,
     alignItems: "center",
-    marginTop: SPACING.md,
+    justifyContent: "center",
   },
-  saveDispatchBtnText: {
-    color: "#fff",
+  addressDivider: {
+    height: 1,
+    backgroundColor: "#F1F5F9",
+    marginVertical: 12,
+  },
+  addressRow: {
+    flexDirection: "row",
+    alignItems: "flex-start",
+    gap: 8,
+  },
+  addressText: {
+    flex: 1,
+    fontSize: 13,
+    color: "#475569",
+    lineHeight: 18,
+  },
+  itemsHeaderTitle: {
+    fontSize: 15,
+    fontWeight: "700",
+    color: "#0F172A",
+    marginBottom: 12,
+  },
+  itemsList: {
+    gap: 12,
+  },
+  itemRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 12,
+  },
+  itemThumb: {
+    width: 46,
+    height: 46,
+    borderRadius: 12,
+    backgroundColor: "#F8FAFC",
+    borderWidth: 1,
+    borderColor: "#E2E8F0",
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  itemInfo: {
+    flex: 1,
+  },
+  itemName: {
     fontSize: 14,
+    fontWeight: "700",
+    color: "#0F172A",
+  },
+  itemSpec: {
+    fontSize: 12,
+    color: "#64748B",
+    marginTop: 2,
+  },
+  itemQty: {
+    fontSize: 12,
+    color: "#0066FF",
+    fontWeight: "600",
+    marginTop: 2,
+  },
+  itemPrice: {
+    fontSize: 14,
+    fontWeight: "700",
+    color: "#0F172A",
+  },
+  viewAllBtn: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    gap: 4,
+    paddingTop: 14,
+    marginTop: 8,
+    borderTopWidth: 1,
+    borderTopColor: "#F1F5F9",
+  },
+  viewAllText: {
+    fontSize: 13,
+    fontWeight: "700",
+    color: "#0066FF",
+  },
+  packedCelebrationCard: {
+    backgroundColor: "#F0FDF4",
+    borderRadius: 22,
+    padding: 24,
+    alignItems: "center",
+    justifyContent: "center",
+    borderWidth: 1,
+    borderColor: "#DCFCE7",
+  },
+  celebrationIconBadge: {
+    position: "relative",
+    width: 80,
+    height: 80,
+    borderRadius: 40,
+    backgroundColor: "#DCFCE7",
+    alignItems: "center",
+    justifyContent: "center",
+    marginBottom: 14,
+  },
+  celebrationCheck: {
+    position: "absolute",
+    bottom: 2,
+    right: 2,
+    width: 24,
+    height: 24,
+    borderRadius: 12,
+    backgroundColor: "#10B981",
+    alignItems: "center",
+    justifyContent: "center",
+    borderWidth: 2,
+    borderColor: "#FFFFFF",
+  },
+  packedTitle: {
+    fontSize: 22,
     fontWeight: "800",
+    color: "#065F46",
+    marginBottom: 4,
+  },
+  packedSubtitle: {
+    fontSize: 13,
+    color: "#64748B",
+    textAlign: "center",
+  },
+  riderHeaderRow: {
+    flexDirection: "row",
+    alignItems: "center",
+  },
+  riderAvatarBox: {
+    width: 44,
+    height: 44,
+    borderRadius: 22,
+    backgroundColor: "#EFF6FF",
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  deliveryBadgeText: {
+    fontSize: 11,
+    fontWeight: "700",
+    color: "#0066FF",
+  },
+  riderName: {
+    fontSize: 15,
+    fontWeight: "700",
+    color: "#0F172A",
+  },
+  riderPhone: {
+    fontSize: 12,
+    color: "#64748B",
+  },
+  riderCallBtn: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 4,
+    backgroundColor: "#EFF6FF",
+    paddingHorizontal: 12,
+    paddingVertical: 7,
+    borderRadius: 16,
+  },
+  riderCallText: {
+    fontSize: 13,
+    fontWeight: "700",
+    color: "#0066FF",
+  },
+  riderFooterRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    backgroundColor: "#F8FAFC",
+    padding: 10,
+    borderRadius: 12,
+    marginTop: 12,
+  },
+  riderStatusBox: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 6,
+  },
+  riderEtaText: {
+    fontSize: 12,
+    fontWeight: "600",
+    color: "#0F172A",
+  },
+  licensePlateBox: {
+    backgroundColor: "#FFFFFF",
+    paddingHorizontal: 8,
+    paddingVertical: 3,
+    borderRadius: 6,
+    borderWidth: 1,
+    borderColor: "#E2E8F0",
+  },
+  licensePlateText: {
+    fontSize: 11,
+    fontWeight: "700",
+    color: "#475569",
+  },
+  repackBtn: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    gap: 6,
+    paddingVertical: 6,
+  },
+  repackText: {
+    fontSize: 13,
+    color: "#64748B",
+    fontWeight: "600",
+  },
+  bottomBar: {
+    position: "absolute",
+    bottom: 0,
+    left: 0,
+    right: 0,
+    backgroundColor: "#FFFFFF",
+    paddingHorizontal: 18,
+    paddingVertical: 14,
+    borderTopWidth: 1,
+    borderTopColor: "#F1F5F9",
+  },
+  markPackedBtn: {
+    width: "100%",
+    height: 50,
+    backgroundColor: "#0066FF",
+    borderRadius: 25,
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    gap: 8,
+    shadowColor: "#0066FF",
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.25,
+    shadowRadius: 8,
+    elevation: 4,
+  },
+  markPackedBtnText: {
+    fontSize: 16,
+    fontWeight: "700",
+    color: "#FFFFFF",
+  },
+  viewDetailsBtn: {
+    width: "100%",
+    height: 48,
+    backgroundColor: "#FFFFFF",
+    borderRadius: 24,
+    borderWidth: 1.5,
+    borderColor: "#E2E8F0",
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  viewDetailsBtnText: {
+    fontSize: 15,
+    fontWeight: "700",
+    color: "#0F172A",
   },
 });

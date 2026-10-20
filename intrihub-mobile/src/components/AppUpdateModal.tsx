@@ -5,9 +5,10 @@ import {
   Modal,
   StyleSheet,
   TouchableOpacity,
-  ScrollView,
+  Image,
+  Platform,
 } from "react-native";
-import { DownloadCloud, ArrowUpCircle, CheckCircle2, X, AlertTriangle } from "lucide-react-native";
+import { DownloadCloud, X, AlertTriangle } from "lucide-react-native";
 import { useAppUpdateCheck } from "../hooks/useAppUpdateCheck";
 import { APP_VERSION } from "../constants/config";
 
@@ -26,108 +27,117 @@ export default function AppUpdateModal() {
 
   const isForce = updateInfo.isForceUpdate;
 
+  // Crisp single-line caption
+  const singleLineMessage = isForce
+    ? "Please update now to continue ordering materials."
+    : (updateInfo.message && updateInfo.message.length <= 55
+      ? updateInfo.message
+      : "Update now for faster ordering & new features.");
+
   return (
     <Modal
       visible={modalVisible}
-      transparent={!isForce}
-      animationType="fade"
+      transparent
+      animationType="slide"
       onRequestClose={isForce ? () => {} : handleLaterPress}
       statusBarTranslucent
     >
       <View style={[styles.overlay, isForce && styles.forceOverlay]}>
-        <View style={[styles.card, isForce && styles.forceCard]}>
-          {/* Header Icon / Badge */}
-          <View style={styles.badgeWrapper}>
-            <View style={[styles.badgeCircle, isForce && styles.forceBadgeCircle]}>
-              {isForce ? (
-                <AlertTriangle size={36} color="#FFFFFF" strokeWidth={2.4} />
-              ) : (
-                <ArrowUpCircle size={36} color="#FFFFFF" strokeWidth={2.2} />
-              )}
-            </View>
-            {!isForce && (
-              <View style={styles.sparkleIcon}>
-                <CheckCircle2 size={16} color="#10B981" strokeWidth={2.2} />
-              </View>
-            )}
-          </View>
+        {/* Backdrop touch to dismiss if optional */}
+        {!isForce && (
+          <TouchableOpacity
+            style={styles.backdropPressable}
+            activeOpacity={1}
+            onPress={handleLaterPress}
+          />
+        )}
 
-          {/* Close button ONLY if NOT force update */}
+        {/* Bottom Sheet Card */}
+        <View style={[styles.sheet, isForce && styles.forceSheet]}>
+          {/* Top Grab Handle */}
+          <View style={styles.handleBar} />
+
+          {/* Close button (top right) */}
           {!isForce && (
             <TouchableOpacity
               style={styles.closeBtn}
               onPress={handleLaterPress}
               activeOpacity={0.7}
-              hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+              hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}
             >
               <X size={20} color="#64748B" />
             </TouchableOpacity>
           )}
 
-          {/* Title & Version Tag */}
-          <Text style={styles.title}>
-            {isForce ? "Update Required" : updateInfo.title || "New Update Available!"}
-          </Text>
-
-          <View style={styles.versionTagContainer}>
-            <Text style={styles.currentVersionText}>Current: v{APP_VERSION}</Text>
-            <Text style={styles.versionArrow}>→</Text>
-            <View style={[styles.newVersionBadge, isForce && styles.forceVersionBadge]}>
-              <Text style={[styles.newVersionText, isForce && styles.forceVersionText]}>
-                Latest: v{updateInfo.latestVersion}
-              </Text>
-            </View>
+          {/* Centered Brand Logo */}
+          <View style={styles.logoWrapper}>
+            {isForce ? (
+              <View style={styles.forceIconRow}>
+                <AlertTriangle size={24} color="#DC2626" strokeWidth={2.4} />
+                <Image
+                  source={require("../../assets/intri-web-logo.png")}
+                  style={styles.fullLogoImage}
+                  resizeMode="contain"
+                />
+              </View>
+            ) : (
+              <Image
+                source={require("../../assets/intri-web-logo.png")}
+                style={styles.fullLogoImage}
+                resizeMode="contain"
+              />
+            )}
           </View>
 
-          {/* Description */}
-          <Text style={styles.message}>
-            {isForce
-              ? "This version of IntriHub is deprecated and no longer supported. Please update now to continue ordering materials."
-              : updateInfo.message ||
-                "A brand new version of IntriHub is ready with speed improvements, smoother checkout, and new features."}
+          {/* Centered Title (Strictly Single Line) */}
+          <Text
+            style={styles.title}
+            numberOfLines={1}
+            adjustsFontSizeToFit
+            minimumFontScale={0.85}
+          >
+            {isForce ? "Update Required" : "New Update Available"}
           </Text>
 
-          {/* Release Notes */}
-          {updateInfo.releaseNotes && updateInfo.releaseNotes.length > 0 && (
-            <View style={styles.releaseNotesBox}>
-              <Text style={styles.releaseNotesHeader}>What's New:</Text>
-              <ScrollView
-                style={styles.notesScroll}
-                showsVerticalScrollIndicator={false}
-                bounces={false}
-              >
-                {updateInfo.releaseNotes.map((note, index) => (
-                  <View key={index} style={styles.noteRow}>
-                    <CheckCircle2 size={15} color="#10B981" style={styles.noteIcon} />
-                    <Text style={styles.noteText}>{note}</Text>
-                  </View>
-                ))}
-              </ScrollView>
-            </View>
-          )}
+          {/* Centered Subtitle (Strictly Single Line) */}
+          <Text
+            style={styles.message}
+            numberOfLines={1}
+            adjustsFontSizeToFit
+            minimumFontScale={0.85}
+          >
+            {singleLineMessage}
+          </Text>
 
-          {/* Actions */}
+          {/* Action Buttons: Aamne-Samne (Horizontal Row) */}
           <View style={styles.actionsContainer}>
+            {!isForce && (
+              <>
+                <TouchableOpacity
+                  style={styles.laterBtn}
+                  onPress={handleLaterPress}
+                  activeOpacity={0.7}
+                  hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+                >
+                  <Text style={styles.laterBtnText}>Later</Text>
+                </TouchableOpacity>
+
+                {/* Subtle vertical separator */}
+                <View style={styles.divider} />
+              </>
+            )}
+
             <TouchableOpacity
-              style={[styles.updateBtn, isForce && styles.forceUpdateBtn]}
+              style={[
+                styles.updateBtn,
+                isForce && styles.forceFullWidthBtn,
+              ]}
               onPress={handleUpdatePress}
               activeOpacity={0.88}
             >
-              <DownloadCloud size={20} color="#FFFFFF" strokeWidth={2.4} />
-              <Text style={styles.updateBtnText}>
-                {isForce ? "Update Now" : "Update Now"}
-              </Text>
+              <DownloadCloud size={19} color="#FFFFFF" strokeWidth={2.3} />
+              <Text style={styles.updateBtnText}>Update Now</Text>
             </TouchableOpacity>
-
-            {!isForce && (
-              <TouchableOpacity
-                style={styles.laterBtn}
-                onPress={handleLaterPress}
-                activeOpacity={0.7}
-              >
-                <Text style={styles.laterBtnText}>Later</Text>
-              </TouchableOpacity>
-            )}
           </View>
         </View>
       </View>
@@ -138,204 +148,134 @@ export default function AppUpdateModal() {
 const styles = StyleSheet.create({
   overlay: {
     flex: 1,
-    backgroundColor: "rgba(5, 15, 30, 0.78)",
-    justifyContent: "center",
-    alignItems: "center",
-    paddingHorizontal: 24,
+    backgroundColor: "rgba(5, 15, 30, 0.5)",
+    justifyContent: "flex-end",
   },
   forceOverlay: {
-    backgroundColor: "#051A33",
-    paddingHorizontal: 20,
+    backgroundColor: "rgba(5, 15, 30, 0.85)",
   },
-  card: {
+  backdropPressable: {
+    flex: 1,
+  },
+  sheet: {
     width: "100%",
-    maxWidth: 380,
     backgroundColor: "#FFFFFF",
-    borderRadius: 24,
+    borderTopLeftRadius: 28,
+    borderTopRightRadius: 28,
     paddingHorizontal: 24,
-    paddingTop: 32,
-    paddingBottom: 24,
+    paddingTop: 12,
+    paddingBottom: Platform.OS === "ios" ? 36 : 24,
     alignItems: "center",
     shadowColor: "#000",
-    shadowOffset: { width: 0, height: 16 },
-    shadowOpacity: 0.25,
-    shadowRadius: 28,
+    shadowOffset: { width: 0, height: -6 },
+    shadowOpacity: 0.12,
+    shadowRadius: 16,
     elevation: 20,
     position: "relative",
   },
-  forceCard: {
-    maxWidth: 420,
-    paddingTop: 36,
-    paddingBottom: 32,
-    borderWidth: 1.5,
-    borderColor: "#E2E8F0",
+  forceSheet: {
+    borderTopWidth: 2,
+    borderColor: "#FCA5A5",
+  },
+  handleBar: {
+    width: 44,
+    height: 4,
+    borderRadius: 2,
+    backgroundColor: "#CBD5E1",
+    alignSelf: "center",
+    marginBottom: 16,
   },
   closeBtn: {
     position: "absolute",
-    top: 16,
-    right: 16,
+    top: 14,
+    right: 18,
     width: 32,
     height: 32,
-    borderRadius: 16,
-    backgroundColor: "#F1F5F9",
     alignItems: "center",
     justifyContent: "center",
+    zIndex: 10,
   },
-  badgeWrapper: {
-    position: "relative",
-    marginBottom: 16,
-  },
-  badgeCircle: {
-    width: 72,
-    height: 72,
-    borderRadius: 36,
-    backgroundColor: "#052A51",
+  logoWrapper: {
     alignItems: "center",
     justifyContent: "center",
-    shadowColor: "#052A51",
-    shadowOffset: { width: 0, height: 8 },
-    shadowOpacity: 0.35,
-    shadowRadius: 14,
-    elevation: 10,
+    marginBottom: 14,
   },
-  forceBadgeCircle: {
-    backgroundColor: "#DC2626",
-    shadowColor: "#DC2626",
+  forceIconRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 10,
   },
-  sparkleIcon: {
-    position: "absolute",
-    top: -2,
-    right: -2,
-    backgroundColor: "#FEF3C7",
-    padding: 5,
-    borderRadius: 12,
+  fullLogoImage: {
+    width: 210,
+    height: 66,
   },
   title: {
-    fontSize: 20,
+    fontSize: 18,
     fontFamily: "PlusJakartaSans_700Bold",
     color: "#0F172A",
     textAlign: "center",
-    marginBottom: 8,
-  },
-  versionTagContainer: {
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "center",
-    marginBottom: 12,
-    gap: 8,
-  },
-  currentVersionText: {
-    fontSize: 12,
-    fontFamily: "PlusJakartaSans_500Medium",
-    color: "#64748B",
-  },
-  versionArrow: {
-    fontSize: 12,
-    color: "#94A3B8",
-  },
-  newVersionBadge: {
-    backgroundColor: "#EFF6FF",
-    paddingHorizontal: 10,
-    paddingVertical: 3,
-    borderRadius: 12,
-    borderWidth: 1,
-    borderColor: "#BFDBFE",
-  },
-  forceVersionBadge: {
-    backgroundColor: "#FEF2F2",
-    borderColor: "#FECACA",
-  },
-  newVersionText: {
-    fontSize: 12,
-    fontFamily: "PlusJakartaSans_600SemiBold",
-    color: "#1D4ED8",
-  },
-  forceVersionText: {
-    color: "#DC2626",
+    width: "100%",
+    marginBottom: 6,
+    fontWeight: "700",
   },
   message: {
     fontSize: 13,
     fontFamily: "PlusJakartaSans_400Regular",
-    color: "#475569",
+    color: "#64748B",
     textAlign: "center",
-    lineHeight: 19,
-    marginBottom: 16,
-  },
-  releaseNotesBox: {
-    width: "100%",
-    backgroundColor: "#F8FAFC",
-    borderRadius: 14,
-    padding: 14,
-    marginBottom: 20,
-    borderWidth: 1,
-    borderColor: "#E2E8F0",
-  },
-  releaseNotesHeader: {
-    fontSize: 12,
-    fontFamily: "PlusJakartaSans_700Bold",
-    color: "#1E293B",
-    marginBottom: 8,
-    textTransform: "uppercase",
-    letterSpacing: 0.5,
-  },
-  notesScroll: {
-    maxHeight: 120,
-  },
-  noteRow: {
-    flexDirection: "row",
-    alignItems: "flex-start",
-    marginBottom: 6,
-  },
-  noteIcon: {
-    marginRight: 8,
-    marginTop: 2,
-  },
-  noteText: {
-    flex: 1,
-    fontSize: 12,
-    fontFamily: "PlusJakartaSans_500Medium",
-    color: "#334155",
-    lineHeight: 17,
+    lineHeight: 18,
+    marginBottom: 24,
+    paddingHorizontal: 6,
   },
   actionsContainer: {
     width: "100%",
-    gap: 10,
-  },
-  updateBtn: {
-    width: "100%",
-    height: 50,
-    backgroundColor: "#052A51",
-    borderRadius: 14,
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "center",
-    gap: 10,
-    shadowColor: "#052A51",
-    shadowOffset: { width: 0, height: 6 },
-    shadowOpacity: 0.3,
-    shadowRadius: 10,
-    elevation: 6,
+    paddingHorizontal: 6,
+    gap: 16,
   },
-  forceUpdateBtn: {
+  laterBtn: {
+    paddingVertical: 12,
+    paddingHorizontal: 16,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  laterBtnText: {
+    fontSize: 15,
+    fontFamily: "PlusJakartaSans_600SemiBold",
+    color: "#0066FF",
+    fontWeight: "600",
+  },
+  divider: {
+    width: 1,
+    height: 24,
+    backgroundColor: "#E2E8F0",
+  },
+  updateBtn: {
+    flex: 1,
+    height: 48,
+    backgroundColor: "#0066FF",
+    borderRadius: 24,
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    gap: 8,
+    shadowColor: "#0066FF",
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.25,
+    shadowRadius: 8,
+    elevation: 4,
+  },
+  forceFullWidthBtn: {
+    flex: 1,
     backgroundColor: "#DC2626",
     shadowColor: "#DC2626",
-    height: 52,
   },
   updateBtnText: {
     fontSize: 15,
     fontFamily: "PlusJakartaSans_700Bold",
     color: "#FFFFFF",
-    letterSpacing: 0.3,
-  },
-  laterBtn: {
-    width: "100%",
-    height: 42,
-    alignItems: "center",
-    justifyContent: "center",
-  },
-  laterBtnText: {
-    fontSize: 14,
-    fontFamily: "PlusJakartaSans_600SemiBold",
-    color: "#64748B",
+    fontWeight: "700",
   },
 });

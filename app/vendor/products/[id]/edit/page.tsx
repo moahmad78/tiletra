@@ -52,6 +52,15 @@ export default function VendorEditProductPage() {
   const [wastagePercent, setWastagePercent] = useState<string>("10");
   const [vendorProfile, setVendorProfile] = useState<any | null>(null);
 
+  // Advanced Specifications & Customization
+  const [brand, setBrand] = useState("");
+  const [modelNumber, setModelNumber] = useState("");
+  const [thickness, setThickness] = useState("");
+  const [finish, setFinish] = useState("");
+  const [warranty, setWarranty] = useState("");
+  const [hsnCode, setHsnCode] = useState("");
+  const [gstPercent, setGstPercent] = useState("18");
+
   // Variants
   const [hasVariants, setHasVariants] = useState(false);
   const [variants, setVariants] = useState<any[]>([
@@ -95,6 +104,16 @@ export default function VendorEditProductPage() {
           setCoverageRate(prod.coverageRate ? String(prod.coverageRate) : "");
           setPiecesPerBox(prod.piecesPerBox ? String(prod.piecesPerBox) : "");
           setWastagePercent(prod.wastageFactor ? String(Math.round((prod.wastageFactor - 1) * 100)) : "10");
+
+          // Load advanced specs
+          setBrand(prod.brand || (prod.specs as any)?.brand || "");
+          setModelNumber(prod.modelNumber || (prod.specs as any)?.modelNumber || "");
+          setThickness(prod.thickness || (prod.specs as any)?.thickness || "");
+          setFinish(prod.finish || (prod.specs as any)?.finish || "");
+          setWarranty(prod.warranty || (prod.specs as any)?.warranty || "");
+          setHsnCode(prod.hsnCode || (prod.specs as any)?.hsnCode || "");
+          setGstPercent(prod.gstPercent ? String(prod.gstPercent) : (prod.gstRate ? String(prod.gstRate) : "18"));
+
           setHasVariants(Boolean(prod.hasVariants) || (prod.variants && prod.variants.length > 1));
           if (prod.variants && prod.variants.length > 0) {
             setVariants(
@@ -259,6 +278,13 @@ export default function VendorEditProductPage() {
       wastageFactor: (parseFloat(wastagePercent) || 10) / 100 + 1.0,
       hasVariants: hasVariants && mappedVariants.length > 0,
       variants: mappedVariants,
+      brand: brand.trim() || null,
+      modelNumber: modelNumber.trim() || null,
+      thickness: thickness.trim() || null,
+      finish: finish.trim() || null,
+      warranty: warranty.trim() || null,
+      hsnCode: hsnCode.trim() || null,
+      gstPercent: gstPercent ? Number(gstPercent) : 18,
     });
     setSaving(false);
 
@@ -393,6 +419,61 @@ export default function VendorEditProductPage() {
                   </option>
                 ))}
               </select>
+            </div>
+          </div>
+
+          {/* Brand, Model, Thickness & Finish */}
+          <div className="grid grid-cols-1 sm:grid-cols-4 gap-4 pt-3 border-t border-gray-100">
+            <div>
+              <label className="block text-xs font-bold text-gray-700 uppercase tracking-wider mb-1.5">
+                Brand / Manufacturer
+              </label>
+              <input
+                type="text"
+                value={brand}
+                onChange={(e) => setBrand(e.target.value)}
+                placeholder="e.g. Kajaria, Astral"
+                className="w-full bg-gray-50 border border-gray-200 rounded-xl px-3.5 py-2.5 text-xs font-semibold text-gray-800 focus:bg-white focus:border-emerald-500 focus:outline-hidden transition-all"
+              />
+            </div>
+
+            <div>
+              <label className="block text-xs font-bold text-gray-700 uppercase tracking-wider mb-1.5">
+                Model Number / Code
+              </label>
+              <input
+                type="text"
+                value={modelNumber}
+                onChange={(e) => setModelNumber(e.target.value)}
+                placeholder="e.g. MOD-102"
+                className="w-full bg-gray-50 border border-gray-200 rounded-xl px-3.5 py-2.5 text-xs font-semibold text-gray-800 focus:bg-white focus:border-emerald-500 focus:outline-hidden transition-all"
+              />
+            </div>
+
+            <div>
+              <label className="block text-xs font-bold text-gray-700 uppercase tracking-wider mb-1.5">
+                Thickness
+              </label>
+              <input
+                type="text"
+                value={thickness}
+                onChange={(e) => setThickness(e.target.value)}
+                placeholder="e.g. 9 mm, 12 mm"
+                className="w-full bg-gray-50 border border-gray-200 rounded-xl px-3.5 py-2.5 text-xs font-semibold text-gray-800 focus:bg-white focus:border-emerald-500 focus:outline-hidden transition-all"
+              />
+            </div>
+
+            <div>
+              <label className="block text-xs font-bold text-gray-700 uppercase tracking-wider mb-1.5">
+                Surface Finish
+              </label>
+              <input
+                type="text"
+                value={finish}
+                onChange={(e) => setFinish(e.target.value)}
+                placeholder="e.g. Glossy, Matte"
+                className="w-full bg-gray-50 border border-gray-200 rounded-xl px-3.5 py-2.5 text-xs font-semibold text-gray-800 focus:bg-white focus:border-emerald-500 focus:outline-hidden transition-all"
+              />
             </div>
           </div>
 
@@ -589,6 +670,57 @@ export default function VendorEditProductPage() {
               <p className="text-[10px] text-gray-400 mt-1">
                 Cutting/application buffer added automatically before rounding
               </p>
+            </div>
+          </div>
+        </div>
+
+        {/* ── Tax, Compliance & Warranty ── */}
+        <div className="bg-white rounded-3xl p-6 border border-gray-200/80 shadow-xs space-y-4">
+          <h2 className="text-sm font-black text-gray-900 uppercase tracking-wider">
+            5. Tax, Compliance &amp; Warranty
+          </h2>
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+            <div>
+              <label className="block text-xs font-bold text-gray-700 uppercase tracking-wider mb-1.5">
+                HSN Code
+              </label>
+              <input
+                type="text"
+                value={hsnCode}
+                onChange={(e) => setHsnCode(e.target.value)}
+                placeholder="e.g. 6907, 8481"
+                className="w-full bg-gray-50 border border-gray-200 rounded-xl px-3.5 py-2.5 text-xs font-semibold text-gray-800 focus:bg-white focus:border-emerald-500 focus:outline-hidden transition-all"
+              />
+            </div>
+
+            <div>
+              <label className="block text-xs font-bold text-gray-700 uppercase tracking-wider mb-1.5">
+                GST Rate (%)
+              </label>
+              <select
+                value={gstPercent}
+                onChange={(e) => setGstPercent(e.target.value)}
+                className="w-full bg-gray-50 border border-gray-200 rounded-xl px-3.5 py-2.5 text-xs font-semibold text-gray-800 focus:bg-white focus:border-emerald-500 focus:outline-hidden transition-all cursor-pointer"
+              >
+                <option value="0">0% (Nil)</option>
+                <option value="5">5% (Essential)</option>
+                <option value="12">12% (Standard)</option>
+                <option value="18">18% (Standard / Construction &amp; Tiles)</option>
+                <option value="28">28% (Luxury)</option>
+              </select>
+            </div>
+
+            <div>
+              <label className="block text-xs font-bold text-gray-700 uppercase tracking-wider mb-1.5">
+                Warranty
+              </label>
+              <input
+                type="text"
+                value={warranty}
+                onChange={(e) => setWarranty(e.target.value)}
+                placeholder="e.g. 10 Years Warranty"
+                className="w-full bg-gray-50 border border-gray-200 rounded-xl px-3.5 py-2.5 text-xs font-semibold text-gray-800 focus:bg-white focus:border-emerald-500 focus:outline-hidden transition-all"
+              />
             </div>
           </div>
         </div>

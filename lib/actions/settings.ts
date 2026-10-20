@@ -26,11 +26,11 @@ export async function getStoreSettings() {
           email: "support@intrihub.com",
           address: "Intrihub Central Supply Hub, Begur, Bangalore, Karnataka - 560114",
           gstNumber: "29AABCT1234F1Z8",
-          freeDeliveryThreshold: 15000,
-          standardDeliveryFee: 999,
-          deliveryFeeEnabled: true,
-          bikeDeliveryRate: 99,
-          fourWheelerDeliveryRate: 349,
+          freeDeliveryThreshold: 0,
+          standardDeliveryFee: 0,
+          deliveryFeeEnabled: false,
+          bikeDeliveryRate: 0,
+          fourWheelerDeliveryRate: 0,
           weightThresholdKg: 20,
           lowStockThreshold: 25,
           codEnabled: true,
@@ -43,6 +43,11 @@ export async function getStoreSettings() {
     if (settings) {
       return {
         ...settings,
+        standardDeliveryFee: 0,
+        deliveryFeeEnabled: false,
+        freeDeliveryThreshold: 0,
+        bikeDeliveryRate: 0,
+        fourWheelerDeliveryRate: 0,
         appInstallPromptEnabled: (settings as any).appInstallPromptEnabled !== false,
         appVersionConfig: ((settings as any).appVersionConfig as AppVersionSettings) || DEFAULT_APP_VERSION_SETTINGS,
       };

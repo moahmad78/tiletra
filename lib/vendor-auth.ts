@@ -17,6 +17,7 @@ export type VendorSession = {
   autoPublishEnabled?: boolean;
   rejectionReason?: string | null;
   mustChangePassword?: boolean;
+  isOnline?: boolean;
   lastLogin: string;
 };
 
@@ -60,6 +61,7 @@ export const useVendorAuth = create<VendorAuthState>()(
               autoPublishEnabled: Boolean(data.vendor.autoPublishEnabled),
               rejectionReason: data.vendor.rejectionReason,
               mustChangePassword: data.vendor.mustChangePassword,
+              isOnline: data.vendor.isOnline !== undefined ? Boolean(data.vendor.isOnline) : true,
               lastLogin: new Date().toISOString(),
             };
             set({ vendor: session, isAuthenticated: true });

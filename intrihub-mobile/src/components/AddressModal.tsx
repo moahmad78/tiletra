@@ -14,6 +14,7 @@ import Svg, { Path, Circle } from "react-native-svg";
 import {
   X,
   Plus,
+  PlusCircle,
   Check,
   MapPin,
   Building,
@@ -29,6 +30,9 @@ import {
   Trash2,
   ArrowLeft,
   Search,
+  Mic,
+  MoreVertical,
+  ArrowRight,
 } from "lucide-react-native";
 import * as Location from "expo-location";
 import { Address } from "../types";
@@ -621,6 +625,11 @@ export const AddressModal: React.FC<AddressModalProps> = ({ visible, onClose, on
     <Modal visible={visible} animationType="slide" transparent onRequestClose={onClose}>
       <View style={styles.overlay}>
         <View style={styles.modalCard}>
+          {/* Mobile Top Drag Indicator */}
+          <View style={styles.dragHandleWrap}>
+            <View style={styles.dragHandle} />
+          </View>
+
           {/* Header */}
           <View style={styles.header}>
             <View style={styles.headerTitleContainer}>
@@ -882,22 +891,26 @@ export const AddressModal: React.FC<AddressModalProps> = ({ visible, onClose, on
                 {/* 0. Blinkit-Style Address Search Input */}
                 <View style={styles.addressSearchBarContainer}>
                   <View style={styles.addressSearchBar}>
-                    <Search size={18} color={COLORS.textTertiary} />
+                    <Search size={18} color="#94A3B8" />
                     <TextInput
                       style={styles.addressSearchInput}
-                      placeholder="Search address"
-                      placeholderTextColor={COLORS.textTertiary}
+                      placeholder="Search area, street, landmark or pincode..."
+                      placeholderTextColor="#94A3B8"
                       value={addressSearchQuery}
                       onChangeText={handleAddressSearchChange}
                       returnKeyType="search"
                     />
                     {isSearchingAddress ? (
-                      <ActivityIndicator size="small" color={COLORS.primary} />
+                      <ActivityIndicator size="small" color="#0066FF" />
                     ) : addressSearchQuery ? (
                       <TouchableOpacity onPress={() => { setAddressSearchQuery(""); setAddressPredictions([]); setShowAddressPredictions(false); }}>
-                        <X size={16} color={COLORS.textTertiary} />
+                        <X size={16} color="#94A3B8" />
                       </TouchableOpacity>
-                    ) : null}
+                    ) : (
+                      <TouchableOpacity activeOpacity={0.7}>
+                        <Mic size={18} color="#94A3B8" />
+                      </TouchableOpacity>
+                    )}
                   </View>
 
                   {/* Predictions List */}
@@ -911,7 +924,7 @@ export const AddressModal: React.FC<AddressModalProps> = ({ visible, onClose, on
                           activeOpacity={0.7}
                         >
                           <View style={styles.searchPredictionIcon}>
-                            <MapPin size={16} color={COLORS.primary} />
+                            <MapPin size={16} color="#0066FF" />
                           </View>
                           <View style={{ flex: 1 }}>
                             <Text style={styles.searchPredictionMain} numberOfLines={1}>{p.mainText}</Text>
@@ -923,62 +936,71 @@ export const AddressModal: React.FC<AddressModalProps> = ({ visible, onClose, on
                   )}
                 </View>
 
-                {/* 1. Google Maps Card */}
-                <TouchableOpacity
-                  style={styles.actionCard}
-                  onPress={() => {
-                    resetForm();
-                    setShowMapPicker(true);
-                  }}
-                  activeOpacity={0.75}
-                >
-                  <View style={styles.actionIconWrapGoogle}>
-                    <GoogleMapsIcon size={24} />
-                  </View>
-                  <View style={styles.actionTextContainer}>
-                    <Text style={styles.actionTitle}>Choose on Google Maps</Text>
-                    <Text style={styles.actionSubtitle}>
-                      Drag pin to select exact building, gate or site
-                    </Text>
-                  </View>
-                  <ChevronRight size={18} color="#94A3B8" />
-                </TouchableOpacity>
+                {/* 1 & 2. Side-by-Side Quick Action Buttons (Matches Design) */}
+                <View style={styles.quickActionsRow}>
+                  {/* Use Current Location */}
+                  <TouchableOpacity
+                    style={styles.quickActionGps}
+                    onPress={handleUseCurrentLocation}
+                    disabled={detectingLocation}
+                    activeOpacity={0.75}
+                  >
+                    <View style={styles.quickActionLeft}>
+                      <View style={styles.quickActionGpsBadge}>
+                        <Navigation size={18} color="#0066FF" />
+                      </View>
+                      <View style={{ flex: 1, minWidth: 0 }}>
+                        <Text style={styles.quickActionTitle} numberOfLines={1}>Use Current Location</Text>
+                        <Text style={styles.quickActionSub} numberOfLines={1}>
+                          {detectingLocation ? "Detecting GPS..." : "Auto-detect your address"}
+                        </Text>
+                      </View>
+                    </View>
+                    <ChevronRight size={14} color="#94A3B8" />
+                  </TouchableOpacity>
 
-                {/* 2. Auto-Detect Current GPS Location */}
-                <TouchableOpacity
-                  style={styles.actionCard}
-                  onPress={handleUseCurrentLocation}
-                  disabled={detectingLocation}
-                  activeOpacity={0.75}
-                >
-                  <View style={styles.actionIconWrapGps}>
-                    <Navigation size={20} color={COLORS.primary} />
-                  </View>
-                  <View style={styles.actionTextContainer}>
-                    <Text style={styles.actionTitle}>Use Current Location</Text>
-                    <Text style={styles.actionSubtitle}>
-                      {detectingLocation
-                        ? "Detecting address via GPS..."
-                        : "Auto-detects street, area, city & PIN code"}
-                    </Text>
-                  </View>
-                  <ChevronRight size={18} color="#94A3B8" />
-                </TouchableOpacity>
+                  {/* Choose on Google Maps */}
+                  <TouchableOpacity
+                    style={styles.quickActionMap}
+                    onPress={() => {
+                      resetForm();
+                      setShowMapPicker(true);
+                    }}
+                    activeOpacity={0.75}
+                  >
+                    <View style={styles.quickActionLeft}>
+                      <View style={styles.quickActionMapBadge}>
+                        <GoogleMapsIcon size={20} />
+                      </View>
+                      <View style={{ flex: 1, minWidth: 0 }}>
+                        <Text style={styles.quickActionTitle} numberOfLines={1}>Choose on Google Maps</Text>
+                        <Text style={styles.quickActionSub} numberOfLines={1}>Pick exact location on map</Text>
+                      </View>
+                    </View>
+                    <ChevronRight size={14} color="#94A3B8" />
+                  </TouchableOpacity>
+                </View>
 
                 {/* Section Header: Saved Addresses */}
                 <View style={styles.sectionHeaderRow}>
-                  <Text style={styles.sectionTitle}>SAVED ADDRESSES</Text>
-                  {savedAddresses.length > 0 && (
-                    <Text style={styles.sectionCount}>
-                      {savedAddresses.length} saved
-                    </Text>
-                  )}
+                  <Text style={styles.sectionTitle}>Saved Addresses</Text>
+                  <TouchableOpacity
+                    style={styles.addNewBtn}
+                    onPress={() => {
+                      resetForm();
+                      setIsAddingNew(true);
+                    }}
+                    activeOpacity={0.7}
+                  >
+                    <PlusCircle size={16} color="#0066FF" />
+                    <Text style={styles.addNewBtnText}>Add New</Text>
+                  </TouchableOpacity>
                 </View>
 
                 {/* Saved Address Cards */}
                 {loadingAddresses ? (
                   <View style={styles.loadingContainer}>
-                    <ActivityIndicator size="small" color={COLORS.primary} />
+                    <ActivityIndicator size="small" color="#0066FF" />
                     <Text style={styles.loadingText}>Loading saved addresses...</Text>
                   </View>
                 ) : savedAddresses.length === 0 ? (
@@ -1015,7 +1037,6 @@ export const AddressModal: React.FC<AddressModalProps> = ({ visible, onClose, on
                         addr.buildingName,
                         addr.street,
                         addr.area,
-                        addr.landmark ? `Near ${addr.landmark}` : null,
                         addr.city,
                         addr.pincode ? `PIN: ${addr.pincode}` : null,
                       ]
@@ -1023,36 +1044,41 @@ export const AddressModal: React.FC<AddressModalProps> = ({ visible, onClose, on
                         .join(", ");
 
                     return (
-                      <View
+                      <TouchableOpacity
                         key={addr.id}
                         style={[
                           styles.addressCard,
                           isSelected && styles.addressCardSelected,
                         ]}
+                        onPress={() => handleSelect(addr)}
+                        activeOpacity={0.8}
                       >
-                        <TouchableOpacity
-                          onPress={() => handleSelect(addr)}
-                          activeOpacity={0.7}
+                        {/* Left Circular Icon Badge */}
+                        <View
+                          style={[
+                            styles.cardLeftBadge,
+                            isSelected ? styles.cardLeftBadgeSelected : styles.cardLeftBadgeNormal,
+                          ]}
                         >
-                          <View style={styles.addressCardTopRow}>
-                            <View style={styles.addressLabelChip}>
-                              <LabelIcon size={13} color={COLORS.primary} />
-                              <Text style={styles.addressLabelText}>
-                                {addr.label || "Home"}
-                              </Text>
-                            </View>
-                            {isSelected ? (
-                              <View style={styles.selectedPill}>
-                                <Check size={11} color="#fff" />
-                                <Text style={styles.selectedPillText}>DELIVERING HERE</Text>
+                          <LabelIcon
+                            size={20}
+                            color={isSelected ? "#0066FF" : "#475569"}
+                          />
+                        </View>
+
+                        {/* Middle Details */}
+                        <View style={{ flex: 1, minWidth: 0 }}>
+                          <View style={{ flexDirection: "row", alignItems: "center", gap: 6 }}>
+                            <Text style={styles.cardLabelTitle}>{addr.label || "Home"}</Text>
+                            {isSelected && (
+                              <View style={styles.deliveringHereBadge}>
+                                <Text style={styles.deliveringHereText}>Delivering Here</Text>
                               </View>
-                            ) : (
-                              <View style={styles.radioCircle} />
                             )}
                           </View>
 
                           {addr.fullName ? (
-                            <Text style={styles.addressRecipient}>
+                            <Text style={styles.addressRecipient} numberOfLines={1}>
                               {addr.fullName}
                               {addr.phone
                                 ? ` • +91 ${addr.phone.replace(/\D/g, "").slice(-10)}`
@@ -1060,38 +1086,59 @@ export const AddressModal: React.FC<AddressModalProps> = ({ visible, onClose, on
                             </Text>
                           ) : null}
 
-                          <Text style={styles.addressDetails} numberOfLines={3}>
+                          <Text style={styles.addressDetails} numberOfLines={2}>
                             {formattedDisplay}
                           </Text>
-                        </TouchableOpacity>
+                        </View>
 
-                        {/* Zepto/Blinkit Actions: Edit & Delete */}
-                        <View style={styles.cardActionsFooter}>
+                        {/* Right Radio & Menu */}
+                        <View style={styles.cardRightActions}>
+                          <View
+                            style={[
+                              styles.radioCircle,
+                              isSelected && styles.radioCircleSelected,
+                            ]}
+                          >
+                            {isSelected && <View style={styles.radioInnerDot} />}
+                          </View>
                           <TouchableOpacity
-                            style={styles.cardActionBtn}
                             onPress={() => handleStartEdit(addr)}
-                            activeOpacity={0.7}
+                            style={{ padding: 4 }}
                           >
-                            <Edit3 size={13} color={COLORS.primary} />
-                            <Text style={styles.cardActionBtnText}>Edit</Text>
-                          </TouchableOpacity>
-
-                          <TouchableOpacity
-                            style={styles.cardActionBtnDelete}
-                            onPress={() => handleConfirmDelete(addr)}
-                            activeOpacity={0.7}
-                          >
-                            <Trash2 size={13} color="#EF4444" />
-                            <Text style={styles.cardActionBtnDeleteText}>Delete</Text>
+                            <MoreVertical size={16} color="#94A3B8" />
                           </TouchableOpacity>
                         </View>
-                      </View>
+                      </TouchableOpacity>
                     );
                   })
                 )}
               </View>
             )}
           </ScrollView>
+
+          {/* Bottom Action Button (Matches Screenshot) */}
+          {!isAddingNew && (
+            <View style={styles.bottomContinueContainer}>
+              <TouchableOpacity
+                style={styles.continueToOrderBtn}
+                onPress={() => {
+                  if (selectedAddress) {
+                    onSelectAddress(selectedAddress);
+                    onClose();
+                  } else if (savedAddresses.length > 0) {
+                    onSelectAddress(savedAddresses[0]);
+                    onClose();
+                  } else {
+                    Alert.alert("Address Required", "Please select or add a delivery address to proceed.");
+                  }
+                }}
+                activeOpacity={0.88}
+              >
+                <Text style={styles.continueToOrderText}>Continue to Order</Text>
+                <ArrowRight size={18} color="#FFFFFF" />
+              </TouchableOpacity>
+            </View>
+          )}
         </View>
       </View>
 
@@ -1642,5 +1689,167 @@ const styles = StyleSheet.create({
     fontSize: 11,
     color: COLORS.textTertiary,
     marginTop: 2,
+  },
+  dragHandleWrap: {
+    alignItems: "center",
+    paddingTop: 10,
+    paddingBottom: 4,
+  },
+  dragHandle: {
+    width: 44,
+    height: 4,
+    borderRadius: 2,
+    backgroundColor: "#CBD5E1",
+  },
+  quickActionsRow: {
+    flexDirection: "row",
+    gap: 10,
+    marginBottom: 14,
+  },
+  quickActionGps: {
+    flex: 1,
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    backgroundColor: "#F0F7FF",
+    borderWidth: 1,
+    borderColor: "#BFDBFE",
+    borderRadius: 16,
+    padding: 10,
+  },
+  quickActionMap: {
+    flex: 1,
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    backgroundColor: "#FFFFFF",
+    borderWidth: 1,
+    borderColor: "#E2E8F0",
+    borderRadius: 16,
+    padding: 10,
+  },
+  quickActionLeft: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 8,
+    flex: 1,
+    minWidth: 0,
+  },
+  quickActionGpsBadge: {
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    backgroundColor: "#DBEAFE",
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  quickActionMapBadge: {
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    backgroundColor: "#F8FAFC",
+    borderWidth: 1,
+    borderColor: "#E2E8F0",
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  quickActionTitle: {
+    fontSize: 12,
+    fontWeight: "700",
+    color: "#0F172A",
+    lineHeight: 15,
+  },
+  quickActionSub: {
+    fontSize: 10,
+    color: "#64748B",
+    marginTop: 1,
+  },
+  addNewBtn: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 4,
+  },
+  addNewBtnText: {
+    fontSize: 13,
+    fontWeight: "700",
+    color: "#0066FF",
+  },
+  cardLeftBadge: {
+    width: 44,
+    height: 44,
+    borderRadius: 22,
+    alignItems: "center",
+    justifyContent: "center",
+    marginRight: 12,
+    marginTop: 2,
+  },
+  cardLeftBadgeSelected: {
+    backgroundColor: "#EFF6FF",
+    borderWidth: 1,
+    borderColor: "#DBEAFE",
+  },
+  cardLeftBadgeNormal: {
+    backgroundColor: "#F1F5F9",
+  },
+  cardLabelTitle: {
+    fontSize: 14,
+    fontWeight: "800",
+    color: "#0F172A",
+  },
+  deliveringHereBadge: {
+    backgroundColor: "#DBEAFE",
+    paddingHorizontal: 8,
+    paddingVertical: 2,
+    borderRadius: 12,
+  },
+  deliveringHereText: {
+    fontSize: 10,
+    fontWeight: "800",
+    color: "#0066FF",
+    letterSpacing: 0.3,
+  },
+  cardRightActions: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 8,
+    alignSelf: "center",
+    marginLeft: 8,
+  },
+  radioCircleSelected: {
+    borderColor: "#0066FF",
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  radioInnerDot: {
+    width: 8,
+    height: 8,
+    borderRadius: 4,
+    backgroundColor: "#0066FF",
+  },
+  bottomContinueContainer: {
+    paddingHorizontal: SPACING.lg,
+    paddingVertical: 12,
+    borderTopWidth: 1,
+    borderTopColor: "#F1F5F9",
+    backgroundColor: "#FFFFFF",
+  },
+  continueToOrderBtn: {
+    height: 52,
+    borderRadius: 26,
+    backgroundColor: "#0066FF",
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    gap: 8,
+    shadowColor: "#0066FF",
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.3,
+    shadowRadius: 8,
+    elevation: 4,
+  },
+  continueToOrderText: {
+    fontSize: 16,
+    fontWeight: "800",
+    color: "#FFFFFF",
   },
 });

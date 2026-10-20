@@ -35,10 +35,6 @@ export default function CartScreen() {
   const total = getTotal();
   const itemCount = getItemCount();
 
-  const freeDeliveryThreshold = 15000;
-  const progressToFreeDelivery = Math.min(1, subtotal / freeDeliveryThreshold);
-  const remainingForFreeDelivery = Math.max(0, freeDeliveryThreshold - subtotal);
-
   const handleCheckout = () => {
     if (!isAuthenticated) {
       router.push("/(auth)/login");
@@ -78,31 +74,6 @@ export default function CartScreen() {
       </View>
 
       <ScrollView style={styles.scroll} showsVerticalScrollIndicator={false}>
-        {/* Free Delivery Banner */}
-        <View style={styles.deliveryBanner}>
-          <View style={styles.deliveryRow}>
-            <Truck size={16} color={COLORS.accentGreen} />
-            <Text style={styles.deliveryText}>
-              {subtotal >= freeDeliveryThreshold ? (
-                <Text style={styles.greenText}>
-                  {t("cart.unlockedFreeDelivery") || "You have unlocked FREE Standard Delivery!"}
-                </Text>
-              ) : (
-                t("cart.addMoreForFreeDelivery", { amount: remainingForFreeDelivery.toLocaleString("en-IN") }) ||
-                `Add ₹${remainingForFreeDelivery.toLocaleString("en-IN")} more for FREE Delivery`
-              )}
-            </Text>
-          </View>
-          <View style={styles.progressBarBg}>
-            <View
-              style={[
-                styles.progressBarFill,
-                { width: `${progressToFreeDelivery * 100}%` },
-              ]}
-            />
-          </View>
-        </View>
-
         {/* Cart Items List */}
         <View style={styles.itemsList}>
           {items.map((item) => {
@@ -266,40 +237,6 @@ const styles = StyleSheet.create({
   scroll: {
     flex: 1,
   },
-  deliveryBanner: {
-    backgroundColor: COLORS.surface,
-    padding: 12,
-    marginHorizontal: SPACING.lg,
-    marginTop: SPACING.md,
-    borderRadius: RADIUS.md,
-    borderWidth: 1,
-    borderColor: COLORS.border,
-  },
-  deliveryRow: {
-    flexDirection: "row",
-    alignItems: "center",
-    marginBottom: 6,
-  },
-  deliveryText: {
-    fontSize: 12,
-    fontWeight: "700",
-    color: COLORS.text,
-    marginLeft: 6,
-  },
-  greenText: {
-    color: COLORS.accentGreen,
-    fontWeight: "800",
-  },
-  progressBarBg: {
-    height: 4,
-    backgroundColor: COLORS.surfaceSecondary,
-    borderRadius: RADIUS.full,
-    overflow: "hidden",
-  },
-  progressBarFill: {
-    height: "100%",
-    backgroundColor: COLORS.accentGreen,
-  },
   itemsList: {
     paddingHorizontal: SPACING.lg,
     marginTop: SPACING.md,
@@ -405,6 +342,10 @@ const styles = StyleSheet.create({
     fontSize: 13,
     fontWeight: "700",
     color: COLORS.text,
+  },
+  greenText: {
+    color: COLORS.accentGreen,
+    fontWeight: "800",
   },
   divider: {
     height: 1,

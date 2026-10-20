@@ -42,6 +42,7 @@ class SocketService {
     if (!this.socket || !userId) return;
     this.currentUserId = userId;
     this.socket.emit("join-user", userId);
+    this.socket.emit("join-room", `user:${userId}`);
   }
 
   leaveUserRoom() {

@@ -7,9 +7,11 @@ import {
   TouchableOpacity,
   RefreshControl,
   ActivityIndicator,
+  Switch,
+  Alert,
 } from "react-native";
 import { useRouter } from "expo-router";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { Image } from "expo-image";
 import {
   Building2,
@@ -23,14 +25,18 @@ import {
   Plus,
   ChevronRight,
   ArrowUpRight,
+  Bell,
+  Power,
 } from "lucide-react-native";
-import { fetchVendorDashboard } from "../../src/api/vendor";
+import { fetchVendorDashboard, updateVendorStatus } from "../../src/api/vendor";
 import { COLORS, SPACING, RADIUS, SHADOWS } from "../../src/constants/theme";
 import { useTranslation } from "../../src/store/i18nStore";
 
 export default function VendorDashboardScreen() {
   const router = useRouter();
   const { t } = useTranslation();
+  const queryClient = useQueryClient();
+  const [isUpdatingOnline, setIsUpdatingOnline] = useState(false);
 
   const { data, isLoading, isError, refetch, isRefetching } = useQuery({
     queryKey: ["vendor-dashboard"],
@@ -40,6 +46,37 @@ export default function VendorDashboardScreen() {
   const stats = data?.stats;
   const vendor = data?.vendor;
   const recentOrders = data?.recentOrders || [];
+
+  const statusMutation = useMutation({
+    mutationFn: (newOnline: boolean) => updateVendorStatus({ isOnline: newOnline }),
+    onSuccess: (res, newOnline) => {
+      queryClient.invalidateQueries({ queryKey: ["vendor-dashboard"] });
+      if (newOnline) {
+        Alert.alert(
+          "Store Online 🟢",
+          "Your store is now ONLINE! Products are visible on the website and mobile app."
+        );
+      } else {
+        Alert.alert(
+          "Store Offline 🔴",
+          "Your store is now OFFLINE. Products are hidden from customers so no unfulfillable orders are received."
+        );
+      }
+    },
+    onError: (err: any) => {
+      Alert.alert("Error", err?.message || "Failed to update online status");
+    },
+    onSettled: () => {
+      setIsUpdatingOnline(false);
+    },
+  });
+
+  const isOnline = vendor?.isOnline !== false;
+
+  const handleToggleOnline = (newValue: boolean) => {
+    setIsUpdatingOnline(true);
+    statusMutation.mutate(newValue);
+  };
 
   if (isLoading) {
     return (
@@ -77,14 +114,27 @@ export default function VendorDashboardScreen() {
           <Text style={styles.storeName} numberOfLines={1}>{vendor?.businessName || "My Store"}</Text>
         </View>
 
-        <TouchableOpacity
-          style={styles.quickAddBtn}
-          onPress={() => router.push("/(vendor)/add-product" as any)}
-          activeOpacity={0.85}
-        >
-          <Plus size={16} color="#fff" />
-          <Text style={styles.quickAddBtnText}>Add</Text>
-        </TouchableOpacity>
+        <View style={{ flexDirection: "row", alignItems: "center", gap: 10 }}>
+          <TouchableOpacity
+            style={styles.notifHeaderBtn}
+            onPress={() => router.push("/(vendor)/notifications" as any)}
+            activeOpacity={0.85}
+          >
+            <Bell size={20} color="#FFFFFF" />
+            <View style={styles.notifBadge}>
+              <Text style={styles.notifBadgeText}>5</Text>
+            </View>
+          </TouchableOpacity>
+
+          <TouchableOpacity
+            style={styles.quickAddBtn}
+            onPress={() => router.push("/(vendor)/add-product" as any)}
+            activeOpacity={0.85}
+          >
+            <Plus size={16} color="#fff" />
+            <Text style={styles.quickAddBtnText}>Add</Text>
+          </TouchableOpacity>
+        </View>
       </View>
 
       <ScrollView
@@ -92,6 +142,66 @@ export default function VendorDashboardScreen() {
         refreshControl={<RefreshControl refreshing={isRefetching} onRefresh={refetch} tintColor={COLORS.accentOrange} />}
         showsVerticalScrollIndicator={false}
       >
+        {/* Store Online / Offline Toggle Card */}
+        <View
+          style={[
+            styles.statusToggleCard,
+            {
+              backgroundColor: isOnline ? "#F0FDF4" : "#FEF2F2",
+              borderColor: isOnline ? "#BBF7D0" : "#FECACA",
+            },
+          ]}
+        >
+          <View style={styles.statusToggleLeft}>
+            <View
+              style={[
+                styles.statusIconBadge,
+                { backgroundColor: isOnline ? "#DCFCE7" : "#FEE2E2" },
+              ]}
+            >
+              <Power size={18} color={isOnline ? "#16A34A" : "#DC2626"} />
+            </View>
+            <View style={{ flex: 1 }}>
+              <View style={{ flexDirection: "row", alignItems: "center", gap: 6 }}>
+                <View
+                  style={[
+                    styles.statusPulsingDot,
+                    { backgroundColor: isOnline ? "#16A34A" : "#DC2626" },
+                  ]}
+                />
+                <Text
+                  style={[
+                    styles.statusCardTitle,
+                    { color: isOnline ? "#15803D" : "#B91C1C" },
+                  ]}
+                >
+                  {isOnline ? "Store is ONLINE" : "Store is OFFLINE"}
+                </Text>
+              </View>
+              <Text
+                style={[
+                  styles.statusCardSubtitle,
+                  { color: isOnline ? "#166534" : "#991B1B" },
+                ]}
+                numberOfLines={2}
+              >
+                {isOnline
+                  ? "Items visible on website & app • Accepting orders"
+                  : "Items hidden from catalog • Store closed"}
+              </Text>
+            </View>
+          </View>
+
+          <Switch
+            value={isOnline}
+            onValueChange={handleToggleOnline}
+            disabled={isUpdatingOnline}
+            trackColor={{ false: "#CBD5E1", true: "#86EFAC" }}
+            thumbColor={isOnline ? "#16A34A" : "#64748B"}
+            ios_backgroundColor="#CBD5E1"
+          />
+        </View>
+
         {/* Revenue Highlight Card */}
         <View style={styles.revenueCard}>
           <View style={styles.revenueHeader}>
@@ -291,6 +401,31 @@ const styles = StyleSheet.create({
     fontWeight: "900",
     color: COLORS.textWhite,
     marginTop: 2,
+  },
+  notifHeaderBtn: {
+    position: "relative",
+    width: 38,
+    height: 38,
+    borderRadius: 19,
+    backgroundColor: "rgba(255, 255, 255, 0.12)",
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  notifBadge: {
+    position: "absolute",
+    top: 4,
+    right: 4,
+    width: 16,
+    height: 16,
+    borderRadius: 8,
+    backgroundColor: "#EF4444",
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  notifBadgeText: {
+    color: "#FFFFFF",
+    fontSize: 9,
+    fontWeight: "900",
   },
   quickAddBtn: {
     flexDirection: "row",
@@ -506,5 +641,44 @@ const styles = StyleSheet.create({
     fontSize: 14,
     fontWeight: "800",
     color: COLORS.accentOrange,
+  },
+  statusToggleCard: {
+    borderRadius: RADIUS.xl,
+    padding: SPACING.md,
+    marginBottom: SPACING.md,
+    borderWidth: 1.5,
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    ...SHADOWS.sm,
+  },
+  statusToggleLeft: {
+    flexDirection: "row",
+    alignItems: "center",
+    flex: 1,
+    marginRight: SPACING.sm,
+    gap: SPACING.sm,
+  },
+  statusIconBadge: {
+    width: 38,
+    height: 38,
+    borderRadius: 19,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  statusPulsingDot: {
+    width: 8,
+    height: 8,
+    borderRadius: 4,
+  },
+  statusCardTitle: {
+    fontSize: 14,
+    fontWeight: "900",
+  },
+  statusCardSubtitle: {
+    fontSize: 11,
+    fontWeight: "600",
+    marginTop: 2,
+    lineHeight: 15,
   },
 });

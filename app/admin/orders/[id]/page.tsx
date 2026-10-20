@@ -91,7 +91,7 @@ export default function OrderDetailPage({
       <div className="flex items-center justify-center min-h-[400px]">
         <div className="flex flex-col items-center gap-3">
           <Loader2 className="animate-spin text-[#F26522]" size={32} />
-          <p className="text-sm font-bold text-[#052a51]">Loading order #{id} from Neon DB...</p>
+          <p className="text-sm font-bold text-[#052a51]">Loading order #{id}...</p>
         </div>
       </div>
     );
@@ -130,7 +130,7 @@ export default function OrderDetailPage({
     if (res.success) {
       broadcastLiveEvent("order:status-updated", { orderId: order.id, orderStatus: "Dispatched" });
       setOrder((prev: any) => ({ ...prev, courierName: courier, trackingNumber: tracking, orderStatus: "Dispatched" }));
-      toast.success("Courier & tracking updated in Neon DB!");
+      toast.success("Courier & tracking updated!");
     } else {
       toast.error(res.error || "Failed to update tracking");
     }

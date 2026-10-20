@@ -130,10 +130,8 @@ export const useCartStore = create<CartState>((set, get) => ({
   },
 
   getDeliveryFee: () => {
-    const subtotal = get().getSubtotal();
-    if (subtotal === 0) return 0;
-    // Free delivery above ₹15,000, otherwise ₹999 standard delivery
-    return subtotal >= 15000 ? 0 : 999;
+    // Delivery fee turned off - Free delivery on all orders
+    return 0;
   },
 
   getTotal: () => {

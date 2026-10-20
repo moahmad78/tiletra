@@ -502,7 +502,7 @@ export default function ProductDetailsClient({
             <div className="grid grid-cols-3 gap-2 pt-1 text-[11px] text-gray-600 font-medium">
               <div className="flex items-center gap-1.5 p-2 bg-gray-50 rounded-xl">
                 <Truck size={14} className="text-[#F26522] shrink-0" />
-                <span className="truncate">Free delivery &gt; ₹15K</span>
+                <span className="truncate">Express Delivery</span>
               </div>
               <div className="flex items-center gap-1.5 p-2 bg-gray-50 rounded-xl">
                 <Shield size={14} className="text-[#F26522] shrink-0" />

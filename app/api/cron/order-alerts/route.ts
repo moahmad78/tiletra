@@ -99,8 +99,8 @@ export async function GET(req: NextRequest) {
           try {
             await notifyVendorPush({
               vendorId: alert.vendorId,
-              title: `🚨 URGENT: Unacknowledged Order #${alert.orderId.slice(-6)}`,
-              body: `Please tap "Received" to acknowledge Order #${alert.orderId.slice(-6)} immediately. (Step ${nextStep} Alert)`,
+              title: "Order Unacknowledged",
+              body: `Order #${alert.orderId.slice(-6)} is not acknowledged. Please take action immediately.`,
               data: {
                 orderId: alert.orderId,
                 type: "high_alert_new_order",

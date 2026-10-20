@@ -493,6 +493,11 @@ export async function createOrder(input: CreateOrderInput) {
       for (const item of verifiedItems) {
         const vInfo = productVendorMap.get(item.productId);
         if (vInfo) {
+          // Block order placement if vendor is currently offline
+          if (vInfo.vendor && vInfo.vendor.isOnline === false) {
+            throw new Error(`The seller "${vInfo.vendor.businessName || "Vendor"}" is currently offline and not accepting orders. Please remove "${item.productName}" from your cart to proceed.`);
+          }
+
           const current = vendorSubtotals.get(vInfo.vendorId) || {
             vendor: vInfo.vendor,
             subtotal: 0,
@@ -790,14 +795,18 @@ export async function createOrder(input: CreateOrderInput) {
           initialVehicle = "3-wheeler";
         }
 
+        const effectiveCommissionRate = vData.commissionRate || 15;
+        const commissionAmount = Number(((vData.subtotal * effectiveCommissionRate) / 100).toFixed(2));
+        const vendorPayoutAmount = Number((vData.subtotal - commissionAmount).toFixed(2));
+
         await tx.vendorOrderSplit.create({
           data: {
             orderId: createdOrder.id,
             vendorId: vId,
             subtotal: vData.subtotal,
-            commissionRate: vData.commissionRate,
-            commissionAmount: 0,
-            vendorPayoutAmount: 0,
+            commissionRate: effectiveCommissionRate,
+            commissionAmount: commissionAmount,
+            vendorPayoutAmount: vendorPayoutAmount,
             deliveryMethod: vData.deliveryMethod || "self",
             fulfillmentStatus: evalResult.status,
             paymentCollected: finalPaymentCollected,
@@ -911,7 +920,13 @@ export async function createOrder(input: CreateOrderInput) {
       // Notify Vendors for each assigned split
       const splits = await prisma.vendorOrderSplit.findMany({
         where: { orderId: order.id },
-        select: { vendorId: true, subtotal: true, autoAccepted: true },
+        select: {
+          id: true,
+          vendorId: true,
+          subtotal: true,
+          autoAccepted: true,
+          vendor: { select: { ownerId: true } },
+        },
       });
 
       for (const split of splits) {
@@ -919,8 +934,8 @@ export async function createOrder(input: CreateOrderInput) {
           // Quick Success Chime: Auto-Accepted & Ready to Pack
           await notifyVendorPush({
             vendorId: split.vendorId,
-            title: "⚡ New Order Auto-Accepted & Ready to Pack!",
-            body: `Order #${order.id} (₹${split.subtotal.toLocaleString("en-IN")}) auto-confirmed from in-stock inventory. Ready to pack!`,
+            title: "New Order Auto-Accepted!",
+            body: `Order #${order.id} (₹${split.subtotal.toLocaleString("en-IN")}) auto-confirmed from inventory. Ready to pack!`,
             data: { orderId: order.id, type: "ORDER_AUTO_ACCEPTED", requiresManualApproval: false },
             isAutoAccepted: true,
             requiresManualApproval: false,
@@ -931,8 +946,8 @@ export async function createOrder(input: CreateOrderInput) {
           // Loud Ringing Chime: Manual Approval Required
           await notifyVendorPush({
             vendorId: split.vendorId,
-            title: "🔔 Ringing Alert: Manual Order Approval Required!",
-            body: `Order #${order.id} (₹${split.subtotal.toLocaleString("en-IN")}) requires your manual confirmation due to stock allocation.`,
+            title: "🔔 Urgent | Manual Order Approval Required!",
+            body: `Order #${order.id} (₹${split.subtotal.toLocaleString("en-IN")}) requires manual approval. Stock check needed.`,
             data: { orderId: order.id, type: "PENDING_VENDOR_APPROVAL", requiresManualApproval: true },
             isAutoAccepted: false,
             requiresManualApproval: true,
@@ -945,9 +960,11 @@ export async function createOrder(input: CreateOrderInput) {
       console.warn("Vendor/Admin push notification error:", e);
     }
 
-    // Real-Time Socket Broadcast to Admin Room (Phase 5b PRD)
+    // Real-Time Socket Broadcast to Admin Room & Vendor Rooms
     try {
       const { emitSocketEvent } = await import("@/lib/socket-server-emit");
+      
+      // 1. Admin room broadcast
       await emitSocketEvent({
         event: "new-order",
         room: "admin",
@@ -966,6 +983,60 @@ export async function createOrder(input: CreateOrderInput) {
           createdAt: order.createdAt,
         },
       });
+
+      // 2. Vendor rooms broadcast for instant ringing chime & dashboard refresh
+      const splitsForSocket = await prisma.vendorOrderSplit.findMany({
+        where: { orderId: order.id },
+        select: {
+          id: true,
+          vendorId: true,
+          subtotal: true,
+          autoAccepted: true,
+          vendor: { select: { ownerId: true } },
+        },
+      });
+
+      for (const split of splitsForSocket) {
+        const vendorRooms = [
+          `vendor:${split.vendorId}`,
+          `vendor_${split.vendorId}`,
+          split.vendorId,
+        ];
+        if (split.vendor?.ownerId) {
+          vendorRooms.push(
+            `user:${split.vendor.ownerId}`,
+            `user_${split.vendor.ownerId}`,
+            split.vendor.ownerId,
+            `vendor:${split.vendor.ownerId}`
+          );
+        }
+
+        const vendorAlertData = {
+          orderId: order.id,
+          id: order.id,
+          splitId: split.id,
+          vendorId: split.vendorId,
+          customerName: order.customerName,
+          total: split.subtotal,
+          totalAmount: split.subtotal,
+          itemsCount: order.items.length,
+          isAutoAccepted: split.autoAccepted,
+          requiresManualApproval: !split.autoAccepted,
+          createdAt: order.createdAt,
+        };
+
+        await emitSocketEvent({
+          event: "new-order",
+          rooms: vendorRooms,
+          data: vendorAlertData,
+        });
+
+        await emitSocketEvent({
+          event: "order-alert",
+          rooms: vendorRooms,
+          data: vendorAlertData,
+        });
+      }
     } catch (e) {
       console.error("Failed to emit socket new-order event:", e);
     }

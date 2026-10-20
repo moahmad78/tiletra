@@ -103,6 +103,17 @@ export default function AdminHeader({
         ...prev.slice(0, 9),
       ]);
     },
+    "order-status-updated": (data: any) => {
+      console.log("⚡ [SOCKET EVENT: order-status-updated]", data);
+      toast.info(`📦 Order #${data.orderId || data.id} Updated`, {
+        description: `Status changed to ${data.orderStatus || data.status}`,
+        action: {
+          label: "View",
+          onClick: () => router.push(`/admin/orders/${data.orderId || data.id}`),
+        },
+      });
+      fetchNotifications();
+    },
   });
 
   // ── Universal Live Sync Hook (Cross-tab broadcast + Tab Focus + 12s Auto-Poll) ──

@@ -150,7 +150,7 @@ export default function AdminContentPage() {
       <div className="flex items-center justify-center min-h-[400px]">
         <div className="flex flex-col items-center gap-3">
           <Loader2 className="animate-spin text-[#F26522]" size={32} />
-          <p className="text-sm font-bold text-[#052a51]">Loading CMS content from Neon DB...</p>
+          <p className="text-sm font-bold text-[#052a51]">Loading CMS content...</p>
         </div>
       </div>
     );

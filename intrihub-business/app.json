@@ -3,7 +3,7 @@
     "name": "Intrihub Business",
     "slug": "intrihub-business",
     "owner": "sahil_sheikh78",
-    "version": "1.0.23",
+    "version": "1.0.24",
     "orientation": "portrait",
     "icon": "./assets/icon.png",
     "scheme": "intrihub-biz",
@@ -12,7 +12,7 @@
     "splash": {
       "image": "./assets/splash.png",
       "resizeMode": "contain",
-      "backgroundColor": "#052A51"
+      "backgroundColor": "#FFFFFF"
     },
     "ios": {
       "supportsTablet": false,
@@ -36,7 +36,7 @@
     },
     "android": {
       "package": "com.intrihub.business",
-      "versionCode": 31,
+      "versionCode": 32,
       "blockedPermissions": [
         "android.permission.READ_MEDIA_IMAGES",
         "android.permission.READ_MEDIA_VIDEO",

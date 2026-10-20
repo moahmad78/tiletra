@@ -46,6 +46,7 @@ import {
   Archive,
 } from "lucide-react";
 import { toast } from "sonner";
+import ProductEditChoiceModal from "@/components/shared/ProductEditChoiceModal";
 
 function CpoCatalogContent() {
   const router = useRouter();
@@ -58,6 +59,7 @@ function CpoCatalogContent() {
   const [total, setTotal] = useState(0);
   const [recycleBinCount, setRecycleBinCount] = useState(0);
   const [page, setPage] = useState(1);
+  const [editingProductForChoice, setEditingProductForChoice] = useState<any | null>(null);
   const [totalPages, setTotalPages] = useState(1);
   const [loading, setLoading] = useState(true);
 
@@ -938,14 +940,15 @@ function CpoCatalogContent() {
                                 )}
                               </button>
 
-                              {/* Full Edit Page Link */}
-                              <Link
-                                href={`/cpo/catalog/${p.id}/edit`}
-                                className="p-1.5 rounded-lg bg-gray-100 hover:bg-[#052a51] hover:text-white text-gray-700 transition-colors"
-                                title="Edit Product Listing (All Options)"
+                              {/* Edit Choice Button (Instant 3-Rates/Stock or Full Customizer) */}
+                              <button
+                                type="button"
+                                onClick={() => setEditingProductForChoice(p)}
+                                className="p-1.5 rounded-lg bg-gray-100 hover:bg-[#052a51] hover:text-white text-gray-700 transition-colors cursor-pointer"
+                                title="Edit Product (Instant 3-Rates/Stock or Full Customizer)"
                               >
                                 <Edit className="w-4 h-4" />
-                              </Link>
+                              </button>
 
                               {/* View on Website (Customer Storefront) */}
                               <a
@@ -1162,6 +1165,18 @@ function CpoCatalogContent() {
         onClose={() => setIsChooserOpen(false)}
         currentVendorId={selectedVendorFilter === "all" ? workspace.vendorId : selectedVendorFilter}
         onSelectVendor={(vId) => handleVendorFilterChange(vId)}
+      />
+
+      {/* Product Edit Choice Modal (Instant Update vs Custom Update) */}
+      <ProductEditChoiceModal
+        isOpen={Boolean(editingProductForChoice)}
+        onClose={() => setEditingProductForChoice(null)}
+        product={editingProductForChoice as any}
+        editUrl={editingProductForChoice ? `/cpo/catalog/${editingProductForChoice.id}/edit` : ""}
+        onSuccess={() => {
+          loadData();
+          setEditingProductForChoice(null);
+        }}
       />
     </div>
   );

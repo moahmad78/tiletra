@@ -120,6 +120,7 @@ export interface VendorDashboardData {
     latitude?: number | null;
     longitude?: number | null;
     autoAcceptOrders?: boolean;
+    isOnline?: boolean;
   };
   stats: {
     totalRevenue: number;

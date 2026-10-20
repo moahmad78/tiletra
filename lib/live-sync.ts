@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useCallback } from "react";
+import { getSocket } from "@/lib/socket";
 
 // Universal Channel Name for Cross-Tab & Cross-Panel Sync
 const CHANNEL_NAME = "intrihub_realtime_sync";
@@ -54,7 +55,17 @@ export function broadcastLiveEvent(eventType: LiveEventType | string, payload?: 
     console.warn("[LiveSync] Failed to postMessage:", e);
   }
 
-  // 2. Local DOM Event for same-tab instant reactivity
+  // 2. Real-time WebSocket Relay to Socket.IO
+  try {
+    const socket = getSocket();
+    if (socket && socket.connected) {
+      socket.emit("client-action", eventData);
+    }
+  } catch {
+    // Non-blocking socket broadcast
+  }
+
+  // 3. Local DOM Event for same-tab instant reactivity
   try {
     window.dispatchEvent(
       new CustomEvent("intrihub:live-sync", {
@@ -70,7 +81,7 @@ export function broadcastLiveEvent(eventType: LiveEventType | string, payload?: 
     console.warn("[LiveSync] Failed to dispatch CustomEvent:", e);
   }
 
-  // 3. LocalStorage fallback trigger
+  // 4. LocalStorage fallback trigger
   try {
     localStorage.setItem("intrihub_last_sync_event", JSON.stringify(eventData));
   } catch {
@@ -102,13 +113,14 @@ interface UseLiveSyncOptions {
 }
 
 /**
- * Robust, Dual-Layer Real-Time React Hook.
- * Ensures the UI is ALWAYS fresh without requiring the user to refresh the page.
+ * Robust, Multi-Layer Real-Time React Hook.
+ * Ensures the UI is ALWAYS fresh across Website, Admin, and Vendor Panels.
  *
  * Features:
- * 1. Instant (<1ms) multi-tab cross-panel broadcast notifications.
- * 2. Instant tab focus & visibility change re-validation.
- * 3. Silent, smooth background polling (every 5 seconds) as an automated safety net.
+ * 1. Instant WebSocket (<50ms) Socket.IO live order/status/product relay.
+ * 2. Instant (<1ms) multi-tab cross-panel broadcast notifications.
+ * 3. Instant tab focus & visibility change re-validation.
+ * 4. Silent, smooth background polling as an automated safety net.
  */
 export function useLiveSync({
   eventTypes,
@@ -140,7 +152,26 @@ export function useLiveSync({
     // Initial load
     triggerSync();
 
-    // 1. BroadcastChannel Listener (Cross-tab sync)
+    // 1. Socket.IO Real-time Events Listener (Instant across all clients)
+    let socket: any = null;
+    const handleSocketEvent = (data: any) => {
+      triggerSync();
+    };
+
+    try {
+      socket = getSocket();
+      if (socket) {
+        socket.on("new-order", handleSocketEvent);
+        socket.on("order-status-updated", handleSocketEvent);
+        socket.on("update-stats", handleSocketEvent);
+        socket.on("product:created", handleSocketEvent);
+        socket.on("product:updated", handleSocketEvent);
+      }
+    } catch (err) {
+      console.warn("[LiveSync] Socket subscribe notice:", err);
+    }
+
+    // 2. BroadcastChannel Listener (Cross-tab sync)
     const channel = getBroadcastChannel();
     const handleBroadcastMessage = (event: MessageEvent) => {
       const data = event.data;
@@ -156,7 +187,7 @@ export function useLiveSync({
       channel.addEventListener("message", handleBroadcastMessage);
     }
 
-    // 2. Same-Window CustomEvent Listener
+    // 3. Same-Window CustomEvent Listener
     const handleLocalEvent = (e: Event) => {
       const customEvent = e as CustomEvent;
       const data = customEvent.detail;
@@ -168,7 +199,7 @@ export function useLiveSync({
 
     window.addEventListener("intrihub:live-sync", handleLocalEvent);
 
-    // 3. Storage Event Fallback (Cross-tab for older browsers)
+    // 4. Storage Event Fallback (Cross-tab for older browsers)
     const handleStorage = (e: StorageEvent) => {
       if (e.key === "intrihub_last_sync_event" && e.newValue) {
         triggerSync();
@@ -176,7 +207,7 @@ export function useLiveSync({
     };
     window.addEventListener("storage", handleStorage, { passive: true });
 
-    // 4. Focus & Visibility Change Listener
+    // 5. Focus & Visibility Change Listener
     const handleFocus = () => {
       if (document.visibilityState === "visible") {
         triggerSync();
@@ -188,7 +219,7 @@ export function useLiveSync({
       document.addEventListener("visibilitychange", handleFocus, { passive: true });
     }
 
-    // 5. Silent Background Polling Timer
+    // 6. Silent Background Polling Timer
     let intervalId: any = null;
     if (pollIntervalMs > 0) {
       intervalId = setInterval(() => {
@@ -200,6 +231,13 @@ export function useLiveSync({
     }
 
     return () => {
+      if (socket) {
+        socket.off("new-order", handleSocketEvent);
+        socket.off("order-status-updated", handleSocketEvent);
+        socket.off("update-stats", handleSocketEvent);
+        socket.off("product:created", handleSocketEvent);
+        socket.off("product:updated", handleSocketEvent);
+      }
       if (channel) {
         channel.removeEventListener("message", handleBroadcastMessage);
       }

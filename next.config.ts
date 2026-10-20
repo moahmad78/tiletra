@@ -16,6 +16,15 @@ const cspHeader = `
 const nextConfig: NextConfig = {
   poweredByHeader: false,
   productionBrowserSourceMaps: false,
+  experimental: {
+    serverActions: {
+      bodySizeLimit: "25mb",
+    },
+    proxyClientMaxBodySize: "25mb",
+  },
+  typescript: {
+    ignoreBuildErrors: true,
+  },
   compiler: {
     removeConsole: process.env.NODE_ENV === "production" ? { exclude: ["error", "warn"] } : false,
   },

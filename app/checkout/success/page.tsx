@@ -1,8 +1,9 @@
 "use client";
 
-import { Suspense } from "react";
+import { Suspense, useState } from "react";
 import { useSearchParams } from "next/navigation";
 import Link from "next/link";
+import { useSocket } from "@/lib/socket";
 import {
   CheckCircle2,
   Package,
@@ -29,6 +30,17 @@ function SuccessContent() {
   const slot = searchParams.get("slot");
 
   const isCod = method.toLowerCase() === "cod";
+  const [orderStatus, setOrderStatus] = useState<string>("Processing");
+
+  // Real-time socket sync on the specific order room
+  useSocket(orderId ? `order:${orderId}` : null, {
+    "order-status-updated": (data: any) => {
+      console.log("⚡ [CHECKOUT SUCCESS] Live order status:", data);
+      if (data?.orderStatus) {
+        setOrderStatus(data.orderStatus);
+      }
+    },
+  });
 
   return (
     <div className="w-full max-w-[1200px] mx-auto px-3 sm:px-6 lg:px-8 pt-[76px] sm:pt-[84px] md:pt-[175px] lg:pt-[180px] pb-14 flex-1">
@@ -118,7 +130,7 @@ function SuccessContent() {
               <span className="text-gray-500 font-medium">Order Status</span>
               <span className="inline-flex items-center gap-1 font-black text-xs text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded-md">
                 <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
-                Processing
+                {orderStatus}
               </span>
             </div>
           </div>

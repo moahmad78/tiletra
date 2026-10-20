@@ -32,6 +32,7 @@ import {
   AttributeOptionItem,
 } from "@/lib/actions/attributes";
 import ColorPalettePickerModal from "@/components/admin/ColorPalettePickerModal";
+import ColorRadioSelector from "@/components/shared/ColorRadioSelector";
 import { resolveColorHex } from "@/lib/catalog";
 
 export interface UnifiedVariantManagerProps {
@@ -48,6 +49,12 @@ export interface UnifiedVariantManagerProps {
   unitOfSale?: string;
   readOnly?: boolean;
   isAdminOrCpo?: boolean;
+  initialColorImages?: Record<string, string>;
+  initialColorRates?: Record<string, string>;
+  initialColorDescriptions?: Record<string, string>;
+  onColorImagesChange?: (imgs: Record<string, string>) => void;
+  onColorRatesChange?: (rates: Record<string, string>) => void;
+  onColorDescriptionsChange?: (descs: Record<string, string>) => void;
 }
 
 export interface AttributeSelection {
@@ -103,6 +110,12 @@ export default function UnifiedVariantManager({
   unitOfSale = "box",
   readOnly = false,
   isAdminOrCpo = false,
+  initialColorImages,
+  initialColorRates,
+  initialColorDescriptions,
+  onColorImagesChange,
+  onColorRatesChange,
+  onColorDescriptionsChange,
 }: UnifiedVariantManagerProps) {
   // Attribute Options from DB
   const [dbOptions, setDbOptions] = useState<AttributeOptionItem[]>([]);
@@ -112,6 +125,23 @@ export default function UnifiedVariantManager({
   const [activeAttributes, setActiveAttributes] = useState<AttributeSelection[]>([
     { type: "unit", name: "Size / Quantity", values: [] },
   ]);
+
+  // Variant colour-wise assets (Images, Rates, Descriptions)
+  const [variantColorImages, setVariantColorImages] = useState<Record<string, string>>(initialColorImages || {});
+  const [variantColorRates, setVariantColorRates] = useState<Record<string, string>>(initialColorRates || {});
+  const [variantColorDescriptions, setVariantColorDescriptions] = useState<Record<string, string>>(initialColorDescriptions || {});
+
+  useEffect(() => {
+    if (initialColorImages) setVariantColorImages(initialColorImages);
+  }, [initialColorImages]);
+
+  useEffect(() => {
+    if (initialColorRates) setVariantColorRates(initialColorRates);
+  }, [initialColorRates]);
+
+  useEffect(() => {
+    if (initialColorDescriptions) setVariantColorDescriptions(initialColorDescriptions);
+  }, [initialColorDescriptions]);
 
   // Color picker state
   const [colorPickerTargetRow, setColorPickerTargetRow] = useState<number | null>(null);
@@ -372,6 +402,15 @@ export default function UnifiedVariantManager({
         .join("-");
       const sku = `SKU-${cleanSkuPrefix}-${Math.floor(1000 + Math.random() * 9000)}`;
 
+      const customColorImage = variantColorImages[colorValue];
+      const customColorRate = variantColorRates[colorValue] && !isNaN(Number(variantColorRates[colorValue]))
+        ? Number(variantColorRates[colorValue])
+        : null;
+      const customColorDesc = variantColorDescriptions[colorValue];
+
+      const rowPrice = customColorRate !== null ? customColorRate : defaultSellingPrice;
+      const rowImage = customColorImage || fallbackImage;
+
       return {
         id: `v-${Date.now()}-${idx}`,
         sku,
@@ -380,18 +419,19 @@ export default function UnifiedVariantManager({
         finish: "Standard",
         color: colorValue,
         colorHex,
-        image: fallbackImage,
-        images: fallbackImage ? [fallbackImage] : [],
+        image: rowImage,
+        images: rowImage ? [rowImage] : [],
         unit: unitOfSale,
         attributes: attrMap,
         thickness: thicknessValue,
         variantSpecs: {
           ...(thicknessValue ? { thickness: thicknessValue } : {}),
+          ...(customColorDesc ? { colorDescription: customColorDesc } : {}),
         },
-        price: defaultSellingPrice,
-        pricePerBox: defaultSellingPrice,
+        price: rowPrice,
+        pricePerBox: rowPrice,
         mrp: defaultMrp,
-        pricePerSqft: defaultSellingPrice,
+        pricePerSqft: rowPrice,
         sqftPerBox: 1,
         piecesPerBox: 1,
         stockBoxes: defaultStock,
@@ -779,48 +819,87 @@ export default function UnifiedVariantManager({
                     </div>
 
                     {/* Value Selection Chips */}
-                    <div className="flex flex-wrap gap-2 pt-1">
-                      {/* Available presets from DB */}
-                      {availableOptions.map((opt) => {
-                        const selected = attr.values.includes(opt.value);
-                        return (
-                          <button
-                            key={opt.id}
-                            type="button"
-                            onClick={() => handleToggleValue(attrIdx, opt.value)}
-                            className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all flex items-center gap-1.5 cursor-pointer border ${
-                              selected
-                                ? "bg-[#052a51] text-white border-[#052a51] shadow-2xs"
-                                : "bg-white text-gray-700 border-gray-200 hover:bg-gray-100"
-                            }`}
-                          >
-                            {opt.type === "colour" && opt.meta?.hex && (
-                              <span
-                                className="w-3.5 h-3.5 rounded-full border border-gray-300 shrink-0"
-                                style={{ backgroundColor: opt.meta.hex }}
-                              />
-                            )}
-                            {selected && <Check size={12} />}
-                            <span>{opt.value}</span>
-                          </button>
-                        );
-                      })}
+                    {attr.type === "colour" ? (
+                      <div className="pt-1">
+                        <ColorRadioSelector
+                          value={attr.values.join(", ")}
+                          defaultMulti={true}
+                          allowCustom={true}
+                          nameGroup={`variant-colour-${attrIdx}`}
+                          label="Variant Colours (Multi-Colour Selection Supported)"
+                          helperText="Choose colours for variants. For each colour, you can optionally attach a photo, custom rate (₹) and description."
+                          initialColorImages={variantColorImages}
+                          onColorImagesChange={(imgs) => {
+                            setVariantColorImages(imgs);
+                            if (onColorImagesChange) onColorImagesChange(imgs);
+                          }}
+                          initialColorRates={variantColorRates}
+                          onColorRatesChange={(rates) => {
+                            setVariantColorRates(rates);
+                            if (onColorRatesChange) onColorRatesChange(rates);
+                          }}
+                          initialColorDescriptions={variantColorDescriptions}
+                          onColorDescriptionsChange={(descs) => {
+                            setVariantColorDescriptions(descs);
+                            if (onColorDescriptionsChange) onColorDescriptionsChange(descs);
+                          }}
+                          onChange={(_joined, _hex, list, newImgs, dataMap) => {
+                            const updated = [...activeAttributes];
+                            updated[attrIdx].values = list || [];
+                            setActiveAttributes(updated);
+                            if (newImgs) {
+                              setVariantColorImages(newImgs);
+                              if (onColorImagesChange) onColorImagesChange(newImgs);
+                            }
+                            if (dataMap?.rates) {
+                              setVariantColorRates(dataMap.rates);
+                              if (onColorRatesChange) onColorRatesChange(dataMap.rates);
+                            }
+                            if (dataMap?.descriptions) {
+                              setVariantColorDescriptions(dataMap.descriptions);
+                              if (onColorDescriptionsChange) onColorDescriptionsChange(dataMap.descriptions);
+                            }
+                          }}
+                        />
+                      </div>
+                    ) : (
+                      <div className="flex flex-wrap gap-2 pt-1">
+                        {/* Available presets from DB */}
+                        {availableOptions.map((opt) => {
+                          const selected = attr.values.includes(opt.value);
+                          return (
+                            <button
+                              key={opt.id}
+                              type="button"
+                              onClick={() => handleToggleValue(attrIdx, opt.value)}
+                              className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all flex items-center gap-1.5 cursor-pointer border ${
+                                selected
+                                  ? "bg-[#052a51] text-white border-[#052a51] shadow-2xs"
+                                  : "bg-white text-gray-700 border-gray-200 hover:bg-gray-100"
+                              }`}
+                            >
+                              {selected && <Check size={12} />}
+                              <span>{opt.value}</span>
+                            </button>
+                          );
+                        })}
 
-                      {/* Selected values that might not be in DB presets yet */}
-                      {attr.values
-                        .filter((v) => !availableOptions.some((o) => o.value === v))
-                        .map((customVal) => (
-                          <button
-                            key={customVal}
-                            type="button"
-                            onClick={() => handleToggleValue(attrIdx, customVal)}
-                            className="px-3 py-1.5 rounded-xl text-xs font-bold bg-[#052a51] text-white border border-[#052a51] shadow-2xs flex items-center gap-1.5 cursor-pointer"
-                          >
-                            <Check size={12} />
-                            <span>{customVal}</span>
-                          </button>
-                        ))}
-                    </div>
+                        {/* Selected values that might not be in DB presets yet */}
+                        {attr.values
+                          .filter((v) => !availableOptions.some((o) => o.value === v))
+                          .map((customVal) => (
+                            <button
+                              key={customVal}
+                              type="button"
+                              onClick={() => handleToggleValue(attrIdx, customVal)}
+                              className="px-3 py-1.5 rounded-xl text-xs font-bold bg-[#052a51] text-white border border-[#052a51] shadow-2xs flex items-center gap-1.5 cursor-pointer"
+                            >
+                              <Check size={12} />
+                              <span>{customVal}</span>
+                            </button>
+                          ))}
+                      </div>
+                    )}
                   </div>
                 );
               })}
@@ -1046,6 +1125,13 @@ export default function UnifiedVariantManager({
                             <div className="mt-0.5">
                               <span className="inline-block px-1.5 py-0.2 rounded-md bg-orange-100 text-[#F26522] text-[9px] font-bold truncate max-w-[120px]">
                                 🏷️ {v.customBadgeText || v.tags?.[0]}
+                              </span>
+                            </div>
+                          )}
+                          {v.variantSpecs?.colorDescription && (
+                            <div className="mt-0.5">
+                              <span className="inline-block px-1.5 py-0.2 rounded-md bg-blue-50 text-blue-700 text-[9px] font-medium border border-blue-200 truncate max-w-[140px]" title={v.variantSpecs.colorDescription}>
+                                📝 {v.variantSpecs.colorDescription}
                               </span>
                             </div>
                           )}

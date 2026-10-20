@@ -3,18 +3,20 @@
 import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/Button";
 import { cn } from "@/lib/utils";
-import { MapPin, Phone, Mail, ShoppingCart, Search, Heart, User as UserIcon, Store, Truck } from "lucide-react";
+import { MapPin, Phone, Mail, ShoppingCart, Search, Heart, User as UserIcon, Store, Truck, ChevronDown } from "lucide-react";
 import Link from "next/link";
 import Image from "next/image";
 import { useCartStore } from "@/lib/cart-store";
 import { useWishlistStore } from "@/lib/wishlist-store";
 import { useAuthStore, useAuthStatus } from "@/lib/auth-store";
+import { useDeliveryAddressStore } from "@/lib/delivery-address-store";
 import SearchModal from "@/components/SearchModal";
 import NotificationCenter from "@/components/notifications/NotificationCenter";
 import CategoryNavBar from "@/components/CategoryNavBar";
 import RotatingHeaderContact from "@/components/RotatingHeaderContact";
 import UserAvatar from "@/components/ui/UserAvatar";
 import LanguageSelector from "@/components/translate/LanguageSelector";
+import SelectDeliveryAddressModal from "@/components/shared/SelectDeliveryAddressModal";
 export default function Header() {
   const [isScrolled, setIsScrolled] = useState(false);
   const [searchOpen, setSearchOpen] = useState(false);
@@ -25,6 +27,9 @@ export default function Header() {
   const { toggleCart } = useCartStore();
   const totalBoxes = useCartStore((s) => s.getTotalBoxes());
   const wishlistCount = useWishlistStore((s) => s.items.length);
+
+  const selectedAddress = useDeliveryAddressStore((s) => s.selectedAddress);
+  const openAddressModal = useDeliveryAddressStore((s) => s.openAddressModal);
 
   useEffect(() => {
     setMounted(true);
@@ -65,9 +70,19 @@ export default function Header() {
           <div className="w-full max-w-[1400px] mx-auto px-4 md:px-6 lg:px-8">
             <div className="flex justify-between items-center text-xs font-medium">
               <div className="flex items-center gap-6">
-                <span className="flex items-center gap-1.5">
-                  <MapPin size={13} className="text-[#F26522]" /> Bangalore, Karnataka
-                </span>
+                <button
+                  type="button"
+                  onClick={openAddressModal}
+                  className="flex items-center gap-1.5 hover:text-[#F26522] transition-colors cursor-pointer group text-left"
+                >
+                  <MapPin size={13} className="text-[#F26522] group-hover:scale-110 transition-transform shrink-0" />
+                  <span className="font-semibold underline decoration-white/30 underline-offset-2 truncate max-w-[200px]">
+                    {selectedAddress
+                      ? `${selectedAddress.line1 || selectedAddress.city || "Bengaluru"} - ${selectedAddress.pincode || "560114"}`
+                      : "Bengaluru - 560114"}
+                  </span>
+                  <ChevronDown size={11} className="text-white/60 group-hover:text-white shrink-0" />
+                </button>
                 <a
                   href="mailto:support@intrihub.com"
                   className="flex items-center gap-1.5 hover:text-[#F26522] transition-colors"
@@ -108,6 +123,29 @@ export default function Header() {
                 />
               </Link>
             </div>
+
+            {/* Delivery Location Selector Pill */}
+            <button
+              type="button"
+              onClick={openAddressModal}
+              className="hidden lg:flex items-center gap-2 px-3 py-1.5 rounded-full bg-slate-50 hover:bg-blue-50 border border-slate-200 hover:border-blue-300 transition-all text-left cursor-pointer shrink-0 max-w-[210px] group shadow-2xs"
+              title="Change Delivery Address"
+            >
+              <div className="w-6 h-6 rounded-full bg-blue-100 text-[#0066FF] flex items-center justify-center shrink-0">
+                <MapPin size={12} />
+              </div>
+              <div className="min-w-0">
+                <span className="text-[10px] uppercase tracking-wider text-slate-400 font-bold block leading-none">
+                  Deliver To
+                </span>
+                <span className="text-xs font-bold text-slate-800 truncate block leading-tight mt-0.5">
+                  {selectedAddress
+                    ? `${selectedAddress.line1 || selectedAddress.city} - ${selectedAddress.pincode || "560114"}`
+                    : "Bengaluru - 560114"}
+                </span>
+              </div>
+              <ChevronDown size={12} className="text-slate-400 group-hover:text-slate-700 shrink-0 ml-0.5" />
+            </button>
 
             {/* Mobile Prominent Search Bar (Center) */}
             <div className="flex md:hidden flex-1 min-w-0">
@@ -261,6 +299,9 @@ export default function Header() {
 
       {/* Global Search Modal */}
       <SearchModal isOpen={searchOpen} onClose={() => setSearchOpen(false)} />
+
+      {/* Global Delivery Address Modal */}
+      <SelectDeliveryAddressModal />
     </>
   );
 }

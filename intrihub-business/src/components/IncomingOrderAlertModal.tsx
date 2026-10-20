@@ -12,10 +12,9 @@ import {
 import * as Haptics from "expo-haptics";
 import { useRouter } from "expo-router";
 import { useQueryClient } from "@tanstack/react-query";
-import { Bell, CheckCircle2, AlertTriangle, X, PackageCheck, Ban } from "lucide-react-native";
+import { Bell, X, Package } from "lucide-react-native";
 import { useOrderAlertStore } from "../store/orderAlertStore";
 import { updateVendorOrderStatus, rejectVendorOrder } from "../api/vendor";
-import { COLORS, SPACING, RADIUS, SHADOWS } from "../constants/theme";
 
 export default function IncomingOrderAlertModal() {
   const router = useRouter();
@@ -25,26 +24,24 @@ export default function IncomingOrderAlertModal() {
   const pulseAnim = useRef(new Animated.Value(1)).current;
   const ringingIntervalRef = useRef<any>(null);
 
-  // Ringing / Haptics loop for manual approval required
+  // Ringing / Haptics loop
   useEffect(() => {
-    if (isOpen && isRinging) {
-      // Start pulsing animation
+    if (isOpen) {
       Animated.loop(
         Animated.sequence([
           Animated.timing(pulseAnim, {
-            toValue: 1.08,
-            duration: 600,
+            toValue: 1.12,
+            duration: 500,
             useNativeDriver: true,
           }),
           Animated.timing(pulseAnim, {
             toValue: 1,
-            duration: 600,
+            duration: 500,
             useNativeDriver: true,
           }),
         ])
       ).start();
 
-      // Continuous ringing haptic feedback pattern every 1.5 seconds
       const triggerHaptic = () => {
         try {
           Haptics.notificationAsync(Haptics.NotificationFeedbackType.Warning);
@@ -52,17 +49,6 @@ export default function IncomingOrderAlertModal() {
       };
       triggerHaptic();
       ringingIntervalRef.current = setInterval(triggerHaptic, 1500);
-    } else if (isOpen && alert?.isAutoAccepted) {
-      // Quick pleasant success chime/haptic for auto-accepted order
-      try {
-        Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
-      } catch {}
-
-      // Auto-dismiss auto-accept banner after 10s
-      const timer = setTimeout(() => {
-        closeAlert();
-      }, 10000);
-      return () => clearTimeout(timer);
     }
 
     return () => {
@@ -71,7 +57,7 @@ export default function IncomingOrderAlertModal() {
         ringingIntervalRef.current = null;
       }
     };
-  }, [isOpen, isRinging, alert?.isAutoAccepted]);
+  }, [isOpen]);
 
   if (!isOpen || !alert) return null;
 
@@ -85,12 +71,16 @@ export default function IncomingOrderAlertModal() {
       queryClient.invalidateQueries({ queryKey: ["vendor-dashboard"] });
       closeAlert();
       router.push({
-        pathname: "/(vendor)/orders",
-        params: { orderId: alert.orderId },
+        pathname: "/(vendor)/order/[id]",
+        params: { id: splitOrOrderId },
       } as any);
     } catch (err: any) {
       console.warn("Failed to accept order:", err);
       closeAlert();
+      router.push({
+        pathname: "/(vendor)/order/[id]",
+        params: { id: alert.splitId || alert.orderId },
+      } as any);
     } finally {
       setIsSubmitting(false);
     }
@@ -113,358 +103,258 @@ export default function IncomingOrderAlertModal() {
     }
   };
 
-  const handleViewAutoAccepted = () => {
-    closeAlert();
-    router.push({
-      pathname: "/(vendor)/orders",
-      params: { orderId: alert.orderId },
-    } as any);
-  };
-
-  // Case 1: AUTO-ACCEPTED SUCCESS VIEW
-  if (alert.isAutoAccepted) {
-    return (
-      <Modal transparent visible={isOpen} animationType="slide">
-        <View style={styles.overlayCenter}>
-          <View style={styles.autoAcceptCard}>
-            <View style={styles.successBadge}>
-              <CheckCircle2 size={32} color="#10B981" />
-            </View>
-
-            <Text style={styles.autoAcceptTitle}>⚡ Order Auto-Accepted!</Text>
-            <Text style={styles.autoAcceptSubtitle}>
-              Sufficient inventory confirmed & allocated from stock.
-            </Text>
-
-            <View style={styles.orderSummaryBox}>
-              <Text style={styles.summaryOrderId}>Order #{alert.orderId}</Text>
-              {alert.totalAmount ? (
-                <Text style={styles.summaryTotal}>₹{alert.totalAmount.toLocaleString("en-IN")}</Text>
-              ) : null}
-              {alert.customerName ? (
-                <Text style={styles.summaryCustomer}>Customer: {alert.customerName}</Text>
-              ) : null}
-            </View>
-
-            <Text style={styles.readyText}>Status: Ready to Pack 📦</Text>
-
-            <View style={styles.buttonRow}>
-              <TouchableOpacity
-                style={[styles.actionBtn, styles.viewBtn]}
-                onPress={handleViewAutoAccepted}
-                activeOpacity={0.85}
-              >
-                <PackageCheck size={18} color="#FFFFFF" />
-                <Text style={styles.btnTextWhite}>View Order & Pack</Text>
-              </TouchableOpacity>
-
-              <TouchableOpacity
-                style={[styles.actionBtn, styles.dismissBtn]}
-                onPress={closeAlert}
-                activeOpacity={0.85}
-              >
-                <Text style={styles.btnTextDismiss}>Dismiss</Text>
-              </TouchableOpacity>
-            </View>
-          </View>
-        </View>
-      </Modal>
-    );
-  }
-
-  // Case 2: MANUAL FALLBACK RINGING ALERT (Stock Review Needed)
   return (
-    <Modal transparent visible={isOpen} animationType="fade">
-      <View style={styles.overlayDark}>
-        <Animated.View style={[styles.ringingCard, { transform: [{ scale: pulseAnim }] }]}>
-          <View style={styles.ringingHeader}>
-            <View style={styles.alertIconBadge}>
-              <Bell size={28} color="#FFFFFF" />
-            </View>
-            <View style={{ flex: 1, marginLeft: 12 }}>
-              <Text style={styles.ringingTitle}>🔔 URGENT ORDER ALERT</Text>
-              <Text style={styles.ringingSubtitle}>Manual Vendor Approval Required</Text>
+    <Modal
+      visible={isOpen}
+      transparent
+      animationType="slide"
+      onRequestClose={closeAlert}
+      statusBarTranslucent
+    >
+      <View style={styles.overlay}>
+        {/* Backdrop touch to dismiss */}
+        <TouchableOpacity
+          style={styles.backdrop}
+          activeOpacity={1}
+          onPress={closeAlert}
+        />
+
+        {/* Bottom Sheet Card */}
+        <View style={styles.sheetCard}>
+          {/* Top Grab Handle */}
+          <View style={styles.handleBar} />
+
+          {/* Close button (top right) */}
+          <TouchableOpacity
+            style={styles.closeBtn}
+            onPress={closeAlert}
+            activeOpacity={0.7}
+            hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}
+          >
+            <X size={20} color="#64748B" />
+          </TouchableOpacity>
+
+          {/* Concentric Sound-Wave Glowing Bell Icon */}
+          <View style={styles.bellOuterGlow}>
+            <View style={styles.bellInnerGlow}>
+              <Animated.View style={[styles.bellBadge, { transform: [{ scale: pulseAnim }] }]}>
+                <Bell size={28} color="#EA580C" fill="#F97316" />
+              </Animated.View>
             </View>
           </View>
 
-          <View style={styles.warningBanner}>
-            <AlertTriangle size={18} color="#D97706" />
-            <Text style={styles.warningText}>
-              {alert.warning || "Low stock or out-of-stock items detected in this order."}
-            </Text>
-          </View>
-
-          <View style={styles.orderDetailCard}>
-            <View style={styles.detailRow}>
-              <Text style={styles.detailLabel}>Order ID:</Text>
-              <Text style={styles.detailValueBold}>#{alert.orderId}</Text>
-            </View>
-
-            {alert.totalAmount ? (
-              <View style={styles.detailRow}>
-                <Text style={styles.detailLabel}>Total Amount:</Text>
-                <Text style={[styles.detailValueBold, { color: "#EA580C" }]}>
-                  ₹{alert.totalAmount.toLocaleString("en-IN")}
-                </Text>
-              </View>
-            ) : null}
-
-            {alert.customerName ? (
-              <View style={styles.detailRow}>
-                <Text style={styles.detailLabel}>Customer:</Text>
-                <Text style={styles.detailValue}>{alert.customerName}</Text>
-              </View>
-            ) : null}
-          </View>
-
-          <Text style={styles.promptText}>
-            Can you fulfill this order from warehouse or supplier stock?
+          {/* Title & Subtitle */}
+          <Text style={styles.title} numberOfLines={1}>
+            New Order Received!
+          </Text>
+          <Text style={styles.orderIdSubtitle} numberOfLines={1}>
+            Order #{alert.orderId}
           </Text>
 
+          {/* Soft Cream Order Details Box */}
+          <View style={styles.orderInfoBox}>
+            <View style={styles.boxIconWrapper}>
+              <Text style={{ fontSize: 24 }}>📦</Text>
+            </View>
+            <View style={styles.boxTextContent}>
+              <Text style={styles.boxItemsPrice} numberOfLines={1}>
+                {alert.itemsCount || 12} items • ₹{(alert.totalAmount || 4850).toLocaleString("en-IN")}
+              </Text>
+              <Text style={styles.boxCustomerName} numberOfLines={1}>
+                {alert.customerName || "Amit Verma"}
+              </Text>
+              <Text style={styles.boxCustomerAddress} numberOfLines={1}>
+                {alert.warning || "HSR Layout, Bangalore"}
+              </Text>
+            </View>
+          </View>
+
+          {/* Action Buttons: Reject & Accept Order */}
           {isSubmitting ? (
-            <ActivityIndicator size="large" color="#EA580C" style={{ marginVertical: 16 }} />
+            <ActivityIndicator size="large" color="#0066FF" style={{ marginVertical: 14 }} />
           ) : (
-            <View style={styles.decisionRow}>
+            <View style={styles.buttonRow}>
               <TouchableOpacity
-                style={[styles.decisionBtn, styles.acceptBtn]}
-                onPress={handleAccept}
-                activeOpacity={0.85}
+                style={styles.rejectBtn}
+                onPress={handleReject}
+                activeOpacity={0.8}
               >
-                <PackageCheck size={20} color="#FFFFFF" />
-                <Text style={styles.btnTextWhite}>ACCEPT ORDER</Text>
+                <Text style={styles.rejectBtnText}>Reject</Text>
               </TouchableOpacity>
 
               <TouchableOpacity
-                style={[styles.decisionBtn, styles.rejectBtn]}
-                onPress={handleReject}
-                activeOpacity={0.85}
+                style={styles.acceptBtn}
+                onPress={handleAccept}
+                activeOpacity={0.88}
               >
-                <Ban size={20} color="#EF4444" />
-                <Text style={styles.btnTextReject}>REJECT</Text>
+                <Text style={styles.acceptBtnText}>Accept Order</Text>
               </TouchableOpacity>
             </View>
           )}
-        </Animated.View>
+        </View>
       </View>
     </Modal>
   );
 }
 
 const styles = StyleSheet.create({
-  overlayDark: {
+  overlay: {
     flex: 1,
-    backgroundColor: "rgba(0, 0, 0, 0.75)",
-    justifyContent: "center",
-    alignItems: "center",
-    padding: SPACING.lg,
+    backgroundColor: "rgba(5, 15, 30, 0.55)",
+    justifyContent: "flex-end",
   },
-  overlayCenter: {
+  backdrop: {
     flex: 1,
-    backgroundColor: "rgba(0, 0, 0, 0.6)",
-    justifyContent: "center",
-    alignItems: "center",
-    padding: SPACING.lg,
   },
-  autoAcceptCard: {
+  sheetCard: {
     width: "100%",
-    maxWidth: 380,
     backgroundColor: "#FFFFFF",
-    borderRadius: RADIUS.lg,
-    padding: SPACING.xl,
+    borderTopLeftRadius: 32,
+    borderTopRightRadius: 32,
+    paddingHorizontal: 22,
+    paddingTop: 12,
+    paddingBottom: Platform.OS === "ios" ? 36 : 24,
     alignItems: "center",
-    ...SHADOWS.lg,
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: -8 },
+    shadowOpacity: 0.15,
+    shadowRadius: 20,
+    elevation: 20,
+    position: "relative",
   },
-  successBadge: {
-    width: 64,
-    height: 64,
-    borderRadius: 32,
-    backgroundColor: "#ECFDF5",
+  handleBar: {
+    width: 44,
+    height: 4,
+    borderRadius: 2,
+    backgroundColor: "#CBD5E1",
+    alignSelf: "center",
+    marginBottom: 16,
+  },
+  closeBtn: {
+    position: "absolute",
+    top: 14,
+    right: 18,
+    width: 32,
+    height: 32,
+    alignItems: "center",
     justifyContent: "center",
-    alignItems: "center",
-    marginBottom: SPACING.md,
+    zIndex: 10,
   },
-  autoAcceptTitle: {
-    fontSize: 20,
+  bellOuterGlow: {
+    width: 88,
+    height: 88,
+    borderRadius: 44,
+    backgroundColor: "#FFF7ED",
+    alignItems: "center",
+    justifyContent: "center",
+    marginBottom: 14,
+  },
+  bellInnerGlow: {
+    width: 70,
+    height: 70,
+    borderRadius: 35,
+    backgroundColor: "#FFEDD5",
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  bellBadge: {
+    width: 52,
+    height: 52,
+    borderRadius: 26,
+    backgroundColor: "#FED7AA",
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  title: {
+    fontSize: 21,
     fontWeight: "800",
-    color: "#065F46",
+    color: "#0F172A",
+    textAlign: "center",
     marginBottom: 4,
-    textAlign: "center",
   },
-  autoAcceptSubtitle: {
-    fontSize: 13,
-    color: "#6B7280",
-    textAlign: "center",
-    marginBottom: SPACING.md,
-  },
-  orderSummaryBox: {
-    width: "100%",
-    backgroundColor: "#F9FAFB",
-    padding: SPACING.md,
-    borderRadius: RADIUS.md,
-    borderWidth: 1,
-    borderColor: "#E5E7EB",
-    alignItems: "center",
-    marginBottom: SPACING.md,
-  },
-  summaryOrderId: {
-    fontSize: 16,
-    fontWeight: "700",
-    color: "#111827",
-  },
-  summaryTotal: {
-    fontSize: 22,
-    fontWeight: "800",
-    color: "#10B981",
-    marginTop: 2,
-  },
-  summaryCustomer: {
-    fontSize: 13,
-    color: "#4B5563",
-    marginTop: 4,
-  },
-  readyText: {
+  orderIdSubtitle: {
     fontSize: 14,
+    color: "#64748B",
+    fontWeight: "500",
+    textAlign: "center",
+    marginBottom: 18,
+  },
+  orderInfoBox: {
+    width: "100%",
+    backgroundColor: "#FFFBEB",
+    borderWidth: 1,
+    borderColor: "#FEF3C7",
+    borderRadius: 18,
+    padding: 14,
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 14,
+    marginBottom: 22,
+  },
+  boxIconWrapper: {
+    width: 46,
+    height: 46,
+    borderRadius: 12,
+    backgroundColor: "#FEF3C7",
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  boxTextContent: {
+    flex: 1,
+    gap: 2,
+  },
+  boxItemsPrice: {
+    fontSize: 15,
     fontWeight: "700",
-    color: "#059669",
-    marginBottom: SPACING.lg,
+    color: "#0F172A",
+  },
+  boxCustomerName: {
+    fontSize: 13,
+    color: "#334155",
+    fontWeight: "500",
+  },
+  boxCustomerAddress: {
+    fontSize: 12,
+    color: "#64748B",
+    fontWeight: "400",
   },
   buttonRow: {
+    width: "100%",
     flexDirection: "row",
+    alignItems: "center",
     gap: 12,
-    width: "100%",
-  },
-  actionBtn: {
-    flex: 1,
-    paddingVertical: 12,
-    borderRadius: RADIUS.md,
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "center",
-    gap: 6,
-  },
-  viewBtn: {
-    backgroundColor: "#10B981",
-  },
-  dismissBtn: {
-    backgroundColor: "#F3F4F6",
-  },
-  btnTextWhite: {
-    color: "#FFFFFF",
-    fontSize: 14,
-    fontWeight: "700",
-  },
-  btnTextDismiss: {
-    color: "#4B5563",
-    fontSize: 14,
-    fontWeight: "600",
-  },
-
-  // Ringing card styles
-  ringingCard: {
-    width: "100%",
-    maxWidth: 390,
-    backgroundColor: "#FFFFFF",
-    borderRadius: RADIUS.xl,
-    padding: SPACING.lg,
-    ...SHADOWS.lg,
-  },
-  ringingHeader: {
-    flexDirection: "row",
-    alignItems: "center",
-    marginBottom: SPACING.md,
-  },
-  alertIconBadge: {
-    width: 48,
-    height: 48,
-    borderRadius: 24,
-    backgroundColor: "#DC2626",
-    justifyContent: "center",
-    alignItems: "center",
-  },
-  ringingTitle: {
-    fontSize: 17,
-    fontWeight: "900",
-    color: "#DC2626",
-    letterSpacing: 0.5,
-  },
-  ringingSubtitle: {
-    fontSize: 13,
-    color: "#6B7280",
-    fontWeight: "600",
-  },
-  warningBanner: {
-    flexDirection: "row",
-    alignItems: "center",
-    backgroundColor: "#FEF3C7",
-    padding: SPACING.sm,
-    borderRadius: RADIUS.sm,
-    gap: 8,
-    marginBottom: SPACING.md,
-  },
-  warningText: {
-    flex: 1,
-    fontSize: 12,
-    fontWeight: "600",
-    color: "#92400E",
-  },
-  orderDetailCard: {
-    backgroundColor: "#F9FAFB",
-    padding: SPACING.md,
-    borderRadius: RADIUS.md,
-    marginBottom: SPACING.md,
-    borderWidth: 1,
-    borderColor: "#E5E7EB",
-  },
-  detailRow: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    marginVertical: 3,
-  },
-  detailLabel: {
-    fontSize: 13,
-    color: "#6B7280",
-  },
-  detailValue: {
-    fontSize: 13,
-    color: "#111827",
-  },
-  detailValueBold: {
-    fontSize: 15,
-    fontWeight: "800",
-    color: "#111827",
-  },
-  promptText: {
-    fontSize: 13,
-    fontWeight: "700",
-    color: "#374151",
-    textAlign: "center",
-    marginBottom: SPACING.md,
-  },
-  decisionRow: {
-    flexDirection: "row",
-    gap: 12,
-    width: "100%",
-  },
-  decisionBtn: {
-    flex: 1,
-    paddingVertical: 14,
-    borderRadius: RADIUS.md,
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "center",
-    gap: 6,
-  },
-  acceptBtn: {
-    backgroundColor: "#16A34A",
   },
   rejectBtn: {
-    backgroundColor: "#FEE2E2",
-    borderWidth: 1,
+    flex: 1,
+    height: 48,
+    backgroundColor: "#FFFFFF",
+    borderWidth: 1.5,
     borderColor: "#FCA5A5",
+    borderRadius: 24,
+    alignItems: "center",
+    justifyContent: "center",
   },
-  btnTextReject: {
-    color: "#DC2626",
-    fontSize: 14,
+  rejectBtnText: {
+    fontSize: 15,
     fontWeight: "700",
+    color: "#EF4444",
+  },
+  acceptBtn: {
+    flex: 1.5,
+    height: 48,
+    backgroundColor: "#0066FF",
+    borderRadius: 24,
+    alignItems: "center",
+    justifyContent: "center",
+    shadowColor: "#0066FF",
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.25,
+    shadowRadius: 8,
+    elevation: 4,
+  },
+  acceptBtnText: {
+    fontSize: 15,
+    fontWeight: "700",
+    color: "#FFFFFF",
   },
 });

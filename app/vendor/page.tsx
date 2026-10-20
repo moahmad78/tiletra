@@ -108,6 +108,23 @@ export default function VendorDashboardPage() {
       {/* Mandatory KYC Warning Banner */}
       <VendorKycBanner vendor={vendor} />
 
+      {/* Offline Alert Banner */}
+      {vendor?.isOnline === false && (
+        <div className="bg-amber-500/10 border-2 border-amber-500/30 rounded-2xl p-4 flex items-center justify-between gap-4 text-amber-900">
+          <div className="flex items-center gap-3">
+            <div className="w-10 h-10 rounded-xl bg-amber-500/20 flex items-center justify-center shrink-0">
+              <AlertTriangle className="text-amber-600" size={20} />
+            </div>
+            <div>
+              <p className="font-extrabold text-sm text-amber-950">Store is Currently OFFLINE (Store Closed)</p>
+              <p className="text-xs text-amber-800">
+                Your products are hidden from the customer website and mobile app. Switch to Online in the top header when ready to accept orders.
+              </p>
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* Vendor Onboarding Checklist — shown until all 5 steps complete */}
       <VendorOnboardingChecklist progress={onboardingProgress} />
 

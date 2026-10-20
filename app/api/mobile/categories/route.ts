@@ -16,12 +16,42 @@ export async function GET(req: NextRequest) {
           orderBy: { order: "asc" },
           include: {
             _count: {
-              select: { products: { where: { status: "active", approvalStatus: "approved" } } },
+              select: {
+                products: {
+                  where: {
+                    status: "active",
+                    approvalStatus: "approved",
+                    AND: [
+                      {
+                        OR: [
+                          { vendorId: null },
+                          { vendor: { isOnline: true } },
+                        ],
+                      },
+                    ],
+                  },
+                },
+              },
             },
           },
         },
         _count: {
-          select: { products: { where: { status: "active", approvalStatus: "approved" } } },
+          select: {
+            products: {
+              where: {
+                status: "active",
+                approvalStatus: "approved",
+                AND: [
+                  {
+                    OR: [
+                      { vendorId: null },
+                      { vendor: { isOnline: true } },
+                    ],
+                  },
+                ],
+              },
+            },
+          },
         },
       },
     });

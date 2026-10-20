@@ -369,7 +369,7 @@ export async function POST(req: NextRequest) {
 
       const finalFileUrl = `/api/uploads/${uniqueFileName}`;
 
-      // 1. Save permanently to Neon PostgreSQL Database (100% First-Party Storage)
+      // 1. Save permanently to PostgreSQL Database (100% First-Party Storage)
       try {
         await (prisma as any).uploadedFile.upsert({
           where: { fileName: uniqueFileName },

@@ -65,8 +65,8 @@ export async function GET(req: NextRequest) {
         const { notifyVendorPush } = await import("@/lib/push-notifications");
         await notifyVendorPush({
           vendorId: split.vendorId,
-          title: `⏰ ${minutesLeft} min to pack — Order #${split.orderId.slice(-6)}`,
-          body: `Packing deadline approaching! Mark order as "Ready for Pickup" within ${minutesLeft} minute(s) to avoid SLA breach.`,
+          title: `${minutesLeft} min to pack 📦`,
+          body: `Order #${split.orderId.slice(-6)} packing deadline approaching! Mark ready to avoid SLA breach.`,
           data: {
             type: "sla_warning",
             splitId: split.id,

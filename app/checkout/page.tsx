@@ -54,13 +54,13 @@ function CheckoutContent() {
 
   const addresses = user?.addresses || [];
 
-  // Store Settings (with safe fallback)
+  // Store Settings (Delivery charges OFF)
   const [storeSettings, setStoreSettings] = useState({
-    freeDeliveryThreshold: 15000,
-    bikeDeliveryRate: 99,
-    fourWheelerDeliveryRate: 349,
+    freeDeliveryThreshold: 0,
+    bikeDeliveryRate: 0,
+    fourWheelerDeliveryRate: 0,
     weightThresholdKg: 20,
-    standardDeliveryFee: 999,
+    standardDeliveryFee: 0,
   });
 
   // Coupons
@@ -92,11 +92,11 @@ function CheckoutContent() {
         const s: any = await getStoreSettings();
         if (s) {
           setStoreSettings({
-            freeDeliveryThreshold: s.freeDeliveryThreshold ?? 15000,
-            bikeDeliveryRate: s.bikeDeliveryRate ?? 99,
-            fourWheelerDeliveryRate: s.fourWheelerDeliveryRate ?? 349,
+            freeDeliveryThreshold: 0,
+            bikeDeliveryRate: 0,
+            fourWheelerDeliveryRate: 0,
             weightThresholdKg: s.weightThresholdKg ?? 20,
-            standardDeliveryFee: s.standardDeliveryFee ?? 999,
+            standardDeliveryFee: 0,
           });
         }
       } catch (err) {
@@ -123,15 +123,12 @@ function CheckoutContent() {
     ? (((buyNowItem.variant as any)?.weightKg ?? (buyNowItem.product as any)?.weightKg ?? 2.0) * buyNowItem.quantity)
     : getTotalWeightKg();
 
-  const isFreeDelivery = subtotal >= storeSettings.freeDeliveryThreshold;
-  const isBikeDelivery = !isFreeDelivery && totalWeightKg <= storeSettings.weightThresholdKg;
-  const calculatedDeliveryFee = isFreeDelivery
-    ? 0
-    : isBikeDelivery
-    ? storeSettings.bikeDeliveryRate
-    : storeSettings.fourWheelerDeliveryRate;
+  // Delivery fee turned OFF (Free delivery on all orders)
+  const isFreeDelivery = true;
+  const isBikeDelivery = false;
+  const calculatedDeliveryFee = 0;
 
-  const grandTotal = Math.max(1, subtotal + calculatedDeliveryFee - discountAmount);
+  const grandTotal = Math.max(1, subtotal - discountAmount);
 
   // 4. Coupon Handler
   const handleApplyCoupon = async (code: string): Promise<boolean> => {

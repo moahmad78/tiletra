@@ -48,7 +48,7 @@ export async function GET(
       // Local disk read failed or running in cloud serverless
     }
 
-    // 2. Query Neon PostgreSQL database for permanent persistent media
+    // 2. Query PostgreSQL database for permanent persistent media
     const dbFile = await (prisma as any).uploadedFile.findUnique({
       where: { fileName: filename },
     });

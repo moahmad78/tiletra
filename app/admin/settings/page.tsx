@@ -47,11 +47,11 @@ export default function AdminSettingsPage() {
   const [whatsappNumber, setWhatsappNumber] = useState("+91 70901 20211");
   const [email, setEmail] = useState("support@intrihub.com");
   const [address, setAddress] = useState("Intrihub Central Supply Hub, Begur, Bangalore, Karnataka - 560114");
-  const [freeDeliveryThreshold, setFreeDeliveryThreshold] = useState(15000);
-  const [standardDeliveryFee, setStandardDeliveryFee] = useState(999);
-  const [deliveryFeeEnabled, setDeliveryFeeEnabled] = useState(true);
-  const [bikeDeliveryRate, setBikeDeliveryRate] = useState(99);
-  const [fourWheelerDeliveryRate, setFourWheelerDeliveryRate] = useState(349);
+  const [freeDeliveryThreshold, setFreeDeliveryThreshold] = useState(0);
+  const [standardDeliveryFee, setStandardDeliveryFee] = useState(0);
+  const [deliveryFeeEnabled, setDeliveryFeeEnabled] = useState(false);
+  const [bikeDeliveryRate, setBikeDeliveryRate] = useState(0);
+  const [fourWheelerDeliveryRate, setFourWheelerDeliveryRate] = useState(0);
   const [weightThresholdKg, setWeightThresholdKg] = useState(20);
   const [lowStockThreshold, setLowStockThreshold] = useState(25);
   const [codEnabled, setCodEnabled] = useState(true);
@@ -254,7 +254,7 @@ export default function AdminSettingsPage() {
       <div className="flex items-center justify-center min-h-[400px]">
         <div className="flex flex-col items-center gap-3">
           <Loader2 className="animate-spin text-[#F26522]" size={32} />
-          <p className="text-sm font-bold text-[#052a51]">Loading store settings from Neon DB...</p>
+          <p className="text-sm font-bold text-[#052a51]">Loading store settings...</p>
         </div>
       </div>
     );

@@ -46,9 +46,10 @@ export default function DeliveryStep({
     totalWeightKg += itemWeight * qty;
   });
 
-  const isFreeDelivery = subtotal >= freeThreshold;
-  const isBikeDelivery = !isFreeDelivery && totalWeightKg <= weightThreshold;
-  const calculatedFee = isFreeDelivery ? 0 : isBikeDelivery ? bikeRate : fourWheelerRate;
+  // Delivery fee turned OFF (Free delivery on all orders)
+  const isFreeDelivery = true;
+  const isBikeDelivery = false;
+  const calculatedFee = 0;
 
   return (
     <div className="space-y-4 sm:space-y-6">

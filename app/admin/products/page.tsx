@@ -29,6 +29,7 @@ import type { Category } from "@/lib/data/categories";
 import { getLowestPrice, getLowestBoxPrice } from "@/lib/data/products";
 import { formatPrice, formatUnitLabel } from "@/lib/formatters";
 import { resolveColorHex } from "@/lib/catalog";
+import ProductEditChoiceModal from "@/components/shared/ProductEditChoiceModal";
 import { toast } from "sonner";
 
 export default function AdminProductsPage() {
@@ -43,6 +44,7 @@ export default function AdminProductsPage() {
   const [selectedStockStatus, setSelectedStockStatus] = useState<string>("all");
   const [selectedApprovalStatus, setSelectedApprovalStatus] = useState<string>("all");
   const [selectedIds, setSelectedIds] = useState<string[]>([]);
+  const [editingProductForChoice, setEditingProductForChoice] = useState<Product | null>(null);
 
   const loadData = async () => {
     try {
@@ -224,7 +226,7 @@ export default function AdminProductsPage() {
       <div className="flex items-center justify-center min-h-[400px]">
         <div className="flex flex-col items-center gap-3">
           <Loader2 className="animate-spin text-[#F26522]" size={32} />
-          <p className="text-sm font-bold text-[#052a51]">Loading catalog from Neon DB...</p>
+          <p className="text-sm font-bold text-[#052a51]">Loading catalog...</p>
         </div>
       </div>
     );
@@ -615,13 +617,14 @@ export default function AdminProductsPage() {
                         >
                           <Copy size={14} />
                         </button>
-                        <Link
-                          href={`/admin/products/${p.id}/edit`}
-                          className="p-1.5 text-gray-400 hover:text-[#F26522] inline-block rounded-lg hover:bg-gray-100"
-                          title="Edit product"
+                        <button
+                          type="button"
+                          onClick={() => setEditingProductForChoice(p)}
+                          className="p-1.5 text-gray-400 hover:text-[#F26522] inline-block rounded-lg hover:bg-gray-100 cursor-pointer"
+                          title="Edit product (Instant 3-Rates/Stock or Full Customizer)"
                         >
                           <Edit size={14} />
-                        </Link>
+                        </button>
                         <button
                           onClick={() => handleDelete(p.id, p.name)}
                           className="p-1.5 text-gray-400 hover:text-red-600 rounded-lg hover:bg-red-50 cursor-pointer"
@@ -638,6 +641,18 @@ export default function AdminProductsPage() {
           </table>
         </div>
       </div>
+
+      {/* Product Edit Choice Modal (Instant Update vs Custom Update) */}
+      <ProductEditChoiceModal
+        isOpen={Boolean(editingProductForChoice)}
+        onClose={() => setEditingProductForChoice(null)}
+        product={editingProductForChoice as any}
+        editUrl={editingProductForChoice ? `/admin/products/${editingProductForChoice.id}/edit` : ""}
+        onSuccess={() => {
+          loadData();
+          setEditingProductForChoice(null);
+        }}
+      />
     </div>
   );
 }

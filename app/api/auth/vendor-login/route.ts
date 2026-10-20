@@ -141,6 +141,7 @@ export async function POST(req: Request) {
         ownerName: vendor.owner?.name || vendor.businessName,
         ownerId: vendor.ownerId,
         mustChangePassword: vendor.owner?.mustChangePassword ?? false,
+        isOnline: Boolean(vendor.isOnline),
       },
     });
 

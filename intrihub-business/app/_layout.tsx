@@ -22,11 +22,32 @@ import LanguageModal from "../src/components/LanguageModal";
 import IncomingOrderAlertModal from "../src/components/IncomingOrderAlertModal";
 import { useI18nStore } from "../src/store/i18nStore";
 import { COLORS } from "../src/constants/theme";
+import { useOrderAlertStore } from "../src/store/orderAlertStore";
 
 // Suppress non-fatal dev CLI connection warning from popping up on screen
 LogBox.ignoreLogs([
   "Cannot connect to Expo CLI",
 ]);
+
+// ─── Global JS Error Handler ──────────────────────────────────────────────────
+declare const ErrorUtils: {
+  getGlobalHandler: () => (error: Error, isFatal?: boolean) => void;
+  setGlobalHandler: (handler: (error: Error, isFatal?: boolean) => void) => void;
+} | undefined;
+
+if (typeof ErrorUtils !== "undefined" && ErrorUtils?.getGlobalHandler) {
+  try {
+    const defaultHandler = ErrorUtils.getGlobalHandler();
+    ErrorUtils.setGlobalHandler((error: Error, isFatal?: boolean) => {
+      console.warn("Intrihub Business uncaught error:", error?.message);
+      // Suppress hard crash for non-fatal errors
+      if (!isFatal) return;
+      defaultHandler?.(error, isFatal);
+    });
+  } catch {
+    // Ignore error handler initialization failure
+  }
+}
 
 // Keep native splash screen visible while app JS bundle loads
 SplashScreen.preventAutoHideAsync().catch(() => {});
@@ -139,10 +160,52 @@ function RootLayout() {
   useEffect(() => {
     if (user?.id) {
       socketService.connect(user.id);
+
+      const unsubNewOrder = socketService.subscribe("new-order", (data: any) => {
+        console.log("⚡ [BIZ SOCKET] new-order received:", data);
+        queryClient.invalidateQueries({ queryKey: ["vendor-orders"] });
+        queryClient.invalidateQueries({ queryKey: ["vendor-dashboard"] });
+        useOrderAlertStore.getState().triggerAlert({
+          orderId: String(data?.orderId || data?.id || "NEW"),
+          splitId: data?.splitId,
+          customerName: data?.customerName || "Customer",
+          totalAmount: Number(data?.total || data?.totalAmount) || 0,
+          itemsCount: Number(data?.itemsCount || data?.items?.length) || 1,
+          isAutoAccepted: Boolean(data?.isAutoAccepted),
+          requiresManualApproval: !data?.isAutoAccepted,
+          warning: data?.warning,
+        });
+      });
+
+      const unsubOrderAlert = socketService.subscribe("order-alert", (data: any) => {
+        console.log("⚡ [BIZ SOCKET] order-alert received:", data);
+        queryClient.invalidateQueries({ queryKey: ["vendor-orders"] });
+        queryClient.invalidateQueries({ queryKey: ["vendor-dashboard"] });
+        useOrderAlertStore.getState().triggerAlert({
+          orderId: String(data?.orderId || data?.id || "NEW"),
+          splitId: data?.splitId,
+          customerName: data?.customerName || "Customer",
+          totalAmount: Number(data?.total || data?.totalAmount) || 0,
+          itemsCount: Number(data?.itemsCount || data?.items?.length) || 1,
+          isAutoAccepted: false,
+          requiresManualApproval: true,
+          warning: data?.warning,
+        });
+      });
+
+      const unsubStatus = socketService.subscribe("order-status-updated", (data: any) => {
+        console.log("⚡ [BIZ SOCKET] order-status-updated:", data);
+        queryClient.invalidateQueries({ queryKey: ["vendor-orders"] });
+        queryClient.invalidateQueries({ queryKey: ["vendor-dashboard"] });
+      });
+
+      return () => {
+        unsubNewOrder();
+        unsubOrderAlert();
+        unsubStatus();
+        socketService.disconnect();
+      };
     }
-    return () => {
-      socketService.disconnect();
-    };
   }, [user?.id]);
 
   return (
@@ -181,7 +244,7 @@ function RootLayout() {
             isFirstLaunch
           />
 
-          {/* Animated Quick-Commerce Splash Screen Layer (Option B) */}
+          {/* Animated Quick-Commerce Splash Screen (Delivery Boy & Highway Lights) */}
           {splashMounted && (
             <AnimatedSplashScreen
               isAppReady={isAppReady}
@@ -194,10 +257,7 @@ function RootLayout() {
   );
 }
 
-// Sentry.wrap() is used for crash reporting breadcrumbs
-// In release builds, if Sentry native layer isn't ready this can crash.
-// We guard it so the app always launches even if Sentry is unavailable.
-export default Sentry.wrap(RootLayout);
+export default RootLayout;
 
 const styles = StyleSheet.create({
   loadingContainer: {

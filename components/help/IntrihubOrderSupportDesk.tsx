@@ -600,7 +600,7 @@ export default function IntrihubOrderSupportDesk({
                       Order & Complaint Management System
                     </h1>
                     <p className="text-xs sm:text-sm text-white/75 mt-1 leading-relaxed">
-                      Instant customer lookup, order tracking, return & exchange ticket generation, and 1-click refund processing powered by live Neon Postgres database.
+                      Instant customer lookup, order tracking, return & exchange ticket generation, and 1-click refund processing powered by live PostgreSQL database.
                     </p>
 
                     <div className="mt-4 flex flex-wrap items-center gap-2.5">

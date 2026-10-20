@@ -43,6 +43,14 @@ export async function GET(req: NextRequest) {
     const where: any = {
       status: "active",
       approvalStatus: "approved",
+      AND: [
+        {
+          OR: [
+            { vendorId: null },
+            { vendor: { isOnline: true } },
+          ],
+        },
+      ],
     };
 
     if (categorySlug && !q) {
@@ -194,6 +202,14 @@ export async function GET(req: NextRequest) {
         where: {
           status: "active",
           approvalStatus: "approved",
+          AND: [
+            {
+              OR: [
+                { vendorId: null },
+                { vendor: { isOnline: true } },
+              ],
+            },
+          ],
         },
         orderBy: [{ isBestseller: "desc" }, { isTrending: "desc" }, { rating: "desc" }],
         take: 20,

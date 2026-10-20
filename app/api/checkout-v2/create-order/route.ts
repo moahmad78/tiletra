@@ -32,11 +32,11 @@ export async function POST(request: NextRequest) {
     let settings = await prisma.storeSettings.findFirst();
     if (!settings) {
       settings = {
-        freeDeliveryThreshold: 15000,
-        standardDeliveryFee: 999,
-        deliveryFeeEnabled: true,
-        bikeDeliveryRate: 99,
-        fourWheelerDeliveryRate: 349,
+        freeDeliveryThreshold: 0,
+        standardDeliveryFee: 0,
+        deliveryFeeEnabled: false,
+        bikeDeliveryRate: 0,
+        fourWheelerDeliveryRate: 0,
         weightThresholdKg: 20,
       } as any;
     }
@@ -130,27 +130,9 @@ export async function POST(request: NextRequest) {
       });
     }
 
-    // 3. Evaluate Vehicle Delivery Fee Slabs
-    const freeDeliveryThreshold = settings?.freeDeliveryThreshold ?? 15000;
-    const weightThreshold = settings?.weightThresholdKg ?? 20;
-    const bikeRate = settings?.bikeDeliveryRate ?? 99;
-    const fourWheelerRate = settings?.fourWheelerDeliveryRate ?? 349;
-
+    // 3. Evaluate Vehicle Delivery Fee Slabs (Delivery Fee turned OFF)
     let deliveryFee = 0;
     let vehicleType = "Free Delivery";
-
-    if (recalculatedSubtotal >= freeDeliveryThreshold) {
-      deliveryFee = 0;
-      vehicleType = "FREE Delivery (Above ₹" + freeDeliveryThreshold.toLocaleString("en-IN") + ")";
-    } else {
-      if (totalWeightKg <= weightThreshold) {
-        deliveryFee = bikeRate;
-        vehicleType = `Bike Delivery (${totalWeightKg.toFixed(1)} kg ≤ ${weightThreshold} kg)`;
-      } else {
-        deliveryFee = fourWheelerRate;
-        vehicleType = `4-Wheeler Delivery (${totalWeightKg.toFixed(1)} kg > ${weightThreshold} kg)`;
-      }
-    }
 
     // 4. Validate Coupon Discount server-side
     let discount = 0;

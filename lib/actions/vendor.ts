@@ -801,14 +801,15 @@ export async function getVendorDashboardStats(vendorId?: string) {
       }),
       prisma.productVariant.count({
         where: {
-          product: { vendorId },
+          product: { vendorId: effectiveVendorId },
           stockBoxes: { lt: 15 },
         },
       }),
       prisma.vendorOrderSplit.findMany({
-        where: { vendorId },
+        where: { vendorId: effectiveVendorId },
         select: {
           subtotal: true,
+          commissionRate: true,
           vendorPayoutAmount: true,
           fulfillmentStatus: true,
         },
@@ -821,7 +822,13 @@ export async function getVendorDashboardStats(vendorId?: string) {
     const pendingApprovals = allProducts.filter((p) => p.approvalStatus === "pending").length;
     const rejectedProducts = allProducts.filter((p) => p.approvalStatus === "rejected").length;
     const totalOrders = splits.length;
-    const totalRevenue = splits.reduce((acc, s) => acc + s.vendorPayoutAmount, 0);
+    const totalRevenue = splits.reduce((acc, s) => {
+      const rate = s.commissionRate || 15;
+      const payout = s.vendorPayoutAmount > 0
+        ? s.vendorPayoutAmount
+        : Number((s.subtotal - ((s.subtotal * rate) / 100)).toFixed(2));
+      return acc + payout;
+    }, 0);
 
     return {
       totalProducts,
@@ -1074,6 +1081,7 @@ export async function getVendorOrders(vendorId?: string) {
       where: { id: { in: orderIds } },
       include: {
         items: true,
+        deliveryPartner: true,
       },
     });
 
@@ -1081,17 +1089,66 @@ export async function getVendorOrders(vendorId?: string) {
 
     return splits.map((split) => {
       const parent = orderMap.get(split.orderId);
+      const allParentItems = parent?.items || [];
+      const vendorItems = allParentItems.filter(
+        (it: any) => !it.vendorId || it.vendorId === split.vendorId
+      );
+      const rawItems = vendorItems.length > 0 ? vendorItems : allParentItems;
+
+      const formattedItems = rawItems.map((it: any) => ({
+        id: it.id,
+        productId: it.productId,
+        name: it.productName,
+        productName: it.productName,
+        spec: it.variantDetails || "Standard",
+        variant: it.variantDetails || "Standard",
+        qty: `${it.boxQuantity} box(es)`,
+        quantity: it.boxQuantity,
+        boxQuantity: it.boxQuantity,
+        price: `₹${(it.totalPrice || it.pricePerBox * it.boxQuantity || 0).toLocaleString("en-IN")}`,
+        pricePerBox: it.pricePerBox,
+        totalPrice: it.totalPrice,
+        image: it.image || "",
+        icon: "📦",
+      }));
+
+      const commissionRate = split.commissionRate || 15;
+      const commissionAmount =
+        split.commissionAmount > 0
+          ? split.commissionAmount
+          : Number(((split.subtotal * commissionRate) / 100).toFixed(2));
+      const vendorPayoutAmount =
+        split.vendorPayoutAmount > 0
+          ? split.vendorPayoutAmount
+          : Number((split.subtotal - commissionAmount).toFixed(2));
+
       return {
         id: split.id,
+        splitId: split.id,
         orderId: split.orderId,
         vendorId: split.vendorId,
         subtotal: split.subtotal,
-        commissionRate: split.commissionRate,
-        commissionAmount: split.commissionAmount,
-        vendorPayoutAmount: split.vendorPayoutAmount,
+        commissionRate,
+        commissionAmount,
+        vendorPayoutAmount,
         fulfillmentStatus: split.fulfillmentStatus,
-        trackingNumber: split.trackingNumber,
-        courierName: split.courierName,
+        paymentStatus: parent?.paymentStatus || "Confirmed",
+        paymentMethod: parent?.paymentMethod || "COD",
+        trackingNumber: split.trackingNumber || parent?.trackingNumber || null,
+        courierName: split.courierName || parent?.courierName || null,
+        riderName: parent?.deliveryPartner?.name || split.courierName || null,
+        riderPhone: parent?.deliveryPartner?.phone || null,
+        vehicleType: split.vehicleType || "bike",
+        customerName: parent?.deliveryName || parent?.customerName || "Customer",
+        customerPhone: parent?.deliveryPhone || parent?.customerPhone || "",
+        deliveryAddress:
+          parent?.deliveryAddress ||
+          (typeof parent?.shippingAddress === "object"
+            ? (parent.shippingAddress as any)?.street || ""
+            : String(parent?.shippingAddress || "")),
+        shippingAddress: parent?.shippingAddress,
+        itemsCount: formattedItems.length,
+        items: formattedItems,
         createdAt: split.createdAt,
         updatedAt: split.updatedAt,
         parentOrder: parent
@@ -1103,7 +1160,7 @@ export async function getVendorOrders(vendorId?: string) {
               paymentStatus: parent.paymentStatus,
               paymentMethod: parent.paymentMethod,
               orderStatus: parent.orderStatus,
-              items: parent.items,
+              items: formattedItems,
             }
           : null,
       };
@@ -1246,8 +1303,9 @@ export async function updateVendorFulfillmentStatus(
     }
 
     // Real-time Push Notification Dispatch to Customer App (Flipkart/Zomato style)
+    let parentOrder: { userId: string | null; total: number } | null = null;
     try {
-      const parentOrder = await prisma.order.findUnique({
+      parentOrder = await prisma.order.findUnique({
         where: { id: existing.orderId },
         select: { userId: true, total: true },
       });
@@ -1272,16 +1330,30 @@ export async function updateVendorFulfillmentStatus(
       console.warn("Customer status push notification warning:", pushErr);
     }
 
-    // Real-Time Socket Broadcast to customer and admin rooms
+    // Real-Time Socket Broadcast to customer, vendor, and admin rooms
     try {
       const { emitSocketEvent } = await import("@/lib/socket-server-emit");
+      const orderRooms = [
+        `order_${existing.orderId}`,
+        `order:${existing.orderId}`,
+        `vendor:${vendorId}`,
+        `vendor_${vendorId}`,
+        vendorId,
+        "admin-room",
+        "admin",
+      ];
+      if (parentOrder?.userId) {
+        orderRooms.push(`user:${parentOrder.userId}`, `user_${parentOrder.userId}`, parentOrder.userId);
+      }
+
       await emitSocketEvent({
-        room: `order_${existing.orderId}`,
+        rooms: orderRooms,
         event: "order-status-updated",
         data: {
           orderId: existing.orderId,
           splitId: updated.id,
           fulfillmentStatus: updated.fulfillmentStatus,
+          orderStatus: normalizedStatus === "dispatched" ? "dispatched" : isDelivered ? "delivered" : isConfirmed ? "Confirmed" : updated.fulfillmentStatus,
           trackingNumber: updated.trackingNumber,
           courierName: updated.courierName,
           packingDeadline: updated.packingDeadline,
@@ -1290,7 +1362,7 @@ export async function updateVendorFulfillmentStatus(
         },
       });
       await emitSocketEvent({
-        room: "admin-room",
+        rooms: ["admin-room", "admin"],
         event: "vendor-order-updated",
         data: {
           orderId: existing.orderId,
@@ -1672,6 +1744,46 @@ export async function toggleVendorAutoAcceptOrders(vendorId: string, autoAccept:
   } catch (error: any) {
     console.error("toggleVendorAutoAcceptOrders error:", error);
     return { success: false, error: error?.message || "Failed to update vendor auto-accept setting" };
+  }
+}
+
+export async function getVendorOnlineStatus(vendorId: string) {
+  try {
+    if (!vendorId) return { success: false, isOnline: false };
+    const vendor = await prisma.vendor.findUnique({
+      where: { id: vendorId },
+      select: { id: true, isOnline: true, businessName: true },
+    });
+    return { success: true, isOnline: Boolean(vendor?.isOnline) };
+  } catch (error: any) {
+    console.error("getVendorOnlineStatus error:", error);
+    return { success: false, isOnline: false };
+  }
+}
+
+export async function toggleVendorOnlineStatus(vendorId: string, isOnline: boolean) {
+  try {
+    if (!vendorId) return { success: false, error: "Vendor ID required" };
+    const updated = await prisma.vendor.update({
+      where: { id: vendorId },
+      data: {
+        isOnline,
+        ...(isOnline ? { lastHeartbeatAt: new Date() } : {}),
+      },
+      select: { id: true, isOnline: true, businessName: true },
+    });
+
+    safeRevalidate("/");
+    safeRevalidate("/products");
+    safeRevalidate("/vendor");
+    safeRevalidate("/vendor/orders");
+    safeRevalidate("/vendor/products");
+    safeRevalidate("/admin/vendors");
+
+    return { success: true, isOnline: updated.isOnline };
+  } catch (error: any) {
+    console.error("toggleVendorOnlineStatus error:", error);
+    return { success: false, error: error?.message || "Failed to update vendor online status" };
   }
 }
 

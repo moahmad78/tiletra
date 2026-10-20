@@ -14,6 +14,15 @@ export async function GET(req: NextRequest, { params }: { params: Promise<{ id: 
       where: {
         OR: [{ id }, { slug: id }],
         status: "active",
+        approvalStatus: "approved",
+        AND: [
+          {
+            OR: [
+              { vendorId: null },
+              { vendor: { isOnline: true } },
+            ],
+          },
+        ],
       },
       include: {
         vendor: {
@@ -24,6 +33,7 @@ export async function GET(req: NextRequest, { params }: { params: Promise<{ id: 
             logo: true,
             description: true,
             category: true,
+            isOnline: true,
           },
         },
         variants: true,
@@ -44,7 +54,7 @@ export async function GET(req: NextRequest, { params }: { params: Promise<{ id: 
     });
 
     if (!product) {
-      return mobileApiResponse({ success: false, error: "Product not found" }, 404);
+      return mobileApiResponse({ success: false, error: "Product not found or currently unavailable" }, 404);
     }
 
     // Fetch related products
@@ -54,6 +64,14 @@ export async function GET(req: NextRequest, { params }: { params: Promise<{ id: 
         id: { not: product.id },
         status: "active",
         approvalStatus: "approved",
+        AND: [
+          {
+            OR: [
+              { vendorId: null },
+              { vendor: { isOnline: true } },
+            ],
+          },
+        ],
       },
       take: 6,
       select: {

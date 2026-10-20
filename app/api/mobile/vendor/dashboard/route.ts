@@ -43,7 +43,10 @@ export async function GET(req: NextRequest) {
         customerPhone: parent?.customerPhone || "",
         itemsCount: parent?.items?.length || 0,
         subtotal: s.subtotal,
-        vendorPayoutAmount: s.vendorPayoutAmount,
+        vendorPayoutAmount:
+          s.vendorPayoutAmount > 0
+            ? s.vendorPayoutAmount
+            : Number((s.subtotal - ((s.subtotal * (s.commissionRate || 15)) / 100)).toFixed(2)),
         fulfillmentStatus: s.fulfillmentStatus,
         paymentStatus: parent?.paymentStatus || "pending",
         createdAt: s.createdAt,
@@ -64,6 +67,8 @@ export async function GET(req: NextRequest) {
         contactPhone: vendor.contactPhone,
         deliveryMethod: vendor.deliveryMethod,
         autoPublishEnabled: Boolean(vendor.autoPublishEnabled),
+        isOnline: Boolean(vendor.isOnline),
+        autoAcceptOrders: Boolean(vendor.autoAcceptOrders),
       },
       stats,
       recentOrders,

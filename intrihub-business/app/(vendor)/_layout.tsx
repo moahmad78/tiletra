@@ -91,6 +91,12 @@ export default function VendorTabsLayout() {
           href: null,
         }}
       />
+      <Tabs.Screen
+        name="notifications"
+        options={{
+          href: null,
+        }}
+      />
     </Tabs>
   );
 }

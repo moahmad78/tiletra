@@ -19,6 +19,7 @@ export type CreateProductInput = {
   sku?: string | null;
   material: string;
   thickness?: string | null;
+  finish?: string | null;
   description: string;
   shortDescription?: string | null;
   images: string[];
@@ -187,6 +188,17 @@ export async function getProducts(options?: {
       } else {
         where.approvalStatus = "approved";
       }
+
+      // Hide products belonging to offline vendors from customer storefront
+      where.AND = [
+        ...(where.AND || []),
+        {
+          OR: [
+            { vendorId: null },
+            { vendor: { isOnline: true } },
+          ],
+        },
+      ];
     } else {
       if (options?.status && options.status !== "all") {
         where.status = options.status;
@@ -425,6 +437,7 @@ export async function getProductBySlug(slug: string, options?: { includeAllStatu
             id: true,
             businessName: true,
             status: true,
+            isOnline: true,
           },
         },
       },
@@ -441,6 +454,11 @@ export async function getProductBySlug(slug: string, options?: { includeAllStatu
             dbProduct.status === "archived");
 
         if (!isPubliclyViewable) {
+          return null;
+        }
+
+        // Hide if vendor is offline
+        if (dbProduct.vendor && dbProduct.vendor.isOnline === false) {
           return null;
         }
       }
@@ -468,6 +486,7 @@ export async function getProductById(id: string, options?: { includeAllStatuses?
             id: true,
             businessName: true,
             status: true,
+            isOnline: true,
           },
         },
       },
@@ -476,6 +495,9 @@ export async function getProductById(id: string, options?: { includeAllStatuses?
     if (!dbProduct) return null;
     if (!options?.includeAllStatuses) {
       if (dbProduct.status !== "active" || dbProduct.approvalStatus !== "approved") {
+        return null;
+      }
+      if (dbProduct.vendor && dbProduct.vendor.isOnline === false) {
         return null;
       }
     }
@@ -553,6 +575,16 @@ export async function getRelatedProducts(productId: string, categorySlug: string
       where: {
         categorySlug,
         id: { not: productId },
+        status: "active",
+        approvalStatus: "approved",
+        AND: [
+          {
+            OR: [
+              { vendorId: null },
+              { vendor: { isOnline: true } },
+            ],
+          },
+        ],
       },
       include: {
         variants: true,
@@ -2092,5 +2124,141 @@ export async function parseCsvAndBulkCreate(csvText: string, defaultVendorId?: s
     return { success: false, error: err?.message || "Failed to parse CSV file" };
   }
 }
+
+// ── ⚡ INSTANT UPDATE: QUICK RATES (MRP, SALE RATE, BUY RATE) & STOCK ──
+export interface QuickRateVariantItem {
+  id?: string;
+  sku?: string | null;
+  variantName?: string | null;
+  mrp?: number | null;
+  saleRate?: number;
+  buyRate?: number | null;
+  stock?: number;
+}
+
+export interface QuickUpdateRatesAndStockInput {
+  productId: string;
+  mrp?: number | null;
+  saleRate?: number;
+  buyRate?: number | null;
+  stock?: number;
+  variants?: QuickRateVariantItem[];
+}
+
+export async function quickUpdateProductRatesAndStock(input: QuickUpdateRatesAndStockInput) {
+  try {
+    const { productId } = input;
+    if (!productId) return { success: false, error: "Product ID is required" };
+
+    const product = await prisma.product.findUnique({
+      where: { id: productId },
+      include: { variants: true },
+    });
+    if (!product) return { success: false, error: "Product not found" };
+
+    const existingSpecs = (product.specs as Record<string, any>) || {};
+    const newSpecs = {
+      ...existingSpecs,
+      ...(input.buyRate !== undefined ? { costPrice: input.buyRate !== null ? Number(input.buyRate) : null, buyRate: input.buyRate !== null ? Number(input.buyRate) : null } : {}),
+    };
+
+    const productUpdateData: any = {
+      specs: newSpecs,
+    };
+
+    if (input.mrp !== undefined) {
+      productUpdateData.mrp = input.mrp !== null ? Number(input.mrp) : null;
+    }
+    if (input.saleRate !== undefined) {
+      productUpdateData.pricePerSqft = Number(input.saleRate);
+    }
+    if (input.stock !== undefined) {
+      productUpdateData.inStock = Number(input.stock) > 0;
+    }
+
+    // Update variants
+    if (input.variants && input.variants.length > 0) {
+      for (const vItem of input.variants) {
+        if (vItem.id) {
+          const existingV = product.variants.find((x) => x.id === vItem.id);
+          const vSpecs = (existingV?.variantSpecs as Record<string, any>) || {};
+          const updatedVSpecs = {
+            ...vSpecs,
+            ...(vItem.buyRate !== undefined ? { costPrice: vItem.buyRate !== null ? Number(vItem.buyRate) : null, buyRate: vItem.buyRate !== null ? Number(vItem.buyRate) : null } : {}),
+          };
+
+          const varUpdateData: any = {
+            variantSpecs: updatedVSpecs,
+          };
+          if (vItem.mrp !== undefined) varUpdateData.mrp = vItem.mrp !== null ? Number(vItem.mrp) : null;
+          if (vItem.saleRate !== undefined) {
+            const num = Number(vItem.saleRate);
+            varUpdateData.price = num;
+            varUpdateData.pricePerBox = num;
+            varUpdateData.pricePerSqft = num;
+          }
+          if (vItem.stock !== undefined) {
+            const sNum = Number(vItem.stock);
+            varUpdateData.stockBoxes = sNum;
+            varUpdateData.inStock = sNum > 0;
+          }
+
+          await prisma.productVariant.update({
+            where: { id: vItem.id },
+            data: varUpdateData,
+          });
+        }
+      }
+    } else if (product.variants.length > 0) {
+      // Single product or bulk sync: update all variants with primary values
+      for (const existingV of product.variants) {
+        const vSpecs = (existingV.variantSpecs as Record<string, any>) || {};
+        const updatedVSpecs = {
+          ...vSpecs,
+          ...(input.buyRate !== undefined ? { costPrice: input.buyRate !== null ? Number(input.buyRate) : null, buyRate: input.buyRate !== null ? Number(input.buyRate) : null } : {}),
+        };
+
+        const varUpdateData: any = {
+          variantSpecs: updatedVSpecs,
+        };
+        if (input.mrp !== undefined) varUpdateData.mrp = input.mrp !== null ? Number(input.mrp) : null;
+        if (input.saleRate !== undefined) {
+          const num = Number(input.saleRate);
+          varUpdateData.price = num;
+          varUpdateData.pricePerBox = num;
+          varUpdateData.pricePerSqft = num;
+        }
+        if (input.stock !== undefined) {
+          const sNum = Number(input.stock);
+          varUpdateData.stockBoxes = sNum;
+          varUpdateData.inStock = sNum > 0;
+        }
+
+        await prisma.productVariant.update({
+          where: { id: existingV.id },
+          data: varUpdateData,
+        });
+      }
+    }
+
+    await prisma.product.update({
+      where: { id: productId },
+      data: productUpdateData,
+    });
+
+    safeRevalidate("/admin/products");
+    safeRevalidate("/vendor/products");
+    safeRevalidate("/cpo/catalog");
+    if (product.slug) {
+      safeRevalidate(`/product/${product.slug}`);
+    }
+
+    return { success: true, message: "Rates & stock updated instantly" };
+  } catch (err: any) {
+    console.error("Error in quickUpdateProductRatesAndStock:", err);
+    return { success: false, error: err?.message || "Failed to update rates and stock" };
+  }
+}
+
 
 

@@ -48,6 +48,17 @@ export default function EditProductPage({
   const [piecesPerBox, setPiecesPerBox] = useState<string>("");
   const [wastagePercent, setWastagePercent] = useState<string>("10");
 
+  // Advanced Specifications & Customization
+  const [brand, setBrand] = useState("");
+  const [modelNumber, setModelNumber] = useState("");
+  const [thickness, setThickness] = useState("");
+  const [finish, setFinish] = useState("");
+  const [warranty, setWarranty] = useState("");
+  const [hsnCode, setHsnCode] = useState("");
+  const [gstPercent, setGstPercent] = useState("18");
+  const [metaTitle, setMetaTitle] = useState("");
+  const [metaDescription, setMetaDescription] = useState("");
+
   useEffect(() => {
     async function load() {
       try {
@@ -88,6 +99,17 @@ export default function EditProductPage({
           setCoverageRate(p.coverageRate ? String(p.coverageRate) : "");
           setPiecesPerBox(p.piecesPerBox ? String(p.piecesPerBox) : "");
           setWastagePercent(p.wastageFactor ? String(Math.round((p.wastageFactor - 1) * 100)) : "10");
+
+          // Load advanced specifications
+          setBrand(p.brand || (p.specs as any)?.brand || "");
+          setModelNumber(p.modelNumber || (p.specs as any)?.modelNumber || "");
+          setThickness(p.thickness || (p.specs as any)?.thickness || "");
+          setFinish(p.finish || (p.specs as any)?.finish || "");
+          setWarranty(p.warranty || (p.specs as any)?.warranty || "");
+          setHsnCode(p.hsnCode || (p.specs as any)?.hsnCode || "");
+          setGstPercent(p.gstPercent ? String(p.gstPercent) : (p.gstRate ? String(p.gstRate) : "18"));
+          setMetaTitle(p.metaTitle || "");
+          setMetaDescription(p.metaDescription || "");
         }
       } catch (err) {
         console.error("Error loading product for editing:", err);
@@ -103,7 +125,7 @@ export default function EditProductPage({
       <div className="flex items-center justify-center min-h-[400px]">
         <div className="flex flex-col items-center gap-3">
           <Loader2 className="animate-spin text-[#F26522]" size={32} />
-          <p className="text-sm font-bold text-[#052a51]">Loading product details from Neon DB...</p>
+          <p className="text-sm font-bold text-[#052a51]">Loading product details...</p>
         </div>
       </div>
     );
@@ -212,13 +234,29 @@ export default function EditProductPage({
       isNew,
       manualRating: manualRating ? parseFloat(manualRating) : null,
       manualReviewCount: manualReviewCount ? parseInt(manualReviewCount, 10) : null,
-      specs,
+      specs: {
+        ...specs,
+        brand: brand.trim() || undefined,
+        modelNumber: modelNumber.trim() || undefined,
+        thickness: thickness.trim() || undefined,
+        finish: finish.trim() || undefined,
+        warranty: warranty.trim() || undefined,
+      },
+      brand: brand.trim() || null,
+      modelNumber: modelNumber.trim() || null,
+      thickness: thickness.trim() || null,
+      finish: finish.trim() || null,
+      warranty: warranty.trim() || null,
+      hsnCode: hsnCode.trim() || null,
+      gstPercent: gstPercent ? Number(gstPercent) : 18,
+      metaTitle: metaTitle.trim() || null,
+      metaDescription: metaDescription.trim() || null,
     });
 
     setSaving(false);
 
     if (res.success) {
-      toast.success(`"${name}" updated successfully in Neon PostgreSQL!`);
+      toast.success(`"${name}" updated successfully!`);
       router.push("/admin/products");
     } else {
       toast.error(res.error || "Failed to update product");
@@ -368,6 +406,61 @@ export default function EditProductPage({
                 </option>
               ))}
             </select>
+          </div>
+        </div>
+
+        {/* Brand, Model, Thickness & Finish */}
+        <div className="grid grid-cols-1 sm:grid-cols-4 gap-4 pt-2 border-t border-gray-100">
+          <div>
+            <label className="text-xs font-bold text-[#052a51] uppercase tracking-wider block mb-1.5">
+              Brand / Manufacturer
+            </label>
+            <input
+              type="text"
+              value={brand}
+              onChange={(e) => setBrand(e.target.value)}
+              placeholder="e.g. Kajaria, Somany, Astral"
+              className="w-full px-3.5 py-2.5 bg-gray-50 border border-gray-200 rounded-xl text-xs font-semibold text-[#052a51] focus:outline-none focus:border-[#F26522]"
+            />
+          </div>
+
+          <div>
+            <label className="text-xs font-bold text-[#052a51] uppercase tracking-wider block mb-1.5">
+              Model Number / Code
+            </label>
+            <input
+              type="text"
+              value={modelNumber}
+              onChange={(e) => setModelNumber(e.target.value)}
+              placeholder="e.g. MOD-8821, SER-09"
+              className="w-full px-3.5 py-2.5 bg-gray-50 border border-gray-200 rounded-xl text-xs font-semibold text-[#052a51] focus:outline-none focus:border-[#F26522]"
+            />
+          </div>
+
+          <div>
+            <label className="text-xs font-bold text-[#052a51] uppercase tracking-wider block mb-1.5">
+              Thickness (e.g. 9mm, 12mm)
+            </label>
+            <input
+              type="text"
+              value={thickness}
+              onChange={(e) => setThickness(e.target.value)}
+              placeholder="e.g. 9 mm, 12 mm"
+              className="w-full px-3.5 py-2.5 bg-gray-50 border border-gray-200 rounded-xl text-xs font-semibold text-[#052a51] focus:outline-none focus:border-[#F26522]"
+            />
+          </div>
+
+          <div>
+            <label className="text-xs font-bold text-[#052a51] uppercase tracking-wider block mb-1.5">
+              Surface Finish
+            </label>
+            <input
+              type="text"
+              value={finish}
+              onChange={(e) => setFinish(e.target.value)}
+              placeholder="e.g. Glossy, Matte, Carving"
+              className="w-full px-3.5 py-2.5 bg-gray-50 border border-gray-200 rounded-xl text-xs font-semibold text-[#052a51] focus:outline-none focus:border-[#F26522]"
+            />
           </div>
         </div>
 
@@ -584,6 +677,111 @@ export default function EditProductPage({
             onChange={(e) => setTagsInput(e.target.value)}
             className="w-full px-3.5 py-2.5 bg-gray-50 border border-gray-200 rounded-xl text-xs font-semibold text-[#052a51] focus:outline-none focus:border-[#F26522]"
           />
+        </div>
+      </div>
+
+      {/* ── Section 6: Tax, Compliance & Warranty ── */}
+      <div className="bg-white p-6 rounded-2xl border border-gray-200/80 shadow-2xs space-y-4">
+        <h3 className="text-base font-black text-[#052a51]">6. Tax, Compliance &amp; Warranty</h3>
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+          <div>
+            <label className="text-xs font-bold text-[#052a51] uppercase tracking-wider block mb-1.5">
+              HSN Code
+            </label>
+            <input
+              type="text"
+              value={hsnCode}
+              onChange={(e) => setHsnCode(e.target.value)}
+              placeholder="e.g. 6907, 8481"
+              className="w-full px-3.5 py-2.5 bg-gray-50 border border-gray-200 rounded-xl text-xs font-semibold text-[#052a51] focus:outline-none focus:border-[#F26522]"
+            />
+          </div>
+
+          <div>
+            <label className="text-xs font-bold text-[#052a51] uppercase tracking-wider block mb-1.5">
+              GST Rate (%)
+            </label>
+            <select
+              value={gstPercent}
+              onChange={(e) => setGstPercent(e.target.value)}
+              className="w-full px-3.5 py-2.5 bg-gray-50 border border-gray-200 rounded-xl text-xs font-semibold text-[#052a51] focus:outline-none focus:border-[#F26522]"
+            >
+              <option value="0">0% (Nil)</option>
+              <option value="5">5% (Essential)</option>
+              <option value="12">12% (Standard)</option>
+              <option value="18">18% (Standard / Ceramic &amp; Construction)</option>
+              <option value="28">28% (Luxury)</option>
+            </select>
+          </div>
+
+          <div>
+            <label className="text-xs font-bold text-[#052a51] uppercase tracking-wider block mb-1.5">
+              Warranty Details
+            </label>
+            <input
+              type="text"
+              value={warranty}
+              onChange={(e) => setWarranty(e.target.value)}
+              placeholder="e.g. 10 Years Manufacturer Warranty"
+              className="w-full px-3.5 py-2.5 bg-gray-50 border border-gray-200 rounded-xl text-xs font-semibold text-[#052a51] focus:outline-none focus:border-[#F26522]"
+            />
+          </div>
+        </div>
+      </div>
+
+      {/* ── Section 7: SEO & Google Discovery ── */}
+      <div className="bg-white p-6 rounded-2xl border border-gray-200/80 shadow-2xs space-y-4">
+        <div className="flex items-center justify-between">
+          <h3 className="text-base font-black text-[#052a51]">7. Search Engine Optimization (SEO)</h3>
+          <span className="text-[10px] font-bold text-gray-400 bg-gray-100 px-2.5 py-1 rounded-full">
+            AI &amp; Google Discovery
+          </span>
+        </div>
+
+        <div className="space-y-4">
+          <div>
+            <label className="text-xs font-bold text-[#052a51] uppercase tracking-wider block mb-1.5 flex justify-between">
+              <span>Meta Title Tag</span>
+              <span className="text-[10px] text-gray-400 font-normal">{metaTitle.length}/60 characters</span>
+            </label>
+            <input
+              type="text"
+              value={metaTitle}
+              onChange={(e) => setMetaTitle(e.target.value)}
+              placeholder={name ? `Buy ${name} Online | IntriHub` : "Enter SEO title"}
+              maxLength={70}
+              className="w-full px-3.5 py-2.5 bg-gray-50 border border-gray-200 rounded-xl text-xs font-semibold text-[#052a51] focus:outline-none focus:border-[#F26522]"
+            />
+          </div>
+
+          <div>
+            <label className="text-xs font-bold text-[#052a51] uppercase tracking-wider block mb-1.5 flex justify-between">
+              <span>Meta Description</span>
+              <span className="text-[10px] text-gray-400 font-normal">{metaDescription.length}/160 characters</span>
+            </label>
+            <textarea
+              rows={2}
+              value={metaDescription}
+              onChange={(e) => setMetaDescription(e.target.value)}
+              placeholder="Summary of product shown on search engine results..."
+              maxLength={200}
+              className="w-full px-3.5 py-2.5 bg-gray-50 border border-gray-200 rounded-xl text-xs font-medium text-gray-700 focus:outline-none focus:border-[#F26522]"
+            />
+          </div>
+
+          {/* Live SERP Preview */}
+          <div className="bg-gray-50 p-4 rounded-xl border border-gray-200/70 space-y-1">
+            <span className="text-[10px] font-bold uppercase tracking-wider text-gray-400">Search Snippet Preview</span>
+            <p className="text-sm font-semibold text-blue-700 truncate hover:underline cursor-pointer">
+              {metaTitle || (name ? `${name} | IntriHub Direct` : "Product Name | IntriHub")}
+            </p>
+            <p className="text-[11px] text-emerald-800 font-mono truncate">
+              https://intrihub.com/product/{slug || "item-slug"}
+            </p>
+            <p className="text-xs text-gray-600 line-clamp-2">
+              {metaDescription || description?.slice(0, 150) || "Explore high quality construction materials and premium products on IntriHub."}
+            </p>
+          </div>
         </div>
       </div>
 

@@ -25,9 +25,9 @@ export default function CartPage() {
     standardDeliveryFee: number;
     deliveryFeeEnabled: boolean;
   }>({
-    freeDeliveryThreshold: 15000,
-    standardDeliveryFee: 999,
-    deliveryFeeEnabled: true,
+    freeDeliveryThreshold: 0,
+    standardDeliveryFee: 0,
+    deliveryFeeEnabled: false,
   });
 
   const { isAuthenticated, openLoginModal } = useAuthStore();
@@ -35,20 +35,21 @@ export default function CartPage() {
   const subtotal = useCartStore((s) => s.getSubtotal());
   const totalSqft = useCartStore((s) => s.getTotalSqft());
 
-  const isDeliveryFeeEnabled = settings.deliveryFeeEnabled !== false;
-  const freeThreshold = settings.freeDeliveryThreshold ?? 15000;
-  const standardFee = settings.standardDeliveryFee ?? 999;
-  const deliveryFee = !isDeliveryFeeEnabled ? 0 : (subtotal >= freeThreshold ? 0 : standardFee);
-  const total = subtotal + deliveryFee;
+  // Delivery charge turned OFF (Free delivery across all orders)
+  const isDeliveryFeeEnabled = false;
+  const freeThreshold = 0;
+  const standardFee = 0;
+  const deliveryFee = 0;
+  const total = subtotal;
 
   useEffect(() => {
     setMounted(true);
     getStoreSettings().then((res: any) => {
       if (res) {
         setSettings({
-          freeDeliveryThreshold: res.freeDeliveryThreshold ?? 15000,
-          standardDeliveryFee: res.standardDeliveryFee ?? 999,
-          deliveryFeeEnabled: res.deliveryFeeEnabled !== false,
+          freeDeliveryThreshold: 0,
+          standardDeliveryFee: 0,
+          deliveryFeeEnabled: false,
         });
       }
     });
@@ -226,11 +227,6 @@ export default function CartPage() {
                       {deliveryFee === 0 ? "FREE" : formatPrice(deliveryFee)}
                     </span>
                   </div>
-                  {deliveryFee > 0 && subtotal < freeThreshold && (
-                    <div className="text-[11px] text-gray-600 bg-amber-50 border border-amber-200/80 rounded-xl p-2.5 leading-snug">
-                      ✨ Add <span className="font-bold text-[#F26522]">{formatPrice(freeThreshold - subtotal)}</span> more for <strong>FREE Delivery</strong>
-                    </div>
-                  )}
                   <hr className="border-gray-100 my-2" />
                   <div className="flex justify-between text-base font-black text-[#052a51]">
                     <span>Total Amount</span>

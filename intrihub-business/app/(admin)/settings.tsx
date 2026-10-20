@@ -48,12 +48,12 @@ export default function AdminSettingsScreen() {
   const [email, setEmail] = useState("support@intrihub.com");
   const [address, setAddress] = useState("Intrihub Central Supply Hub, Begur, Bangalore, Karnataka - 560114");
 
-  // Shipping & Freight
-  const [deliveryFeeEnabled, setDeliveryFeeEnabled] = useState(true);
-  const [standardDeliveryFee, setStandardDeliveryFee] = useState("999");
-  const [freeDeliveryThreshold, setFreeDeliveryThreshold] = useState("15000");
-  const [bikeDeliveryRate, setBikeDeliveryRate] = useState("99");
-  const [fourWheelerDeliveryRate, setFourWheelerDeliveryRate] = useState("349");
+  // Shipping & Freight (Delivery Fee OFF)
+  const [deliveryFeeEnabled, setDeliveryFeeEnabled] = useState(false);
+  const [standardDeliveryFee, setStandardDeliveryFee] = useState("0");
+  const [freeDeliveryThreshold, setFreeDeliveryThreshold] = useState("0");
+  const [bikeDeliveryRate, setBikeDeliveryRate] = useState("0");
+  const [fourWheelerDeliveryRate, setFourWheelerDeliveryRate] = useState("0");
   const [weightThresholdKg, setWeightThresholdKg] = useState("20");
   const [lowStockThreshold, setLowStockThreshold] = useState("25");
   const [estimatedDelivery, setEstimatedDelivery] = useState("Within 60 Minutes");
@@ -76,11 +76,11 @@ export default function AdminSettingsScreen() {
         setEmail(s.email || "");
         setAddress(s.address || "");
 
-        setDeliveryFeeEnabled(s.deliveryFeeEnabled !== false);
-        setStandardDeliveryFee(String(s.standardDeliveryFee ?? 999));
-        setFreeDeliveryThreshold(String(s.freeDeliveryThreshold ?? 15000));
-        setBikeDeliveryRate(String(s.bikeDeliveryRate ?? 99));
-        setFourWheelerDeliveryRate(String(s.fourWheelerDeliveryRate ?? 349));
+        setDeliveryFeeEnabled(s.deliveryFeeEnabled !== false && Number(s.standardDeliveryFee || 0) > 0);
+        setStandardDeliveryFee(String(s.standardDeliveryFee ?? 0));
+        setFreeDeliveryThreshold(String(s.freeDeliveryThreshold ?? 0));
+        setBikeDeliveryRate(String(s.bikeDeliveryRate ?? 0));
+        setFourWheelerDeliveryRate(String(s.fourWheelerDeliveryRate ?? 0));
         setWeightThresholdKg(String(s.weightThresholdKg ?? 20));
         setLowStockThreshold(String(s.lowStockThreshold ?? 25));
         setEstimatedDelivery(s.estimatedDelivery || "Within 60 Minutes");

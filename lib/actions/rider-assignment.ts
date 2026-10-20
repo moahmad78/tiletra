@@ -250,13 +250,20 @@ export async function autoAssignNearestRider(
     try {
       const { emitSocketEvent } = await import("@/lib/socket-server-emit");
       await emitSocketEvent({
-        room: "admin-room",
+        rooms: [
+          "admin-room",
+          "admin",
+          `vendor:${vendorId}`,
+          `vendor_${vendorId}`,
+          vendorId,
+        ],
         event: "rider-assigned",
         data: {
           orderId,
           splitId,
           riderId: nearestRider.id,
           riderName: nearestRider.name,
+          riderPhone: nearestRider.phone,
           carrier: "in_house",
           vehicleType: "bike",
           distanceKm: distanceKm.toFixed(2),
@@ -264,11 +271,21 @@ export async function autoAssignNearestRider(
         },
       });
       await emitSocketEvent({
-        room: `order_${orderId}`,
+        rooms: [
+          `order_${orderId}`,
+          `order:${orderId}`,
+          `vendor:${vendorId}`,
+          `vendor_${vendorId}`,
+          vendorId,
+          "admin-room",
+          "admin",
+        ],
         event: "order-status-updated",
         data: {
           orderId,
+          splitId,
           orderStatus: "Dispatched",
+          fulfillmentStatus: "dispatched",
           riderAssigned: true,
           carrier: "in_house",
           riderName: nearestRider.name,

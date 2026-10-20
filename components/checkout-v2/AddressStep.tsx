@@ -4,10 +4,12 @@ import React, { useState, useRef, useEffect } from "react";
 import {
   MapPin,
   Plus,
+  PlusCircle,
   CheckCircle2,
   Home,
   Briefcase,
   Building,
+  Building2,
   HardHat,
   Trash2,
   ArrowRight,
@@ -26,6 +28,7 @@ import {
 import { type CustomerAddress, useAuthStore } from "@/lib/auth-store";
 import { toast } from "sonner";
 import WebMapPickerModal, { WebPickedLocation } from "@/components/maps/WebMapPickerModal";
+import { GoogleMapsPinSvg } from "@/components/shared/SelectDeliveryAddressModal";
 import { getAvailableDeliverySchedule, type DeliveryDayOption } from "@/lib/delivery-slots";
 
 interface AddressStepProps {
@@ -375,143 +378,158 @@ export default function AddressStep({
       {/* Saved Addresses Section */}
       {!isAddingNew && userAddresses.length > 0 && (
         <div className="space-y-4">
-          <div className="flex items-center justify-between">
-            <h3 className="text-base font-black text-[#052a51] flex items-center gap-2">
-              <MapPin size={18} className="text-[#F26522]" />
-              Select Delivery Address
-            </h3>
+          <div className="flex items-center justify-between pb-3 border-b border-gray-100">
+            <div>
+              <h3 className="text-base sm:text-lg font-bold text-slate-900 tracking-tight">
+                Select Delivery Address
+              </h3>
+              <p className="text-xs text-slate-500 mt-0.5 font-medium">
+                Choose where you want us to deliver your order
+              </p>
+            </div>
             <button
               type="button"
               onClick={() => {
                 setDetectedNotice(null);
                 setIsAddingNew(true);
               }}
-              className="text-xs font-bold text-[#F26522] hover:text-[#d95a1e] flex items-center gap-1 cursor-pointer"
+              className="text-xs sm:text-sm font-bold text-[#0066FF] hover:text-blue-700 flex items-center gap-1.5 cursor-pointer"
             >
-              <Plus size={14} />
-              Add New Address
+              <PlusCircle size={16} className="text-[#0066FF]" />
+              <span>Add New</span>
             </button>
           </div>
 
-          {/* Location Actions: 1-Click GPS or Interactive Draggable Map */}
+          {/* Quick Actions: Side-by-Side Use Current Location & Choose on Google Maps */}
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+            {/* Use Current Location */}
             <button
               type="button"
               onClick={handleDetectLocation}
               disabled={isDetectingLocation}
-              className="p-3.5 sm:p-4 rounded-2xl bg-[#052a51] hover:bg-[#041f3d] text-white flex items-center justify-between shadow-xs transition-all cursor-pointer group active:scale-[0.99] border border-[#052a51]"
+              className="flex items-center justify-between p-3.5 rounded-2xl bg-[#F0F7FF] hover:bg-blue-100/60 border border-[#BFDBFE] transition-all text-left group active:scale-[0.99] cursor-pointer"
             >
-              <div className="flex items-center gap-3">
-                <div className="w-10 h-10 rounded-xl bg-white/10 flex items-center justify-center text-white shrink-0">
-                  <MapPin size={18} className="text-[#F26522]" />
+              <div className="flex items-center gap-2.5 min-w-0">
+                <div className="w-10 h-10 rounded-full bg-[#DBEAFE] flex items-center justify-center text-[#0066FF] shrink-0">
+                  <Navigation size={18} className={isDetectingLocation ? "animate-spin" : ""} />
                 </div>
-                <div className="text-left">
-                  <div className="flex items-center gap-1.5">
-                    <span className="text-xs sm:text-sm font-black">Use Current Location</span>
-                    <span className="text-[9px] font-black uppercase bg-[#F26522] text-white px-1.5 py-0.5 rounded-full">
-                      1-Click
-                    </span>
-                  </div>
-                  <p className="text-[11px] text-white/75 mt-0.5">
-                    {isDetectingLocation ? "Detecting GPS..." : "Auto-detect via device GPS"}
+                <div className="min-w-0">
+                  <p className="text-xs sm:text-[13px] font-bold text-slate-900 leading-tight truncate">
+                    Use Current Location
+                  </p>
+                  <p className="text-[11px] text-slate-500 mt-0.5 truncate">
+                    {isDetectingLocation ? "Detecting GPS..." : "Auto-detect your address"}
                   </p>
                 </div>
               </div>
-              <ArrowRight size={16} className="text-white/60 group-hover:text-white group-hover:translate-x-1 transition-all shrink-0" />
+              <ArrowRight size={15} className="text-slate-400 group-hover:text-[#0066FF] group-hover:translate-x-0.5 transition-all shrink-0 ml-1" />
             </button>
 
+            {/* Choose on Google Maps */}
             <button
               type="button"
               onClick={() => setShowWebMapModal(true)}
-              className="p-3.5 sm:p-4 rounded-2xl bg-white hover:bg-gray-50 text-[#052a51] flex items-center justify-between shadow-xs transition-all cursor-pointer group active:scale-[0.99] border-2 border-gray-200 hover:border-[#052a51]/30"
+              className="flex items-center justify-between p-3.5 rounded-2xl bg-white hover:bg-slate-50 border border-slate-200 transition-all text-left group active:scale-[0.99] cursor-pointer"
             >
-              <div className="flex items-center gap-3">
-                <div className="w-10 h-10 rounded-xl bg-[#052a51]/5 flex items-center justify-center text-[#052a51] shrink-0">
-                  <Sparkles size={18} className="text-[#052a51]" />
+              <div className="flex items-center gap-2.5 min-w-0">
+                <div className="w-10 h-10 rounded-full bg-slate-50 border border-slate-100 flex items-center justify-center shrink-0">
+                  <GoogleMapsPinSvg size={22} />
                 </div>
-                <div className="text-left">
-                  <div className="flex items-center gap-1.5">
-                    <span className="text-xs sm:text-sm font-black text-[#052a51]">Choose on Map</span>
-                    <span className="text-[9px] font-black uppercase bg-blue-100 text-[#052a51] px-1.5 py-0.5 rounded-full border border-blue-200 font-bold">
-                      Drag Pin
-                    </span>
-                  </div>
-                  <p className="text-[11px] text-gray-500 mt-0.5">
-                    Pin exact gate / delivery site
+                <div className="min-w-0">
+                  <p className="text-xs sm:text-[13px] font-bold text-slate-900 leading-tight truncate">
+                    Choose on Google Maps
+                  </p>
+                  <p className="text-[11px] text-slate-500 mt-0.5 truncate">
+                    Pick exact location on map
                   </p>
                 </div>
               </div>
-              <ArrowRight size={16} className="text-gray-400 group-hover:text-[#052a51] group-hover:translate-x-1 transition-all shrink-0" />
+              <ArrowRight size={15} className="text-slate-400 group-hover:text-slate-700 group-hover:translate-x-0.5 transition-all shrink-0 ml-1" />
             </button>
           </div>
 
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5">
-            {userAddresses.map((addr: CustomerAddress) => {
-              const isSelected = selectedAddress?.id === addr.id;
-              return (
-                <div
-                  key={addr.id}
-                  onClick={() => onSelectAddress(addr)}
-                  className={`relative p-4 rounded-2xl border-2 transition-all cursor-pointer flex flex-col justify-between ${
-                    isSelected
-                      ? "border-[#052a51] bg-[#052a51]/5 shadow-xs"
-                      : "border-gray-200 bg-white hover:border-gray-300"
-                  }`}
-                >
-                  <div className="space-y-2">
-                    <div className="flex items-center justify-between">
-                      <div className="flex items-center gap-1.5">
-                        <span className="p-1 rounded-md bg-gray-100">{getLabelIcon(addr.label)}</span>
-                        <span className="text-xs font-bold uppercase text-gray-700">{addr.label}</span>
-                        {addr.isDefault && (
-                          <span className="text-[10px] font-black uppercase text-[#2F7A4F] bg-green-50 px-1.5 py-0.5 rounded border border-green-200">
-                            Default
-                          </span>
-                        )}
-                      </div>
-                      {isSelected && (
-                        <CheckCircle2 size={18} className="text-[#052a51]" fill="#052a51" color="#fff" />
-                      )}
-                    </div>
+          {/* Section Header: Saved Addresses */}
+          <div className="pt-1">
+            <h4 className="text-xs font-bold text-slate-500 uppercase tracking-wider mb-2.5">
+              Saved Addresses
+            </h4>
 
-                    <div>
-                      <p className="text-sm font-bold text-[#052a51]">{addr.name}</p>
-                      <p className="text-xs text-gray-600 font-medium mt-0.5">
-                        {addr.line1}
-                        {addr.line2 ? `, ${addr.line2}` : ""}
-                        {addr.landmark ? `, Near ${addr.landmark}` : ""}
-                      </p>
-                      <p className="text-xs font-bold text-gray-700 mt-0.5">
-                        {addr.city}, {addr.state} - {addr.pincode}
-                      </p>
-                      <p className="text-xs font-semibold text-gray-500 mt-1">Phone: +91 {addr.phone}</p>
-                    </div>
-                  </div>
-
-                  <div className="flex items-center justify-between pt-3 mt-3 border-t border-gray-100">
-                    {!addr.isDefault && (
-                      <button
-                        type="button"
-                        onClick={(e) => handleSetDefault(e, addr.id)}
-                        className="text-[11px] font-bold text-gray-500 hover:text-gray-800"
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+              {userAddresses.map((addr: CustomerAddress) => {
+                const isSelected = selectedAddress?.id === addr.id;
+                return (
+                  <div
+                    key={addr.id}
+                    onClick={() => onSelectAddress(addr)}
+                    className={`relative p-3.5 sm:p-4 rounded-2xl border transition-all cursor-pointer flex items-start justify-between ${
+                      isSelected
+                        ? "border-2 border-[#0066FF] bg-[#F0F7FF]/50 shadow-2xs"
+                        : "border-slate-200 bg-white hover:border-slate-300"
+                    }`}
+                  >
+                    <div className="flex items-start gap-3 min-w-0 flex-1">
+                      {/* Left Circular Icon Badge */}
+                      <div
+                        className={`w-11 h-11 rounded-full flex items-center justify-center shrink-0 mt-0.5 ${
+                          isSelected
+                            ? "bg-[#EFF6FF] border border-[#DBEAFE] text-[#0066FF]"
+                            : "bg-slate-100 text-slate-600"
+                        }`}
                       >
-                        Set as Default
-                      </button>
-                    )}
-                    <div className="flex items-center gap-2 ml-auto">
+                        {getLabelIcon(addr.label)}
+                      </div>
+
+                      {/* Middle Details */}
+                      <div className="min-w-0 flex-1">
+                        <div className="flex items-center gap-2">
+                          <span className="text-sm font-bold text-slate-900">
+                            {addr.label || "Home"}
+                          </span>
+                          {isSelected && (
+                            <span className="px-2 py-0.5 rounded-full bg-[#DBEAFE] text-[#0066FF] text-[10px] font-bold tracking-wide">
+                              Delivering Here
+                            </span>
+                          )}
+                        </div>
+
+                        {addr.name && (
+                          <p className="text-xs text-slate-600 font-medium mt-1 truncate">
+                            {addr.name}
+                            {addr.phone ? ` • +91 ${addr.phone.replace(/\D/g, "").slice(-10)}` : ""}
+                          </p>
+                        )}
+
+                        <p className="text-xs text-slate-500 mt-0.5 leading-relaxed line-clamp-2">
+                          {[addr.houseNumber, addr.line1, addr.line2, addr.city, addr.state, addr.pincode]
+                            .filter(Boolean)
+                            .join(", ")}
+                        </p>
+                      </div>
+                    </div>
+
+                    {/* Right Radio Circle & Trash */}
+                    <div className="flex items-center gap-2 shrink-0 ml-2.5 self-center">
+                      <div
+                        className={`w-5 h-5 rounded-full flex items-center justify-center border-2 transition-all ${
+                          isSelected ? "border-[#0066FF]" : "border-slate-300"
+                        }`}
+                      >
+                        {isSelected && <div className="w-2.5 h-2.5 rounded-full bg-[#0066FF]" />}
+                      </div>
+
                       <button
                         type="button"
                         onClick={(e) => handleDelete(e, addr.id)}
-                        className="p-1 text-gray-400 hover:text-rose-600 transition-colors"
+                        className="p-1 text-slate-400 hover:text-rose-600 transition-colors rounded-md"
                         title="Delete Address"
                       >
-                        <Trash2 size={13} />
+                        <Trash2 size={14} />
                       </button>
                     </div>
                   </div>
-                </div>
-              );
-            })}
+                );
+              })}
+            </div>
           </div>
 
           {/* ── Optional Delivery Time Section Directly Below Location Selector ── */}
@@ -727,10 +745,10 @@ export default function AddressStep({
                   }
                   onProceedToDelivery();
                 }}
-                className="w-full sm:w-auto px-7 py-3 bg-[#052a51] hover:bg-[#041f3d] text-white font-black text-xs sm:text-sm rounded-2xl shadow-md transition-all flex items-center justify-center gap-2 cursor-pointer active:scale-95"
+                className="w-full sm:w-auto px-8 py-3.5 bg-[#0066FF] hover:bg-[#0052CC] text-white font-bold text-sm sm:text-base rounded-2xl shadow-lg shadow-blue-500/25 transition-all flex items-center justify-center gap-2 cursor-pointer active:scale-95"
               >
-                <span>Deliver to this Address</span>
-                <ArrowRight size={16} />
+                <span>Continue to Delivery</span>
+                <ArrowRight size={18} />
               </button>
             </div>
           )}

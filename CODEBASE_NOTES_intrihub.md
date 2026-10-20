@@ -24,9 +24,9 @@
 
 | Component | Framework / Runtime | Core Libraries & Versions |
 |---|---|---|
-| **Root Web & API** | Next.js `16.2.10` (App Router), React `19.2.4`, Node.js | `@prisma/client: ^6.19.3`, `tailwindcss: ^4`, `razorpay: ^2.9.8`, `resend: ^6.20.0`, `socket.io: ^4.8.3`, `socket.io-client: ^4.8.3`, `zustand: ^5.0.15`, `zod: ^4.4.3`, `@sentry/nextjs: ^10.74.0` |
+| **Root Web & API** | Next.js `16.2.10` (App Router), React `19.2.4`, Node.js | `@prisma/client: ^6.19.3`, `tailwindcss: ^4`, `razorpay: ^2.9.8`, `resend: ^6.20.0`, `socket.io: ^4.8.3`, `socket.io-client: ^4.8.3`, `zustand: ^5.0.15`, `zod: ^4.4.3` |
 | **Customer Mobile (`intrihub-mobile`)** | React Native `0.86.3`, Expo SDK `~57.0.0`, Expo Router `~57.0.23` | `expo-location: ~57.0.20`, `expo-notifications: ~57.0.21`, `react-native-razorpay: ^3.0.0`, `@tanstack/react-query: ^5.66.0`, `zustand: ^5.0.3`, `socket.io-client: ^4.8.1` |
-| **Business Mobile (`intrihub-business`)** | React Native `0.86.3`, Expo SDK `^57.0.0`, Expo Router `~57.0.22` | `expo-location: ~57.0.19`, `expo-notifications: ~57.0.20`, `@tanstack/react-query: ^5.66.0`, `zustand: ^5.0.3`, `@sentry/react-native: ^8.27.0`, `socket.io-client: ^4.8.1` |
+| **Business Mobile (`intrihub-business`)** | React Native `0.86.3`, Expo SDK `^57.0.0`, Expo Router `~57.0.22` | `expo-location: ~57.0.19`, `expo-notifications: ~57.0.20`, `@tanstack/react-query: ^5.66.0`, `zustand: ^5.0.3`, `socket.io-client: ^4.8.1` |
 | **Real-Time Relay (`socket-server`)** | Node.js, Express `^4.21.2` | `socket.io: ^4.8.1`, `cors: ^2.8.5`, `dotenv: ^16.4.7` |
 | **Database** | PostgreSQL | Queried through Prisma ORM `6.19.3` (`DATABASE_URL` pooler + `DIRECT_URL`) |
 
@@ -586,9 +586,7 @@ Defined in [push-notifications.ts](file:///d:/Intrihub/lib/push-notifications.ts
 
 ### 3. Logging, Error Handling & Background Jobs
 
-- **Error Monitoring**: **Sentry** configured across all environments:
-  - Root Web: `@sentry/nextjs: ^10.74.0` in `sentry.server.config.ts`, `sentry.client.config.ts`, `sentry.edge.config.ts`.
-  - Business Mobile: `@sentry/react-native: ^8.27.0` in `intrihub-business/app.json`.
+- **Error Monitoring**: Sentry is **permanently removed** across all environments (Web, Business App, Mobile App). Error handling relies on standard React ErrorBoundaries, `ErrorUtils` global JS handlers, and structured server logs.
 - **Application Logging**: Prefixed console logs (`[GeoVendor]`, `[SLA Cron]`, `[Expo Push Notification Error]`, `[SEC-ALERT]`) and structured audit logs in `lib/security-logger.ts`.
 - **Background Jobs / Workers**:
   - **No message queue worker exists** (no Redis, BullMQ, Celery, or RabbitMQ).

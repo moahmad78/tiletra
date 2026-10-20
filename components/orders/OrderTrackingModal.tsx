@@ -1,6 +1,8 @@
 "use client";
 
+import { useState, useEffect } from "react";
 import { X, Truck, Package, CheckCircle2, Clock, MapPin, Phone, ShieldCheck } from "lucide-react";
+import { useSocket } from "@/lib/socket";
 
 interface OrderTrackingModalProps {
   order: any;
@@ -21,9 +23,27 @@ export default function OrderTrackingModal({
   isOpen,
   onClose,
 }: OrderTrackingModalProps) {
+  const [liveStatus, setLiveStatus] = useState<string>(order?.orderStatus || "Processing");
+
+  useEffect(() => {
+    if (order?.orderStatus) {
+      setLiveStatus(order.orderStatus);
+    }
+  }, [order?.orderStatus]);
+
+  // Real-time socket updates for this specific order room
+  useSocket(isOpen && order?.id ? `order:${order.id}` : null, {
+    "order-status-updated": (data: any) => {
+      console.log("⚡ [LIVE TRACKER] Order status updated:", data);
+      if (data?.orderStatus) {
+        setLiveStatus(data.orderStatus);
+      }
+    },
+  });
+
   if (!isOpen || !order) return null;
 
-  const currentStatus = order.orderStatus || "Processing";
+  const currentStatus = liveStatus;
   const currentIndex = ORDER_STEPS.findIndex((s) => s.key.toLowerCase() === currentStatus.toLowerCase());
   const activeStepIdx = currentIndex !== -1 ? currentIndex : 0;
 

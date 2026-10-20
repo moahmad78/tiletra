@@ -248,7 +248,11 @@ export default function SharedProductUploadWizard({
   const [customSubcategoryDimensionUnit, setCustomSubcategoryDimensionUnit] = useState<"mm" | "cm" | "inch" | "feet">("cm");
   const [isSavingSubcategory, setIsSavingSubcategory] = useState<boolean>(false);
   const [colorImages, setColorImages] = useState<Record<string, string>>({});
+  const [colorRates, setColorRates] = useState<Record<string, string>>({});
+  const [colorDescriptions, setColorDescriptions] = useState<Record<string, string>>({});
   const [customSubcategoryColorImages, setCustomSubcategoryColorImages] = useState<Record<string, string>>({});
+  const [customSubcategoryColorRates, setCustomSubcategoryColorRates] = useState<Record<string, string>>({});
+  const [customSubcategoryColorDescriptions, setCustomSubcategoryColorDescriptions] = useState<Record<string, string>>({});
   const [dynamicAttributes, setDynamicAttributes] = useState<Record<string, string>>({});
   const [customSpecs, setCustomSpecs] = useState<Array<{ key: string; value: string }>>([]);
   const [newSpecKey, setNewSpecKey] = useState<string>("");
@@ -549,6 +553,20 @@ export default function SharedProductUploadWizard({
       } else if (d.dynamicAttributes?.colorImages) {
         try {
           setColorImages(JSON.parse(d.dynamicAttributes.colorImages));
+        } catch {}
+      }
+      if (d.colorRates) {
+        setColorRates(d.colorRates);
+      } else if (d.dynamicAttributes?.colorRates) {
+        try {
+          setColorRates(JSON.parse(d.dynamicAttributes.colorRates));
+        } catch {}
+      }
+      if (d.colorDescriptions) {
+        setColorDescriptions(d.colorDescriptions);
+      } else if (d.dynamicAttributes?.colorDescriptions) {
+        try {
+          setColorDescriptions(JSON.parse(d.dynamicAttributes.colorDescriptions));
         } catch {}
       }
       if (d.customSpecs) setCustomSpecs(d.customSpecs);
@@ -1525,77 +1543,152 @@ export default function SharedProductUploadWizard({
     }
 
     const formattedVariants = isMultiVariety
-      ? variants.map((v) => ({
-          sku: v.sku || null,
-          variantName: v.variantName || v.attributeValue || v.size || "Standard",
-          size: v.size || "Standard",
-          finish: v.finish || "Standard",
-          color: v.color || "Standard",
-          colorHex: v.colorHex || null,
-          image: v.image || (v.color && colorImages[v.color]) || images[0] || null,
-          images: Array.isArray(v.images) && v.images.length > 0
-            ? v.images
-            : (v.image
-                ? [v.image]
-                : (v.color && colorImages[v.color]
-                    ? [colorImages[v.color]]
-                    : (images.length > 0 ? [images[0]] : []))),
-          unit: v.unit || unitOfSale,
-          attributeLabel: v.attributeLabel || "Option",
-          attributeValue: v.attributeValue || v.size || "Standard",
-          mrp: v.mrp !== undefined && v.mrp !== null ? Number(v.mrp) : mrpNum || null,
-          costPrice: v.costPrice !== undefined && v.costPrice !== null ? Number(v.costPrice) : costNum > 0 ? costNum : null,
-          price: Number(v.price || v.pricePerBox || sellingNum),
-          pricePerBox: Number(v.pricePerBox || v.price || sellingNum),
-          pricePerSqft: Number(v.pricePerSqft || v.price || sellingNum),
-          sqftPerBox: Number(v.sqftPerBox || 1),
-          stockBoxes: Number(v.stockBoxes || 50),
-          active: v.active !== undefined ? Boolean(v.active) : true,
-          lowStockAlert: v.lowStockAlert !== undefined && v.lowStockAlert !== null ? Number(v.lowStockAlert) : 10,
-          minOrderQuantity: v.minOrderQuantity ? Number(v.minOrderQuantity) : 1,
-          maxOrderQuantity: v.maxOrderQuantity ? Number(v.maxOrderQuantity) : null,
-          isDefault: Boolean(v.isDefault),
-          barcode: v.barcode || null,
-          allowBackorders,
-          tags: v.tags || selectedTags,
-          customBadgeText: v.customBadgeText || (customBadgeText.trim() || null),
-          badgeColor: v.badgeColor || badgeColor,
-          showAutoDiscount: v.showAutoDiscount !== undefined ? v.showAutoDiscount : showAutoDiscount,
-        }))
-      : [
-          {
-            variantName: "Standard",
-            size: "Standard",
-            finish: dynamicAttributes["Surface Finish"] || dynamicAttributes["Finish"] || "Standard",
-            color: dynamicAttributes["Colour"] || dynamicAttributes["Color"] || "Standard",
-            colorHex: resolveColorHex(dynamicAttributes["Colour"] || dynamicAttributes["Color"] || "Standard"),
-            image: (dynamicAttributes["Colour"] && colorImages[dynamicAttributes["Colour"]]) || images[0] || null,
-            images: (dynamicAttributes["Colour"] && colorImages[dynamicAttributes["Colour"]])
-              ? [colorImages[dynamicAttributes["Colour"]], ...images.filter((i) => i !== colorImages[dynamicAttributes["Colour"]])]
-              : (images.length > 0 ? [images[0]] : []),
-            unit: unitOfSale,
-            attributeLabel: "Option",
-            attributeValue: "Standard",
-            mrp: mrpNum > 0 ? mrpNum : null,
-            costPrice: costNum > 0 ? costNum : null,
-            price: sellingNum,
-            pricePerBox: sellingNum,
-            pricePerSqft: sellingNum,
-            sqftPerBox: 1,
-            stockBoxes: parseInt(stockQuantity, 10) || 100,
-            active: true,
-            isDefault: true,
-            barcode: barcode || null,
-            lowStockAlert: parseInt(lowStockAlert, 10) || 10,
-            minOrderQuantity: parseInt(minOrderQuantity, 10) || 1,
-            maxOrderQuantity: maxOrderQuantity ? parseInt(maxOrderQuantity, 10) : null,
+      ? variants.map((v) => {
+          const vColor = v.color || "Standard";
+          const customColorRate = colorRates[vColor] && !isNaN(Number(colorRates[vColor]))
+            ? Number(colorRates[vColor])
+            : undefined;
+          const customColorDesc = colorDescriptions[vColor] || undefined;
+          const customColorImg = (vColor && colorImages[vColor]) || null;
+          const finalPrice = Number(v.price || customColorRate || v.pricePerBox || sellingNum);
+
+          return {
+            sku: v.sku || null,
+            variantName: v.variantName || v.attributeValue || v.size || "Standard",
+            size: v.size || "Standard",
+            finish: v.finish || "Standard",
+            color: vColor,
+            colorHex: v.colorHex || null,
+            image: v.image || customColorImg || images[0] || null,
+            images: Array.isArray(v.images) && v.images.length > 0
+              ? v.images
+              : (v.image
+                  ? [v.image]
+                  : (customColorImg
+                      ? [customColorImg]
+                      : (images.length > 0 ? [images[0]] : []))),
+            unit: v.unit || unitOfSale,
+            attributeLabel: v.attributeLabel || "Option",
+            attributeValue: v.attributeValue || v.size || "Standard",
+            variantSpecs: {
+              ...(v.variantSpecs || {}),
+              ...(customColorDesc ? { colorDescription: customColorDesc } : {}),
+            },
+            mrp: v.mrp !== undefined && v.mrp !== null ? Number(v.mrp) : mrpNum || null,
+            costPrice: v.costPrice !== undefined && v.costPrice !== null ? Number(v.costPrice) : costNum > 0 ? costNum : null,
+            price: finalPrice,
+            pricePerBox: finalPrice,
+            pricePerSqft: finalPrice,
+            sqftPerBox: Number(v.sqftPerBox || 1),
+            stockBoxes: Number(v.stockBoxes || 50),
+            active: v.active !== undefined ? Boolean(v.active) : true,
+            lowStockAlert: v.lowStockAlert !== undefined && v.lowStockAlert !== null ? Number(v.lowStockAlert) : 10,
+            minOrderQuantity: v.minOrderQuantity ? Number(v.minOrderQuantity) : 1,
+            maxOrderQuantity: v.maxOrderQuantity ? Number(v.maxOrderQuantity) : null,
+            isDefault: Boolean(v.isDefault),
+            barcode: v.barcode || null,
             allowBackorders,
-            tags: selectedTags,
-            customBadgeText: customBadgeText.trim() || null,
-            badgeColor,
-            showAutoDiscount,
-          },
-        ];
+            tags: v.tags || selectedTags,
+            customBadgeText: v.customBadgeText || (customBadgeText.trim() || null),
+            badgeColor: v.badgeColor || badgeColor,
+            showAutoDiscount: v.showAutoDiscount !== undefined ? v.showAutoDiscount : showAutoDiscount,
+          };
+        })
+      : (() => {
+          const selectedColoursList = (dynamicAttributes["SelectedColours"] || dynamicAttributes["Colour"] || dynamicAttributes["Color"] || "")
+            .split(",")
+            .map((s) => s.trim())
+            .filter(Boolean);
+
+          if (selectedColoursList.length > 1) {
+            return selectedColoursList.map((colName, idx) => {
+              const colRate = colorRates[colName] && !isNaN(Number(colorRates[colName]))
+                ? Number(colorRates[colName])
+                : sellingNum;
+              const colImg = colorImages[colName] || images[0] || null;
+              const colDesc = colorDescriptions[colName] || null;
+
+              return {
+                variantName: colName,
+                size: "Standard",
+                finish: dynamicAttributes["Surface Finish"] || dynamicAttributes["Finish"] || "Standard",
+                color: colName,
+                colorHex: resolveColorHex(colName),
+                image: colImg,
+                images: colImg
+                  ? [colImg, ...images.filter((i) => i !== colImg)]
+                  : (images.length > 0 ? [images[0]] : []),
+                unit: unitOfSale,
+                attributeLabel: "Colour",
+                attributeValue: colName,
+                attributes: { Colour: colName },
+                variantSpecs: colDesc ? { colorDescription: colDesc } : undefined,
+                mrp: mrpNum > 0 ? mrpNum : null,
+                costPrice: costNum > 0 ? costNum : null,
+                price: colRate,
+                pricePerBox: colRate,
+                pricePerSqft: colRate,
+                sqftPerBox: 1,
+                stockBoxes: parseInt(stockQuantity, 10) || 100,
+                active: true,
+                isDefault: idx === 0,
+                barcode: barcode || null,
+                lowStockAlert: parseInt(lowStockAlert, 10) || 10,
+                minOrderQuantity: parseInt(minOrderQuantity, 10) || 1,
+                maxOrderQuantity: maxOrderQuantity ? parseInt(maxOrderQuantity, 10) : null,
+                allowBackorders,
+                tags: selectedTags,
+                customBadgeText: customBadgeText.trim() || null,
+                badgeColor,
+                showAutoDiscount,
+              };
+            });
+          }
+
+          const singleColor = dynamicAttributes["Colour"] || dynamicAttributes["Color"] || "Standard";
+          const singleRate = colorRates[singleColor] && !isNaN(Number(colorRates[singleColor]))
+            ? Number(colorRates[singleColor])
+            : sellingNum;
+          const singleImg = (singleColor && colorImages[singleColor]) || images[0] || null;
+          const singleDesc = colorDescriptions[singleColor] || null;
+
+          return [
+            {
+              variantName: "Standard",
+              size: "Standard",
+              finish: dynamicAttributes["Surface Finish"] || dynamicAttributes["Finish"] || "Standard",
+              color: singleColor,
+              colorHex: resolveColorHex(singleColor),
+              image: singleImg,
+              images: singleImg
+                ? [singleImg, ...images.filter((i) => i !== singleImg)]
+                : (images.length > 0 ? [images[0]] : []),
+              unit: unitOfSale,
+              attributeLabel: "Option",
+              attributeValue: "Standard",
+              attributes: singleColor !== "Standard" ? { Colour: singleColor } : null,
+              variantSpecs: singleDesc ? { colorDescription: singleDesc } : undefined,
+              mrp: mrpNum > 0 ? mrpNum : null,
+              costPrice: costNum > 0 ? costNum : null,
+              price: singleRate,
+              pricePerBox: singleRate,
+              pricePerSqft: singleRate,
+              sqftPerBox: 1,
+              stockBoxes: parseInt(stockQuantity, 10) || 100,
+              active: true,
+              isDefault: true,
+              barcode: barcode || null,
+              lowStockAlert: parseInt(lowStockAlert, 10) || 10,
+              minOrderQuantity: parseInt(minOrderQuantity, 10) || 1,
+              maxOrderQuantity: maxOrderQuantity ? parseInt(maxOrderQuantity, 10) : null,
+              allowBackorders,
+              tags: selectedTags,
+              customBadgeText: customBadgeText.trim() || null,
+              badgeColor,
+              showAutoDiscount,
+            },
+          ];
+        })();
 
     const targetStatus = submitAction === "draft" ? "draft" : "active";
     const targetApproval = submitAction === "draft" ? "pending" : "approved";
@@ -1616,7 +1709,7 @@ export default function SharedProductUploadWizard({
         images,
         videos: videoUrl ? [videoUrl] : [],
         unitOfSale,
-        hasVariants: isMultiVariety,
+        hasVariants: isMultiVariety || formattedVariants.length > 1,
         mrp: mrpNum > 0 ? mrpNum : null,
         costPrice: costNum > 0 ? costNum : null,
         tags: selectedTags,
@@ -1692,12 +1785,17 @@ export default function SharedProductUploadWizard({
     } catch (err: any) {
       setLoading(false);
       console.error("Create product failed:", err);
-      const isHtmlErr = err?.message?.includes("<!DOCTYPE") || err?.message?.includes("Unexpected token '<'");
-      toast.error(
-        isHtmlErr
-          ? "Server communication issue. Please reload page or check session."
-          : (err?.message || "Failed to create product listing")
-      );
+      const errMsg = err?.message || "";
+      const isHtmlErr = errMsg.includes("<!DOCTYPE") || errMsg.includes("Unexpected token '<'");
+      const isUnexpected = errMsg.includes("unexpected response was received");
+      
+      let userFacingError = errMsg || "Failed to create product listing";
+      if (isHtmlErr) {
+        userFacingError = "Server communication issue. Please reload page or check session.";
+      } else if (isUnexpected) {
+        userFacingError = "Server communication error. Please retry or check server connection.";
+      }
+      toast.error(userFacingError);
     }
   };
 
@@ -3035,7 +3133,7 @@ export default function SharedProductUploadWizard({
                 value={dynamicAttributes["Colour"] || dynamicAttributes["Color"] || ""}
                 defaultMulti={true}
                 label="Primary Product Colours (Multi-Colour Selection Supported)"
-                helperText="Choose one or multiple colours for this product. You can bind specific photos to each colour."
+                helperText="Choose one or multiple colours for this product. You can bind specific photos, rates, and descriptions to each colour."
                 initialColorImages={colorImages}
                 onColorImagesChange={(imgs) => {
                   setColorImages(imgs);
@@ -3044,7 +3142,23 @@ export default function SharedProductUploadWizard({
                     colorImages: JSON.stringify(imgs),
                   }));
                 }}
-                onChange={(colorName, colorHex, colorList, newColorImages) => {
+                initialColorRates={colorRates}
+                onColorRatesChange={(rates) => {
+                  setColorRates(rates);
+                  setDynamicAttributes((prev) => ({
+                    ...prev,
+                    colorRates: JSON.stringify(rates),
+                  }));
+                }}
+                initialColorDescriptions={colorDescriptions}
+                onColorDescriptionsChange={(descs) => {
+                  setColorDescriptions(descs);
+                  setDynamicAttributes((prev) => ({
+                    ...prev,
+                    colorDescriptions: JSON.stringify(descs),
+                  }));
+                }}
+                onChange={(colorName, colorHex, colorList, newColorImages, dataMap) => {
                   if (newColorImages) {
                     setColorImages(newColorImages);
                     const addedImgs = Object.values(newColorImages).filter((img): img is string => Boolean(img));
@@ -3056,6 +3170,12 @@ export default function SharedProductUploadWizard({
                       });
                     }
                   }
+                  if (dataMap?.rates) {
+                    setColorRates(dataMap.rates);
+                  }
+                  if (dataMap?.descriptions) {
+                    setColorDescriptions(dataMap.descriptions);
+                  }
                   setDynamicAttributes((prev) => ({
                     ...prev,
                     Colour: colorName,
@@ -3063,6 +3183,8 @@ export default function SharedProductUploadWizard({
                     ...(colorHex ? { ColorHex: colorHex } : {}),
                     ...(colorList && colorList.length > 0 ? { SelectedColours: colorList.join(", ") } : {}),
                     ...(newColorImages ? { colorImages: JSON.stringify(newColorImages) } : {}),
+                    ...(dataMap?.rates ? { colorRates: JSON.stringify(dataMap.rates) } : {}),
+                    ...(dataMap?.descriptions ? { colorDescriptions: JSON.stringify(dataMap.descriptions) } : {}),
                   }));
                 }}
                 allowCustom={true}
@@ -3329,7 +3451,23 @@ export default function SharedProductUploadWizard({
                             colorImages: JSON.stringify(imgs),
                           }));
                         }}
-                        onChange={(colorName, colorHex, colorList, newColorImages) => {
+                        initialColorRates={colorRates}
+                        onColorRatesChange={(rates) => {
+                          setColorRates(rates);
+                          setDynamicAttributes((prev) => ({
+                            ...prev,
+                            colorRates: JSON.stringify(rates),
+                          }));
+                        }}
+                        initialColorDescriptions={colorDescriptions}
+                        onColorDescriptionsChange={(descs) => {
+                          setColorDescriptions(descs);
+                          setDynamicAttributes((prev) => ({
+                            ...prev,
+                            colorDescriptions: JSON.stringify(descs),
+                          }));
+                        }}
+                        onChange={(colorName, colorHex, colorList, newColorImages, dataMap) => {
                           if (newColorImages) {
                             setColorImages(newColorImages);
                             const addedImgs = Object.values(newColorImages).filter((img): img is string => Boolean(img));
@@ -3341,6 +3479,12 @@ export default function SharedProductUploadWizard({
                               });
                             }
                           }
+                          if (dataMap?.rates) {
+                            setColorRates(dataMap.rates);
+                          }
+                          if (dataMap?.descriptions) {
+                            setColorDescriptions(dataMap.descriptions);
+                          }
                           setDynamicAttributes((prev) => ({
                             ...prev,
                             Colour: colorName,
@@ -3348,6 +3492,8 @@ export default function SharedProductUploadWizard({
                             ...(colorHex ? { ColorHex: colorHex } : {}),
                             ...(colorList && colorList.length > 0 ? { SelectedColours: colorList.join(", ") } : {}),
                             ...(newColorImages ? { colorImages: JSON.stringify(newColorImages) } : {}),
+                            ...(dataMap?.rates ? { colorRates: JSON.stringify(dataMap.rates) } : {}),
+                            ...(dataMap?.descriptions ? { colorDescriptions: JSON.stringify(dataMap.descriptions) } : {}),
                           }));
                         }}
                         label="Sub-category Colour (Multi-Select & Standard Radio Buttons)"
@@ -3961,10 +4107,20 @@ export default function SharedProductUploadWizard({
                         value={customSubcategoryColour}
                         initialColorImages={customSubcategoryColorImages}
                         onColorImagesChange={setCustomSubcategoryColorImages}
-                        onChange={(colorName, _hex, _list, newImgs) => {
+                        initialColorRates={customSubcategoryColorRates}
+                        onColorRatesChange={setCustomSubcategoryColorRates}
+                        initialColorDescriptions={customSubcategoryColorDescriptions}
+                        onColorDescriptionsChange={setCustomSubcategoryColorDescriptions}
+                        onChange={(colorName, _hex, _list, newImgs, dataMap) => {
                           setCustomSubcategoryColour(colorName);
                           if (newImgs) {
                             setCustomSubcategoryColorImages(newImgs);
+                          }
+                          if (dataMap?.rates) {
+                            setCustomSubcategoryColorRates(dataMap.rates);
+                          }
+                          if (dataMap?.descriptions) {
+                            setCustomSubcategoryColorDescriptions(dataMap.descriptions);
                           }
                         }}
                         label="Sub-category Colour (Standard & Multi-Select Colours)"
@@ -4428,6 +4584,12 @@ export default function SharedProductUploadWizard({
               isAdminOrCpo={isAdminOrCpo}
               defaultStock={parseInt(stockQuantity, 10) || 50}
               unitOfSale={unitOfSale}
+              initialColorImages={colorImages}
+              onColorImagesChange={setColorImages}
+              initialColorRates={colorRates}
+              onColorRatesChange={setColorRates}
+              initialColorDescriptions={colorDescriptions}
+              onColorDescriptionsChange={setColorDescriptions}
             />
           )}
 

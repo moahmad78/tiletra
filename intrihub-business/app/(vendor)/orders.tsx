@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import {
   View,
   Text,
@@ -37,6 +37,7 @@ import { COURIER_PARTNERS } from "../../src/constants/logistics";
 import { COLORS, SPACING, RADIUS, SHADOWS } from "../../src/constants/theme";
 import { printOrderInvoice } from "../../src/utils/invoicePrinter";
 import { useTranslation } from "../../src/store/i18nStore";
+import { socketService } from "../../src/store/socketStore";
 
 const getCleanPhone = (phone?: string | null) => {
   if (!phone) return "";
@@ -71,6 +72,20 @@ export default function VendorOrdersScreen() {
     queryKey: ["vendor-orders", statusFilter],
     queryFn: () => fetchVendorOrders(statusFilter),
   });
+
+  // Real-time Socket.IO auto-refetch for live order sync
+  useEffect(() => {
+    const unsubStatus = socketService.subscribe("order-status-updated", () => {
+      refetch();
+    });
+    const unsubNew = socketService.subscribe("new-order", () => {
+      refetch();
+    });
+    return () => {
+      unsubStatus();
+      unsubNew();
+    };
+  }, [refetch]);
 
   const { data: profileData } = useQuery({
     queryKey: ["vendor-profile"],

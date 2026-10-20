@@ -7,9 +7,7 @@ let socketInstance: Socket | null = null;
 
 const SOCKET_URL =
   process.env.NEXT_PUBLIC_SOCKET_URL ||
-  (typeof window !== "undefined" && window.location.hostname === "localhost"
-    ? "http://localhost:4000"
-    : undefined);
+  (typeof window !== "undefined" ? window.location.origin : undefined);
 
 export function getSocket(): Socket {
   if (!socketInstance) {
@@ -64,6 +62,7 @@ export function useSocket(
     // Join room if specified
     if (room) {
       const join = () => {
+        socket.emit("join-room", room);
         if (room === "admin") {
           socket.emit("join-admin");
         } else {
@@ -88,8 +87,11 @@ export function useSocket(
       Object.entries(eventHandlers).forEach(([event, handler]) => {
         socket.off(event, handler);
       });
-      if (room && room !== "admin") {
-        socket.emit("leave-user", room);
+      if (room) {
+        socket.emit("leave-room", room);
+        if (room !== "admin") {
+          socket.emit("leave-user", room);
+        }
       }
     };
   }, [room]);

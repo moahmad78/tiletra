@@ -3,7 +3,7 @@
 **Date**: 24 September 2026  
 **Status**: Completed & Verified  
 **Branch**: `chore/first-party-images-hardening`  
-**Target Environment**: Neon PostgreSQL (`ep-silent-wind-ax66kuhx-pooler.c-4.us-east-2.aws.neon.tech / neondb`)
+**Target Environment**: Production VPS PostgreSQL (`localhost:5432 / intrihub_db`)
 
 ---
 

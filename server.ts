@@ -58,28 +58,61 @@ app.prepare().then(() => {
   globalThis.io = io;
 
   io.on("connection", (socket) => {
-    // Join Admin Room (for store notifications, live orders)
-    socket.on("join-admin", () => {
-      socket.join("admin");
-      socket.emit("joined-room", { room: "admin" });
-    });
+    // Universal Room Normalizer
+    const getNormalizedRooms = (rawRoom: string) => {
+      if (!rawRoom || typeof rawRoom !== "string") return [];
+      const r = rawRoom.trim();
+      const set = new Set<string>([r]);
 
-    // Join Customer User Room (for user-specific order updates)
-    socket.on("join-user", (userId: string) => {
-      if (userId && typeof userId === "string") {
-        const rawId = userId.replace(/^user:/, "");
-        const roomName = `user:${rawId}`;
-        socket.join(roomName);
-        socket.emit("joined-room", { room: roomName });
+      if (r === "admin" || r === "admin-room") {
+        set.add("admin");
+        set.add("admin-room");
       }
-    });
+      if (r.startsWith("user:")) {
+        set.add(r.slice(5));
+      } else if (r.startsWith("vendor:")) {
+        set.add(r.slice(7));
+      } else {
+        set.add(`user:${r}`);
+        set.add(`vendor:${r}`);
+      }
+      return Array.from(set);
+    };
 
-    // Leave Customer User Room
-    socket.on("leave-user", (userId: string) => {
-      if (userId && typeof userId === "string") {
-        const rawId = userId.replace(/^user:/, "");
-        socket.leave(`user:${rawId}`);
+    const handleJoin = (rawRoom: string) => {
+      if (typeof rawRoom === "string" && rawRoom.trim()) {
+        const rooms = getNormalizedRooms(rawRoom);
+        rooms.forEach((r) => socket.join(r));
+        socket.emit("joined-room", { room: rawRoom.trim(), success: true });
       }
+    };
+
+    const handleLeave = (rawRoom: string) => {
+      if (typeof rawRoom === "string" && rawRoom.trim()) {
+        const rooms = getNormalizedRooms(rawRoom);
+        rooms.forEach((r) => socket.leave(r));
+      }
+    };
+
+    // Join Event Handlers
+    socket.on("join-room", handleJoin);
+    socket.on("join", handleJoin);
+    socket.on("join-admin", () => handleJoin("admin"));
+    socket.on("join-vendor", (vendorId: string) => handleJoin(`vendor:${vendorId}`));
+    socket.on("join-user", (userId: string) => handleJoin(`user:${userId}`));
+
+    // Leave Event Handlers
+    socket.on("leave-room", handleLeave);
+    socket.on("leave", handleLeave);
+    socket.on("leave-user", (userId: string) => handleLeave(`user:${userId}`));
+
+    // Client-to-client relay & broadcast
+    socket.on("client-action", (data: any) => {
+      io.emit("update-stats", {
+        message: "Data updated at " + new Date().toLocaleTimeString(),
+        data,
+        timestamp: new Date().toISOString(),
+      });
     });
 
     socket.on("disconnect", () => {

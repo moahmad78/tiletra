@@ -130,9 +130,9 @@ export default function HomeScreen() {
 
       {/* Categories Section with animated expand/collapse */}
       <View style={styles.sectionHeader}>
-        <View>
-          <Text style={styles.sectionTitle}>{t("home.shopByCategory") || "Shop by Category"}</Text>
-          <Text style={styles.sectionSubtitle}>{t("home.heroSubtitle") || "20+ construction & interior materials"}</Text>
+        <View style={{ flex: 1, marginRight: 12 }}>
+          <Text style={styles.sectionTitle} numberOfLines={1}>{t("home.shopByCategory") || "Shop by Category"}</Text>
+          <Text style={styles.sectionSubtitle} numberOfLines={1}>{t("home.heroSubtitle") || "Direct to site in 60 mins"}</Text>
         </View>
         <TouchableOpacity
           style={styles.viewAllBtn}
