@@ -871,13 +871,7 @@ const styles = StyleSheet.create({
   ambientLayer: {
     ...StyleSheet.absoluteFill,
   },
-  topWarmGlow: {
-    position: "absolute",
-    top: 0,
-    left: 0,
-    width: SCREEN_WIDTH * 0.75,
-    height: SCREEN_HEIGHT * 0.35,
-  },
+
   bottomCoolGlow: {
     position: "absolute",
     bottom: 0,
