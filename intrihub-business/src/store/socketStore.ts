@@ -52,6 +52,23 @@ class SocketService {
               console.warn(`[SOCKET] Error in listener for ${evt}:`, err);
             }
           });
+
+          // If new notification, order, or alert arrives, push to notification store to update unread badge and shake bell
+          if (evt === "new-order" || evt === "order-alert" || evt === "notification") {
+            try {
+              const { addNotification } = require("./notificationStore").useNotificationStore.getState();
+              addNotification({
+                title: data?.title || (evt === "new-order" ? "New Order Received! 🛍️" : "Store Notification"),
+                body: data?.body || data?.message || (data?.orderId ? `Order #${data.orderId} received` : "You have a new update in your store."),
+                orderId: data?.orderId || data?.id,
+                amount: data?.amount || data?.totalAmount ? `₹${data.amount || data.totalAmount}` : undefined,
+                type: data?.requiresManualApproval ? "approval_required" : "auto_accepted",
+                accentColor: data?.requiresManualApproval ? "#EF4444" : "#3B82F6",
+              });
+            } catch (e) {
+              console.warn("[SOCKET] Notice adding notification:", e);
+            }
+          }
         });
       });
     } catch (err) {

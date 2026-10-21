@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useRef, useEffect, useCallback } from "react";
 import {
   View,
   Text,
@@ -9,6 +9,7 @@ import {
   ActivityIndicator,
   Switch,
   Alert,
+  Animated,
 } from "react-native";
 import { useRouter } from "expo-router";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
@@ -31,6 +32,7 @@ import {
 import { fetchVendorDashboard, updateVendorStatus } from "../../src/api/vendor";
 import { COLORS, SPACING, RADIUS, SHADOWS } from "../../src/constants/theme";
 import { useTranslation } from "../../src/store/i18nStore";
+import { useNotificationStore } from "../../src/store/notificationStore";
 
 export default function VendorDashboardScreen() {
   const router = useRouter();
@@ -41,6 +43,58 @@ export default function VendorDashboardScreen() {
   const { data, isLoading, isError, refetch, isRefetching } = useQuery({
     queryKey: ["vendor-dashboard"],
     queryFn: fetchVendorDashboard,
+  });
+
+  const { unreadCount, shakeNonce, initNotifications } = useNotificationStore();
+  const shakeAnim = useRef(new Animated.Value(0)).current;
+
+  const triggerBellShake = useCallback(() => {
+    shakeAnim.setValue(0);
+    Animated.sequence([
+      Animated.timing(shakeAnim, { toValue: 1, duration: 80, useNativeDriver: true }),
+      Animated.timing(shakeAnim, { toValue: -1, duration: 80, useNativeDriver: true }),
+      Animated.timing(shakeAnim, { toValue: 0.75, duration: 70, useNativeDriver: true }),
+      Animated.timing(shakeAnim, { toValue: -0.75, duration: 70, useNativeDriver: true }),
+      Animated.timing(shakeAnim, { toValue: 0.4, duration: 60, useNativeDriver: true }),
+      Animated.timing(shakeAnim, { toValue: -0.4, duration: 60, useNativeDriver: true }),
+      Animated.timing(shakeAnim, { toValue: 0, duration: 50, useNativeDriver: true }),
+    ]).start();
+  }, [shakeAnim]);
+
+  useEffect(() => {
+    initNotifications();
+  }, [initNotifications]);
+
+  // Shake the bell whenever a new notification arrives
+  useEffect(() => {
+    if (shakeNonce > 0) {
+      triggerBellShake();
+    }
+  }, [shakeNonce, triggerBellShake]);
+
+  // Initial bell ringing animation if unread alerts are pending
+  useEffect(() => {
+    if (unreadCount > 0) {
+      const timer = setTimeout(() => {
+        triggerBellShake();
+      }, 700);
+      return () => clearTimeout(timer);
+    }
+  }, []);
+
+  // Periodic subtle jiggle if vendor has unread alerts
+  useEffect(() => {
+    if (unreadCount > 0) {
+      const interval = setInterval(() => {
+        triggerBellShake();
+      }, 20000);
+      return () => clearInterval(interval);
+    }
+  }, [unreadCount, triggerBellShake]);
+
+  const bellRotation = shakeAnim.interpolate({
+    inputRange: [-1, -0.5, 0, 0.5, 1],
+    outputRange: ["-22deg", "-11deg", "0deg", "11deg", "22deg"],
   });
 
   const stats = data?.stats;
@@ -120,10 +174,16 @@ export default function VendorDashboardScreen() {
             onPress={() => router.push("/(vendor)/notifications" as any)}
             activeOpacity={0.85}
           >
-            <Bell size={20} color="#FFFFFF" />
-            <View style={styles.notifBadge}>
-              <Text style={styles.notifBadgeText}>5</Text>
-            </View>
+            <Animated.View style={{ transform: [{ rotate: bellRotation }] }}>
+              <Bell size={20} color="#FFFFFF" />
+            </Animated.View>
+            {unreadCount > 0 && (
+              <View style={styles.notifBadge}>
+                <Text style={styles.notifBadgeText}>
+                  {unreadCount > 99 ? "99+" : unreadCount}
+                </Text>
+              </View>
+            )}
           </TouchableOpacity>
 
           <TouchableOpacity

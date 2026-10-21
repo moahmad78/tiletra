@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useEffect } from "react";
 import {
   View,
   Text,
@@ -17,130 +17,67 @@ import {
   User,
   CheckCircle2,
   Trash2,
+  CheckCheck,
 } from "lucide-react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
-
-interface NotificationItem {
-  id: string;
-  type: "approval_required" | "auto_accepted" | "unacknowledged" | "sla_warning" | "rider_arrived";
-  accentColor: string;
-  badge?: {
-    icon: string;
-    text: string;
-    color: string;
-  };
-  iconOverlay?: "bell" | "clock" | "user";
-  title: string;
-  body: string;
-  timestamp: string;
-  orderId: string;
-  amount?: string;
-  actions?: {
-    type: "two_buttons" | "single_button" | "chevron";
-    primaryText?: string;
-    secondaryText?: string;
-  };
-}
-
-const INITIAL_NOTIFICATIONS: NotificationItem[] = [
-  {
-    id: "notif-1",
-    type: "approval_required",
-    accentColor: "#EF4444", // Red
-    badge: {
-      icon: "🔔",
-      text: "Urgent",
-      color: "#DC2626",
-    },
-    title: "Manual Order Approval Required!",
-    body: "Order #ORD-8493 (₹12,400) requires manual approval. Stock check needed.",
-    timestamp: "2m ago",
-    orderId: "ORD-8493",
-    amount: "₹12,400",
-    actions: {
-      type: "two_buttons",
-      primaryText: "Accept",
-      secondaryText: "Reject",
-    },
-  },
-  {
-    id: "notif-2",
-    type: "auto_accepted",
-    accentColor: "#3B82F6", // Blue
-    title: "New Order Auto-Accepted!",
-    body: "Order #ORD-8492 (₹4,850) auto-confirmed from inventory. Ready to pack!",
-    timestamp: "2m ago",
-    orderId: "ORD-8492",
-    amount: "₹4,850",
-    actions: {
-      type: "single_button",
-      primaryText: "View Order & Pack →",
-    },
-  },
-  {
-    id: "notif-3",
-    type: "unacknowledged",
-    accentColor: "#F97316", // Orange
-    iconOverlay: "bell",
-    title: "Order Unacknowledged",
-    body: "Order #ORD-8490 is not acknowledged. Please take action immediately.",
-    timestamp: "10m ago",
-    orderId: "ORD-8490",
-    actions: {
-      type: "chevron",
-    },
-  },
-  {
-    id: "notif-4",
-    type: "sla_warning",
-    accentColor: "#EAB308", // Yellow / Gold
-    iconOverlay: "clock",
-    title: "5 min to pack 📦",
-    body: "Order #ORD-8488 packing deadline approaching! Mark ready to avoid SLA breach.",
-    timestamp: "10m ago",
-    orderId: "ORD-8488",
-    actions: {
-      type: "chevron",
-    },
-  },
-  {
-    id: "notif-5",
-    type: "rider_arrived",
-    accentColor: "#10B981", // Teal / Green
-    iconOverlay: "user",
-    title: "Dispatch Rider Arrived",
-    body: "Rohit Kumar arrived at your store for pickup of Order #ORD-8485.",
-    timestamp: "10m ago",
-    orderId: "ORD-8485",
-    actions: {
-      type: "chevron",
-    },
-  },
-];
+import {
+  useNotificationStore,
+  NotificationItem,
+} from "../../src/store/notificationStore";
 
 export default function NotificationsScreen() {
   const router = useRouter();
-  const [notifications, setNotifications] = useState<NotificationItem[]>(INITIAL_NOTIFICATIONS);
+  const {
+    notifications,
+    unreadCount,
+    markAsRead,
+    markAllAsRead,
+    removeNotification,
+    clearAll,
+    initNotifications,
+  } = useNotificationStore();
+
+  useEffect(() => {
+    initNotifications();
+  }, [initNotifications]);
 
   const handleAccept = (item: NotificationItem) => {
-    Alert.alert("Order Accepted", `Order #${item.orderId} accepted successfully! Inventory allocated.`);
-    setNotifications((prev) => prev.filter((n) => n.id !== item.id));
+    markAsRead(item.id);
+    Alert.alert(
+      "Order Accepted",
+      `Order #${item.orderId || "item"} accepted successfully! Inventory allocated.`
+    );
+    removeNotification(item.id);
   };
 
   const handleReject = (item: NotificationItem) => {
-    Alert.alert("Order Rejected", `Order #${item.orderId} marked as out of stock.`);
-    setNotifications((prev) => prev.filter((n) => n.id !== item.id));
+    markAsRead(item.id);
+    Alert.alert(
+      "Order Rejected",
+      `Order #${item.orderId || "item"} marked as out of stock.`
+    );
+    removeNotification(item.id);
   };
 
-  const handleOpenOrder = (orderId: string) => {
-    router.push({
-      pathname: "/(vendor)/orders",
-      params: { orderId },
-    } as any);
+  const handleOpenOrder = (item: NotificationItem) => {
+    markAsRead(item.id);
+    if (item.orderId) {
+      router.push({
+        pathname: "/(vendor)/orders",
+        params: { orderId: item.orderId },
+      } as any);
+    }
   };
 
   const handleClearAll = () => {
-    setNotifications([]);
+    Alert.alert(
+      "Clear All Notifications",
+      "Are you sure you want to remove all alerts?",
+      [
+        { text: "Cancel", style: "cancel" },
+        { text: "Clear All", style: "destructive", onPress: () => clearAll() },
+      ]
+    );
   };
 
   return (
@@ -157,18 +94,34 @@ export default function NotificationsScreen() {
         <View style={styles.headerCenter}>
           <Text style={styles.headerTitle}>Notifications</Text>
           <Text style={styles.headerSubtitle}>
-            {notifications.length} high priority alerts
+            {unreadCount > 0
+              ? `${unreadCount} unread · ${notifications.length} alerts`
+              : `${notifications.length} alerts · all caught up`}
           </Text>
         </View>
-        {notifications.length > 0 && (
-          <TouchableOpacity
-            style={styles.clearBtn}
-            onPress={handleClearAll}
-            activeOpacity={0.7}
-          >
-            <Trash2 size={18} color="#64748B" />
-          </TouchableOpacity>
-        )}
+
+        <View style={styles.headerActions}>
+          {unreadCount > 0 && (
+            <TouchableOpacity
+              style={styles.markAllReadBtn}
+              onPress={markAllAsRead}
+              activeOpacity={0.7}
+            >
+              <CheckCheck size={16} color="#0284C7" />
+              <Text style={styles.markAllReadText}>Read All</Text>
+            </TouchableOpacity>
+          )}
+
+          {notifications.length > 0 && (
+            <TouchableOpacity
+              style={styles.clearBtn}
+              onPress={handleClearAll}
+              activeOpacity={0.7}
+            >
+              <Trash2 size={18} color="#64748B" />
+            </TouchableOpacity>
+          )}
+        </View>
       </View>
 
       {/* Notifications List */}
@@ -183,19 +136,22 @@ export default function NotificationsScreen() {
             </View>
             <Text style={styles.emptyTitle}>All Caught Up!</Text>
             <Text style={styles.emptySubtitle}>
-              No pending high-alert notifications right now.
+              No pending notifications or alerts right now.
             </Text>
           </View>
         ) : (
           notifications.map((item) => (
-            <View
+            <TouchableOpacity
               key={item.id}
+              activeOpacity={0.92}
+              onPress={() => handleOpenOrder(item)}
               style={[
                 styles.notifCard,
                 { borderLeftColor: item.accentColor },
+                item.isRead && styles.notifCardRead,
               ]}
             >
-              {/* Card Top Row: App Icon + App Name + Badge + Timestamp */}
+              {/* Card Top Row: App Icon + App Name + Badge + Unread Indicator + Timestamp */}
               <View style={styles.cardTopRow}>
                 <View style={styles.iconWrapper}>
                   <Image
@@ -205,17 +161,32 @@ export default function NotificationsScreen() {
                   />
                   {/* Small icon overlay at bottom-right of app icon */}
                   {item.iconOverlay === "bell" && (
-                    <View style={[styles.iconOverlayBadge, { backgroundColor: "#F97316" }]}>
+                    <View
+                      style={[
+                        styles.iconOverlayBadge,
+                        { backgroundColor: "#F97316" },
+                      ]}
+                    >
                       <Bell size={8} color="#FFFFFF" />
                     </View>
                   )}
                   {item.iconOverlay === "clock" && (
-                    <View style={[styles.iconOverlayBadge, { backgroundColor: "#EAB308" }]}>
+                    <View
+                      style={[
+                        styles.iconOverlayBadge,
+                        { backgroundColor: "#EAB308" },
+                      ]}
+                    >
                       <Clock size={8} color="#FFFFFF" />
                     </View>
                   )}
                   {item.iconOverlay === "user" && (
-                    <View style={[styles.iconOverlayBadge, { backgroundColor: "#10B981" }]}>
+                    <View
+                      style={[
+                        styles.iconOverlayBadge,
+                        { backgroundColor: "#10B981" },
+                      ]}
+                    >
                       <User size={8} color="#FFFFFF" />
                     </View>
                   )}
@@ -225,24 +196,38 @@ export default function NotificationsScreen() {
                   <Text style={styles.appName}>IntriHub Business</Text>
                   {item.badge && (
                     <View style={styles.urgentBadge}>
-                      <Text style={[styles.urgentBadgeText, { color: item.badge.color }]}>
+                      <Text
+                        style={[
+                          styles.urgentBadgeText,
+                          { color: item.badge.color },
+                        ]}
+                      >
                         {item.badge.icon} {item.badge.text}
                       </Text>
                     </View>
                   )}
+                  {!item.isRead && <View style={styles.unreadDot} />}
                 </View>
 
                 <Text style={styles.timestamp}>{item.timestamp}</Text>
               </View>
 
               {/* Card Content Row: Title + Body */}
-              <TouchableOpacity
-                activeOpacity={0.85}
-                onPress={() => handleOpenOrder(item.orderId)}
-                style={styles.cardBodyContainer}
-              >
-                <View style={{ flex: 1, paddingRight: item.actions?.type === "chevron" ? 8 : 0 }}>
-                  <Text style={styles.cardTitle}>{item.title}</Text>
+              <View style={styles.cardBodyContainer}>
+                <View
+                  style={{
+                    flex: 1,
+                    paddingRight: item.actions?.type === "chevron" ? 8 : 0,
+                  }}
+                >
+                  <Text
+                    style={[
+                      styles.cardTitle,
+                      item.isRead && styles.cardTitleRead,
+                    ]}
+                  >
+                    {item.title}
+                  </Text>
                   <Text style={styles.cardBody}>{item.body}</Text>
                 </View>
 
@@ -251,7 +236,7 @@ export default function NotificationsScreen() {
                     <ChevronRight size={18} color="#94A3B8" />
                   </View>
                 )}
-              </TouchableOpacity>
+              </View>
 
               {/* Action Buttons: 2 Buttons (Reject / Accept) */}
               {item.actions?.type === "two_buttons" && (
@@ -282,7 +267,7 @@ export default function NotificationsScreen() {
               {item.actions?.type === "single_button" && (
                 <TouchableOpacity
                   style={styles.singleBtn}
-                  onPress={() => handleOpenOrder(item.orderId)}
+                  onPress={() => handleOpenOrder(item)}
                   activeOpacity={0.85}
                 >
                   <Text style={styles.singleBtnText}>
@@ -290,7 +275,7 @@ export default function NotificationsScreen() {
                   </Text>
                 </TouchableOpacity>
               )}
-            </View>
+            </TouchableOpacity>
           ))
         )}
       </ScrollView>
@@ -336,9 +321,31 @@ const styles = StyleSheet.create({
     color: "#64748B",
     fontFamily: "PlusJakartaSans_400Regular",
   },
+  headerActions: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 8,
+  },
+  markAllReadBtn: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 4,
+    paddingHorizontal: 10,
+    paddingVertical: 6,
+    borderRadius: 8,
+    backgroundColor: "#E0F2FE",
+  },
+  markAllReadText: {
+    fontSize: 12,
+    fontWeight: "600",
+    color: "#0284C7",
+    fontFamily: "PlusJakartaSans_600SemiBold",
+  },
   clearBtn: {
-    width: 38,
-    height: 38,
+    width: 36,
+    height: 36,
+    borderRadius: 8,
+    backgroundColor: "#F1F5F9",
     alignItems: "center",
     justifyContent: "center",
   },
@@ -356,6 +363,13 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.06,
     shadowRadius: 10,
     elevation: 3,
+  },
+  notifCardRead: {
+    backgroundColor: "#F8FAFC",
+    opacity: 0.85,
+    borderLeftWidth: 3,
+    shadowOpacity: 0.02,
+    elevation: 1,
   },
   cardTopRow: {
     flexDirection: "row",
@@ -414,6 +428,12 @@ const styles = StyleSheet.create({
     fontWeight: "700",
     fontFamily: "PlusJakartaSans_700Bold",
   },
+  unreadDot: {
+    width: 8,
+    height: 8,
+    borderRadius: 4,
+    backgroundColor: "#EF4444",
+  },
   timestamp: {
     fontSize: 12,
     color: "#94A3B8",
@@ -432,6 +452,10 @@ const styles = StyleSheet.create({
     marginBottom: 4,
     fontFamily: "PlusJakartaSans_700Bold",
   },
+  cardTitleRead: {
+    color: "#475569",
+    fontWeight: "600",
+  },
   cardBody: {
     fontSize: 13,
     color: "#475569",
@@ -449,23 +473,25 @@ const styles = StyleSheet.create({
   },
   rejectBtn: {
     flex: 1,
-    height: 38,
-    backgroundColor: "#FEE2E2",
-    borderRadius: 9,
+    paddingVertical: 10,
+    borderRadius: 10,
+    backgroundColor: "#F1F5F9",
     alignItems: "center",
     justifyContent: "center",
+    borderWidth: 1,
+    borderColor: "#E2E8F0",
   },
   rejectBtnText: {
     fontSize: 13,
     fontWeight: "700",
-    color: "#EF4444",
+    color: "#64748B",
     fontFamily: "PlusJakartaSans_700Bold",
   },
   acceptBtn: {
     flex: 1,
-    height: 38,
-    backgroundColor: "#10B981",
-    borderRadius: 9,
+    paddingVertical: 10,
+    borderRadius: 10,
+    backgroundColor: "#052A51",
     alignItems: "center",
     justifyContent: "center",
   },
@@ -477,9 +503,11 @@ const styles = StyleSheet.create({
   },
   singleBtn: {
     width: "100%",
-    height: 38,
+    paddingVertical: 11,
+    borderRadius: 10,
     backgroundColor: "#EFF6FF",
-    borderRadius: 9,
+    borderWidth: 1,
+    borderColor: "#BFDBFE",
     alignItems: "center",
     justifyContent: "center",
     marginTop: 2,
@@ -494,12 +522,13 @@ const styles = StyleSheet.create({
     alignItems: "center",
     justifyContent: "center",
     paddingVertical: 80,
+    paddingHorizontal: 24,
   },
   emptyIconCircle: {
-    width: 72,
-    height: 72,
-    borderRadius: 36,
-    backgroundColor: "#ECFDF5",
+    width: 80,
+    height: 80,
+    borderRadius: 40,
+    backgroundColor: "#DCFCE7",
     alignItems: "center",
     justifyContent: "center",
     marginBottom: 16,
@@ -515,6 +544,7 @@ const styles = StyleSheet.create({
     fontSize: 14,
     color: "#64748B",
     textAlign: "center",
+    lineHeight: 20,
     fontFamily: "PlusJakartaSans_400Regular",
   },
 });

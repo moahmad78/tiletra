@@ -77,7 +77,6 @@ export function usePushNotifications() {
             } catch (e) {
               console.error("Error triggering order alert modal:", e);
             }
-          } else if (data?.screen) {
             try {
               if (data.id) {
                 router.push({ pathname: data.screen, params: { id: data.id } } as any);
@@ -87,6 +86,21 @@ export function usePushNotifications() {
             } catch (e) {
               console.error("Error deep-linking foreground push notification:", e);
             }
+          }
+
+          // Add to in-app notification store so bell unread count increments & bell shakes
+          try {
+            const { addNotification } = require("../store/notificationStore").useNotificationStore.getState();
+            addNotification({
+              title: notification.request.content.title || (requiresManualApproval ? "Manual Order Approval Required!" : "New Notification"),
+              body: notification.request.content.body || (data?.orderId ? `Order #${data.orderId} update` : "You have a new update."),
+              orderId: data?.orderId || data?.id,
+              amount: data?.amount || data?.totalAmount ? `₹${data.amount || data.totalAmount}` : undefined,
+              type: requiresManualApproval ? "approval_required" : isAutoAccepted ? "auto_accepted" : "general",
+              accentColor: requiresManualApproval ? "#EF4444" : "#3B82F6",
+            });
+          } catch (e) {
+            console.warn("Failed to add notification to notificationStore:", e);
           }
         }
       );
