@@ -212,21 +212,30 @@ export async function POST(req: NextRequest) {
     }
 
     const allowedAdminEmail = (process.env.ADMIN_ALLOWED_EMAIL || "admin@intrihub.com").toLowerCase().trim();
-    const isAdmin = cleanEmail === allowedAdminEmail;
+    const adminOrCpoUser = cleanEmail
+      ? await prisma.user.findFirst({
+          where: {
+            email: { equals: cleanEmail, mode: "insensitive" },
+            role: { in: ["admin", "superadmin", "cpo", "ADMIN", "SUPERADMIN", "CPO"] },
+          },
+        })
+      : null;
 
-    if (isAdmin) {
-      const adminUser = await prisma.user.findFirst({
+    const isAdminOrStaff = Boolean(adminOrCpoUser || (cleanEmail && cleanEmail === allowedAdminEmail));
+
+    if (isAdminOrStaff) {
+      const staffUser = adminOrCpoUser || await prisma.user.findFirst({
         where: { email: { equals: cleanEmail, mode: "insensitive" } },
       });
 
-      if (!adminUser || !adminUser.passwordHash) {
+      if (!staffUser || !staffUser.passwordHash) {
         return mobileApiResponse(
-          { success: false, error: "Password authentication is not enabled for Super Admin. Please use Email OTP." },
+          { success: false, error: "Password authentication is not enabled for this account. Please use Email OTP." },
           400
         );
       }
 
-      const isValid = verifyPassword(password, adminUser.passwordHash);
+      const isValid = verifyPassword(password, staffUser.passwordHash);
       if (!isValid) {
         const failCheck = recordVendorLoginFailure(clientIp, cleanEmail);
         if (failCheck.locked) {
@@ -253,20 +262,20 @@ export async function POST(req: NextRequest) {
       }
 
       resetVendorLoginLockout(clientIp, cleanEmail);
-      const tokens = await generateMobileTokens(adminUser);
+      const tokens = await generateMobileTokens(staffUser);
       return mobileApiResponse({
         success: true,
-        message: "Admin authenticated successfully",
+        message: "Staff authenticated successfully",
         user: {
-          id: adminUser.id,
-          name: adminUser.name,
-          email: adminUser.email,
-          phone: adminUser.phone,
-          role: adminUser.role,
-          avatar: adminUser.avatar,
-          emailVerified: adminUser.emailVerified,
-          phoneVerified: adminUser.phoneVerified,
-          createdAt: adminUser.createdAt,
+          id: staffUser.id,
+          name: staffUser.name,
+          email: staffUser.email,
+          phone: staffUser.phone,
+          role: staffUser.role,
+          avatar: staffUser.avatar,
+          emailVerified: staffUser.emailVerified,
+          phoneVerified: staffUser.phoneVerified,
+          createdAt: staffUser.createdAt,
         },
         tokens,
       });

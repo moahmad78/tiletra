@@ -192,14 +192,14 @@ export default function BusinessLoginScreen() {
     if (user.role === "vendor") {
       setUser(user);
       router.replace("/(vendor)/dashboard" as any);
-    } else if (user.role === "admin" || user.role === "superadmin") {
+    } else if (user.role === "admin" || user.role === "superadmin" || user.role === "cpo") {
       setUser(user);
       router.replace("/(admin)/dashboard" as any);
     } else {
       // User is not a registered vendor or admin:
       // Return immediately to login page with an error banner - NO website redirect, NO delay!
       clearStoredTokens();
-      setError("This email does not exist as an approved vendor account. Please sign in with your registered vendor email.");
+      setError("This email does not exist as an approved vendor, CPO or admin account. Please sign in with your registered vendor email.");
       setStep("input");
     }
   };
@@ -306,14 +306,7 @@ export default function BusinessLoginScreen() {
         return;
       }
 
-      // 2. If vendor configured for password login
-      if (methodCheck.loginMethod === "password") {
-        setStep("password");
-        setPassword("");
-        return;
-      }
-
-      // 3. If vendor configured for OTP login (default)
+      // 2. Send OTP (Primary authentication method per requirements)
       const res = await sendOtp(email.trim());
       if (res.success) {
         setStep("otp");
@@ -429,8 +422,8 @@ export default function BusinessLoginScreen() {
         <View style={styles.headerHero}>
           <View style={styles.logoBadgeBox}>
             <Image
-              source={require("../../assets/intri-icon.png")}
-              style={styles.brandIconImage}
+              source={require("../../assets/intri-web-logo.png")}
+              style={styles.brandWebLogo}
               contentFit="contain"
             />
           </View>
@@ -612,13 +605,20 @@ export default function BusinessLoginScreen() {
               <TouchableOpacity
                 style={styles.secondaryActionBtn}
                 onPress={() => {
-                  setStep("otp");
                   setError("");
                   setOtp("");
+                  handleSendOtp();
                 }}
+                disabled={loading || isLocked}
               >
-                <Mail size={16} color={COLORS.primary} style={{ marginRight: 6 }} />
-                <Text style={styles.secondaryActionBtnText}>Sign In with Verification Code (OTP)</Text>
+                {loading ? (
+                  <ActivityIndicator size="small" color={COLORS.primary} />
+                ) : (
+                  <>
+                    <Mail size={16} color={COLORS.primary} style={{ marginRight: 6 }} />
+                    <Text style={styles.secondaryActionBtnText}>Sign In with Verification Code (OTP)</Text>
+                  </>
+                )}
               </TouchableOpacity>
 
               <TouchableOpacity
@@ -863,19 +863,18 @@ const styles = StyleSheet.create({
     marginBottom: 20,
   },
   logoBadgeBox: {
-    width: 88,
-    height: 88,
-    borderRadius: 24,
     backgroundColor: "#FFFFFF",
+    paddingHorizontal: 20,
+    paddingVertical: 12,
+    borderRadius: 20,
     alignItems: "center",
     justifyContent: "center",
-    marginBottom: 12,
-    overflow: "hidden",
+    marginBottom: 14,
     ...SHADOWS.card,
   },
-  brandIconImage: {
-    width: 88,
-    height: 88,
+  brandWebLogo: {
+    width: 165,
+    height: 42,
   },
   badgeContainer: {
     flexDirection: "row",

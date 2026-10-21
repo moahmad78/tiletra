@@ -168,29 +168,39 @@ export async function sendEmailOtp(
     }
   } else if (purpose === "vendor" || purpose === "business") {
     const allowedAdminEmail = (process.env.ADMIN_ALLOWED_EMAIL || "admin@intrihub.com").toLowerCase().trim();
-    const isAdmin = cleanEmail === allowedAdminEmail;
+    const cleanEmailLower = cleanEmail.toLowerCase();
+    const isExplicitAdmin = cleanEmailLower === allowedAdminEmail;
 
-    if (!isAdmin) {
-      const cpoUser = await prisma.user.findFirst({
+    const adminOrCpoUser = !isExplicitAdmin
+      ? await prisma.user.findFirst({
+          where: {
+            email: { equals: cleanEmailLower, mode: "insensitive" },
+            role: { in: ["admin", "superadmin", "cpo", "ADMIN", "SUPERADMIN", "CPO"] },
+          },
+        })
+      : null;
+
+    if (!isExplicitAdmin && !adminOrCpoUser) {
+      const vendorRecord = await prisma.vendor.findFirst({
         where: {
-          email: { equals: cleanEmail, mode: "insensitive" },
-          role: { in: ["cpo", "CPO"] },
+          OR: [
+            { contactEmail: { equals: cleanEmailLower, mode: "insensitive" } },
+            { owner: { email: { equals: cleanEmailLower, mode: "insensitive" } } },
+          ],
         },
       });
 
-      const vendorRecord = !cpoUser
-        ? await prisma.vendor.findFirst({
+      const vendorUser = !vendorRecord
+        ? await prisma.user.findFirst({
             where: {
-              OR: [
-                { contactEmail: { equals: cleanEmail, mode: "insensitive" } },
-                { owner: { email: { equals: cleanEmail, mode: "insensitive" } } },
-              ],
+              email: { equals: cleanEmailLower, mode: "insensitive" },
+              role: { in: ["vendor", "VENDOR"] },
             },
           })
         : null;
 
-      if (!vendorRecord && !cpoUser) {
-        return { success: false, message: "Access Denied: Email not registered as a vendor." };
+      if (!vendorRecord && !vendorUser) {
+        return { success: false, message: "Access Denied: Email not registered as a vendor, CPO or admin." };
       }
 
       if (vendorRecord && vendorRecord.status !== "approved") {
@@ -572,26 +582,29 @@ export async function verifyEmailOtp(
   // Vendor authentication flow
   if (purpose === "vendor" || purpose === "business") {
     const allowedAdminEmail = (process.env.ADMIN_ALLOWED_EMAIL || "admin@intrihub.com").toLowerCase().trim();
-    const isAdmin = cleanEmail === allowedAdminEmail;
+    const adminUser = await prisma.user.findFirst({
+      where: {
+        email: { equals: cleanEmail, mode: "insensitive" },
+        OR: [
+          { role: { in: ["admin", "ADMIN", "superadmin", "SUPERADMIN"] } },
+          { email: { equals: allowedAdminEmail, mode: "insensitive" } },
+        ],
+      },
+    });
 
-    if (isAdmin) {
-      const adminUser = await prisma.user.findFirst({
-        where: { email: { equals: cleanEmail, mode: "insensitive" } },
+    if (adminUser) {
+      await prisma.emailOtpToken.updateMany({
+        where: { email: cleanEmail },
+        data: { used: true },
       });
-      if (adminUser) {
-        await prisma.emailOtpToken.updateMany({
-          where: { email: cleanEmail },
-          data: { used: true },
-        });
-        await setWebAuthCookies(adminUser, adminUser.role || "admin");
-        return {
-          success: true,
-          message: "Admin authenticated successfully!",
-          userId: adminUser.id,
-          role: adminUser.role || "admin",
-          user: adminUser,
-        };
-      }
+      await setWebAuthCookies(adminUser, adminUser.role || "admin");
+      return {
+        success: true,
+        message: "Admin authenticated successfully!",
+        userId: adminUser.id,
+        role: adminUser.role || "admin",
+        user: adminUser,
+      };
     }
 
     // 1. Check if user has CPO role in DB

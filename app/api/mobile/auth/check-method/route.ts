@@ -98,17 +98,24 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    // 2. Check Admin account
+    // 2. Check Admin, Superadmin, or CPO account
     const allowedAdminEmail = (process.env.ADMIN_ALLOWED_EMAIL || "admin@intrihub.com").toLowerCase().trim();
-    if (cleanEmail && cleanEmail === allowedAdminEmail) {
-      const adminUser = await prisma.user.findFirst({
-        where: { email: { equals: cleanEmail, mode: "insensitive" } },
-      });
-      const method = adminUser?.passwordHash ? "password" : "otp";
+    const adminOrCpoUser = cleanEmail
+      ? await prisma.user.findFirst({
+          where: {
+            email: { equals: cleanEmail, mode: "insensitive" },
+            role: { in: ["admin", "superadmin", "cpo", "ADMIN", "SUPERADMIN", "CPO"] },
+          },
+        })
+      : null;
+
+    if (adminOrCpoUser || (cleanEmail && cleanEmail === allowedAdminEmail)) {
+      const role = adminOrCpoUser?.role?.toLowerCase() || "admin";
       return mobileApiResponse({
         success: true,
-        loginMethod: method,
-        vendorName: "Super Admin",
+        loginMethod: "otp",
+        vendorName: role === "cpo" ? "CPO Executive" : "Admin Console",
+        email: cleanEmail,
       });
     }
 
@@ -207,15 +214,10 @@ export async function POST(req: NextRequest) {
       }
     }
 
-    // Vendor is eligible: determine loginMethod
-    const isPasswordConfigured =
-      vendor?.loginMethod === "password" && Boolean(vendor?.passwordHash || vendor?.owner?.passwordHash);
-
-    const determinedMethod: "otp" | "password" = isPasswordConfigured ? "password" : "otp";
-
+    // Vendor is eligible: default to OTP as primary
     return mobileApiResponse({
       success: true,
-      loginMethod: determinedMethod,
+      loginMethod: "otp",
       vendorName: vendor?.businessName || vendorUser?.name || "Vendor Partner",
       email: cleanEmail,
     });

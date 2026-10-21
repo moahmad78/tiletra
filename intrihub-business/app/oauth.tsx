@@ -186,8 +186,8 @@ export default function OAuthCallbackScreen() {
     <View style={styles.container}>
       <View style={styles.logoBadgeBox}>
         <Image
-          source={require("../assets/intri-icon.png")}
-          style={styles.brandIconImage}
+          source={require("../assets/intri-web-logo.png")}
+          style={styles.brandWebLogo}
           contentFit="contain"
         />
       </View>
@@ -207,10 +207,10 @@ const styles = StyleSheet.create({
     padding: 24,
   },
   logoBadgeBox: {
-    width: 68,
-    height: 68,
-    borderRadius: 20,
     backgroundColor: "#FFFFFF",
+    paddingHorizontal: 20,
+    paddingVertical: 12,
+    borderRadius: 20,
     alignItems: "center",
     justifyContent: "center",
     marginBottom: 20,
@@ -220,9 +220,9 @@ const styles = StyleSheet.create({
     shadowRadius: 10,
     elevation: 6,
   },
-  brandIconImage: {
-    width: 44,
-    height: 44,
+  brandWebLogo: {
+    width: 150,
+    height: 38,
   },
   spinner: {
     marginBottom: 16,

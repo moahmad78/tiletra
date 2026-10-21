@@ -936,7 +936,7 @@ export const AddressModal: React.FC<AddressModalProps> = ({ visible, onClose, on
                   )}
                 </View>
 
-                {/* 1 & 2. Side-by-Side Quick Action Buttons (Matches Design) */}
+                {/* 1 & 2. Side-by-Side Quick Action Buttons */}
                 <View style={styles.quickActionsRow}>
                   {/* Use Current Location */}
                   <TouchableOpacity
@@ -945,18 +945,17 @@ export const AddressModal: React.FC<AddressModalProps> = ({ visible, onClose, on
                     disabled={detectingLocation}
                     activeOpacity={0.75}
                   >
-                    <View style={styles.quickActionLeft}>
-                      <View style={styles.quickActionGpsBadge}>
-                        <Navigation size={18} color="#0066FF" />
-                      </View>
-                      <View style={{ flex: 1, minWidth: 0 }}>
-                        <Text style={styles.quickActionTitle} numberOfLines={1}>Use Current Location</Text>
-                        <Text style={styles.quickActionSub} numberOfLines={1}>
-                          {detectingLocation ? "Detecting GPS..." : "Auto-detect your address"}
-                        </Text>
-                      </View>
+                    <View style={styles.quickActionGpsBadge}>
+                      <Navigation size={18} color="#0066FF" />
                     </View>
-                    <ChevronRight size={14} color="#94A3B8" />
+                    <View style={{ flex: 1, minWidth: 0 }}>
+                      <Text style={styles.quickActionTitle} numberOfLines={1}>
+                        Current Location
+                      </Text>
+                      <Text style={styles.quickActionSub} numberOfLines={1}>
+                        {detectingLocation ? "Detecting GPS..." : "Auto-detect via GPS"}
+                      </Text>
+                    </View>
                   </TouchableOpacity>
 
                   {/* Choose on Google Maps */}
@@ -968,16 +967,17 @@ export const AddressModal: React.FC<AddressModalProps> = ({ visible, onClose, on
                     }}
                     activeOpacity={0.75}
                   >
-                    <View style={styles.quickActionLeft}>
-                      <View style={styles.quickActionMapBadge}>
-                        <GoogleMapsIcon size={20} />
-                      </View>
-                      <View style={{ flex: 1, minWidth: 0 }}>
-                        <Text style={styles.quickActionTitle} numberOfLines={1}>Choose on Google Maps</Text>
-                        <Text style={styles.quickActionSub} numberOfLines={1}>Pick exact location on map</Text>
-                      </View>
+                    <View style={styles.quickActionMapBadge}>
+                      <GoogleMapsIcon size={19} />
                     </View>
-                    <ChevronRight size={14} color="#94A3B8" />
+                    <View style={{ flex: 1, minWidth: 0 }}>
+                      <Text style={styles.quickActionTitle} numberOfLines={1}>
+                        Choose on Map
+                      </Text>
+                      <Text style={styles.quickActionSub} numberOfLines={1}>
+                        Pick exact site
+                      </Text>
+                    </View>
                   </TouchableOpacity>
                 </View>
 
@@ -1103,9 +1103,10 @@ export const AddressModal: React.FC<AddressModalProps> = ({ visible, onClose, on
                           </View>
                           <TouchableOpacity
                             onPress={() => handleStartEdit(addr)}
-                            style={{ padding: 4 }}
+                            style={styles.moreOptionsBtn}
+                            hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
                           >
-                            <MoreVertical size={16} color="#94A3B8" />
+                            <MoreVertical size={18} color="#94A3B8" />
                           </TouchableOpacity>
                         </View>
                       </TouchableOpacity>
@@ -1522,8 +1523,10 @@ const styles = StyleSheet.create({
     lineHeight: 16,
   },
   addressCard: {
+    flexDirection: "row",
+    alignItems: "flex-start",
     backgroundColor: "#FFFFFF",
-    borderRadius: 14,
+    borderRadius: 16,
     padding: 14,
     marginBottom: 10,
     borderWidth: 1.5,
@@ -1531,8 +1534,8 @@ const styles = StyleSheet.create({
     ...SHADOWS.sm,
   },
   addressCardSelected: {
-    borderColor: COLORS.primary,
-    backgroundColor: "#F8FAFC",
+    borderColor: "#0066FF",
+    backgroundColor: "#F8FAFF",
   },
   addressCardTopRow: {
     flexDirection: "row",
@@ -1571,11 +1574,14 @@ const styles = StyleSheet.create({
     letterSpacing: 0.5,
   },
   radioCircle: {
-    width: 16,
-    height: 16,
-    borderRadius: 8,
-    borderWidth: 1.5,
+    width: 20,
+    height: 20,
+    borderRadius: 10,
+    borderWidth: 2,
     borderColor: "#CBD5E1",
+    alignItems: "center",
+    justifyContent: "center",
+    backgroundColor: "#FFFFFF",
   },
   addressRecipient: {
     fontSize: 13,
@@ -1710,23 +1716,25 @@ const styles = StyleSheet.create({
     flex: 1,
     flexDirection: "row",
     alignItems: "center",
-    justifyContent: "space-between",
     backgroundColor: "#F0F7FF",
     borderWidth: 1,
     borderColor: "#BFDBFE",
-    borderRadius: 16,
-    padding: 10,
+    borderRadius: 14,
+    paddingVertical: 10,
+    paddingHorizontal: 10,
+    gap: 8,
   },
   quickActionMap: {
     flex: 1,
     flexDirection: "row",
     alignItems: "center",
-    justifyContent: "space-between",
     backgroundColor: "#FFFFFF",
     borderWidth: 1,
     borderColor: "#E2E8F0",
-    borderRadius: 16,
-    padding: 10,
+    borderRadius: 14,
+    paddingVertical: 10,
+    paddingHorizontal: 10,
+    gap: 8,
   },
   quickActionLeft: {
     flexDirection: "row",
@@ -1775,9 +1783,9 @@ const styles = StyleSheet.create({
     color: "#0066FF",
   },
   cardLeftBadge: {
-    width: 44,
-    height: 44,
-    borderRadius: 22,
+    width: 42,
+    height: 42,
+    borderRadius: 21,
     alignItems: "center",
     justifyContent: "center",
     marginRight: 12,
@@ -1813,17 +1821,23 @@ const styles = StyleSheet.create({
     alignItems: "center",
     gap: 8,
     alignSelf: "center",
-    marginLeft: 8,
+    marginLeft: 10,
+  },
+  moreOptionsBtn: {
+    padding: 4,
+    alignItems: "center",
+    justifyContent: "center",
   },
   radioCircleSelected: {
     borderColor: "#0066FF",
+    backgroundColor: "#EFF6FF",
     alignItems: "center",
     justifyContent: "center",
   },
   radioInnerDot: {
-    width: 8,
-    height: 8,
-    borderRadius: 4,
+    width: 10,
+    height: 10,
+    borderRadius: 5,
     backgroundColor: "#0066FF",
   },
   bottomContinueContainer: {

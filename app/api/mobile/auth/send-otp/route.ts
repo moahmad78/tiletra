@@ -71,13 +71,20 @@ export async function POST(req: NextRequest) {
         );
       }
 
-      const allowedAdminEmail = (process.env.ADMIN_ALLOWED_EMAIL || "admin@intrihub.com").toLowerCase().trim();
-
       if (email) {
         const cleanEmail = email.trim().toLowerCase();
-        const isAdmin = cleanEmail === allowedAdminEmail;
+        const allowedAdminEmail = (process.env.ADMIN_ALLOWED_EMAIL || "admin@intrihub.com").toLowerCase().trim();
 
-        if (!isAdmin) {
+        // Check if Admin, Superadmin, or CPO user
+        const adminOrCpoUser = await prisma.user.findFirst({
+          where: {
+            email: { equals: cleanEmail, mode: "insensitive" },
+            role: { in: ["admin", "superadmin", "cpo", "ADMIN", "SUPERADMIN", "CPO"] },
+          },
+        });
+        const isAdminOrCpo = Boolean(adminOrCpoUser || cleanEmail === allowedAdminEmail);
+
+        if (!isAdminOrCpo) {
           // Check Vendor table
           const vendor = await prisma.vendor.findFirst({
             where: {
@@ -104,7 +111,7 @@ export async function POST(req: NextRequest) {
               {
                 success: false,
                 reason: "NOT_FOUND",
-                error: "Access Denied: Email not registered as a vendor.",
+                error: "Access Denied: Email not registered as a vendor, CPO or admin.",
                 locked: false,
                 remainingAttempts: lockoutCheck.remainingAttempts ?? 5,
                 email: cleanEmail,

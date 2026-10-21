@@ -163,11 +163,14 @@ export async function POST(req: NextRequest) {
     // 2. Business Login Security Whitelist Verification
     if (isBusinessLogin) {
       const allowedAdminEmail = (process.env.ADMIN_ALLOWED_EMAIL || "admin@intrihub.com").toLowerCase().trim();
-      const isAdmin =
-        (user.role === "admin" || user.role === "superadmin") &&
+      const isAdminOrStaff =
+        user.role === "admin" ||
+        user.role === "superadmin" ||
+        user.role === "cpo" ||
+        user.role?.toLowerCase() === "cpo" ||
         user.email?.toLowerCase().trim() === allowedAdminEmail;
 
-      if (!isAdmin) {
+      if (!isAdminOrStaff) {
         let vendor = user.vendor;
 
         // If not directly linked, check by email/phone in Vendor table
