@@ -3,7 +3,7 @@
     "name": "Intrihub Business",
     "slug": "intrihub-business",
     "owner": "sahil_sheikh78",
-    "version": "1.0.25",
+    "version": "1.0.26",
     "orientation": "portrait",
     "icon": "./assets/icon.png",
     "scheme": "intrihub-biz",
@@ -37,7 +37,7 @@
     },
     "android": {
       "package": "com.intrihub.business",
-      "versionCode": 33,
+      "versionCode": 34,
       "blockedPermissions": [
         "android.permission.READ_MEDIA_IMAGES",
         "android.permission.READ_MEDIA_VIDEO",
