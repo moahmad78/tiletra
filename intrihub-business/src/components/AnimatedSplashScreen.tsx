@@ -419,12 +419,6 @@ export default function AnimatedSplashScreen({
       {/* Ambient Glow Washes */}
       <Animated.View style={[styles.ambientLayer, { opacity: ambientOpacity }]}>
         <LinearGradient
-          colors={["rgba(234, 88, 12, 0.12)", "rgba(255, 255, 255, 0)"]}
-          style={styles.topWarmGlow}
-          start={{ x: 0, y: 0 }}
-          end={{ x: 1, y: 1 }}
-        />
-        <LinearGradient
           colors={["rgba(5, 42, 81, 0.09)", "rgba(255, 255, 255, 0)"]}
           style={styles.bottomCoolGlow}
           start={{ x: 1, y: 1 }}
