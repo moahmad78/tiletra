@@ -17,22 +17,77 @@ export async function POST(req: NextRequest) {
     const body = await req.json().catch(() => ({}));
     const { token, title, message, screen = "/(admin)/orders", id } = body;
 
-    let targetTokens: string[] = [];
+    const tokenSet = new Set<string>();
 
-    if (token) {
-      targetTokens = [token];
-    } else {
+    if (token && typeof token === "string" && (token.startsWith("ExponentPushToken[") || token.startsWith("ExpoPushToken["))) {
+      tokenSet.add(token.trim());
+      // Also register this token in background for future alerts
+      try {
+        const { registerPushToken } = await import("@/lib/push-notifications");
+        await registerPushToken({
+          userId: user.id,
+          role: user.role,
+          token: token.trim(),
+          platform: "android",
+        });
+      } catch (regErr) {
+        console.warn("[Push Test] Auto-register token error:", regErr);
+      }
+    }
+
+    // 1. Check direct user.pushToken
+    if (user.pushToken && (user.pushToken.startsWith("ExponentPushToken[") || user.pushToken.startsWith("ExpoPushToken["))) {
+      tokenSet.add(user.pushToken.trim());
+    }
+
+    // 2. Check DeviceToken table
+    try {
+      const deviceTokens = await prisma.deviceToken.findMany({
+        where: { userId: user.id },
+        select: { token: true },
+      });
+      deviceTokens.forEach((dt) => {
+        if (dt.token && (dt.token.startsWith("ExponentPushToken[") || dt.token.startsWith("ExpoPushToken["))) {
+          tokenSet.add(dt.token.trim());
+        }
+      });
+    } catch (e) {}
+
+    // 3. Check MobilePushToken table
+    try {
+      const mobileTokens = await (prisma as any).mobilePushToken.findMany({
+        where: { userId: user.id },
+        select: { token: true },
+      });
+      mobileTokens.forEach((mt: any) => {
+        if (mt.token && (mt.token.startsWith("ExponentPushToken[") || mt.token.startsWith("ExpoPushToken["))) {
+          tokenSet.add(mt.token.trim());
+        }
+      });
+    } catch (e) {}
+
+    // 4. Fallback check in Setting table
+    try {
       const key = `push_tokens_${user.id}`;
       const setting = await prisma.setting.findUnique({ where: { key } });
       if (setting && setting.value) {
         const parsed: { token: string }[] = JSON.parse(setting.value);
-        targetTokens = parsed.map((t) => t.token);
+        parsed.forEach((t) => {
+          if (t.token && (t.token.startsWith("ExponentPushToken[") || t.token.startsWith("ExpoPushToken["))) {
+            tokenSet.add(t.token.trim());
+          }
+        });
       }
-    }
+    } catch (e) {}
+
+    const targetTokens = Array.from(tokenSet);
 
     if (targetTokens.length === 0) {
       return mobileApiResponse(
-        { success: false, error: "No registered push token found for this device. Please grant notification permission first." },
+        {
+          success: false,
+          error: "Is device ka push notification token server par registered nahi mila. Kripya app me notification permissions grant karein.",
+        },
         400
       );
     }

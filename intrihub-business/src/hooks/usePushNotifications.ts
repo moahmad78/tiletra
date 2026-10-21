@@ -153,9 +153,22 @@ async function registerForPushNotificationsAsync(): Promise<string | null> {
   if (Platform.OS === "android") {
     try {
       await Notifications.setNotificationChannelAsync("default", {
-        name: "default",
+        name: "Default Notifications",
         importance: (Notifications as any).AndroidImportance?.MAX ?? 5,
         vibrationPattern: [0, 250, 250, 250],
+        enableVibrate: true,
+        sound: "default",
+        lightColor: "#F26522",
+      });
+
+      await Notifications.setNotificationChannelAsync("orders_alert_v2", {
+        name: "Orders & Urgent Alerts",
+        importance: (Notifications as any).AndroidImportance?.MAX ?? 5,
+        vibrationPattern: [0, 500, 250, 500, 250, 500],
+        enableVibrate: true,
+        sound: "default",
+        lockscreenVisibility: (Notifications as any).AndroidNotificationVisibility?.PUBLIC ?? 1,
+        bypassDnd: true,
         lightColor: "#F26522",
       });
 
@@ -163,7 +176,8 @@ async function registerForPushNotificationsAsync(): Promise<string | null> {
         name: "Incoming Orders High Alert",
         importance: (Notifications as any).AndroidImportance?.MAX ?? 5,
         vibrationPattern: [0, 500, 250, 500, 250, 500],
-        sound: "order_alert",
+        enableVibrate: true,
+        sound: "default",
         lockscreenVisibility: (Notifications as any).AndroidNotificationVisibility?.PUBLIC ?? 1,
         bypassDnd: true,
         lightColor: "#F26522",

@@ -247,9 +247,65 @@ export default function VendorProfileScreen() {
   const handleTestPushNotification = async () => {
     setTestingPush(true);
     try {
+      let deviceToken: string | undefined = undefined;
+
+      // 1. Check/request permission & retrieve actual Expo push token on device
+      try {
+        const Notifications = require("expo-notifications");
+        const Constants = require("expo-constants").default || require("expo-constants");
+
+        const { status: existingStatus } = await Notifications.getPermissionsAsync();
+        let finalStatus = existingStatus;
+        if (existingStatus !== "granted") {
+          const permReq = await Notifications.requestPermissionsAsync();
+          finalStatus = permReq.status;
+        }
+
+        if (finalStatus === "granted") {
+          const projectId =
+            Constants?.expoConfig?.extra?.eas?.projectId ?? Constants?.easConfig?.projectId ?? "107f8b28-48ac-4c6a-b065-8d24f2427724";
+          const tokenObj = await Notifications.getExpoPushTokenAsync(
+            projectId ? { projectId } : undefined
+          );
+          deviceToken = tokenObj?.data;
+
+          // Register with backend immediately
+          if (deviceToken) {
+            await apiClient
+              .post("/api/mobile/push-token", {
+                token: deviceToken,
+                platform: Platform.OS,
+              })
+              .catch(() => {});
+          }
+
+          // Trigger local notification so phone rings/vibrates right away
+          await Notifications.scheduleNotificationAsync({
+            content: {
+              title: "📦 New Order Received!",
+              body: "Order #84920: Vitrified Glazed Tiles (24 Boxes) received. Tap to dispatch.",
+              sound: "default",
+              data: { screen: "/(vendor)/orders", id: "TEST_84920" },
+            },
+            trigger: null,
+          });
+        } else {
+          Alert.alert(
+            "Permission Required",
+            "Notification permission denied. Please allow notifications in your phone's app settings."
+          );
+          setTestingPush(false);
+          return;
+        }
+      } catch (nativeErr: any) {
+        console.warn("Local push registration/schedule warning:", nativeErr);
+      }
+
+      // 2. Dispatch remote push via backend
       const res = await apiClient.post("/api/mobile/push-token/test", {
+        token: deviceToken,
         title: "📦 New Order Received!",
-        message: "Customer placed an order for 24 Boxes of Glazed Tiles! Tap to dispatch.",
+        message: "Order #84920: Vitrified Glazed Tiles (24 Boxes) received. Tap to dispatch.",
         screen: "/(vendor)/orders",
       });
 
@@ -257,14 +313,15 @@ export default function VendorProfileScreen() {
       if (res.data.success) {
         Alert.alert(
           "Push Dispatched 🔔",
-          "Test push notification sent! Lock your phone screen or pull down notifications shade to view."
+          "Test push notification dispatched! Check your notification tray or lock screen."
         );
       } else {
-        Alert.alert("Push Test", res.data.message || "Failed to trigger test.");
+        Alert.alert("Push Test", res.data.error || res.data.message || "Failed to trigger test.");
       }
     } catch (e: any) {
       setTestingPush(false);
-      Alert.alert("Notice", "Push test dispatched to device.");
+      const serverErr = e?.response?.data?.error || e?.response?.data?.message || e?.message || "Failed to dispatch test notification";
+      Alert.alert("Push Test", serverErr);
     }
   };
 
