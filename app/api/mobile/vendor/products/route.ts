@@ -66,6 +66,17 @@ export async function POST(req: NextRequest) {
       usage,
       look,
       status,
+      brand,
+      hsnCode,
+      gstRate,
+      piecesPerBox,
+      sqftPerBox,
+      lowStockAlert,
+      warrantyDuration,
+      returnPolicyDays,
+      videoUrl,
+      weightKg,
+      isBulky,
     } = body;
 
     if (!name || typeof name !== "string" || name.trim().length < 2) {
@@ -76,6 +87,7 @@ export async function POST(req: NextRequest) {
     const numMrp = mrp ? Number(mrp) : numPrice * 1.25;
     const numStock = stockBoxes ? Number(stockBoxes) : 50;
     const imgList = Array.isArray(images) ? images : images ? [images] : [];
+    const numSqftPerBox = sqftPerBox ? Number(sqftPerBox) : 16;
 
     const incomingVariants = Array.isArray(body.variants) && body.variants.length > 0
       ? body.variants.map((v: any) => ({
@@ -83,12 +95,13 @@ export async function POST(req: NextRequest) {
           finish: v.finish || finish || "Glossy",
           color: v.color || look || "Standard",
           pricePerSqft: Number(v.pricePerSqft) || numPrice,
-          pricePerBox: Number(v.pricePerBox) || (numPrice * 16),
-          sqftPerBox: 16,
+          pricePerBox: Number(v.pricePerBox) || (numPrice * numSqftPerBox),
+          sqftPerBox: numSqftPerBox,
           stockBoxes: Number(v.stockBoxes) || numStock,
           mrp: Number(v.mrp) || numMrp,
           thickness: v.thickness || thickness || "9mm",
           image: v.image || undefined,
+          lowStockAlert: lowStockAlert ? Number(lowStockAlert) : undefined,
         }))
       : [
           {
@@ -96,11 +109,12 @@ export async function POST(req: NextRequest) {
             finish: finish || "Glossy",
             color: look || (body.selectedColors && body.selectedColors[0]) || "Standard",
             pricePerSqft: numPrice,
-            pricePerBox: numPrice * 16,
-            sqftPerBox: 16,
+            pricePerBox: numPrice * numSqftPerBox,
+            sqftPerBox: numSqftPerBox,
             stockBoxes: numStock,
             mrp: numMrp,
             thickness: thickness || "9mm",
+            lowStockAlert: lowStockAlert ? Number(lowStockAlert) : undefined,
           },
         ];
 
@@ -116,13 +130,30 @@ export async function POST(req: NextRequest) {
       images: imgList,
       status: status || "active",
       variants: incomingVariants,
+      brand: brand?.trim() || undefined,
+      hsnCode: hsnCode?.trim() || undefined,
+      taxRate: gstRate !== undefined && gstRate !== "" ? Number(gstRate) : undefined,
+      piecesPerBox: piecesPerBox ? Number(piecesPerBox) : undefined,
+      coverageRate: sqftPerBox ? Number(sqftPerBox) : undefined,
+      lowStockAlert: lowStockAlert ? Number(lowStockAlert) : undefined,
+      warrantyDuration: warrantyDuration?.trim() || undefined,
+      returnPolicyDays: returnPolicyDays !== undefined && returnPolicyDays !== "" ? Number(returnPolicyDays) : undefined,
+      videoUrl: videoUrl?.trim() || undefined,
+      weightKg: weightKg ? Number(weightKg) : undefined,
+      isBulky: Boolean(isBulky),
       specs: {
         thickness: thickness || "9mm",
         usage: usage || "Indoor / Commercial",
         look: look || "Modern",
         ...(body.selectedColors && Array.isArray(body.selectedColors) ? { colours: body.selectedColors.join(", ") } : {}),
+        ...(brand ? { brand: brand.trim() } : {}),
+        ...(hsnCode ? { hsnCode: hsnCode.trim() } : {}),
+        ...(gstRate !== undefined && gstRate !== "" ? { gstRate: `${gstRate}%` } : {}),
+        ...(piecesPerBox ? { piecesPerBox: `${piecesPerBox} pcs` } : {}),
+        ...(sqftPerBox ? { coveragePerBox: `${sqftPerBox} sq.ft` } : {}),
+        ...(warrantyDuration ? { warranty: warrantyDuration } : {}),
       },
-    });
+    } as any);
 
     if (!res.success || !res.product) {
       return mobileApiResponse({ success: false, error: res.error || "Failed to create product" }, 400);

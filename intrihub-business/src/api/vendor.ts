@@ -66,6 +66,15 @@ export async function createVendorProduct(data: {
   isBulky?: boolean;
   status?: "active" | "paused" | "draft";
   variants?: any[];
+  brand?: string;
+  hsnCode?: string;
+  gstRate?: number;
+  piecesPerBox?: number;
+  sqftPerBox?: number;
+  lowStockAlert?: number;
+  warrantyDuration?: string;
+  returnPolicyDays?: number;
+  videoUrl?: string;
 }): Promise<{
   success: boolean;
   product?: Product;

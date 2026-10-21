@@ -33,6 +33,10 @@ import {
   Search,
   Check,
   Zap,
+  Tag,
+  BadgePercent,
+  ShieldCheck,
+  Video,
 } from "lucide-react-native";
 import {
   createVendorProduct,
@@ -89,6 +93,17 @@ export default function AddProductScreen() {
   const [images, setImages] = useState<string[]>([]);
   const [primaryImageUrlInput, setPrimaryImageUrlInput] = useState("");
   const [uploading, setUploading] = useState(false);
+
+  // CPO Catalog Parity Fields
+  const [brand, setBrand] = useState("Generic / Unbranded");
+  const [gstRate, setGstRate] = useState("18");
+  const [hsnCode, setHsnCode] = useState("6907");
+  const [piecesPerBox, setPiecesPerBox] = useState("4");
+  const [sqftPerBox, setSqftPerBox] = useState("16");
+  const [lowStockAlert, setLowStockAlert] = useState("10");
+  const [warrantyDuration, setWarrantyDuration] = useState("1 Year");
+  const [returnPolicyDays, setReturnPolicyDays] = useState("7");
+  const [videoUrl, setVideoUrl] = useState("");
 
   // Multi-Variants State
   const [hasVariants, setHasVariants] = useState(false);
@@ -383,6 +398,16 @@ export default function AddProductScreen() {
       isBulky,
       images: allImages,
       variants: hasVariants ? variants.map((v) => ({ ...v, thickness: v.thickness || thickness })) : undefined,
+      // CPO Parity Fields
+      brand: brand.trim(),
+      gstRate: parseFloat(gstRate) || 0,
+      hsnCode: hsnCode.trim(),
+      piecesPerBox: parseInt(piecesPerBox, 10) || undefined,
+      sqftPerBox: parseFloat(sqftPerBox) || undefined,
+      lowStockAlert: parseInt(lowStockAlert, 10) || undefined,
+      warrantyDuration: warrantyDuration.trim(),
+      returnPolicyDays: parseInt(returnPolicyDays, 10) || undefined,
+      videoUrl: videoUrl.trim() || undefined,
     });
   };
 
@@ -424,6 +449,34 @@ export default function AddProductScreen() {
             onChangeText={setName}
             placeholder="e.g. Royal Statuario Glazed Vitrified Tile"
           />
+
+          {/* Brand / Manufacturer (CPO Parity) */}
+          <Text style={[styles.inputLabel, { marginTop: 14 }]}>Brand / Manufacturer</Text>
+          <View style={{ flexDirection: "row", gap: 8, alignItems: "center" }}>
+            <View style={[styles.inputBox, { flex: 1, flexDirection: "row", alignItems: "center", paddingVertical: 0 }]}>
+              <Tag size={16} color="#052A51" style={{ marginRight: 8 }} />
+              <TextInput
+                style={{ flex: 1, height: 42, fontSize: 13, color: "#0F172A", fontWeight: "600" }}
+                value={brand}
+                onChangeText={setBrand}
+                placeholder="e.g. Kajaria, Jaquar, Asian Paints"
+              />
+            </View>
+          </View>
+          <ScrollView horizontal showsHorizontalScrollIndicator={false} style={{ marginTop: 6 }} contentContainerStyle={{ gap: 6 }}>
+            {["Kajaria", "Somany", "Jaquar", "Havells", "Asian Paints", "Hindware", "Cera", "UltraTech", "Finolex", "Generic / Unbranded"].map((b) => {
+              const isSel = brand === b;
+              return (
+                <TouchableOpacity
+                  key={b}
+                  style={[styles.quickChip, isSel && styles.quickChipActive]}
+                  onPress={() => setBrand(b)}
+                >
+                  <Text style={[styles.quickChipText, isSel && styles.quickChipTextActive]}>{b}</Text>
+                </TouchableOpacity>
+              );
+            })}
+          </ScrollView>
 
           {/* 1. Category Dropdown */}
           <Text style={[styles.inputLabel, { marginTop: 14 }]}>Category *</Text>
@@ -673,6 +726,92 @@ export default function AddProductScreen() {
             </View>
           </View>
 
+          {/* Packaging & Coverage Specifications (CPO Parity) */}
+          <View style={[styles.twoCol, { marginTop: 14 }]}>
+            <View style={{ flex: 1 }}>
+              <Text style={styles.inputLabel}>Pieces per {unitOfSale.toUpperCase()}</Text>
+              <TextInput
+                style={styles.inputBox}
+                value={piecesPerBox}
+                onChangeText={setPiecesPerBox}
+                keyboardType="number-pad"
+                placeholder="e.g. 4"
+              />
+            </View>
+            <View style={{ flex: 1 }}>
+              <Text style={styles.inputLabel}>Coverage ({unitOfSale.toLowerCase() === "box" ? "Sq.ft" : "Units"})</Text>
+              <TextInput
+                style={styles.inputBox}
+                value={sqftPerBox}
+                onChangeText={(val) => {
+                  setSqftPerBox(val);
+                  const sqft = parseFloat(val);
+                  const boxPrice = parseFloat(pricePerBox);
+                  if (sqft > 0 && boxPrice > 0) {
+                    setPricePerSqft((boxPrice / sqft).toFixed(2));
+                  }
+                }}
+                keyboardType="decimal-pad"
+                placeholder="e.g. 16"
+              />
+            </View>
+          </View>
+
+          {/* Low Stock Alert Threshold */}
+          <View style={{ marginTop: 14 }}>
+            <Text style={styles.inputLabel}>Low Stock Alert Threshold ({unitOfSale}s)</Text>
+            <TextInput
+              style={styles.inputBox}
+              value={lowStockAlert}
+              onChangeText={setLowStockAlert}
+              keyboardType="number-pad"
+              placeholder="e.g. 10"
+            />
+            <Text style={{ fontSize: 10, color: "#64748B", marginTop: 4 }}>
+              App alerts you with a notification when stock falls at or below this count.
+            </Text>
+          </View>
+
+          {/* Tax & GST Compliance (CPO Parity) */}
+          <View style={{ marginTop: 14, padding: 12, backgroundColor: "#F0FDF4", borderRadius: 10, borderWidth: 1, borderColor: "#BBF7D0" }}>
+            <View style={{ flexDirection: "row", alignItems: "center", gap: 6, marginBottom: 4 }}>
+              <BadgePercent size={16} color="#15803D" />
+              <Text style={{ fontSize: 13, fontWeight: "800", color: "#166534" }}>Tax & GST Compliance *</Text>
+            </View>
+            
+            <Text style={[styles.inputLabel, { marginTop: 8 }]}>GST Rate Slab (%)</Text>
+            <View style={{ flexDirection: "row", gap: 6, marginTop: 4, flexWrap: "wrap" }}>
+              {["0", "5", "12", "18", "28"].map((rate) => {
+                const isSel = gstRate === rate;
+                return (
+                  <TouchableOpacity
+                    key={rate}
+                    style={[
+                      styles.quickChip,
+                      { paddingHorizontal: 12 },
+                      isSel && { backgroundColor: "#15803D", borderColor: "#15803D" },
+                    ]}
+                    onPress={() => setGstRate(rate)}
+                  >
+                    <Text style={[styles.quickChipText, isSel && { color: "#FFFFFF", fontWeight: "800" }]}>
+                      {rate}% {rate === "0" ? "(Exempt)" : rate === "18" ? "(Standard)" : ""}
+                    </Text>
+                  </TouchableOpacity>
+                );
+              })}
+            </View>
+
+            <View style={{ marginTop: 10 }}>
+              <Text style={styles.inputLabel}>HSN Code (Tax Invoice)</Text>
+              <TextInput
+                style={[styles.inputBox, { backgroundColor: "#FFFFFF" }]}
+                value={hsnCode}
+                onChangeText={setHsnCode}
+                placeholder="e.g. 6907 (Tiles), 8544 (Electrical), 7324 (Sanitary)"
+              />
+            </View>
+          </View>
+
           {/* F8: Weight & Bulkiness Section */}
           <View style={{ marginTop: 14, padding: 12, backgroundColor: "#F8FAFC", borderRadius: 10, borderWidth: 1, borderColor: "#E2E8F0" }}>
             <View style={{ flexDirection: "row", alignItems: "center", gap: 6, marginBottom: 4 }}>
@@ -737,6 +876,56 @@ export default function AddProductScreen() {
             </TouchableOpacity>
           </View>
 
+          {/* Warranty & Returns Policy (CPO Parity) */}
+          <View style={{ marginTop: 14, padding: 12, backgroundColor: "#EFF6FF", borderRadius: 10, borderWidth: 1, borderColor: "#BFDBFE" }}>
+            <View style={{ flexDirection: "row", alignItems: "center", gap: 6, marginBottom: 4 }}>
+              <ShieldCheck size={16} color="#1D4ED8" />
+              <Text style={{ fontSize: 13, fontWeight: "800", color: "#1E40AF" }}>Warranty & Return Policy</Text>
+            </View>
+
+            <Text style={[styles.inputLabel, { marginTop: 8 }]}>Manufacturer Warranty</Text>
+            <ScrollView horizontal showsHorizontalScrollIndicator={false} style={{ marginTop: 4 }} contentContainerStyle={{ gap: 6 }}>
+              {["No Warranty", "6 Months", "1 Year", "2 Years", "5 Years", "10 Years"].map((w) => {
+                const isSel = warrantyDuration === w;
+                return (
+                  <TouchableOpacity
+                    key={w}
+                    style={[
+                      styles.quickChip,
+                      isSel && { backgroundColor: "#1D4ED8", borderColor: "#1D4ED8" },
+                    ]}
+                    onPress={() => setWarrantyDuration(w)}
+                  >
+                    <Text style={[styles.quickChipText, isSel && { color: "#FFFFFF", fontWeight: "800" }]}>{w}</Text>
+                  </TouchableOpacity>
+                );
+              })}
+            </ScrollView>
+
+            <Text style={[styles.inputLabel, { marginTop: 12 }]}>Return / Replacement Window</Text>
+            <View style={{ flexDirection: "row", gap: 6, marginTop: 4 }}>
+              {[
+                { label: "7 Days Replacement", val: "7" },
+                { label: "10 Days Return", val: "10" },
+                { label: "Non-Returnable", val: "0" },
+              ].map((r) => {
+                const isSel = returnPolicyDays === r.val;
+                return (
+                  <TouchableOpacity
+                    key={r.val}
+                    style={[
+                      styles.quickChip,
+                      isSel && { backgroundColor: "#1D4ED8", borderColor: "#1D4ED8" },
+                    ]}
+                    onPress={() => setReturnPolicyDays(r.val)}
+                  >
+                    <Text style={[styles.quickChipText, isSel && { color: "#FFFFFF", fontWeight: "800" }]}>{r.label}</Text>
+                  </TouchableOpacity>
+                );
+              })}
+            </View>
+          </View>
+
           {/* Primary Images URL & Upload */}
           <Text style={[styles.inputLabel, { marginTop: 12 }]}>Primary Product Image</Text>
           <View style={{ flexDirection: "row", gap: 8 }}>
@@ -759,6 +948,20 @@ export default function AddProductScreen() {
               <Camera size={14} color="#052A51" />
               <Text style={styles.uploadMiniBtnText}>Upload</Text>
             </TouchableOpacity>
+          </View>
+
+          {/* Product Video Showcase URL (CPO Parity) */}
+          <Text style={[styles.inputLabel, { marginTop: 14 }]}>Product Video Showcase URL (Optional)</Text>
+          <View style={{ flexDirection: "row", gap: 8, alignItems: "center" }}>
+            <View style={[styles.inputBox, { flex: 1, flexDirection: "row", alignItems: "center", paddingVertical: 0 }]}>
+              <Video size={16} color="#DC2626" style={{ marginRight: 8 }} />
+              <TextInput
+                style={{ flex: 1, height: 42, fontSize: 13, color: "#0F172A" }}
+                value={videoUrl}
+                onChangeText={setVideoUrl}
+                placeholder="https://youtube.com/watch?v=... or demo video link"
+              />
+            </View>
           </View>
 
           {images.length > 0 ? (
