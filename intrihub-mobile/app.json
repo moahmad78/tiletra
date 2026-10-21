@@ -27,6 +27,7 @@
         "NSPhotoLibraryUsageDescription": "Intrihub requires access to your photo library to select and upload images for products, profiles, and order assistance.",
         "NSLocationWhenInUseUsageDescription": "Intrihub requires your location while using the app to accurately calculate delivery times and dispatch materials to your construction site or address.",
         "UIBackgroundModes": [
+          "remote-notification",
           "remote-notification"
         ]
       },
@@ -38,6 +39,8 @@
       "package": "com.intrihub.app",
       "versionCode": 32,
       "blockedPermissions": [
+        "android.permission.READ_MEDIA_IMAGES",
+        "android.permission.READ_MEDIA_VIDEO",
         "android.permission.READ_MEDIA_IMAGES",
         "android.permission.READ_MEDIA_VIDEO"
       ],
@@ -52,6 +55,10 @@
         "backgroundColor": "#FFFFFF"
       },
       "permissions": [
+        "RECEIVE_BOOT_COMPLETED",
+        "VIBRATE",
+        "INTERNET",
+        "POST_NOTIFICATIONS",
         "RECEIVE_BOOT_COMPLETED",
         "VIBRATE",
         "INTERNET",
@@ -98,6 +105,12 @@
       "eas": {
         "projectId": "7c786f97-0217-4a68-b51f-14499a3311a2"
       }
+    },
+    "runtimeVersion": {
+      "policy": "appVersion"
+    },
+    "updates": {
+      "url": "https://u.expo.dev/7c786f97-0217-4a68-b51f-14499a3311a2"
     }
   }
 }
