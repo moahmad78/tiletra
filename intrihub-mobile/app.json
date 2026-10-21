@@ -3,7 +3,7 @@
     "name": "Intrihub",
     "slug": "intrihub",
     "owner": "sahil_sheikh78",
-    "version": "1.2.15",
+    "version": "1.2.16",
     "orientation": "portrait",
     "icon": "./assets/icon.png",
     "scheme": "intrihub",
@@ -37,7 +37,7 @@
     },
     "android": {
       "package": "com.intrihub.app",
-      "versionCode": 34,
+      "versionCode": 35,
       "blockedPermissions": [
         "android.permission.READ_MEDIA_IMAGES",
         "android.permission.READ_MEDIA_VIDEO",
