@@ -416,15 +416,7 @@ export default function AnimatedSplashScreen({
         end={{ x: 0.5, y: 1 }}
       />
 
-      {/* Ambient Glow Washes */}
-      <Animated.View style={[styles.ambientLayer, { opacity: ambientOpacity }]}>
-        <LinearGradient
-          colors={["rgba(5, 42, 81, 0.09)", "rgba(255, 255, 255, 0)"]}
-          style={styles.bottomCoolGlow}
-          start={{ x: 1, y: 1 }}
-          end={{ x: 0, y: 0 }}
-        />
-      </Animated.View>
+
 
       <View style={[styles.contentWrapper, { paddingTop: insets.top + 16 }]}>
         {/* TOP: Floating 3D Package, Curved Dotted Route & Location Pin */}
@@ -868,17 +860,7 @@ const styles = StyleSheet.create({
     elevation: 999999,
     backgroundColor: "#FFFFFF",
   },
-  ambientLayer: {
-    ...StyleSheet.absoluteFill,
-  },
 
-  bottomCoolGlow: {
-    position: "absolute",
-    bottom: 0,
-    right: 0,
-    width: SCREEN_WIDTH * 0.85,
-    height: SCREEN_HEIGHT * 0.45,
-  },
   contentWrapper: {
     flex: 1,
     justifyContent: "space-between",
