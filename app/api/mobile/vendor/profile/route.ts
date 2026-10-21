@@ -141,15 +141,40 @@ export async function PATCH(req: NextRequest) {
       data: updateData,
     });
 
-    // Also update underlying user record name/phone/avatar
-    await prisma.user.update({
-      where: { id: user.id },
-      data: {
-        name: businessName !== undefined ? String(businessName).trim() : undefined,
-        phone: cleanPhone !== undefined ? cleanPhone : undefined,
-        avatar: logo !== undefined ? (logo ? String(logo).trim() : null) : undefined,
-      },
-    });
+    // Also update underlying user record name/phone/avatar safely
+    try {
+      const userUpdateData: any = {};
+      if (businessName !== undefined) userUpdateData.name = String(businessName).trim();
+      if (logo !== undefined) userUpdateData.avatar = logo ? String(logo).trim() : null;
+
+      if (cleanPhone && cleanPhone !== user.phone) {
+        // Only attempt to update User.phone if no other user holds this phone number
+        const phoneOwner = await prisma.user.findFirst({
+          where: {
+            phone: cleanPhone,
+            id: { not: user.id },
+          },
+          select: { id: true },
+        });
+
+        if (!phoneOwner) {
+          userUpdateData.phone = cleanPhone;
+        } else {
+          console.warn(
+            `[Mobile Vendor Profile] Phone ${cleanPhone} is already registered to user ${phoneOwner.id}. Skipping User.phone update while keeping Vendor.contactPhone updated.`
+          );
+        }
+      }
+
+      if (Object.keys(userUpdateData).length > 0) {
+        await prisma.user.update({
+          where: { id: user.id },
+          data: userUpdateData,
+        });
+      }
+    } catch (userErr: any) {
+      console.warn("[Mobile Vendor Profile] Could not update associated User record:", userErr?.message);
+    }
 
     return mobileApiResponse({
       success: true,
