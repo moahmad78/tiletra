@@ -70,20 +70,17 @@ export const useDeliveryAddressStore = create<DeliveryAddressState>()(
         if (state) {
           // Remove any legacy mock/sample addresses left in localStorage
           const cleanSaved = (state.savedAddresses || []).filter(
-            (a) =>
-              a &&
-              !a.id?.includes("sample") &&
-              a.phone !== "9264920211" &&
-              !a.name?.includes("Sahil Sheikh")
+            (a) => a && !a.id?.includes("sample")
           );
           state.savedAddresses = cleanSaved;
           if (
             state.selectedAddress &&
-            (state.selectedAddress.id?.includes("sample") ||
-              state.selectedAddress.phone === "9264920211" ||
-              state.selectedAddress.name?.includes("Sahil Sheikh"))
+            state.selectedAddress.id?.includes("sample")
           ) {
             state.selectedAddress = cleanSaved[0] || null;
+          }
+          if (!state.selectedAddress && cleanSaved.length > 0) {
+            state.selectedAddress = cleanSaved.find((a) => a.isDefault) || cleanSaved[0];
           }
         }
       },

@@ -33,7 +33,7 @@ export default function Header() {
 
   // Compact display locality for Deliver To pill (Zepto/Blinkit/Flipkart style)
   const compactDeliveryText = (() => {
-    if (!selectedAddress) return "Bengaluru - 560114";
+    if (!mounted || !selectedAddress) return "Bengaluru - 560114";
     let name = "";
     if (
       selectedAddress.line2 &&
@@ -54,6 +54,27 @@ export default function Header() {
     const pin = selectedAddress.pincode ? ` - ${selectedAddress.pincode}` : "";
     return `${name}${pin}`;
   })();
+
+  // Auto-sync delivery address on mount if not yet selected
+  useEffect(() => {
+    if (!mounted) return;
+    const current = useDeliveryAddressStore.getState().selectedAddress;
+    if (!current) {
+      const saved = useDeliveryAddressStore.getState().savedAddresses;
+      const validSaved = (saved || []).filter((a) => a && !a.id?.includes("sample"));
+      if (validSaved.length > 0) {
+        const def = validSaved.find((a) => a.isDefault) || validSaved[0];
+        if (def) useDeliveryAddressStore.getState().setSelectedAddress(def);
+        return;
+      }
+      const authUser = useAuthStore.getState().user;
+      if (authUser?.addresses && authUser.addresses.length > 0) {
+        const validAuth = authUser.addresses.filter((a) => a && !a.id?.includes("sample"));
+        const def = validAuth.find((a) => a.isDefault) || validAuth[0];
+        if (def) useDeliveryAddressStore.getState().setSelectedAddress(def);
+      }
+    }
+  }, [mounted, user]);
 
   useEffect(() => {
     setMounted(true);
@@ -139,7 +160,7 @@ export default function Header() {
             <button
               type="button"
               onClick={openAddressModal}
-              className="hidden lg:flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-slate-50 hover:bg-blue-50 border border-slate-200 hover:border-blue-300 transition-all text-left cursor-pointer shrink-0 max-w-[130px] xl:max-w-[165px] group shadow-2xs"
+              className="hidden md:flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-slate-50 hover:bg-blue-50 border border-slate-200 hover:border-blue-300 transition-all text-left cursor-pointer shrink-0 max-w-[130px] xl:max-w-[165px] group shadow-2xs"
               title={selectedAddress ? `${selectedAddress.line1 || ""} ${selectedAddress.city || ""}` : "Change Delivery Address"}
             >
               <div className="w-5 h-5 rounded-full bg-blue-100 text-[#0066FF] flex items-center justify-center shrink-0">

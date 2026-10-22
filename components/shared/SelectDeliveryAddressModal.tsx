@@ -171,9 +171,7 @@ export default function SelectDeliveryAddressModal({
       return authList.filter(
         (a) =>
           a &&
-          !a.id?.includes("sample") &&
-          a.phone !== "9264920211" &&
-          !a.name?.includes("Sahil Sheikh")
+          !a.id?.includes("sample")
       );
     }
 
@@ -181,11 +179,17 @@ export default function SelectDeliveryAddressModal({
     return savedAddresses.filter(
       (a) =>
         a &&
-        !a.id?.includes("sample") &&
-        a.phone !== "9264920211" &&
-        !a.name?.includes("Sahil Sheikh")
+        !a.id?.includes("sample")
     );
   }, [user?.id, user?.addresses, dbAddresses, savedAddresses]);
+
+  // Auto-sync selected address if not set yet but addresses are available
+  useEffect(() => {
+    if (!selectedAddress && combinedAddresses.length > 0) {
+      const def = combinedAddresses.find((a) => a.isDefault) || combinedAddresses[0];
+      if (def) setSelectedAddress(def);
+    }
+  }, [selectedAddress, combinedAddresses, setSelectedAddress]);
 
   const currentSelectedId = selectedAddress?.id || combinedAddresses[0]?.id;
 
