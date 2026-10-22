@@ -127,7 +127,11 @@ export default function Header() {
                 </span>
                 <span className="text-xs font-bold text-slate-800 truncate block leading-tight mt-0.5">
                   {selectedAddress
-                    ? `${selectedAddress.line1 || selectedAddress.city} - ${selectedAddress.pincode || "560114"}`
+                    ? `${
+                        (selectedAddress.line1 && !selectedAddress.line1.includes("(")
+                          ? selectedAddress.line1
+                          : selectedAddress.city || "Bengaluru")
+                      } - ${selectedAddress.pincode || "560114"}`
                     : "Bengaluru - 560114"}
                 </span>
               </div>

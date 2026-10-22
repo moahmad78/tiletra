@@ -277,18 +277,22 @@ export default function SelectDeliveryAddressModal({
           const data = await res.json();
           toast.dismiss("gps-locate");
 
+          const addrData = data?.success && data.address ? data.address : null;
+          const displayArea = addrData?.area || addrData?.city || "Bengaluru";
+          const displayCity = addrData?.city || "Bengaluru";
+          const shortTitle = addrData?.shortAddress || `${displayArea}, ${displayCity}`;
+          const fullLine1 = addrData?.line1 || (addrData?.area ? `${addrData.area}` : "Bengaluru");
+
           const detectedAddr: CustomerAddress = {
             id: `addr_gps_${Date.now()}`,
             name: fullName.trim() || user?.name || "Customer",
             phone: phone.trim() || (user?.phone ? user.phone.replace(/\D/g, "").slice(-10) : ""),
             label: "Home",
-            line1: data?.success && data.address
-              ? (data.address.line1 || data.address.area || "Current Location")
-              : `Current Location (${lat.toFixed(4)}, ${lng.toFixed(4)})`,
-            line2: data?.success && data.address?.line2 ? data.address.line2 : "",
-            city: data?.success && data.address?.city ? data.address.city : "Bengaluru",
-            state: data?.success && data.address?.state ? data.address.state : "Karnataka",
-            pincode: data?.success && data.address?.pincode ? data.address.pincode : "560114",
+            line1: fullLine1,
+            line2: addrData?.street || addrData?.area || "",
+            city: displayCity,
+            state: addrData?.state || "Karnataka",
+            pincode: addrData?.pincode || "560114",
             latitude: lat,
             longitude: lng,
             source: "GPS",
@@ -302,10 +306,7 @@ export default function SelectDeliveryAddressModal({
           // Close popup immediately upon detection
           handleClose();
 
-          const areaName = data?.success && data.address?.area ? data.address.area : null;
-          const cityName = data?.success && data.address?.city ? data.address.city : null;
-          const displayLoc = areaName || cityName || `${lat.toFixed(4)}, ${lng.toFixed(4)}`;
-          toast.success(`📍 Location set: ${displayLoc}`, { duration: 4000 });
+          toast.success(`📍 Location set: ${shortTitle}`, { duration: 4000 });
         } catch {
           toast.dismiss("gps-locate");
           const fallbackAddr: CustomerAddress = {
@@ -313,7 +314,7 @@ export default function SelectDeliveryAddressModal({
             name: fullName.trim() || user?.name || "Customer",
             phone: phone.trim() || (user?.phone ? user.phone.replace(/\D/g, "").slice(-10) : ""),
             label: "Home",
-            line1: `Location (${lat.toFixed(4)}, ${lng.toFixed(4)})`,
+            line1: "Bengaluru (Current Location)",
             line2: "",
             city: "Bengaluru",
             state: "Karnataka",
@@ -329,7 +330,7 @@ export default function SelectDeliveryAddressModal({
             authAddAddress?.(fallbackAddr);
           }
           handleClose();
-          toast.success(`📍 Location pinned at ${lat.toFixed(4)}, ${lng.toFixed(4)}`, { duration: 4000 });
+          toast.success(`📍 Location set: Bengaluru`, { duration: 4000 });
         } finally {
           setIsDetectingLocation(false);
         }
@@ -669,11 +670,12 @@ export default function SelectDeliveryAddressModal({
                       {predictions.map((p) => (
                         <div
                           key={p.placeId}
-                          onClick={() => {
+                          onClick={async () => {
                             setSearchQuery("");
                             setPredictions([]);
+                            const newAddrId = `addr_search_${Date.now()}`;
                             const newAddr: CustomerAddress = {
-                              id: `addr_search_${Date.now()}`,
+                              id: newAddrId,
                               name: fullName.trim() || user?.name || "Customer",
                               phone: phone.trim() || (user?.phone ? user.phone.replace(/\D/g, "").slice(-10) : ""),
                               label: "Other",
@@ -683,6 +685,7 @@ export default function SelectDeliveryAddressModal({
                               state: "Karnataka",
                               pincode: "560114",
                               source: "SEARCH",
+                              isDefault: true,
                             };
                             addSavedAddress(newAddr);
                             handleSelect(newAddr);
@@ -691,6 +694,34 @@ export default function SelectDeliveryAddressModal({
                             }
                             handleClose();
                             toast.success(`📍 Location set: ${p.mainText}`, { duration: 4000 });
+
+                            // Fetch place details in background to capture exact apartment coordinates & PIN code
+                            if (p.placeId && !p.placeId.startsWith("osm_")) {
+                              try {
+                                const res = await fetch(`/api/geo/place-details?placeId=${encodeURIComponent(p.placeId)}`);
+                                const data = await res.json();
+                                if (data?.success && data.location) {
+                                  const loc = data.location;
+                                  const updated: CustomerAddress = {
+                                    ...newAddr,
+                                    line1: p.mainText,
+                                    line2: loc.street || loc.area || p.secondaryText,
+                                    city: loc.city || "Bengaluru",
+                                    state: loc.state || "Karnataka",
+                                    pincode: loc.pincode || "560114",
+                                    latitude: loc.latitude,
+                                    longitude: loc.longitude,
+                                  };
+                                  addSavedAddress(updated);
+                                  handleSelect(updated);
+                                  if (user?.id) {
+                                    authAddAddress?.(updated);
+                                  }
+                                }
+                              } catch (enrichErr) {
+                                console.warn("Could not enrich place details:", enrichErr);
+                              }
+                            }
                           }}
                           className="p-3 hover:bg-slate-50 cursor-pointer flex items-center gap-3 transition-colors text-left"
                         >
