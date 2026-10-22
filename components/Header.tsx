@@ -31,6 +31,30 @@ export default function Header() {
   const selectedAddress = useDeliveryAddressStore((s) => s.selectedAddress);
   const openAddressModal = useDeliveryAddressStore((s) => s.openAddressModal);
 
+  // Compact display locality for Deliver To pill (Zepto/Blinkit/Flipkart style)
+  const compactDeliveryText = (() => {
+    if (!selectedAddress) return "Bengaluru - 560114";
+    let name = "";
+    if (
+      selectedAddress.line2 &&
+      !selectedAddress.line2.toLowerCase().includes("karnataka") &&
+      !selectedAddress.line2.toLowerCase().includes("india")
+    ) {
+      name = selectedAddress.line2;
+    } else if (selectedAddress.line1) {
+      const parts = selectedAddress.line1.split(",").map((s) => s.trim()).filter(Boolean);
+      name = parts.length > 1 ? parts[parts.length - 1] : parts[0];
+    } else {
+      name = selectedAddress.city || "Bengaluru";
+    }
+    // Clean up coordinates / generic markers
+    name = name.replace(/Current Location/gi, "Bengaluru").replace(/\([^)]+\)/g, "").trim();
+    if (!name) name = selectedAddress.city || "Bengaluru";
+
+    const pin = selectedAddress.pincode ? ` - ${selectedAddress.pincode}` : "";
+    return `${name}${pin}`;
+  })();
+
   useEffect(() => {
     setMounted(true);
     let ticking = false;
@@ -96,46 +120,40 @@ export default function Header() {
             "h-[56px] md:h-[76px]"
           )}
         >
-          <div className="w-full max-w-[1400px] mx-auto px-3 sm:px-4 md:px-6 lg:px-8 h-full flex items-center justify-between gap-2.5">
+          <div className="w-full max-w-[1400px] mx-auto px-2 sm:px-4 md:px-5 lg:px-6 h-full flex items-center justify-between gap-1.5 lg:gap-2.5">
             {/* Logo */}
             <div className="flex-shrink-0 notranslate" translate="no">
               <Link href="/" className="flex items-center group notranslate" translate="no">
                 <Image
                   src="/logo/intri-web-logo.png"
                   alt="IntriHub"
-                  width={150}
-                  height={40}
+                  width={140}
+                  height={38}
                   priority
-                  className="h-[30px] sm:h-[34px] md:h-[40px] w-auto object-contain transition-all duration-300 group-hover:scale-105"
+                  className="h-[28px] sm:h-[32px] md:h-[38px] w-auto object-contain transition-all duration-300 group-hover:scale-105"
                 />
               </Link>
             </div>
 
-            {/* Delivery Location Selector Pill */}
+            {/* Delivery Location Selector Pill (Compact Zepto / Blinkit style) */}
             <button
               type="button"
               onClick={openAddressModal}
-              className="hidden lg:flex items-center gap-2 px-3 py-1.5 rounded-full bg-slate-50 hover:bg-blue-50 border border-slate-200 hover:border-blue-300 transition-all text-left cursor-pointer shrink-0 max-w-[210px] group shadow-2xs"
-              title="Change Delivery Address"
+              className="hidden lg:flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-slate-50 hover:bg-blue-50 border border-slate-200 hover:border-blue-300 transition-all text-left cursor-pointer shrink-0 max-w-[130px] xl:max-w-[165px] group shadow-2xs"
+              title={selectedAddress ? `${selectedAddress.line1 || ""} ${selectedAddress.city || ""}` : "Change Delivery Address"}
             >
-              <div className="w-6 h-6 rounded-full bg-blue-100 text-[#0066FF] flex items-center justify-center shrink-0">
-                <MapPin size={12} />
+              <div className="w-5 h-5 rounded-full bg-blue-100 text-[#0066FF] flex items-center justify-center shrink-0">
+                <MapPin size={11} />
               </div>
               <div className="min-w-0">
-                <span className="text-[10px] uppercase tracking-wider text-slate-400 font-bold block leading-none">
+                <span className="text-[9px] uppercase tracking-wider text-slate-400 font-bold block leading-none">
                   Deliver To
                 </span>
-                <span className="text-xs font-bold text-slate-800 truncate block leading-tight mt-0.5">
-                  {selectedAddress
-                    ? `${
-                        (selectedAddress.line1 && !selectedAddress.line1.includes("(")
-                          ? selectedAddress.line1
-                          : selectedAddress.city || "Bengaluru")
-                      } - ${selectedAddress.pincode || "560114"}`
-                    : "Bengaluru - 560114"}
+                <span className="text-[11px] font-bold text-slate-800 truncate block leading-tight mt-0.5">
+                  {compactDeliveryText}
                 </span>
               </div>
-              <ChevronDown size={12} className="text-slate-400 group-hover:text-slate-700 shrink-0 ml-0.5" />
+              <ChevronDown size={11} className="text-slate-400 group-hover:text-slate-700 shrink-0 ml-0.5" />
             </button>
 
             {/* Mobile Prominent Search Bar (Center) */}
@@ -155,19 +173,19 @@ export default function Header() {
               </div>
             </div>
 
-            {/* Desktop Large Prominent Search Bar (Flipkart / Amazon Pattern) */}
-            <div className="hidden md:flex flex-1 max-w-[520px] xl:max-w-[620px] mx-6">
-              <div className="w-full h-11 bg-gray-50 hover:bg-gray-100/80 border border-gray-200 hover:border-[#F26522] rounded-2xl px-4 flex items-center justify-between text-left transition-all shadow-2xs group">
+            {/* Desktop Large Prominent Search Bar (Responsive Width) */}
+            <div className="hidden md:flex flex-1 min-w-[160px] max-w-[280px] lg:max-w-[360px] xl:max-w-[480px] 2xl:max-w-[560px] mx-1.5 lg:mx-2.5 xl:mx-4">
+              <div className="w-full h-10 lg:h-11 bg-gray-50 hover:bg-gray-100/80 border border-gray-200 hover:border-[#F26522] rounded-2xl px-3 lg:px-4 flex items-center justify-between text-left transition-all shadow-2xs group">
                 <button
                   type="button"
                   onClick={() => setSearchOpen(true)}
                   aria-label="Search catalog"
-                  className="flex-1 flex items-center gap-2.5 text-gray-600 group-hover:text-gray-800 text-xs font-semibold mr-2 overflow-hidden"
+                  className="flex-1 flex items-center gap-2 text-gray-600 group-hover:text-gray-800 text-xs font-semibold mr-2 overflow-hidden"
                 >
-                  <Search size={16} className="text-gray-500 group-hover:text-[#F26522] transition-colors shrink-0" />
-                  <span className="truncate">Search tiles, electrical, plumbing, hardware, plywood, granite...</span>
+                  <Search size={15} className="text-gray-500 group-hover:text-[#F26522] transition-colors shrink-0" />
+                  <span className="truncate">Search tiles, electrical, plumbing...</span>
                 </button>
-                <div className="flex items-center gap-2 shrink-0">
+                <div className="hidden xl:flex items-center gap-2 shrink-0">
                   <span className="text-[10px] font-bold text-gray-600 bg-white border border-gray-300 px-2 py-0.5 rounded-md shadow-2xs">
                     ⌘K
                   </span>
@@ -176,7 +194,7 @@ export default function Header() {
             </div>
 
             {/* Right Actions */}
-            <div className="flex items-center gap-1.5 md:gap-2 lg:gap-3 shrink-0">
+            <div className="flex items-center gap-1 md:gap-1.5 lg:gap-2 shrink-0">
               {/* Notification Center (Site-wide on mobile & desktop) */}
               <NotificationCenter />
 
