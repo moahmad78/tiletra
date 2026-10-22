@@ -86,7 +86,7 @@ export async function POST(req: NextRequest) {
       return mobileApiResponse(
         {
           success: false,
-          error: "Is device ka push notification token server par registered nahi mila. Kripya app me notification permissions grant karein.",
+          error: "Is account ke sath abhi koi active remote push token linked nahi mila. (Local notifications device par play ho chuki hain. Remote FCM push ke liye standalone build active hona chahiye).",
         },
         400
       );

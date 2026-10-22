@@ -20,6 +20,7 @@ import AnimatedSplashScreen from "../src/components/AnimatedSplashScreen";
 import AppUpdateModal from "../src/components/AppUpdateModal";
 import LanguageModal from "../src/components/LanguageModal";
 import IncomingOrderAlertModal from "../src/components/IncomingOrderAlertModal";
+import CustomAlertModal from "../src/components/CustomAlertModal";
 import { useI18nStore } from "../src/store/i18nStore";
 import { COLORS } from "../src/constants/theme";
 import { useOrderAlertStore } from "../src/store/orderAlertStore";
@@ -236,6 +237,9 @@ function RootLayout() {
 
           {/* Real-time Order Chime & Ringing Alert Modal */}
           <IncomingOrderAlertModal />
+
+          {/* Branded Themed Alert & Confirmation Modal */}
+          <CustomAlertModal />
 
           {/* First launch language selection modal */}
           <LanguageModal

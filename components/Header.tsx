@@ -70,19 +70,6 @@ export default function Header() {
           <div className="w-full max-w-[1400px] mx-auto px-4 md:px-6 lg:px-8">
             <div className="flex justify-between items-center text-xs font-medium">
               <div className="flex items-center gap-6">
-                <button
-                  type="button"
-                  onClick={openAddressModal}
-                  className="flex items-center gap-1.5 hover:text-[#F26522] transition-colors cursor-pointer group text-left"
-                >
-                  <MapPin size={13} className="text-[#F26522] group-hover:scale-110 transition-transform shrink-0" />
-                  <span className="font-semibold underline decoration-white/30 underline-offset-2 truncate max-w-[200px]">
-                    {selectedAddress
-                      ? `${selectedAddress.line1 || selectedAddress.city || "Bengaluru"} - ${selectedAddress.pincode || "560114"}`
-                      : "Bengaluru - 560114"}
-                  </span>
-                  <ChevronDown size={11} className="text-white/60 group-hover:text-white shrink-0" />
-                </button>
                 <a
                   href="mailto:support@intrihub.com"
                   className="flex items-center gap-1.5 hover:text-[#F26522] transition-colors"

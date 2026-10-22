@@ -98,8 +98,8 @@ export default function SelectDeliveryAddressModal({
 
   // Form Fields
   const [label, setLabel] = useState<"Home" | "Office" | "Other" | string>("Home");
-  const [fullName, setFullName] = useState(user?.name || "Sahil Sheikh");
-  const [phone, setPhone] = useState(user?.phone?.replace(/\D/g, "").slice(-10) || "9264920211");
+  const [fullName, setFullName] = useState(user?.name || "");
+  const [phone, setPhone] = useState(user?.phone ? user.phone.replace(/\D/g, "").slice(-10) : "");
   const [houseNumber, setHouseNumber] = useState("");
   const [street, setStreet] = useState("");
   const [area, setArea] = useState("");
@@ -107,18 +107,85 @@ export default function SelectDeliveryAddressModal({
   const [state, setState] = useState("Karnataka");
   const [pincode, setPincode] = useState("");
 
-  // Combine auth addresses and store addresses safely
+  // Sync profile details when user changes
+  useEffect(() => {
+    if (user?.name) setFullName(user.name);
+    if (user?.phone) setPhone(user.phone.replace(/\D/g, "").slice(-10));
+  }, [user?.name, user?.phone]);
+
+  // Fetch authenticated user's addresses from database
+  const [dbAddresses, setDbAddresses] = useState<CustomerAddress[]>([]);
+  const [isLoadingAddresses, setIsLoadingAddresses] = useState(false);
+
+  useEffect(() => {
+    if (!user?.id) {
+      setDbAddresses([]);
+      return;
+    }
+    let isCancelled = false;
+    const fetchUserAddresses = async () => {
+      try {
+        setIsLoadingAddresses(true);
+        const res = await fetch(`/api/addresses?userId=${encodeURIComponent(user.id)}`);
+        const data = await res.json();
+        if (!isCancelled && data?.success && Array.isArray(data.addresses)) {
+          const mapped: CustomerAddress[] = data.addresses.map((a: any) => ({
+            id: a.id,
+            name: user.name || "Customer",
+            phone: user.phone || "",
+            label: a.label || "Home",
+            houseNumber: a.houseNumber || "",
+            line1: a.street || a.line1 || "",
+            line2: a.landmark || a.line2 || "",
+            city: a.city || "Bengaluru",
+            state: a.state || "Karnataka",
+            pincode: a.pincode || "560114",
+            latitude: a.latitude ? Number(a.latitude) : undefined,
+            longitude: a.longitude ? Number(a.longitude) : undefined,
+            isDefault: Boolean(a.isDefault),
+          }));
+          setDbAddresses(mapped);
+        }
+      } catch (err) {
+        console.warn("Could not fetch user addresses:", err);
+      } finally {
+        if (!isCancelled) setIsLoadingAddresses(false);
+      }
+    };
+    fetchUserAddresses();
+    return () => {
+      isCancelled = true;
+    };
+  }, [user?.id, isOpen]);
+
+  // Strictly combine addresses belonging ONLY to this user (or guest session)
   const combinedAddresses = React.useMemo(() => {
-    const list = [...savedAddresses];
-    if (user?.addresses?.length) {
-      user.addresses.forEach((ua) => {
-        if (!list.some((a) => a.id === ua.id)) {
-          list.push(ua);
+    if (user?.id) {
+      const authList = [...(user.addresses || [])];
+      dbAddresses.forEach((da) => {
+        if (!authList.some((a) => a.id === da.id)) {
+          authList.push(da);
         }
       });
+      // Purge any legacy sample/dummy addresses
+      return authList.filter(
+        (a) =>
+          a &&
+          !a.id?.includes("sample") &&
+          a.phone !== "9264920211" &&
+          !a.name?.includes("Sahil Sheikh")
+      );
     }
-    return list;
-  }, [savedAddresses, user?.addresses]);
+
+    // Unauthenticated guest user: only return addresses saved in this local session
+    return savedAddresses.filter(
+      (a) =>
+        a &&
+        !a.id?.includes("sample") &&
+        a.phone !== "9264920211" &&
+        !a.name?.includes("Sahil Sheikh")
+    );
+  }, [user?.id, user?.addresses, dbAddresses, savedAddresses]);
 
   const currentSelectedId = selectedAddress?.id || combinedAddresses[0]?.id;
 
@@ -210,31 +277,59 @@ export default function SelectDeliveryAddressModal({
           const data = await res.json();
           toast.dismiss("gps-locate");
 
-          if (data?.success && data.address) {
-            const detectedAddr: CustomerAddress = {
-              id: `addr_gps_${Date.now()}`,
-              name: fullName || "Sahil Sheikh",
-              phone: phone || "9264920211",
-              label: "Home",
-              line1: data.address.line1 || data.address.area || "Current Location",
-              line2: data.address.line2 || "",
-              city: data.address.city || "Bengaluru",
-              state: data.address.state || "Karnataka",
-              pincode: data.address.pincode || "560114",
-              latitude: lat,
-              longitude: lng,
-              source: "GPS",
-              isDefault: true,
-            };
-            addSavedAddress(detectedAddr);
-            handleSelect(detectedAddr);
-            toast.success("Location detected successfully!");
-          } else {
-            toast.info("Location pinned at " + lat.toFixed(4) + ", " + lng.toFixed(4));
+          const detectedAddr: CustomerAddress = {
+            id: `addr_gps_${Date.now()}`,
+            name: fullName.trim() || user?.name || "Customer",
+            phone: phone.trim() || (user?.phone ? user.phone.replace(/\D/g, "").slice(-10) : ""),
+            label: "Home",
+            line1: data?.success && data.address
+              ? (data.address.line1 || data.address.area || "Current Location")
+              : `Current Location (${lat.toFixed(4)}, ${lng.toFixed(4)})`,
+            line2: data?.success && data.address?.line2 ? data.address.line2 : "",
+            city: data?.success && data.address?.city ? data.address.city : "Bengaluru",
+            state: data?.success && data.address?.state ? data.address.state : "Karnataka",
+            pincode: data?.success && data.address?.pincode ? data.address.pincode : "560114",
+            latitude: lat,
+            longitude: lng,
+            source: "GPS",
+            isDefault: true,
+          };
+          addSavedAddress(detectedAddr);
+          handleSelect(detectedAddr);
+          if (user?.id) {
+            authAddAddress?.(detectedAddr);
           }
+          // Close popup immediately upon detection
+          handleClose();
+
+          const areaName = data?.success && data.address?.area ? data.address.area : null;
+          const cityName = data?.success && data.address?.city ? data.address.city : null;
+          const displayLoc = areaName || cityName || `${lat.toFixed(4)}, ${lng.toFixed(4)}`;
+          toast.success(`📍 Location set: ${displayLoc}`, { duration: 4000 });
         } catch {
           toast.dismiss("gps-locate");
-          toast.error("Could not fetch address details for coordinates");
+          const fallbackAddr: CustomerAddress = {
+            id: `addr_gps_${Date.now()}`,
+            name: fullName.trim() || user?.name || "Customer",
+            phone: phone.trim() || (user?.phone ? user.phone.replace(/\D/g, "").slice(-10) : ""),
+            label: "Home",
+            line1: `Location (${lat.toFixed(4)}, ${lng.toFixed(4)})`,
+            line2: "",
+            city: "Bengaluru",
+            state: "Karnataka",
+            pincode: "560114",
+            latitude: lat,
+            longitude: lng,
+            source: "GPS",
+            isDefault: true,
+          };
+          addSavedAddress(fallbackAddr);
+          handleSelect(fallbackAddr);
+          if (user?.id) {
+            authAddAddress?.(fallbackAddr);
+          }
+          handleClose();
+          toast.success(`📍 Location pinned at ${lat.toFixed(4)}, ${lng.toFixed(4)}`, { duration: 4000 });
         } finally {
           setIsDetectingLocation(false);
         }
@@ -253,8 +348,8 @@ export default function SelectDeliveryAddressModal({
     setShowWebMapModal(false);
     const mapAddr: CustomerAddress = {
       id: `addr_map_${Date.now()}`,
-      name: fullName || "Sahil Sheikh",
-      phone: phone || "9264920211",
+      name: fullName.trim() || user?.name || "Customer",
+      phone: phone.trim() || (user?.phone ? user.phone.replace(/\D/g, "").slice(-10) : ""),
       label: "Other",
       houseNumber: loc.houseNumber || "",
       line1: loc.street || loc.area || "Map Selected Location",
@@ -269,7 +364,11 @@ export default function SelectDeliveryAddressModal({
     };
     addSavedAddress(mapAddr);
     handleSelect(mapAddr);
-    toast.success("Address pinned from Google Maps!");
+    if (user?.id) {
+      authAddAddress?.(mapAddr);
+    }
+    handleClose(); // Close delivery address modal
+    toast.success(`📍 Location pinned: ${loc.area || loc.city || "Map Location"}`, { duration: 4000 });
   };
 
   // Save New Address Form
@@ -281,8 +380,8 @@ export default function SelectDeliveryAddressModal({
     }
     const newAddr: CustomerAddress = {
       id: `addr_custom_${Date.now()}`,
-      name: fullName.trim() || "Sahil Sheikh",
-      phone: phone.trim() || "9264920211",
+      name: fullName.trim() || user?.name || "Customer",
+      phone: phone.trim() || (user?.phone ? user.phone.replace(/\D/g, "").slice(-10) : ""),
       label,
       houseNumber: houseNumber.trim(),
       line1: [houseNumber.trim(), street.trim()].filter(Boolean).join(", ") || area.trim(),
@@ -294,6 +393,9 @@ export default function SelectDeliveryAddressModal({
     };
     addSavedAddress(newAddr);
     handleSelect(newAddr);
+    if (user?.id) {
+      authAddAddress?.(newAddr);
+    }
     setIsAddingNew(false);
     toast.success("New address saved!");
   };
@@ -572,8 +674,8 @@ export default function SelectDeliveryAddressModal({
                             setPredictions([]);
                             const newAddr: CustomerAddress = {
                               id: `addr_search_${Date.now()}`,
-                              name: fullName,
-                              phone: phone,
+                              name: fullName.trim() || user?.name || "Customer",
+                              phone: phone.trim() || (user?.phone ? user.phone.replace(/\D/g, "").slice(-10) : ""),
                               label: "Other",
                               line1: p.mainText,
                               line2: p.secondaryText,
@@ -584,7 +686,11 @@ export default function SelectDeliveryAddressModal({
                             };
                             addSavedAddress(newAddr);
                             handleSelect(newAddr);
-                            toast.success(`Selected: ${p.mainText}`);
+                            if (user?.id) {
+                              authAddAddress?.(newAddr);
+                            }
+                            handleClose();
+                            toast.success(`📍 Location set: ${p.mainText}`, { duration: 4000 });
                           }}
                           className="p-3 hover:bg-slate-50 cursor-pointer flex items-center gap-3 transition-colors text-left"
                         >
@@ -676,121 +782,136 @@ export default function SelectDeliveryAddressModal({
 
                   {/* 4. Saved Addresses Cards */}
                   <div className="space-y-2.5 max-h-[290px] overflow-y-auto pr-0.5">
-                    {combinedAddresses.map((addr) => {
-                      const isSelected = currentSelectedId === addr.id;
-                      const isMenuOpen = activeMenuId === addr.id;
+                    {combinedAddresses.length === 0 ? (
+                      <div className="py-7 px-4 text-center rounded-2xl border border-dashed border-slate-200 bg-slate-50/50">
+                        <div className="w-10 h-10 rounded-full bg-blue-50 text-[#0066FF] flex items-center justify-center mx-auto mb-2">
+                          <MapPin size={18} />
+                        </div>
+                        <p className="text-xs sm:text-sm font-bold text-slate-800">No saved addresses</p>
+                        <p className="text-[11px] sm:text-xs text-slate-500 mt-0.5">
+                          Use Current Location above or tap Add New
+                        </p>
+                      </div>
+                    ) : (
+                      combinedAddresses.map((addr) => {
+                        const isSelected = currentSelectedId === addr.id;
+                        const isMenuOpen = activeMenuId === addr.id;
 
-                      return (
-                        <div
-                          key={addr.id}
-                          onClick={() => handleSelect(addr)}
-                          className={`p-3.5 rounded-2xl transition-all cursor-pointer flex items-start justify-between border relative ${
-                            isSelected
-                              ? "border-2 border-[#0066FF] bg-[#F0F7FF]/50 shadow-2xs"
-                              : "border-slate-200 bg-white hover:border-slate-300"
-                          }`}
-                        >
-                          <div className="flex items-start gap-3 min-w-0 flex-1">
-                            {/* Left Circular Icon Badge */}
-                            <div
-                              className={`w-11 h-11 rounded-full flex items-center justify-center shrink-0 mt-0.5 ${
-                                isSelected
-                                  ? "bg-[#EFF6FF] border border-[#DBEAFE] text-[#0066FF]"
-                                  : "bg-slate-100 text-slate-600"
-                              }`}
-                            >
-                              {getLabelIcon(addr.label)}
+                        return (
+                          <div
+                            key={addr.id}
+                            onClick={() => handleSelect(addr)}
+                            className={`p-3.5 rounded-2xl transition-all cursor-pointer flex items-start justify-between border relative ${
+                              isSelected
+                                ? "border-2 border-[#0066FF] bg-[#F0F7FF]/50 shadow-2xs"
+                                : "border-slate-200 bg-white hover:border-slate-300"
+                            }`}
+                          >
+                            <div className="flex items-start gap-3 min-w-0 flex-1">
+                              {/* Left Circular Icon Badge */}
+                              <div
+                                className={`w-11 h-11 rounded-full flex items-center justify-center shrink-0 mt-0.5 ${
+                                  isSelected
+                                    ? "bg-[#EFF6FF] border border-[#DBEAFE] text-[#0066FF]"
+                                    : "bg-slate-100 text-slate-600"
+                                }`}
+                              >
+                                {getLabelIcon(addr.label)}
+                              </div>
+
+                              {/* Middle Details */}
+                              <div className="min-w-0 flex-1">
+                                <div className="flex items-center gap-2">
+                                  <span className="text-sm font-bold text-slate-900">
+                                    {addr.label || "Home"}
+                                  </span>
+                                  {isSelected && (
+                                    <span className="px-2 py-0.5 rounded-full bg-[#DBEAFE] text-[#0066FF] text-[10px] font-bold tracking-wide">
+                                      Delivering Here
+                                    </span>
+                                  )}
+                                </div>
+
+                                {addr.name && (
+                                  <p className="text-xs text-slate-600 font-medium mt-1 truncate">
+                                    {addr.name}
+                                    {addr.phone
+                                      ? ` • +91 ${addr.phone.replace(/\D/g, "").slice(-10)}`
+                                      : ""}
+                                  </p>
+                                )}
+
+                                <p className="text-xs text-slate-500 mt-0.5 leading-relaxed line-clamp-2">
+                                  {[
+                                    addr.houseNumber,
+                                    addr.line1,
+                                    addr.line2,
+                                    addr.city,
+                                    addr.state,
+                                    addr.pincode,
+                                  ]
+                                    .filter(Boolean)
+                                    .join(", ")}
+                                </p>
+                              </div>
                             </div>
 
-                            {/* Middle Details */}
-                            <div className="min-w-0 flex-1">
-                              <div className="flex items-center gap-2">
-                                <span className="text-sm font-bold text-slate-900">
-                                  {addr.label || "Home"}
-                                </span>
+                            {/* Right Radio Circle & Options */}
+                            <div className="flex items-center gap-2.5 shrink-0 ml-3 self-center">
+                              {/* Radio Circle */}
+                              <div
+                                className={`w-5 h-5 rounded-full flex items-center justify-center border-2 transition-all ${
+                                  isSelected ? "border-[#0066FF]" : "border-slate-300"
+                                }`}
+                              >
                                 {isSelected && (
-                                  <span className="px-2 py-0.5 rounded-full bg-[#DBEAFE] text-[#0066FF] text-[10px] font-bold tracking-wide">
-                                    Delivering Here
-                                  </span>
+                                  <div className="w-2.5 h-2.5 rounded-full bg-[#0066FF]" />
                                 )}
                               </div>
 
-                              {addr.name && (
-                                <p className="text-xs text-slate-600 font-medium mt-1 truncate">
-                                  {addr.name}
-                                  {addr.phone
-                                    ? ` • +91 ${addr.phone.replace(/\D/g, "").slice(-10)}`
-                                    : ""}
-                                </p>
-                              )}
-
-                              <p className="text-xs text-slate-500 mt-0.5 leading-relaxed line-clamp-2">
-                                {[
-                                  addr.houseNumber,
-                                  addr.line1,
-                                  addr.line2,
-                                  addr.city,
-                                  addr.state,
-                                  addr.pincode,
-                                ]
-                                  .filter(Boolean)
-                                  .join(", ")}
-                              </p>
-                            </div>
-                          </div>
-
-                          {/* Right Radio Circle & Options */}
-                          <div className="flex items-center gap-2.5 shrink-0 ml-3 self-center">
-                            {/* Radio Circle */}
-                            <div
-                              className={`w-5 h-5 rounded-full flex items-center justify-center border-2 transition-all ${
-                                isSelected ? "border-[#0066FF]" : "border-slate-300"
-                              }`}
-                            >
-                              {isSelected && (
-                                <div className="w-2.5 h-2.5 rounded-full bg-[#0066FF]" />
-                              )}
-                            </div>
-
-                            {/* 3-Dots Menu Trigger */}
-                            <div className="relative">
-                              <button
-                                type="button"
-                                onClick={(e) => {
-                                  e.stopPropagation();
-                                  setActiveMenuId(isMenuOpen ? null : addr.id);
-                                }}
-                                className="p-1 rounded-md text-slate-400 hover:text-slate-600 hover:bg-slate-100 transition-colors"
-                              >
-                                <MoreVertical size={16} />
-                              </button>
-
-                              {/* Dropdown Menu */}
-                              {isMenuOpen && (
-                                <div
-                                  className="absolute right-0 top-full mt-1 w-32 bg-white rounded-xl shadow-lg border border-slate-200 py-1 z-30 divide-y divide-slate-100"
-                                  onClick={(e) => e.stopPropagation()}
+                              {/* 3-Dots Menu Trigger */}
+                              <div className="relative">
+                                <button
+                                  type="button"
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    setActiveMenuId(isMenuOpen ? null : addr.id);
+                                  }}
+                                  className="p-1 rounded-md text-slate-400 hover:text-slate-600 hover:bg-slate-100 transition-colors"
                                 >
-                                  <button
-                                    type="button"
-                                    onClick={() => {
-                                      setActiveMenuId(null);
-                                      deleteSavedAddress(addr.id);
-                                      if (user?.id) authDeleteAddress?.(addr.id);
-                                      toast.success("Address removed");
-                                    }}
-                                    className="w-full px-3 py-2 text-left text-xs text-rose-600 hover:bg-rose-50 flex items-center gap-2 font-semibold"
+                                  <MoreVertical size={16} />
+                                </button>
+
+                                {/* Dropdown Menu */}
+                                {isMenuOpen && (
+                                  <div
+                                    className="absolute right-0 top-full mt-1 w-32 bg-white rounded-xl shadow-lg border border-slate-200 py-1 z-30 divide-y divide-slate-100"
+                                    onClick={(e) => e.stopPropagation()}
                                   >
-                                    <Trash2 size={13} />
-                                    <span>Delete</span>
-                                  </button>
-                                </div>
-                              )}
+                                    <button
+                                      type="button"
+                                      onClick={() => {
+                                        setActiveMenuId(null);
+                                        deleteSavedAddress(addr.id);
+                                        if (user?.id) {
+                                          authDeleteAddress?.(addr.id);
+                                          fetch(`/api/addresses/${addr.id}`, { method: "DELETE" }).catch(() => {});
+                                        }
+                                        toast.success("Address removed");
+                                      }}
+                                      className="w-full px-3 py-2 text-left text-xs text-rose-600 hover:bg-rose-50 flex items-center gap-2 font-semibold"
+                                    >
+                                      <Trash2 size={13} />
+                                      <span>Delete</span>
+                                    </button>
+                                  </div>
+                                )}
+                              </div>
                             </div>
                           </div>
-                        </div>
-                      );
-                    })}
+                        );
+                      })
+                    )}
                   </div>
                 </div>
               </>

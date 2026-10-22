@@ -18,47 +18,11 @@ interface DeliveryAddressState {
   setSavedAddresses: (addresses: CustomerAddress[]) => void;
 }
 
-const DEFAULT_SAMPLE_ADDRESSES: CustomerAddress[] = [
-  {
-    id: "addr_home_sample",
-    name: "Sahil Sheikh",
-    phone: "9264920211",
-    label: "Home",
-    line1: "Begur",
-    city: "Bengaluru",
-    state: "Karnataka",
-    pincode: "560114",
-    isDefault: true,
-  },
-  {
-    id: "addr_office_sample",
-    name: "Sahil Sheikh",
-    phone: "9264920211",
-    label: "Office",
-    line1: "HSR Layout",
-    city: "Bengaluru",
-    state: "Karnataka",
-    pincode: "560102",
-    isDefault: false,
-  },
-  {
-    id: "addr_other_sample",
-    name: "Sahil Sheikh",
-    phone: "9264920211",
-    label: "Other",
-    line1: "Koramangala",
-    city: "Bengaluru",
-    state: "Karnataka",
-    pincode: "560034",
-    isDefault: false,
-  },
-];
-
 export const useDeliveryAddressStore = create<DeliveryAddressState>()(
   persist(
     (set, get) => ({
-      selectedAddress: DEFAULT_SAMPLE_ADDRESSES[0],
-      savedAddresses: DEFAULT_SAMPLE_ADDRESSES,
+      selectedAddress: null,
+      savedAddresses: [],
       isAddressModalOpen: false,
 
       openAddressModal: () => set({ isAddressModalOpen: true }),
@@ -102,6 +66,27 @@ export const useDeliveryAddressStore = create<DeliveryAddressState>()(
         selectedAddress: state.selectedAddress,
         savedAddresses: state.savedAddresses,
       }),
+      onRehydrateStorage: () => (state) => {
+        if (state) {
+          // Remove any legacy mock/sample addresses left in localStorage
+          const cleanSaved = (state.savedAddresses || []).filter(
+            (a) =>
+              a &&
+              !a.id?.includes("sample") &&
+              a.phone !== "9264920211" &&
+              !a.name?.includes("Sahil Sheikh")
+          );
+          state.savedAddresses = cleanSaved;
+          if (
+            state.selectedAddress &&
+            (state.selectedAddress.id?.includes("sample") ||
+              state.selectedAddress.phone === "9264920211" ||
+              state.selectedAddress.name?.includes("Sahil Sheikh"))
+          ) {
+            state.selectedAddress = cleanSaved[0] || null;
+          }
+        }
+      },
     }
   )
 );

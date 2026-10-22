@@ -524,10 +524,15 @@ export const useAuthStore = create<AuthState>()(
             useNotificationsStore.getState().reset();
           } catch {}
           try {
+            const { useDeliveryAddressStore } = require("@/lib/delivery-address-store");
+            useDeliveryAddressStore.setState({ selectedAddress: null, savedAddresses: [] });
+          } catch {}
+          try {
             localStorage.removeItem("intrihub-customer-auth");
             localStorage.removeItem("tiletra-customer-auth");
             localStorage.removeItem("intrihub-notifications");
             localStorage.removeItem("intrihub-notifications-v2");
+            localStorage.removeItem("intrihub_delivery_address_store");
             sessionStorage.clear();
             document.cookie = "intrihub_session=; max-age=0; path=/;";
             document.cookie = "tiletra_session=; max-age=0; path=/;";

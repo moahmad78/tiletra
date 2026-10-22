@@ -29,6 +29,7 @@ import {
 import { Category } from "../types";
 import { COLORS, SPACING, RADIUS } from "../constants/theme";
 import { getImageUrl } from "../constants/config";
+import { useTranslation } from "../store/i18nStore";
 
 // In React Native New Architecture (Fabric / Bridgeless), LayoutAnimation is enabled by default
 // and calling setLayoutAnimationEnabledExperimental triggers a no-op warning.
@@ -51,6 +52,10 @@ if (
 interface CategoryGridProps {
   categories: Category[];
   mode?: "grid" | "horizontal";
+  isExpanded?: boolean;
+  onToggleExpand?: () => void;
+  collapsedCount?: number;
+  expandedCount?: number;
 }
 
 const CATEGORY_ICON_MAP: Record<string, any> = {
@@ -66,14 +71,23 @@ const CATEGORY_ICON_MAP: Record<string, any> = {
   "kitchen-sinks": Box,
 };
 
-export const CategoryGrid: React.FC<CategoryGridProps> = ({ categories, mode = "grid" }) => {
+export const CategoryGrid: React.FC<CategoryGridProps> = ({
+  categories,
+  mode = "grid",
+  isExpanded: controlledExpanded,
+  onToggleExpand,
+  collapsedCount = 12,
+  expandedCount,
+}) => {
   const router = useRouter();
+  const { t } = useTranslation();
   const { width: windowWidth } = useWindowDimensions();
   const columns = windowWidth >= 900 ? 8 : windowWidth >= 600 ? 6 : 4;
   const gap = 10;
   const availableWidth = windowWidth - SPACING.md * 2;
   const itemWidth = Math.floor((availableWidth - gap * (columns - 1)) / columns);
-  const [isExpanded, setIsExpanded] = useState(true);
+  const [internalExpanded, setInternalExpanded] = useState(false);
+  const isExpanded = controlledExpanded !== undefined ? controlledExpanded : internalExpanded;
   const bounceAnim = useRef(new Animated.Value(0)).current;
 
   useEffect(() => {
@@ -97,7 +111,11 @@ export const CategoryGrid: React.FC<CategoryGridProps> = ({ categories, mode = "
 
   const toggleExpand = () => {
     LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
-    setIsExpanded((prev) => !prev);
+    if (onToggleExpand) {
+      onToggleExpand();
+    } else {
+      setInternalExpanded((prev) => !prev);
+    }
   };
 
   const handleCategoryPress = (slug: string) => {
@@ -139,7 +157,10 @@ export const CategoryGrid: React.FC<CategoryGridProps> = ({ categories, mode = "
     );
   }
 
-  const displayedCategories = isExpanded ? categories : categories.slice(0, 8);
+  const maxCollapsed = collapsedCount || 12;
+  const displayedCategories = isExpanded
+    ? (expandedCount ? categories.slice(0, expandedCount) : categories)
+    : categories.slice(0, maxCollapsed);
 
   return (
     <View style={styles.container}>
@@ -166,7 +187,7 @@ export const CategoryGrid: React.FC<CategoryGridProps> = ({ categories, mode = "
       </View>
 
       {/* Centered Expand/Collapse Button with Animated Arrow */}
-      {categories.length > 8 && (
+      {categories.length > maxCollapsed && (
         <TouchableOpacity
           style={styles.expandButton}
           onPress={toggleExpand}
@@ -186,7 +207,9 @@ export const CategoryGrid: React.FC<CategoryGridProps> = ({ categories, mode = "
             <ChevronDown size={18} color={COLORS.primary} />
           </Animated.View>
           <Text style={styles.expandText}>
-            {isExpanded ? "Show Less" : `+${categories.length - 8} More Categories`}
+            {isExpanded
+              ? (t("common.showLess") || "Show Less")
+              : `+${categories.length - maxCollapsed} More Categories`}
           </Text>
         </TouchableOpacity>
       )}

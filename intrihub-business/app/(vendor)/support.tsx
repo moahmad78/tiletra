@@ -31,7 +31,11 @@ import {
   HelpCircle,
   FileText,
   MapPin,
+  LogOut,
+  Trash2,
 } from "lucide-react-native";
+import { useAuthStore } from "../../src/store/authStore";
+import { apiClient } from "../../src/api/client";
 import { COLORS, SPACING, RADIUS, SHADOWS } from "../../src/constants/theme";
 
 interface FAQItem {
@@ -95,10 +99,53 @@ const VENDOR_FAQS: FAQItem[] = [
 
 export default function VendorPartnerSupportScreen() {
   const router = useRouter();
+  const { user, logout } = useAuthStore();
   const [expandedFaqId, setExpandedFaqId] = useState<string | null>("1");
   const [queryCategory, setQueryCategory] = useState("General Support");
   const [queryMessage, setQueryMessage] = useState("");
   const [sendingQuery, setSendingQuery] = useState(false);
+
+  const handleLogout = () => {
+    Alert.alert(
+      "Log Out",
+      "Are you sure you want to log out of Intrihub Business?",
+      [
+        { text: "Cancel", style: "cancel" },
+        {
+          text: "Log Out",
+          style: "destructive",
+          onPress: async () => {
+            await logout();
+            router.replace("/(auth)/login" as any);
+          },
+        },
+      ]
+    );
+  };
+
+  const handleDeleteAccount = () => {
+    Alert.alert(
+      "Delete Vendor Account",
+      "Are you sure you want to permanently delete your vendor account and data? This action cannot be undone.",
+      [
+        { text: "Cancel", style: "cancel" },
+        {
+          text: "Delete My Account",
+          style: "destructive",
+          onPress: async () => {
+            try {
+              await apiClient.delete("/api/mobile/auth/me");
+              await logout();
+              Alert.alert("Account Deleted", "Your account has been deleted.");
+              router.replace("/(auth)/login" as any);
+            } catch (err: any) {
+              Alert.alert("Error", err?.response?.data?.error || "Failed to delete account. Please contact support.");
+            }
+          },
+        },
+      ]
+    );
+  };
 
   const handleWhatsApp = () => {
     const text = encodeURIComponent(
@@ -321,6 +368,47 @@ export default function VendorPartnerSupportScreen() {
               Official 100% Verified Merchant Escrow & Transit Insurance Protected
             </Text>
           </View>
+        </View>
+
+        {/* Account & Data Management (Logout & Delete Account) at the very end */}
+        <View style={styles.accountActionSection}>
+          <Text style={styles.accountSectionTitle}>ACCOUNT & DATA PRIVACY</Text>
+
+          {/* Log Out Button */}
+          <TouchableOpacity
+            style={styles.actionRowBtn}
+            onPress={handleLogout}
+            activeOpacity={0.8}
+          >
+            <View style={styles.actionRowLeft}>
+              <View style={[styles.actionIconBox, { backgroundColor: "#FEE2E2" }]}>
+                <LogOut size={18} color={COLORS.error} />
+              </View>
+              <View style={{ marginLeft: 12, flex: 1 }}>
+                <Text style={styles.actionRowTitle}>Sign Out from Vendor Portal</Text>
+                <Text style={styles.actionRowSub}>Safely end your active merchant session</Text>
+              </View>
+            </View>
+            <Text style={styles.actionLogoutText}>Sign Out</Text>
+          </TouchableOpacity>
+
+          {/* Delete Vendor Account Button */}
+          <TouchableOpacity
+            style={[styles.actionRowBtn, { marginTop: 10, borderColor: "#FEE2E2" }]}
+            onPress={handleDeleteAccount}
+            activeOpacity={0.8}
+          >
+            <View style={styles.actionRowLeft}>
+              <View style={[styles.actionIconBox, { backgroundColor: "#FEF2F2" }]}>
+                <Trash2 size={18} color="#DC2626" />
+              </View>
+              <View style={{ marginLeft: 12, flex: 1 }}>
+                <Text style={[styles.actionRowTitle, { color: "#DC2626" }]}>Delete Vendor Account</Text>
+                <Text style={styles.actionRowSub}>Permanently delete vendor account and data</Text>
+              </View>
+            </View>
+            <Text style={styles.actionDeleteText}>Delete</Text>
+          </TouchableOpacity>
         </View>
       </ScrollView>
     </SafeAreaView>
@@ -625,5 +713,69 @@ const styles = StyleSheet.create({
     fontWeight: "700",
     color: "#166534",
     flex: 1,
+  },
+  accountActionSection: {
+    marginTop: 22,
+    marginBottom: 10,
+  },
+  accountSectionTitle: {
+    fontSize: 11,
+    fontWeight: "800",
+    color: "#94A3B8",
+    letterSpacing: 0.8,
+    marginBottom: 10,
+    marginLeft: 4,
+  },
+  actionRowBtn: {
+    backgroundColor: "#FFFFFF",
+    borderRadius: 14,
+    padding: 14,
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    borderWidth: 1,
+    borderColor: "#E2E8F0",
+    ...SHADOWS.sm,
+  },
+  actionRowLeft: {
+    flexDirection: "row",
+    alignItems: "center",
+    flex: 1,
+    marginRight: 10,
+  },
+  actionIconBox: {
+    width: 38,
+    height: 38,
+    borderRadius: 10,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  actionRowTitle: {
+    fontSize: 13.5,
+    fontWeight: "700",
+    color: "#0F172A",
+  },
+  actionRowSub: {
+    fontSize: 11,
+    color: "#64748B",
+    marginTop: 2,
+  },
+  actionLogoutText: {
+    fontSize: 12,
+    fontWeight: "700",
+    color: COLORS.error,
+    backgroundColor: "#FEE2E2",
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderRadius: 8,
+  },
+  actionDeleteText: {
+    fontSize: 12,
+    fontWeight: "700",
+    color: "#DC2626",
+    backgroundColor: "#FEF2F2",
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderRadius: 8,
   },
 });

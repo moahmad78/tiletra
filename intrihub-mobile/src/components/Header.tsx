@@ -7,6 +7,7 @@ import {
   Platform,
   StatusBar,
   Animated,
+  Image as RNImage,
 } from "react-native";
 import { Image } from "expo-image";
 import { LinearGradient } from "expo-linear-gradient";
@@ -104,11 +105,10 @@ export const Header: React.FC<HeaderProps> = ({
             onPress={() => router.push("/(tabs)/home")}
             activeOpacity={0.85}
           >
-            <Image
+            <RNImage
               source={require("../../assets/intri-web-logo.png")}
               style={styles.brandLogo}
-              contentFit="contain"
-              transition={150}
+              resizeMode="contain"
             />
           </TouchableOpacity>
 
@@ -202,15 +202,20 @@ const styles = StyleSheet.create({
     backgroundColor: "transparent",
   },
   brandContainer: {
-    marginRight: 6,
+    width: 110,
+    height: 32,
     justifyContent: "center",
+    alignItems: "flex-start",
+    flexShrink: 0,
+    marginRight: 8,
   },
   brandLogo: {
-    width: 114,
+    width: 110,
     height: 32,
   },
   locationPill: {
     flex: 1,
+    minWidth: 0,
     flexDirection: "row",
     alignItems: "center",
     backgroundColor: "rgba(5, 42, 81, 0.07)",

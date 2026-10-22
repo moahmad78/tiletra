@@ -22,6 +22,7 @@ import { usePushNotifications } from "../src/hooks/usePushNotifications";
 import AnimatedSplashScreen from "../src/components/AnimatedSplashScreen";
 import { ErrorBoundary } from "../src/components/ErrorBoundary";
 import AppUpdateModal from "../src/components/AppUpdateModal";
+import CustomAlertModal from "../src/components/CustomAlertModal";
 import { COLORS } from "../src/constants/theme";
 import LanguageModal from "../src/components/LanguageModal";
 import { useI18nStore } from "../src/store/i18nStore";
@@ -179,6 +180,9 @@ export default function RootLayout() {
 
           {/* In-App Update Popup & Notification Dispatcher */}
           <AppUpdateModal />
+
+          {/* Branded Themed Alert & Confirmation Modal */}
+          <CustomAlertModal />
 
           {/* Animated Quick-Commerce Splash Screen Layer */}
           {splashMounted && (

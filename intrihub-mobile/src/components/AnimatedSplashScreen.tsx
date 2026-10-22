@@ -8,10 +8,11 @@ import {
   Easing,
   Platform,
   StatusBar,
+  Image as RNImage,
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { LinearGradient } from "expo-linear-gradient";
-import { Image } from "expo-image";
+
 import Svg, {
   Path,
   Circle,
@@ -516,41 +517,42 @@ export default function AnimatedSplashScreen({
           </View>
         </View>
 
-        {/* CENTER: Intrihub Original Brand Logo */}
-        <Animated.View
-          style={[
-            styles.brandSection,
-            {
-              opacity: logoOpacity,
-              transform: [{ scale: logoScale }],
-            },
-          ]}
-        >
-          <View style={styles.logoWrapper}>
-            <Image
-              source={require("../../assets/intri-web-logo.png")}
-              style={styles.originalLogo}
-              contentFit="contain"
-              transition={150}
-            />
-          </View>
-        </Animated.View>
+        {/* CENTER: Intrihub Original Brand Logo & Tagline */}
+        <View style={styles.centerBrandBlock}>
+          <Animated.View
+            style={[
+              styles.brandSection,
+              {
+                opacity: logoOpacity,
+                transform: [{ scale: logoScale }],
+              },
+            ]}
+          >
+            <View style={styles.logoWrapper}>
+              <RNImage
+                source={require("../../assets/intri-web-logo.png")}
+                style={styles.originalLogo}
+                resizeMode="contain"
+              />
+            </View>
+          </Animated.View>
 
-        {/* Tagline: "Every Material. Every Space." */}
-        <Animated.View
-          style={[
-            styles.taglineWrapper,
-            {
-              opacity: taglineOpacity,
-              transform: [{ translateY: taglineTranslateY }],
-            },
-          ]}
-        >
-          <Text style={styles.taglineText}>
-            <Text style={styles.taglineNavy}>Every Material. </Text>
-            <Text style={styles.taglineOrange}>Every Space.</Text>
-          </Text>
-        </Animated.View>
+          {/* Tagline: "Every Material. Every Space." */}
+          <Animated.View
+            style={[
+              styles.taglineWrapper,
+              {
+                opacity: taglineOpacity,
+                transform: [{ translateY: taglineTranslateY }],
+              },
+            ]}
+          >
+            <Text style={styles.taglineText}>
+              <Text style={styles.taglineNavy}>Every Material. </Text>
+              <Text style={styles.taglineOrange}>Every Space.</Text>
+            </Text>
+          </Animated.View>
+        </View>
 
         {/* BOTTOM: Dynamic Highway + Moving Light Trails + Skyline + Bike Delivery */}
         <View style={styles.bottomSection}>
@@ -920,22 +922,30 @@ const styles = StyleSheet.create({
     width: 24,
     height: 30,
   },
+  centerBrandBlock: {
+    alignItems: "center",
+    justifyContent: "center",
+    width: "100%",
+    paddingHorizontal: 20,
+    marginVertical: "auto",
+  },
   brandSection: {
     alignItems: "center",
     justifyContent: "center",
-    marginTop: -15,
+    marginBottom: 6,
   },
   logoWrapper: {
     alignItems: "center",
     justifyContent: "center",
-    paddingVertical: 8,
+    width: 260,
+    height: 72,
   },
   originalLogo: {
     width: 250,
-    height: 74,
+    height: 64,
   },
   taglineWrapper: {
-    marginTop: 6,
+    marginTop: 4,
     alignItems: "center",
   },
   taglineText: {
