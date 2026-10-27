@@ -16,12 +16,6 @@ import { Bell, X, Package } from "lucide-react-native";
 import { WebView } from "react-native-webview";
 import { useOrderAlertStore } from "../store/orderAlertStore";
 import { updateVendorOrderStatus, rejectVendorOrder } from "../api/vendor";
-import {
-  fireSystemAlarmNotification,
-  dismissOrderAlarm,
-  triggerAlertHaptics,
-  ORDER_ALARM_AUDIO_HTML,
-} from "../utils/orderAlarm";
 
 export default function IncomingOrderAlertModal() {
   const router = useRouter();
@@ -29,63 +23,71 @@ export default function IncomingOrderAlertModal() {
   const { alert, isOpen, isRinging, closeAlert, stopRinging } = useOrderAlertStore();
   const [isSubmitting, setIsSubmitting] = React.useState(false);
   const pulseAnim = useRef(new Animated.Value(1)).current;
-  const hapticIntervalRef = useRef<any>(null);
-  const alarmIntervalRef = useRef<any>(null);
+  const ringingIntervalRef = useRef<any>(null);
+  const webAudioRef = useRef<any>(null);
 
-  // High-Volume Ringing / Alarm Notification & Haptics Loop
+  // Ringing / Haptics loop + Web audio fallback
   useEffect(() => {
-    if (isOpen && isRinging && alert) {
-      // 1. Concentric visual pulse animation
+    if (isOpen) {
+      if (Platform.OS === "web") {
+        try {
+          const audio = new Audio("https://www.intrihub.com/sounds/ring.mp3");
+          audio.loop = true;
+          audio.play().catch(() => {});
+          webAudioRef.current = audio;
+        } catch {}
+      }
+
       Animated.loop(
         Animated.sequence([
           Animated.timing(pulseAnim, {
-            toValue: 1.15,
-            duration: 450,
+            toValue: 1.12,
+            duration: 500,
             useNativeDriver: true,
           }),
           Animated.timing(pulseAnim, {
             toValue: 1,
-            duration: 450,
+            duration: 500,
             useNativeDriver: true,
           }),
         ])
       ).start();
 
-      // 2. Heavy Haptics loop
-      triggerAlertHaptics();
-      hapticIntervalRef.current = setInterval(triggerAlertHaptics, 1400);
-
-      // 3. Android System Alarm stream notifications (Rings audibly even in Silent/Vibrate mode)
-      fireSystemAlarmNotification(alert.orderId, alert.totalAmount);
-      alarmIntervalRef.current = setInterval(() => {
-        fireSystemAlarmNotification(alert.orderId, alert.totalAmount);
-      }, 4200);
+      const triggerHaptic = () => {
+        try {
+          Haptics.notificationAsync(Haptics.NotificationFeedbackType.Warning);
+        } catch {}
+      };
+      triggerHaptic();
+      ringingIntervalRef.current = setInterval(triggerHaptic, 1500);
+    } else {
+      if (webAudioRef.current) {
+        try {
+          webAudioRef.current.pause();
+          webAudioRef.current.currentTime = 0;
+        } catch {}
+        webAudioRef.current = null;
+      }
     }
 
     return () => {
-      if (hapticIntervalRef.current) {
-        clearInterval(hapticIntervalRef.current);
-        hapticIntervalRef.current = null;
+      if (ringingIntervalRef.current) {
+        clearInterval(ringingIntervalRef.current);
+        ringingIntervalRef.current = null;
       }
-      if (alarmIntervalRef.current) {
-        clearInterval(alarmIntervalRef.current);
-        alarmIntervalRef.current = null;
+      if (webAudioRef.current) {
+        try {
+          webAudioRef.current.pause();
+        } catch {}
+        webAudioRef.current = null;
       }
-      dismissOrderAlarm();
     };
-  }, [isOpen, isRinging, alert?.orderId]);
+  }, [isOpen]);
 
   if (!isOpen || !alert) return null;
 
-  const handleClose = () => {
-    stopRinging();
-    dismissOrderAlarm();
-    closeAlert();
-  };
-
   const handleAccept = async () => {
     stopRinging();
-    dismissOrderAlarm();
     setIsSubmitting(true);
     try {
       const splitOrOrderId = alert.splitId || alert.orderId;
@@ -111,7 +113,6 @@ export default function IncomingOrderAlertModal() {
 
   const handleReject = async () => {
     stopRinging();
-    dismissOrderAlarm();
     setIsSubmitting(true);
     try {
       const splitOrOrderId = alert.splitId || alert.orderId;
@@ -132,30 +133,41 @@ export default function IncomingOrderAlertModal() {
       visible={isOpen}
       transparent
       animationType="slide"
-      onRequestClose={handleClose}
+      onRequestClose={closeAlert}
       statusBarTranslucent
     >
+      {Platform.OS !== "web" && isOpen && (
+        <View style={{ width: 0, height: 0, opacity: 0, position: "absolute" }}>
+          <WebView
+            source={{
+              html: `
+                <!DOCTYPE html>
+                <html>
+                  <head><meta name="viewport" content="width=device-width, initial-scale=1"></head>
+                  <body style="background:transparent;margin:0;padding:0;">
+                    <audio id="ring" src="https://www.intrihub.com/sounds/ring.mp3" autoplay loop playsinline></audio>
+                    <script>
+                      var el = document.getElementById('ring');
+                      el.play().catch(function() {
+                        window.addEventListener('touchstart', function() { el.play(); }, { once: true });
+                      });
+                    </script>
+                  </body>
+                </html>
+              `,
+            }}
+            allowsInlineMediaPlayback={true}
+            mediaPlaybackRequiresUserAction={false}
+            style={{ width: 1, height: 1 }}
+          />
+        </View>
+      )}
       <View style={styles.overlay}>
-        {/* Hidden Audio Synthesizer WebView for Continuous Loud Ring Chime */}
-        {isRinging && (
-          <View style={styles.hiddenAudioContainer} pointerEvents="none">
-            <WebView
-              source={{ html: ORDER_ALARM_AUDIO_HTML }}
-              originWhitelist={["*"]}
-              javaScriptEnabled
-              domStorageEnabled
-              mediaPlaybackRequiresUserAction={false}
-              allowsInlineMediaPlayback
-              style={styles.hiddenWebView}
-            />
-          </View>
-        )}
-
         {/* Backdrop touch to dismiss */}
         <TouchableOpacity
           style={styles.backdrop}
           activeOpacity={1}
-          onPress={handleClose}
+          onPress={closeAlert}
         />
 
         {/* Bottom Sheet Card */}
@@ -166,7 +178,7 @@ export default function IncomingOrderAlertModal() {
           {/* Close button (top right) */}
           <TouchableOpacity
             style={styles.closeBtn}
-            onPress={handleClose}
+            onPress={closeAlert}
             activeOpacity={0.7}
             hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}
           >
@@ -395,18 +407,5 @@ const styles = StyleSheet.create({
     fontSize: 15,
     fontWeight: "700",
     color: "#FFFFFF",
-  },
-  hiddenAudioContainer: {
-    width: 1,
-    height: 1,
-    opacity: 0,
-    position: "absolute",
-    top: -100,
-    left: -100,
-    overflow: "hidden",
-  },
-  hiddenWebView: {
-    width: 1,
-    height: 1,
   },
 });
