@@ -211,20 +211,28 @@ async function main() {
 
   // Create immutable Audit Log
   try {
-    await prisma.adminAuditLog.create({
-      data: {
-        userId: "CLI_ADMIN_SCRIPT",
-        userEmail: "system-cli@intrihub.com",
-        action: "APP_VERSION_CONFIG_CLI_UPDATE",
-        entity: "StoreSettings",
-        details: {
-          app: targetApp,
-          platform: targetPlatform,
-          newConfig: platformTarget,
-          timestamp: new Date().toISOString(),
-        } as any,
-      },
+    const adminUser = await prisma.user.findFirst({
+      where: { role: "ADMIN" },
+      select: { id: true, email: true },
     });
+    if (adminUser) {
+      await prisma.adminAuditLog.create({
+        data: {
+          adminId: adminUser.id,
+          action: "UPDATE_APP_VERSION_CONFIG",
+          entity: "StoreSettings",
+          entityId: settings.id,
+          actorRole: "ADMIN",
+          after: {
+            app: targetApp,
+            platform: targetPlatform,
+            newConfig: platformTarget,
+            source: "CLI_SCRIPT",
+            timestamp: new Date().toISOString(),
+          } as any,
+        },
+      });
+    }
   } catch (auditErr) {
     console.warn("⚠️ Warning: Could not write to AdminAuditLog:", auditErr);
   }
