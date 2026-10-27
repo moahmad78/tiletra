@@ -28,7 +28,13 @@ export async function GET(req: NextRequest) {
     const parentOrders = await prisma.order.findMany({
       where: { id: { in: orderIds } },
       include: {
-        items: true,
+        items: {
+          include: {
+            product: {
+              select: { vendorId: true },
+            },
+          },
+        },
       },
     });
 
@@ -37,10 +43,11 @@ export async function GET(req: NextRequest) {
     const recentOrders = recentSplits.map((s) => {
       const parent = orderMap.get(s.orderId);
       const allParentItems = parent?.items || [];
-      const hasAnyVendorId = allParentItems.some((it: any) => Boolean(it.vendorId));
-      const vendorItems = hasAnyVendorId
-        ? allParentItems.filter((it: any) => it.vendorId === s.vendorId)
-        : allParentItems;
+      const vendorItems = allParentItems.filter(
+        (it: any) =>
+          it.vendorId === s.vendorId ||
+          (it.product && it.product.vendorId === s.vendorId)
+      );
 
       const rawPhone = parent?.deliveryPhone || parent?.customerPhone || "";
       const cleanDigits = rawPhone.replace(/\D/g, "");

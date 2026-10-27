@@ -1129,7 +1129,15 @@ export async function getVendorOrders(vendorId?: string) {
     const parentOrders = await prisma.order.findMany({
       where: { id: { in: orderIds } },
       include: {
-        items: true,
+        items: {
+          include: {
+            product: {
+              select: {
+                vendorId: true,
+              },
+            },
+          },
+        },
         deliveryPartner: true,
       },
     });
@@ -1139,10 +1147,19 @@ export async function getVendorOrders(vendorId?: string) {
     const result = splits.map((split) => {
       const parent = orderMap.get(split.orderId);
       const allParentItems = parent?.items || [];
-      const hasAnyVendorId = allParentItems.some((it: any) => Boolean(it.vendorId));
-      const vendorItems = hasAnyVendorId
-        ? allParentItems.filter((it: any) => it.vendorId === split.vendorId)
-        : allParentItems;
+      
+      // STRICT VENDOR ISOLATION:
+      // A vendor MUST ONLY receive & see items belonging to their store catalog.
+      const vendorItems = allParentItems.filter((it: any) => {
+        if (it.vendorId) {
+          return it.vendorId === split.vendorId;
+        }
+        if (it.product && it.product.vendorId) {
+          return it.product.vendorId === split.vendorId;
+        }
+        // Fallback ONLY if the order is single-vendor legacy without stamped vendorId
+        return splits.length === 1 && split.vendorId === effectiveVendorId;
+      });
       const rawItems = vendorItems;
 
       const formattedItems = rawItems.map((it: any) => ({

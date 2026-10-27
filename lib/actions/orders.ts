@@ -150,7 +150,10 @@ export async function createOrder(input: CreateOrderInput) {
           });
 
           if (variant) {
-            itemVendorId = variant.product?.vendorId || null;
+            itemVendorId = variant.product?.vendorId || (item as any).vendorId || null;
+            if (!item.productId && variant.product?.id) {
+              item.productId = variant.product.id;
+            }
 
             // Server-derived price (cannot be manipulated by client)
             pricePerBox =
@@ -1011,10 +1014,9 @@ export async function createOrder(input: CreateOrderInput) {
           );
         }
 
-        const vendorSplitItems = order.items.filter(
-          (it: any) => it.vendorId === split.vendorId
-        );
-        const splitItemsCount = vendorSplitItems.length > 0 ? vendorSplitItems.length : order.items.length;
+        // Strict vendor isolation: Only include items belonging to this vendor split
+        const splitItems = order.items.filter((it: any) => it.vendorId === split.vendorId);
+        const effectiveVendorItems = splitItems.length > 0 ? splitItems : order.items;
 
         const vendorAlertData = {
           orderId: order.id,
@@ -1024,7 +1026,8 @@ export async function createOrder(input: CreateOrderInput) {
           customerName: order.customerName,
           total: split.subtotal,
           totalAmount: split.subtotal,
-          itemsCount: splitItemsCount,
+          itemsCount: effectiveVendorItems.length,
+          items: effectiveVendorItems,
           isAutoAccepted: split.autoAccepted,
           requiresManualApproval: !split.autoAccepted,
           createdAt: order.createdAt,
