@@ -22,13 +22,13 @@ async function main() {
     throw new Error("Vendor vendor@intrihub.com not found!");
   }
 
-  console.log(`✓ Found Vendor: ${vendor.storeName} (Vendor ID: ${vendor.id}, User ID: ${vendor.ownerId})`);
+  console.log(`✓ Found Vendor: ${vendor.businessName} (Vendor ID: ${vendor.id}, User ID: ${vendor.ownerId})`);
 
   const product = vendor.products[0];
   const variant = product?.variants[0];
   const productName = product?.name || "Vitrified Premium Floor Tiles (2x2)";
   const variantDetails = variant ? `${variant.size} • ${variant.finish || "Glossy"}` : "Standard Box";
-  const unitPrice = product?.price || 1450;
+  const unitPrice = variant?.pricePerBox || variant?.price || product?.pricePerSqft || 1450;
   const quantity = 3;
   const subtotal = unitPrice * quantity;
 
@@ -175,7 +175,7 @@ async function main() {
 
   console.log("\n🎉 TEST ORDER DISPATCHED SUCCESSFULLY!");
   console.log(`Order ID: ${order.id}`);
-  console.log(`Target Vendor: ${vendor.storeName} (${vendor.contactEmail})`);
+  console.log(`Target Vendor: ${vendor.businessName} (${vendor.contactEmail})`);
   console.log(`Amount: ₹${subtotal}`);
 }
 
