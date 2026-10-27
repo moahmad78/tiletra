@@ -57,6 +57,22 @@ const getCleanPhone = (phone?: string | null) => {
   return digits.length > 10 ? digits.slice(-10) : digits;
 };
 
+const formatOrderTime = (dateStr?: string | Date | null) => {
+  if (!dateStr) return "";
+  try {
+    const d = new Date(dateStr);
+    return d.toLocaleDateString("en-IN", {
+      day: "2-digit",
+      month: "short",
+      hour: "2-digit",
+      minute: "2-digit",
+      hour12: true,
+    });
+  } catch {
+    return "";
+  }
+};
+
 export default function VendorOrdersScreen() {
   const router = useRouter();
   const queryClient = useQueryClient();
@@ -130,7 +146,13 @@ export default function VendorOrdersScreen() {
     },
   });
 
-  const orders = data?.orders || [];
+  const rawOrders = data?.orders || [];
+  // Strict serial chronological sort: latest orders always appear first on top
+  const orders = [...rawOrders].sort((a, b) => {
+    const timeA = new Date(a.createdAt || 0).getTime();
+    const timeB = new Date(b.createdAt || 0).getTime();
+    return timeB - timeA;
+  });
 
   const handleOpenStatusModal = (order: VendorOrderSplit) => {
     setSelectedSplit(order);
@@ -156,8 +178,13 @@ export default function VendorOrdersScreen() {
     return (
       <View style={styles.orderCard}>
         <View style={styles.cardHeader}>
-          <View>
-            <Text style={styles.orderId}>Order #{item.orderId}</Text>
+          <View style={{ flex: 1, paddingRight: 8 }}>
+            <View style={{ flexDirection: "row", alignItems: "center", justifyContent: "space-between", marginBottom: 2 }}>
+              <Text style={styles.orderId}>Order #{item.orderId}</Text>
+              {item.createdAt ? (
+                <Text style={styles.orderTimeText}>{formatOrderTime(item.createdAt)}</Text>
+              ) : null}
+            </View>
             <Text style={styles.customerName}>{item.customerName}</Text>
             {item.customerPhone ? (
               <Text style={styles.customerPhone}>
@@ -551,6 +578,11 @@ const styles = StyleSheet.create({
     fontSize: 15,
     fontWeight: "800",
     color: COLORS.primary,
+  },
+  orderTimeText: {
+    fontSize: 11,
+    color: COLORS.textTertiary,
+    fontWeight: "600",
   },
   customerName: {
     fontSize: 13,

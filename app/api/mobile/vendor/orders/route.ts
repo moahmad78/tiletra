@@ -19,6 +19,13 @@ export async function GET(req: NextRequest) {
 
     const allOrders = await getVendorOrders(auth.vendor.id);
 
+    // Strict chronological descending sort (latest orders first)
+    allOrders.sort((a, b) => {
+      const timeA = new Date(a.createdAt || 0).getTime();
+      const timeB = new Date(b.createdAt || 0).getTime();
+      return timeB - timeA;
+    });
+
     const filtered = statusFilter === "all"
       ? allOrders
       : allOrders.filter((o) => o.fulfillmentStatus?.toLowerCase() === statusFilter.toLowerCase());

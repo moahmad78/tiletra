@@ -99,7 +99,13 @@ export default function VendorDashboardScreen() {
 
   const stats = data?.stats;
   const vendor = data?.vendor;
-  const recentOrders = data?.recentOrders || [];
+  const rawRecent = data?.recentOrders || [];
+  // Strict serial chronological sort: latest orders always appear first on top
+  const recentOrders = [...rawRecent].sort((a, b) => {
+    const timeA = new Date(a.createdAt || 0).getTime();
+    const timeB = new Date(b.createdAt || 0).getTime();
+    return timeB - timeA;
+  });
 
   const statusMutation = useMutation({
     mutationFn: (newOnline: boolean) => updateVendorStatus({ isOnline: newOnline }),
@@ -370,8 +376,13 @@ export default function VendorDashboardScreen() {
               activeOpacity={0.85}
             >
               <View style={styles.orderCardHeader}>
-                <View>
-                  <Text style={styles.orderIdText}>Order #{order.orderId}</Text>
+                <View style={{ flex: 1, paddingRight: 8 }}>
+                  <View style={{ flexDirection: "row", alignItems: "center", justifyContent: "space-between", marginBottom: 2 }}>
+                    <Text style={styles.orderIdText}>Order #{order.orderId}</Text>
+                    {order.createdAt ? (
+                      <Text style={styles.orderTimeText}>{formatOrderTime(order.createdAt)}</Text>
+                    ) : null}
+                  </View>
                   <Text style={styles.customerName}>{order.customerName}</Text>
                 </View>
                 <View style={[styles.statusPill, getStatusStyle(order.fulfillmentStatus)]}>
@@ -393,6 +404,22 @@ export default function VendorDashboardScreen() {
       </ScrollView>
     </View>
   );
+}
+
+function formatOrderTime(dateStr?: string | Date | null) {
+  if (!dateStr) return "";
+  try {
+    const d = new Date(dateStr);
+    return d.toLocaleDateString("en-IN", {
+      day: "2-digit",
+      month: "short",
+      hour: "2-digit",
+      minute: "2-digit",
+      hour12: true,
+    });
+  } catch {
+    return "";
+  }
 }
 
 function formatStatus(status?: string) {
@@ -663,6 +690,11 @@ const styles = StyleSheet.create({
     fontSize: 14,
     fontWeight: "800",
     color: COLORS.primary,
+  },
+  orderTimeText: {
+    fontSize: 11,
+    color: COLORS.textTertiary,
+    fontWeight: "600",
   },
   customerName: {
     fontSize: 12,

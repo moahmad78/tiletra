@@ -1087,7 +1087,7 @@ export async function getVendorOrders(vendorId?: string) {
 
     const orderMap = new Map(parentOrders.map((o) => [o.id, o]));
 
-    return splits.map((split) => {
+    const result = splits.map((split) => {
       const parent = orderMap.get(split.orderId);
       const allParentItems = parent?.items || [];
       const hasAnyVendorId = allParentItems.some((it: any) => Boolean(it.vendorId));
@@ -1178,6 +1178,15 @@ export async function getVendorOrders(vendorId?: string) {
           : null,
       };
     });
+
+    // Strict serial chronological sort: latest orders always appear first on top
+    result.sort((a, b) => {
+      const timeA = new Date(a.createdAt || 0).getTime();
+      const timeB = new Date(b.createdAt || 0).getTime();
+      return timeB - timeA;
+    });
+
+    return result;
   } catch (error) {
     console.error("getVendorOrders error:", error);
     return [];

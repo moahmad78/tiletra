@@ -116,6 +116,22 @@ export default function VendorOrderDetailScreen() {
   const items = Array.isArray(split.items) ? split.items : [];
   const displayedItems = showAllItems ? items : items.slice(0, 3);
 
+  const formatOrderTime = (dateStr?: string | Date | null) => {
+    if (!dateStr) return "";
+    try {
+      const d = new Date(dateStr);
+      return d.toLocaleDateString("en-IN", {
+        day: "2-digit",
+        month: "short",
+        hour: "2-digit",
+        minute: "2-digit",
+        hour12: true,
+      });
+    } catch {
+      return "";
+    }
+  };
+
   const handleCallRider = () => {
     Linking.openURL(`tel:918765432109`).catch(() => {});
   };
@@ -129,9 +145,16 @@ export default function VendorOrderDetailScreen() {
         </TouchableOpacity>
 
         <View style={styles.headerTitleRow}>
-          <Text style={styles.orderTitle} numberOfLines={1}>
-            Order #{orderNumber}
-          </Text>
+          <View style={{ flex: 1, paddingRight: 6 }}>
+            <Text style={styles.orderTitle} numberOfLines={1}>
+              Order #{orderNumber}
+            </Text>
+            {split.createdAt ? (
+              <Text style={styles.orderTimestamp}>
+                Placed on {formatOrderTime(split.createdAt)}
+              </Text>
+            ) : null}
+          </View>
           <View
             style={[
               styles.statusBadge,
@@ -441,6 +464,12 @@ const styles = StyleSheet.create({
     fontWeight: "800",
     color: "#0F172A",
     fontFamily: "PlusJakartaSans_800ExtraBold",
+  },
+  orderTimestamp: {
+    fontSize: 11,
+    color: "#64748B",
+    marginTop: 2,
+    fontWeight: "600",
   },
   statusBadge: {
     paddingHorizontal: 8,
