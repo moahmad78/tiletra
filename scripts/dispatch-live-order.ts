@@ -80,28 +80,28 @@ async function main() {
           },
         ],
       },
-      splits: {
-        create: [
-          {
-            id: splitId,
-            vendorId: vendor.id,
-            subtotal,
-            commissionRate: 15.0,
-            commissionAmount: (subtotal * 15) / 100,
-            vendorPayoutAmount: subtotal - (subtotal * 15) / 100,
-            fulfillmentStatus: "processing",
-            autoAccepted: false,
-          },
-        ],
       },
     },
     include: {
       items: true,
-      splits: true,
     },
   });
 
-  console.log(`✓ Created Order in DB: ${order.id} (Split ID: ${splitId}) - Total: ₹${order.total}`);
+  const split = await prisma.vendorOrderSplit.create({
+    data: {
+      id: splitId,
+      orderId: order.id,
+      vendorId: vendor.id,
+      subtotal,
+      commissionRate: 15.0,
+      commissionAmount: (subtotal * 15) / 100,
+      vendorPayoutAmount: subtotal - (subtotal * 15) / 100,
+      fulfillmentStatus: "processing",
+      autoAccepted: false,
+    },
+  });
+
+  console.log(`✓ Created Order in DB: ${order.id} (Split ID: ${split.id}) - Total: ₹${order.total}`);
 
   // 4. Broadcast via Socket Server
   const vendorRooms = [
