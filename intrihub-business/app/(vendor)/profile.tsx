@@ -340,10 +340,11 @@ export default function VendorProfileScreen() {
                 title: "📦 New Order Received!",
                 body: "Order #84920: Vitrified Glazed Tiles (24 Boxes) received. Tap to dispatch.",
                 sound: "default",
-                channelId: "orders_high_importance",
                 data: { screen: "/(vendor)/orders", id: "TEST_84920" },
               },
-              trigger: null,
+              trigger: {
+                channelId: "urgent_order_alarm_v3",
+              } as any,
             });
             localSuccess = true;
           } catch (localErr) {

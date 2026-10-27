@@ -334,7 +334,7 @@ export default function VendorDashboardScreen() {
             <View style={[styles.statIconCircle, { backgroundColor: "rgba(37, 99, 235, 0.15)" }]}>
               <Package size={20} color={COLORS.accentBlue} />
             </View>
-            <Text style={styles.statNumber}>{stats?.activeProductsCount || stats?.totalProducts || 0}</Text>
+            <Text style={styles.statNumber}>{stats?.activeProductsCount || (stats as any)?.totalProducts || 0}</Text>
             <Text style={styles.statTitle}>Product Catalog</Text>
           </TouchableOpacity>
 
@@ -346,7 +346,7 @@ export default function VendorDashboardScreen() {
             <View style={[styles.statIconCircle, { backgroundColor: "rgba(239, 68, 68, 0.15)" }]}>
               <AlertTriangle size={20} color={COLORS.accentRed} />
             </View>
-            <Text style={styles.statNumber}>{stats?.lowStockProductsCount || stats?.lowStockCount || 0}</Text>
+            <Text style={styles.statNumber}>{stats?.lowStockProductsCount || (stats as any)?.lowStockCount || 0}</Text>
             <Text style={styles.statTitle}>Low Stock Items</Text>
           </TouchableOpacity>
         </View>

@@ -30,7 +30,7 @@ export const useOrderAlertStore = create<OrderAlertState>((set) => ({
     set({
       alert: data,
       isOpen: true,
-      isRinging: data.requiresManualApproval,
+      isRinging: true,
     }),
 
   closeAlert: () =>
