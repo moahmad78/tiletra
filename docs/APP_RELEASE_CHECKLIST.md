@@ -91,16 +91,35 @@ eas submit --platform android --profile production
 6. Click **Review Release** and **Start rollout to Production**.
 
 > ⚠️ **CRITICAL RULE:**
+> **latestVersionCode Play Console/EAS build se lo, app.json se nahi, aur config tab update karo jab Play Store par release "Available" dikhe.**
+>
 > **DO NOT** update the backend version policy until Google Play has approved the release and the status in Play Console shows **"Available on Google Play"**.
 > If you update the backend policy early, existing users will be prompted to update to a version that is not yet downloadable from the Play Store!
 
 ---
 
-## 5. Publish In-App Update Policy (Admin Screen)
+## 5. Publish In-App Update Policy (3 Supported Ways)
 
-Once the release is officially **LIVE** on Google Play Store:
+Once the release is officially **"Available on Google Play"**:
 
-1. Open **Intrihub Business App** on your device.
+> **Rule:** `latestVersionCode Play Console/EAS build se lo, app.json se nahi, aur config tab update karo jab Play Store par release "Available" dikhe.`
+
+You can update the version configuration using any of the following 3 ways:
+
+### Option A: Web Admin Settings (Fastest & No App Installation Needed)
+1. Open [https://www.intrihub.com/admin/settings](https://www.intrihub.com/admin/settings) in your browser.
+2. Scroll to **Section 5: Mobile App Version Governance**.
+3. Under the target app (**Customer App** or **Business App**), fill in:
+   - **Latest Version (Semver)**: e.g. `1.2.18`
+   - **Version Code (Build #)**: Take from Play Console/EAS build (e.g. `37`)
+   - **Min Supported Version**: e.g. `1.2.0`
+   - **Min Version Code**: e.g. `30`
+   - **Force Update Wall**: Check only if mandatory/breaking
+   - **Popup Title, Description, and Release Notes**
+4. Click **Save Settings** at the bottom.
+
+### Option B: Intrihub Business Mobile App
+1. Open **Intrihub Business App** on your phone.
 2. Log in with your authorized admin account (`ADMIN_ALLOWED_EMAIL`).
 3. Tap **Account** (Bottom Tab) > **App Versions & In-App Updates** (under *Operations & Audit*).
    *(Alternatively: tap **Settings** > **App Release & Versions** banner).*
@@ -116,6 +135,19 @@ Once the release is officially **LIVE** on Google Play Store:
    - **Popup Title & Message**: Enter friendly text explaining why updating is beneficial.
    - **Release Notes**: Enter bullets (one per line) describing new features and fixes.
 6. Tap **Save & Publish App Policy**.
+
+### Option C: Safe Terminal / CLI Script (Direct Server Execution)
+If you prefer updating from the terminal or VPS without opening a browser or app:
+```bash
+# 1. Inspect current live versions in DB:
+npx tsx scripts/set-app-version.ts --show
+
+# 2. Update Customer Android App (e.g., v1.2.18, code 37):
+npx tsx scripts/set-app-version.ts --app customer --version 1.2.18 --code 37
+
+# 3. Update Business Android App (e.g., v1.0.28, code 36):
+npx tsx scripts/set-app-version.ts --app business --version 1.0.28 --code 36
+```
 
 ---
 

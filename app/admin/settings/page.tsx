@@ -197,8 +197,19 @@ export default function AdminSettingsPage() {
 
     for (const item of appsToValidate) {
       if (!isValidSemver(item.config.latestVersion)) {
-        toast.error(`Invalid Latest Version "${item.config.latestVersion}" for ${item.name}. Format must be X.Y or X.Y.Z (e.g. 1.2.5).`);
+        toast.error(`Invalid Latest Version "${item.config.latestVersion}" for ${item.name}. Format must be X.Y or X.Y.Z (e.g. 1.2.17).`);
         return;
+      }
+      if (
+        item.config.latestVersionCode !== undefined &&
+        item.config.latestVersionCode !== null &&
+        item.config.latestVersionCode !== ""
+      ) {
+        const code = Number(item.config.latestVersionCode);
+        if (!Number.isInteger(code) || code <= 0) {
+          toast.error(`Invalid Version Code "${item.config.latestVersionCode}" for ${item.name}. Must be a positive integer from Google Play / EAS build.`);
+          return;
+        }
       }
       if (!isValidSemver(item.config.minSupportedVersion)) {
         toast.error(`Invalid Min Supported Version "${item.config.minSupportedVersion}" for ${item.name}. Format must be X.Y or X.Y.Z (e.g. 1.2.0).`);
@@ -220,6 +231,113 @@ export default function AdminSettingsPage() {
       .map((p) => p.trim())
       .filter(Boolean);
 
+    // Format releaseNotes and serialize numbers
+    const formatNotes = (notes: any): string[] => {
+      if (Array.isArray(notes)) return notes;
+      if (typeof notes === "string") {
+        return notes
+          .split("\n")
+          .map((n) => n.trim().replace(/^[-•*]\s*/, ""))
+          .filter(Boolean);
+      }
+      return [];
+    };
+
+    const cleanConfig: AppVersionSettings = {
+      customer: {
+        android: {
+          ...versionConfig.customer.android,
+          latestVersion: versionConfig.customer.android.latestVersion.trim(),
+          latestVersionCode:
+            versionConfig.customer.android.latestVersionCode !== undefined &&
+            versionConfig.customer.android.latestVersionCode !== null &&
+            String(versionConfig.customer.android.latestVersionCode).trim() !== ""
+              ? Number(versionConfig.customer.android.latestVersionCode)
+              : undefined,
+          minSupportedVersion: versionConfig.customer.android.minSupportedVersion.trim(),
+          minSupportedVersionCode:
+            versionConfig.customer.android.minSupportedVersionCode !== undefined &&
+            versionConfig.customer.android.minSupportedVersionCode !== null &&
+            String(versionConfig.customer.android.minSupportedVersionCode).trim() !== ""
+              ? Number(versionConfig.customer.android.minSupportedVersionCode)
+              : undefined,
+          forceUpdate: Boolean(versionConfig.customer.android.forceUpdate),
+          storeUrl: versionConfig.customer.android.storeUrl.trim(),
+          title: versionConfig.customer.android.title || "New Update Available! 🚀",
+          message: versionConfig.customer.android.message || "",
+          releaseNotes: formatNotes(versionConfig.customer.android.releaseNotes),
+        },
+        ios: {
+          ...versionConfig.customer.ios,
+          latestVersion: versionConfig.customer.ios.latestVersion.trim(),
+          latestVersionCode:
+            versionConfig.customer.ios.latestVersionCode !== undefined &&
+            versionConfig.customer.ios.latestVersionCode !== null &&
+            String(versionConfig.customer.ios.latestVersionCode).trim() !== ""
+              ? Number(versionConfig.customer.ios.latestVersionCode)
+              : undefined,
+          minSupportedVersion: versionConfig.customer.ios.minSupportedVersion.trim(),
+          minSupportedVersionCode:
+            versionConfig.customer.ios.minSupportedVersionCode !== undefined &&
+            versionConfig.customer.ios.minSupportedVersionCode !== null &&
+            String(versionConfig.customer.ios.minSupportedVersionCode).trim() !== ""
+              ? Number(versionConfig.customer.ios.minSupportedVersionCode)
+              : undefined,
+          forceUpdate: Boolean(versionConfig.customer.ios.forceUpdate),
+          storeUrl: versionConfig.customer.ios.storeUrl.trim(),
+          title: versionConfig.customer.ios.title || "iOS Update Available! 🍎",
+          message: versionConfig.customer.ios.message || "",
+          releaseNotes: formatNotes(versionConfig.customer.ios.releaseNotes),
+        },
+      },
+      business: {
+        android: {
+          ...versionConfig.business.android,
+          latestVersion: versionConfig.business.android.latestVersion.trim(),
+          latestVersionCode:
+            versionConfig.business.android.latestVersionCode !== undefined &&
+            versionConfig.business.android.latestVersionCode !== null &&
+            String(versionConfig.business.android.latestVersionCode).trim() !== ""
+              ? Number(versionConfig.business.android.latestVersionCode)
+              : undefined,
+          minSupportedVersion: versionConfig.business.android.minSupportedVersion.trim(),
+          minSupportedVersionCode:
+            versionConfig.business.android.minSupportedVersionCode !== undefined &&
+            versionConfig.business.android.minSupportedVersionCode !== null &&
+            String(versionConfig.business.android.minSupportedVersionCode).trim() !== ""
+              ? Number(versionConfig.business.android.minSupportedVersionCode)
+              : undefined,
+          forceUpdate: Boolean(versionConfig.business.android.forceUpdate),
+          storeUrl: versionConfig.business.android.storeUrl.trim(),
+          title: versionConfig.business.android.title || "Business Update Available! 📦",
+          message: versionConfig.business.android.message || "",
+          releaseNotes: formatNotes(versionConfig.business.android.releaseNotes),
+        },
+        ios: {
+          ...versionConfig.business.ios,
+          latestVersion: versionConfig.business.ios.latestVersion.trim(),
+          latestVersionCode:
+            versionConfig.business.ios.latestVersionCode !== undefined &&
+            versionConfig.business.ios.latestVersionCode !== null &&
+            String(versionConfig.business.ios.latestVersionCode).trim() !== ""
+              ? Number(versionConfig.business.ios.latestVersionCode)
+              : undefined,
+          minSupportedVersion: versionConfig.business.ios.minSupportedVersion.trim(),
+          minSupportedVersionCode:
+            versionConfig.business.ios.minSupportedVersionCode !== undefined &&
+            versionConfig.business.ios.minSupportedVersionCode !== null &&
+            String(versionConfig.business.ios.minSupportedVersionCode).trim() !== ""
+              ? Number(versionConfig.business.ios.minSupportedVersionCode)
+              : undefined,
+          forceUpdate: Boolean(versionConfig.business.ios.forceUpdate),
+          storeUrl: versionConfig.business.ios.storeUrl.trim(),
+          title: versionConfig.business.ios.title || "Business iOS Update Available! 📦",
+          message: versionConfig.business.ios.message || "",
+          releaseNotes: formatNotes(versionConfig.business.ios.releaseNotes),
+        },
+      },
+    };
+
     const res = await updateStoreSettings({
       storeName,
       gstNumber,
@@ -238,7 +356,7 @@ export default function AdminSettingsPage() {
       codMaxLimit: Number(codMaxLimit),
       codBlockedPincodes: blockedPincodesArray,
       appInstallPromptEnabled,
-      appVersionConfig: versionConfig,
+      appVersionConfig: cleanConfig,
     });
     setSaving(false);
 
@@ -864,19 +982,35 @@ export default function AdminSettingsPage() {
 
         {/* ── Section 5: Mobile App Version Policies (Customer & Vendor Apps) ── */}
         <div className="bg-white p-6 rounded-2xl border border-gray-200/80 shadow-2xs space-y-6">
-          <div className="pb-2 border-b border-gray-100">
+          <div className="pb-3 border-b border-gray-100 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
             <div className="flex items-center gap-2">
               <Smartphone size={18} className="text-[#F26522]" />
               <div>
                 <h3 className="text-base font-black text-[#052a51]">Mobile App Version Governance</h3>
                 <p className="text-xs text-gray-500 mt-0.5">
-                  Manage live versions and enforce force update barriers on Google Play Store & Apple App Store.
+                  Manage live release versions, build versionCodes, and enforce in-app update barriers.
                 </p>
               </div>
             </div>
+            <a
+              href="/api/mobile/app-config?app=customer&platform=android"
+              target="_blank"
+              className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-blue-50 hover:bg-blue-100 text-blue-700 text-xs font-bold rounded-lg transition-colors"
+            >
+              <ExternalLink size={13} />
+              <span>Inspect Live JSON Policy</span>
+            </a>
           </div>
 
-          {/* Customer App Settings */}
+          {/* Release Guardrail Notice */}
+          <div className="bg-amber-50 border border-amber-200 p-3.5 rounded-xl flex items-start gap-2.5">
+            <AlertCircle size={17} className="text-amber-600 mt-0.5 shrink-0" />
+            <div className="text-xs text-amber-900 leading-relaxed">
+              <span className="font-bold">CRITICAL RELEASE RULE:</span> Take <code className="bg-amber-100 px-1 py-0.5 rounded font-bold text-amber-950">latestVersionCode</code> directly from your <strong>Google Play Console / EAS build</strong> (not <code className="bg-amber-100 px-1 py-0.5 rounded">app.json</code>). Only click <strong>Save Settings</strong> AFTER Google Play marks the release status as <span className="font-bold underline">"Available on Google Play"</span>.
+            </div>
+          </div>
+
+          {/* ── 1. Customer App Settings (com.intrihub.app) ── */}
           <div className="space-y-4 border border-blue-100 bg-blue-50/30 p-4.5 rounded-2xl">
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-2">
@@ -890,13 +1024,33 @@ export default function AdminSettingsPage() {
 
             {/* Android Customer */}
             <div className="space-y-3 bg-white p-4 rounded-xl border border-gray-200/70">
-              <h5 className="text-xs font-black text-emerald-700 uppercase tracking-wider flex items-center gap-1.5">
-                <span>🤖 Android (Google Play)</span>
-              </h5>
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+              <div className="flex items-center justify-between">
+                <h5 className="text-xs font-black text-emerald-700 uppercase tracking-wider flex items-center gap-1.5">
+                  <span>🤖 Android (Google Play)</span>
+                </h5>
+                <label className="flex items-center gap-2 cursor-pointer">
+                  <input
+                    type="checkbox"
+                    checked={Boolean(versionConfig.customer.android.forceUpdate)}
+                    onChange={(e) =>
+                      setVersionConfig((prev) => ({
+                        ...prev,
+                        customer: {
+                          ...prev.customer,
+                          android: { ...prev.customer.android, forceUpdate: e.target.checked },
+                        },
+                      }))
+                    }
+                    className="w-4 h-4 accent-red-600 rounded cursor-pointer"
+                  />
+                  <span className="text-[11px] font-bold text-red-600">Force Update Wall (Non-dismissible)</span>
+                </label>
+              </div>
+
+              <div className="grid grid-cols-1 sm:grid-cols-4 gap-3">
                 <div>
                   <label className="text-[11px] font-bold text-gray-700 block mb-1">
-                    Latest Version (SemVer, e.g. 1.2.5)
+                    Latest Version (Semver)
                   </label>
                   <input
                     type="text"
@@ -911,13 +1065,36 @@ export default function AdminSettingsPage() {
                       }))
                     }
                     className="w-full px-3 py-2 bg-gray-50 border border-gray-200 rounded-lg text-xs font-bold text-[#052a51] focus:outline-none focus:border-[#F26522]"
-                    placeholder="1.2.5"
+                    placeholder="1.2.17"
                   />
-                  <p className="text-[10px] text-gray-400 mt-0.5">Triggers soft update popup if user version &lt; latest.</p>
+                  <p className="text-[10px] text-gray-400 mt-0.5">e.g. 1.2.17</p>
                 </div>
+
                 <div>
                   <label className="text-[11px] font-bold text-gray-700 block mb-1">
-                    Min Supported Version (Force Update Wall)
+                    Version Code (Build #)
+                  </label>
+                  <input
+                    type="number"
+                    value={versionConfig.customer.android.latestVersionCode ?? ""}
+                    onChange={(e) =>
+                      setVersionConfig((prev) => ({
+                        ...prev,
+                        customer: {
+                          ...prev.customer,
+                          android: { ...prev.customer.android, latestVersionCode: e.target.value ? Number(e.target.value) : undefined },
+                        },
+                      }))
+                    }
+                    className="w-full px-3 py-2 bg-gray-50 border border-gray-200 rounded-lg text-xs font-bold text-[#052a51] focus:outline-none focus:border-[#F26522]"
+                    placeholder="36"
+                  />
+                  <p className="text-[10px] text-gray-400 mt-0.5">From Play Console</p>
+                </div>
+
+                <div>
+                  <label className="text-[11px] font-bold text-gray-700 block mb-1">
+                    Min Supported Version
                   </label>
                   <input
                     type="text"
@@ -934,9 +1111,32 @@ export default function AdminSettingsPage() {
                     className="w-full px-3 py-2 bg-gray-50 border border-gray-200 rounded-lg text-xs font-bold text-[#052a51] focus:outline-none focus:border-[#F26522]"
                     placeholder="1.2.0"
                   />
-                  <p className="text-[10px] text-gray-400 mt-0.5">Blocks app if user version &lt; min supported.</p>
+                  <p className="text-[10px] text-gray-400 mt-0.5">Blocks older semver</p>
+                </div>
+
+                <div>
+                  <label className="text-[11px] font-bold text-gray-700 block mb-1">
+                    Min Version Code
+                  </label>
+                  <input
+                    type="number"
+                    value={versionConfig.customer.android.minSupportedVersionCode ?? ""}
+                    onChange={(e) =>
+                      setVersionConfig((prev) => ({
+                        ...prev,
+                        customer: {
+                          ...prev.customer,
+                          android: { ...prev.customer.android, minSupportedVersionCode: e.target.value ? Number(e.target.value) : undefined },
+                        },
+                      }))
+                    }
+                    className="w-full px-3 py-2 bg-gray-50 border border-gray-200 rounded-lg text-xs font-bold text-[#052a51] focus:outline-none focus:border-[#F26522]"
+                    placeholder="30"
+                  />
+                  <p className="text-[10px] text-gray-400 mt-0.5">Blocks older build</p>
                 </div>
               </div>
+
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-1">
                 <div>
                   <label className="text-[11px] font-bold text-gray-700 block mb-1">Play Store URL</label>
@@ -956,32 +1156,94 @@ export default function AdminSettingsPage() {
                   />
                 </div>
                 <div>
-                  <label className="text-[11px] font-bold text-gray-700 block mb-1">Update Message</label>
+                  <label className="text-[11px] font-bold text-gray-700 block mb-1">Popup Title</label>
                   <input
                     type="text"
-                    value={versionConfig.customer.android.message || ""}
+                    value={versionConfig.customer.android.title || ""}
                     onChange={(e) =>
                       setVersionConfig((prev) => ({
                         ...prev,
                         customer: {
                           ...prev.customer,
-                          android: { ...prev.customer.android, message: e.target.value },
+                          android: { ...prev.customer.android, title: e.target.value },
                         },
                       }))
                     }
                     className="w-full px-3 py-2 bg-gray-50 border border-gray-200 rounded-lg text-xs text-[#052a51] focus:outline-none focus:border-[#F26522]"
-                    placeholder="A fresh update of IntriHub is here..."
+                    placeholder="New Update Available! 🚀"
                   />
                 </div>
+              </div>
+
+              <div>
+                <label className="text-[11px] font-bold text-gray-700 block mb-1">Popup Description</label>
+                <input
+                  type="text"
+                  value={versionConfig.customer.android.message || ""}
+                  onChange={(e) =>
+                    setVersionConfig((prev) => ({
+                      ...prev,
+                      customer: {
+                        ...prev.customer,
+                        android: { ...prev.customer.android, message: e.target.value },
+                      },
+                    }))
+                  }
+                  className="w-full px-3 py-2 bg-gray-50 border border-gray-200 rounded-lg text-xs text-[#052a51] focus:outline-none focus:border-[#F26522]"
+                  placeholder="A fresh update of IntriHub is available with faster catalog browsing..."
+                />
+              </div>
+
+              <div>
+                <label className="text-[11px] font-bold text-gray-700 block mb-1">Release Notes (One per line)</label>
+                <textarea
+                  rows={2}
+                  value={
+                    Array.isArray(versionConfig.customer.android.releaseNotes)
+                      ? versionConfig.customer.android.releaseNotes.join("\n")
+                      : versionConfig.customer.android.releaseNotes || ""
+                  }
+                  onChange={(e) =>
+                    setVersionConfig((prev) => ({
+                      ...prev,
+                      customer: {
+                        ...prev.customer,
+                        android: { ...prev.customer.android, releaseNotes: e.target.value as any },
+                      },
+                    }))
+                  }
+                  className="w-full px-3 py-2 bg-gray-50 border border-gray-200 rounded-lg text-xs text-[#052a51] focus:outline-none focus:border-[#F26522]"
+                  placeholder="Faster catalog & tiles browsing&#10;Smooth checkout and order tracking&#10;Performance fixes"
+                />
               </div>
             </div>
 
             {/* iOS Customer */}
             <div className="space-y-3 bg-white p-4 rounded-xl border border-gray-200/70">
-              <h5 className="text-xs font-black text-slate-700 uppercase tracking-wider flex items-center gap-1.5">
-                <span>🍎 iOS (Apple App Store)</span>
-              </h5>
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+              <div className="flex items-center justify-between">
+                <h5 className="text-xs font-black text-slate-700 uppercase tracking-wider flex items-center gap-1.5">
+                  <span>🍎 iOS (Apple App Store)</span>
+                </h5>
+                <label className="flex items-center gap-2 cursor-pointer">
+                  <input
+                    type="checkbox"
+                    checked={Boolean(versionConfig.customer.ios.forceUpdate)}
+                    onChange={(e) =>
+                      setVersionConfig((prev) => ({
+                        ...prev,
+                        customer: {
+                          ...prev.customer,
+                          ios: { ...prev.customer.ios, forceUpdate: e.target.checked },
+                        },
+                      }))
+                    }
+                    className="w-4 h-4 accent-red-600 rounded cursor-pointer"
+                  />
+                  <span className="text-[11px] font-bold text-red-600">Force Update Wall</span>
+                </label>
+              </div>
+
+              <div className="grid grid-cols-1 sm:grid-cols-4 gap-3">
                 <div>
                   <label className="text-[11px] font-bold text-gray-700 block mb-1">Latest Version</label>
                   <input
@@ -997,11 +1259,29 @@ export default function AdminSettingsPage() {
                       }))
                     }
                     className="w-full px-3 py-2 bg-gray-50 border border-gray-200 rounded-lg text-xs font-bold text-[#052a51] focus:outline-none focus:border-[#F26522]"
-                    placeholder="1.2.5"
+                    placeholder="1.2.17"
                   />
                 </div>
                 <div>
-                  <label className="text-[11px] font-bold text-gray-700 block mb-1">Min Supported Version</label>
+                  <label className="text-[11px] font-bold text-gray-700 block mb-1">Version Code</label>
+                  <input
+                    type="number"
+                    value={versionConfig.customer.ios.latestVersionCode ?? ""}
+                    onChange={(e) =>
+                      setVersionConfig((prev) => ({
+                        ...prev,
+                        customer: {
+                          ...prev.customer,
+                          ios: { ...prev.customer.ios, latestVersionCode: e.target.value ? Number(e.target.value) : undefined },
+                        },
+                      }))
+                    }
+                    className="w-full px-3 py-2 bg-gray-50 border border-gray-200 rounded-lg text-xs font-bold text-[#052a51] focus:outline-none focus:border-[#F26522]"
+                    placeholder="36"
+                  />
+                </div>
+                <div>
+                  <label className="text-[11px] font-bold text-gray-700 block mb-1">Min Version</label>
                   <input
                     type="text"
                     value={versionConfig.customer.ios.minSupportedVersion}
@@ -1018,7 +1298,26 @@ export default function AdminSettingsPage() {
                     placeholder="1.2.0"
                   />
                 </div>
+                <div>
+                  <label className="text-[11px] font-bold text-gray-700 block mb-1">Min Code</label>
+                  <input
+                    type="number"
+                    value={versionConfig.customer.ios.minSupportedVersionCode ?? ""}
+                    onChange={(e) =>
+                      setVersionConfig((prev) => ({
+                        ...prev,
+                        customer: {
+                          ...prev.customer,
+                          ios: { ...prev.customer.ios, minSupportedVersionCode: e.target.value ? Number(e.target.value) : undefined },
+                        },
+                      }))
+                    }
+                    className="w-full px-3 py-2 bg-gray-50 border border-gray-200 rounded-lg text-xs font-bold text-[#052a51] focus:outline-none focus:border-[#F26522]"
+                    placeholder="30"
+                  />
+                </div>
               </div>
+
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-1">
                 <div>
                   <label className="text-[11px] font-bold text-gray-700 block mb-1">App Store URL</label>
@@ -1058,7 +1357,7 @@ export default function AdminSettingsPage() {
             </div>
           </div>
 
-          {/* Vendor App Settings */}
+          {/* ── 2. Vendor App Settings (com.intrihub.business) ── */}
           <div className="space-y-4 border border-amber-100 bg-amber-50/30 p-4.5 rounded-2xl">
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-2">
@@ -1072,10 +1371,30 @@ export default function AdminSettingsPage() {
 
             {/* Android Vendor */}
             <div className="space-y-3 bg-white p-4 rounded-xl border border-gray-200/70">
-              <h5 className="text-xs font-black text-emerald-700 uppercase tracking-wider flex items-center gap-1.5">
-                <span>🤖 Android (Google Play)</span>
-              </h5>
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+              <div className="flex items-center justify-between">
+                <h5 className="text-xs font-black text-emerald-700 uppercase tracking-wider flex items-center gap-1.5">
+                  <span>🤖 Android (Google Play)</span>
+                </h5>
+                <label className="flex items-center gap-2 cursor-pointer">
+                  <input
+                    type="checkbox"
+                    checked={Boolean(versionConfig.business.android.forceUpdate)}
+                    onChange={(e) =>
+                      setVersionConfig((prev) => ({
+                        ...prev,
+                        business: {
+                          ...prev.business,
+                          android: { ...prev.business.android, forceUpdate: e.target.checked },
+                        },
+                      }))
+                    }
+                    className="w-4 h-4 accent-red-600 rounded cursor-pointer"
+                  />
+                  <span className="text-[11px] font-bold text-red-600">Force Update Wall (Non-dismissible)</span>
+                </label>
+              </div>
+
+              <div className="grid grid-cols-1 sm:grid-cols-4 gap-3">
                 <div>
                   <label className="text-[11px] font-bold text-gray-700 block mb-1">Latest Version</label>
                   <input
@@ -1091,9 +1410,31 @@ export default function AdminSettingsPage() {
                       }))
                     }
                     className="w-full px-3 py-2 bg-gray-50 border border-gray-200 rounded-lg text-xs font-bold text-[#052a51] focus:outline-none focus:border-[#F26522]"
-                    placeholder="1.0.13"
+                    placeholder="1.0.27"
                   />
+                  <p className="text-[10px] text-gray-400 mt-0.5">e.g. 1.0.27</p>
                 </div>
+
+                <div>
+                  <label className="text-[11px] font-bold text-gray-700 block mb-1">Version Code</label>
+                  <input
+                    type="number"
+                    value={versionConfig.business.android.latestVersionCode ?? ""}
+                    onChange={(e) =>
+                      setVersionConfig((prev) => ({
+                        ...prev,
+                        business: {
+                          ...prev.business,
+                          android: { ...prev.business.android, latestVersionCode: e.target.value ? Number(e.target.value) : undefined },
+                        },
+                      }))
+                    }
+                    className="w-full px-3 py-2 bg-gray-50 border border-gray-200 rounded-lg text-xs font-bold text-[#052a51] focus:outline-none focus:border-[#F26522]"
+                    placeholder="35"
+                  />
+                  <p className="text-[10px] text-gray-400 mt-0.5">From Play Console</p>
+                </div>
+
                 <div>
                   <label className="text-[11px] font-bold text-gray-700 block mb-1">Min Supported Version</label>
                   <input
@@ -1111,8 +1452,30 @@ export default function AdminSettingsPage() {
                     className="w-full px-3 py-2 bg-gray-50 border border-gray-200 rounded-lg text-xs font-bold text-[#052a51] focus:outline-none focus:border-[#F26522]"
                     placeholder="1.0.10"
                   />
+                  <p className="text-[10px] text-gray-400 mt-0.5">Blocks older semver</p>
+                </div>
+
+                <div>
+                  <label className="text-[11px] font-bold text-gray-700 block mb-1">Min Version Code</label>
+                  <input
+                    type="number"
+                    value={versionConfig.business.android.minSupportedVersionCode ?? ""}
+                    onChange={(e) =>
+                      setVersionConfig((prev) => ({
+                        ...prev,
+                        business: {
+                          ...prev.business,
+                          android: { ...prev.business.android, minSupportedVersionCode: e.target.value ? Number(e.target.value) : undefined },
+                        },
+                      }))
+                    }
+                    className="w-full px-3 py-2 bg-gray-50 border border-gray-200 rounded-lg text-xs font-bold text-[#052a51] focus:outline-none focus:border-[#F26522]"
+                    placeholder="25"
+                  />
+                  <p className="text-[10px] text-gray-400 mt-0.5">Blocks older build</p>
                 </div>
               </div>
+
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-1">
                 <div>
                   <label className="text-[11px] font-bold text-gray-700 block mb-1">Play Store URL</label>
@@ -1132,21 +1495,201 @@ export default function AdminSettingsPage() {
                   />
                 </div>
                 <div>
-                  <label className="text-[11px] font-bold text-gray-700 block mb-1">Update Message</label>
+                  <label className="text-[11px] font-bold text-gray-700 block mb-1">Popup Title</label>
                   <input
                     type="text"
-                    value={versionConfig.business.android.message || ""}
+                    value={versionConfig.business.android.title || ""}
                     onChange={(e) =>
                       setVersionConfig((prev) => ({
                         ...prev,
                         business: {
                           ...prev.business,
-                          android: { ...prev.business.android, message: e.target.value },
+                          android: { ...prev.business.android, title: e.target.value },
                         },
                       }))
                     }
                     className="w-full px-3 py-2 bg-gray-50 border border-gray-200 rounded-lg text-xs text-[#052a51] focus:outline-none focus:border-[#F26522]"
-                    placeholder="Update Intrihub Business for instant order chimes..."
+                    placeholder="Business Update Available! 📦"
+                  />
+                </div>
+              </div>
+
+              <div>
+                <label className="text-[11px] font-bold text-gray-700 block mb-1">Update Message</label>
+                <input
+                  type="text"
+                  value={versionConfig.business.android.message || ""}
+                  onChange={(e) =>
+                    setVersionConfig((prev) => ({
+                      ...prev,
+                      business: {
+                        ...prev.business,
+                        android: { ...prev.business.android, message: e.target.value },
+                      },
+                    }))
+                  }
+                  className="w-full px-3 py-2 bg-gray-50 border border-gray-200 rounded-lg text-xs text-[#052a51] focus:outline-none focus:border-[#F26522]"
+                  placeholder="Update Intrihub Business for instant order alerts, real-time stock sync..."
+                />
+              </div>
+
+              <div>
+                <label className="text-[11px] font-bold text-gray-700 block mb-1">Release Notes (One per line)</label>
+                <textarea
+                  rows={2}
+                  value={
+                    Array.isArray(versionConfig.business.android.releaseNotes)
+                      ? versionConfig.business.android.releaseNotes.join("\n")
+                      : versionConfig.business.android.releaseNotes || ""
+                  }
+                  onChange={(e) =>
+                    setVersionConfig((prev) => ({
+                      ...prev,
+                      business: {
+                        ...prev.business,
+                        android: { ...prev.business.android, releaseNotes: e.target.value as any },
+                      },
+                    }))
+                  }
+                  className="w-full px-3 py-2 bg-gray-50 border border-gray-200 rounded-lg text-xs text-[#052a51] focus:outline-none focus:border-[#F26522]"
+                  placeholder="Instant sound alerts for incoming customer orders&#10;Enhanced catalog & stock management&#10;Android 15 performance stability"
+                />
+              </div>
+            </div>
+
+            {/* iOS Vendor */}
+            <div className="space-y-3 bg-white p-4 rounded-xl border border-gray-200/70">
+              <div className="flex items-center justify-between">
+                <h5 className="text-xs font-black text-slate-700 uppercase tracking-wider flex items-center gap-1.5">
+                  <span>🍎 iOS (Apple App Store)</span>
+                </h5>
+                <label className="flex items-center gap-2 cursor-pointer">
+                  <input
+                    type="checkbox"
+                    checked={Boolean(versionConfig.business.ios.forceUpdate)}
+                    onChange={(e) =>
+                      setVersionConfig((prev) => ({
+                        ...prev,
+                        business: {
+                          ...prev.business,
+                          ios: { ...prev.business.ios, forceUpdate: e.target.checked },
+                        },
+                      }))
+                    }
+                    className="w-4 h-4 accent-red-600 rounded cursor-pointer"
+                  />
+                  <span className="text-[11px] font-bold text-red-600">Force Update Wall</span>
+                </label>
+              </div>
+
+              <div className="grid grid-cols-1 sm:grid-cols-4 gap-3">
+                <div>
+                  <label className="text-[11px] font-bold text-gray-700 block mb-1">Latest Version</label>
+                  <input
+                    type="text"
+                    value={versionConfig.business.ios.latestVersion}
+                    onChange={(e) =>
+                      setVersionConfig((prev) => ({
+                        ...prev,
+                        business: {
+                          ...prev.business,
+                          ios: { ...prev.business.ios, latestVersion: e.target.value.trim() },
+                        },
+                      }))
+                    }
+                    className="w-full px-3 py-2 bg-gray-50 border border-gray-200 rounded-lg text-xs font-bold text-[#052a51] focus:outline-none focus:border-[#F26522]"
+                    placeholder="1.0.27"
+                  />
+                </div>
+                <div>
+                  <label className="text-[11px] font-bold text-gray-700 block mb-1">Version Code</label>
+                  <input
+                    type="number"
+                    value={versionConfig.business.ios.latestVersionCode ?? ""}
+                    onChange={(e) =>
+                      setVersionConfig((prev) => ({
+                        ...prev,
+                        business: {
+                          ...prev.business,
+                          ios: { ...prev.business.ios, latestVersionCode: e.target.value ? Number(e.target.value) : undefined },
+                        },
+                      }))
+                    }
+                    className="w-full px-3 py-2 bg-gray-50 border border-gray-200 rounded-lg text-xs font-bold text-[#052a51] focus:outline-none focus:border-[#F26522]"
+                    placeholder="35"
+                  />
+                </div>
+                <div>
+                  <label className="text-[11px] font-bold text-gray-700 block mb-1">Min Version</label>
+                  <input
+                    type="text"
+                    value={versionConfig.business.ios.minSupportedVersion}
+                    onChange={(e) =>
+                      setVersionConfig((prev) => ({
+                        ...prev,
+                        business: {
+                          ...prev.business,
+                          ios: { ...prev.business.ios, minSupportedVersion: e.target.value.trim() },
+                        },
+                      }))
+                    }
+                    className="w-full px-3 py-2 bg-gray-50 border border-gray-200 rounded-lg text-xs font-bold text-[#052a51] focus:outline-none focus:border-[#F26522]"
+                    placeholder="1.0.10"
+                  />
+                </div>
+                <div>
+                  <label className="text-[11px] font-bold text-gray-700 block mb-1">Min Code</label>
+                  <input
+                    type="number"
+                    value={versionConfig.business.ios.minSupportedVersionCode ?? ""}
+                    onChange={(e) =>
+                      setVersionConfig((prev) => ({
+                        ...prev,
+                        business: {
+                          ...prev.business,
+                          ios: { ...prev.business.ios, minSupportedVersionCode: e.target.value ? Number(e.target.value) : undefined },
+                        },
+                      }))
+                    }
+                    className="w-full px-3 py-2 bg-gray-50 border border-gray-200 rounded-lg text-xs font-bold text-[#052a51] focus:outline-none focus:border-[#F26522]"
+                    placeholder="25"
+                  />
+                </div>
+              </div>
+
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-1">
+                <div>
+                  <label className="text-[11px] font-bold text-gray-700 block mb-1">App Store URL</label>
+                  <input
+                    type="text"
+                    value={versionConfig.business.ios.storeUrl}
+                    onChange={(e) =>
+                      setVersionConfig((prev) => ({
+                        ...prev,
+                        business: {
+                          ...prev.business,
+                          ios: { ...prev.business.ios, storeUrl: e.target.value.trim() },
+                        },
+                      }))
+                    }
+                    className="w-full px-3 py-2 bg-gray-50 border border-gray-200 rounded-lg text-xs text-[#052a51] focus:outline-none focus:border-[#F26522]"
+                  />
+                </div>
+                <div>
+                  <label className="text-[11px] font-bold text-gray-700 block mb-1">Update Message</label>
+                  <input
+                    type="text"
+                    value={versionConfig.business.ios.message || ""}
+                    onChange={(e) =>
+                      setVersionConfig((prev) => ({
+                        ...prev,
+                        business: {
+                          ...prev.business,
+                          ios: { ...prev.business.ios, message: e.target.value },
+                        },
+                      }))
+                    }
+                    className="w-full px-3 py-2 bg-gray-50 border border-gray-200 rounded-lg text-xs text-[#052a51] focus:outline-none focus:border-[#F26522]"
                   />
                 </div>
               </div>
