@@ -18,11 +18,13 @@ def get_local_env_val(key):
 
 google_client_id = get_local_env_val("GOOGLE_CLIENT_ID") or ""
 google_client_secret = get_local_env_val("GOOGLE_CLIENT_SECRET") or ""
-smtp_host = get_local_env_val("SMTP_HOST") or get_local_env_val("EMAIL_SERVER_HOST") or "smtp.titan.email"
-smtp_port = get_local_env_val("SMTP_PORT") or get_local_env_val("EMAIL_SERVER_PORT") or "465"
-smtp_user = get_local_env_val("SMTP_USER") or get_local_env_val("EMAIL_SERVER_USER") or "info@intrihub.com"
-smtp_pass = get_local_env_val("SMTP_PASS") or get_local_env_val("SMTP_PASSWORD") or get_local_env_val("EMAIL_SERVER_PASSWORD") or ""
-email_from = get_local_env_val("EMAIL_FROM") or "IntriHub <info@intrihub.com>"
+
+# Enforce Titan Mail SMTP settings
+smtp_host = "smtp.titan.email"
+smtp_port = "465"
+smtp_user = "info@intrihub.com"
+smtp_pass = os.environ.get("SMTP_PASS") or get_local_env_val("SMTP_PASS") or get_local_env_val("SMTP_PASSWORD") or get_local_env_val("EMAIL_SERVER_PASSWORD") or ""
+email_from = "IntriHub <info@intrihub.com>"
 
 # Generate strong secret if not locally provided
 nextauth_secret = get_local_env_val("NEXTAUTH_SECRET") or secrets.token_hex(32)
@@ -45,6 +47,24 @@ for line in lines:
         k, v = line_s.split('=', 1)
         env_dict[k.strip()] = v.strip()
 
+# Clean up any legacy secureserver references
+for k in list(env_dict.keys()):
+    if 'secureserver' in env_dict[k]:
+        env_dict[k] = env_dict[k].replace('smtpout.secureserver.net', 'smtp.titan.email')
+
+# Enforce Titan Mail credentials
+env_dict['SMTP_HOST'] = '"{smtp_host}"'
+env_dict['SMTP_PORT'] = '"{smtp_port}"'
+env_dict['SMTP_USER'] = '"{smtp_user}"'
+env_dict['EMAIL_FROM'] = '"{email_from}"'
+env_dict['EMAIL_SERVER_HOST'] = '"{smtp_host}"'
+env_dict['EMAIL_SERVER_PORT'] = '"{smtp_port}"'
+env_dict['EMAIL_SERVER_USER'] = '"{smtp_user}"'
+
+if '{smtp_pass}':
+    env_dict['SMTP_PASS'] = '"{smtp_pass}"'
+    env_dict['EMAIL_SERVER_PASSWORD'] = '"{smtp_pass}"'
+
 required_vars = {{
     'NEXTAUTH_URL': '"https://www.intrihub.com"',
     'NEXTAUTH_SECRET': '"{nextauth_secret}"',
@@ -55,11 +75,6 @@ required_vars = {{
     'ADMIN_ALLOWED_EMAIL': '"admin@intrihub.com"',
     'GOOGLE_CLIENT_ID': '"{google_client_id}"',
     'GOOGLE_CLIENT_SECRET': '"{google_client_secret}"',
-    'SMTP_HOST': '"{smtp_host}"',
-    'SMTP_PORT': '"{smtp_port}"',
-    'SMTP_USER': '"{smtp_user}"',
-    'SMTP_PASS': '"{smtp_pass}"',
-    'EMAIL_FROM': '"{email_from}"',
 }}
 
 added_or_updated = 0
@@ -75,7 +90,7 @@ for k, v in env_dict.items():
 with open(env_path, 'w') as f:
     f.writelines(new_lines)
 
-print(f"SUCCESS: Configured {{added_or_updated}} environment keys in /var/www/intrihub/.env")
+print(f"SUCCESS: Configured Titan SMTP and {{added_or_updated}} environment keys in /var/www/intrihub/.env")
 """
 
 import base64

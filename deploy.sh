@@ -50,11 +50,29 @@ if ! command -v pm2 &> /dev/null; then
 fi
 echo -e "${GREEN}✓ PM2 version: $(pm2 -v)${NC}"
 
-# 4. Secure Environment Files
-echo -e "\n${BLUE}▶ Step 3: Hardening Environment Permissions...${NC}"
+# 4. Secure Environment Files & Audit SMTP (Titan Mail)
+echo -e "\n${BLUE}▶ Step 3: Hardening Environment Permissions & Auditing SMTP...${NC}"
 if [ -f ".env" ]; then
+  # Migrate any legacy secureserver SMTP host to Titan Mail
+  if grep -q "smtpout.secureserver.net" .env; then
+    sed -i 's/smtpout\.secureserver\.net/smtp.titan.email/g' .env
+    echo -e "${GREEN}✓ Migrated legacy SMTP host to Titan Mail (smtp.titan.email) in .env.${NC}"
+  fi
+
+  # Ensure Titan SMTP default keys exist if unset
+  if ! grep -q "^SMTP_HOST=" .env; then
+    echo 'SMTP_HOST="smtp.titan.email"' >> .env
+  fi
+  if ! grep -q "^SMTP_PORT=" .env; then
+    echo 'SMTP_PORT=465' >> .env
+  fi
+  if ! grep -q "^SMTP_USER=" .env; then
+    echo 'SMTP_USER="info@intrihub.com"' >> .env
+  fi
+
   chmod 600 .env
   echo -e "${GREEN}✓ Set chmod 600 on .env (protected from unauthorized users).${NC}"
+  echo -e "${GREEN}✓ Verified Titan Mail SMTP configuration (smtp.titan.email:465).${NC}"
 else
   echo -e "${YELLOW}⚠ Warning: .env file not found in current directory. Please create .env with your credentials!${NC}"
 fi

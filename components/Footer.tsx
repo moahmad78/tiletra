@@ -17,7 +17,15 @@ import {
   PhoneCall,
   ArrowRight,
 } from "lucide-react";
-import { PHONE_DISPLAY, PHONE_TEL, SOCIAL_LINKS } from "@/lib/siteConfig";
+import {
+  PHONE_DISPLAY,
+  PHONE_TEL,
+  SOCIAL_LINKS,
+  COMPANY_NAME,
+  CIN,
+  REGISTERED_OFFICE_STRING,
+  EMAIL,
+} from "@/lib/siteConfig";
 
 function InstagramIcon({ size = 14, className = "" }: { size?: number; className?: string }) {
   return (
@@ -303,6 +311,21 @@ export default function Footer() {
                   </a>
                 </div>
               </li>
+              <li className="flex items-center gap-3 select-none">
+                <div className="w-8 h-8 rounded-full bg-[#F26522]/20 flex items-center justify-center text-[#F26522] shrink-0">
+                  <Mail size={15} />
+                </div>
+                <div className="flex flex-col justify-center">
+                  <span className="font-bold text-white block leading-tight text-xs">Support Email</span>
+                  <a
+                    href={`mailto:${EMAIL}`}
+                    aria-label={`Email IntriHub Support at ${EMAIL}`}
+                    className="text-[#F26522] hover:text-white font-semibold text-xs tracking-wide transition-colors"
+                  >
+                    {EMAIL}
+                  </a>
+                </div>
+              </li>
               <li className="flex items-center gap-2 text-white/90 text-xs font-semibold">
                 <Clock size={15} className="text-[#F26522] shrink-0" />
                 <span>24/7 Customer Support</span>
@@ -409,10 +432,36 @@ export default function Footer() {
           </p>
         </div>
 
+        {/* Corporate Legal & Registered Office Info */}
+        <div className="py-5 border-t border-white/10 text-xs text-white/80 bg-white/[0.03] rounded-2xl px-5 sm:px-6 my-4 border border-white/10 space-y-3">
+          <div className="flex flex-col md:flex-row md:items-center justify-between gap-2 border-b border-white/10 pb-3">
+            <div className="flex flex-wrap items-center gap-x-3 gap-y-1">
+              <span className="text-white font-black tracking-wide text-xs sm:text-sm">
+                {COMPANY_NAME}
+              </span>
+              <span className="hidden sm:inline text-white/40">•</span>
+              <span className="text-white/80 font-medium text-[11px] sm:text-xs">
+                CIN: <strong className="text-white font-mono tracking-wider">{CIN}</strong>
+              </span>
+            </div>
+            <div className="flex items-center gap-3 text-[11px] text-white/70">
+              <span>Support: <a href={`mailto:${EMAIL}`} className="text-[#F26522] hover:underline font-semibold">{EMAIL}</a></span>
+              <span>•</span>
+              <a href={PHONE_TEL} className="text-[#F26522] hover:underline font-semibold">{PHONE_DISPLAY}</a>
+            </div>
+          </div>
+          <div className="flex items-start gap-2 text-[11px] sm:text-xs text-white/70 leading-relaxed">
+            <MapPin size={14} className="text-[#F26522] shrink-0 mt-0.5" />
+            <p>
+              <strong className="text-white font-semibold">Official Registered Office:</strong> {REGISTERED_OFFICE_STRING}
+            </p>
+          </div>
+        </div>
+
         {/* Bottom bar */}
         <div className="pt-6 flex flex-col md:flex-row justify-between items-center gap-4 text-xs text-white/50">
           <div className="flex flex-col sm:flex-row items-center gap-4">
-            <p className="font-semibold text-white/80">© {new Date().getFullYear()} IntriHub Pvt Ltd. All Rights Reserved.</p>
+            <p className="font-semibold text-white/80">© 2026 IntriHub Private Limited. All rights reserved.</p>
           </div>
           <div className="flex items-center gap-4 flex-wrap justify-center">
             <Link href="/privacy-policy" className="hover:text-white transition-colors">Privacy Policy</Link>

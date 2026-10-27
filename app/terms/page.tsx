@@ -2,17 +2,26 @@
 
 import React from "react";
 import Link from "next/link";
-import { FileText, Scale, Shield, AlertTriangle, Building2, Truck, Handshake } from "lucide-react";
+import { FileText, Scale, Shield, AlertTriangle, Building2, Truck, Handshake, Phone, Mail } from "lucide-react";
 import PolicyLayout from "@/components/PolicyLayout";
+import {
+  COMPANY_NAME,
+  CIN,
+  REGISTERED_OFFICE_STRING,
+  EMAIL,
+  PHONE_DISPLAY,
+  PHONE_TEL,
+} from "@/lib/siteConfig";
 
 const TERMS_SECTIONS = [
+  { id: "corporate-entity", title: "Corporate Entity & Ownership" },
   { id: "agreement", title: "Agreement to Terms" },
   { id: "service-area", title: "Pan-India Service Area & Delivery Timelines" },
   { id: "marketplace", title: "Marketplace & Vendor Partner Fulfillment" },
   { id: "products", title: "Products, Specifications & Pricing" },
   { id: "orders", title: "Order Acceptance & Cancellation Windows" },
   { id: "jurisdiction", title: "Governing Law & Legal Jurisdiction" },
-  { id: "communication", title: "Corporate Communications" },
+  { id: "communication", title: "Corporate Communications & Official Notices" },
 ];
 
 export default function TermsPage() {
@@ -21,37 +30,54 @@ export default function TermsPage() {
       currentTab="terms"
       title="Terms of Service"
       categoryTag="Legal Agreement"
-      lastUpdated="September 2026"
+      lastUpdated="October 2026"
       sections={TERMS_SECTIONS}
     >
       {/* Highlight Box */}
       <div className="p-5 sm:p-6 bg-slate-50 border border-slate-200/80 rounded-2xl flex items-start gap-3.5">
         <Scale className="text-[#052a51] shrink-0 mt-0.5" size={22} />
         <div>
-          <h3 className="font-extrabold text-[#052a51] text-base">User Agreement & Commercial Terms</h3>
+          <h3 className="font-extrabold text-[#052a51] text-base">User Agreement &amp; Commercial Terms</h3>
           <p className="text-xs sm:text-sm text-neutral-700 mt-1 leading-relaxed">
-            By browsing, requesting quotes, or purchasing from IntriHub (intrihub.com) or the IntriHub mobile application, you acknowledge and agree to these commercial terms and conditions governing both hyperlocal Bengaluru deliveries and Pan-India dispatches.
+            By browsing, requesting quotes, or purchasing from IntriHub (www.intrihub.com) or the IntriHub mobile application, you enter into a legally binding agreement with <strong>{COMPANY_NAME}</strong> (CIN: {CIN}), governing both hyperlocal Bengaluru deliveries and Pan-India dispatches.
           </p>
         </div>
       </div>
 
-      <section id="agreement" className="space-y-2.5 pt-2 scroll-mt-32">
+      <section id="corporate-entity" className="space-y-2.5 pt-2 scroll-mt-32">
         <h2 className="text-lg sm:text-xl font-black text-[#052a51] flex items-center gap-2">
           <span className="w-6 h-6 rounded-full bg-[#052a51]/10 text-[#052a51] flex items-center justify-center text-xs font-black">1</span>
+          Corporate Entity &amp; Ownership
+        </h2>
+        <p className="text-neutral-700">
+          The digital commerce platform available at <strong>www.intrihub.com</strong> and associated mobile applications are owned and operated by:
+        </p>
+        <div className="p-4 rounded-2xl bg-neutral-50 border border-neutral-200 text-xs sm:text-sm space-y-1.5 text-neutral-700">
+          <p><strong>Full Registered Entity Name:</strong> {COMPANY_NAME}</p>
+          <p><strong>Corporate Identification Number (CIN):</strong> <span className="font-mono font-semibold">{CIN}</span></p>
+          <p><strong>Official Registered Office:</strong> {REGISTERED_OFFICE_STRING}</p>
+          <p><strong>Official Support Email:</strong> <a href={`mailto:${EMAIL}`} className="text-[#F26522] font-semibold hover:underline">{EMAIL}</a></p>
+          <p><strong>Official Support Phone:</strong> <a href={PHONE_TEL} className="text-[#052a51] font-semibold hover:underline">{PHONE_DISPLAY}</a></p>
+        </div>
+      </section>
+
+      <section id="agreement" className="space-y-2.5 pt-6 border-t border-neutral-200 scroll-mt-32">
+        <h2 className="text-lg sm:text-xl font-black text-[#052a51] flex items-center gap-2">
+          <span className="w-6 h-6 rounded-full bg-[#052a51]/10 text-[#052a51] flex items-center justify-center text-xs font-black">2</span>
           Agreement to Terms
         </h2>
         <p className="text-neutral-700">
-          These Terms of Service govern your access to and use of the IntriHub marketplace platform across all digital channels (web and mobile apps). If you represent an interior design firm, architecture studio, commercial enterprise, or construction contractor, you warrant that you have full legal authority to bind your entity to these terms.
+          These Terms of Service govern your access to and use of {COMPANY_NAME}&apos;s marketplace platform across all digital channels (web and mobile apps). If you represent an interior design firm, architecture studio, commercial enterprise, or construction contractor, you warrant that you have full legal authority to bind your entity to these terms.
         </p>
       </section>
 
       <section id="service-area" className="space-y-2.5 pt-6 border-t border-neutral-200 scroll-mt-32">
         <h2 className="text-lg sm:text-xl font-black text-[#052a51] flex items-center gap-2">
-          <span className="w-6 h-6 rounded-full bg-[#052a51]/10 text-[#052a51] flex items-center justify-center text-xs font-black">2</span>
+          <span className="w-6 h-6 rounded-full bg-[#052a51]/10 text-[#052a51] flex items-center justify-center text-xs font-black">3</span>
           Pan-India Service Area &amp; Delivery Timelines
         </h2>
         <p className="text-neutral-700">
-          IntriHub provides building and interior material procurement services across India under two operational fulfillment models:
+          IntriHub Private Limited provides building and interior material procurement services across India under two operational fulfillment models:
         </p>
         <ul className="list-disc list-inside space-y-2 text-neutral-600 pl-2">
           <li>
@@ -68,28 +94,28 @@ export default function TermsPage() {
 
       <section id="marketplace" className="space-y-2.5 pt-6 border-t border-neutral-200 scroll-mt-32">
         <h2 className="text-lg sm:text-xl font-black text-[#052a51] flex items-center gap-2">
-          <span className="w-6 h-6 rounded-full bg-[#052a51]/10 text-[#052a51] flex items-center justify-center text-xs font-black">3</span>
+          <span className="w-6 h-6 rounded-full bg-[#052a51]/10 text-[#052a51] flex items-center justify-center text-xs font-black">4</span>
           Marketplace &amp; Vendor Partner Fulfillment
         </h2>
         <p className="text-neutral-700">
-          IntriHub operates both direct fulfillment centers (in Bengaluru) and a curated vendor marketplace network across other states:
+          IntriHub Private Limited operates both direct fulfillment centers (in Bengaluru) and a curated vendor marketplace network across other states:
         </p>
         <ul className="list-disc list-inside space-y-2 text-neutral-600 pl-2">
           <li>
             <strong>Vendor Network Compliance</strong>: In regions fulfilled by verified vendor partners, the partner is responsible for physical stock warehousing, palletizing, and initial carrier handover under IntriHub&apos;s strict quality criteria.
           </li>
           <li>
-            <strong>Platform Guarantee &amp; Quality Oversight</strong>: IntriHub guarantees material authenticity, GST billing compliance, digital payment escrow, and transit damage protection across all vendor-fulfilled orders nationwide.
+            <strong>Platform Guarantee &amp; Quality Oversight</strong>: IntriHub Private Limited guarantees material authenticity, GST billing compliance, digital payment escrow, and transit damage protection across all vendor-fulfilled orders nationwide.
           </li>
           <li>
-            <strong>Customer Recourse</strong>: All customer inquiries, return claims, and warranty requests remain centrally managed by IntriHub&apos;s dedicated support team.
+            <strong>Customer Recourse</strong>: All customer inquiries, return claims, and warranty requests remain centrally managed by {COMPANY_NAME}&apos;s dedicated support team.
           </li>
         </ul>
       </section>
 
       <section id="products" className="space-y-2.5 pt-6 border-t border-neutral-200 scroll-mt-32">
         <h2 className="text-lg sm:text-xl font-black text-[#052a51] flex items-center gap-2">
-          <span className="w-6 h-6 rounded-full bg-[#052a51]/10 text-[#052a51] flex items-center justify-center text-xs font-black">4</span>
+          <span className="w-6 h-6 rounded-full bg-[#052a51]/10 text-[#052a51] flex items-center justify-center text-xs font-black">5</span>
           Products, Specifications &amp; Pricing
         </h2>
         <p className="text-neutral-700">
@@ -98,17 +124,17 @@ export default function TermsPage() {
         <ul className="list-disc list-inside space-y-1 text-neutral-600 pl-2">
           <li><strong>Color &amp; Batch Calibration</strong>: Physical tiles, wood laminates, and stone slabs may exhibit subtle natural shade distinctions compared to digital screen previews.</li>
           <li><strong>Volume Discounts</strong>: Tier-based commercial bulk pricing applies dynamically based on minimum box or sheet order thresholds.</li>
-          <li><strong>Price Modifications</strong>: IntriHub reserves the right to revise catalog pricing in response to raw material or freight cost variations prior to order confirmation.</li>
+          <li><strong>Price Modifications</strong>: IntriHub Private Limited reserves the right to revise catalog pricing in response to raw material or freight cost variations prior to order confirmation.</li>
         </ul>
       </section>
 
       <section id="orders" className="space-y-2.5 pt-6 border-t border-neutral-200 scroll-mt-32">
         <h2 className="text-lg sm:text-xl font-black text-[#052a51] flex items-center gap-2">
-          <span className="w-6 h-6 rounded-full bg-[#052a51]/10 text-[#052a51] flex items-center justify-center text-xs font-black">5</span>
+          <span className="w-6 h-6 rounded-full bg-[#052a51]/10 text-[#052a51] flex items-center justify-center text-xs font-black">6</span>
           Order Acceptance &amp; Cancellation Windows
         </h2>
         <p className="text-neutral-700">
-          Receipt of an electronic order confirmation does not constitute final order acceptance. IntriHub reserves the right to cancel or adjust quantities due to stock non-availability, area non-serviceability, or inadvertent pricing errors, in which case a 100% full refund is immediately issued.
+          Receipt of an electronic order confirmation does not constitute final order acceptance. IntriHub Private Limited reserves the right to cancel or adjust quantities due to stock non-availability, area non-serviceability, or inadvertent pricing errors, in which case a 100% full refund is immediately issued.
         </p>
         <div className="bg-slate-50 p-4 rounded-xl border border-slate-200 text-xs sm:text-sm space-y-2 text-neutral-700 mt-2">
           <p className="font-bold text-[#052a51]">Order Cancellation Windows:</p>
@@ -121,7 +147,7 @@ export default function TermsPage() {
 
       <section id="jurisdiction" className="space-y-2.5 pt-6 border-t border-neutral-200 scroll-mt-32">
         <h2 className="text-lg sm:text-xl font-black text-[#052a51] flex items-center gap-2">
-          <span className="w-6 h-6 rounded-full bg-[#052a51]/10 text-[#052a51] flex items-center justify-center text-xs font-black">6</span>
+          <span className="w-6 h-6 rounded-full bg-[#052a51]/10 text-[#052a51] flex items-center justify-center text-xs font-black">7</span>
           Governing Law &amp; Legal Jurisdiction
         </h2>
         <p className="text-neutral-700">
@@ -131,19 +157,19 @@ export default function TermsPage() {
 
       <section id="communication" className="space-y-2.5 pt-6 border-t border-neutral-200 scroll-mt-32">
         <h2 className="text-lg sm:text-xl font-black text-[#052a51] flex items-center gap-2">
-          <span className="w-6 h-6 rounded-full bg-[#052a51]/10 text-[#052a51] flex items-center justify-center text-xs font-black">7</span>
-          Corporate Communications
+          <span className="w-6 h-6 rounded-full bg-[#052a51]/10 text-[#052a51] flex items-center justify-center text-xs font-black">8</span>
+          Corporate Communications &amp; Official Notices
         </h2>
         <p className="text-neutral-700">
-          For legal notices or corporate communication, contact our legal team at{" "}
-          <a href="mailto:info@intrihub.com" className="font-bold text-[#052a51] hover:underline">
-            info@intrihub.com
-          </a>{" "}
-          or customer support at{" "}
-          <a href="mailto:support@intrihub.com" className="font-bold text-[#F26522] hover:underline">
-            support@intrihub.com
-          </a>.
+          For legal notices, service of process, or formal corporate communication, please address to:
         </p>
+        <div className="p-4 rounded-2xl bg-neutral-50 border border-neutral-200 text-xs sm:text-sm space-y-1.5 text-neutral-700">
+          <p><strong>To:</strong> Legal Directorate, {COMPANY_NAME}</p>
+          <p><strong>CIN:</strong> <span className="font-mono">{CIN}</span></p>
+          <p><strong>Registered Address:</strong> {REGISTERED_OFFICE_STRING}</p>
+          <p><strong>Support &amp; Legal Email:</strong> <a href={`mailto:${EMAIL}`} className="font-bold text-[#F26522] hover:underline">{EMAIL}</a></p>
+          <p><strong>Support Helpline:</strong> <a href={PHONE_TEL} className="font-bold text-[#052a51] hover:underline">{PHONE_DISPLAY}</a></p>
+        </div>
       </section>
     </PolicyLayout>
   );

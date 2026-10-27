@@ -32,7 +32,13 @@ export const APP_VERSION_CODE: number =
   18;
 
 export const PACKAGE_NAME = "com.intrihub.app";
+export const COMPANY_NAME = "IntriHub Private Limited";
+export const COMPANY_CIN = "U43299KA2026PTC230136";
+export const COMPANY_REGISTERED_OFFICE =
+  "2858/4, Near Government High School, Begur Hobli, Mico Layout, Bangalore South, Bangalore, Karnataka - 560076";
+export const SUPPORT_EMAIL = "co@intrihub.com";
 export const SUPPORT_PHONE = "7090120211";
+export const SUPPORT_PHONE_FORMATTED = "+91 70901 20211";
 export const SUPPORT_CALL_URL = "tel:7090120211";
 export const SUPPORT_WHATSAPP_URL = "https://wa.me/917090120211?text=Hello%20Intrihub%20Support";
 

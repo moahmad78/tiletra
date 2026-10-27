@@ -24,6 +24,7 @@ import {
 import Link from "next/link";
 import { toast } from "sonner";
 import { CONTACT_PERSONS, LEADERSHIP_TEAM } from "@/lib/data/contacts";
+import { EMAIL } from "@/lib/siteConfig";
 
 const FAQS = [
   {
@@ -310,7 +311,7 @@ export default function FloatingCustomerSupport() {
                         {/* Customer Email */}
                         <div className="p-3.5 rounded-2xl bg-orange-50/50 border border-orange-200/80 hover:border-orange-300 transition-all flex items-center justify-between group">
                           <a
-                            href="mailto:support@intrihub.com"
+                            href={`mailto:${EMAIL}`}
                             className="flex items-center gap-3 flex-1 min-w-0"
                           >
                             <div className="w-10 h-10 rounded-xl bg-[#F26522] text-white flex items-center justify-center shrink-0 group-hover:scale-105 transition-transform">
@@ -318,16 +319,16 @@ export default function FloatingCustomerSupport() {
                             </div>
                             <div className="min-w-0">
                               <p className="text-[11px] text-orange-800 font-semibold truncate">Customer Email</p>
-                              <p className="text-xs font-bold text-gray-900 truncate">support@intrihub.com</p>
+                              <p className="text-xs font-bold text-gray-900 truncate">{EMAIL}</p>
                             </div>
                           </a>
                           <button
                             type="button"
-                            onClick={() => copyToClipboard("support@intrihub.com", "Support Email")}
+                            onClick={() => copyToClipboard(EMAIL, "Support Email")}
                             title="Copy email"
                             className="p-1.5 text-gray-400 hover:text-[#F26522] transition-colors rounded-lg hover:bg-orange-100"
                           >
-                            {copiedText === "support@intrihub.com" ? <Check size={14} className="text-green-600" /> : <Copy size={14} />}
+                            {copiedText === EMAIL ? <Check size={14} className="text-green-600" /> : <Copy size={14} />}
                           </button>
                         </div>
                       </div>

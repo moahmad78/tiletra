@@ -24,7 +24,15 @@ import {
 import { toast } from "sonner";
 import { useQuoteModal } from "@/components/QuoteModalProvider";
 import { CONTACT_PERSONS, CORE_DEPARTMENTS } from "@/lib/data/contacts";
-import { PHONE_DISPLAY, PHONE_TEL, PHONE_WA } from "@/lib/siteConfig";
+import {
+  PHONE_DISPLAY,
+  PHONE_TEL,
+  PHONE_WA,
+  COMPANY_NAME,
+  CIN,
+  REGISTERED_OFFICE_STRING,
+  EMAIL,
+} from "@/lib/siteConfig";
 import SectionHeader from "./SectionHeader";
 
 const SUPPORT_CATEGORIES = [
@@ -329,19 +337,29 @@ export default function Contact() {
                   <Building size={20} className="text-[#F26522]" />
                 </div>
                 <div>
-                  <h4 className="text-white font-bold text-base">Registered Head Office</h4>
-                  <p className="text-neutral-400 text-xs">Bengaluru Central Operations HQ</p>
+                  <h4 className="text-white font-bold text-base">Official Registered Office</h4>
+                  <p className="text-neutral-400 text-xs">{COMPANY_NAME}</p>
                 </div>
               </div>
 
               <div className="space-y-3 text-xs text-neutral-300">
-                <p className="leading-relaxed">
-                  <strong>IntriHub QuickCommerce Private Limited</strong><br />
-                  41, 10th A Cross Rd, Janapriya Layout, Begur,<br />
-                  Bengaluru, Karnataka 560114, India
-                </p>
+                <div className="leading-relaxed space-y-1">
+                  <p className="font-bold text-white text-sm">{COMPANY_NAME}</p>
+                  <p className="text-xs text-neutral-400 font-mono">CIN: <span className="text-white">{CIN}</span></p>
+                  <p className="text-xs text-neutral-300 pt-1 leading-snug">
+                    {REGISTERED_OFFICE_STRING}
+                  </p>
+                </div>
 
                 <div className="pt-2 border-t border-white/10 space-y-2">
+                  <div className="flex items-center gap-2">
+                    <Mail size={14} className="text-[#F26522]" />
+                    <span>Support Email: <a href={`mailto:${EMAIL}`} className="text-[#F26522] hover:underline font-bold">{EMAIL}</a></span>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <Phone size={14} className="text-emerald-400" />
+                    <span>Support Phone: <a href={PHONE_TEL} className="text-white hover:underline font-bold">{PHONE_DISPLAY}</a></span>
+                  </div>
                   <div className="flex items-center gap-2">
                     <Clock size={14} className="text-[#F26522]" />
                     <span>Customer Support: <strong>24/7 Dedicated Support</strong></span>
@@ -349,10 +367,6 @@ export default function Contact() {
                   <div className="flex items-center gap-2">
                     <Truck size={14} className="text-[#1E9E6B]" />
                     <span>Dispatch Operations: <strong>7 Days a Week</strong></span>
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <Mail size={14} className="text-blue-400" />
-                    <span>General Desk: <strong>info@intrihub.com</strong></span>
                   </div>
                 </div>
               </div>

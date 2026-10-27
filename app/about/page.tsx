@@ -68,11 +68,16 @@ export default function AboutPage() {
       "@type": "Organization",
       "@id": `${BASE_SITE_URL}/#organization`,
       name: "IntriHub",
-      alternateName: "IntriHub QuickCommerce",
+      legalName: "IntriHub Private Limited",
+      identifier: "U43299KA2026PTC230136",
+      leiCode: "U43299KA2026PTC230136",
+      alternateName: ["IntriHub", "IntriHub QuickCommerce", "IntriHub Private Limited"],
       url: BASE_SITE_URL,
       logo: `${BASE_SITE_URL}/logo/intri-web-logo.png`,
       image: `${BASE_SITE_URL}/about/hero-facility.jpg`,
       foundingDate: "2026",
+      email: "co@intrihub.com",
+      telephone: "+91-70901-20211",
       founder: {
         "@type": "Person",
         name: "Sahil Sheikh",
@@ -102,10 +107,10 @@ export default function AboutPage() {
       ],
       address: {
         "@type": "PostalAddress",
-        streetAddress: "41, 10th A Cross Rd, Janapriya Layout, Begur",
-        addressLocality: "Begur, Bengaluru",
+        streetAddress: "2858/4, Near Government High School, Begur Hobli, Mico Layout, Bangalore South",
+        addressLocality: "Bangalore",
         addressRegion: "Karnataka",
-        postalCode: "560114",
+        postalCode: "560076",
         addressCountry: "IN",
       },
     },
@@ -851,12 +856,30 @@ export default function AboutPage() {
             <div className="mt-12 p-6 sm:p-8 rounded-3xl bg-slate-50 border border-slate-200/80 grid grid-cols-1 md:grid-cols-3 gap-6">
               <div className="flex items-start gap-3">
                 <div className="w-10 h-10 rounded-xl bg-[#052a51]/10 text-[#052a51] flex items-center justify-center shrink-0">
+                  <Building2 className="w-5 h-5" />
+                </div>
+                <div>
+                  <h4 className="text-xs font-bold text-slate-500 uppercase tracking-wider">Corporate Identity</h4>
+                  <p className="text-sm font-bold text-slate-900 mt-1">
+                    IntriHub Private Limited
+                  </p>
+                  <p className="text-xs font-mono text-slate-600 mt-0.5">
+                    CIN: U43299KA2026PTC230136
+                  </p>
+                  <p className="text-xs text-slate-600 mt-1">
+                    Support: <a href="mailto:co@intrihub.com" className="text-[#F26522] hover:underline font-semibold">co@intrihub.com</a>
+                  </p>
+                </div>
+              </div>
+
+              <div className="flex items-start gap-3">
+                <div className="w-10 h-10 rounded-xl bg-[#052a51]/10 text-[#052a51] flex items-center justify-center shrink-0">
                   <MapPin className="w-5 h-5" />
                 </div>
                 <div>
-                  <h4 className="text-xs font-bold text-slate-500 uppercase tracking-wider">Registered Headquarters</h4>
-                  <p className="text-sm font-semibold text-slate-900 mt-1">
-                    41, 10th A Cross Rd, Janapriya Layout, Begur, Bengaluru, Karnataka 560114, India
+                  <h4 className="text-xs font-bold text-slate-500 uppercase tracking-wider">Official Registered Office</h4>
+                  <p className="text-xs sm:text-sm font-semibold text-slate-900 mt-1 leading-snug">
+                    2858/4, Near Government High School, Begur Hobli, Mico Layout, Bangalore South, Bangalore, Karnataka - 560076
                   </p>
                 </div>
               </div>
@@ -871,21 +894,6 @@ export default function AboutPage() {
                     +91 70901 20211 (Customer &amp; Trade Desk)
                   </p>
                   <p className="text-xs font-bold text-emerald-600 mt-0.5">24/7 Dedicated Support</p>
-                </div>
-              </div>
-
-              <div className="flex items-start gap-3">
-                <div className="w-10 h-10 rounded-xl bg-emerald-500/10 text-emerald-600 flex items-center justify-center shrink-0">
-                  <ShieldCheck className="w-5 h-5" />
-                </div>
-                <div>
-                  <h4 className="text-xs font-bold text-slate-500 uppercase tracking-wider">Official Domain Guarantee</h4>
-                  <p className="text-sm font-semibold text-slate-900 mt-1">
-                    https://www.intrihub.com
-                  </p>
-                  <p className="text-xs text-slate-500 mt-0.5">
-                    We operate exclusively through our official domain. Beware of duplicate third-party sites.
-                  </p>
                 </div>
               </div>
             </div>

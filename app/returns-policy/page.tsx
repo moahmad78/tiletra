@@ -4,6 +4,7 @@ import React from "react";
 import Link from "next/link";
 import { CheckCircle, AlertCircle, ShieldAlert, ArrowRight, MessageCircle, Truck, PackageCheck } from "lucide-react";
 import PolicyLayout from "@/components/PolicyLayout";
+import { EMAIL, PHONE_DISPLAY, PHONE_WA } from "@/lib/siteConfig";
 
 const RETURNS_SECTIONS = [
   { id: "window", title: "7-Day Return Window & Regional Logistics" },
@@ -64,7 +65,7 @@ export default function ReturnsPolicyPage() {
           <p className="font-bold text-[#052a51]">Damage Claim Procedure:</p>
           <ul className="list-disc list-inside space-y-1 pl-1">
             <li>Record clear photos or an unboxing video showing the damaged cartons/slabs and shipping label.</li>
-            <li>Submit evidence via WhatsApp (<a href="https://wa.me/917090120211" className="font-bold text-[#1E9E6B] hover:underline">+91 70901 20211</a>) or email (<a href="mailto:support@intrihub.com" className="font-bold text-[#052a51] hover:underline">support@intrihub.com</a>) within <strong>48 hours</strong> of delivery receipt.</li>
+            <li>Submit evidence via WhatsApp (<a href={PHONE_WA} className="font-bold text-[#1E9E6B] hover:underline">{PHONE_DISPLAY}</a>) or email (<a href={`mailto:${EMAIL}`} className="font-bold text-[#052a51] hover:underline">{EMAIL}</a>) within <strong>48 hours</strong> of delivery receipt.</li>
             <li>IntriHub will immediately dispatch a priority replacement consignment at zero additional cost to the buyer, or issue a 100% refund for the damaged units.</li>
           </ul>
         </div>

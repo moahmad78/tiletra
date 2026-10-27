@@ -28,10 +28,76 @@ export function getFormattedFromEmail(): string {
 }
 
 /**
+ * Dispatches mail errors to Sentry if available in runtime/global context.
+ * Never leaks passwords or credentials.
+ */
+export function captureMailError(
+  error: unknown,
+  context: {
+    event: "startup_verify" | "send_failure" | "unconfigured";
+    host?: string;
+    port?: number;
+    user?: string;
+    to?: string;
+    subject?: string;
+    errorDetails?: string;
+  }
+) {
+  try {
+    const errorObj = error instanceof Error ? error : new Error(String(error || "Unknown Mail Error"));
+
+    // 1. Check globalThis.Sentry
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const globalSentry = (globalThis as any).Sentry;
+    if (globalSentry && typeof globalSentry.captureException === "function") {
+      globalSentry.captureException(errorObj, {
+        tags: { service: "titan-smtp", event: context.event },
+        extra: {
+          host: context.host,
+          port: context.port,
+          user: context.user,
+          recipient: context.to,
+          subject: context.subject,
+          details: context.errorDetails,
+        },
+      });
+      return;
+    }
+
+    // 2. Check dynamic require in Node environment
+    if (typeof require !== "undefined") {
+      try {
+        // eslint-disable-next-line @typescript-eslint/no-require-imports
+        const sentry = require("@sentry/nextjs");
+        if (sentry && typeof sentry.captureException === "function") {
+          sentry.captureException(errorObj, {
+            tags: { service: "titan-smtp", event: context.event },
+            extra: {
+              host: context.host,
+              port: context.port,
+              user: context.user,
+              recipient: context.to,
+              subject: context.subject,
+              details: context.errorDetails,
+            },
+          });
+          return;
+        }
+      } catch {
+        // Sentry package not installed
+      }
+    }
+  } catch (sentryErr) {
+    // Fail silently so error logging never breaks mail workflow
+    console.warn("[email] Sentry capture exception failed:", (sentryErr as Error)?.message);
+  }
+}
+
+/**
  * Creates and returns configured Nodemailer SMTP transporter for Titan Mail.
  */
 export function getMailTransporter(overrideHost?: string, overridePort?: number) {
-  const defaultHost = "smtpout.secureserver.net";
+  const defaultHost = "smtp.titan.email";
   const host = overrideHost || getSanitizedEnv("SMTP_HOST", getSanitizedEnv("EMAIL_SERVER_HOST", defaultHost));
   const portStr = overridePort ? String(overridePort) : getSanitizedEnv("SMTP_PORT", getSanitizedEnv("EMAIL_SERVER_PORT", "465"));
   const port = parseInt(portStr, 10);
@@ -63,8 +129,55 @@ export function getMailTransporter(overrideHost?: string, overridePort?: number)
   };
 }
 
+let verifyPromise: Promise<boolean> | null = null;
+
 /**
- * Universal Titan Mail / GoDaddy SMTP Email Dispatcher with auto-fallback
+ * Runs transporter.verify() at startup.
+ * Logs host, port, user and connection status without exposing secrets.
+ * Dispatches to Sentry if verification fails.
+ */
+export function verifyTransporterStartup(): Promise<boolean> {
+  if (verifyPromise) return verifyPromise;
+
+  const { transporter, host, port, user, configured } = getMailTransporter();
+  if (!configured) {
+    console.log(
+      `[email] startup_verify: skipped (SMTP credentials incomplete: host=${host} user=${user} pass=${configured ? "configured" : "missing"})`
+    );
+    verifyPromise = Promise.resolve(false);
+    return verifyPromise;
+  }
+
+  verifyPromise = new Promise<boolean>((resolve) => {
+    transporter.verify((error, success) => {
+      if (error) {
+        const errorMsg = error.message || "SMTP verification failed";
+        console.warn(`[email] startup_verify: fail host=${host}:${port} user=${user} error=${errorMsg}`);
+        captureMailError(error, {
+          event: "startup_verify",
+          host,
+          port,
+          user,
+          errorDetails: errorMsg,
+        });
+        resolve(false);
+      } else {
+        console.log(`[email] startup_verify: success host=${host}:${port} user=${user} ready=${Boolean(success)}`);
+        resolve(true);
+      }
+    });
+  });
+
+  return verifyPromise;
+}
+
+// Auto-trigger verify once when module is loaded in Node.js server environment (non-browser, non-test)
+if (typeof window === "undefined" && process.env.NODE_ENV !== "test") {
+  verifyTransporterStartup().catch(() => {});
+}
+
+/**
+ * Universal Titan Mail SMTP Email Dispatcher
  */
 export async function sendEmail({
   to,
@@ -86,13 +199,10 @@ export async function sendEmail({
   const primaryConfig = getMailTransporter();
 
   if (primaryConfig.configured) {
-    // List candidate hosts to attempt: primary first, followed by known alternative
     const candidateHosts: Array<{ host: string; port: number }> = [
       { host: primaryConfig.host, port: primaryConfig.port },
     ];
-    if (primaryConfig.host.includes("titan")) {
-      candidateHosts.push({ host: "smtpout.secureserver.net", port: 465 });
-    } else if (primaryConfig.host.includes("secureserver")) {
+    if (primaryConfig.host !== "smtp.titan.email") {
       candidateHosts.push({ host: "smtp.titan.email", port: 465 });
     }
 
@@ -122,6 +232,18 @@ export async function sendEmail({
     }
 
     console.error(`[email] provider=smtp status=all_candidates_failed reason=${lastErrorReason}`);
+
+    // Dispatches error to Sentry on send failure
+    captureMailError(new Error(`[SMTP Send Failed] ${lastErrorReason}`), {
+      event: "send_failure",
+      host: primaryConfig.host,
+      port: primaryConfig.port,
+      user: primaryConfig.user,
+      to: maskEmail(cleanTo),
+      subject,
+      errorDetails: lastErrorReason,
+    });
+
     return { success: false, provider: "smtp", error: lastErrorReason };
   }
 
@@ -135,6 +257,12 @@ export async function sendEmail({
 
   const reason = "SMTP credentials missing. Please set SMTP_HOST, SMTP_PORT, SMTP_USER, and SMTP_PASS in environment variables.";
   console.error(`[email] provider=none status=fail reason=${reason}`);
+  captureMailError(new Error(reason), {
+    event: "unconfigured",
+    to: maskEmail(cleanTo),
+    subject,
+    errorDetails: reason,
+  });
   return {
     success: false,
     provider: "none",

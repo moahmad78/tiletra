@@ -36,8 +36,9 @@ export async function POST(req: NextRequest) {
     }
 
     // 1. Check direct user.pushToken
-    if (user.pushToken && (user.pushToken.startsWith("ExponentPushToken[") || user.pushToken.startsWith("ExpoPushToken["))) {
-      tokenSet.add(user.pushToken.trim());
+    const userAny = user as any;
+    if (userAny.pushToken && (userAny.pushToken.startsWith("ExponentPushToken[") || userAny.pushToken.startsWith("ExpoPushToken["))) {
+      tokenSet.add(userAny.pushToken.trim());
     }
 
     // 2. Check DeviceToken table

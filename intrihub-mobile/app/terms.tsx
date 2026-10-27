@@ -9,9 +9,16 @@ import {
   StatusBar,
 } from "react-native";
 import { useRouter } from "expo-router";
-import { ArrowLeft, FileText, ShieldCheck, Users, AlertTriangle, Scale, Ban } from "lucide-react-native";
+import { ArrowLeft, FileText, ShieldCheck, Users, AlertTriangle, Scale, Ban, Building2 } from "lucide-react-native";
 import { COLORS, SPACING, RADIUS, SHADOWS } from "../src/constants/theme";
-import { SUPPORT_PHONE } from "../src/constants/config";
+import {
+  SUPPORT_PHONE,
+  COMPANY_NAME,
+  COMPANY_CIN,
+  COMPANY_REGISTERED_OFFICE,
+  SUPPORT_EMAIL,
+  SUPPORT_PHONE_FORMATTED,
+} from "../src/constants/config";
 
 export default function TermsOfUseScreen() {
   const router = useRouter();
@@ -131,11 +138,43 @@ export default function TermsOfUseScreen() {
           <Text style={styles.sectionBody}>
             For questions regarding these Terms of Use, reach out to our support team:
           </Text>
-          <Text style={styles.contactLine}>📞  Support: {SUPPORT_PHONE}</Text>
-          <Text style={styles.contactLine}>📧  Customer Support: support@intrihub.com</Text>
-          <Text style={styles.contactLine}>🏢  Corporate & Legal: info@intrihub.com</Text>
+          <Text style={styles.contactLine}>📞  Support: {SUPPORT_PHONE_FORMATTED}</Text>
+          <Text style={styles.contactLine}>📧  Customer Support: {SUPPORT_EMAIL}</Text>
+          <Text style={styles.contactLine}>🏢  Official Desk: {SUPPORT_EMAIL}</Text>
           <Text style={[styles.noteBox as any]}>
             Intrihub reserves the right to modify these Terms at any time. Continued use of the application after changes constitutes acceptance of the revised terms.
+          </Text>
+        </View>
+
+        {/* Official Corporate Identity Card */}
+        <View style={styles.corporateCard}>
+          <View style={styles.corporateHeader}>
+            <Building2 size={18} color={COLORS.primary} style={styles.sectionIcon} />
+            <Text style={styles.corporateTitle}>Corporate Identity</Text>
+          </View>
+          <Text style={styles.corporateBody}>
+            This mobile application and services are owned and operated by{" "}
+            <Text style={styles.corporateHighlight}>{COMPANY_NAME}</Text>.
+          </Text>
+          <View style={styles.corporateDivider} />
+          <View style={styles.corporateDetailRow}>
+            <Text style={styles.corporateLabel}>CIN:</Text>
+            <Text style={styles.corporateValue}>{COMPANY_CIN}</Text>
+          </View>
+          <View style={styles.corporateDetailRow}>
+            <Text style={styles.corporateLabel}>Registered Office:</Text>
+            <Text style={styles.corporateValue}>{COMPANY_REGISTERED_OFFICE}</Text>
+          </View>
+          <View style={styles.corporateDetailRow}>
+            <Text style={styles.corporateLabel}>Support Email:</Text>
+            <Text style={styles.corporateValue}>{SUPPORT_EMAIL}</Text>
+          </View>
+          <View style={styles.corporateDetailRow}>
+            <Text style={styles.corporateLabel}>Support Phone:</Text>
+            <Text style={styles.corporateValue}>{SUPPORT_PHONE_FORMATTED}</Text>
+          </View>
+          <Text style={styles.corporateFooterText}>
+            © 2026 {COMPANY_NAME}. All rights reserved.
           </Text>
         </View>
 
@@ -273,5 +312,67 @@ const styles = StyleSheet.create({
     fontSize: 13,
     color: COLORS.textSecondary,
     marginBottom: 4,
+  },
+  corporateCard: {
+    backgroundColor: COLORS.surface,
+    borderRadius: RADIUS.lg,
+    padding: SPACING.lg,
+    borderWidth: 1,
+    borderColor: "rgba(5, 42, 81, 0.15)",
+    marginBottom: SPACING.md,
+    marginTop: 4,
+  },
+  corporateHeader: {
+    flexDirection: "row",
+    alignItems: "center",
+    marginBottom: 8,
+  },
+  corporateTitle: {
+    fontSize: 14,
+    fontWeight: "800",
+    color: COLORS.primary,
+    textTransform: "uppercase",
+    letterSpacing: 0.5,
+  },
+  corporateBody: {
+    fontSize: 12.5,
+    color: COLORS.textSecondary,
+    lineHeight: 18,
+    marginBottom: 10,
+  },
+  corporateHighlight: {
+    fontWeight: "700",
+    color: COLORS.text,
+  },
+  corporateDivider: {
+    height: 1,
+    backgroundColor: COLORS.border,
+    marginVertical: 8,
+  },
+  corporateDetailRow: {
+    marginBottom: 6,
+  },
+  corporateLabel: {
+    fontSize: 11,
+    fontWeight: "700",
+    color: COLORS.textMuted,
+    textTransform: "uppercase",
+  },
+  corporateValue: {
+    fontSize: 12.5,
+    fontWeight: "600",
+    color: COLORS.text,
+    lineHeight: 18,
+    marginTop: 1,
+  },
+  corporateFooterText: {
+    fontSize: 11,
+    fontWeight: "600",
+    color: COLORS.textMuted,
+    textAlign: "center",
+    marginTop: 10,
+    paddingTop: 8,
+    borderTopWidth: 1,
+    borderTopColor: COLORS.border,
   },
 });

@@ -18,6 +18,15 @@ import {
 } from "lucide-react";
 import Header from "@/components/Header";
 import Footer from "@/components/Footer";
+import {
+  COMPANY_NAME,
+  CIN,
+  REGISTERED_OFFICE_STRING,
+  EMAIL,
+  PHONE_DISPLAY,
+  PHONE_TEL,
+  PHONE_WA,
+} from "@/lib/siteConfig";
 
 export type PolicyTabId = "privacy" | "terms" | "returns" | "shipping" | "faq" | "contact";
 
@@ -305,7 +314,7 @@ export default function PolicyLayout({
               </p>
               <div className="space-y-2 pt-1">
                 <a
-                  href="https://wa.me/917090120211?text=Hi%20Intrihub,%20I%20have%20a%20query%20regarding%20policies%20or%20orders."
+                  href={`${PHONE_WA}?text=Hi%20Intrihub,%20I%20have%20a%20query%20regarding%20policies%20or%20orders.`}
                   target="_blank"
                   rel="noopener noreferrer"
                   className="flex items-center gap-2 text-xs font-bold text-[#1E9E6B] hover:underline"
@@ -314,18 +323,18 @@ export default function PolicyLayout({
                   <span>WhatsApp Priority Desk</span>
                 </a>
                 <a
-                  href="tel:+917090120211"
+                  href={PHONE_TEL}
                   className="flex items-center gap-2 text-xs font-bold text-neutral-800 hover:text-[#052a51] transition-colors"
                 >
                   <Phone size={13} className="text-[#F26522]" />
-                  <span>+91 70901 20211</span>
+                  <span>{PHONE_DISPLAY}</span>
                 </a>
                 <a
-                  href="mailto:support@intrihub.com"
+                  href={`mailto:${EMAIL}`}
                   className="flex items-center gap-2 text-xs font-bold text-neutral-800 hover:text-[#052a51] transition-colors"
                 >
                   <Mail size={13} className="text-[#052a51]" />
-                  <span>support@intrihub.com</span>
+                  <span>{EMAIL}</span>
                 </a>
               </div>
             </div>
@@ -334,12 +343,17 @@ export default function PolicyLayout({
           {/* Right Main Policy Content Body */}
           <div className="flex-1 w-full min-w-0">
             <div className="bg-white rounded-3xl p-6 sm:p-8 md:p-12 shadow-xs border border-neutral-200 space-y-6 text-sm sm:text-base text-neutral-700 leading-relaxed font-normal">
-              {/* Official Website Notice Banner */}
+              {/* Corporate Identity & Official Website Notice Banner */}
               <div className="p-4 rounded-2xl bg-blue-50/70 border border-blue-200/80 text-[#052a51] text-xs sm:text-sm leading-relaxed flex items-start gap-3">
                 <ShieldCheck size={18} className="text-[#F26522] shrink-0 mt-0.5" />
-                <p>
-                  IntriHub&apos;s only official website is <strong className="font-bold underline decoration-[#F26522] underline-offset-2">www.intrihub.com</strong>. We are not affiliated with any other website using a similar name.
-                </p>
+                <div className="space-y-1">
+                  <p>
+                    This platform and services are owned and operated by <strong className="font-bold text-[#052a51]">{COMPANY_NAME}</strong> (CIN: <strong className="font-mono">{CIN}</strong>).
+                  </p>
+                  <p className="text-[11px] sm:text-xs text-neutral-600">
+                    Registered Office: {REGISTERED_OFFICE_STRING} • Support: <a href={`mailto:${EMAIL}`} className="text-[#F26522] hover:underline font-semibold">{EMAIL}</a> | <a href={PHONE_TEL} className="text-[#F26522] hover:underline font-semibold">{PHONE_DISPLAY}</a>
+                  </p>
+                </div>
               </div>
 
               {children}
