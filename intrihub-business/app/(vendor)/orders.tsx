@@ -159,8 +159,10 @@ export default function VendorOrdersScreen() {
           <View>
             <Text style={styles.orderId}>Order #{item.orderId}</Text>
             <Text style={styles.customerName}>{item.customerName}</Text>
-            {getCleanPhone(item.customerPhone) ? (
-              <Text style={styles.customerPhone}>Phone: +91 {getCleanPhone(item.customerPhone)}</Text>
+            {item.customerPhone ? (
+              <Text style={styles.customerPhone}>
+                Phone: {item.customerPhone.includes("••••") ? item.customerPhone : `+91 ${getCleanPhone(item.customerPhone).slice(0, 5)} •••••`}
+              </Text>
             ) : null}
           </View>
           <View style={[styles.statusBadge, getStatusStyle(item.fulfillmentStatus)]}>

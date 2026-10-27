@@ -36,12 +36,24 @@ export async function GET(req: NextRequest) {
 
     const recentOrders = recentSplits.map((s) => {
       const parent = orderMap.get(s.orderId);
+      const allParentItems = parent?.items || [];
+      const hasAnyVendorId = allParentItems.some((it: any) => Boolean(it.vendorId));
+      const vendorItems = hasAnyVendorId
+        ? allParentItems.filter((it: any) => it.vendorId === s.vendorId)
+        : allParentItems;
+
+      const rawPhone = parent?.deliveryPhone || parent?.customerPhone || "";
+      const cleanDigits = rawPhone.replace(/\D/g, "");
+      const maskedPhone = cleanDigits.length >= 10
+        ? `+91 ${cleanDigits.slice(-10, -5)} •••••`
+        : (rawPhone ? "••••••••••" : "");
+
       return {
         splitId: s.id,
         orderId: s.orderId,
-        customerName: parent?.customerName || "Customer",
-        customerPhone: parent?.customerPhone || "",
-        itemsCount: parent?.items?.length || 0,
+        customerName: parent?.deliveryName || parent?.customerName || "Customer",
+        customerPhone: maskedPhone,
+        itemsCount: vendorItems.length,
         subtotal: s.subtotal,
         vendorPayoutAmount:
           s.vendorPayoutAmount > 0

@@ -16,7 +16,7 @@ import {
   ArrowLeft,
   Check,
   Phone,
-  MessageCircle,
+  ShieldCheck,
   MapPin,
   MoreVertical,
   ChevronDown,
@@ -102,21 +102,19 @@ export default function VendorOrderDetailScreen() {
     );
   }
 
-  const cleanPhone = split.customerPhone ? split.customerPhone.replace(/\D/g, "").slice(-10) : "9876543210";
-  const displayPhone = `+91 ${cleanPhone.slice(0, 5)} ${cleanPhone.slice(5)}`;
+  // Customer privacy protection: Never reveal raw customer phone or direct contact actions to vendor
+  const rawPhone = split.customerPhone ? String(split.customerPhone).trim() : "";
+  const cleanPhone = rawPhone.replace(/\D/g, "");
+  const displayPhone = rawPhone.includes("••••")
+    ? rawPhone
+    : (cleanPhone.length >= 5
+        ? `+91 ${cleanPhone.slice(-10, -5)} •••••`
+        : (rawPhone ? "••••••••••" : "Privacy Protected"));
   const orderNumber = split.orderId || split.splitId.slice(-6);
 
   // Real items from database order
   const items = Array.isArray(split.items) ? split.items : [];
   const displayedItems = showAllItems ? items : items.slice(0, 3);
-
-  const handleCallCustomer = () => {
-    Linking.openURL(`tel:${cleanPhone}`).catch(() => {});
-  };
-
-  const handleMessageCustomer = () => {
-    Linking.openURL(`https://wa.me/91${cleanPhone}`).catch(() => {});
-  };
 
   const handleCallRider = () => {
     Linking.openURL(`tel:918765432109`).catch(() => {});
@@ -229,27 +227,14 @@ export default function VendorOrderDetailScreen() {
 
                 <View style={styles.customerMeta}>
                   <Text style={styles.customerName}>
-                    {split.customerName || "Amit Verma"}
+                    {split.customerName || "Customer"}
                   </Text>
                   <Text style={styles.customerPhone}>{displayPhone}</Text>
                 </View>
 
-                <View style={styles.contactActions}>
-                  <TouchableOpacity
-                    style={[styles.contactCircleBtn, { backgroundColor: "#ECFDF5" }]}
-                    onPress={handleCallCustomer}
-                    activeOpacity={0.75}
-                  >
-                    <Phone size={16} color="#10B981" />
-                  </TouchableOpacity>
-
-                  <TouchableOpacity
-                    style={[styles.contactCircleBtn, { backgroundColor: "#EFF6FF" }]}
-                    onPress={handleMessageCustomer}
-                    activeOpacity={0.75}
-                  >
-                    <MessageCircle size={16} color="#0066FF" />
-                  </TouchableOpacity>
+                <View style={styles.privacyBadge}>
+                  <ShieldCheck size={14} color="#059669" />
+                  <Text style={styles.privacyBadgeText}>Protected</Text>
                 </View>
               </View>
 
@@ -593,16 +578,21 @@ const styles = StyleSheet.create({
     color: "#64748B",
     marginTop: 2,
   },
-  contactActions: {
+  privacyBadge: {
     flexDirection: "row",
-    gap: 8,
-  },
-  contactCircleBtn: {
-    width: 36,
-    height: 36,
-    borderRadius: 18,
     alignItems: "center",
-    justifyContent: "center",
+    gap: 4,
+    backgroundColor: "#F0FDF4",
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    borderRadius: 8,
+    borderWidth: 1,
+    borderColor: "#DCFCE7",
+  },
+  privacyBadgeText: {
+    fontSize: 11,
+    fontWeight: "700",
+    color: "#059669",
   },
   addressDivider: {
     height: 1,

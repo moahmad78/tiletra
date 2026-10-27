@@ -1090,10 +1090,11 @@ export async function getVendorOrders(vendorId?: string) {
     return splits.map((split) => {
       const parent = orderMap.get(split.orderId);
       const allParentItems = parent?.items || [];
-      const vendorItems = allParentItems.filter(
-        (it: any) => !it.vendorId || it.vendorId === split.vendorId
-      );
-      const rawItems = vendorItems.length > 0 ? vendorItems : allParentItems;
+      const hasAnyVendorId = allParentItems.some((it: any) => Boolean(it.vendorId));
+      const vendorItems = hasAnyVendorId
+        ? allParentItems.filter((it: any) => it.vendorId === split.vendorId)
+        : allParentItems;
+      const rawItems = vendorItems;
 
       const formattedItems = rawItems.map((it: any) => ({
         id: it.id,
@@ -1122,6 +1123,18 @@ export async function getVendorOrders(vendorId?: string) {
           ? split.vendorPayoutAmount
           : Number((split.subtotal - commissionAmount).toFixed(2));
 
+      // Security & Privacy Masking: Never expose raw customer contact numbers or emails to vendor
+      const rawCustomerPhone = parent?.deliveryPhone || parent?.customerPhone || "";
+      const cleanDigits = rawCustomerPhone.replace(/\D/g, "");
+      const maskedCustomerPhone = cleanDigits.length >= 10
+        ? `+91 ${cleanDigits.slice(-10, -5)} •••••`
+        : (rawCustomerPhone ? "••••••••••" : "");
+
+      const rawCustomerEmail = parent?.customerEmail || "";
+      const maskedCustomerEmail = rawCustomerEmail.includes("@")
+        ? `${rawCustomerEmail.slice(0, 2)}***@${rawCustomerEmail.split("@")[1]}`
+        : "";
+
       return {
         id: split.id,
         splitId: split.id,
@@ -1140,7 +1153,7 @@ export async function getVendorOrders(vendorId?: string) {
         riderPhone: parent?.deliveryPartner?.phone || null,
         vehicleType: split.vehicleType || "bike",
         customerName: parent?.deliveryName || parent?.customerName || "Customer",
-        customerPhone: parent?.deliveryPhone || parent?.customerPhone || "",
+        customerPhone: maskedCustomerPhone,
         deliveryAddress:
           parent?.deliveryAddress ||
           (typeof parent?.shippingAddress === "object"
@@ -1153,9 +1166,9 @@ export async function getVendorOrders(vendorId?: string) {
         updatedAt: split.updatedAt,
         parentOrder: parent
           ? {
-              customerName: parent.customerName,
-              customerPhone: parent.customerPhone,
-              customerEmail: parent.customerEmail,
+              customerName: parent.deliveryName || parent.customerName,
+              customerPhone: maskedCustomerPhone,
+              customerEmail: maskedCustomerEmail,
               shippingAddress: parent.shippingAddress,
               paymentStatus: parent.paymentStatus,
               paymentMethod: parent.paymentMethod,

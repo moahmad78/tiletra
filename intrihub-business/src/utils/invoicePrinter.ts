@@ -44,7 +44,7 @@ export function generateOrderInvoiceHtml(order: any, customSettings?: any): stri
   const customerName = order?.deliveryName || order?.customerName || "Valued Customer";
   const rawPhone = order?.deliveryPhone || order?.customerPhone;
   const cleanPhone = sanitizePhone(rawPhone);
-  const phoneDisplay = cleanPhone ? `+91 ${cleanPhone}` : "Not Provided";
+  const phoneDisplay = cleanPhone ? `+91 ${cleanPhone.slice(0, 5)} •••••` : "Protected";
 
   // Build clean, non-repeating full customer address
   let fullAddress = "";

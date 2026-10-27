@@ -1011,6 +1011,11 @@ export async function createOrder(input: CreateOrderInput) {
           );
         }
 
+        const vendorSplitItems = order.items.filter(
+          (it: any) => it.vendorId === split.vendorId
+        );
+        const splitItemsCount = vendorSplitItems.length > 0 ? vendorSplitItems.length : order.items.length;
+
         const vendorAlertData = {
           orderId: order.id,
           id: order.id,
@@ -1019,7 +1024,7 @@ export async function createOrder(input: CreateOrderInput) {
           customerName: order.customerName,
           total: split.subtotal,
           totalAmount: split.subtotal,
-          itemsCount: order.items.length,
+          itemsCount: splitItemsCount,
           isAutoAccepted: split.autoAccepted,
           requiresManualApproval: !split.autoAccepted,
           createdAt: order.createdAt,
