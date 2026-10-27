@@ -1220,7 +1220,10 @@ export async function updateVendorFulfillmentStatus(
     }
 
     const existing = await prisma.vendorOrderSplit.findFirst({
-      where: { id: splitId, vendorId: effectiveVendorId },
+      where: {
+        OR: [{ id: splitId }, { orderId: splitId }],
+        vendorId: effectiveVendorId,
+      },
     });
 
     if (!existing) {
@@ -1269,7 +1272,7 @@ export async function updateVendorFulfillmentStatus(
     }
 
     const updated = await prisma.vendorOrderSplit.update({
-      where: { id: splitId },
+      where: { id: existing.id },
       data: updateData,
     });
 
