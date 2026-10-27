@@ -80,7 +80,6 @@ async function main() {
           },
         ],
       },
-      },
     },
     include: {
       items: true,
