@@ -12,8 +12,6 @@ import Constants from "expo-constants";
 import { DownloadCloud, X, AlertTriangle } from "lucide-react-native";
 import { useAppUpdateCheck } from "../hooks/useAppUpdateCheck";
 
-const APP_VERSION = Constants.expoConfig?.version || "1.0.13";
-
 export default function AppUpdateModal() {
   const {
     modalVisible,
@@ -22,7 +20,6 @@ export default function AppUpdateModal() {
     handleLaterPress,
   } = useAppUpdateCheck({
     app: "business",
-    installedVersion: APP_VERSION,
   });
 
   if (!modalVisible || !updateInfo) return null;

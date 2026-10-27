@@ -20,7 +20,6 @@ export default function AppUpdateModal() {
     handleLaterPress,
   } = useAppUpdateCheck({
     app: "customer",
-    installedVersion: APP_VERSION,
   });
 
   if (!modalVisible || !updateInfo) return null;

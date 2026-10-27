@@ -1,24 +1,31 @@
 import { useState, useEffect, useCallback, useRef } from "react";
 import { Platform, AppState, AppStateStatus, Linking } from "react-native";
 import AsyncStorage from "@react-native-async-storage/async-storage";
+import * as Application from "expo-application";
+import Constants from "expo-constants";
 import { apiClient } from "../api/client";
 
-const TWO_DAYS_MS = 2 * 24 * 60 * 60 * 1000;
+const SIX_HOURS_MS = 6 * 60 * 60 * 1000;
+const TWENTY_FOUR_HOURS_MS = 24 * 60 * 60 * 1000;
 
 export interface UpdateInfo {
   latestVersion: string;
+  latestVersionCode: number | null;
   minSupportedVersion: string;
+  minSupportedVersionCode: number | null;
   storeUrl: string;
   message: string;
   title: string;
   releaseNotes: string[];
   isForceUpdate: boolean;
+  installedVersion: string;
+  installedVersionCode: number;
 }
 
 export interface UseAppUpdateCheckOptions {
   app: "customer" | "business";
-  installedVersion: string;
-  storageKeyDismissedUntil?: string;
+  installedVersion?: string;
+  installedVersionCode?: number;
 }
 
 export function compareSemver(v1: string, v2: string): number {
@@ -34,89 +41,170 @@ export function compareSemver(v1: string, v2: string): number {
   return 0;
 }
 
+function reportErrorToSentry(err: unknown, extra?: Record<string, any>) {
+  try {
+    const globalSentry = (globalThis as any).Sentry;
+    if (globalSentry && typeof globalSentry.captureException === "function") {
+      globalSentry.captureException(err, { extra });
+    }
+  } catch {
+    // Suppress secondary reporting errors
+  }
+}
+
 export function useAppUpdateCheck({
   app,
-  installedVersion,
-  storageKeyDismissedUntil = `intrihub_${app}_update_dismissed_until`,
+  installedVersion: propInstalledVersion,
+  installedVersionCode: propInstalledVersionCode,
 }: UseAppUpdateCheckOptions) {
   const [modalVisible, setModalVisible] = useState(false);
   const [updateInfo, setUpdateInfo] = useState<UpdateInfo | null>(null);
   const isCheckingRef = useRef(false);
 
-  const checkVersion = useCallback(async () => {
-    if (isCheckingRef.current || Platform.OS === "web") return;
-    isCheckingRef.current = true;
+  // Read installed semver & native build versionCode from expo-application
+  const currentInstalledVersion =
+    propInstalledVersion ||
+    Application.nativeApplicationVersion ||
+    Constants.expoConfig?.version ||
+    "1.0.0";
 
-    try {
-      const res = await apiClient.get<any>("/api/mobile/app-version", {
-        params: {
-          platform: Platform.OS,
-          app,
-          installedVersion,
-        },
-        timeout: 6000,
-      });
+  const currentInstalledVersionCode =
+    propInstalledVersionCode !== undefined
+      ? propInstalledVersionCode
+      : parseInt(
+          Application.nativeBuildVersion ||
+            String(Constants.expoConfig?.android?.versionCode || "0"),
+          10
+        ) || 0;
 
-      if (!res?.data?.success) {
-        return;
-      }
+  const checkVersion = useCallback(
+    async (isColdStart = false) => {
+      if (isCheckingRef.current || Platform.OS === "web") return;
 
-      const data = res.data;
-      const latestVersion = data.latestVersion || installedVersion;
-      const minSupportedVersion = data.minSupportedVersion || installedVersion;
+      const throttleKey = `intrihub_${app}_last_update_check_time`;
 
-      const isUpdateAvailable = compareSemver(installedVersion, latestVersion) < 0;
-      const isForceUpdate = compareSemver(installedVersion, minSupportedVersion) < 0;
-
-      // If up-to-date, ensure modal is closed
-      if (!isUpdateAvailable && !isForceUpdate) {
-        setModalVisible(false);
-        setUpdateInfo(null);
-        return;
-      }
-
-      const info: UpdateInfo = {
-        latestVersion,
-        minSupportedVersion,
-        storeUrl: data.storeUrl || "",
-        message:
-          data.message ||
-          "A fresh update of Intrihub Business is available for instant order chimes, stock sync, and stability.",
-        title: isForceUpdate
-          ? "Critical Update Required ⚠️"
-          : data.title || "Business Update Available! 📦",
-        releaseNotes: Array.isArray(data.releaseNotes) ? data.releaseNotes : [],
-        isForceUpdate,
-      };
-
-      setUpdateInfo(info);
-
-      // Soft update: Check if user dismissed it within the last 2 days
-      if (!isForceUpdate) {
-        const dismissedUntil = await AsyncStorage.getItem(storageKeyDismissedUntil);
-        if (dismissedUntil && Date.now() < parseInt(dismissedUntil, 10)) {
-          // Suppressed for 2 days
-          return;
+      // Throttle foreground checks: at most once every 6 hours
+      if (!isColdStart) {
+        try {
+          const lastCheckTime = await AsyncStorage.getItem(throttleKey);
+          if (lastCheckTime) {
+            const elapsed = Date.now() - parseInt(lastCheckTime, 10);
+            if (elapsed < SIX_HOURS_MS) {
+              return; // Throttled
+            }
+          }
+        } catch {
+          // If storage read fails, continue check safely
         }
       }
 
-      // Show update modal
-      setModalVisible(true);
-    } catch {
-      // Gracefully handle offline or network errors silently without blocking app
-    } finally {
-      isCheckingRef.current = false;
-    }
-  }, [app, installedVersion, storageKeyDismissedUntil]);
+      isCheckingRef.current = true;
+
+      try {
+        const res = await apiClient.get<any>("/api/mobile/app-config", {
+          params: {
+            platform: Platform.OS,
+            app,
+            version: currentInstalledVersion,
+            versionCode: currentInstalledVersionCode,
+          },
+          timeout: 8000,
+        });
+
+        // Record check timestamp
+        await AsyncStorage.setItem(throttleKey, String(Date.now())).catch(() => {});
+
+        if (!res?.data?.success) {
+          return;
+        }
+
+        const data = res.data;
+        const latestVersion = (data.latestVersion || currentInstalledVersion).trim();
+        const latestVersionCode =
+          data.latestVersionCode !== undefined && data.latestVersionCode !== null
+            ? Number(data.latestVersionCode)
+            : null;
+
+        const minSupportedVersion = (data.minSupportedVersion || latestVersion).trim();
+        const minSupportedVersionCode =
+          data.minSupportedVersionCode !== undefined && data.minSupportedVersionCode !== null
+            ? Number(data.minSupportedVersionCode)
+            : null;
+
+        // Compare installed vs latest (both semver and build versionCode)
+        const isSemverOutdated = compareSemver(currentInstalledVersion, latestVersion) < 0;
+        const isCodeOutdated =
+          latestVersionCode !== null && currentInstalledVersionCode < latestVersionCode;
+        const isUpdateAvailable = Boolean(data.updateAvailable) || isSemverOutdated || isCodeOutdated;
+
+        // Check force update conditions
+        const isSemverBelowMin = compareSemver(currentInstalledVersion, minSupportedVersion) < 0;
+        const isCodeBelowMin =
+          minSupportedVersionCode !== null && currentInstalledVersionCode < minSupportedVersionCode;
+        const isForceUpdate = Boolean(data.forceUpdate) || isSemverBelowMin || isCodeBelowMin;
+
+        // If up-to-date, close modal and clear
+        if (!isUpdateAvailable && !isForceUpdate) {
+          setModalVisible(false);
+          setUpdateInfo(null);
+          return;
+        }
+
+        const info: UpdateInfo = {
+          latestVersion,
+          latestVersionCode,
+          minSupportedVersion,
+          minSupportedVersionCode,
+          storeUrl: data.storeUrl || "",
+          message:
+            data.message ||
+            "A fresh update of Intrihub Business is available for instant order chimes, stock sync, and stability.",
+          title: isForceUpdate
+            ? "Critical Update Required ⚠️"
+            : data.title || "Business Update Available! 📦",
+          releaseNotes: Array.isArray(data.releaseNotes) ? data.releaseNotes : [],
+          isForceUpdate,
+          installedVersion: currentInstalledVersion,
+          installedVersionCode: currentInstalledVersionCode,
+        };
+
+        setUpdateInfo(info);
+
+        // Soft update: Check if user tapped "Later" within the last 24 hours FOR THIS VERSION
+        if (!isForceUpdate) {
+          const versionDismissKey = `intrihub_${app}_dismissed_until_${latestVersion}`;
+          const dismissedUntil = await AsyncStorage.getItem(versionDismissKey);
+          if (dismissedUntil && Date.now() < parseInt(dismissedUntil, 10)) {
+            // Suppressed for 24 hours for this version
+            return;
+          }
+        }
+
+        // Show update modal
+        setModalVisible(true);
+      } catch (err) {
+        reportErrorToSentry(err, {
+          action: "check_version_failure",
+          app,
+          platform: Platform.OS,
+          installedVersion: currentInstalledVersion,
+          installedVersionCode: currentInstalledVersionCode,
+        });
+      } finally {
+        isCheckingRef.current = false;
+      }
+    },
+    [app, currentInstalledVersion, currentInstalledVersionCode]
+  );
 
   useEffect(() => {
-    // 1. Initial check on mount / launch
-    checkVersion();
+    // 1. Initial cold-start check on mount
+    checkVersion(true);
 
-    // 2. Check whenever returning to foreground from background
+    // 2. Foreground check throttled to every 6 hours
     const subscription = AppState.addEventListener("change", (nextState: AppStateStatus) => {
       if (nextState === "active") {
-        checkVersion();
+        checkVersion(false);
       }
     });
 
@@ -125,29 +213,62 @@ export function useAppUpdateCheck({
     };
   }, [checkVersion]);
 
+  // "Update Now" handler: market:// protocol first with fallback to https://
   const handleUpdatePress = useCallback(async () => {
     if (!updateInfo?.storeUrl) return;
-    try {
-      const supported = await Linking.canOpenURL(updateInfo.storeUrl);
-      if (supported) {
-        await Linking.openURL(updateInfo.storeUrl);
-      } else {
-        await Linking.openURL(updateInfo.storeUrl).catch(() => {});
-      }
-    } catch {
-      await Linking.openURL(updateInfo.storeUrl).catch(() => {});
-    }
-  }, [updateInfo]);
+    const rawStoreUrl = updateInfo.storeUrl.trim();
 
+    if (Platform.OS === "android") {
+      const match = rawStoreUrl.match(/id=([a-zA-Z0-9._]+)/);
+      const pkg = match ? match[1] : app === "business" ? "com.intrihub.business" : "com.intrihub.app";
+      const marketUrl = `market://details?id=${pkg}`;
+      const webFallbackUrl = `https://play.google.com/store/apps/details?id=${pkg}`;
+
+      try {
+        const canOpenMarket = await Linking.canOpenURL(marketUrl);
+        if (canOpenMarket) {
+          await Linking.openURL(marketUrl);
+          return;
+        }
+      } catch {
+        // Fall back to https://
+      }
+
+      try {
+        await Linking.openURL(webFallbackUrl);
+      } catch (err) {
+        reportErrorToSentry(err, { action: "open_store_url_fallback", app, pkg });
+      }
+      return;
+    }
+
+    // iOS / other platforms
+    try {
+      const canOpen = await Linking.canOpenURL(rawStoreUrl);
+      if (canOpen) {
+        await Linking.openURL(rawStoreUrl);
+      } else {
+        await Linking.openURL(rawStoreUrl).catch(() => {});
+      }
+    } catch (err) {
+      reportErrorToSentry(err, { action: "open_store_url", app, rawStoreUrl });
+    }
+  }, [updateInfo, app]);
+
+  // "Later" handler: suppresses prompt for 24 hours for this specific release version
   const handleLaterPress = useCallback(async () => {
-    // Force update cannot be dismissed
     if (updateInfo?.isForceUpdate) return;
 
-    // Suppress for 2 days
-    const twoDaysLater = Date.now() + TWO_DAYS_MS;
-    await AsyncStorage.setItem(storageKeyDismissedUntil, String(twoDaysLater));
+    const targetVersion = updateInfo?.latestVersion || "latest";
+    const versionDismissKey = `intrihub_${app}_dismissed_until_${targetVersion}`;
+    const nextPromptTime = Date.now() + TWENTY_FOUR_HOURS_MS;
+
+    try {
+      await AsyncStorage.setItem(versionDismissKey, String(nextPromptTime));
+    } catch {}
+
     setModalVisible(false);
-  }, [updateInfo, storageKeyDismissedUntil]);
+  }, [updateInfo, app]);
 
   return {
     modalVisible,

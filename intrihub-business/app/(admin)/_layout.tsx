@@ -166,6 +166,12 @@ export default function AdminTabsLayout() {
           href: null,
         }}
       />
+      <Tabs.Screen
+        name="app-versions"
+        options={{
+          href: null,
+        }}
+      />
     </Tabs>
   );
 }

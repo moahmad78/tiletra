@@ -23,7 +23,7 @@ import { ProductCard } from "../../src/components/ProductCard";
 import { AddressModal } from "../../src/components/AddressModal";
 import { getCategories, getProducts } from "../../src/api/products";
 import { COLORS, SPACING, RADIUS } from "../../src/constants/theme";
-import { Product } from "../../src/types";
+import { Product, Category } from "../../src/types";
 import { useTranslation } from "../../src/store/i18nStore";
 
 export default function HomeScreen() {

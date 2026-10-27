@@ -27,6 +27,7 @@ import {
   Plus,
   X,
   AlertTriangle,
+  Smartphone,
 } from "lucide-react-native";
 import { fetchAdminStoreSettings, updateAdminStoreSettings } from "../../src/api/admin";
 import { StoreSettings } from "../../src/types";
@@ -182,6 +183,33 @@ export default function AdminSettingsScreen() {
         contentContainerStyle={styles.scrollContent}
         refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} colors={[COLORS.accentBlue]} />}
       >
+        {/* App Versions Quick Action Card */}
+        <TouchableOpacity
+          style={{
+            flexDirection: "row",
+            alignItems: "center",
+            backgroundColor: "#EFF6FF",
+            borderWidth: 1,
+            borderColor: "#BFDBFE",
+            borderRadius: RADIUS.md,
+            padding: 12,
+            marginBottom: 16,
+            gap: 10,
+          }}
+          onPress={() => router.push("/(admin)/app-versions" as any)}
+          activeOpacity={0.85}
+        >
+          <Smartphone size={20} color="#1D4ED8" />
+          <View style={{ flex: 1 }}>
+            <Text style={{ fontSize: 13, fontWeight: "700", color: "#1E40AF" }}>
+              App Release & Versions
+            </Text>
+            <Text style={{ fontSize: 11, color: "#3B82F6", marginTop: 2 }}>
+              Update live Play Store version codes & trigger in-app updates
+            </Text>
+          </View>
+        </TouchableOpacity>
+
         {/* ── Section 1: Store Identity & Tax Info ── */}
         <View style={styles.sectionCard}>
           <View style={styles.sectionHeaderRow}>

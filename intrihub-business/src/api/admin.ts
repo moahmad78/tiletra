@@ -1003,5 +1003,50 @@ export async function deleteAdminGuide(id: string): Promise<{
   return res.data;
 }
 
+// 21. Admin App Versions & Releases Management
+export interface AppTargetConfig {
+  latestVersion: string;
+  latestVersionCode?: number;
+  minSupportedVersion: string;
+  minSupportedVersionCode?: number;
+  forceUpdate?: boolean;
+  storeUrl: string;
+  message?: string;
+  title?: string;
+  releaseNotes?: string[];
+}
 
+export interface AppVersionSettingsResponse {
+  customer: {
+    android: AppTargetConfig;
+    ios: AppTargetConfig;
+  };
+  business: {
+    android: AppTargetConfig;
+    ios: AppTargetConfig;
+  };
+}
 
+export async function fetchAdminAppConfig(): Promise<{
+  success: boolean;
+  config?: AppVersionSettingsResponse;
+  error?: string;
+}> {
+  const res = await apiClient.get("/api/mobile/admin/app-config");
+  return res.data;
+}
+
+export async function updateAdminAppConfig(data: {
+  app?: "customer" | "business";
+  platform?: "android" | "ios";
+  config?: Partial<AppTargetConfig>;
+  fullConfig?: Partial<AppVersionSettingsResponse>;
+}): Promise<{
+  success: boolean;
+  message?: string;
+  config?: AppVersionSettingsResponse;
+  error?: string;
+}> {
+  const res = await apiClient.post("/api/mobile/admin/app-config", data);
+  return res.data;
+}

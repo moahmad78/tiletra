@@ -801,6 +801,29 @@ export default function AdminAccountMasterHubScreen() {
 
       <Text style={[styles.sectionHeader, { marginTop: 18 }]}>OPERATIONS & AUDIT</Text>
 
+      {/* App Versions & Release Management */}
+      <TouchableOpacity
+        style={[styles.menuCard, { borderColor: "#BAE6FD", backgroundColor: "#F0F9FF" }]}
+        onPress={() => router.push("/(admin)/app-versions" as any)}
+        activeOpacity={0.85}
+      >
+        <View style={[styles.iconBox, { backgroundColor: "#E0F2FE" }]}>
+          <Layers size={20} color="#0284C7" />
+        </View>
+        <View style={{ flex: 1 }}>
+          <View style={{ flexDirection: "row", alignItems: "center", gap: 6 }}>
+            <Text style={[styles.menuTitle, { color: "#0369A1" }]}>App Versions & In-App Updates</Text>
+            <View style={[styles.trashCountPill, { backgroundColor: "#0284C7" }]}>
+              <Text style={styles.trashCountPillText}>RELEASE</Text>
+            </View>
+          </View>
+          <Text style={styles.menuSub}>
+            Configure live Play Store versions, semver enforcement, and force-update prompts
+          </Text>
+        </View>
+        <ChevronRight size={18} color="#0284C7" />
+      </TouchableOpacity>
+
       {/* 8. Vendor Settlements & Commission Engine */}
       <TouchableOpacity
         style={[styles.menuCard, { borderColor: "#BBF7D0", backgroundColor: "#F0FDF4" }]}
