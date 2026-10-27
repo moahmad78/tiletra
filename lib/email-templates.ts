@@ -79,41 +79,15 @@ export function renderOtpEmailHtml({
         <!-- Main Card Container -->
         <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="max-width: 520px; width: 100%; background-color: #FFFFFF; border-radius: 20px; overflow: hidden; box-shadow: 0 10px 30px rgba(5, 42, 81, 0.12); border: 1px solid #E2E8F0;">
           
-          <!-- 1. Hero Navy Header -->
+          <!-- 1. Hero Navy Header with 3D Visual Graphic Banner -->
           <tr>
-            <td style="background: linear-gradient(145deg, #051F3A 0%, #08294D 55%, #0B3564 100%); background-color: #08294D; padding: 36px 30px 32px 30px;">
-              <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0">
-                <tr>
-                  <td>
-                    <!-- Logo & QuickCommerce Brand -->
-                    <table role="presentation" cellpadding="0" cellspacing="0" border="0">
-                      <tr>
-                        <td style="vertical-align: middle;">
-                          <div style="background-color: #0E3E72; width: 44px; height: 44px; border-radius: 12px; text-align: center; line-height: 44px; font-size: 22px;">
-                            🚚
-                          </div>
-                        </td>
-                        <td style="vertical-align: middle; padding-left: 12px;">
-                          <div style="font-size: 24px; font-weight: 800; color: #FFFFFF; letter-spacing: -0.5px; line-height: 1;">intrihub</div>
-                          <div style="font-size: 9px; font-weight: 800; color: #38BDF8; letter-spacing: 2.2px; text-transform: uppercase; margin-top: 3px;">QUICKCOMMERCE</div>
-                        </td>
-                      </tr>
-                    </table>
-                    <div style="color: #94A3B8; font-size: 13px; font-weight: 500; margin-top: 10px;">
-                      Every Material. Every Space.
-                    </div>
-
-                    <!-- Title -->
-                    <h1 style="margin: 28px 0 0 0; font-size: 28px; line-height: 1.25; font-weight: 800; color: #FFFFFF; letter-spacing: -0.5px;">
-                      ${titlePre}<br />
-                      <span style="color: #38BDF8;">${titleHighlight}</span> ${titlePost}
-                    </h1>
-                    <p style="margin: 12px 0 0 0; font-size: 14px; line-height: 1.55; color: #E2E8F0; max-width: 420px;">
-                      ${subtitle}
-                    </p>
-                  </td>
-                </tr>
-              </table>
+            <td align="center" style="background-color: #08294D; padding: 0; line-height: 0; border-top-left-radius: 20px; border-top-right-radius: 20px; overflow: hidden;">
+              <img
+                src="https://www.intrihub.com/images/email/otp-hero-banner.jpg"
+                alt="IntriHub QuickCommerce - Your Login Verification Code: Use the 6-digit code below to securely sign into your Intrihub account."
+                width="520"
+                style="display: block; width: 100%; max-width: 520px; height: auto; border: 0; outline: none; text-decoration: none; border-top-left-radius: 20px; border-top-right-radius: 20px; background-color: #08294D; color: #FFFFFF; font-size: 15px; font-weight: bold; text-align: center; line-height: 1.4;"
+              />
             </td>
           </tr>
 
