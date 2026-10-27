@@ -3,6 +3,7 @@
 import crypto from "crypto";
 import { prisma } from "@/lib/prisma";
 import { deliverEmail, getFormattedFromEmail, maskEmail } from "@/lib/mail";
+import { renderOtpEmailHtml } from "@/lib/email-templates";
 
 export { deliverEmail, getFormattedFromEmail, maskEmail };
 
@@ -335,41 +336,13 @@ export async function sendEmailOtp(
 
   const copy = emailCopies[resolvedLang || "en"] || emailCopies.en;
 
-  // Professional Localized Email Template
-  const emailHtml = `
-    <div style="font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif;max-width:520px;margin:0 auto;padding:36px 24px;background:#f8fafc;border-radius:16px;">
-      <div style="text-align:center;margin-bottom:24px;">
-        <a href="https://www.intrihub.com" target="_blank" style="text-decoration:none;display:inline-block;">
-          <img src="https://www.intrihub.com/logo/intri-web-logo.png" alt="Intrihub" width="160" height="42" style="display:block;margin:0 auto;height:42px;width:auto;max-width:180px;border:0;outline:none;text-decoration:none;" />
-        </a>
-        <p style="color:#64748b;font-size:13px;margin:10px 0 0;font-weight:500;">${copy.note}</p>
-      </div>
-
-      <div style="background:#ffffff;border-radius:14px;padding:32px 24px;text-align:center;border:1px solid #e2e8f0;box-shadow:0 1px 3px rgba(0,0,0,0.05);">
-        <h2 style="font-size:18px;font-weight:800;color:#1e293b;margin:0 0 8px;">${copy.title}</h2>
-        <p style="color:#64748b;font-size:14px;margin:0 0 24px;line-height:1.5;">
-          ${copy.desc}
-        </p>
-
-        <div style="background:#f1f5f9;border-radius:10px;padding:16px;margin:0 0 24px;display:inline-block;letter-spacing:10px;font-size:38px;font-weight:900;color:#052a51;font-family:monospace;">
-          ${otp}
-        </div>
-
-        <p style="color:#94a3b8;font-size:12px;margin:0;line-height:1.5;">
-          ${copy.expire}
-        </p>
-      </div>
-
-      <div style="border-top:1px solid #e2e8f0;margin-top:24px;padding-top:16px;text-align:center;">
-        <p style="color:#64748b;font-size:11px;margin:0 0 6px;line-height:1.4;">
-          IntriHub&apos;s only official website is <a href="https://www.intrihub.com" style="color:#052a51;font-weight:bold;text-decoration:none;">www.intrihub.com</a>. We are not affiliated with any other website using a similar name.
-        </p>
-        <p style="color:#94a3b8;font-size:11px;margin:0;line-height:1.4;">
-          ${copy.footer}
-        </p>
-      </div>
-    </div>
-  `;
+  // Professional Localized Email Template matching brand design specification
+  const emailHtml = renderOtpEmailHtml({
+    otp,
+    purpose,
+    minutes: OTP_EXPIRY_MINUTES,
+    language: resolvedLang || "en",
+  });
 
   // Deliver Email through configured provider
   console.log(`[RESEND_SEND_STARTED] email=${maskEmail(cleanEmail)} lang=${resolvedLang}`);
