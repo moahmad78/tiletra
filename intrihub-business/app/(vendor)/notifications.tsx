@@ -237,7 +237,7 @@ export default function NotificationsScreen() {
 
                 return (
                   <View style={styles.cardBodyContainer}>
-                    {(item.orderId || item.type === "new_order" || (itemImages && itemImages.length > 0)) ? (
+                    {(item.orderId || (itemImages && itemImages.length > 0)) ? (
                       <View style={{ marginRight: 10, alignSelf: "flex-start", marginTop: 2 }}>
                         <RotatingOrderItemImage
                           images={itemImages}
