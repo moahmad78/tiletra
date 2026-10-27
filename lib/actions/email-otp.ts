@@ -380,10 +380,14 @@ export async function sendEmailOtp(
   });
 
   if (!deliveryResult.success) {
-    console.error(`[RESEND_SEND_FAILED] email=${maskEmail(cleanEmail)} reason=${deliveryResult.error}`);
+    console.error(`[OTP_SEND_FAILED] email=${maskEmail(cleanEmail)} reason=${deliveryResult.error}`);
+    const userSafeMessage =
+      process.env.NODE_ENV === "development"
+        ? deliveryResult.error || "Failed to send verification code email."
+        : "Unable to send verification code email right now. Please try again in a few moments.";
     return {
       success: false,
-      message: deliveryResult.error || "Unable to send verification code email right now. Please try again.",
+      message: userSafeMessage,
     };
   }
 

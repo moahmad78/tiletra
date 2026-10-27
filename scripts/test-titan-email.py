@@ -29,6 +29,7 @@ def mask_email(email: str) -> str:
 def main():
     parser = argparse.ArgumentParser(description="Test Titan Mail SMTP OTP dispatch")
     parser.add_argument("--to", help="Recipient email address", default="mohammadmail92@gmail.com")
+    parser.add_argument("--host", help="SMTP Host", default=None)
     parser.add_argument("--user", help="Titan Mail user email", default=None)
     parser.add_argument("--password", help="Titan Mail password", default=None)
     parser.add_argument("--from_email", help="Sender from header", default=None)
@@ -44,7 +45,7 @@ def main():
     user_email = args.user or env_vars.get("SMTP_USER") or env_vars.get("EMAIL_SERVER_USER", "info@intrihub.com")
     password = args.password or env_vars.get("SMTP_PASS") or env_vars.get("SMTP_PASSWORD") or env_vars.get("EMAIL_SERVER_PASSWORD", "")
     from_email = args.from_email or env_vars.get("EMAIL_FROM", f"IntriHub <{user_email}>")
-    host = env_vars.get("SMTP_HOST") or env_vars.get("EMAIL_SERVER_HOST", "smtp.titan.email")
+    host = args.host or env_vars.get("SMTP_HOST") or env_vars.get("EMAIL_SERVER_HOST", "smtp.titan.email")
     port = args.port or int(env_vars.get("SMTP_PORT") or env_vars.get("EMAIL_SERVER_PORT", "465"))
     is_secure = port == 465
 

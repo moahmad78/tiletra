@@ -67,8 +67,11 @@ export function captureMailError(
     // 2. Check dynamic require in Node environment
     if (typeof require !== "undefined") {
       try {
-        // eslint-disable-next-line @typescript-eslint/no-require-imports
-        const sentry = require("@sentry/nextjs");
+        // Safely resolve without triggering bundler missing package trace
+        const sentryPkgName = "@sentry/nextjs";
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        const req = typeof eval === "function" ? eval("require") : null;
+        const sentry = req ? req(sentryPkgName) : null;
         if (sentry && typeof sentry.captureException === "function") {
           sentry.captureException(errorObj, {
             tags: { service: "titan-smtp", event: context.event },
@@ -149,10 +152,23 @@ export function verifyTransporterStartup(): Promise<boolean> {
   }
 
   verifyPromise = new Promise<boolean>((resolve) => {
-    transporter.verify((error, success) => {
+    transporter.verify(async (error, success) => {
       if (error) {
         const errorMsg = error.message || "SMTP verification failed";
         console.warn(`[email] startup_verify: fail host=${host}:${port} user=${user} error=${errorMsg}`);
+
+        // If primary host failed, try alternate fallback host
+        const fallbackHost = host.includes("titan") ? "smtpout.secureserver.net" : "smtp.titan.email";
+        try {
+          const fallback = getMailTransporter(fallbackHost, 465);
+          await fallback.transporter.verify();
+          console.log(`[email] startup_verify: fallback_success host=${fallbackHost}:465 user=${user} ready=true`);
+          resolve(true);
+          return;
+        } catch {
+          // Both failed
+        }
+
         captureMailError(error, {
           event: "startup_verify",
           host,
@@ -177,7 +193,7 @@ if (typeof window === "undefined" && process.env.NODE_ENV !== "test") {
 }
 
 /**
- * Universal Titan Mail SMTP Email Dispatcher
+ * Universal Titan Mail SMTP Email Dispatcher with auto-fallback
  */
 export async function sendEmail({
   to,
@@ -202,7 +218,10 @@ export async function sendEmail({
     const candidateHosts: Array<{ host: string; port: number }> = [
       { host: primaryConfig.host, port: primaryConfig.port },
     ];
-    if (primaryConfig.host !== "smtp.titan.email") {
+    // Seamless fallback between Titan Mail and GoDaddy Secureserver
+    if (primaryConfig.host.includes("titan")) {
+      candidateHosts.push({ host: "smtpout.secureserver.net", port: 465 });
+    } else {
       candidateHosts.push({ host: "smtp.titan.email", port: 465 });
     }
 
