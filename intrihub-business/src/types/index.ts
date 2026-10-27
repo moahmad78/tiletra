@@ -114,6 +114,8 @@ export interface VendorOrderSplit {
   courierName?: string;
   deliveryAddress?: string;
   shippingAddress?: any;
+  images?: string[];
+  itemImages?: string[];
   items?: any[];
 }
 

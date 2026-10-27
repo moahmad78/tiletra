@@ -16,6 +16,7 @@ import { Bell, X, Package } from "lucide-react-native";
 import { WebView } from "react-native-webview";
 import { useOrderAlertStore } from "../store/orderAlertStore";
 import { updateVendorOrderStatus, rejectVendorOrder } from "../api/vendor";
+import RotatingOrderItemImage from "./RotatingOrderItemImage";
 
 export default function IncomingOrderAlertModal() {
   const router = useRouter();
@@ -204,9 +205,12 @@ export default function IncomingOrderAlertModal() {
 
           {/* Soft Cream Order Details Box */}
           <View style={styles.orderInfoBox}>
-            <View style={styles.boxIconWrapper}>
-              <Text style={{ fontSize: 24 }}>📦</Text>
-            </View>
+            <RotatingOrderItemImage
+              images={(alert as any).images || ((alert as any).itemImages || ((alert as any).image ? [(alert as any).image] : []))}
+              fallbackImage={(alert as any).image}
+              size={54}
+              borderRadius={10}
+            />
             <View style={styles.boxTextContent}>
               <Text style={styles.boxItemsPrice} numberOfLines={1}>
                 {alert.itemsCount || 12} items • ₹{(alert.totalAmount || 4850).toLocaleString("en-IN")}

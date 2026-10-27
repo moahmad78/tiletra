@@ -93,6 +93,8 @@ export type Product = {
   mrp?: number | null; // Product level MRP
   costPrice?: number | null; // Product level Cost Price (For Margin Calculation)
   pricePerSqft?: number; // Base / equivalent unit price
+  pricePerBox?: number;
+  stockBoxes?: number;
   grade?: string | null;
   series?: string | null;
   warranty?: string | null;
@@ -160,6 +162,7 @@ export type Product = {
   allowScheduledDelivery?: boolean;
   allowCod?: boolean;
   isFragile?: boolean;
+  isBulky?: boolean;
   isPerishable?: boolean;
   returnPolicyDays?: number | null;
   replacementAllowed?: boolean;

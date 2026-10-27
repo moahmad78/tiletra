@@ -38,6 +38,7 @@ import { COLORS, SPACING, RADIUS, SHADOWS } from "../../src/constants/theme";
 import { printOrderInvoice } from "../../src/utils/invoicePrinter";
 import { useTranslation } from "../../src/store/i18nStore";
 import { socketService } from "../../src/store/socketStore";
+import RotatingOrderItemImage from "../../src/components/RotatingOrderItemImage";
 
 const getCleanPhone = (phone?: string | null) => {
   if (!phone) return "";
@@ -55,22 +56,6 @@ const getCleanPhone = (phone?: string | null) => {
   const digits = str.replace(/\D/g, "");
   if (digits.length < 7) return "";
   return digits.length > 10 ? digits.slice(-10) : digits;
-};
-
-const formatOrderTime = (dateStr?: string | Date | null) => {
-  if (!dateStr) return "";
-  try {
-    const d = new Date(dateStr);
-    return d.toLocaleDateString("en-IN", {
-      day: "2-digit",
-      month: "short",
-      hour: "2-digit",
-      minute: "2-digit",
-      hour12: true,
-    });
-  } catch {
-    return "";
-  }
 };
 
 export default function VendorOrdersScreen() {
@@ -146,13 +131,7 @@ export default function VendorOrdersScreen() {
     },
   });
 
-  const rawOrders = data?.orders || [];
-  // Strict serial chronological sort: latest orders always appear first on top
-  const orders = [...rawOrders].sort((a, b) => {
-    const timeA = new Date(a.createdAt || 0).getTime();
-    const timeB = new Date(b.createdAt || 0).getTime();
-    return timeB - timeA;
-  });
+  const orders = data?.orders || [];
 
   const handleOpenStatusModal = (order: VendorOrderSplit) => {
     setSelectedSplit(order);
@@ -178,18 +157,11 @@ export default function VendorOrdersScreen() {
     return (
       <View style={styles.orderCard}>
         <View style={styles.cardHeader}>
-          <View style={{ flex: 1, paddingRight: 8 }}>
-            <View style={{ flexDirection: "row", alignItems: "center", justifyContent: "space-between", marginBottom: 2 }}>
-              <Text style={styles.orderId}>Order #{item.orderId}</Text>
-              {item.createdAt ? (
-                <Text style={styles.orderTimeText}>{formatOrderTime(item.createdAt)}</Text>
-              ) : null}
-            </View>
+          <View>
+            <Text style={styles.orderId}>Order #{item.orderId}</Text>
             <Text style={styles.customerName}>{item.customerName}</Text>
-            {item.customerPhone ? (
-              <Text style={styles.customerPhone}>
-                Phone: {item.customerPhone.includes("••••") ? item.customerPhone : `+91 ${getCleanPhone(item.customerPhone).slice(0, 5)} •••••`}
-              </Text>
+            {getCleanPhone(item.customerPhone) ? (
+              <Text style={styles.customerPhone}>Phone: +91 {getCleanPhone(item.customerPhone)}</Text>
             ) : null}
           </View>
           <View style={[styles.statusBadge, getStatusStyle(item.fulfillmentStatus)]}>
@@ -200,7 +172,21 @@ export default function VendorOrdersScreen() {
         </View>
 
         <View style={styles.detailsRow}>
-          <Text style={styles.itemsCountText}>{item.itemsCount} material item(s)</Text>
+          <View style={{ flexDirection: "row", alignItems: "center", gap: 10, flex: 1 }}>
+            <RotatingOrderItemImage
+              images={
+                item.images && item.images.length > 0
+                  ? item.images
+                  : item.items
+                  ? item.items.flatMap((it: any) => it.images || (it.image ? [it.image] : []))
+                  : []
+              }
+              fallbackImage={item.items?.[0]?.image}
+              size={42}
+              borderRadius={8}
+            />
+            <Text style={styles.itemsCountText}>{item.itemsCount} material item(s)</Text>
+          </View>
           <View style={styles.payoutContainer}>
             <Text style={styles.payoutLabel}>Your Payout:</Text>
             <Text style={styles.payoutValue}>₹{item.vendorPayoutAmount?.toLocaleString("en-IN")}</Text>
@@ -578,11 +564,6 @@ const styles = StyleSheet.create({
     fontSize: 15,
     fontWeight: "800",
     color: COLORS.primary,
-  },
-  orderTimeText: {
-    fontSize: 11,
-    color: COLORS.textTertiary,
-    fontWeight: "600",
   },
   customerName: {
     fontSize: 13,

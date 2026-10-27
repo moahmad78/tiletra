@@ -20,6 +20,9 @@ import {
   CheckCheck,
 } from "lucide-react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
+import { useQuery } from "@tanstack/react-query";
+import { fetchVendorOrders } from "../../src/api/vendor";
+import RotatingOrderItemImage from "../../src/components/RotatingOrderItemImage";
 import {
   useNotificationStore,
   NotificationItem,
@@ -27,6 +30,11 @@ import {
 
 export default function NotificationsScreen() {
   const router = useRouter();
+  const { data: ordersData } = useQuery({
+    queryKey: ["vendor-orders", "all"],
+    queryFn: () => fetchVendorOrders("all"),
+  });
+  const orders = ordersData?.orders || [];
   const {
     notifications,
     unreadCount,
@@ -212,31 +220,59 @@ export default function NotificationsScreen() {
                 <Text style={styles.timestamp}>{item.timestamp}</Text>
               </View>
 
-              {/* Card Content Row: Title + Body */}
-              <View style={styles.cardBodyContainer}>
-                <View
-                  style={{
-                    flex: 1,
-                    paddingRight: item.actions?.type === "chevron" ? 8 : 0,
-                  }}
-                >
-                  <Text
-                    style={[
-                      styles.cardTitle,
-                      item.isRead && styles.cardTitleRead,
-                    ]}
-                  >
-                    {item.title}
-                  </Text>
-                  <Text style={styles.cardBody}>{item.body}</Text>
-                </View>
+              {/* Card Content Row: Title + Body + Rotating Item Thumbnail */}
+              {(() => {
+                const matchedOrder = orders.find(
+                  (o: any) => o.orderId === item.orderId || o.splitId === item.orderId
+                );
+                const itemImages =
+                  item.images && item.images.length > 0
+                    ? item.images
+                    : matchedOrder?.images ||
+                      (matchedOrder?.items
+                        ? matchedOrder.items.flatMap((it: any) => it.images || (it.image ? [it.image] : []))
+                        : item.image
+                        ? [item.image]
+                        : []);
 
-                {item.actions?.type === "chevron" && (
-                  <View style={styles.chevronWrapper}>
-                    <ChevronRight size={18} color="#94A3B8" />
+                return (
+                  <View style={styles.cardBodyContainer}>
+                    {(item.orderId || item.type === "new_order" || (itemImages && itemImages.length > 0)) ? (
+                      <View style={{ marginRight: 10, alignSelf: "flex-start", marginTop: 2 }}>
+                        <RotatingOrderItemImage
+                          images={itemImages}
+                          fallbackImage={item.image}
+                          size={52}
+                          borderRadius={10}
+                        />
+                      </View>
+                    ) : null}
+
+                    <View
+                      style={{
+                        flex: 1,
+                        paddingRight: item.actions?.type === "chevron" ? 8 : 0,
+                      }}
+                    >
+                      <Text
+                        style={[
+                          styles.cardTitle,
+                          item.isRead && styles.cardTitleRead,
+                        ]}
+                      >
+                        {item.title}
+                      </Text>
+                      <Text style={styles.cardBody}>{item.body}</Text>
+                    </View>
+
+                    {item.actions?.type === "chevron" && (
+                      <View style={styles.chevronWrapper}>
+                        <ChevronRight size={18} color="#94A3B8" />
+                      </View>
+                    )}
                   </View>
-                )}
-              </View>
+                );
+              })()}
 
               {/* Action Buttons: 2 Buttons (Reject / Accept) */}
               {item.actions?.type === "two_buttons" && (

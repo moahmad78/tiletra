@@ -182,25 +182,6 @@ async function registerForPushNotificationsAsync(): Promise<string | null> {
         bypassDnd: true,
         lightColor: "#F26522",
       });
-
-      await Notifications.setNotificationChannelAsync("urgent_order_alarm_v3", {
-        name: "Urgent Order Ring Alert (Silent Bypass)",
-        importance: (Notifications as any).AndroidImportance?.MAX ?? 7,
-        vibrationPattern: [0, 800, 300, 800, 300, 800],
-        enableVibrate: true,
-        sound: "default",
-        lockscreenVisibility: (Notifications as any).AndroidNotificationVisibility?.PUBLIC ?? 1,
-        bypassDnd: true,
-        audioAttributes: {
-          usage: (Notifications as any).AndroidAudioUsage?.ALARM ?? 4,
-          contentType: (Notifications as any).AndroidAudioContentType?.SONIFICATION ?? 4,
-          flags: {
-            enforceAudibility: true,
-            requestHardwareAudioVideoSynchronization: false,
-          },
-        },
-        lightColor: "#EA580C",
-      });
     } catch (e) {
       console.warn("Could not create notification channel:", e);
     }

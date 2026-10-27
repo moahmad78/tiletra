@@ -99,13 +99,7 @@ export default function VendorDashboardScreen() {
 
   const stats = data?.stats;
   const vendor = data?.vendor;
-  const rawRecent = data?.recentOrders || [];
-  // Strict serial chronological sort: latest orders always appear first on top
-  const recentOrders = [...rawRecent].sort((a, b) => {
-    const timeA = new Date(a.createdAt || 0).getTime();
-    const timeB = new Date(b.createdAt || 0).getTime();
-    return timeB - timeA;
-  });
+  const recentOrders = data?.recentOrders || [];
 
   const statusMutation = useMutation({
     mutationFn: (newOnline: boolean) => updateVendorStatus({ isOnline: newOnline }),
@@ -285,14 +279,14 @@ export default function VendorDashboardScreen() {
 
           <View style={styles.payoutsRow}>
             <View style={styles.payoutCol}>
-              <Text style={styles.payoutLabel}>Pending Settlement</Text>
+              <Text style={styles.payoutLabel}>{t("vendor.payouts") || "Pending Payout"}</Text>
               <Text style={[styles.payoutValue, { color: COLORS.accentAmber }]}>
                 ₹{(stats?.pendingPayout || 0).toLocaleString("en-IN")}
               </Text>
             </View>
             <View style={styles.payoutDivider} />
             <View style={styles.payoutCol}>
-              <Text style={styles.payoutLabel}>Settled to Bank</Text>
+              <Text style={styles.payoutLabel}>{t("vendor.payouts") || "Completed Payouts"}</Text>
               <Text style={[styles.payoutValue, { color: COLORS.accentGreen }]}>
                 ₹{(stats?.completedPayouts || 0).toLocaleString("en-IN")}
               </Text>
@@ -311,7 +305,7 @@ export default function VendorDashboardScreen() {
               <Clock size={20} color={COLORS.accentAmber} />
             </View>
             <Text style={styles.statNumber}>{stats?.pendingOrders || 0}</Text>
-            <Text style={styles.statTitle}>Active Orders</Text>
+            <Text style={styles.statTitle}>{t("orders.pending") || "Pending Orders"}</Text>
           </TouchableOpacity>
 
           <TouchableOpacity
@@ -323,7 +317,7 @@ export default function VendorDashboardScreen() {
               <CheckCircle2 size={20} color={COLORS.accentGreen} />
             </View>
             <Text style={styles.statNumber}>{stats?.deliveredOrders || 0}</Text>
-            <Text style={styles.statTitle}>Delivered</Text>
+            <Text style={styles.statTitle}>{t("orders.delivered") || "Delivered"}</Text>
           </TouchableOpacity>
 
           <TouchableOpacity
@@ -334,8 +328,8 @@ export default function VendorDashboardScreen() {
             <View style={[styles.statIconCircle, { backgroundColor: "rgba(37, 99, 235, 0.15)" }]}>
               <Package size={20} color={COLORS.accentBlue} />
             </View>
-            <Text style={styles.statNumber}>{stats?.activeProductsCount || (stats as any)?.totalProducts || 0}</Text>
-            <Text style={styles.statTitle}>Product Catalog</Text>
+            <Text style={styles.statNumber}>{stats?.activeProductsCount || 0}</Text>
+            <Text style={styles.statTitle}>{t("vendor.products") || "Active Catalog"}</Text>
           </TouchableOpacity>
 
           <TouchableOpacity
@@ -346,8 +340,8 @@ export default function VendorDashboardScreen() {
             <View style={[styles.statIconCircle, { backgroundColor: "rgba(239, 68, 68, 0.15)" }]}>
               <AlertTriangle size={20} color={COLORS.accentRed} />
             </View>
-            <Text style={styles.statNumber}>{stats?.lowStockProductsCount || (stats as any)?.lowStockCount || 0}</Text>
-            <Text style={styles.statTitle}>Low Stock Items</Text>
+            <Text style={styles.statNumber}>{stats?.lowStockProductsCount || 0}</Text>
+            <Text style={styles.statTitle}>{t("vendor.outOfStock") || "Low Stock Items"}</Text>
           </TouchableOpacity>
         </View>
 
@@ -376,13 +370,8 @@ export default function VendorDashboardScreen() {
               activeOpacity={0.85}
             >
               <View style={styles.orderCardHeader}>
-                <View style={{ flex: 1, paddingRight: 8 }}>
-                  <View style={{ flexDirection: "row", alignItems: "center", justifyContent: "space-between", marginBottom: 2 }}>
-                    <Text style={styles.orderIdText}>Order #{order.orderId}</Text>
-                    {order.createdAt ? (
-                      <Text style={styles.orderTimeText}>{formatOrderTime(order.createdAt)}</Text>
-                    ) : null}
-                  </View>
+                <View>
+                  <Text style={styles.orderIdText}>Order #{order.orderId}</Text>
                   <Text style={styles.customerName}>{order.customerName}</Text>
                 </View>
                 <View style={[styles.statusPill, getStatusStyle(order.fulfillmentStatus)]}>
@@ -404,22 +393,6 @@ export default function VendorDashboardScreen() {
       </ScrollView>
     </View>
   );
-}
-
-function formatOrderTime(dateStr?: string | Date | null) {
-  if (!dateStr) return "";
-  try {
-    const d = new Date(dateStr);
-    return d.toLocaleDateString("en-IN", {
-      day: "2-digit",
-      month: "short",
-      hour: "2-digit",
-      minute: "2-digit",
-      hour12: true,
-    });
-  } catch {
-    return "";
-  }
 }
 
 function formatStatus(status?: string) {
@@ -690,11 +663,6 @@ const styles = StyleSheet.create({
     fontSize: 14,
     fontWeight: "800",
     color: COLORS.primary,
-  },
-  orderTimeText: {
-    fontSize: 11,
-    color: COLORS.textTertiary,
-    fontWeight: "600",
   },
   customerName: {
     fontSize: 12,

@@ -16,7 +16,7 @@ import {
   ArrowLeft,
   Check,
   Phone,
-  ShieldCheck,
+  MessageCircle,
   MapPin,
   MoreVertical,
   ChevronDown,
@@ -30,6 +30,7 @@ import {
 import { fetchVendorOrders, updateVendorOrderStatus } from "../../../src/api/vendor";
 import { printOrderInvoice } from "../../../src/utils/invoicePrinter";
 import { socketService } from "../../../src/store/socketStore";
+import RotatingOrderItemImage from "../../../src/components/RotatingOrderItemImage";
 
 export default function VendorOrderDetailScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
@@ -102,34 +103,20 @@ export default function VendorOrderDetailScreen() {
     );
   }
 
-  // Customer privacy protection: Never reveal raw customer phone or direct contact actions to vendor
-  const rawPhone = split.customerPhone ? String(split.customerPhone).trim() : "";
-  const cleanPhone = rawPhone.replace(/\D/g, "");
-  const displayPhone = rawPhone.includes("••••")
-    ? rawPhone
-    : (cleanPhone.length >= 5
-        ? `+91 ${cleanPhone.slice(-10, -5)} •••••`
-        : (rawPhone ? "••••••••••" : "Privacy Protected"));
+  const cleanPhone = split.customerPhone ? split.customerPhone.replace(/\D/g, "").slice(-10) : "9876543210";
+  const displayPhone = `+91 ${cleanPhone.slice(0, 5)} ${cleanPhone.slice(5)}`;
   const orderNumber = split.orderId || split.splitId.slice(-6);
 
   // Real items from database order
   const items = Array.isArray(split.items) ? split.items : [];
   const displayedItems = showAllItems ? items : items.slice(0, 3);
 
-  const formatOrderTime = (dateStr?: string | Date | null) => {
-    if (!dateStr) return "";
-    try {
-      const d = new Date(dateStr);
-      return d.toLocaleDateString("en-IN", {
-        day: "2-digit",
-        month: "short",
-        hour: "2-digit",
-        minute: "2-digit",
-        hour12: true,
-      });
-    } catch {
-      return "";
-    }
+  const handleCallCustomer = () => {
+    Linking.openURL(`tel:${cleanPhone}`).catch(() => {});
+  };
+
+  const handleMessageCustomer = () => {
+    Linking.openURL(`https://wa.me/91${cleanPhone}`).catch(() => {});
   };
 
   const handleCallRider = () => {
@@ -145,16 +132,9 @@ export default function VendorOrderDetailScreen() {
         </TouchableOpacity>
 
         <View style={styles.headerTitleRow}>
-          <View style={{ flex: 1, paddingRight: 6 }}>
-            <Text style={styles.orderTitle} numberOfLines={1}>
-              Order #{orderNumber}
-            </Text>
-            {split.createdAt ? (
-              <Text style={styles.orderTimestamp}>
-                Placed on {formatOrderTime(split.createdAt)}
-              </Text>
-            ) : null}
-          </View>
+          <Text style={styles.orderTitle} numberOfLines={1}>
+            Order #{orderNumber}
+          </Text>
           <View
             style={[
               styles.statusBadge,
@@ -250,14 +230,27 @@ export default function VendorOrderDetailScreen() {
 
                 <View style={styles.customerMeta}>
                   <Text style={styles.customerName}>
-                    {split.customerName || "Customer"}
+                    {split.customerName || "Amit Verma"}
                   </Text>
                   <Text style={styles.customerPhone}>{displayPhone}</Text>
                 </View>
 
-                <View style={styles.privacyBadge}>
-                  <ShieldCheck size={14} color="#059669" />
-                  <Text style={styles.privacyBadgeText}>Protected</Text>
+                <View style={styles.contactActions}>
+                  <TouchableOpacity
+                    style={[styles.contactCircleBtn, { backgroundColor: "#ECFDF5" }]}
+                    onPress={handleCallCustomer}
+                    activeOpacity={0.75}
+                  >
+                    <Phone size={16} color="#10B981" />
+                  </TouchableOpacity>
+
+                  <TouchableOpacity
+                    style={[styles.contactCircleBtn, { backgroundColor: "#EFF6FF" }]}
+                    onPress={handleMessageCustomer}
+                    activeOpacity={0.75}
+                  >
+                    <MessageCircle size={16} color="#0066FF" />
+                  </TouchableOpacity>
                 </View>
               </View>
 
@@ -280,9 +273,12 @@ export default function VendorOrderDetailScreen() {
               <View style={styles.itemsList}>
                 {displayedItems.map((item: any, index: number) => (
                   <View key={index} style={styles.itemRow}>
-                    <View style={styles.itemThumb}>
-                      <Text style={{ fontSize: 20 }}>{item.icon || "📦"}</Text>
-                    </View>
+                    <RotatingOrderItemImage
+                      images={item.images || (item.image ? [item.image] : [])}
+                      fallbackImage={item.image}
+                      size={56}
+                      borderRadius={10}
+                    />
                     <View style={styles.itemInfo}>
                       <Text style={styles.itemName}>{item.name || item.productName}</Text>
                       <Text style={styles.itemSpec}>{item.spec || item.variant || "Standard Pack"}</Text>
@@ -465,12 +461,6 @@ const styles = StyleSheet.create({
     color: "#0F172A",
     fontFamily: "PlusJakartaSans_800ExtraBold",
   },
-  orderTimestamp: {
-    fontSize: 11,
-    color: "#64748B",
-    marginTop: 2,
-    fontWeight: "600",
-  },
   statusBadge: {
     paddingHorizontal: 8,
     paddingVertical: 3,
@@ -607,21 +597,16 @@ const styles = StyleSheet.create({
     color: "#64748B",
     marginTop: 2,
   },
-  privacyBadge: {
+  contactActions: {
     flexDirection: "row",
-    alignItems: "center",
-    gap: 4,
-    backgroundColor: "#F0FDF4",
-    paddingHorizontal: 8,
-    paddingVertical: 4,
-    borderRadius: 8,
-    borderWidth: 1,
-    borderColor: "#DCFCE7",
+    gap: 8,
   },
-  privacyBadgeText: {
-    fontSize: 11,
-    fontWeight: "700",
-    color: "#059669",
+  contactCircleBtn: {
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    alignItems: "center",
+    justifyContent: "center",
   },
   addressDivider: {
     height: 1,

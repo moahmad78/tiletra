@@ -16,6 +16,8 @@ export interface NotificationItem {
   timestamp: string;
   orderId?: string;
   amount?: string;
+  image?: string;
+  images?: string[];
   isRead: boolean;
   actions?: {
     type: "two_buttons" | "single_button" | "chevron";
@@ -202,6 +204,8 @@ export const useNotificationStore = create<NotificationState>((set, get) => ({
       timestamp: item.timestamp || "Just now",
       orderId: item.orderId,
       amount: item.amount,
+      image: item.image,
+      images: item.images,
       badge: item.badge,
       iconOverlay: item.iconOverlay || "bell",
       actions: item.actions || { type: "chevron" },

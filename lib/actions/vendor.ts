@@ -1134,6 +1134,14 @@ export async function getVendorOrders(vendorId?: string) {
             product: {
               select: {
                 vendorId: true,
+                images: true,
+                variants: {
+                  select: {
+                    id: true,
+                    image: true,
+                    images: true,
+                  },
+                },
               },
             },
           },
@@ -1162,22 +1170,57 @@ export async function getVendorOrders(vendorId?: string) {
       });
       const rawItems = vendorItems;
 
-      const formattedItems = rawItems.map((it: any) => ({
-        id: it.id,
-        productId: it.productId,
-        name: it.productName,
-        productName: it.productName,
-        spec: it.variantDetails || "Standard",
-        variant: it.variantDetails || "Standard",
-        qty: `${it.boxQuantity} box(es)`,
-        quantity: it.boxQuantity,
-        boxQuantity: it.boxQuantity,
-        price: `₹${(it.totalPrice || it.pricePerBox * it.boxQuantity || 0).toLocaleString("en-IN")}`,
-        pricePerBox: it.pricePerBox,
-        totalPrice: it.totalPrice,
-        image: it.image || "",
-        icon: "📦",
-      }));
+      const formattedItems = rawItems.map((it: any) => {
+        const itemImages: string[] = [];
+        if (it.image && typeof it.image === "string" && it.image.trim() !== "" && !it.image.includes("placeholder")) {
+          itemImages.push(it.image.trim());
+        }
+        if (Array.isArray(it.product?.images)) {
+          for (const img of it.product.images) {
+            if (img && typeof img === "string" && img.trim() !== "" && !img.includes("placeholder") && !itemImages.includes(img.trim())) {
+              itemImages.push(img.trim());
+            }
+          }
+        }
+        const vMatch = (it.product?.variants || []).find((v: any) => v.id === it.variantId);
+        if (vMatch?.image && !itemImages.includes(vMatch.image.trim())) {
+          itemImages.unshift(vMatch.image.trim());
+        }
+        if (Array.isArray(vMatch?.images)) {
+          for (const img of vMatch.images) {
+            if (img && typeof img === "string" && img.trim() !== "" && !itemImages.includes(img.trim())) {
+              itemImages.push(img.trim());
+            }
+          }
+        }
+
+        const mainImage = itemImages.length > 0 ? itemImages[0] : (it.image || "");
+
+        return {
+          id: it.id,
+          productId: it.productId,
+          name: it.productName,
+          productName: it.productName,
+          spec: it.variantDetails || "Standard",
+          variant: it.variantDetails || "Standard",
+          qty: `${it.boxQuantity} box(es)`,
+          quantity: it.boxQuantity,
+          boxQuantity: it.boxQuantity,
+          price: `₹${(it.totalPrice || it.pricePerBox * it.boxQuantity || 0).toLocaleString("en-IN")}`,
+          pricePerBox: it.pricePerBox,
+          totalPrice: it.totalPrice,
+          image: mainImage,
+          images: itemImages.length > 0 ? itemImages : (mainImage ? [mainImage] : []),
+          icon: "📦",
+        };
+      });
+
+      const splitImages: string[] = [];
+      for (const fit of formattedItems) {
+        for (const img of fit.images) {
+          if (!splitImages.includes(img)) splitImages.push(img);
+        }
+      }
 
       const commissionRate = split.commissionRate || 15;
       const commissionAmount =
@@ -1228,6 +1271,8 @@ export async function getVendorOrders(vendorId?: string) {
         shippingAddress: parent?.shippingAddress,
         itemsCount: formattedItems.length,
         items: formattedItems,
+        images: splitImages,
+        itemImages: splitImages,
         createdAt: split.createdAt,
         updatedAt: split.updatedAt,
         parentOrder: parent
