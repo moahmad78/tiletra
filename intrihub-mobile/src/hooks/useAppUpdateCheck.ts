@@ -60,6 +60,7 @@ export function useAppUpdateCheck({
   const [modalVisible, setModalVisible] = useState(false);
   const [updateInfo, setUpdateInfo] = useState<UpdateInfo | null>(null);
   const isCheckingRef = useRef(false);
+  const sessionDismissedRef = useRef(false);
 
   // Read installed semver & native build versionCode from expo-application
   const currentInstalledVersion =
@@ -85,6 +86,9 @@ export function useAppUpdateCheck({
 
       // Throttle foreground checks: at most once every 6 hours
       if (!isColdStart) {
+        if (sessionDismissedRef.current) {
+          return; // User dismissed for this session
+        }
         try {
           const lastCheckTime = await AsyncStorage.getItem(throttleKey);
           if (lastCheckTime) {
@@ -170,14 +174,9 @@ export function useAppUpdateCheck({
 
         setUpdateInfo(info);
 
-        // Soft update: Check if user tapped "Later" within the last 24 hours FOR THIS VERSION
-        if (!isForceUpdate) {
-          const versionDismissKey = `intrihub_${app}_dismissed_until_${latestVersion}`;
-          const dismissedUntil = await AsyncStorage.getItem(versionDismissKey);
-          if (dismissedUntil && Date.now() < parseInt(dismissedUntil, 10)) {
-            // Suppressed for 24 hours for this version
-            return;
-          }
+        // Every time user opens app (cold start), popup will show until updated
+        if (!isForceUpdate && !isColdStart && sessionDismissedRef.current) {
+          return;
         }
 
         // Show update modal
@@ -255,20 +254,12 @@ export function useAppUpdateCheck({
     }
   }, [updateInfo, app]);
 
-  // "Later" handler: suppresses prompt for 24 hours for this specific release version
+  // "Later" handler: dismisses for current session; reappears every time app is closed & reopened
   const handleLaterPress = useCallback(async () => {
     if (updateInfo?.isForceUpdate) return;
-
-    const targetVersion = updateInfo?.latestVersion || "latest";
-    const versionDismissKey = `intrihub_${app}_dismissed_until_${targetVersion}`;
-    const nextPromptTime = Date.now() + TWENTY_FOUR_HOURS_MS;
-
-    try {
-      await AsyncStorage.setItem(versionDismissKey, String(nextPromptTime));
-    } catch {}
-
+    sessionDismissedRef.current = true;
     setModalVisible(false);
-  }, [updateInfo, app]);
+  }, [updateInfo]);
 
   return {
     modalVisible,

@@ -216,6 +216,7 @@ async function main() {
         userId: "CLI_ADMIN_SCRIPT",
         userEmail: "system-cli@intrihub.com",
         action: "APP_VERSION_CONFIG_CLI_UPDATE",
+        entity: "StoreSettings",
         details: {
           app: targetApp,
           platform: targetPlatform,
