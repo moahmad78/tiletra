@@ -790,7 +790,7 @@ export async function getVendorDashboardStats(vendorId?: string) {
       };
     }
 
-    const [allProducts, lowStockVariants, splits] = await Promise.all([
+    const [allProducts, lowStockVariants, splits, pastPayouts] = await Promise.all([
       prisma.product.findMany({
         where: { vendorId: effectiveVendorId },
         select: {
@@ -812,45 +812,94 @@ export async function getVendorDashboardStats(vendorId?: string) {
           commissionRate: true,
           vendorPayoutAmount: true,
           fulfillmentStatus: true,
+          payoutId: true,
         },
+      }),
+      prisma.payout.findMany({
+        where: { vendorId: effectiveVendorId, status: "completed" },
+        select: { amount: true },
       }),
     ]);
 
     const totalProducts = allProducts.length;
-    const activeProducts = allProducts.filter((p) => p.status === "active" && p.approvalStatus === "approved").length;
+    const activeProducts = allProducts.filter((p) => {
+      const st = (p.status || "").toLowerCase();
+      const ap = (p.approvalStatus || "").toLowerCase();
+      return st !== "archived" && st !== "deleted" && (ap === "approved" || !p.approvalStatus);
+    }).length;
     const pausedProducts = allProducts.filter((p) => p.status === "paused").length;
     const pendingApprovals = allProducts.filter((p) => p.approvalStatus === "pending").length;
     const rejectedProducts = allProducts.filter((p) => p.approvalStatus === "rejected").length;
+
     const totalOrders = splits.length;
-    const totalRevenue = splits.reduce((acc, s) => {
-      const rate = s.commissionRate || 15;
-      const payout = s.vendorPayoutAmount > 0
-        ? s.vendorPayoutAmount
-        : Number((s.subtotal - ((s.subtotal * rate) / 100)).toFixed(2));
-      return acc + payout;
-    }, 0);
+    const pendingOrders = splits.filter((s) => {
+      const st = (s.fulfillmentStatus || "").toLowerCase();
+      return st !== "delivered" && st !== "cancelled";
+    }).length;
+    const deliveredOrders = splits.filter(
+      (s) => (s.fulfillmentStatus || "").toLowerCase() === "delivered"
+    ).length;
+    const cancelledOrders = splits.filter(
+      (s) => (s.fulfillmentStatus || "").toLowerCase() === "cancelled"
+    ).length;
+
+    const totalRevenue = splits
+      .filter((s) => (s.fulfillmentStatus || "").toLowerCase() !== "cancelled")
+      .reduce((acc, s) => {
+        const rate = s.commissionRate || 15;
+        const payout = s.vendorPayoutAmount > 0
+          ? s.vendorPayoutAmount
+          : Number((s.subtotal - ((s.subtotal * rate) / 100)).toFixed(2));
+        return acc + payout;
+      }, 0);
+
+    const pendingPayout = splits
+      .filter((s) => (s.fulfillmentStatus || "").toLowerCase() !== "cancelled" && !s.payoutId)
+      .reduce((acc, s) => {
+        const rate = s.commissionRate || 15;
+        const payout = s.vendorPayoutAmount > 0
+          ? s.vendorPayoutAmount
+          : Number((s.subtotal - ((s.subtotal * rate) / 100)).toFixed(2));
+        return acc + payout;
+      }, 0);
+
+    const completedPayouts = pastPayouts.reduce((sum, p) => sum + (p.amount || 0), 0);
 
     return {
       totalProducts,
       activeProducts,
+      activeProductsCount: activeProducts > 0 ? activeProducts : totalProducts,
       pausedProducts,
       pendingApprovals,
       rejectedProducts,
       lowStockCount: lowStockVariants,
+      lowStockProductsCount: lowStockVariants,
       totalOrders,
+      pendingOrders,
+      deliveredOrders,
+      cancelledOrders,
       totalRevenue,
+      pendingPayout,
+      completedPayouts,
     };
   } catch (error) {
     console.error("Error getting vendor dashboard stats:", error);
     return {
       totalProducts: 0,
       activeProducts: 0,
+      activeProductsCount: 0,
       pausedProducts: 0,
       pendingApprovals: 0,
       rejectedProducts: 0,
       lowStockCount: 0,
+      lowStockProductsCount: 0,
       totalOrders: 0,
+      pendingOrders: 0,
+      deliveredOrders: 0,
+      cancelledOrders: 0,
       totalRevenue: 0,
+      pendingPayout: 0,
+      completedPayouts: 0,
     };
   }
 }

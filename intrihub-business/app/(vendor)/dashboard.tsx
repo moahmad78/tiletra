@@ -285,14 +285,14 @@ export default function VendorDashboardScreen() {
 
           <View style={styles.payoutsRow}>
             <View style={styles.payoutCol}>
-              <Text style={styles.payoutLabel}>{t("vendor.payouts") || "Pending Payout"}</Text>
+              <Text style={styles.payoutLabel}>Pending Settlement</Text>
               <Text style={[styles.payoutValue, { color: COLORS.accentAmber }]}>
                 ₹{(stats?.pendingPayout || 0).toLocaleString("en-IN")}
               </Text>
             </View>
             <View style={styles.payoutDivider} />
             <View style={styles.payoutCol}>
-              <Text style={styles.payoutLabel}>{t("vendor.payouts") || "Completed Payouts"}</Text>
+              <Text style={styles.payoutLabel}>Settled to Bank</Text>
               <Text style={[styles.payoutValue, { color: COLORS.accentGreen }]}>
                 ₹{(stats?.completedPayouts || 0).toLocaleString("en-IN")}
               </Text>
@@ -311,7 +311,7 @@ export default function VendorDashboardScreen() {
               <Clock size={20} color={COLORS.accentAmber} />
             </View>
             <Text style={styles.statNumber}>{stats?.pendingOrders || 0}</Text>
-            <Text style={styles.statTitle}>{t("orders.pending") || "Pending Orders"}</Text>
+            <Text style={styles.statTitle}>Active Orders</Text>
           </TouchableOpacity>
 
           <TouchableOpacity
@@ -323,7 +323,7 @@ export default function VendorDashboardScreen() {
               <CheckCircle2 size={20} color={COLORS.accentGreen} />
             </View>
             <Text style={styles.statNumber}>{stats?.deliveredOrders || 0}</Text>
-            <Text style={styles.statTitle}>{t("orders.delivered") || "Delivered"}</Text>
+            <Text style={styles.statTitle}>Delivered</Text>
           </TouchableOpacity>
 
           <TouchableOpacity
@@ -334,8 +334,8 @@ export default function VendorDashboardScreen() {
             <View style={[styles.statIconCircle, { backgroundColor: "rgba(37, 99, 235, 0.15)" }]}>
               <Package size={20} color={COLORS.accentBlue} />
             </View>
-            <Text style={styles.statNumber}>{stats?.activeProductsCount || 0}</Text>
-            <Text style={styles.statTitle}>{t("vendor.products") || "Active Catalog"}</Text>
+            <Text style={styles.statNumber}>{stats?.activeProductsCount || stats?.totalProducts || 0}</Text>
+            <Text style={styles.statTitle}>Product Catalog</Text>
           </TouchableOpacity>
 
           <TouchableOpacity
@@ -346,8 +346,8 @@ export default function VendorDashboardScreen() {
             <View style={[styles.statIconCircle, { backgroundColor: "rgba(239, 68, 68, 0.15)" }]}>
               <AlertTriangle size={20} color={COLORS.accentRed} />
             </View>
-            <Text style={styles.statNumber}>{stats?.lowStockProductsCount || 0}</Text>
-            <Text style={styles.statTitle}>{t("vendor.outOfStock") || "Low Stock Items"}</Text>
+            <Text style={styles.statNumber}>{stats?.lowStockProductsCount || stats?.lowStockCount || 0}</Text>
+            <Text style={styles.statTitle}>Low Stock Items</Text>
           </TouchableOpacity>
         </View>
 
