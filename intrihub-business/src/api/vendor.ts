@@ -89,6 +89,9 @@ export async function updateVendorProduct(
   id: string,
   data: Partial<{
     name: string;
+    brand: string;
+    modelNumber: string;
+    sku: string;
     categoryId: string;
     categorySlug: string;
     categoryName: string;
@@ -107,6 +110,18 @@ export async function updateVendorProduct(
     look: string;
     weightKg: number;
     isBulky: boolean;
+    hsnCode: string;
+    gstRate: number;
+    gstPercent: number;
+    coverageRate: number;
+    piecesPerBox: number;
+    wastageFactor: number;
+    lowStockAlert: number;
+    warrantyDuration: string;
+    returnPolicyDays: number;
+    hasVariants: boolean;
+    variants: any[];
+    attributes: Array<{ key: string; value: string }>;
     status: "active" | "paused" | "draft";
   }>
 ): Promise<{

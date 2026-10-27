@@ -374,5 +374,14 @@ export function formatProduct(dbProduct: any): Product {
     metaDescription: dbProduct.metaDescription || null,
     isFeatured: Boolean(dbProduct.isFeatured),
     scheduledPublishDate: dbProduct.scheduledPublishDate || null,
+    weightKg: dbProduct.weightKg !== null && dbProduct.weightKg !== undefined ? Number(dbProduct.weightKg) : (variants[0]?.weightKg ?? 2.5),
+    isBulky: Boolean(dbProduct.isBulky),
+    hsnCode: dbProduct.hsnCode || null,
+    gstPercent: dbProduct.gstPercent ? Number(dbProduct.gstPercent) : (dbProduct.gstRate ? Number(dbProduct.gstRate) : 18),
+    pricePerBox: variants[0]?.pricePerBox ?? (dbProduct.pricePerSqft ? Number(dbProduct.pricePerSqft) * (dbProduct.coverageRate || 16) : 0),
+    stockBoxes: variants[0]?.stockBoxes ?? (dbProduct.inStock ? 50 : 0),
+    thickness: dbProduct.thickness || "9mm",
+    finish: dbProduct.finish || "Glossy",
+    size: dbProduct.size || "Standard",
   };
 }
