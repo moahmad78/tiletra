@@ -193,6 +193,9 @@ export default function Footer() {
           <p className="text-white/80 leading-relaxed text-xs sm:text-sm">
             We deliver building &amp; interior materials with guaranteed 60-minute delivery in Bengaluru; 3-7 days Pan-India (outside Bengaluru).
           </p>
+          <p className="text-white/50 leading-relaxed text-[11px] sm:text-xs pt-1.5">
+            Karnataka, Tamil Nadu, Kerala, Telangana, Andhra Pradesh, Goa, Delhi (NCR), Uttar Pradesh, Haryana, Punjab, Rajasthan, Uttarakhand, Himachal Pradesh, West Bengal, Bihar, Odisha, Jharkhand, Assam, Sikkim, Arunachal Pradesh, Meghalaya, Manipur, Mizoram, Nagaland, Tripura, Maharashtra, Gujarat, Madhya Pradesh, Chhattisgarh, and other Union Territories.
+          </p>
         </div>
 
         {/* Corporate Legal & Registered Office Info */}
