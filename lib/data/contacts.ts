@@ -109,7 +109,7 @@ export const CONTACT_PERSONS: ContactPerson[] = [
     name: "Intrihub Central Support",
     shortName: "Support Desk",
     role: "General Inquiries & Customer Helpdesk",
-    email: "co@intrihub.com",
+    email: "support@intrihub.com",
     phone: PHONE_DISPLAY,
     tel: PHONE_TEL,
     whatsapp: PHONE_WA,

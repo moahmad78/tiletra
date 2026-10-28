@@ -76,7 +76,7 @@ export default function AboutPage() {
       logo: `${BASE_SITE_URL}/logo/intri-web-logo.png`,
       image: `${BASE_SITE_URL}/about/hero-facility.jpg`,
       foundingDate: "2026",
-      email: "co@intrihub.com",
+      email: "support@intrihub.com",
       telephone: "+91-70901-20211",
       founder: {
         "@type": "Person",
@@ -867,7 +867,7 @@ export default function AboutPage() {
                     CIN: U43299KA2026PTC230136
                   </p>
                   <p className="text-xs text-slate-600 mt-1">
-                    Support: <a href="mailto:co@intrihub.com" className="text-[#F26522] hover:underline font-semibold">co@intrihub.com</a>
+                    Support: <a href="mailto:support@intrihub.com" className="text-[#F26522] hover:underline font-semibold">support@intrihub.com</a>
                   </p>
                 </div>
               </div>

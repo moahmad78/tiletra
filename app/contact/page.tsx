@@ -47,7 +47,7 @@ export default function ContactPage() {
       alternateName: ["IntriHub", "IntriHub QuickCommerce", "IntriHub Private Limited"],
       url: BASE_SITE_URL,
       telephone: "+91-70901-20211",
-      email: "co@intrihub.com",
+      email: "support@intrihub.com",
       address: {
         "@type": "PostalAddress",
         streetAddress: "2858/4, Near Government High School, Begur Hobli, Mico Layout, Bangalore South",

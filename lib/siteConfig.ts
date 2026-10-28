@@ -10,8 +10,8 @@ export const PHONE_TEL = "tel:+917090120211";
 export const PHONE_WA = "https://wa.me/917090120211";
 export const PHONE_SCHEMA = "+91-70901-20211";
 
-export const EMAIL = "co@intrihub.com";
-export const SUPPORT_EMAIL = "co@intrihub.com";
+export const EMAIL = "support@intrihub.com";
+export const SUPPORT_EMAIL = "support@intrihub.com";
 
 export const ADDRESS = {
   streetAddress: "2858/4, Near Government High School, Begur Hobli, Mico Layout, Bangalore South",
