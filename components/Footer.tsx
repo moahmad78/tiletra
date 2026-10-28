@@ -57,12 +57,12 @@ export default function Footer() {
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8 lg:gap-12 pb-10 border-b border-white/10">
           {/* Col 1: Brand info, Highlights & Social Icons (Spans 2 cols on md and lg) */}
           <div className="md:col-span-2 lg:col-span-2 space-y-4 pr-0 lg:pr-8">
-            {/* Logo: No rounded border radius, tighter padding, larger display */}
+            {/* Logo: Soft rounded corners, balanced padding, large clean display */}
             <div className="flex items-center gap-3 notranslate" translate="no">
               <Link
                 href="/"
                 aria-label="Intrihub Home"
-                className="inline-flex items-center bg-white px-2 py-0.5 rounded-none shadow-xs notranslate"
+                className="inline-flex items-center bg-white px-2.5 py-1 rounded-lg shadow-xs notranslate"
                 translate="no"
               >
                 <Image
