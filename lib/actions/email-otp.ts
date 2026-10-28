@@ -41,6 +41,79 @@ async function setWebAuthCookies(
     const isProd = process.env.NODE_ENV === "production";
     const emailOrPhone = user.email || user.phone || "";
 
+    // ── ISOLATED ROLE AUTH ──
+    // Admin, Vendor, and CPO portals have dedicated, isolated cookie namespaces.
+    // They MUST NEVER touch or overwrite the customer session cookies
+    // (intrihub_token, intrihub_session, next-auth.session-token).
+    // This allows an admin/vendor to be logged into /admin or /vendor in one tab
+    // while remaining logged into the customer storefront (intrihub.com) with their
+    // customer account in another tab on the same browser.
+
+    if (role === "admin" || role === "superadmin") {
+      const adminToken = generateAdminSessionToken(user.id, user.email || "");
+      cookieStore.set("intrihub_admin_token", adminToken, {
+        httpOnly: true,
+        secure: isProd,
+        sameSite: "lax",
+        maxAge: 60 * 60 * 24 * 7,
+        path: "/",
+      });
+      cookieStore.set(
+        "intrihub_admin_session",
+        JSON.stringify({
+          userId: user.id,
+          email: user.email,
+          role: "admin",
+          verifiedAt: new Date().toISOString(),
+        }),
+        {
+          httpOnly: true,
+          secure: isProd,
+          sameSite: "lax",
+          maxAge: 60 * 60 * 24 * 7,
+          path: "/",
+        }
+      );
+      return;
+    }
+
+    if (role === "vendor" && vendorId) {
+      const vendorToken = generateVendorSessionToken(
+        vendorId,
+        user.id,
+        user.email || ""
+      );
+      cookieStore.set("intrihub_vendor_token", vendorToken, {
+        httpOnly: true,
+        secure: isProd,
+        sameSite: "lax",
+        maxAge: 60 * 60 * 24 * 7,
+        path: "/",
+      });
+      return;
+    }
+
+    if (role === "cpo") {
+      try {
+        const { generateCpoSessionToken } = await import("@/lib/cpo/auth");
+        const { CPO_SESSION_COOKIE } = await import(
+          "@/lib/config/cpo-permissions"
+        );
+        const cpoToken = await generateCpoSessionToken(user.id, user.email || "");
+        cookieStore.set(CPO_SESSION_COOKIE, cpoToken, {
+          httpOnly: true,
+          secure: isProd,
+          sameSite: "lax",
+          maxAge: 60 * 60 * 24 * 7,
+          path: "/",
+        });
+      } catch (cpoErr) {
+        console.error("Failed to generate CPO session token:", cpoErr);
+      }
+      return;
+    }
+
+    // ── CUSTOMER ONLY ──
     // 1. Signed customer session token (for server actions & API endpoints)
     const custToken = generateCustomerSessionToken(user.id, emailOrPhone, role);
     cookieStore.set("intrihub_token", custToken, {
@@ -89,48 +162,6 @@ async function setWebAuthCookies(
       maxAge: 60 * 60 * 24 * 7,
       path: "/",
     });
-
-    // 4. Role-specific signed cookies
-    if (role === "admin" || role === "superadmin") {
-      const adminToken = generateAdminSessionToken(user.id, user.email || "");
-      cookieStore.set("intrihub_admin_token", adminToken, {
-        httpOnly: true,
-        secure: isProd,
-        sameSite: "lax",
-        maxAge: 60 * 60 * 24 * 7,
-        path: "/",
-      });
-    } else if (role === "vendor" && vendorId) {
-      const vendorToken = generateVendorSessionToken(
-        vendorId,
-        user.id,
-        user.email || ""
-      );
-      cookieStore.set("intrihub_vendor_token", vendorToken, {
-        httpOnly: true,
-        secure: isProd,
-        sameSite: "lax",
-        maxAge: 60 * 60 * 24 * 7,
-        path: "/",
-      });
-    } else if (role === "cpo") {
-      try {
-        const { generateCpoSessionToken } = await import("@/lib/cpo/auth");
-        const { CPO_SESSION_COOKIE } = await import(
-          "@/lib/config/cpo-permissions"
-        );
-        const cpoToken = await generateCpoSessionToken(user.id, user.email || "");
-        cookieStore.set(CPO_SESSION_COOKIE, cpoToken, {
-          httpOnly: true,
-          secure: isProd,
-          sameSite: "lax",
-          maxAge: 60 * 60 * 24 * 7,
-          path: "/",
-        });
-      } catch (cpoErr) {
-        console.error("Failed to generate CPO session token:", cpoErr);
-      }
-    }
   } catch (err) {
     console.warn("[setWebAuthCookies] Non-request context or cookie error:", err);
   }

@@ -206,31 +206,34 @@ export async function POST(req: NextRequest) {
     const isProduction = process.env.NODE_ENV === "production";
     const cookieMaxAge = 7 * 24 * 60 * 60; // 7 days
 
-    response.cookies.set("intrihub_token", token, {
-      httpOnly: true,
-      secure: isProduction,
-      sameSite: "lax",
-      maxAge: cookieMaxAge,
-      path: "/",
-    });
+    // Set customer session cookies ONLY for non-privileged customer users
+    if (effectiveRole !== "admin" && effectiveRole !== "cpo" && effectiveRole !== "vendor") {
+      response.cookies.set("intrihub_token", token, {
+        httpOnly: true,
+        secure: isProduction,
+        sameSite: "lax",
+        maxAge: cookieMaxAge,
+        path: "/",
+      });
 
-    // Mirror for NextAuth compatibility
-    response.cookies.set("next-auth.session-token", token, {
-      httpOnly: true,
-      secure: isProduction,
-      sameSite: "lax",
-      maxAge: cookieMaxAge,
-      path: "/",
-    });
+      // Mirror for NextAuth compatibility
+      response.cookies.set("next-auth.session-token", token, {
+        httpOnly: true,
+        secure: isProduction,
+        sameSite: "lax",
+        maxAge: cookieMaxAge,
+        path: "/",
+      });
 
-    const clientSession = Buffer.from(JSON.stringify(safeUser)).toString("base64url");
-    response.cookies.set("intrihub_session", clientSession, {
-      httpOnly: false,
-      secure: isProduction,
-      sameSite: "lax",
-      maxAge: cookieMaxAge,
-      path: "/",
-    });
+      const clientSession = Buffer.from(JSON.stringify(safeUser)).toString("base64url");
+      response.cookies.set("intrihub_session", clientSession, {
+        httpOnly: false,
+        secure: isProduction,
+        sameSite: "lax",
+        maxAge: cookieMaxAge,
+        path: "/",
+      });
+    }
 
     // Role-specific tokens for immediate privileged access
     if (effectiveRole === "admin") {

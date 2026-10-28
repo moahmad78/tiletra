@@ -57,6 +57,7 @@ export const useAdminAuth = create<AdminAuthState>()(
             localStorage.removeItem("intrihub-admin-auth");
             localStorage.removeItem("intrihub_admin_last_active");
             document.cookie = "intrihub_admin_session=; path=/; max-age=0;";
+            document.cookie = "intrihub_admin_token=; path=/; max-age=0;";
           } catch {}
         }
       },

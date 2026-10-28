@@ -116,16 +116,40 @@ export default function GoogleSessionHydrator() {
           const cookieVal = decodeURIComponent(match[1]);
           const jsonStr = decodeBase64Url(cookieVal);
           const decoded = JSON.parse(jsonStr);
-          if (decoded && (!isAuthenticated || !user || (!user.avatar && decoded.avatar))) {
-            googleSignIn({
-              userId: decoded.userId,
-              name: decoded.name || decoded.email?.split("@")[0] || "User",
-              email: decoded.email || "",
-              avatar: decoded.avatar || undefined,
-              phone: decoded.phone,
-              phoneVerified: decoded.phoneVerified,
-              createdAt: decoded.createdAt,
-            });
+          if (decoded) {
+            // Guard: Never hydrate admin / staff accounts into customer storefront
+            const allowedAdminEmail = "admin@intrihub.com";
+            const isDecodedAdmin =
+              decoded.role === "admin" ||
+              decoded.role === "superadmin" ||
+              decoded.role === "staff" ||
+              decoded.email?.toLowerCase().trim() === allowedAdminEmail;
+
+            if (isDecodedAdmin) {
+              return;
+            }
+
+            // Guard: If customer is ALREADY authenticated with an account, NEVER overwrite with a different account!
+            if (
+              isAuthenticated &&
+              user?.email &&
+              decoded.email &&
+              user.email.toLowerCase().trim() !== decoded.email.toLowerCase().trim()
+            ) {
+              return;
+            }
+
+            if (!isAuthenticated || !user || (!user.avatar && decoded.avatar)) {
+              googleSignIn({
+                userId: decoded.userId,
+                name: decoded.name || decoded.email?.split("@")[0] || "User",
+                email: decoded.email || "",
+                avatar: decoded.avatar || undefined,
+                phone: decoded.phone,
+                phoneVerified: decoded.phoneVerified,
+                createdAt: decoded.createdAt,
+              });
+            }
           }
         } catch (e) {
           // silently ignore invalid cookie format
