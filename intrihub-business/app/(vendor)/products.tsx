@@ -32,12 +32,14 @@ import {
 import { Product } from "../../src/types";
 import { COLORS, SPACING, RADIUS, SHADOWS } from "../../src/constants/theme";
 import { getImageUrl } from "../../src/api/client";
+import ProductEditChoiceModal from "../../src/components/ProductEditChoiceModal";
 
 export default function VendorProductsScreen() {
   const router = useRouter();
   const queryClient = useQueryClient();
   const [search, setSearch] = useState("");
   const [statusFilter, setStatusFilter] = useState<"all" | "active" | "paused" | "pending" | "rejected">("all");
+  const [choiceModalProduct, setChoiceModalProduct] = useState<Product | null>(null);
 
   const { data, isLoading, refetch, isRefetching } = useQuery({
     queryKey: ["vendor-products", search, statusFilter],
@@ -158,7 +160,7 @@ export default function VendorProductsScreen() {
           <View style={styles.actionRow}>
             <TouchableOpacity
               style={styles.actionBtn}
-              onPress={() => router.push({ pathname: "/(vendor)/product/[id]", params: { id: item.id } } as any)}
+              onPress={() => setChoiceModalProduct(item)}
             >
               <Edit2 size={15} color={COLORS.primary} />
               <Text style={styles.actionBtnText}>Edit</Text>
@@ -278,6 +280,20 @@ export default function VendorProductsScreen() {
           }
         />
       )}
+
+      {/* CPO Parity Product Edit Choice Modal (Instant Rate & Stock vs Full Edit) */}
+      <ProductEditChoiceModal
+        visible={Boolean(choiceModalProduct)}
+        product={choiceModalProduct}
+        onClose={() => setChoiceModalProduct(null)}
+        onNavigateToFullEdit={(id) => {
+          router.push({ pathname: "/(vendor)/product/[id]", params: { id } } as any);
+        }}
+        onSuccess={() => {
+          queryClient.invalidateQueries({ queryKey: ["vendor-products"] });
+          queryClient.invalidateQueries({ queryKey: ["vendor-dashboard"] });
+        }}
+      />
     </View>
   );
 }

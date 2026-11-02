@@ -115,6 +115,31 @@ export async function POST(req: NextRequest) {
       } catch { }
     }
 
+    // 4.5 Check Mobile Bearer Auth (Mobile Vendor / Mobile Admin)
+    if (!isAuthorized) {
+      try {
+        const { getAuthenticatedMobileUser } = await import("@/lib/mobile-auth");
+        const mobileUser = await getAuthenticatedMobileUser(req);
+        if (mobileUser) {
+          isAuthorized = true;
+          actorType = mobileUser.role === "admin" || mobileUser.role === "superadmin" ? "ADMIN" : "VENDOR";
+          if (actorType === "VENDOR") {
+            const v = await prisma.vendor.findFirst({
+              where: {
+                OR: [
+                  { ownerId: mobileUser.id },
+                  { contactEmail: mobileUser.email || "" },
+                  { contactPhone: mobileUser.phone || "" },
+                ],
+              },
+              select: { id: true },
+            });
+            if (v) effectiveVendorId = v.id;
+          }
+        }
+      } catch { }
+    }
+
     // 5. Check Customer/User Session or Dev Fallback
     if (!isAuthorized) {
       try {

@@ -17,9 +17,7 @@ export async function emitSocketEvent(payload: EmitPayload): Promise<boolean> {
     if (io) {
       const targetRooms = payload.rooms || (payload.room ? [payload.room] : []);
       if (targetRooms.length > 0) {
-        targetRooms.forEach((r) => {
-          io.to(r).emit(payload.event, payload.data);
-        });
+        io.to(targetRooms).emit(payload.event, payload.data);
       } else {
         io.emit(payload.event, payload.data);
       }

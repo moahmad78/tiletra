@@ -1,4 +1,33 @@
-"use client";
+import { Metadata } from "next";
+import JsonLd from "@/components/JsonLd";
+import { generateBreadcrumbSchema } from "@/lib/seo";
+
+export const metadata: Metadata = {
+  title: "Privacy Policy | IntriHub Data Protection & Security",
+  description: "Learn how IntriHub protects your personal data, secures transactions, and complies with Indian data protection regulations for construction material delivery.",
+  alternates: {
+    canonical: "https://www.intrihub.com/privacy-policy",
+  },
+  openGraph: {
+    title: "Privacy Policy | IntriHub Data Protection & Security",
+    description: "Learn how IntriHub protects your personal data, secures transactions, and complies with Indian data protection regulations for construction material delivery.",
+    url: "https://www.intrihub.com/privacy-policy",
+    type: "website",
+    siteName: "IntriHub",
+    images: [{ url: "https://www.intrihub.com/images/intrihub-og-image.jpg", width: 1200, height: 630, alt: "IntriHub Privacy Policy" }],
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: "Privacy Policy | IntriHub Data Protection & Security",
+    description: "Learn how IntriHub protects your personal data, secures transactions, and complies with Indian data protection regulations for construction material delivery.",
+    images: ["https://www.intrihub.com/images/intrihub-og-image.jpg"],
+  },
+};
+
+const breadcrumbSchema = generateBreadcrumbSchema([
+  { name: "Home", url: "/" },
+  { name: "Privacy Policy", url: "/privacy-policy" },
+]);
 
 import React from "react";
 import Link from "next/link";
@@ -25,7 +54,9 @@ const PRIVACY_SECTIONS = [
 
 export default function PrivacyPolicyPage() {
   return (
-    <PolicyLayout
+    <>
+      <JsonLd schema={breadcrumbSchema} />
+      <PolicyLayout
       currentTab="privacy"
       title="Privacy Policy"
       categoryTag="Data Protection"
@@ -147,5 +178,6 @@ export default function PrivacyPolicyPage() {
         </div>
       </section>
     </PolicyLayout>
+    </>
   );
 }

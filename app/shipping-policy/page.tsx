@@ -1,4 +1,34 @@
-"use client";
+import { Metadata } from "next";
+import JsonLd from "@/components/JsonLd";
+import { generateBreadcrumbSchema } from "@/lib/seo";
+
+export const metadata: Metadata = {
+  title: "Shipping & Freight Policy | IntriHub Express Logistics",
+  description: "IntriHub shipping policy: 60-minute express deliveries across Bengaluru and 3-7 day pallet freight delivery nationwide with breakage protection.",
+  alternates: {
+    canonical: "https://www.intrihub.com/shipping-policy",
+  },
+  openGraph: {
+    title: "Shipping & Freight Policy | IntriHub Express Logistics",
+    description: "IntriHub shipping policy: 60-minute express deliveries across Bengaluru and 3-7 day pallet freight delivery nationwide with breakage protection.",
+    url: "https://www.intrihub.com/shipping-policy",
+    type: "website",
+    siteName: "IntriHub",
+    images: [{ url: "https://www.intrihub.com/images/intrihub-og-image.jpg", width: 1200, height: 630, alt: "IntriHub Shipping Policy" }],
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: "Shipping & Freight Policy | IntriHub Express Logistics",
+    description: "IntriHub shipping policy: 60-minute express deliveries across Bengaluru and 3-7 day pallet freight delivery nationwide with breakage protection.",
+    images: ["https://www.intrihub.com/images/intrihub-og-image.jpg"],
+  },
+};
+
+const breadcrumbSchema = generateBreadcrumbSchema([
+  { name: "Home", url: "/" },
+  { name: "Shipping Policy", url: "/shipping-policy" },
+]);
+
 
 import React from "react";
 import Link from "next/link";
@@ -14,7 +44,9 @@ const SHIPPING_SECTIONS = [
 
 export default function ShippingPolicyPage() {
   return (
-    <PolicyLayout
+    <>
+      <JsonLd schema={breadcrumbSchema} />
+      <PolicyLayout
       currentTab="shipping"
       title="Shipping & Freight Policy"
       categoryTag="Delivery & Logistics"
@@ -102,5 +134,6 @@ export default function ShippingPolicyPage() {
         </Link>
       </div>
     </PolicyLayout>
+    </>
   );
 }

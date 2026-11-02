@@ -1,4 +1,33 @@
-"use client";
+import { Metadata } from "next";
+import JsonLd from "@/components/JsonLd";
+import { generateBreadcrumbSchema } from "@/lib/seo";
+
+export const metadata: Metadata = {
+  title: "Terms of Service | IntriHub Marketplace Agreement",
+  description: "Review IntriHub customer terms, order verification, express delivery timelines, transit policies, and marketplace partner legal agreements.",
+  alternates: {
+    canonical: "https://www.intrihub.com/terms",
+  },
+  openGraph: {
+    title: "Terms of Service | IntriHub Marketplace Agreement",
+    description: "Review IntriHub customer terms, order verification, express delivery timelines, transit policies, and marketplace partner legal agreements.",
+    url: "https://www.intrihub.com/terms",
+    type: "website",
+    siteName: "IntriHub",
+    images: [{ url: "https://www.intrihub.com/images/intrihub-og-image.jpg", width: 1200, height: 630, alt: "IntriHub Terms of Service" }],
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: "Terms of Service | IntriHub Marketplace Agreement",
+    description: "Review IntriHub customer terms, order verification, express delivery timelines, transit policies, and marketplace partner legal agreements.",
+    images: ["https://www.intrihub.com/images/intrihub-og-image.jpg"],
+  },
+};
+
+const breadcrumbSchema = generateBreadcrumbSchema([
+  { name: "Home", url: "/" },
+  { name: "Terms of Service", url: "/terms" },
+]);
 
 import React from "react";
 import Link from "next/link";
@@ -26,7 +55,9 @@ const TERMS_SECTIONS = [
 
 export default function TermsPage() {
   return (
-    <PolicyLayout
+    <>
+      <JsonLd schema={breadcrumbSchema} />
+      <PolicyLayout
       currentTab="terms"
       title="Terms of Service"
       categoryTag="Legal Agreement"
@@ -172,5 +203,6 @@ export default function TermsPage() {
         </div>
       </section>
     </PolicyLayout>
+    </>
   );
 }

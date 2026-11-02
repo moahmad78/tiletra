@@ -97,6 +97,31 @@ export async function GET(req: NextRequest) {
         inProgressCount: summary.inProgressCount,
         payoutHistory,
         trend,
+        vendor: {
+          id: vendor.id,
+          businessName: vendor.businessName,
+          commissionRate: (vendor as any).commissionRate ?? 10,
+          bankAccountName: (vendor as any).bankAccountName || vendor.businessName,
+          bankAccountNumber: (vendor as any).bankAccountNumber || "",
+          bankIfsc: (vendor as any).bankIfsc || "",
+        },
+        summary: {
+          totalRevenue: totalEarnings,
+          totalPayoutAmount: totalEarnings,
+          pendingPayoutAmount: summary.readyForPayoutAmount,
+          completedPayoutAmount: summary.lifetimePaidOut,
+          totalPlatformFee: 0,
+        },
+        payouts: payoutHistory.map((p) => ({
+          id: p.id,
+          orderId: p.paymentReference || p.id,
+          subtotal: p.amount,
+          platformFee: 0,
+          vendorPayoutAmount: p.amount,
+          payoutStatus: p.status === "completed" ? "paid" : "pending",
+          payoutReference: p.paymentReference,
+          createdAt: p.paidAt,
+        })),
       },
     });
   } catch (err: any) {

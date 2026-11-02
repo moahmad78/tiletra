@@ -28,7 +28,16 @@ export async function GET(req: NextRequest) {
 
     const filtered = statusFilter === "all"
       ? allOrders
-      : allOrders.filter((o) => o.fulfillmentStatus?.toLowerCase() === statusFilter.toLowerCase());
+      : allOrders.filter((o) => {
+          const fs = (o.fulfillmentStatus || "").toLowerCase();
+          const target = statusFilter.toLowerCase();
+          if (target === "pending") return fs.includes("pending") || fs.includes("awaiting");
+          if (target === "ready" || target === "ready_for_pickup") return fs.includes("ready");
+          if (target === "confirmed") return fs === "confirmed" || fs === "accepted" || fs === "processing";
+          if (target === "dispatched") return fs === "dispatched" || fs.includes("transit") || fs.includes("delivery");
+          if (target === "delivered") return fs === "delivered";
+          return fs === target;
+        });
 
     return mobileApiResponse({
       success: true,

@@ -214,11 +214,13 @@ const getFormattedAddress = (order: any) => {
             <Text style={styles.adminBadgeText}>ADMIN</Text>
           </View>
         </View>
-        <Image
-          source={require("../../assets/intri-icon.png")}
-          style={styles.headerBrandLogo}
-          contentFit="contain"
-        />
+        <View style={styles.webLogoBadge}>
+          <Image
+            source={require("../../assets/intri-web-logo.png")}
+            style={styles.webHeaderLogo}
+            contentFit="contain"
+          />
+        </View>
       </View>
 
       <ScrollView
@@ -753,6 +755,18 @@ const styles = StyleSheet.create({
     fontSize: 18,
     fontWeight: "900",
     color: COLORS.textWhite,
+  },
+  webLogoBadge: {
+    backgroundColor: "#FFFFFF",
+    paddingHorizontal: 7,
+    paddingVertical: 4,
+    borderRadius: 8,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  webHeaderLogo: {
+    width: 76,
+    height: 20,
   },
   headerBrandLogo: {
     width: 36,

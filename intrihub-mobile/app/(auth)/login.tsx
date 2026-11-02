@@ -21,6 +21,7 @@ import { COLORS, SPACING, RADIUS, SHADOWS } from "../../src/constants/theme";
 import { sendOtp, verifyOtp, checkAuthMethod, loginWithPassword } from "../../src/api/auth";
 import { setStoredTokens } from "../../src/api/client";
 import { useAuthStore } from "../../src/store/authStore";
+import { registerCustomerPushToken } from "../../src/hooks/usePushNotifications";
 
 // maybeCompleteAuthSession is still needed to finalise any in-flight auth sessions
 WebBrowser.maybeCompleteAuthSession();
@@ -65,7 +66,8 @@ export default function LoginScreen() {
   const [canResend, setCanResend] = useState(false);
 
   // Directly navigate to Account (Profile) tab upon successful login
-  const navigateAfterLogin = useCallback(() => {
+    const navigateAfterLogin = useCallback(() => {
+    registerCustomerPushToken().catch(() => {});
     router.replace("/(tabs)/profile" as any);
   }, [router]);
 
@@ -934,3 +936,4 @@ const styles = StyleSheet.create({
     lineHeight: 16,
   },
 });
+

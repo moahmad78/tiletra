@@ -481,6 +481,13 @@ function CpoCatalogContent() {
           ) : (
             <>
               <Link
+                href="/admin/products/bulk"
+                className="inline-flex items-center gap-1.5 px-4 py-2.5 bg-white border border-gray-200 hover:border-[#F26522] hover:text-[#F26522] text-gray-700 text-xs font-bold rounded-xl shadow-2xs transition-colors cursor-pointer"
+              >
+                <Upload className="w-4 h-4 text-[#F26522]" />
+                <span>Bulk CSV Import</span>
+              </Link>
+              <Link
                 href="/cpo/categories"
                 className="inline-flex items-center gap-1.5 px-4 py-2.5 bg-white border border-gray-200 hover:border-[#F26522] hover:text-[#F26522] text-gray-700 text-xs font-bold rounded-xl shadow-2xs transition-colors cursor-pointer"
               >

@@ -51,15 +51,15 @@ export async function GET(req: NextRequest) {
 
       const rawPhone = parent?.deliveryPhone || parent?.customerPhone || "";
       const cleanDigits = rawPhone.replace(/\D/g, "");
-      const maskedPhone = cleanDigits.length >= 10
-        ? `+91 ${cleanDigits.slice(-10, -5)} •••••`
-        : (rawPhone ? "••••••••••" : "");
+      const formattedPhone = cleanDigits.length >= 10
+        ? `+91 ${cleanDigits.slice(-10, -5)} ${cleanDigits.slice(-5)}`
+        : (rawPhone || "");
 
       return {
         splitId: s.id,
         orderId: s.orderId,
         customerName: parent?.deliveryName || parent?.customerName || "Customer",
-        customerPhone: maskedPhone,
+        customerPhone: formattedPhone,
         itemsCount: vendorItems.length,
         subtotal: s.subtotal,
         vendorPayoutAmount:
@@ -84,10 +84,32 @@ export async function GET(req: NextRequest) {
         ownerName: user.name,
         contactEmail: vendor.contactEmail,
         contactPhone: vendor.contactPhone,
+        businessAddress: vendor.businessAddress,
         deliveryMethod: vendor.deliveryMethod,
         autoPublishEnabled: Boolean(vendor.autoPublishEnabled),
         isOnline: Boolean(vendor.isOnline),
         autoAcceptOrders: Boolean(vendor.autoAcceptOrders),
+        latitude: vendor.latitude,
+        longitude: vendor.longitude,
+        locationAccuracy: vendor.locationAccuracy,
+        // Bank Details
+        bankAccountHolder: vendor.bankAccountHolder,
+        bankName: vendor.bankName,
+        bankAccountNumber: vendor.bankAccountNumber,
+        bankIfscCode: vendor.bankIfscCode,
+        bankUpiId: vendor.bankUpiId,
+        // KYC Legal Documents & Shopfront Verification
+        shopPhotoUrl: vendor.shopPhotoUrl,
+        panNumber: vendor.panNumber,
+        panDocUrl: vendor.panDocUrl,
+        aadharNumber: vendor.aadharNumber,
+        aadharDocUrl: vendor.aadharDocUrl,
+        gstNumber: vendor.gstNumber,
+        gstDocUrl: vendor.gstDocUrl,
+        chequeDocUrl: vendor.chequeDocUrl,
+        tradeLicenseDocUrl: vendor.tradeLicenseDocUrl,
+        kycStatus: vendor.kycStatus || "pending",
+        kycNotes: vendor.kycNotes,
       },
       stats,
       recentOrders,

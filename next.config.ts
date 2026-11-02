@@ -76,7 +76,17 @@ const nextConfig: NextConfig = {
         destination: "/electrical-material-provider-india",
         permanent: true,
       },
-    ];
+          {
+        source: "/designs",
+        destination: "/shop",
+        permanent: true,
+      },
+      {
+        source: "/usp",
+        destination: "/why-intrihub",
+        permanent: true,
+      },
+];
   },
   async headers() {
     return [

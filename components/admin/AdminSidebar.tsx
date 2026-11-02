@@ -26,6 +26,8 @@ import {
   FileText,
   Activity,
   BellRing,
+  CreditCard,
+  FileSpreadsheet,
 } from "lucide-react";
 import { useState, useCallback, useEffect } from "react";
 import { getAdminMarketplaceStats } from "@/lib/actions/admin-vendor";
@@ -33,17 +35,20 @@ import { useLiveSync } from "@/lib/live-sync";
 
 const navItems = [
   { name: "Dashboard", href: "/admin", icon: LayoutDashboard, exact: true },
+  { name: "Orders", href: "/admin/orders", icon: ShoppingBag, badgeKey: "pendingOrders" },
+  { name: "Transactions & Refunds", href: "/admin/transactions", icon: CreditCard },
   { name: "Help Desk (Connect)", href: "/admin/connect", icon: Headphones, badgeKey: "urgentConnect" },
   { name: "Vendor Inquiries", href: "/admin/vendor-applications", icon: Clock, badgeKey: "inquiriesCount" },
   { name: "Vendors & Shops", href: "/admin/vendors", icon: Store, badgeKey: "pendingVendors" },
   { name: "Product Approvals", href: "/admin/product-approvals", icon: CheckSquare, badgeKey: "pendingProducts" },
   { name: "Products", href: "/admin/products", icon: Package, badgeKey: "lowStock" },
   { name: "Categories", href: "/admin/categories", icon: Layers },
-  { name: "Orders", href: "/admin/orders", icon: ShoppingBag, badgeKey: "pendingOrders" },
   { name: "Push Campaigns", href: "/admin/campaigns", icon: BellRing },
   { name: "Invoice Generator", href: "/admin/invoices", icon: FileText },
   { name: "Logistics & Deliveries", href: "/admin/deliveries", icon: Truck },
   { name: "Customers", href: "/admin/customers", icon: Users },
+  { name: "Reports & Exports", href: "/admin/reports", icon: FileSpreadsheet },
+  { name: "Roles & Sessions", href: "/admin/roles", icon: ShieldCheck },
   { name: "Reviews", href: "/admin/reviews", icon: MessageSquare, badgeKey: "pendingReviews" },
   { name: "Coupons", href: "/admin/coupons", icon: Tag },
   { name: "Guides & Blog", href: "/admin/guides", icon: BookOpen },

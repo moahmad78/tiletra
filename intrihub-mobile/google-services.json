@@ -1,30 +1,40 @@
 {
   "project_info": {
-    "project_number": "602084779648",
-    "project_id": "intrihub-production",
-    "storage_bucket": "intrihub-production.appspot.com"
+    "project_number": "756813427613",
+    "project_id": "intrihub78",
+    "storage_bucket": "intrihub78.firebasestorage.app"
   },
   "client": [
     {
       "client_info": {
-        "mobilesdk_app_id": "1:602084779648:android:7c786f9702174a68b51f14",
+        "mobilesdk_app_id": "1:756813427613:android:77ea6be4947b204c0ef574",
         "android_client_info": {
           "package_name": "com.intrihub.app"
         }
       },
-      "oauth_client": [
-        {
-          "client_id": "602084779648-bchh5lt1n03g719qisutva4bkhjg17cb.apps.googleusercontent.com",
-          "client_type": 1,
-          "android_info": {
-            "package_name": "com.intrihub.app",
-            "certificate_hash": "a1b2c3d4e5f60718293a4b5c6d7e8f9012345678"
-          }
-        }
-      ],
+      "oauth_client": [],
       "api_key": [
         {
-          "current_key": "AIzaSyDummyProductionFCMKeyPlaceholderForBuild"
+          "current_key": "AIzaSyBa9BWiGI40xRI6s8h4LEbGUsFttX-1K_M"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    },
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:756813427613:android:b71eb4780a4880ca0ef574",
+        "android_client_info": {
+          "package_name": "com.intrihub.business"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyBa9BWiGI40xRI6s8h4LEbGUsFttX-1K_M"
         }
       ],
       "services": {

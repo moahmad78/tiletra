@@ -1,5 +1,5 @@
 import { useEffect, useRef } from "react";
-import { Platform, Linking } from "react-native";
+import { Platform, Linking, AppState, AppStateStatus } from "react-native";
 import Constants, { ExecutionEnvironment } from "expo-constants";
 import { useRouter } from "expo-router";
 import { registerPushToken } from "../api/push";
@@ -10,10 +10,8 @@ const isExpoGo =
   Constants.appOwnership === "expo" ||
   Constants.executionEnvironment === ExecutionEnvironment.StoreClient;
 
-// Dynamically reference expo-notifications to prevent Expo Go SDK 53+ crash on top-level import
 let Notifications: typeof import("expo-notifications") | null = null;
 
-// Only require expo-notifications when NOT running in Expo Go and not on web
 if (!isExpoGo && Platform.OS !== "web") {
   try {
     Notifications = require("expo-notifications");
@@ -31,6 +29,55 @@ if (!isExpoGo && Platform.OS !== "web") {
   }
 }
 
+/**
+ * Explicit token registration helper called after successful login and on app launch.
+ * Enforces that user is authenticated before sending token to backend.
+ */
+export async function registerCustomerPushToken(): Promise<string | null> {
+  if (Platform.OS === "web" || isExpoGo || !Notifications) {
+    return null;
+  }
+
+  const user = useAuthStore.getState().user;
+  if (!user?.id) {
+    // Never attempt remote registration while unauthenticated
+    return null;
+  }
+
+  try {
+    const { status: existingStatus } = await Notifications.getPermissionsAsync();
+    let finalStatus = existingStatus;
+
+    if (existingStatus !== "granted") {
+      const { status } = await Notifications.requestPermissionsAsync();
+      finalStatus = status;
+    }
+
+    if (finalStatus !== "granted") {
+      return null;
+    }
+
+    const projectId =
+      Constants.expoConfig?.extra?.eas?.projectId ||
+      Constants.easConfig?.projectId ||
+      "7c786f97-0217-4a68-b51f-14499a3311a2";
+
+    const tokenData = await Notifications.getExpoPushTokenAsync({
+      projectId,
+    });
+
+    if (tokenData?.data) {
+      await registerPushToken(tokenData.data, Platform.OS);
+      console.log("⚡ [PushNotifications] Customer push token registered:", tokenData.data.slice(-6));
+      return tokenData.data;
+    }
+  } catch (err: any) {
+    console.warn("[PushNotifications] Failed to register customer push token:", err?.message);
+  }
+
+  return null;
+}
+
 export function usePushNotifications() {
   const router = useRouter();
   const { user } = useAuthStore();
@@ -38,79 +85,57 @@ export function usePushNotifications() {
   const responseListener = useRef<any>(null);
 
   useEffect(() => {
-    // Remote push notifications were removed from Expo Go in SDK 53+.
-    // They also do not function on web, emulators/simulators, or when Notifications is unavailable.
-    // Standalone development & production builds (EAS builds) work normally.
     if (Platform.OS === "web" || isExpoGo || !Notifications) {
-      if (__DEV__ && isExpoGo) {
-        console.log(
-          "[PushNotifications] Expo Go detected: remote push notifications are disabled. Use an EAS development build for push notification testing."
-        );
-      }
       return;
     }
 
     const notif = Notifications;
 
-    async function setupNotifications() {
-      try {
-        const { status: existingStatus } = await notif!.getPermissionsAsync();
-        let finalStatus = existingStatus;
-
-        if (existingStatus !== "granted") {
-          const { status } = await notif!.requestPermissionsAsync();
-          finalStatus = status;
-        }
-
-        if (finalStatus !== "granted") {
-          return;
-        }
-
-        const projectId =
-          Constants.expoConfig?.extra?.eas?.projectId ||
-          Constants.easConfig?.projectId;
-
-        if (!projectId) {
-          console.warn("[PushNotifications] EAS projectId not found — skipping push token registration.");
-          return;
-        }
-
-        const tokenData = await notif!.getExpoPushTokenAsync({
-          projectId,
-        });
-
-        if (tokenData?.data) {
-          await registerPushToken(tokenData.data, Platform.OS);
-        }
-
-        if (Platform.OS === "android") {
-          await notif!.setNotificationChannelAsync("orders_high_importance", {
+    async function initChannels() {
+      if (Platform.OS === "android") {
+        try {
+          await notif.setNotificationChannelAsync("orders_high_importance", {
             name: "Order Updates",
-            importance: notif!.AndroidImportance.MAX,
+            importance: notif.AndroidImportance.MAX,
             vibrationPattern: [0, 250, 250, 250],
-            lightColor: "#052a51",
+            lightColor: "#F26522",
+            sound: "default",
           });
 
-          await notif!.setNotificationChannelAsync("reminders_default", {
+          await notif.setNotificationChannelAsync("reminders_default", {
             name: "Cart Reminders",
-            importance: notif!.AndroidImportance.DEFAULT,
+            importance: notif.AndroidImportance.DEFAULT,
             vibrationPattern: [0, 250, 250],
-            lightColor: "#052a51",
+            lightColor: "#F26522",
+            sound: "default",
           });
 
-          await notif!.setNotificationChannelAsync("offers_default", {
+          await notif.setNotificationChannelAsync("offers_default", {
             name: "Exclusive Offers & Discounts",
-            importance: notif!.AndroidImportance.DEFAULT,
+            importance: notif.AndroidImportance.DEFAULT,
             vibrationPattern: [0, 250],
-            lightColor: "#052a51",
+            lightColor: "#F26522",
+            sound: "default",
           });
+        } catch (e) {
+          console.warn("[PushNotifications] Channel setup error:", e);
         }
-      } catch (err) {
-        console.warn("[PushNotifications] Could not register push notifications:", err);
       }
     }
 
-    setupNotifications();
+    initChannels();
+
+    // Register token if user is authenticated
+    if (user?.id) {
+      registerCustomerPushToken().catch(() => {});
+    }
+
+    // Re-register when app comes back to foreground
+    const appStateSub = AppState.addEventListener("change", (nextState: AppStateStatus) => {
+      if (nextState === "active" && useAuthStore.getState().user?.id) {
+        registerCustomerPushToken().catch(() => {});
+      }
+    });
 
     try {
       notificationListener.current = notif.addNotificationReceivedListener((notification: any) => {
@@ -121,7 +146,7 @@ export function usePushNotifications() {
         try {
           const data = response?.notification?.request?.content?.data;
 
-          // Report notification open to backend for audit & analytics (T4)
+          // Report notification open to backend for audit & analytics
           if (data?.logId) {
             import("../api/client").then(({ apiClient }) => {
               apiClient.post("/api/mobile/notifications/open", { logId: data.logId }).catch(() => {});
@@ -138,7 +163,6 @@ export function usePushNotifications() {
             return;
           }
 
-          // Handle PRD T5 deep link targets
           const target = data?.target || "";
           if (target === "cart") {
             router.push("/cart" as Parameters<typeof router.push>[0]);
@@ -151,26 +175,14 @@ export function usePushNotifications() {
           } else if (target.startsWith("order:")) {
             const ordId = target.replace(/^order:/, "").trim();
             router.push(`/order/${ordId}` as Parameters<typeof router.push>[0]);
-          } else if (target === "offers") {
-            router.push("/" as Parameters<typeof router.push>[0]);
-          } else if (data?.orderId) {
-            const cleanOrderId = String(data.orderId).replace(/^[#\s]+/, "").trim();
+          } else if (data?.orderId || data?.id) {
+            const rawOrderId = data.orderId || data.id;
+            const cleanOrderId = String(rawOrderId).replace(/^[#\s]+/, "").trim();
             router.push(`/order/${cleanOrderId}` as Parameters<typeof router.push>[0]);
           } else if (data?.productId) {
             router.push(`/product/${String(data.productId).trim()}` as Parameters<typeof router.push>[0]);
           } else if (data?.screen) {
             router.push(String(data.screen) as Parameters<typeof router.push>[0]);
-          } else if (data?.link && typeof data.link === "string") {
-            const cleanLink = data.link.trim();
-            const orderMatch = cleanLink.match(/\/orders?\/([a-zA-Z0-9_-]+)/i);
-            const prodMatch = cleanLink.match(/\/products?\/([a-zA-Z0-9_-]+)/i);
-            if (orderMatch && orderMatch[1]) {
-              router.push(`/order/${orderMatch[1]}` as Parameters<typeof router.push>[0]);
-            } else if (prodMatch && prodMatch[1]) {
-              router.push(`/product/${prodMatch[1]}` as Parameters<typeof router.push>[0]);
-            } else {
-              router.push("/notifications" as Parameters<typeof router.push>[0]);
-            }
           } else {
             router.push("/" as Parameters<typeof router.push>[0]);
           }
@@ -183,15 +195,12 @@ export function usePushNotifications() {
     }
 
     return () => {
-      try {
-        if (notificationListener.current) {
-          notificationListener.current.remove();
-        }
-        if (responseListener.current) {
-          responseListener.current.remove();
-        }
-      } catch {
-        // safe cleanup
+      appStateSub.remove();
+      if (notificationListener.current) {
+        notificationListener.current.remove();
+      }
+      if (responseListener.current) {
+        responseListener.current.remove();
       }
     };
   }, [user?.id, router]);

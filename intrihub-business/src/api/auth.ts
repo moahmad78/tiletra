@@ -1,4 +1,4 @@
-import { apiClient, setStoredTokens, clearStoredTokens } from "./client";
+import { apiClient, setStoredTokens, clearStoredTokens, getStoredAccessToken } from "./client";
 import { User } from "../types";
 
 export interface AuthResponse {
@@ -142,6 +142,10 @@ export async function loginWithGoogle(params: {
 }
 
 export async function logout(): Promise<void> {
+  try {
+    const { unregisterDevicePushToken } = await import("../hooks/usePushNotifications");
+    await unregisterDevicePushToken().catch(() => {});
+  } catch {}
   await clearStoredTokens();
 }
 
@@ -162,12 +166,18 @@ export async function uploadBusinessImage(
     } as any);
 
     const baseURL = apiClient.defaults.baseURL || "https://www.intrihub.com";
+    const token = await getStoredAccessToken();
+    const headers: Record<string, string> = {
+      Accept: "application/json",
+    };
+    if (token) {
+      headers["Authorization"] = `Bearer ${token}`;
+    }
+
     const res = await fetch(`${baseURL}/api/upload`, {
       method: "POST",
       body: formData,
-      headers: {
-        Accept: "application/json",
-      },
+      headers,
     });
 
     const data = await res.json();
@@ -178,7 +188,50 @@ export async function uploadBusinessImage(
     return { success: false, error: data.error || "Upload failed" };
   } catch (err: any) {
     console.error("uploadBusinessImage error:", err);
-    return { success: false, error: err.message || "Failed to upload image" };
+    return { success: false, error: err?.message || "Failed to upload image" };
+  }
+}
+
+export async function uploadBusinessDocument(
+  uri: string,
+  fileName?: string,
+  mimeType?: string
+): Promise<{ success: boolean; url?: string; error?: string }> {
+  try {
+    const formData = new FormData();
+    const cleanName = fileName || `kyc-doc-${Date.now()}.pdf`;
+    const cleanType = mimeType || "application/pdf";
+
+    formData.append("file", {
+      uri,
+      name: cleanName,
+      type: cleanType,
+    } as any);
+
+    const baseURL = apiClient.defaults.baseURL || "https://www.intrihub.com";
+    const token = await getStoredAccessToken();
+    const headers: Record<string, string> = {
+      Accept: "application/json",
+    };
+    if (token) {
+      headers["Authorization"] = `Bearer ${token}`;
+    }
+
+    const res = await fetch(`${baseURL}/api/upload`, {
+      method: "POST",
+      body: formData,
+      headers,
+    });
+
+    const data = await res.json();
+    if (res.ok && data.success) {
+      const fullUrl = data.url.startsWith("http") ? data.url : `${baseURL}${data.url}`;
+      return { success: true, url: fullUrl };
+    }
+    return { success: false, error: data.error || "Document upload failed" };
+  } catch (err: any) {
+    console.error("uploadBusinessDocument error:", err);
+    return { success: false, error: err?.message || "Failed to upload document" };
   }
 }
 
@@ -205,3 +258,4 @@ export async function resetAuthLockout(email?: string): Promise<{ success: boole
   );
   return res.data;
 }
+

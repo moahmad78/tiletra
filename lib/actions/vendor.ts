@@ -1232,12 +1232,12 @@ export async function getVendorOrders(vendorId?: string) {
           ? split.vendorPayoutAmount
           : Number((split.subtotal - commissionAmount).toFixed(2));
 
-      // Security & Privacy Masking: Never expose raw customer contact numbers or emails to vendor
+      // Customer contact phone for order fulfillment & delivery coordination
       const rawCustomerPhone = parent?.deliveryPhone || parent?.customerPhone || "";
       const cleanDigits = rawCustomerPhone.replace(/\D/g, "");
-      const maskedCustomerPhone = cleanDigits.length >= 10
-        ? `+91 ${cleanDigits.slice(-10, -5)} •••••`
-        : (rawCustomerPhone ? "••••••••••" : "");
+      const formattedCustomerPhone = cleanDigits.length >= 10
+        ? `+91 ${cleanDigits.slice(-10, -5)} ${cleanDigits.slice(-5)}`
+        : (rawCustomerPhone || "");
 
       const rawCustomerEmail = parent?.customerEmail || "";
       const maskedCustomerEmail = rawCustomerEmail.includes("@")
@@ -1262,7 +1262,7 @@ export async function getVendorOrders(vendorId?: string) {
         riderPhone: parent?.deliveryPartner?.phone || null,
         vehicleType: split.vehicleType || "bike",
         customerName: parent?.deliveryName || parent?.customerName || "Customer",
-        customerPhone: maskedCustomerPhone,
+        customerPhone: formattedCustomerPhone,
         deliveryAddress:
           parent?.deliveryAddress ||
           (typeof parent?.shippingAddress === "object"
@@ -1278,7 +1278,7 @@ export async function getVendorOrders(vendorId?: string) {
         parentOrder: parent
           ? {
               customerName: parent.deliveryName || parent.customerName,
-              customerPhone: maskedCustomerPhone,
+              customerPhone: formattedCustomerPhone,
               customerEmail: maskedCustomerEmail,
               shippingAddress: parent.shippingAddress,
               paymentStatus: parent.paymentStatus,

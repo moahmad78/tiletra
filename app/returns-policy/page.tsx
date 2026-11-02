@@ -1,4 +1,33 @@
-"use client";
+import { Metadata } from "next";
+import JsonLd from "@/components/JsonLd";
+import { generateBreadcrumbSchema } from "@/lib/seo";
+
+export const metadata: Metadata = {
+  title: "Returns & Replacement Policy | IntriHub Buyer Protection",
+  description: "Read IntriHub hassle-free 7-day return and instant transit damage replacement policy for tiles, electrical, plumbing, and building materials.",
+  alternates: {
+    canonical: "https://www.intrihub.com/returns-policy",
+  },
+  openGraph: {
+    title: "Returns & Replacement Policy | IntriHub Buyer Protection",
+    description: "Read IntriHub hassle-free 7-day return and instant transit damage replacement policy for tiles, electrical, plumbing, and building materials.",
+    url: "https://www.intrihub.com/returns-policy",
+    type: "website",
+    siteName: "IntriHub",
+    images: [{ url: "https://www.intrihub.com/images/intrihub-og-image.jpg", width: 1200, height: 630, alt: "IntriHub Returns Policy" }],
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: "Returns & Replacement Policy | IntriHub Buyer Protection",
+    description: "Read IntriHub hassle-free 7-day return and instant transit damage replacement policy for tiles, electrical, plumbing, and building materials.",
+    images: ["https://www.intrihub.com/images/intrihub-og-image.jpg"],
+  },
+};
+
+const breadcrumbSchema = generateBreadcrumbSchema([
+  { name: "Home", url: "/" },
+  { name: "Returns Policy", url: "/returns-policy" },
+]);
 
 import React from "react";
 import Link from "next/link";
@@ -16,7 +45,9 @@ const RETURNS_SECTIONS = [
 
 export default function ReturnsPolicyPage() {
   return (
-    <PolicyLayout
+    <>
+      <JsonLd schema={breadcrumbSchema} />
+      <PolicyLayout
       currentTab="returns"
       title="Returns & Replacement Policy"
       categoryTag="Customer Protection"
@@ -123,5 +154,6 @@ export default function ReturnsPolicyPage() {
         </a>
       </div>
     </PolicyLayout>
+    </>
   );
 }

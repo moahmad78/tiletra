@@ -40,6 +40,13 @@ import { useTranslation } from "../../src/store/i18nStore";
 import { socketService } from "../../src/store/socketStore";
 import RotatingOrderItemImage from "../../src/components/RotatingOrderItemImage";
 
+const STATUS_OPTIONS = [
+  { label: "Confirmed", value: "confirmed" },
+  { label: "Ready for Pickup", value: "ready_for_pickup" },
+  { label: "Dispatched", value: "dispatched" },
+  { label: "Delivered", value: "delivered" },
+];
+
 const getCleanPhone = (phone?: string | null) => {
   if (!phone) return "";
   const str = String(phone).trim();
@@ -141,6 +148,31 @@ export default function VendorOrdersScreen() {
     setModalVisible(true);
   };
 
+  const handleSelectStatus = (opt: { label: string; value: string }) => {
+    setNewStatus(opt.value);
+    if (opt.value === "dispatched") {
+      return; // Dispatched requires courier & tracking details
+    }
+    if (selectedSplit && opt.value !== selectedSplit.fulfillmentStatus) {
+      Alert.alert(
+        "Update Order Status",
+        `Change Order #${selectedSplit.orderId} to "${opt.label}"?`,
+        [
+          { text: "Cancel", style: "cancel" },
+          {
+            text: "Update Now",
+            onPress: () => {
+              updateStatusMutation.mutate({
+                splitId: selectedSplit.splitId,
+                status: opt.value,
+              });
+            },
+          },
+        ]
+      );
+    }
+  };
+
   const handleSaveStatus = () => {
     if (!selectedSplit) return;
     updateStatusMutation.mutate({
@@ -157,18 +189,33 @@ export default function VendorOrdersScreen() {
     return (
       <View style={styles.orderCard}>
         <View style={styles.cardHeader}>
-          <View>
-            <Text style={styles.orderId}>Order #{item.orderId}</Text>
-            <Text style={styles.customerName}>{item.customerName}</Text>
+          <View style={styles.cardHeaderLeft}>
+            <Text style={styles.orderId} numberOfLines={1}>Order #{item.orderId}</Text>
+            <Text style={styles.customerName} numberOfLines={1}>{item.customerName}</Text>
             {getCleanPhone(item.customerPhone) ? (
-              <Text style={styles.customerPhone}>Phone: +91 {getCleanPhone(item.customerPhone)}</Text>
+              <Text style={styles.customerPhone} numberOfLines={1}>
+                Phone: +91 {getCleanPhone(item.customerPhone).slice(0, 5)} {getCleanPhone(item.customerPhone).slice(5)}
+              </Text>
             ) : null}
           </View>
-          <View style={[styles.statusBadge, getStatusStyle(item.fulfillmentStatus)]}>
-            <Text style={styles.statusBadgeText}>
-              {item.fulfillmentStatus.replace(/_/g, " ").toUpperCase()}
-            </Text>
-          </View>
+          {(() => {
+            const statusInfo = getFulfillmentStatusInfo(item.fulfillmentStatus);
+            return (
+              <View
+                style={[
+                  styles.statusBadge,
+                  {
+                    backgroundColor: statusInfo.bg,
+                    borderColor: statusInfo.border,
+                  },
+                ]}
+              >
+                <Text style={[styles.statusBadgeText, { color: statusInfo.textColor }]} numberOfLines={1}>
+                  {statusInfo.label}
+                </Text>
+              </View>
+            );
+          })()}
         </View>
 
         <View style={styles.detailsRow}>
@@ -276,7 +323,7 @@ export default function VendorOrdersScreen() {
 
       {/* Status Filter Tabs */}
       <View style={styles.tabsWrapper}>
-        {["all", "pending", "confirmed", "dispatched", "delivered"].map((tab) => (
+        {["all", "pending", "confirmed", "ready", "dispatched", "delivered"].map((tab) => (
           <TouchableOpacity
             key={tab}
             style={[styles.tabChip, statusFilter === tab && styles.tabChipActive]}
@@ -318,40 +365,47 @@ export default function VendorOrdersScreen() {
       <Modal visible={modalVisible} transparent animationType="slide">
         <View style={styles.modalOverlay}>
           <View style={styles.modalContent}>
-            <View style={styles.modalHeader}>
-              <Text style={styles.modalTitle}>Update Fulfillment Status</Text>
-              <TouchableOpacity onPress={() => setModalVisible(false)}>
-                <X size={20} color={COLORS.textSecondary} />
-              </TouchableOpacity>
-            </View>
-
-            <Text style={styles.label}>Select Status</Text>
-            <View style={styles.statusOptions}>
-              {[
-                { label: "Confirmed", value: "confirmed" },
-                { label: "Ready for Pickup", value: "ready_for_pickup" },
-                { label: "Dispatched", value: "dispatched" },
-                { label: "Delivered", value: "delivered" },
-              ].map((opt) => (
-                <TouchableOpacity
-                  key={opt.value}
-                  style={[
-                    styles.statusOptionBtn,
-                    newStatus === opt.value && styles.statusOptionBtnActive,
-                  ]}
-                  onPress={() => setNewStatus(opt.value)}
-                >
-                  <Text
-                    style={[
-                      styles.statusOptionText,
-                      newStatus === opt.value && styles.statusOptionTextActive,
-                    ]}
-                  >
-                    {opt.label}
-                  </Text>
+            <ScrollView
+              showsVerticalScrollIndicator={false}
+              keyboardShouldPersistTaps="handled"
+              contentContainerStyle={{ paddingBottom: 24 }}
+            >
+              <View style={styles.modalHeader}>
+                <View style={{ flex: 1 }}>
+                  <Text style={styles.modalTitle}>Update Fulfillment Status</Text>
+                  {selectedSplit ? (
+                    <Text style={{ fontSize: 12, color: COLORS.textSecondary, marginTop: 2 }}>
+                      Order #{selectedSplit.orderId} (Current: {(selectedSplit.fulfillmentStatus || "").toUpperCase().replace(/_/g, " ")})
+                    </Text>
+                  ) : null}
+                </View>
+                <TouchableOpacity onPress={() => setModalVisible(false)} hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}>
+                  <X size={20} color={COLORS.textSecondary} />
                 </TouchableOpacity>
-              ))}
-            </View>
+              </View>
+
+              <Text style={styles.label}>Select Status (Tap to Change)</Text>
+              <View style={styles.statusOptions}>
+                {STATUS_OPTIONS.map((opt) => (
+                  <TouchableOpacity
+                    key={opt.value}
+                    style={[
+                      styles.statusOptionBtn,
+                      newStatus === opt.value && styles.statusOptionBtnActive,
+                    ]}
+                    onPress={() => handleSelectStatus(opt)}
+                  >
+                    <Text
+                      style={[
+                        styles.statusOptionText,
+                        newStatus === opt.value && styles.statusOptionTextActive,
+                      ]}
+                    >
+                      {opt.label}
+                    </Text>
+                  </TouchableOpacity>
+                ))}
+              </View>
 
             {newStatus === "dispatched" ? (
               <View style={styles.dispatchFields}>
@@ -426,17 +480,27 @@ export default function VendorOrdersScreen() {
               </View>
             ) : null}
 
-            <TouchableOpacity
-              style={styles.modalSaveBtn}
-              onPress={handleSaveStatus}
-              disabled={updateStatusMutation.isPending}
-            >
-              {updateStatusMutation.isPending ? (
-                <ActivityIndicator size="small" color="#fff" />
-              ) : (
-                <Text style={styles.modalSaveBtnText}>Save Status Update</Text>
-              )}
-            </TouchableOpacity>
+              <TouchableOpacity
+                style={[
+                  styles.modalSaveBtn,
+                  updateStatusMutation.isPending && { opacity: 0.7 },
+                ]}
+                onPress={handleSaveStatus}
+                disabled={updateStatusMutation.isPending}
+              >
+                {updateStatusMutation.isPending ? (
+                  <ActivityIndicator size="small" color="#fff" />
+                ) : (
+                  <Text style={styles.modalSaveBtnText}>
+                    {newStatus === "dispatched"
+                      ? "Confirm & Dispatch Order"
+                      : newStatus === selectedSplit?.fulfillmentStatus
+                      ? `Order is ${STATUS_OPTIONS.find((s) => s.value === newStatus)?.label || newStatus}`
+                      : `Save as "${STATUS_OPTIONS.find((s) => s.value === newStatus)?.label || newStatus}"`}
+                  </Text>
+                )}
+              </TouchableOpacity>
+            </ScrollView>
           </View>
         </View>
       </Modal>
@@ -444,18 +508,77 @@ export default function VendorOrdersScreen() {
   );
 }
 
-function getStatusStyle(status?: string) {
-  switch (status) {
-    case "confirmed":
-      return { backgroundColor: "rgba(37, 99, 235, 0.12)" };
-    case "ready_for_pickup":
-    case "dispatched":
-      return { backgroundColor: "rgba(245, 158, 11, 0.12)" };
-    case "delivered":
-      return { backgroundColor: "rgba(16, 185, 129, 0.12)" };
-    default:
-      return { backgroundColor: "rgba(148, 163, 184, 0.15)" };
+function getFulfillmentStatusInfo(status?: string) {
+  const s = (status || "").toLowerCase().trim();
+
+  // Ready for pickup -> Compact single word "READY"
+  if (s.includes("ready")) {
+    return {
+      label: "READY",
+      bg: "#FEF3C7",
+      textColor: "#B45309",
+      border: "#FDE68A",
+    };
   }
+
+  // Pending vendor approval / awaiting vendor -> Compact single word "PENDING"
+  if (s.includes("pending") || s.includes("awaiting")) {
+    return {
+      label: "PENDING",
+      bg: "#EFF6FF",
+      textColor: "#1D4ED8",
+      border: "#BFDBFE",
+    };
+  }
+
+  // Confirmed / accepted / processing
+  if (s === "confirmed" || s === "accepted" || s === "processing") {
+    return {
+      label: "CONFIRMED",
+      bg: "#F0FDF4",
+      textColor: "#15803D",
+      border: "#BBF7D0",
+    };
+  }
+
+  // Dispatched / out for delivery / picked up
+  if (s === "dispatched" || s === "picked_up" || s.includes("delivery") || s.includes("transit")) {
+    return {
+      label: "DISPATCHED",
+      bg: "#F5F3FF",
+      textColor: "#6D28D9",
+      border: "#DDD6FE",
+    };
+  }
+
+  // Delivered
+  if (s === "delivered") {
+    return {
+      label: "DELIVERED",
+      bg: "#DCFCE7",
+      textColor: "#166534",
+      border: "#86EFAC",
+    };
+  }
+
+  // Cancelled / rejected
+  if (s === "cancelled" || s === "rejected") {
+    return {
+      label: "CANCELLED",
+      bg: "#FEE2E2",
+      textColor: "#B91C1C",
+      border: "#FECACA",
+    };
+  }
+
+  // Safe fallback (single word, max 10 chars)
+  const cleanWord = (s.split("_")[0] || "PENDING").slice(0, 10).toUpperCase();
+  return {
+    label: cleanWord,
+    bg: "#F1F5F9",
+    textColor: "#475569",
+    border: "#E2E8F0",
+  };
 }
 
 const styles = StyleSheet.create({
@@ -541,7 +664,8 @@ const styles = StyleSheet.create({
   },
   listContent: {
     padding: SPACING.lg,
-    paddingBottom: 40,
+    paddingBottom: 20,
+    maxHeight: "88%",
   },
   orderCard: {
     backgroundColor: COLORS.surface,
@@ -550,15 +674,21 @@ const styles = StyleSheet.create({
     marginBottom: SPACING.md,
     borderWidth: 1,
     borderColor: COLORS.border,
+    overflow: "hidden",
     ...SHADOWS.sm,
   },
   cardHeader: {
     flexDirection: "row",
     justifyContent: "space-between",
-    alignItems: "flex-start",
+    alignItems: "center",
     borderBottomWidth: 1,
     borderBottomColor: COLORS.borderLight,
     paddingBottom: SPACING.sm,
+    gap: 8,
+  },
+  cardHeaderLeft: {
+    flex: 1,
+    paddingRight: 6,
   },
   orderId: {
     fontSize: 15,
@@ -578,13 +708,16 @@ const styles = StyleSheet.create({
   },
   statusBadge: {
     paddingHorizontal: 8,
-    paddingVertical: 4,
-    borderRadius: RADIUS.sm,
+    paddingVertical: 3,
+    borderRadius: RADIUS.full,
+    borderWidth: 1,
+    flexShrink: 0,
+    alignSelf: "center",
   },
   statusBadgeText: {
     fontSize: 10,
     fontWeight: "800",
-    color: COLORS.primary,
+    letterSpacing: 0.3,
   },
   detailsRow: {
     flexDirection: "row",

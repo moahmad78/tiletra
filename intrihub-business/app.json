@@ -3,7 +3,7 @@
     "name": "Intrihub Business",
     "slug": "intrihub-business",
     "owner": "sahil_sheikh78",
-    "version": "1.0.28",
+    "version": "1.0.33",
     "orientation": "portrait",
     "icon": "./assets/icon.png",
     "scheme": "intrihub-biz",
@@ -17,7 +17,7 @@
     "ios": {
       "supportsTablet": false,
       "bundleIdentifier": "com.intrihub.business",
-      "buildNumber": "36",
+      "buildNumber": "39",
       "config": {
         "usesNonExemptEncryption": false
       },
@@ -37,7 +37,7 @@
     },
     "android": {
       "package": "com.intrihub.business",
-      "versionCode": 36,
+      "versionCode": 41,
       "blockedPermissions": [
         "android.permission.READ_MEDIA_IMAGES",
         "android.permission.READ_MEDIA_VIDEO",
@@ -95,7 +95,7 @@
         "expo-notifications",
         {
           "icon": "./assets/notification-icon.png",
-          "color": "#052A51",
+          "color": "#F26522",
           "sounds": [
             "./assets/sounds/ring.mp3"
           ]

@@ -23,6 +23,12 @@ export const metadata: Metadata = {
     type: "website",
     siteName: "IntriHub",
   },
+  twitter: {
+    card: "summary_large_image",
+    title: "Frequently Asked Questions | IntriHub",
+    description: "Everything you need to know about factory-direct procurement, 60-minute site delivery in Bengaluru, and transit damage protection.",
+    images: ["https://www.intrihub.com/images/intrihub-og-image.jpg"],
+  },
 };
 
 export default function FAQPage() {

@@ -31,6 +31,24 @@ export interface Vendor {
   ordersCount?: number;
   stats?: any;
   plainPassword?: string;
+  // Bank Details
+  bankAccountHolder?: string | null;
+  bankName?: string | null;
+  bankAccountNumber?: string | null;
+  bankIfscCode?: string | null;
+  bankUpiId?: string | null;
+  // KYC Legal Documents & Shopfront
+  shopPhotoUrl?: string | null;
+  panNumber?: string | null;
+  panDocUrl?: string | null;
+  aadharNumber?: string | null;
+  aadharDocUrl?: string | null;
+  gstNumber?: string | null;
+  gstDocUrl?: string | null;
+  chequeDocUrl?: string | null;
+  tradeLicenseDocUrl?: string | null;
+  kycStatus?: "pending" | "submitted" | "verified" | "rejected" | string | null;
+  kycNotes?: string | null;
   createdAt?: string;
 }
 
@@ -74,6 +92,21 @@ export interface Product {
   lowStockAlert?: number;
   warrantyDuration?: string;
   returnPolicyDays?: number;
+  manufacturer?: string;
+  condition?: string;
+  minOrderQuantity?: number;
+  maxOrderQuantity?: number;
+  costPrice?: number;
+  buyRate?: number;
+  dispatchLeadTime?: string;
+  warrantyType?: string;
+  isFragile?: boolean;
+  isBestseller?: boolean;
+  isTrending?: boolean;
+  isNewArrival?: boolean;
+  highlights?: string[];
+  keywords?: string[];
+  specs?: any;
   hasVariants?: boolean;
   variants?: any[];
   attributes?: Array<{ id?: string; key: string; value: string }>;
@@ -137,6 +170,24 @@ export interface VendorDashboardData {
     longitude?: number | null;
     autoAcceptOrders?: boolean;
     isOnline?: boolean;
+    // Bank Details
+    bankAccountHolder?: string | null;
+    bankName?: string | null;
+    bankAccountNumber?: string | null;
+    bankIfscCode?: string | null;
+    bankUpiId?: string | null;
+    // KYC Documents
+    shopPhotoUrl?: string | null;
+    panNumber?: string | null;
+    panDocUrl?: string | null;
+    aadharNumber?: string | null;
+    aadharDocUrl?: string | null;
+    gstNumber?: string | null;
+    gstDocUrl?: string | null;
+    chequeDocUrl?: string | null;
+    tradeLicenseDocUrl?: string | null;
+    kycStatus?: "pending" | "submitted" | "verified" | "rejected" | string | null;
+    kycNotes?: string | null;
   };
   stats: {
     totalRevenue: number;
@@ -153,7 +204,7 @@ export interface VendorDashboardData {
 }
 
 export interface VendorEarningsData {
-  vendor: {
+  vendor?: {
     id: string;
     businessName: string;
     commissionRate: number;
@@ -161,14 +212,14 @@ export interface VendorEarningsData {
     bankAccountNumber?: string;
     bankIfsc?: string;
   };
-  summary: {
+  summary?: {
     totalRevenue: number;
     totalPayoutAmount: number;
     pendingPayoutAmount: number;
     completedPayoutAmount: number;
     totalPlatformFee: number;
   };
-  payouts: Array<{
+  payouts?: Array<{
     id: string;
     orderId: string;
     subtotal: number;
@@ -179,6 +230,14 @@ export interface VendorEarningsData {
     payoutDate?: string;
     createdAt: string;
   }>;
+  totalEarnings?: number;
+  readyForPayoutAmount?: number;
+  inProgressEstimatedPayout?: number;
+  lifetimePaidOut?: number;
+  unsettledSplitsCount?: number;
+  inProgressCount?: number;
+  payoutHistory?: Array<any>;
+  trend?: Array<{ label: string; amount: number }>;
 }
 
 export interface AdminDashboardData {

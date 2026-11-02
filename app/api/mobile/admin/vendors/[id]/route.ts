@@ -148,12 +148,33 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
     if (gstNumber !== undefined) data.gstNumber = String(gstNumber).trim();
     if (status !== undefined) data.status = status;
     if (commissionRate !== undefined) data.commissionRate = Number(commissionRate);
-    if (verified !== undefined) data.kycStatus = verified ? "verified" : "pending";
+    if (body.kycStatus !== undefined) {
+      data.kycStatus = body.kycStatus;
+      if (body.kycStatus === "verified") {
+        data.status = "approved";
+      }
+    } else if (verified !== undefined) {
+      data.kycStatus = verified ? "verified" : "pending";
+    }
+    if (body.kycNotes !== undefined) data.kycNotes = body.kycNotes ? String(body.kycNotes).trim() : null;
     if (deliveryMethod !== undefined) data.deliveryMethod = deliveryMethod;
     if (autoPublishEnabled !== undefined) data.autoPublishEnabled = Boolean(autoPublishEnabled);
     if (ownerId !== undefined) data.ownerId = ownerId;
     if (body.logo !== undefined) data.logo = body.logo ? String(body.logo).trim() : null;
     if (body.shopPhotoUrl !== undefined) data.shopPhotoUrl = body.shopPhotoUrl ? String(body.shopPhotoUrl).trim() : null;
+
+    // Bank & Document Fields
+    if (body.bankAccountHolder !== undefined) data.bankAccountHolder = body.bankAccountHolder ? String(body.bankAccountHolder).trim() : null;
+    if (body.bankName !== undefined) data.bankName = body.bankName ? String(body.bankName).trim() : null;
+    if (body.bankAccountNumber !== undefined) data.bankAccountNumber = body.bankAccountNumber ? String(body.bankAccountNumber).trim().replace(/\s/g, "") : null;
+    if (body.bankIfscCode !== undefined) data.bankIfscCode = body.bankIfscCode ? String(body.bankIfscCode).trim().toUpperCase() : null;
+    if (body.bankUpiId !== undefined) data.bankUpiId = body.bankUpiId ? String(body.bankUpiId).trim() : null;
+    if (body.panNumber !== undefined) data.panNumber = body.panNumber ? String(body.panNumber).trim().toUpperCase() : null;
+    if (body.panDocUrl !== undefined) data.panDocUrl = body.panDocUrl ? String(body.panDocUrl).trim() : null;
+    if (body.aadharNumber !== undefined) data.aadharNumber = body.aadharNumber ? String(body.aadharNumber).trim().replace(/\D/g, "") : null;
+    if (body.aadharDocUrl !== undefined) data.aadharDocUrl = body.aadharDocUrl ? String(body.aadharDocUrl).trim() : null;
+    if (body.gstDocUrl !== undefined) data.gstDocUrl = body.gstDocUrl ? String(body.gstDocUrl).trim() : null;
+    if (body.chequeDocUrl !== undefined) data.chequeDocUrl = body.chequeDocUrl ? String(body.chequeDocUrl).trim() : null;
 
     let hashedPassword: string | null | undefined = undefined;
 

@@ -120,9 +120,8 @@ app.post('/emit', (req, res) => {
     console.log(`[EMIT TRIGGER] Event: "${event}"`, targetRooms.size > 0 ? `Target Rooms: [${Array.from(targetRooms).join(', ')}]` : 'Broadcast to all');
 
     if (targetRooms.size > 0) {
-      targetRooms.forEach((r) => {
-        io.to(r).emit(event, data);
-      });
+      const roomList = Array.from(targetRooms);
+      io.to(roomList).emit(event, data);
     } else {
       io.emit(event, data);
     }

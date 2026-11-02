@@ -118,15 +118,6 @@ export const metadata: Metadata = {
     url: true,
   },
   category: "Building & Construction Materials",
-  alternates: {
-    canonical: "https://www.intrihub.com/",
-    languages: {
-      "en": "https://www.intrihub.com/",
-      "hi": "https://www.intrihub.com/?lang=hi",
-      "kn": "https://www.intrihub.com/?lang=kn",
-      "x-default": "https://www.intrihub.com/",
-    },
-  },
   robots: {
     index: true,
     follow: true,

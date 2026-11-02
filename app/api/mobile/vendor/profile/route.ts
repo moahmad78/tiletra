@@ -48,6 +48,24 @@ export async function GET(req: NextRequest) {
         // F3: Automation
         autoAcceptOrders: vendor.autoAcceptOrders,
         serviceAreaRadiusKm: vendor.serviceAreaRadiusKm,
+        // Bank Details
+        bankAccountHolder: vendor.bankAccountHolder,
+        bankName: vendor.bankName,
+        bankAccountNumber: vendor.bankAccountNumber,
+        bankIfscCode: vendor.bankIfscCode,
+        bankUpiId: vendor.bankUpiId,
+        // KYC Documents
+        shopPhotoUrl: vendor.shopPhotoUrl,
+        panNumber: vendor.panNumber,
+        panDocUrl: vendor.panDocUrl,
+        aadharNumber: vendor.aadharNumber,
+        aadharDocUrl: vendor.aadharDocUrl,
+        gstNumber: vendor.gstNumber,
+        gstDocUrl: vendor.gstDocUrl,
+        chequeDocUrl: vendor.chequeDocUrl,
+        tradeLicenseDocUrl: vendor.tradeLicenseDocUrl,
+        kycStatus: vendor.kycStatus || "pending",
+        kycNotes: vendor.kycNotes,
       },
     });
   } catch (error: any) {
@@ -91,6 +109,22 @@ export async function PATCH(req: NextRequest) {
       description,
       logo,
       shopPhotoUrl,
+      // Bank Details
+      bankAccountHolder,
+      bankName,
+      bankAccountNumber,
+      bankIfscCode,
+      bankUpiId,
+      // KYC Fields
+      panNumber,
+      panDocUrl,
+      aadharNumber,
+      aadharDocUrl,
+      gstNumber,
+      gstDocUrl,
+      chequeDocUrl,
+      tradeLicenseDocUrl,
+      kycStatus,
     } = body;
 
     let cleanPhone: string | undefined = undefined;
@@ -118,6 +152,33 @@ export async function PATCH(req: NextRequest) {
     if (description !== undefined) updateData.description = String(description).trim();
     if (logo !== undefined) updateData.logo = logo ? String(logo).trim() : null;
     if (shopPhotoUrl !== undefined) updateData.shopPhotoUrl = shopPhotoUrl ? String(shopPhotoUrl).trim() : null;
+
+    // Bank Details
+    if (bankAccountHolder !== undefined) updateData.bankAccountHolder = bankAccountHolder ? String(bankAccountHolder).trim() : null;
+    if (bankName !== undefined) updateData.bankName = bankName ? String(bankName).trim() : null;
+    if (bankAccountNumber !== undefined) updateData.bankAccountNumber = bankAccountNumber ? String(bankAccountNumber).trim().replace(/\s/g, "") : null;
+    if (bankIfscCode !== undefined) updateData.bankIfscCode = bankIfscCode ? String(bankIfscCode).trim().toUpperCase() : null;
+    if (bankUpiId !== undefined) updateData.bankUpiId = bankUpiId ? String(bankUpiId).trim() : null;
+
+    // KYC Details & Legal Documents
+    if (panNumber !== undefined) updateData.panNumber = panNumber ? String(panNumber).trim().toUpperCase() : null;
+    if (panDocUrl !== undefined) updateData.panDocUrl = panDocUrl ? String(panDocUrl).trim() : null;
+    if (aadharNumber !== undefined) updateData.aadharNumber = aadharNumber ? String(aadharNumber).trim().replace(/\D/g, "") : null;
+    if (aadharDocUrl !== undefined) updateData.aadharDocUrl = aadharDocUrl ? String(aadharDocUrl).trim() : null;
+    if (gstNumber !== undefined) updateData.gstNumber = gstNumber ? String(gstNumber).trim().toUpperCase() : null;
+    if (gstDocUrl !== undefined) updateData.gstDocUrl = gstDocUrl ? String(gstDocUrl).trim() : null;
+    if (chequeDocUrl !== undefined) updateData.chequeDocUrl = chequeDocUrl ? String(chequeDocUrl).trim() : null;
+    if (tradeLicenseDocUrl !== undefined) updateData.tradeLicenseDocUrl = tradeLicenseDocUrl ? String(tradeLicenseDocUrl).trim() : null;
+
+    // Handle KYC Status update (if submitted explicitly, or if documents uploaded)
+    if (kycStatus !== undefined) {
+      updateData.kycStatus = kycStatus;
+    } else if (
+      (panDocUrl || aadharDocUrl || shopPhotoUrl || gstDocUrl || chequeDocUrl) &&
+      (vendor.kycStatus === "pending" || vendor.kycStatus === "rejected")
+    ) {
+      updateData.kycStatus = "submitted";
+    }
 
     // F1: GPS coordinate update from body
     const { latitude, longitude, locationAccuracy, autoAcceptOrders, serviceAreaRadiusKm } = body;

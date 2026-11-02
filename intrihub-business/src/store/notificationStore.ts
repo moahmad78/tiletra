@@ -27,88 +27,9 @@ export interface NotificationItem {
   createdAt?: number;
 }
 
-export const INITIAL_NOTIFICATIONS: NotificationItem[] = [
-  {
-    id: "notif-1",
-    type: "approval_required",
-    accentColor: "#EF4444",
-    badge: {
-      icon: "🔔",
-      text: "Urgent",
-      color: "#DC2626",
-    },
-    title: "Manual Order Approval Required!",
-    body: "Order #ORD-8493 (₹12,400) requires manual approval. Stock check needed.",
-    timestamp: "2m ago",
-    orderId: "ORD-8493",
-    amount: "₹12,400",
-    isRead: false,
-    actions: {
-      type: "two_buttons",
-      primaryText: "Accept",
-      secondaryText: "Reject",
-    },
-  },
-  {
-    id: "notif-2",
-    type: "auto_accepted",
-    accentColor: "#3B82F6",
-    title: "New Order Auto-Accepted!",
-    body: "Order #ORD-8492 (₹4,850) auto-confirmed from inventory. Ready to pack!",
-    timestamp: "5m ago",
-    orderId: "ORD-8492",
-    amount: "₹4,850",
-    isRead: false,
-    actions: {
-      type: "single_button",
-      primaryText: "View Order & Pack →",
-    },
-  },
-  {
-    id: "notif-3",
-    type: "unacknowledged",
-    accentColor: "#F97316",
-    iconOverlay: "bell",
-    title: "Order Unacknowledged",
-    body: "Order #ORD-8490 is not acknowledged. Please take action immediately.",
-    timestamp: "10m ago",
-    orderId: "ORD-8490",
-    isRead: false,
-    actions: {
-      type: "chevron",
-    },
-  },
-  {
-    id: "notif-4",
-    type: "sla_warning",
-    accentColor: "#EAB308",
-    iconOverlay: "clock",
-    title: "5 min to pack 📦",
-    body: "Order #ORD-8488 packing deadline approaching! Mark ready to avoid SLA breach.",
-    timestamp: "15m ago",
-    orderId: "ORD-8488",
-    isRead: false,
-    actions: {
-      type: "chevron",
-    },
-  },
-  {
-    id: "notif-5",
-    type: "rider_arrived",
-    accentColor: "#10B981",
-    iconOverlay: "user",
-    title: "Dispatch Rider Arrived",
-    body: "Rohit Kumar arrived at your store for pickup of Order #ORD-8485.",
-    timestamp: "25m ago",
-    orderId: "ORD-8485",
-    isRead: false,
-    actions: {
-      type: "chevron",
-    },
-  },
-];
+export const INITIAL_NOTIFICATIONS: NotificationItem[] = [];
 
-const STORAGE_KEY = "@intrihub_business_notifications_v2";
+const STORAGE_KEY = "@intrihub_business_notifications_v3";
 
 const persistNotifications = async (items: NotificationItem[]) => {
   try {
@@ -134,8 +55,8 @@ interface NotificationState {
 }
 
 export const useNotificationStore = create<NotificationState>((set, get) => ({
-  notifications: INITIAL_NOTIFICATIONS,
-  unreadCount: INITIAL_NOTIFICATIONS.filter((n) => !n.isRead).length,
+  notifications: [],
+  unreadCount: 0,
   shakeNonce: 0,
   isInitialized: false,
 
@@ -145,19 +66,42 @@ export const useNotificationStore = create<NotificationState>((set, get) => ({
       if (stored) {
         const parsed = JSON.parse(stored) as NotificationItem[];
         if (Array.isArray(parsed)) {
+          // Deduplicate by orderId or id and remove old dummy placeholder notifications
+          const seenOrders = new Set<string>();
+          const seenIds = new Set<string>();
+          const deduped: NotificationItem[] = [];
+
+          for (const n of parsed) {
+            // Filter out old mock items and old generic store notifications
+            if (["notif-1", "notif-2", "notif-3", "notif-4", "notif-5"].includes(n.id)) continue;
+            if (["ORD-8493", "ORD-8492", "ORD-8490", "ORD-8488", "ORD-8485"].includes(n.orderId || "")) continue;
+            if (n.title === "Store Notification") continue; // Purge old generic duplicate
+
+            const orderKey = n.orderId || (n.body && n.body.match(/ORD-[\w-]+/)?.[0]);
+            if (orderKey) {
+              if (seenOrders.has(orderKey)) continue;
+              seenOrders.add(orderKey);
+            }
+            if (n.id) {
+              if (seenIds.has(n.id)) continue;
+              seenIds.add(n.id);
+            }
+            deduped.push(n);
+          }
+
           set({
-            notifications: parsed,
-            unreadCount: parsed.filter((n) => !n.isRead).length,
+            notifications: deduped,
+            unreadCount: deduped.filter((n) => !n.isRead).length,
             isInitialized: true,
           });
+
+          persistNotifications(deduped);
           return;
         }
       }
-      // If nothing saved yet, seed with initial list
-      await persistNotifications(INITIAL_NOTIFICATIONS);
       set({
-        notifications: INITIAL_NOTIFICATIONS,
-        unreadCount: INITIAL_NOTIFICATIONS.filter((n) => !n.isRead).length,
+        notifications: [],
+        unreadCount: 0,
         isInitialized: true,
       });
     } catch {
@@ -195,14 +139,48 @@ export const useNotificationStore = create<NotificationState>((set, get) => ({
 
   addNotification: (item: Partial<NotificationItem>) => {
     const { notifications, shakeNonce } = get();
+
+    // 1. Deduplicate by order key (orderId or body match) to strictly guarantee 1 notification per order
+    const orderKey = item.orderId || (item.body && item.body.match(/ORD-[\w-]+/)?.[0]);
+    if (orderKey) {
+      const existingIdx = notifications.findIndex(
+        (n) =>
+          n.orderId === orderKey ||
+          n.id === `order-${orderKey}` ||
+          (n.body && n.body.includes(orderKey))
+      );
+      if (existingIdx !== -1) {
+        // Update existing notification without creating duplicate
+        const updated = [...notifications];
+        updated[existingIdx] = {
+          ...updated[existingIdx],
+          ...item,
+          id: updated[existingIdx].id,
+          orderId: orderKey,
+          title: item.title || updated[existingIdx].title || "New Order Received! 🛍️",
+          timestamp: "Just now",
+        };
+        const unread = updated.filter((n) => !n.isRead).length;
+        set({
+          notifications: updated,
+          unreadCount: unread,
+          shakeNonce: shakeNonce + 1,
+        });
+        persistNotifications(updated);
+        return;
+      }
+    }
+
+    const notifId = item.id || (orderKey ? `order-${orderKey}` : `notif-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`);
+
     const newNotif: NotificationItem = {
-      id: item.id || `notif-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`,
+      id: notifId,
       type: item.type || "general",
       accentColor: item.accentColor || "#3B82F6",
-      title: item.title || "New Business Notification",
+      title: item.title || (orderKey ? "New Order Received! 🛍️" : "New Business Notification"),
       body: item.body || "You have a new update in your store.",
       timestamp: item.timestamp || "Just now",
-      orderId: item.orderId,
+      orderId: orderKey,
       amount: item.amount,
       image: item.image,
       images: item.images,
@@ -213,8 +191,12 @@ export const useNotificationStore = create<NotificationState>((set, get) => ({
       createdAt: Date.now(),
     };
 
-    // Filter out if duplicate ID exists, prepend new notification
-    const filtered = notifications.filter((n) => n.id !== newNotif.id);
+    // Filter out if duplicate ID or matching orderKey exists, prepend new notification
+    const filtered = notifications.filter(
+      (n) =>
+        n.id !== newNotif.id &&
+        (!orderKey || (n.orderId !== orderKey && !n.body?.includes(orderKey)))
+    );
     const updated = [newNotif, ...filtered];
     const unread = updated.filter((n) => !n.isRead).length;
 

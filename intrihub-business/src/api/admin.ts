@@ -62,6 +62,16 @@ export async function updateAdminVendor(
     ownerId?: string;
     loginMethod?: "otp" | "password";
     password?: string;
+    kycStatus?: "pending" | "submitted" | "verified" | "rejected" | string;
+    kycNotes?: string;
+    shopPhotoUrl?: string;
+    bankAccountHolder?: string;
+    bankName?: string;
+    bankAccountNumber?: string;
+    bankIfscCode?: string;
+    bankUpiId?: string;
+    panNumber?: string;
+    aadharNumber?: string;
   }
 ): Promise<{
   success: boolean;

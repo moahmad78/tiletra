@@ -53,6 +53,12 @@ export const metadata: Metadata = {
       },
     ],
   },
+  twitter: {
+    card: "summary_large_image",
+    title: "About: Building & Interior Materials | IntriHub",
+    description: "India's instant building & interior materials marketplace. Factory-direct sourcing with fast site delivery.",
+    images: [`${BASE_SITE_URL}/about/hero-facility.jpg`],
+  },
 };
 
 export default function AboutPage() {

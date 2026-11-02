@@ -1038,12 +1038,6 @@ export async function createOrder(input: CreateOrderInput) {
           rooms: vendorRooms,
           data: vendorAlertData,
         });
-
-        await emitSocketEvent({
-          event: "order-alert",
-          rooms: vendorRooms,
-          data: vendorAlertData,
-        });
       }
     } catch (e) {
       console.error("Failed to emit socket new-order event:", e);

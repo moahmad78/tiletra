@@ -34,6 +34,12 @@ export const metadata: Metadata = {
     type: "website",
     siteName: "IntriHub",
   },
+  twitter: {
+    card: "summary_large_image",
+    title: "Pan-India Building Materials Delivery | IntriHub",
+    description: "IntriHub delivers construction & interior materials across India in 3-7 days, with 60-minute instant delivery in Bengaluru.",
+    images: ["https://www.intrihub.com/images/intrihub-og-image.jpg"],
+  },
 };
 
 const statesList = [

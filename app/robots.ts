@@ -27,8 +27,17 @@ export default function robots(): MetadataRoute.Robots {
     "/delete-account/",
     "/wishlist",
     "/wishlist/",
+    "/help",
+    "/help/",
+    "/help/*",
     "/search",
     "/search?*",
+    "/*?*sort=*",
+    "/*?*min_price=*",
+    "/*?*max_price=*",
+    "/*?*filter=*",
+    "/*?*page=*",
+    "/*?*category=*",
   ];
 
   const commonAllows = [
@@ -69,4 +78,3 @@ export default function robots(): MetadataRoute.Robots {
     sitemap: `${BASE_SITE_URL}/sitemap.xml`,
   };
 }
-

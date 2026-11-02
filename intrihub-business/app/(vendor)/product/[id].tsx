@@ -127,6 +127,24 @@ export default function EditProductScreen() {
   const [returnPolicyDays, setReturnPolicyDays] = useState("7");
   const [status, setStatus] = useState<"active" | "paused">("active");
 
+  // ── Extended CPO Parity Fields ──
+  const [buyRate, setBuyRate] = useState("");
+  const [manufacturer, setManufacturer] = useState("");
+  const [condition, setCondition] = useState<"New" | "Refurbished" | "Used">("New");
+  const [countryOfOrigin, setCountryOfOrigin] = useState("India");
+  const [dispatchLeadTime, setDispatchLeadTime] = useState("24 Hours");
+  const [warrantyType, setWarrantyType] = useState("Manufacturer Warranty");
+  const [isFragile, setIsFragile] = useState(false);
+  const [isBestseller, setIsBestseller] = useState(false);
+  const [isTrending, setIsTrending] = useState(false);
+  const [isNewArrival, setIsNewArrival] = useState(false);
+  const [minOrderQuantity, setMinOrderQuantity] = useState("1");
+  const [maxOrderQuantity, setMaxOrderQuantity] = useState("");
+  const [highlights, setHighlights] = useState<string[]>([]);
+  const [newHighlight, setNewHighlight] = useState("");
+  const [keywords, setKeywords] = useState<string[]>([]);
+  const [newKeyword, setNewKeyword] = useState("");
+
   // Media Management
   const [images, setImages] = useState<string[]>([]);
   const [primaryImageUrlInput, setPrimaryImageUrlInput] = useState("");
@@ -335,6 +353,37 @@ export default function EditProductScreen() {
     }
   };
 
+  const handlePickVariantImage = async (variantIdx: number) => {
+    try {
+      const result = await ImagePicker.launchImageLibraryAsync({
+        mediaTypes: ["images"],
+        allowsEditing: false,
+        quality: 0.8,
+      });
+
+      if (!result.canceled && result.assets?.[0]?.uri) {
+        const asset = result.assets[0];
+        setUploadingImage(true);
+        const uploadRes = await uploadBusinessImage(
+          asset.uri,
+          asset.fileName || `var-${variantIdx}-${Date.now()}.jpg`,
+          asset.mimeType || "image/jpeg"
+        );
+        setUploadingImage(false);
+
+        if (uploadRes.success && uploadRes.url) {
+          handleUpdateVariant(variantIdx, "image", uploadRes.url);
+          setImages((prev) => Array.from(new Set([...prev, uploadRes.url!])));
+        } else {
+          Alert.alert("Upload Error", uploadRes.error || "Failed to upload image");
+        }
+      }
+    } catch (e: any) {
+      setUploadingImage(false);
+      Alert.alert("Error", e?.message || "Failed to pick variant image");
+    }
+  };
+
   const handleAddImageUrl = () => {
     const url = primaryImageUrlInput.trim();
     if (!url) return;
@@ -426,6 +475,35 @@ export default function EditProductScreen() {
   };
 
   // Save Validation & Submit
+  // CPO Profit Margin Calculation
+  const saleNum = parseFloat(pricePerBox) || 0;
+  const buyNum = parseFloat(buyRate) || 0;
+  const marginAmt = saleNum - buyNum;
+  const marginPct = saleNum > 0 && buyNum > 0 ? Math.round((marginAmt / saleNum) * 100) : null;
+
+  const handleAddHighlight = () => {
+    if (!newHighlight.trim()) return;
+    setHighlights((prev) => [...prev, newHighlight.trim()]);
+    setNewHighlight("");
+  };
+
+  const handleRemoveHighlight = (idx: number) => {
+    setHighlights((prev) => prev.filter((_, i) => i !== idx));
+  };
+
+  const handleAddKeyword = () => {
+    if (!newKeyword.trim()) return;
+    const clean = newKeyword.trim().toLowerCase();
+    if (!keywords.includes(clean)) {
+      setKeywords((prev) => [...prev, clean]);
+    }
+    setNewKeyword("");
+  };
+
+  const handleRemoveKeyword = (tag: string) => {
+    setKeywords((prev) => prev.filter((k) => k !== tag));
+  };
+
   const handleSave = () => {
     if (!name.trim()) {
       Alert.alert("Validation Error", "Product title cannot be empty.");
@@ -494,6 +572,19 @@ export default function EditProductScreen() {
       hasVariants,
       variants: mappedVariants,
       attributes: cleanAttributes,
+      // Extended CPO Engine Fields
+      buyRate: parseFloat(buyRate) || undefined,
+      costPrice: parseFloat(buyRate) || undefined,
+      manufacturer: manufacturer.trim() || undefined,
+      condition,
+      countryOfOrigin,
+      dispatchLeadTime,
+      warrantyType,
+      isFragile,
+      minOrderQuantity: parseFloat(minOrderQuantity) || 1,
+      maxOrderQuantity: maxOrderQuantity ? parseFloat(maxOrderQuantity) : undefined,
+      highlights: highlights.filter(Boolean),
+      keywords: keywords.filter(Boolean),
     });
   };
 
@@ -1076,6 +1167,50 @@ export default function EditProductScreen() {
                         placeholder="50"
                       />
                     </View>
+                  </View>
+
+                  {/* Variant Specific Photo Attachment (CPO Parity) */}
+                  <View style={{ marginTop: 8, paddingTop: 8, borderTopWidth: 1, borderTopColor: "#F1F5F9" }}>
+                    {v.image ? (
+                      <View style={{ flexDirection: "row", alignItems: "center", gap: 8 }}>
+                        <Image source={{ uri: v.image }} style={{ width: 34, height: 34, borderRadius: 6, borderWidth: 1, borderColor: "#10B981" }} contentFit="cover" />
+                        <View style={{ flex: 1 }}>
+                          <Text style={{ fontSize: 10, fontWeight: "800", color: "#10B981" }}>✓ Color / Variant Photo Attached</Text>
+                          <Text style={{ fontSize: 9, color: "#64748B" }} numberOfLines={1}>{v.image}</Text>
+                        </View>
+                        <TouchableOpacity
+                          style={{ paddingVertical: 4, paddingHorizontal: 7, borderRadius: 6, backgroundColor: "#F1F5F9" }}
+                          onPress={() => handlePickVariantImage(idx)}
+                        >
+                          <Camera size={13} color="#052A51" />
+                        </TouchableOpacity>
+                        <TouchableOpacity
+                          style={{ padding: 4 }}
+                          onPress={() => handleUpdateVariant(idx, "image", "")}
+                        >
+                          <Trash2 size={13} color="#EF4444" />
+                        </TouchableOpacity>
+                      </View>
+                    ) : (
+                      <TouchableOpacity
+                        style={{
+                          flexDirection: "row",
+                          alignItems: "center",
+                          gap: 6,
+                          paddingVertical: 5,
+                          paddingHorizontal: 10,
+                          borderRadius: 8,
+                          backgroundColor: "#EFF6FF",
+                          borderWidth: 1,
+                          borderColor: "#BFDBFE",
+                          alignSelf: "flex-start",
+                        }}
+                        onPress={() => handlePickVariantImage(idx)}
+                      >
+                        <Camera size={12} color="#1D4ED8" />
+                        <Text style={{ fontSize: 10.5, fontWeight: "800", color: "#1D4ED8" }}>+ Attach Variant Photo</Text>
+                      </TouchableOpacity>
+                    )}
                   </View>
                 </View>
               ))}
@@ -1857,6 +1992,23 @@ const styles = StyleSheet.create({
   textWhite: {
     color: "#fff",
   },
+  marginBanner: {
+    flexDirection: "row",
+    alignItems: "center",
+    padding: 10,
+    borderRadius: 10,
+    gap: 8,
+  },
+  marginBannerGood: {
+    backgroundColor: "#DCFCE7",
+  },
+  marginBannerLow: {
+    backgroundColor: "#FEF3C7",
+  },
+  marginBannerText: {
+    fontSize: 12,
+    fontWeight: "600",
+  },
   saveBtn: {
     flexDirection: "row",
     alignItems: "center",
@@ -1945,5 +2097,18 @@ const styles = StyleSheet.create({
   modalItemTextSelected: {
     color: "#F26522",
     fontWeight: "800",
+  },
+  chip: {
+    paddingVertical: 6,
+    paddingHorizontal: 12,
+    borderRadius: 8,
+    backgroundColor: "#F8FAFC",
+    borderWidth: 1,
+    borderColor: "#CBD5E1",
+  },
+  chipText: {
+    fontSize: 11,
+    fontWeight: "700",
+    color: "#475569",
   },
 });

@@ -191,6 +191,7 @@ export default async function CategoryLocationPage({
             <CategoryCatalogClient
               products={products}
               categoryName={`${category.name} — ${location.name}`}
+              headingLevel="h2"
             />
 
             {/* Localized FAQ Accordion */}

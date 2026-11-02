@@ -40,6 +40,7 @@ import {
 import { loginWithGoogle, sendOtp, verifyOtp, checkAuthMethod, loginWithPassword, resetAuthLockout } from "../../src/api/auth";
 import { apiClient, setStoredTokens, clearStoredTokens } from "../../src/api/client";
 import { useAuthStore } from "../../src/store/authStore";
+import { registerDevicePushToken } from "../../src/hooks/usePushNotifications";
 import { COLORS, SHADOWS } from "../../src/constants/theme";
 
 WebBrowser.maybeCompleteAuthSession();
@@ -189,6 +190,7 @@ export default function BusinessLoginScreen() {
   };
 
   const handleRoleRouting = (user: any) => {
+    registerDevicePushToken().catch(() => {});
     if (user.role === "vendor") {
       setUser(user);
       router.replace("/(vendor)/dashboard" as any);

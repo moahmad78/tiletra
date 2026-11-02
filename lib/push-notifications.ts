@@ -11,11 +11,98 @@ export interface ExpoPushPayload {
   channelId?: string;
   image?: string | null;
   mutableContent?: boolean;
+  userId?: string;
+}
+
+// Queue for asynchronous Expo receipt checks
+interface PendingReceipt {
+  ticketId: string;
+  tokenSuffix: string;
+  userId?: string;
+  enqueuedAt: number;
+}
+const pendingReceiptsQueue: PendingReceipt[] = [];
+const MAX_RECEIPTS_QUEUE = 500;
+
+/**
+ * Checks pending Expo push receipts for delivery failures, invalid credentials,
+ * or unregistered devices.
+ */
+export async function checkPendingExpoReceipts(): Promise<void> {
+  if (pendingReceiptsQueue.length === 0) return;
+
+  const now = Date.now();
+  // Check receipts that are at least 10 seconds old
+  const readyToCheck = pendingReceiptsQueue.filter((item) => now - item.enqueuedAt >= 10000);
+  if (readyToCheck.length === 0) return;
+
+  // Process in batches of up to 100
+  const batch = readyToCheck.slice(0, 100);
+  const ticketIds = batch.map((b) => b.ticketId);
+
+  // Remove batch from queue
+  ticketIds.forEach((id) => {
+    const idx = pendingReceiptsQueue.findIndex((item) => item.ticketId === id);
+    if (idx !== -1) pendingReceiptsQueue.splice(idx, 1);
+  });
+
+  try {
+    const headers: Record<string, string> = {
+      Accept: "application/json",
+      "Content-Type": "application/json",
+    };
+    if (process.env.EXPO_ACCESS_TOKEN) {
+      headers["Authorization"] = `Bearer ${process.env.EXPO_ACCESS_TOKEN}`;
+    }
+
+    const res = await fetch("https://exp.host/--/api/v2/push/getReceipts", {
+      method: "POST",
+      headers,
+      body: JSON.stringify({ ids: ticketIds }),
+      signal: AbortSignal.timeout(8000),
+    });
+
+    if (!res.ok) {
+      console.warn("[Expo Push Receipts] Failed to fetch receipts status:", res.status);
+      return;
+    }
+
+    const json = await res.json();
+    const receipts = json.data || {};
+
+    for (const item of batch) {
+      const receipt = receipts[item.ticketId];
+      if (!receipt) continue;
+
+      if (receipt.status === "error") {
+        const errType = receipt.details?.error || receipt.message || "UnknownReceiptError";
+        console.error(
+          `[Expo Push Receipt Error] ticketId=${item.ticketId} userId=${item.userId || "unknown"} token=...${item.tokenSuffix} error=${errType} message=${receipt.message}`
+        );
+
+        if (errType === "InvalidCredentials") {
+          console.error(
+            "🚨 [Expo Push FATAL] InvalidCredentials: Check FCM V1 Service Account key in expo.dev dashboard!"
+          );
+        } else if (errType === "MismatchSenderId") {
+          console.error(
+            "🚨 [Expo Push FATAL] MismatchSenderId: Project FCM credentials do not match google-services.json!"
+          );
+        } else if (errType === "DeviceNotRegistered") {
+          console.warn(`[Expo Push] DeviceNotRegistered for token ending in ...${item.tokenSuffix}. Cleaning up.`);
+        }
+      } else if (receipt.status === "ok") {
+        console.log(`[Expo Push Receipt OK] ticketId=${item.ticketId} token=...${item.tokenSuffix}`);
+      }
+    }
+  } catch (receiptErr) {
+    console.warn("[Expo Push Receipts Check Error]", receiptErr);
+  }
 }
 
 /**
  * Sends a push notification payload directly to Expo's Push API endpoint.
- * Works even when the app is backgrounded or completely closed.
+ * Works across foreground, background, locked and killed app states.
  */
 export async function sendExpoPushNotification(payload: ExpoPushPayload): Promise<{
   success: boolean;
@@ -32,14 +119,19 @@ export async function sendExpoPushNotification(payload: ExpoPushPayload): Promis
       return { success: false, error: "No valid Expo push tokens provided" };
     }
 
+    // Standardized payload format for every push
     const messages = validTokens.map((to) => ({
       to,
-      sound: payload.sound || "default",
       title: payload.title,
       body: payload.body,
-      data: payload.data || {},
+      sound: payload.sound || "default",
       priority: payload.priority || "high",
       channelId: payload.channelId || "orders_high_importance",
+      data: {
+        ...(payload.data || {}),
+        type: payload.data?.type || "GENERAL",
+        orderId: payload.data?.orderId,
+      },
       ...(payload.image ? { image: payload.image } : {}),
       ...(payload.mutableContent !== undefined
         ? { mutableContent: payload.mutableContent }
@@ -48,19 +140,66 @@ export async function sendExpoPushNotification(payload: ExpoPushPayload): Promis
         : {}),
     }));
 
+    const headers: Record<string, string> = {
+      Accept: "application/json",
+      "Accept-Encoding": "gzip, deflate",
+      "Content-Type": "application/json",
+    };
+
+    if (process.env.EXPO_ACCESS_TOKEN) {
+      headers["Authorization"] = `Bearer ${process.env.EXPO_ACCESS_TOKEN}`;
+    }
+
     const res = await fetch("https://exp.host/--/api/v2/push/send", {
       method: "POST",
-      headers: {
-        Accept: "application/json",
-        "Accept-Encoding": "gzip, deflate",
-        "Content-Type": "application/json",
-      },
+      headers,
       body: JSON.stringify(messages),
-      signal: AbortSignal.timeout(6000),
+      signal: AbortSignal.timeout(7000),
     });
 
-    const data = await res.json();
-    return { success: res.ok, ticket: data };
+    const responseData = await res.json().catch(() => ({}));
+
+    // Process tickets and handle error details
+    if (responseData && responseData.data) {
+      const tickets = Array.isArray(responseData.data) ? responseData.data : [responseData.data];
+
+      for (let i = 0; i < tickets.length; i++) {
+        const ticket = tickets[i];
+        const targetToken = validTokens[i] || "";
+        const tokenSuffix = targetToken.slice(-6);
+
+        if (ticket.status === "ok") {
+          if (ticket.id && pendingReceiptsQueue.length < MAX_RECEIPTS_QUEUE) {
+            pendingReceiptsQueue.push({
+              ticketId: ticket.id,
+              tokenSuffix,
+              userId: payload.userId,
+              enqueuedAt: Date.now(),
+            });
+          }
+        } else if (ticket.status === "error") {
+          const errorCode = ticket.details?.error || "UNKNOWN_ERROR";
+          console.error(
+            `[Expo Push Error] userId=${payload.userId || "unknown"} token=...${tokenSuffix} message=${ticket.message} details.error=${errorCode}`
+          );
+
+          // Clean up unregistered device tokens immediately
+          if (errorCode === "DeviceNotRegistered" && targetToken) {
+            try {
+              await deleteDeadPushToken(targetToken);
+              console.log(`[Expo Push] Deleted unregistered token ending in ...${tokenSuffix}`);
+            } catch (delErr) {
+              console.warn("[Expo Push] Failed to delete dead token:", delErr);
+            }
+          }
+        }
+      }
+    }
+
+    // Lazy check previous receipts
+    checkPendingExpoReceipts().catch(() => {});
+
+    return { success: res.ok, ticket: responseData };
   } catch (error: any) {
     console.error("[Expo Push Notification Error]", error);
     return { success: false, error: error?.message || "Failed to send push notification" };
@@ -68,7 +207,22 @@ export async function sendExpoPushNotification(payload: ExpoPushPayload): Promis
 }
 
 /**
- * Registers an Expo push token against a user ID and role in PostgreSQL DeviceToken, MobilePushToken, and User tables.
+ * Removes a dead / unregistered push token from all database tables.
+ */
+async function deleteDeadPushToken(token: string): Promise<void> {
+  await Promise.allSettled([
+    prisma.deviceToken.deleteMany({ where: { token } }),
+    (prisma as any).mobilePushToken.deleteMany({ where: { token } }),
+    (prisma as any).user.updateMany({
+      where: { pushToken: token },
+      data: { pushToken: null },
+    }),
+  ]);
+}
+
+/**
+ * Registers an Expo push token against a verified user ID and role in PostgreSQL.
+ * Upserts DeviceToken and MobilePushToken, and sets User.pushToken.
  */
 export async function registerPushToken(params: {
   userId: string;
@@ -76,18 +230,24 @@ export async function registerPushToken(params: {
   token: string;
   platform?: string;
   appVersion?: string;
+  deviceId?: string;
 }) {
   try {
-    const { userId, role = "customer", token, platform = "android", appVersion } = params;
-    if (!token || (!token.startsWith("ExponentPushToken[") && !token.startsWith("ExpoPushToken["))) {
-      return { success: false, error: "Invalid Expo push token" };
+    const { userId, role = "customer", token, platform = "android", appVersion, deviceId } = params;
+    if (!userId) {
+      return { success: false, error: "User ID is required" };
+    }
+
+    const cleanToken = String(token || "").trim();
+    if (!cleanToken || (!cleanToken.startsWith("ExponentPushToken[") && !cleanToken.startsWith("ExpoPushToken["))) {
+      return { success: false, error: "Invalid Expo push token format" };
     }
 
     // 1. Save directly into User table
     try {
       await (prisma as any).user.update({
         where: { id: userId },
-        data: { pushToken: token },
+        data: { pushToken: cleanToken },
       });
     } catch (userErr) {
       console.warn("[Register Push Token] Could not update User.pushToken directly:", userErr);
@@ -96,9 +256,9 @@ export async function registerPushToken(params: {
     // 2. Upsert into MobilePushToken table
     try {
       await (prisma as any).mobilePushToken.upsert({
-        where: { token },
-        update: { userId, platform, updatedAt: new Date() },
-        create: { userId, token, platform },
+        where: { token: cleanToken },
+        update: { userId, platform, deviceId: deviceId || undefined, updatedAt: new Date() },
+        create: { userId, token: cleanToken, platform, deviceId: deviceId || undefined },
       });
     } catch (mobileErr) {
       console.warn("[Register Push Token] MobilePushToken upsert warning:", mobileErr);
@@ -106,7 +266,7 @@ export async function registerPushToken(params: {
 
     // 3. Upsert into dedicated DeviceToken table
     const deviceToken = await prisma.deviceToken.upsert({
-      where: { token },
+      where: { token: cleanToken },
       update: {
         userId,
         role,
@@ -118,7 +278,7 @@ export async function registerPushToken(params: {
         userId,
         role,
         platform,
-        token,
+        token: cleanToken,
         appVersion: appVersion || null,
         lastSeenAt: new Date(),
       },
@@ -127,6 +287,35 @@ export async function registerPushToken(params: {
     return { success: true, deviceToken };
   } catch (error: any) {
     console.error("[Register Push Token Error]", error);
+    return { success: false, error: error?.message };
+  }
+}
+
+/**
+ * Unregisters a push token on user logout.
+ */
+export async function unregisterPushToken(params: { userId: string; token: string }) {
+  try {
+    const { userId, token } = params;
+    const cleanToken = String(token || "").trim();
+    if (!cleanToken) return { success: true };
+
+    await Promise.allSettled([
+      prisma.deviceToken.deleteMany({
+        where: { userId, token: cleanToken },
+      }),
+      (prisma as any).mobilePushToken.deleteMany({
+        where: { userId, token: cleanToken },
+      }),
+      (prisma as any).user.updateMany({
+        where: { id: userId, pushToken: cleanToken },
+        data: { pushToken: null },
+      }),
+    ]);
+
+    return { success: true };
+  } catch (error: any) {
+    console.warn("[Unregister Push Token Error]", error);
     return { success: false, error: error?.message };
   }
 }
@@ -142,7 +331,7 @@ export async function notifyAdminPush(params: {
   try {
     const records = await prisma.deviceToken.findMany({
       where: { role: { in: ["admin", "superadmin", "cpo"] } },
-      select: { token: true },
+      select: { token: true, userId: true },
     });
 
     const tokens = records.map((r) => r.token);
@@ -151,7 +340,13 @@ export async function notifyAdminPush(params: {
         to: tokens,
         title: params.title,
         body: params.body,
-        data: params.data,
+        sound: "default",
+        priority: "high",
+        channelId: "orders_high_importance",
+        data: {
+          ...params.data,
+          type: params.data?.type || "ADMIN_ALERT",
+        },
       });
     }
   } catch (e) {
@@ -239,23 +434,12 @@ export async function notifyVendorPush(params: {
     );
 
     if (tokens.length > 0) {
-      // Determine audio channel and sound behavior
-      let channelId = "orders_default";
-      let sound = "default";
-
-      if (params.requiresManualApproval) {
-        channelId = "orders_high_importance";
-        sound = "order_alert"; // Loud alarm chime
-      } else if (params.isAutoAccepted) {
-        channelId = "orders_high_importance";
-        sound = "default"; // Quick success chime
-      } else if (params.isNewOrder) {
-        channelId = "orders_high_importance";
-        sound = "order_alert";
-      }
+      const sound = "default";
+      const channelId = "orders_high_importance";
 
       await sendExpoPushNotification({
         to: tokens,
+        userId: targetUserId,
         title: params.title,
         body: params.body,
         sound,
@@ -263,10 +447,16 @@ export async function notifyVendorPush(params: {
         channelId,
         data: {
           ...params.data,
-          isNewOrder: params.isNewOrder,
+          type: params.isAutoAccepted
+            ? "ORDER_AUTO_ACCEPTED"
+            : params.requiresManualApproval
+            ? "PENDING_VENDOR_APPROVAL"
+            : params.data?.type || "NEW_ORDER",
           orderId: params.orderId || params.data?.orderId,
+          isNewOrder: params.isNewOrder ?? true,
           isAutoAccepted: params.isAutoAccepted,
           requiresManualApproval: params.requiresManualApproval,
+          screen: "/(vendor)/orders",
         },
       });
     }
@@ -286,6 +476,7 @@ export async function sendPushToUser(
     data?: Record<string, any>;
     sound?: string;
     channelId?: string;
+    priority?: "default" | "normal" | "high";
   }
 ) {
   try {
@@ -319,12 +510,17 @@ export async function sendPushToUser(
     if (tokens.length > 0) {
       await sendExpoPushNotification({
         to: tokens,
+        userId,
         title: payload.title,
         body: payload.body,
-        data: payload.data,
+        data: {
+          ...payload.data,
+          type: payload.data?.type || "CUSTOMER_ALERT",
+          orderId: payload.data?.orderId,
+        },
         sound: payload.sound || "default",
         channelId: payload.channelId || "orders_high_importance",
-        priority: "high",
+        priority: payload.priority || "high",
       });
     }
   } catch (e) {
@@ -385,10 +581,12 @@ export async function sendCustomerOrderStatusPush(
     body,
     sound: "default",
     channelId: "orders_high_importance",
+    priority: "high",
     data: {
       orderId,
       status,
       type: "order_status_update",
+      screen: `/order/${orderId}`,
     },
   });
 }

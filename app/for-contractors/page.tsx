@@ -21,6 +21,12 @@ export const metadata: Metadata = {
     type: "website",
     siteName: "IntriHub",
   },
+  twitter: {
+    card: "summary_large_image",
+    title: "For Contractors & Builders | IntriHub Direct Supply",
+    description: "Direct bulk building material supply for contractors: zero middleman markup, phased site deliveries, and GST input credit.",
+    images: ["https://www.intrihub.com/images/intrihub-og-image.jpg"],
+  },
 };
 
 export default function ForContractorsPage() {

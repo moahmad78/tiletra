@@ -103,8 +103,12 @@ export default function VendorOrderDetailScreen() {
     );
   }
 
-  const cleanPhone = split.customerPhone ? split.customerPhone.replace(/\D/g, "").slice(-10) : "9876543210";
-  const displayPhone = `+91 ${cleanPhone.slice(0, 5)} ${cleanPhone.slice(5)}`;
+  const rawPhone = split.customerPhone || (split as any).deliveryPhone || (split as any).parentOrder?.customerPhone || "";
+  const phoneDigits = rawPhone.replace(/\D/g, "");
+  const cleanPhone = phoneDigits.slice(-10);
+  const displayPhone = cleanPhone.length === 10
+    ? `+91 ${cleanPhone.slice(0, 5)} ${cleanPhone.slice(5)}`
+    : (rawPhone || "Not provided");
   const orderNumber = split.orderId || split.splitId.slice(-6);
 
   // Real items from database order
@@ -112,11 +116,13 @@ export default function VendorOrderDetailScreen() {
   const displayedItems = showAllItems ? items : items.slice(0, 3);
 
   const handleCallCustomer = () => {
-    Linking.openURL(`tel:${cleanPhone}`).catch(() => {});
+    const dialNum = cleanPhone || phoneDigits;
+    if (dialNum) Linking.openURL(`tel:${dialNum}`).catch(() => {});
   };
 
   const handleMessageCustomer = () => {
-    Linking.openURL(`https://wa.me/91${cleanPhone}`).catch(() => {});
+    const dialNum = cleanPhone || phoneDigits;
+    if (dialNum) Linking.openURL(`https://wa.me/91${dialNum}`).catch(() => {});
   };
 
   const handleCallRider = () => {
@@ -451,15 +457,19 @@ const styles = StyleSheet.create({
     justifyContent: "center",
   },
   headerTitleRow: {
+    flex: 1,
     flexDirection: "row",
     alignItems: "center",
-    gap: 8,
+    justifyContent: "flex-start",
+    gap: 6,
+    marginHorizontal: 8,
   },
   orderTitle: {
-    fontSize: 18,
+    fontSize: 15,
     fontWeight: "800",
     color: "#0F172A",
     fontFamily: "PlusJakartaSans_800ExtraBold",
+    flexShrink: 1,
   },
   statusBadge: {
     paddingHorizontal: 8,

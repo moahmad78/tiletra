@@ -10,6 +10,8 @@ import {
   Alert,
   Modal,
   FlatList,
+  Linking,
+  Platform,
 } from "react-native";
 import { useLocalSearchParams, useRouter } from "expo-router";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
@@ -34,6 +36,12 @@ import {
   TrendingUp,
   AlertTriangle,
   Zap,
+  FileText,
+  Landmark,
+  Eye,
+  ExternalLink,
+  XCircle,
+  AlertCircle,
 } from "lucide-react-native";
 import {
   fetchAdminVendorDetail,
@@ -49,7 +57,10 @@ export default function AdminVendorDetailScreen() {
   const router = useRouter();
   const queryClient = useQueryClient();
 
-  const [activeTab, setActiveTab] = useState<"products" | "orders">("products");
+  const [activeTab, setActiveTab] = useState<"products" | "orders" | "kyc">("products");
+  const [adminKycNote, setAdminKycNote] = useState("");
+  const [updatingKyc, setUpdatingKyc] = useState(false);
+  const [previewDocModal, setPreviewDocModal] = useState<{ url: string; title: string } | null>(null);
 
   // Edit Vendor Modal State
   const [vendorEditModalOpen, setVendorEditModalOpen] = useState(false);
@@ -149,6 +160,35 @@ export default function AdminVendorDetailScreen() {
       }
     } catch (e: any) {
       setTogglingAutoPublish(false);
+      Alert.alert("Error", e?.message || "Something went wrong.");
+    }
+  };
+
+  const handleAdminUpdateKyc = async (newKycStatus: "verified" | "rejected") => {
+    setUpdatingKyc(true);
+    try {
+      const res = await updateAdminVendor(id as string, {
+        kycStatus: newKycStatus,
+        kycNotes: adminKycNote.trim() || undefined,
+        verified: newKycStatus === "verified",
+        status: newKycStatus === "verified" ? "approved" : vendor?.status,
+      });
+      setUpdatingKyc(false);
+      if (res.success) {
+        refetch();
+        queryClient.invalidateQueries({ queryKey: ["admin-vendors"] });
+        queryClient.invalidateQueries({ queryKey: ["admin-vendor-detail", id] });
+        Alert.alert(
+          newKycStatus === "verified" ? "KYC Approved 🎉" : "KYC Rejected ⚠️",
+          newKycStatus === "verified"
+            ? `Store "${vendor?.businessName}" KYC has been verified and approved!`
+            : `Store "${vendor?.businessName}" KYC rejected with feedback note.`
+        );
+      } else {
+        Alert.alert("Error", res.error || "Failed to update KYC status");
+      }
+    } catch (e: any) {
+      setUpdatingKyc(false);
       Alert.alert("Error", e?.message || "Something went wrong.");
     }
   };
@@ -498,9 +538,9 @@ export default function AdminVendorDetailScreen() {
             style={[styles.segmentBtn, activeTab === "products" && styles.segmentBtnActive]}
             onPress={() => setActiveTab("products")}
           >
-            <Package size={15} color={activeTab === "products" ? "#052A51" : "#64748B"} />
+            <Package size={14} color={activeTab === "products" ? "#052A51" : "#64748B"} />
             <Text style={[styles.segmentBtnText, activeTab === "products" && styles.segmentBtnTextActive]}>
-              Products & Stock ({products.length})
+              Products ({products.length})
             </Text>
           </TouchableOpacity>
 
@@ -508,10 +548,23 @@ export default function AdminVendorDetailScreen() {
             style={[styles.segmentBtn, activeTab === "orders" && styles.segmentBtnActive]}
             onPress={() => setActiveTab("orders")}
           >
-            <ShoppingCart size={15} color={activeTab === "orders" ? "#052A51" : "#64748B"} />
+            <ShoppingCart size={14} color={activeTab === "orders" ? "#052A51" : "#64748B"} />
             <Text style={[styles.segmentBtnText, activeTab === "orders" && styles.segmentBtnTextActive]}>
               Orders ({splits.length})
             </Text>
+          </TouchableOpacity>
+
+          <TouchableOpacity
+            style={[styles.segmentBtn, activeTab === "kyc" && styles.segmentBtnActive]}
+            onPress={() => setActiveTab("kyc")}
+          >
+            <ShieldCheck size={14} color={activeTab === "kyc" ? "#052A51" : "#64748B"} />
+            <Text style={[styles.segmentBtnText, activeTab === "kyc" && styles.segmentBtnTextActive]}>
+              Bank & KYC
+            </Text>
+            {vendor.kycStatus === "submitted" ? (
+              <View style={{ width: 6, height: 6, borderRadius: 3, backgroundColor: "#2563EB" }} />
+            ) : null}
           </TouchableOpacity>
         </View>
 
@@ -602,7 +655,18 @@ export default function AdminVendorDetailScreen() {
                       <Text style={styles.orderDateText}>🕒 {orderDate}</Text>
                     </View>
                     <View style={styles.statusBadge}>
-                      <Text style={styles.statusBadgeText}>{s.fulfillmentStatus?.toUpperCase() || "PENDING"}</Text>
+                      <Text style={styles.statusBadgeText}>
+                        {(() => {
+                          const norm = (s.fulfillmentStatus || "").toLowerCase();
+                          if (norm.includes("ready")) return "READY";
+                          if (norm.includes("pending") || norm.includes("awaiting")) return "PENDING";
+                          if (norm === "confirmed" || norm === "accepted") return "CONFIRMED";
+                          if (norm === "dispatched" || norm === "picked_up") return "DISPATCHED";
+                          if (norm === "delivered") return "DELIVERED";
+                          if (norm === "cancelled") return "CANCELLED";
+                          return (norm.split("_")[0] || "PENDING").toUpperCase();
+                        })()}
+                      </Text>
                     </View>
                   </View>
 
@@ -623,6 +687,244 @@ export default function AdminVendorDetailScreen() {
               );
             })
           )
+        )}
+
+        {/* Tab 3: Bank & KYC Documents */}
+        {activeTab === "kyc" && (
+          <View style={{ gap: 14 }}>
+            {/* 1. Bank Details Card */}
+            <View style={styles.adminKycCard}>
+              <View style={styles.adminKycHeaderRow}>
+                <View style={[styles.adminKycIconCircle, { backgroundColor: "#EFF6FF" }]}>
+                  <Landmark size={18} color="#052A51" />
+                </View>
+                <View style={{ flex: 1 }}>
+                  <Text style={styles.adminKycTitle}>Bank & Payout Account</Text>
+                  <Text style={styles.adminKycSubtitle}>Account configured for automated vendor payouts</Text>
+                </View>
+              </View>
+
+              {vendor.bankAccountNumber ? (
+                <View style={styles.adminKycGrid}>
+                  <View style={styles.adminKycGridItem}>
+                    <Text style={styles.adminKycLabel}>ACCOUNT HOLDER</Text>
+                    <Text style={styles.adminKycVal}>{vendor.bankAccountHolder || "—"}</Text>
+                  </View>
+                  <View style={styles.adminKycGridItem}>
+                    <Text style={styles.adminKycLabel}>BANK NAME</Text>
+                    <Text style={styles.adminKycVal}>{vendor.bankName || "—"}</Text>
+                  </View>
+                  <View style={styles.adminKycGridItem}>
+                    <Text style={styles.adminKycLabel}>FULL ACCOUNT NUMBER</Text>
+                    <Text style={[styles.adminKycVal, { fontFamily: Platform.OS === "ios" ? "Courier" : "monospace", fontWeight: "800" }]}>
+                      {vendor.bankAccountNumber}
+                    </Text>
+                  </View>
+                  <View style={styles.adminKycGridItem}>
+                    <Text style={styles.adminKycLabel}>IFSC CODE / UPI ID</Text>
+                    <Text style={[styles.adminKycVal, { color: "#052A51", fontWeight: "800" }]}>
+                      {vendor.bankIfscCode || vendor.bankUpiId || "—"}
+                    </Text>
+                  </View>
+                </View>
+              ) : (
+                <View style={styles.adminKycEmptyBox}>
+                  <AlertCircle size={15} color="#B45309" />
+                  <Text style={{ fontSize: 11, color: "#92400E", fontWeight: "600", flex: 1 }}>
+                    Vendor has not submitted their bank details yet.
+                  </Text>
+                </View>
+              )}
+            </View>
+
+            {/* 2. Legal KYC Documents Card */}
+            <View style={styles.adminKycCard}>
+              <View style={styles.adminKycHeaderRow}>
+                <View style={[styles.adminKycIconCircle, { backgroundColor: "#DCFCE7" }]}>
+                  <FileText size={18} color="#15803D" />
+                </View>
+                <View style={{ flex: 1 }}>
+                  <View style={{ flexDirection: "row", alignItems: "center", justifyContent: "space-between" }}>
+                    <Text style={styles.adminKycTitle}>Government IDs & Shopfront</Text>
+                    <View
+                      style={{
+                        paddingHorizontal: 8,
+                        paddingVertical: 2,
+                        borderRadius: 6,
+                        backgroundColor:
+                          vendor.kycStatus === "verified"
+                            ? "#DCFCE7"
+                            : vendor.kycStatus === "submitted"
+                            ? "#DBEAFE"
+                            : vendor.kycStatus === "rejected"
+                            ? "#FEE2E2"
+                            : "#FEF3C7",
+                      }}
+                    >
+                      <Text
+                        style={{
+                          fontSize: 10,
+                          fontWeight: "800",
+                          color:
+                            vendor.kycStatus === "verified"
+                              ? "#15803D"
+                              : vendor.kycStatus === "submitted"
+                              ? "#1D4ED8"
+                              : vendor.kycStatus === "rejected"
+                              ? "#DC2626"
+                              : "#B45309",
+                        }}
+                      >
+                        {vendor.kycStatus?.toUpperCase() || "PENDING"}
+                      </Text>
+                    </View>
+                  </View>
+                  <Text style={styles.adminKycSubtitle}>Aadhaar, PAN, Shopfront photo and GST proofs</Text>
+                </View>
+              </View>
+
+              {/* Document Items List */}
+              <View style={{ gap: 10, marginTop: 12 }}>
+                {/* 1. PAN Card */}
+                <View style={styles.docRowBox}>
+                  <View style={{ flex: 1 }}>
+                    <Text style={styles.docRowTitle}>PAN Card</Text>
+                    <Text style={styles.docRowVal}>{vendor.panNumber || "Number not entered"}</Text>
+                  </View>
+                  {vendor.panDocUrl ? (
+                    <TouchableOpacity
+                      style={styles.adminViewDocBtn}
+                      onPress={() => setPreviewDocModal({ url: vendor.panDocUrl, title: `PAN Card - ${vendor.businessName}` })}
+                    >
+                      <Eye size={13} color="#15803D" />
+                      <Text style={styles.adminViewDocBtnText}>View Document</Text>
+                    </TouchableOpacity>
+                  ) : (
+                    <Text style={styles.noDocText}>Not uploaded</Text>
+                  )}
+                </View>
+
+                {/* 2. Aadhaar Card */}
+                <View style={styles.docRowBox}>
+                  <View style={{ flex: 1 }}>
+                    <Text style={styles.docRowTitle}>Aadhaar Card</Text>
+                    <Text style={styles.docRowVal}>{vendor.aadharNumber || "Number not entered"}</Text>
+                  </View>
+                  {vendor.aadharDocUrl ? (
+                    <TouchableOpacity
+                      style={styles.adminViewDocBtn}
+                      onPress={() => setPreviewDocModal({ url: vendor.aadharDocUrl, title: `Aadhaar Card - ${vendor.businessName}` })}
+                    >
+                      <Eye size={13} color="#15803D" />
+                      <Text style={styles.adminViewDocBtnText}>View Document</Text>
+                    </TouchableOpacity>
+                  ) : (
+                    <Text style={styles.noDocText}>Not uploaded</Text>
+                  )}
+                </View>
+
+                {/* 3. Shopfront Photo */}
+                <View style={styles.docRowBox}>
+                  <View style={{ flex: 1 }}>
+                    <Text style={styles.docRowTitle}>Storefront Photo</Text>
+                    <Text style={styles.docRowVal}>{vendor.businessAddress || "Physical location"}</Text>
+                  </View>
+                  {vendor.shopPhotoUrl ? (
+                    <TouchableOpacity
+                      style={styles.adminViewDocBtn}
+                      onPress={() => setPreviewDocModal({ url: vendor.shopPhotoUrl, title: `Shop Photo - ${vendor.businessName}` })}
+                    >
+                      <Eye size={13} color="#15803D" />
+                      <Text style={styles.adminViewDocBtnText}>View Photo</Text>
+                    </TouchableOpacity>
+                  ) : (
+                    <Text style={styles.noDocText}>Not uploaded</Text>
+                  )}
+                </View>
+
+                {/* 4. GSTIN Certificate */}
+                <View style={styles.docRowBox}>
+                  <View style={{ flex: 1 }}>
+                    <Text style={styles.docRowTitle}>GST Certificate</Text>
+                    <Text style={styles.docRowVal}>{vendor.gstNumber || "GST Unregistered"}</Text>
+                  </View>
+                  {vendor.gstDocUrl ? (
+                    <TouchableOpacity
+                      style={styles.adminViewDocBtn}
+                      onPress={() => setPreviewDocModal({ url: vendor.gstDocUrl, title: `GST Certificate - ${vendor.businessName}` })}
+                    >
+                      <Eye size={13} color="#15803D" />
+                      <Text style={styles.adminViewDocBtnText}>View Document</Text>
+                    </TouchableOpacity>
+                  ) : (
+                    <Text style={styles.noDocText}>Not uploaded</Text>
+                  )}
+                </View>
+
+                {/* 5. Cancelled Cheque */}
+                {vendor.chequeDocUrl ? (
+                  <View style={styles.docRowBox}>
+                    <View style={{ flex: 1 }}>
+                      <Text style={styles.docRowTitle}>Cancelled Cheque / Passbook</Text>
+                      <Text style={styles.docRowVal}>Bank account proof</Text>
+                    </View>
+                    <TouchableOpacity
+                      style={styles.adminViewDocBtn}
+                      onPress={() => setPreviewDocModal({ url: vendor.chequeDocUrl, title: `Cheque / Passbook Proof - ${vendor.businessName}` })}
+                    >
+                      <Eye size={13} color="#15803D" />
+                      <Text style={styles.adminViewDocBtnText}>View Proof</Text>
+                    </TouchableOpacity>
+                  </View>
+                ) : null}
+              </View>
+
+              {/* Admin KYC Actions Bar */}
+              <View style={{ marginTop: 14, paddingTop: 12, borderTopWidth: 1, borderTopColor: "#F1F5F9" }}>
+                <Text style={{ fontSize: 11, fontWeight: "700", color: "#64748B", marginBottom: 6 }}>
+                  ADMIN REJECTION REASON / FEEDBACK NOTE
+                </Text>
+                <TextInput
+                  style={[styles.inputBox, { height: 40, fontSize: 12, marginBottom: 12 }]}
+                  placeholder="Enter rejection reason or verification note..."
+                  value={adminKycNote}
+                  onChangeText={setAdminKycNote}
+                />
+
+                <View style={{ flexDirection: "row", gap: 10 }}>
+                  <TouchableOpacity
+                    style={[styles.adminKycBtn, { backgroundColor: "#15803D", flex: 1 }]}
+                    onPress={() => handleAdminUpdateKyc("verified")}
+                    disabled={updatingKyc}
+                  >
+                    {updatingKyc ? (
+                      <ActivityIndicator size="small" color="#FFFFFF" />
+                    ) : (
+                      <>
+                        <ShieldCheck size={16} color="#FFFFFF" />
+                        <Text style={styles.adminKycBtnText}>Approve KYC ✓</Text>
+                      </>
+                    )}
+                  </TouchableOpacity>
+
+                  <TouchableOpacity
+                    style={[styles.adminKycBtn, { backgroundColor: "#DC2626", flex: 1 }]}
+                    onPress={() => {
+                      if (!adminKycNote.trim()) {
+                        Alert.alert("Reason Required", "Please enter a rejection reason note for the vendor.");
+                        return;
+                      }
+                      handleAdminUpdateKyc("rejected");
+                    }}
+                    disabled={updatingKyc}
+                  >
+                    <XCircle size={16} color="#FFFFFF" />
+                    <Text style={styles.adminKycBtnText}>Reject KYC ✕</Text>
+                  </TouchableOpacity>
+                </View>
+              </View>
+            </View>
+          </View>
         )}
       </ScrollView>
 
@@ -754,6 +1056,48 @@ export default function AdminVendorDetailScreen() {
               {savingProduct ? <ActivityIndicator size="small" color="#FFF" /> : <Text style={styles.saveActionBtnText}>Save Item Changes</Text>}
             </TouchableOpacity>
           </ScrollView>
+        </View>
+      </Modal>
+
+      {/* In-app Document Preview Modal */}
+      <Modal
+        visible={Boolean(previewDocModal)}
+        transparent={false}
+        animationType="slide"
+        onRequestClose={() => setPreviewDocModal(null)}
+      >
+        <View style={{ flex: 1, backgroundColor: "#0F172A" }}>
+          <View style={{ flexDirection: "row", alignItems: "center", justifyContent: "space-between", paddingHorizontal: 20, paddingTop: 50, paddingBottom: 16, backgroundColor: "#1E293B" }}>
+            <Text style={{ fontSize: 16, fontWeight: "800", color: "#FFFFFF", flex: 1 }} numberOfLines={1}>
+              {previewDocModal?.title}
+            </Text>
+            <TouchableOpacity onPress={() => setPreviewDocModal(null)} style={{ padding: 6 }}>
+              <X size={22} color="#FFFFFF" />
+            </TouchableOpacity>
+          </View>
+
+          <View style={{ flex: 1, alignItems: "center", justifyContent: "center", padding: 16 }}>
+            {previewDocModal?.url?.toLowerCase()?.includes(".pdf") ? (
+              <View style={{ alignItems: "center", padding: 24, backgroundColor: "#1E293B", borderRadius: 16 }}>
+                <FileText size={64} color="#38BDF8" />
+                <Text style={{ fontSize: 14, fontWeight: "700", color: "#FFFFFF", marginTop: 12 }}>
+                  PDF Document Uploaded
+                </Text>
+                <TouchableOpacity
+                  style={{ marginTop: 16, backgroundColor: "#0284C7", paddingHorizontal: 20, paddingVertical: 10, borderRadius: 10 }}
+                  onPress={() => previewDocModal?.url && Linking.openURL(previewDocModal.url)}
+                >
+                  <Text style={{ color: "#FFFFFF", fontWeight: "800", fontSize: 13 }}>Open PDF Document ↗</Text>
+                </TouchableOpacity>
+              </View>
+            ) : previewDocModal?.url ? (
+              <Image
+                source={{ uri: previewDocModal.url }}
+                style={{ width: "100%", height: "80%", borderRadius: 12 }}
+                contentFit="contain"
+              />
+            ) : null}
+          </View>
         </View>
       </Modal>
     </View>
@@ -1215,5 +1559,124 @@ const styles = StyleSheet.create({
   },
   toggleThumbInactive: {
     backgroundColor: "#94A3B8",
+  },
+  adminKycCard: {
+    backgroundColor: COLORS.surface,
+    borderRadius: RADIUS.xl,
+    padding: SPACING.lg,
+    borderWidth: 1,
+    borderColor: COLORS.border,
+    ...SHADOWS.sm,
+  },
+  adminKycHeaderRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 10,
+    borderBottomWidth: 1,
+    borderBottomColor: "#F1F5F9",
+    paddingBottom: 10,
+  },
+  adminKycIconCircle: {
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  adminKycTitle: {
+    fontSize: 14,
+    fontWeight: "900",
+    color: "#052A51",
+  },
+  adminKycSubtitle: {
+    fontSize: 11,
+    color: "#64748B",
+    marginTop: 1,
+  },
+  adminKycGrid: {
+    flexDirection: "row",
+    flexWrap: "wrap",
+    marginTop: 10,
+    gap: 12,
+  },
+  adminKycGridItem: {
+    width: "48%",
+  },
+  adminKycLabel: {
+    fontSize: 10,
+    fontWeight: "800",
+    color: "#94A3B8",
+    letterSpacing: 0.5,
+  },
+  adminKycVal: {
+    fontSize: 12,
+    fontWeight: "700",
+    color: "#1E293B",
+    marginTop: 2,
+  },
+  adminKycEmptyBox: {
+    marginTop: 10,
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 8,
+    padding: 10,
+    backgroundColor: "#FEF3C7",
+    borderRadius: 8,
+    borderWidth: 1,
+    borderColor: "#FDE68A",
+  },
+  docRowBox: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    padding: 10,
+    backgroundColor: "#F8FAFC",
+    borderRadius: 10,
+    borderWidth: 1,
+    borderColor: "#E2E8F0",
+  },
+  docRowTitle: {
+    fontSize: 12,
+    fontWeight: "800",
+    color: "#052A51",
+  },
+  docRowVal: {
+    fontSize: 11,
+    color: "#64748B",
+    marginTop: 1,
+  },
+  adminViewDocBtn: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 4,
+    backgroundColor: "#ECFDF5",
+    borderWidth: 1,
+    borderColor: "#A7F3D0",
+    paddingHorizontal: 10,
+    paddingVertical: 5,
+    borderRadius: 8,
+  },
+  adminViewDocBtnText: {
+    fontSize: 11,
+    fontWeight: "800",
+    color: "#15803D",
+  },
+  noDocText: {
+    fontSize: 11,
+    color: "#94A3B8",
+    fontStyle: "italic",
+  },
+  adminKycBtn: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    gap: 6,
+    paddingVertical: 10,
+    borderRadius: 10,
+  },
+  adminKycBtnText: {
+    color: "#FFFFFF",
+    fontSize: 13,
+    fontWeight: "800",
   },
 });

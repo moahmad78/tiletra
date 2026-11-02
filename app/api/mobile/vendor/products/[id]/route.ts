@@ -34,7 +34,18 @@ export async function GET(
 
     return mobileApiResponse({
       success: true,
-      product: formatProduct(product),
+      product: {
+        ...formatProduct(product),
+        colorImages: (() => {
+          try {
+            const raw = (product.specs as any)?.colorImages;
+            if (raw) return typeof raw === 'string' ? JSON.parse(raw) : raw;
+            const attr = product.attributes?.find(a => a.key === 'colorImages');
+            if (attr?.value) return JSON.parse(attr.value);
+          } catch {}
+          return undefined;
+        })(),
+      },
     });
   } catch (err: any) {
     console.error("Mobile get vendor product error:", err);
@@ -86,6 +97,15 @@ export async function PATCH(
     if (body.returnPolicyDays !== undefined) updateData.returnPolicyDays = body.returnPolicyDays !== null && body.returnPolicyDays !== "" ? Number(body.returnPolicyDays) : 7;
     if (body.status !== undefined) updateData.status = body.status;
     if (body.hasVariants !== undefined) updateData.hasVariants = Boolean(body.hasVariants);
+    if (body.highlights !== undefined) updateData.highlights = Array.isArray(body.highlights) ? body.highlights.filter(Boolean) : [];
+    if (body.keywords !== undefined) updateData.keywords = Array.isArray(body.keywords) ? body.keywords.filter(Boolean) : [];
+    if (body.manufacturer !== undefined) updateData.manufacturer = body.manufacturer?.trim() || null;
+    if (body.condition !== undefined) updateData.condition = body.condition || "New";
+    if (body.minOrderQuantity !== undefined) updateData.minOrderQuantity = Number(body.minOrderQuantity) || 1;
+    if (body.maxOrderQuantity !== undefined) updateData.maxOrderQuantity = body.maxOrderQuantity ? Number(body.maxOrderQuantity) : null;
+    if (body.isBestseller !== undefined) updateData.isBestseller = Boolean(body.isBestseller);
+    if (body.isTrending !== undefined) updateData.isTrending = Boolean(body.isTrending);
+    if (body.isNewArrival !== undefined) updateData.isNewArrival = Boolean(body.isNewArrival);
 
     if (body.images !== undefined) {
       updateData.images = Array.isArray(body.images) ? body.images : [body.images];
@@ -117,7 +137,7 @@ export async function PATCH(
           color: v.color || "Standard",
           colorHex: v.colorHex || null,
           swatchImage: v.swatchImage || null,
-          image: v.image || (Array.isArray(v.images) && v.images[0] ? v.images[0] : null),
+          image: v.image || (v.color && body.colorImages && body.colorImages[v.color]) || (Array.isArray(v.images) && v.images[0] ? v.images[0] : null),
           images: Array.isArray(v.images) ? v.images : (v.image ? [v.image] : []),
           unit: v.unit || body.unitOfSale || "box",
           price: vPricePerBox,
@@ -156,6 +176,19 @@ export async function PATCH(
           },
         ];
       }
+    }
+
+    if (body.costPrice || body.buyRate || body.dispatchLeadTime || body.warrantyType || body.isFragile !== undefined || body.colorImages) {
+      const current = await prisma.product.findUnique({ where: { id }, select: { specs: true } });
+      const currentSpecs = (current?.specs as Record<string, any>) || {};
+      updateData.specs = {
+        ...currentSpecs,
+        ...(body.costPrice || body.buyRate ? { costPrice: Number(body.costPrice || body.buyRate), buyRate: Number(body.costPrice || body.buyRate) } : {}),
+        ...(body.dispatchLeadTime ? { dispatchLeadTime: body.dispatchLeadTime } : {}),
+        ...(body.warrantyType ? { warrantyType: body.warrantyType } : {}),
+        ...(body.isFragile !== undefined ? { isFragile: Boolean(body.isFragile) } : {}),
+        ...(body.colorImages && typeof body.colorImages === 'object' ? { colorImages: JSON.stringify(body.colorImages) } : {}),
+      };
     }
 
     const res = await updateVendorProduct(auth.vendor.id, id, updateData);

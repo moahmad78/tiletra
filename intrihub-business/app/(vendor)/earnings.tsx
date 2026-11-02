@@ -32,9 +32,16 @@ export default function VendorEarningsScreen() {
     );
   }
 
-  const summary = data?.earnings?.summary;
-  const vendor = data?.earnings?.vendor;
-  const payouts = data?.earnings?.payouts || [];
+  const earningsData = data?.earnings;
+  const summary = earningsData?.summary;
+  const vendor = earningsData?.vendor;
+  const rawPayouts = earningsData?.payouts || earningsData?.payoutHistory || [];
+  const payouts = rawPayouts;
+
+  const totalGrossSales = summary?.totalRevenue ?? earningsData?.totalEarnings ?? 0;
+  const pendingPayoutAmount = summary?.pendingPayoutAmount ?? earningsData?.readyForPayoutAmount ?? 0;
+  const completedPayoutAmount = summary?.completedPayoutAmount ?? earningsData?.lifetimePaidOut ?? 0;
+  const commissionRate = vendor?.commissionRate ?? 10;
 
   return (
     <View style={styles.container}>
@@ -47,24 +54,39 @@ export default function VendorEarningsScreen() {
         contentContainerStyle={styles.scrollContent}
         refreshControl={<RefreshControl refreshing={isRefetching} onRefresh={refetch} tintColor={COLORS.accentOrange} />}
       >
-        {/* Highlight Card */}
+        {/* Comprehensive Financial Highlight Card */}
         <View style={styles.balanceCard}>
-          <Text style={styles.balanceSubtitle}>Available Settlement Balance</Text>
-          <Text style={styles.balanceAmount}>
-            ₹{(summary?.pendingPayoutAmount || 0).toLocaleString("en-IN")}
-          </Text>
+          <View style={styles.revenueHeader}>
+            <View>
+              <Text style={styles.balanceSubtitle}>Total Gross Sales</Text>
+              <Text style={styles.balanceAmount}>
+                ₹{totalGrossSales.toLocaleString("en-IN")}
+              </Text>
+            </View>
+            <View style={styles.trendBadge}>
+              <TrendingUp size={14} color="#10B981" />
+              <Text style={styles.trendText}>Live</Text>
+            </View>
+          </View>
 
           <View style={styles.statsRow}>
             <View style={styles.statCol}>
-              <Text style={styles.statLabel}>Total Settled</Text>
-              <Text style={styles.statVal}>
-                ₹{(summary?.completedPayoutAmount || 0).toLocaleString("en-IN")}
+              <Text style={styles.statLabel}>Pending Payout</Text>
+              <Text style={[styles.statVal, { color: COLORS.accentAmber }]}>
+                ₹{pendingPayoutAmount.toLocaleString("en-IN")}
               </Text>
             </View>
             <View style={styles.statDivider} />
             <View style={styles.statCol}>
-              <Text style={styles.statLabel}>Platform Commission</Text>
-              <Text style={styles.statVal}>{vendor?.commissionRate || 10}%</Text>
+              <Text style={styles.statLabel}>Completed Payouts</Text>
+              <Text style={[styles.statVal, { color: COLORS.accentGreen }]}>
+                ₹{completedPayoutAmount.toLocaleString("en-IN")}
+              </Text>
+            </View>
+            <View style={styles.statDivider} />
+            <View style={styles.statCol}>
+              <Text style={styles.statLabel}>Commission</Text>
+              <Text style={styles.statVal}>{commissionRate}%</Text>
             </View>
           </View>
         </View>
@@ -102,7 +124,7 @@ export default function VendorEarningsScreen() {
             </Text>
           </View>
         ) : (
-          payouts.map((p) => (
+          payouts.map((p: any) => (
             <View key={p.id} style={styles.payoutItem}>
               <View>
                 <Text style={styles.payoutItemTitle}>Order #{p.orderId}</Text>
@@ -163,6 +185,25 @@ const styles = StyleSheet.create({
     padding: SPACING.lg,
     marginBottom: SPACING.lg,
     ...SHADOWS.md,
+  },
+  revenueHeader: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "flex-start",
+  },
+  trendBadge: {
+    flexDirection: "row",
+    alignItems: "center",
+    backgroundColor: "rgba(16, 185, 129, 0.2)",
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    borderRadius: RADIUS.full,
+    gap: 4,
+  },
+  trendText: {
+    color: "#10B981",
+    fontSize: 11,
+    fontWeight: "800",
   },
   balanceSubtitle: {
     color: "rgba(255, 255, 255, 0.7)",

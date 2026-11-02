@@ -10,11 +10,13 @@ import CompactProductCard from "@/components/CompactProductCard";
 interface CategoryCatalogClientProps {
   products: Product[];
   categoryName: string;
+  headingLevel?: "h1" | "h2";
 }
 
 export default function CategoryCatalogClient({
   products,
   categoryName,
+  headingLevel = "h1",
 }: CategoryCatalogClientProps) {
   const [visibleCount, setVisibleCount] = useState(24);
   const [isLoadingMore, setIsLoadingMore] = useState(false);
@@ -61,7 +63,11 @@ export default function CategoryCatalogClient({
         <div className="w-14 h-14 mx-auto rounded-2xl bg-[#F26522]/10 border border-[#F26522]/20 flex items-center justify-center text-[#F26522] mb-2">
           <Package size={24} />
         </div>
-        <h1 className="text-lg sm:text-xl font-black text-[#052a51]">No products in {categoryName} yet</h1>
+        {headingLevel === "h2" ? (
+          <h2 className="text-lg sm:text-xl font-black text-[#052a51]">No products in {categoryName} yet</h2>
+        ) : (
+          <h1 className="text-lg sm:text-xl font-black text-[#052a51]">No products in {categoryName} yet</h1>
+        )}
         <p className="text-xs sm:text-sm text-gray-500 max-w-xs mx-auto leading-relaxed">
           We are curating high-grade {categoryName} supplies. Explore our full catalog for other available materials.
         </p>
@@ -89,9 +95,15 @@ export default function CategoryCatalogClient({
             <span>/</span>
             <span className="text-[#052a51]">{categoryName}</span>
           </div>
-          <h1 className="text-base sm:text-lg font-black text-[#052a51] leading-tight">
-            {categoryName}
-          </h1>
+          {headingLevel === "h2" ? (
+            <h2 className="text-base sm:text-lg font-black text-[#052a51] leading-tight">
+              {categoryName}
+            </h2>
+          ) : (
+            <h1 className="text-base sm:text-lg font-black text-[#052a51] leading-tight">
+              {categoryName}
+            </h1>
+          )}
         </div>
         <span className="text-xs font-bold text-gray-500 bg-gray-50 border border-gray-200/70 px-3 py-1.5 rounded-xl shrink-0">
           <span className="text-[#052a51] font-black">{products.length}</span> {products.length === 1 ? "item" : "items"}

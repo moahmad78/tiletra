@@ -274,6 +274,34 @@ export default function Footer() {
           </div>
         </div>
 
+        
+        {/* Popular Material Trends & Price Trackers */}
+        <div className="py-6 border-b border-white/10 text-xs text-white/70">
+          <h4 className="text-white font-bold text-xs sm:text-sm uppercase tracking-wider mb-3 flex items-center justify-between">
+            <span>Material Trends, Inspirations &amp; Price Guides</span>
+            <Link href="/inspiration" className="text-[#FF9900] hover:underline font-semibold text-xs tracking-normal capitalize flex items-center gap-1">
+              <span>View Inspiration Hub</span>
+              <ArrowRight size={12} />
+            </Link>
+          </h4>
+          <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-7 gap-2.5 text-[11px] sm:text-xs">
+            <Link href="/matte-tiles-bangalore" className="hover:text-[#F26522] transition-colors">Matte Tiles Bangalore</Link>
+            <Link href="/terracotta-look-tiles" className="hover:text-[#F26522] transition-colors">Terracotta Look Tiles</Link>
+            <Link href="/sandstone-effect-tiles" className="hover:text-[#F26522] transition-colors">Sandstone Effect Tiles</Link>
+            <Link href="/warm-travertine-tiles" className="hover:text-[#F26522] transition-colors">Warm Travertine Tiles</Link>
+            <Link href="/honey-oak-wood-tiles" className="hover:text-[#F26522] transition-colors">Honey Oak Wood Tiles</Link>
+            <Link href="/e0-grade-plywood" className="hover:text-[#F26522] transition-colors">E0 Grade Plywood</Link>
+            <Link href="/plywood-veneer-designs" className="hover:text-[#F26522] transition-colors">Plywood Veneer Designs</Link>
+            <Link href="/modular-plywood-furniture" className="hover:text-[#F26522] transition-colors">Modular Plywood Furniture</Link>
+            <Link href="/acoustic-panels-interior" className="hover:text-[#F26522] transition-colors">Acoustic Panels Interior</Link>
+            <Link href="/nature-inspired-laminates" className="hover:text-[#F26522] transition-colors">Nature-Inspired Laminates</Link>
+            <Link href="/cement-price-in-bangalore" className="hover:text-[#F26522] transition-colors">Cement Price Bangalore</Link>
+            <Link href="/tmt-bar-price-in-bangalore" className="hover:text-[#F26522] transition-colors">TMT Bar Price Bangalore</Link>
+            <Link href="/inspiration" className="hover:text-[#F26522] transition-colors">Design Inspiration</Link>
+            <Link href="/guides/interior-material-checklist-contractors" className="hover:text-[#F26522] transition-colors">Contractor Material Checklist</Link>
+          </div>
+        </div>
+
         {/* We Deliver Across India Section */}
         <div className="py-5 border-b border-white/10 text-xs text-white/70 bg-white/[0.02] -mx-4 sm:-mx-6 md:-mx-8 px-4 sm:px-6 md:px-8 rounded-xl my-4">
           <h4 className="mb-1.5">

@@ -73,7 +73,7 @@ const CORE_CATEGORIES = [
     description: "Vitrified floor tiles, PGVT slabs, anti-skid bathroom tiles, and South Indian natural granite slabs.",
     popularBrands: ["Kajaria", "Simpolo", "Roff Adhesives", "Jet Black Granite"],
     image: "/images/categories/cat-tiles-stone.jpg",
-    link: "/shop?category=tiles-stone",
+    link: "/shop/tiles-stone",
   },
   {
     name: "Plumbing, Pipes & Sanitary",
@@ -82,7 +82,7 @@ const CORE_CATEGORIES = [
     description: "SDR 11 CPVC hot/cold water pipes, UPVC external lines, SWR drainage fittings, and brass taps.",
     popularBrands: ["Astral", "Ashirvad", "Supreme", "Sintex Tanks"],
     image: "/images/categories/cat-plumbing.jpg",
-    link: "/shop?category=plumbing",
+    link: "/shop/plumbing-sanitary",
   },
   {
     name: "Electrical, Wires & Lighting",
@@ -91,7 +91,7 @@ const CORE_CATEGORIES = [
     description: "FRLS copper house wires, heavy PVC conduits, modular switches, metal back boxes, and LED panels.",
     popularBrands: ["Polycab", "Havells", "Schneider Electric", "Finolex"],
     image: "/images/categories/cat-electrical.jpg",
-    link: "/shop?category=electrical",
+    link: "/shop/electrical",
   },
   {
     name: "Plywood, Laminates & Doors",
@@ -100,7 +100,7 @@ const CORE_CATEGORIES = [
     description: "IS:710 Marine grade & IS:303 MR plywood, 1mm decorative laminates, and solid pine wood flush doors.",
     popularBrands: ["Greenpanel", "CenturyPly", "Greenlam", "Merino"],
     image: "/images/categories/cat-plywood.jpg",
-    link: "/shop?category=plywood",
+    link: "/shop/plywood",
   },
   {
     name: "Hardware, Fasteners & Locks",
@@ -109,7 +109,7 @@ const CORE_CATEGORIES = [
     description: "SS 304 ball-bearing hinges, mortise cylinder locks, self-drilling screws, and telescopic drawer channels.",
     popularBrands: ["Godrej", "Yale", "Dorset", "Hettich Compatible"],
     image: "/images/categories/cat-hardware.jpg",
-    link: "/shop?category=hardware",
+    link: "/shop/hardware-fittings",
   },
   {
     name: "False Ceiling & Waterproofing",
@@ -118,7 +118,7 @@ const CORE_CATEGORIES = [
     description: "Gypsum plasterboards, 0.50mm GI framing channels, POP powder, and 2-coat polymer waterproofing membranes.",
     popularBrands: ["Saint-Gobain Gyproc", "Dr. Fixit", "Fosroc", "Roff"],
     image: "/images/categories/cat-false-ceiling.jpg",
-    link: "/shop?category=false-ceiling",
+    link: "/shop/false-ceiling",
   },
 ];
 

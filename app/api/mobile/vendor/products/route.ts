@@ -77,6 +77,23 @@ export async function POST(req: NextRequest) {
       videoUrl,
       weightKg,
       isBulky,
+      highlights,
+      keywords,
+      manufacturer,
+      modelNumber,
+      condition,
+      countryOfOrigin,
+      minOrderQuantity,
+      maxOrderQuantity,
+      costPrice,
+      buyRate,
+      dispatchLeadTime,
+      warrantyType,
+      isFragile,
+      isBestseller,
+      isTrending,
+      isNewArrival,
+      colorImages,
     } = body;
 
     if (!name || typeof name !== "string" || name.trim().length < 2) {
@@ -86,7 +103,9 @@ export async function POST(req: NextRequest) {
     const numPrice = Number(pricePerSqft || pricePerBox || 100);
     const numMrp = mrp ? Number(mrp) : numPrice * 1.25;
     const numStock = stockBoxes ? Number(stockBoxes) : 50;
-    const imgList = Array.isArray(images) ? images : images ? [images] : [];
+    const rawImgList = Array.isArray(images) ? images : images ? [images] : [];
+    const colorImgs = colorImages && typeof colorImages === "object" ? Object.values(colorImages).filter((x): x is string => typeof x === "string" && Boolean(x)) : [];
+    const imgList = Array.from(new Set([...rawImgList, ...colorImgs]));
     const numSqftPerBox = sqftPerBox ? Number(sqftPerBox) : 16;
 
     const incomingVariants = Array.isArray(body.variants) && body.variants.length > 0
@@ -100,7 +119,7 @@ export async function POST(req: NextRequest) {
           stockBoxes: Number(v.stockBoxes) || numStock,
           mrp: Number(v.mrp) || numMrp,
           thickness: v.thickness || thickness || "9mm",
-          image: v.image || undefined,
+          image: v.image || (v.color && colorImages && colorImages[v.color]) || undefined,
           lowStockAlert: lowStockAlert ? Number(lowStockAlert) : undefined,
         }))
       : [
@@ -114,6 +133,7 @@ export async function POST(req: NextRequest) {
             stockBoxes: numStock,
             mrp: numMrp,
             thickness: thickness || "9mm",
+            image: (body.selectedColors && body.selectedColors[0] && colorImages && colorImages[body.selectedColors[0]]) || (imgList.length > 0 ? imgList[0] : undefined),
             lowStockAlert: lowStockAlert ? Number(lowStockAlert) : undefined,
           },
         ];
@@ -141,12 +161,30 @@ export async function POST(req: NextRequest) {
       videoUrl: videoUrl?.trim() || undefined,
       weightKg: weightKg ? Number(weightKg) : undefined,
       isBulky: Boolean(isBulky),
+      manufacturer: manufacturer?.trim() || undefined,
+      modelNumber: modelNumber?.trim() || undefined,
+      condition: condition || "New",
+      countryOfOrigin: countryOfOrigin || "India",
+      minOrderQuantity: minOrderQuantity ? Number(minOrderQuantity) : 1,
+      maxOrderQuantity: maxOrderQuantity ? Number(maxOrderQuantity) : undefined,
+      highlights: Array.isArray(highlights) ? highlights.filter(Boolean) : undefined,
+      keywords: Array.isArray(keywords) ? keywords.filter(Boolean) : undefined,
+      isBestseller: Boolean(isBestseller),
+      isTrending: Boolean(isTrending),
+      isNewArrival: Boolean(isNewArrival),
       specs: {
         thickness: thickness || "9mm",
         usage: usage || "Indoor / Commercial",
         look: look || "Modern",
+        ...(costPrice || buyRate ? { costPrice: Number(costPrice || buyRate), buyRate: Number(costPrice || buyRate) } : {}),
+        ...(dispatchLeadTime ? { dispatchLeadTime } : {}),
+        ...(warrantyType ? { warrantyType } : {}),
+        ...(isFragile ? { isFragile: true } : {}),
         ...(body.selectedColors && Array.isArray(body.selectedColors) ? { colours: body.selectedColors.join(", ") } : {}),
         ...(brand ? { brand: brand.trim() } : {}),
+        ...(colorImages && typeof colorImages === "object" ? { colorImages: JSON.stringify(colorImages) } : {}),
+        ...(manufacturer ? { manufacturer: manufacturer.trim() } : {}),
+        ...(modelNumber ? { modelNumber: modelNumber.trim() } : {}),
         ...(hsnCode ? { hsnCode: hsnCode.trim() } : {}),
         ...(gstRate !== undefined && gstRate !== "" ? { gstRate: `${gstRate}%` } : {}),
         ...(piecesPerBox ? { piecesPerBox: `${piecesPerBox} pcs` } : {}),

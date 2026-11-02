@@ -1,6 +1,6 @@
-import { redirect } from "next/navigation";
+import { permanentRedirect } from "next/navigation";
 
-// Old /designs route now redirects to /shop
+// Old /designs route permanently redirects to /shop
 export default function DesignsPage() {
-  redirect("/shop");
+  permanentRedirect("/shop");
 }

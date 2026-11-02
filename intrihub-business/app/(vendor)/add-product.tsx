@@ -37,6 +37,12 @@ import {
   BadgePercent,
   ShieldCheck,
   Video,
+  TrendingUp,
+  FileText,
+  Truck,
+  Shield,
+  Star,
+  Info,
 } from "lucide-react-native";
 import {
   createVendorProduct,
@@ -88,6 +94,7 @@ export default function AddProductScreen() {
   const [size, setSize] = useState("600x600 mm (2x2 ft)");
   const [thickness, setThickness] = useState("9 mm");
   const [selectedColors, setSelectedColors] = useState<string[]>(["Alaska White"]);
+  const [colorImages, setColorImages] = useState<Record<string, string>>({});
   const [finish, setFinish] = useState("Glossy");
   const [material, setMaterial] = useState("Glazed Vitrified (GVT)");
   const [images, setImages] = useState<string[]>([]);
@@ -104,6 +111,30 @@ export default function AddProductScreen() {
   const [warrantyDuration, setWarrantyDuration] = useState("1 Year");
   const [returnPolicyDays, setReturnPolicyDays] = useState("7");
   const [videoUrl, setVideoUrl] = useState("");
+
+  // ── Extended CPO Parity Fields ──
+  const [buyRate, setBuyRate] = useState("520");
+  const [manufacturer, setManufacturer] = useState("");
+  const [modelNumber, setModelNumber] = useState("");
+  const [condition, setCondition] = useState<"New" | "Refurbished" | "Used">("New");
+  const [countryOfOrigin, setCountryOfOrigin] = useState("India");
+  const [dispatchLeadTime, setDispatchLeadTime] = useState("24 Hours");
+  const [warrantyType, setWarrantyType] = useState("Manufacturer Warranty");
+  const [isFragile, setIsFragile] = useState(false);
+  const [isBestseller, setIsBestseller] = useState(false);
+  const [isTrending, setIsTrending] = useState(false);
+  const [isNewArrival, setIsNewArrival] = useState(false);
+  const [minOrderQuantity, setMinOrderQuantity] = useState("1");
+  const [maxOrderQuantity, setMaxOrderQuantity] = useState("");
+  const [highlights, setHighlights] = useState<string[]>([
+    "Durable & weather-resistant construction",
+    "Manufactured to strict industry quality benchmarks",
+    "Easy installation for interior and architectural spaces",
+  ]);
+  const [newHighlight, setNewHighlight] = useState("");
+  const [keywords, setKeywords] = useState<string[]>(["tiles", "floor", "vitrified", "interior"]);
+  const [newKeyword, setNewKeyword] = useState("");
+  const [activeStep, setActiveStep] = useState<number>(1);
 
   // Multi-Variants State
   const [hasVariants, setHasVariants] = useState(false);
@@ -223,6 +254,54 @@ export default function AddProductScreen() {
     }
   };
 
+  const handlePickColorImage = async (colorName: string) => {
+    try {
+      const result = await ImagePicker.launchImageLibraryAsync({
+        mediaTypes: ["images"],
+        allowsEditing: false,
+        quality: 0.8,
+      });
+
+      if (!result.canceled && result.assets?.[0]?.uri) {
+        const asset = result.assets[0];
+        setUploading(true);
+        const uploadRes = await uploadBusinessImage(
+          asset.uri,
+          asset.fileName || `color-${colorName.toLowerCase().replace(/[^a-z0-9]+/g, "-")}-${Date.now()}.jpg`,
+          asset.mimeType || "image/jpeg"
+        );
+        setUploading(false);
+
+        if (uploadRes.success && uploadRes.url) {
+          setColorImages((prev) => ({ ...prev, [colorName]: uploadRes.url! }));
+          setImages((prev) => Array.from(new Set([uploadRes.url!, ...prev])));
+          // Also auto-bind to any existing variant with this color
+          setVariants((prev) =>
+            prev.map((v) =>
+              v.color.trim().toLowerCase() === colorName.trim().toLowerCase() && !v.image
+                ? { ...v, image: uploadRes.url! }
+                : v
+            )
+          );
+          Alert.alert("Success", `Photo attached for "${colorName}".`);
+        } else {
+          Alert.alert("Upload Error", uploadRes.error || "Failed to upload color image");
+        }
+      }
+    } catch (e: any) {
+      setUploading(false);
+      Alert.alert("Error", e?.message || "Failed to pick image");
+    }
+  };
+
+  const handleRemoveColorImage = (colorName: string) => {
+    setColorImages((prev) => {
+      const next = { ...prev };
+      delete next[colorName];
+      return next;
+    });
+  };
+
   const handlePickVariantImage = async (variantIdx: number) => {
     try {
       const result = await ImagePicker.launchImageLibraryAsync({
@@ -261,6 +340,7 @@ export default function AddProductScreen() {
         color: defaultColor,
         colorHex: resolveColorHex(defaultColor),
         size: size || "600x600 mm (2x2 ft)",
+      image: (defaultColor && colorImages[defaultColor]) || undefined,
         thickness: thickness || "9 mm",
         finish: finish || "Glossy",
         pricePerBox: pricePerBox || "750",
@@ -361,6 +441,49 @@ export default function AddProductScreen() {
     });
   };
 
+  // ── CPO Engine Calculations ──
+  const saleNum = parseFloat(pricePerBox) || 0;
+  const buyNum = parseFloat(buyRate) || 0;
+  const marginAmt = saleNum - buyNum;
+  const marginPct = saleNum > 0 && buyNum > 0 ? Math.round((marginAmt / saleNum) * 100) : null;
+
+  const calculateCompleteness = () => {
+    let score = 0;
+    if (name.trim().length > 3) score += 20;
+    if (categoryName) score += 15;
+    if (pricePerBox && parseFloat(pricePerBox) > 0) score += 15;
+    if (images.length > 0 || primaryImageUrlInput.trim()) score += 15;
+    if (stockBoxes && parseInt(stockBoxes, 10) > 0) score += 10;
+    if (description.trim().length > 10) score += 10;
+    if (brand.trim()) score += 5;
+    if (weightKg && parseFloat(weightKg) > 0) score += 5;
+    if (highlights.length > 0) score += 5;
+    return Math.min(100, score);
+  };
+
+  const handleAddHighlight = () => {
+    if (!newHighlight.trim()) return;
+    setHighlights((prev) => [...prev, newHighlight.trim()]);
+    setNewHighlight("");
+  };
+
+  const handleRemoveHighlight = (idx: number) => {
+    setHighlights((prev) => prev.filter((_, i) => i !== idx));
+  };
+
+  const handleAddKeyword = () => {
+    if (!newKeyword.trim()) return;
+    const clean = newKeyword.trim().toLowerCase();
+    if (!keywords.includes(clean)) {
+      setKeywords((prev) => [...prev, clean]);
+    }
+    setNewKeyword("");
+  };
+
+  const handleRemoveKeyword = (tag: string) => {
+    setKeywords((prev) => prev.filter((k) => k !== tag));
+  };
+
   const handleSubmit = () => {
     if (!name.trim()) {
       Alert.alert("Validation Error", "Product title is required.");
@@ -392,6 +515,7 @@ export default function AddProductScreen() {
       size,
       thickness,
       selectedColors: selectedColors.length > 0 ? selectedColors : undefined,
+      colorImages: Object.keys(colorImages).length > 0 ? colorImages : undefined,
       finish,
       material,
       weightKg: parsedWeight,
@@ -408,6 +532,23 @@ export default function AddProductScreen() {
       warrantyDuration: warrantyDuration.trim(),
       returnPolicyDays: parseInt(returnPolicyDays, 10) || undefined,
       videoUrl: videoUrl.trim() || undefined,
+      // Extended CPO Engine Fields
+      buyRate: parseFloat(buyRate) || undefined,
+      costPrice: parseFloat(buyRate) || undefined,
+      manufacturer: manufacturer.trim() || undefined,
+      modelNumber: modelNumber.trim() || undefined,
+      condition,
+      countryOfOrigin,
+      dispatchLeadTime,
+      warrantyType,
+      isFragile,
+      isBestseller,
+      isTrending,
+      isNewArrival,
+      minOrderQuantity: parseFloat(minOrderQuantity) || 1,
+      maxOrderQuantity: maxOrderQuantity ? parseFloat(maxOrderQuantity) : undefined,
+      highlights: highlights.filter(Boolean),
+      keywords: keywords.filter(Boolean),
     });
   };
 
@@ -437,6 +578,179 @@ export default function AddProductScreen() {
                 ? "This product will go live immediately on Intrihub storefront upon submission."
                 : "This product will be reviewed and approved by Super Admin before appearing live."}
             </Text>
+          </View>
+        </View>
+
+        {/* CPO Completeness Progress Bar */}
+        <View style={styles.completenessHeaderBar}>
+          <View style={{ flexDirection: "row", justifyContent: "space-between", alignItems: "center" }}>
+            <Text style={styles.completenessLabelText}>
+              CPO Catalog Engine • <Text style={{ color: "#F26522", fontWeight: "900" }}>Step {activeStep} of 5</Text>
+            </Text>
+            <Text style={styles.completenessScoreText}>Listing Score: {calculateCompleteness()}%</Text>
+          </View>
+          <View style={styles.completenessBarTrack}>
+            <View style={[styles.completenessBarFill, { width: `${calculateCompleteness()}%` }]} />
+          </View>
+        </View>
+
+        {/* 5-Step Stepper Navigation Bar */}
+        <View style={styles.stepperContainer}>
+          <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.stepperScroll}>
+            {[
+              { step: 1, label: "1. Info & Specs" },
+              { step: 2, label: "2. Rates & Margin" },
+              { step: 3, label: "3. Photos & Media" },
+              { step: 4, label: "4. Variants Matrix" },
+              { step: 5, label: "5. Shipping & Review" },
+            ].map((st) => {
+              const isCurr = activeStep === st.step;
+              const isDone = activeStep > st.step;
+              return (
+                <TouchableOpacity
+                  key={st.step}
+                  style={[
+                    styles.stepTab,
+                    isCurr && styles.stepTabActive,
+                    isDone && styles.stepTabDone,
+                  ]}
+                  onPress={() => setActiveStep(st.step)}
+                  activeOpacity={0.8}
+                >
+                  <View style={[styles.stepNumBubble, isCurr && styles.stepNumBubbleActive, isDone && styles.stepNumBubbleDone]}>
+                    {isDone ? <Check size={10} color="#FFFFFF" /> : <Text style={[styles.stepNumText, isCurr && { color: "#FFFFFF" }]}>{st.step}</Text>}
+                  </View>
+                  <Text style={[styles.stepTabText, isCurr && styles.stepTabTextActive, isDone && styles.stepTabTextDone]}>
+                    {st.label}
+                  </Text>
+                </TouchableOpacity>
+              );
+            })}
+          </ScrollView>
+
+          {/* Manufacturer & Model Number (CPO Parity) */}
+          <View style={[styles.twoCol, { marginTop: 14 }]}>
+            <View style={{ flex: 1 }}>
+              <Text style={styles.inputLabel}>Manufacturer</Text>
+              <TextInput
+                style={styles.inputBox}
+                value={manufacturer}
+                onChangeText={setManufacturer}
+                placeholder="e.g. Kajaria Ceramics Ltd"
+              />
+            </View>
+            <View style={{ flex: 1 }}>
+              <Text style={styles.inputLabel}>Model / Part No.</Text>
+              <TextInput
+                style={styles.inputBox}
+                value={modelNumber}
+                onChangeText={setModelNumber}
+                placeholder="e.g. KJ-800-GLOSS"
+              />
+            </View>
+          </View>
+
+          {/* Condition & Country of Origin (CPO Parity) */}
+          <View style={[styles.twoCol, { marginTop: 12 }]}>
+            <View style={{ flex: 1 }}>
+              <Text style={styles.inputLabel}>Condition</Text>
+              <View style={{ flexDirection: "row", gap: 6, marginTop: 4 }}>
+                {(["New", "Refurbished", "Used"] as const).map((c) => {
+                  const isSel = condition === c;
+                  return (
+                    <TouchableOpacity
+                      key={c}
+                      style={[styles.quickChip, isSel && styles.quickChipActive]}
+                      onPress={() => setCondition(c)}
+                    >
+                      <Text style={[styles.quickChipText, isSel && styles.quickChipTextActive]}>{c}</Text>
+                    </TouchableOpacity>
+                  );
+                })}
+              </View>
+            </View>
+            <View style={{ flex: 1 }}>
+              <Text style={styles.inputLabel}>Country of Origin</Text>
+              <TextInput
+                style={styles.inputBox}
+                value={countryOfOrigin}
+                onChangeText={setCountryOfOrigin}
+                placeholder="India"
+              />
+            </View>
+          </View>
+
+          {/* Key Highlights Builder (CPO Parity) */}
+          <View style={{ marginTop: 14, padding: 12, backgroundColor: "#F8FAFC", borderRadius: 12, borderWidth: 1, borderColor: "#E2E8F0" }}>
+            <View style={{ flexDirection: "row", justifyContent: "space-between", alignItems: "center", marginBottom: 6 }}>
+              <View style={{ flexDirection: "row", alignItems: "center", gap: 6 }}>
+                <Star size={15} color="#F26522" />
+                <Text style={{ fontSize: 13, fontWeight: "800", color: "#0F172A" }}>Key Product Highlights</Text>
+              </View>
+              <Text style={{ fontSize: 10, color: "#64748B" }}>{highlights.length} bullet points</Text>
+            </View>
+
+            {highlights.map((h, hIdx) => (
+              <View key={hIdx} style={{ flexDirection: "row", alignItems: "center", gap: 8, marginTop: 6, backgroundColor: "#FFFFFF", padding: 8, borderRadius: 8, borderWidth: 1, borderColor: "#E2E8F0" }}>
+                <Text style={{ fontSize: 11, color: "#F26522", fontWeight: "900" }}>•</Text>
+                <Text style={{ flex: 1, fontSize: 11, color: "#334155", fontWeight: "600" }}>{h}</Text>
+                <TouchableOpacity onPress={() => handleRemoveHighlight(hIdx)}>
+                  <Trash2 size={13} color="#DC2626" />
+                </TouchableOpacity>
+              </View>
+            ))}
+
+            <View style={{ flexDirection: "row", gap: 8, marginTop: 8 }}>
+              <TextInput
+                style={[styles.inputBox, { flex: 1, height: 38, fontSize: 11 }]}
+                value={newHighlight}
+                onChangeText={setNewHighlight}
+                placeholder="e.g. Stain resistant mirror glaze surface..."
+              />
+              <TouchableOpacity
+                style={{ backgroundColor: "#052A51", paddingHorizontal: 12, borderRadius: 8, alignItems: "center", justifyContent: "center" }}
+                onPress={handleAddHighlight}
+              >
+                <Plus size={14} color="#FFFFFF" />
+              </TouchableOpacity>
+            </View>
+          </View>
+
+          {/* Search Keywords Tags (CPO Parity) */}
+          <View style={{ marginTop: 14, padding: 12, backgroundColor: "#F8FAFC", borderRadius: 12, borderWidth: 1, borderColor: "#E2E8F0" }}>
+            <View style={{ flexDirection: "row", justifyContent: "space-between", alignItems: "center", marginBottom: 6 }}>
+              <View style={{ flexDirection: "row", alignItems: "center", gap: 6 }}>
+                <Tag size={15} color="#052A51" />
+                <Text style={{ fontSize: 13, fontWeight: "800", color: "#0F172A" }}>Search Keywords & Tags</Text>
+              </View>
+              <Text style={{ fontSize: 10, color: "#64748B" }}>Storefront Search Engine</Text>
+            </View>
+
+            <View style={{ flexDirection: "row", flexWrap: "wrap", gap: 6 }}>
+              {keywords.map((kw) => (
+                <View key={kw} style={{ flexDirection: "row", alignItems: "center", gap: 4, backgroundColor: "#EFF6FF", borderWidth: 1, borderColor: "#BFDBFE", paddingVertical: 4, paddingHorizontal: 8, borderRadius: 12 }}>
+                  <Text style={{ fontSize: 11, fontWeight: "700", color: "#1D4ED8" }}>#{kw}</Text>
+                  <TouchableOpacity onPress={() => handleRemoveKeyword(kw)}>
+                    <X size={11} color="#1D4ED8" />
+                  </TouchableOpacity>
+                </View>
+              ))}
+            </View>
+
+            <View style={{ flexDirection: "row", gap: 8, marginTop: 8 }}>
+              <TextInput
+                style={[styles.inputBox, { flex: 1, height: 38, fontSize: 11 }]}
+                value={newKeyword}
+                onChangeText={setNewKeyword}
+                placeholder="Add keyword e.g. anti-skid, heavy-traffic..."
+              />
+              <TouchableOpacity
+                style={{ backgroundColor: "#F26522", paddingHorizontal: 12, borderRadius: 8, alignItems: "center", justifyContent: "center" }}
+                onPress={handleAddKeyword}
+              >
+                <Plus size={14} color="#FFFFFF" />
+              </TouchableOpacity>
+            </View>
           </View>
         </View>
 
@@ -585,30 +899,88 @@ export default function AddProductScreen() {
             </TouchableOpacity>
           </View>
 
-          {/* Selected Colors Chips */}
-          <View style={{ flexDirection: "row", flexWrap: "wrap", gap: 6, marginTop: 4 }}>
+          {/* Selected Colors with Per-Color Photo Attachment (CPO Parity) */}
+          <View style={{ marginTop: 6, gap: 6 }}>
             {selectedColors.map((col) => {
               const hex = resolveColorHex(col);
+              const colImg = colorImages[col];
               return (
                 <View
                   key={col}
                   style={{
+                    backgroundColor: "#FFFFFF",
+                    borderRadius: 10,
+                    paddingVertical: 6,
+                    paddingHorizontal: 10,
+                    borderWidth: 1,
+                    borderColor: colImg ? "#10B981" : "#E2E8F0",
                     flexDirection: "row",
                     alignItems: "center",
-                    backgroundColor: "#F1F5F9",
-                    paddingVertical: 4,
-                    paddingHorizontal: 8,
-                    borderRadius: 16,
-                    gap: 6,
-                    borderWidth: 1,
-                    borderColor: "#CBD5E1",
+                    justifyContent: "space-between",
                   }}
                 >
-                  <View style={{ width: 12, height: 12, borderRadius: 6, backgroundColor: hex, borderWidth: 1, borderColor: "#94A3B8" }} />
-                  <Text style={{ fontSize: 11, fontWeight: "700", color: "#052A51" }}>{col}</Text>
-                  <TouchableOpacity onPress={() => handleTogglePrimaryColor(col)}>
-                    <X size={12} color="#64748B" />
-                  </TouchableOpacity>
+                  <View style={{ flexDirection: "row", alignItems: "center", gap: 8, flex: 1 }}>
+                    <View style={{ width: 14, height: 14, borderRadius: 7, backgroundColor: hex, borderWidth: 1.5, borderColor: "#94A3B8" }} />
+                    <View>
+                      <Text style={{ fontSize: 12, fontWeight: "800", color: "#0F172A" }}>{col}</Text>
+                      {colImg ? (
+                        <Text style={{ fontSize: 9.5, fontWeight: "700", color: "#10B981" }}>✓ Color Photo Attached</Text>
+                      ) : (
+                        <Text style={{ fontSize: 9.5, color: "#94A3B8" }}>No specific photo attached</Text>
+                      )}
+                    </View>
+                  </View>
+
+                  <View style={{ flexDirection: "row", alignItems: "center", gap: 6 }}>
+                    {colImg ? (
+                      <View style={{ flexDirection: "row", alignItems: "center", gap: 5 }}>
+                        <Image
+                          source={{ uri: colImg }}
+                          style={{ width: 30, height: 30, borderRadius: 6, borderWidth: 1, borderColor: "#10B981" }}
+                          contentFit="cover"
+                        />
+                        <TouchableOpacity
+                          style={{ paddingVertical: 4, paddingHorizontal: 6, borderRadius: 6, backgroundColor: "#F1F5F9" }}
+                          onPress={() => handlePickColorImage(col)}
+                          disabled={uploading}
+                        >
+                          <Camera size={12} color="#052A51" />
+                        </TouchableOpacity>
+                        <TouchableOpacity
+                          style={{ padding: 4 }}
+                          onPress={() => handleRemoveColorImage(col)}
+                        >
+                          <Trash2 size={12} color="#EF4444" />
+                        </TouchableOpacity>
+                      </View>
+                    ) : (
+                      <TouchableOpacity
+                        style={{
+                          flexDirection: "row",
+                          alignItems: "center",
+                          gap: 4,
+                          paddingVertical: 4,
+                          paddingHorizontal: 8,
+                          borderRadius: 6,
+                          backgroundColor: "#EFF6FF",
+                          borderWidth: 1,
+                          borderColor: "#BFDBFE",
+                        }}
+                        onPress={() => handlePickColorImage(col)}
+                        disabled={uploading}
+                      >
+                        <Camera size={11} color="#1D4ED8" />
+                        <Text style={{ fontSize: 10, fontWeight: "800", color: "#1D4ED8" }}>+ Color Photo</Text>
+                      </TouchableOpacity>
+                    )}
+
+                    <TouchableOpacity
+                      style={{ padding: 4, marginLeft: 2 }}
+                      onPress={() => handleTogglePrimaryColor(col)}
+                    >
+                      <X size={13} color="#64748B" />
+                    </TouchableOpacity>
+                  </View>
                 </View>
               );
             })}
@@ -680,25 +1052,35 @@ export default function AddProductScreen() {
           </TouchableOpacity>
 
           {/* Pricing & Stock */}
-          <View style={[styles.twoCol, { marginTop: 14 }]}>
+          {/* Live Profit Margin Banner (CPO Parity) */}
+          {marginPct !== null && (
+            <View style={[styles.marginBanner, marginPct >= 15 ? styles.marginBannerGood : styles.marginBannerLow, { marginTop: 14 }]}>
+              <TrendingUp size={16} color={marginPct >= 15 ? "#16A34A" : "#D97706"} />
+              <Text style={[styles.marginBannerText, { color: marginPct >= 15 ? "#166534" : "#92400E" }]}>
+                Estimated Margin: <Text style={{ fontWeight: "900" }}>₹{marginAmt.toFixed(1)} / {unitOfSale} ({marginPct}%)</Text>
+              </Text>
+            </View>
+          )}
+
+          <View style={[styles.twoCol, { marginTop: 8 }]}>
             <View style={{ flex: 1 }}>
-              <Text style={styles.inputLabel}>Price / {unitOfSale.toUpperCase()} (₹) *</Text>
+              <Text style={styles.inputLabel}>Buy Rate / Cost (₹/{unitOfSale})</Text>
               <TextInput
                 style={styles.inputBox}
+                value={buyRate}
+                onChangeText={setBuyRate}
+                keyboardType="decimal-pad"
+                placeholder="520"
+              />
+            </View>
+            <View style={{ flex: 1 }}>
+              <Text style={styles.inputLabel}>Selling Rate (₹/{unitOfSale}) *</Text>
+              <TextInput
+                style={[styles.inputBox, { borderColor: "#F26522", backgroundColor: "#FFF7ED" }]}
                 value={pricePerBox}
                 onChangeText={setPricePerBox}
                 keyboardType="decimal-pad"
                 placeholder="750"
-              />
-            </View>
-            <View style={{ flex: 1 }}>
-              <Text style={styles.inputLabel}>Price / Sqft (₹)</Text>
-              <TextInput
-                style={styles.inputBox}
-                value={pricePerSqft}
-                onChangeText={setPricePerSqft}
-                keyboardType="decimal-pad"
-                placeholder="45"
               />
             </View>
           </View>
@@ -872,6 +1254,127 @@ export default function AddProductScreen() {
                 }}
               >
                 {isBulky ? <Check size={14} color="#FFFFFF" strokeWidth={3} /> : null}
+              </View>
+            </TouchableOpacity>
+          </View>
+
+          {/* Dispatch Lead Time & Ordering Rules (CPO Parity) */}
+          <View style={{ marginTop: 14, padding: 12, backgroundColor: "#F8FAFC", borderRadius: 10, borderWidth: 1, borderColor: "#E2E8F0" }}>
+            <View style={{ flexDirection: "row", alignItems: "center", gap: 6, marginBottom: 4 }}>
+              <Truck size={16} color="#052A51" />
+              <Text style={{ fontSize: 13, fontWeight: "800", color: "#052A51" }}>Dispatch Lead Time & Order Rules</Text>
+            </View>
+
+            <Text style={[styles.inputLabel, { marginTop: 8 }]}>Dispatch SLA</Text>
+            <ScrollView horizontal showsHorizontalScrollIndicator={false} style={{ marginTop: 4 }} contentContainerStyle={{ gap: 6 }}>
+              {["Same Day", "24 Hours", "2-3 Days", "5-7 Days"].map((sla) => {
+                const isSel = dispatchLeadTime === sla;
+                return (
+                  <TouchableOpacity
+                    key={sla}
+                    style={[styles.quickChip, isSel && styles.quickChipActive]}
+                    onPress={() => setDispatchLeadTime(sla)}
+                  >
+                    <Text style={[styles.quickChipText, isSel && styles.quickChipTextActive]}>{sla}</Text>
+                  </TouchableOpacity>
+                );
+              })}
+            </ScrollView>
+
+            <View style={[styles.twoCol, { marginTop: 10 }]}>
+              <View style={{ flex: 1 }}>
+                <Text style={styles.inputLabel}>Min Order Qty (MOQ)</Text>
+                <TextInput
+                  style={styles.inputBox}
+                  value={minOrderQuantity}
+                  onChangeText={setMinOrderQuantity}
+                  keyboardType="numeric"
+                  placeholder="1"
+                />
+              </View>
+              <View style={{ flex: 1 }}>
+                <Text style={styles.inputLabel}>Max Order Qty (Optional)</Text>
+                <TextInput
+                  style={styles.inputBox}
+                  value={maxOrderQuantity}
+                  onChangeText={setMaxOrderQuantity}
+                  keyboardType="numeric"
+                  placeholder="Unlimited"
+                />
+              </View>
+            </View>
+
+            {/* Promotional Badges (CPO Parity) */}
+            <View style={{ marginTop: 12 }}>
+              <Text style={styles.inputLabel}>Promotional Badges (CPO Marketing)</Text>
+              <View style={{ flexDirection: "row", flexWrap: "wrap", gap: 8, marginTop: 6 }}>
+                <TouchableOpacity
+                  style={[styles.chip, isBestseller && { backgroundColor: "#FEF2F2", borderColor: "#EF4444" }]}
+                  onPress={() => setIsBestseller(!isBestseller)}
+                  activeOpacity={0.8}
+                >
+                  <Text style={[styles.chipText, isBestseller && { color: "#DC2626", fontWeight: "800" }]}>
+                    🔥 Bestseller
+                  </Text>
+                </TouchableOpacity>
+                <TouchableOpacity
+                  style={[styles.chip, isTrending && { backgroundColor: "#FFFBEB", borderColor: "#F59E0B" }]}
+                  onPress={() => setIsTrending(!isTrending)}
+                  activeOpacity={0.8}
+                >
+                  <Text style={[styles.chipText, isTrending && { color: "#D97706", fontWeight: "800" }]}>
+                    ⚡ Trending
+                  </Text>
+                </TouchableOpacity>
+                <TouchableOpacity
+                  style={[styles.chip, isNewArrival && { backgroundColor: "#EFF6FF", borderColor: "#3B82F6" }]}
+                  onPress={() => setIsNewArrival(!isNewArrival)}
+                  activeOpacity={0.8}
+                >
+                  <Text style={[styles.chipText, isNewArrival && { color: "#2563EB", fontWeight: "800" }]}>
+                    ✨ New Arrival
+                  </Text>
+                </TouchableOpacity>
+              </View>
+            </View>
+
+            {/* Fragile Switch */}
+            <TouchableOpacity
+              style={{
+                marginTop: 10,
+                padding: 10,
+                backgroundColor: isFragile ? "#FFF1F2" : "#FFFFFF",
+                borderRadius: 8,
+                borderWidth: 1,
+                borderColor: isFragile ? "#F43F5E" : "#CBD5E1",
+                flexDirection: "row",
+                alignItems: "center",
+                justifyContent: "space-between",
+              }}
+              onPress={() => setIsFragile(!isFragile)}
+              activeOpacity={0.85}
+            >
+              <View style={{ flex: 1, marginRight: 8 }}>
+                <Text style={{ fontSize: 12, fontWeight: "800", color: isFragile ? "#9F1239" : "#1E293B" }}>
+                  ⚠️ Fragile / Breakable Material
+                </Text>
+                <Text style={{ fontSize: 10, color: "#64748B", marginTop: 2 }}>
+                  Tiles, mirrors, glass and sanitary wares are flagged with extra protective handling.
+                </Text>
+              </View>
+              <View
+                style={{
+                  width: 22,
+                  height: 22,
+                  borderRadius: 6,
+                  borderWidth: 1.5,
+                  borderColor: isFragile ? "#E11D48" : "#94A3B8",
+                  backgroundColor: isFragile ? "#E11D48" : "transparent",
+                  alignItems: "center",
+                  justifyContent: "center",
+                }}
+              >
+                {isFragile ? <Check size={14} color="#FFFFFF" strokeWidth={3} /> : null}
               </View>
             </TouchableOpacity>
           </View>
@@ -1883,5 +2386,123 @@ const styles = StyleSheet.create({
   },
   quickChipTextActive: {
     color: "#FFFFFF",
+  },
+  completenessHeaderBar: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+    marginBottom: 6,
+  },
+  completenessLabelText: {
+    fontSize: 11,
+    color: "#64748B",
+    fontWeight: "700",
+  },
+  completenessScoreText: {
+    fontSize: 11,
+    fontWeight: "900",
+    color: "#052A51",
+  },
+  completenessBarTrack: {
+    height: 4,
+    backgroundColor: "#E2E8F0",
+    borderRadius: 2,
+    overflow: "hidden",
+  },
+  completenessBarFill: {
+    height: "100%",
+    backgroundColor: "#F26522",
+    borderRadius: 2,
+  },
+  stepperContainer: {
+    marginTop: 10,
+    marginBottom: 8,
+  },
+  stepperScroll: {
+    flexDirection: "row",
+    gap: 8,
+    paddingVertical: 2,
+  },
+  stepTab: {
+    flexDirection: "row",
+    alignItems: "center",
+    paddingVertical: 6,
+    paddingHorizontal: 10,
+    borderRadius: 16,
+    backgroundColor: "#F1F5F9",
+    borderWidth: 1,
+    borderColor: "#E2E8F0",
+    gap: 6,
+  },
+  stepTabActive: {
+    backgroundColor: "#052A51",
+    borderColor: "#052A51",
+  },
+  stepTabDone: {
+    backgroundColor: "#EFF6FF",
+    borderColor: "#BFDBFE",
+  },
+  stepNumBubble: {
+    width: 18,
+    height: 18,
+    borderRadius: 9,
+    backgroundColor: "#CBD5E1",
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  stepNumBubbleActive: {
+    backgroundColor: "#F26522",
+  },
+  stepNumBubbleDone: {
+    backgroundColor: "#10B981",
+  },
+  stepNumText: {
+    fontSize: 10,
+    fontWeight: "900",
+    color: "#334155",
+  },
+  stepTabText: {
+    fontSize: 11,
+    fontWeight: "700",
+    color: "#64748B",
+  },
+  stepTabTextActive: {
+    color: "#FFFFFF",
+  },
+  stepTabTextDone: {
+    color: "#1E3A8A",
+  },
+  marginBanner: {
+    padding: 8,
+    borderRadius: 8,
+    borderWidth: 1,
+    marginTop: 8,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  marginBannerGood: {
+    backgroundColor: "#ECFDF5",
+    borderColor: "#A7F3D0",
+  },
+  marginBannerLow: {
+    backgroundColor: "#FEF2F2",
+    borderColor: "#FECACA",
+  },
+  marginBannerText: {
+    fontSize: 11,
+    fontWeight: "800",
+  },
+  chip: {
+    paddingVertical: 6,
+    paddingHorizontal: 12,
+    borderRadius: 8,
+    backgroundColor: "#F8FAFC",
+    borderWidth: 1,
+    borderColor: "#CBD5E1",
+  },
+  chipText: {
+    fontSize: 11,
+    fontWeight: "700",
+    color: "#475569",
   },
 });

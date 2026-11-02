@@ -35,35 +35,35 @@ export default function VendorTabsLayout() {
       <Tabs.Screen
         name="dashboard"
         options={{
-          title: t("vendor.dashboard") || "Dashboard",
+          title: t("tabs.dashboard") || "Dashboard",
           tabBarIcon: ({ color, size }) => <LayoutDashboard size={size} color={color} />,
         }}
       />
       <Tabs.Screen
         name="products"
         options={{
-          title: t("vendor.products") || "My Products",
+          title: t("tabs.products") || "Products",
           tabBarIcon: ({ color, size }) => <Package size={size} color={color} />,
         }}
       />
       <Tabs.Screen
         name="orders"
         options={{
-          title: t("vendor.orders") || "Orders",
+          title: t("tabs.orders") || "Orders",
           tabBarIcon: ({ color, size }) => <ShoppingCart size={size} color={color} />,
         }}
       />
       <Tabs.Screen
         name="earnings"
         options={{
-          title: t("vendor.earnings") || "Earnings",
+          title: t("tabs.earnings") || "Earnings",
           tabBarIcon: ({ color, size }) => <IndianRupee size={size} color={color} />,
         }}
       />
       <Tabs.Screen
         name="profile"
         options={{
-          title: t("account.profile") || "Store Profile",
+          title: t("tabs.profile") || "Profile",
           tabBarIcon: ({ color, size }) => <User size={size} color={color} />,
         }}
       />

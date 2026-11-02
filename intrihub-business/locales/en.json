@@ -182,6 +182,8 @@
     "products": "Product Catalog",
     "earnings": "Total Earnings",
     "payouts": "Settlement & Payouts",
+    "pendingPayout": "Pending Payout",
+    "completedPayouts": "Completed Payouts",
     "acceptOrder": "Accept Order",
     "readyForPickup": "Ready for Dispatch",
     "shopStatus": "Shop Online Status",
@@ -213,5 +215,12 @@
     "orderQuery": "Please reply with your 6-digit Order ID to track your live delivery status.",
     "talkToAgent": "Connecting you with an IntriHub procurement specialist right away...",
     "fallback": "Thank you for reaching out. An IntriHub site manager will respond shortly."
+  },
+  "tabs": {
+    "dashboard": "Dashboard",
+    "products": "Products",
+    "orders": "Orders",
+    "earnings": "Earnings",
+    "profile": "Profile"
   }
 }

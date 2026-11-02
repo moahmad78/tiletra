@@ -21,6 +21,12 @@ export const metadata: Metadata = {
     type: "website",
     siteName: "IntriHub",
   },
+  twitter: {
+    card: "summary_large_image",
+    title: "For Interior Designers & Studios | IntriHub",
+    description: "Curated interior material sourcing for design studios with trade discounts, sample deliveries, and fast site procurement.",
+    images: ["https://www.intrihub.com/images/intrihub-og-image.jpg"],
+  },
 };
 
 export default function ForInteriorDesignersPage() {

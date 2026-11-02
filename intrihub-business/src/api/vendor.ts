@@ -60,6 +60,7 @@ export async function createVendorProduct(data: {
   size?: string;
   thickness?: string;
   selectedColors?: string[];
+  colorImages?: Record<string, string>;
   usage?: string;
   look?: string;
   weightKg?: number;
@@ -67,6 +68,22 @@ export async function createVendorProduct(data: {
   status?: "active" | "paused" | "draft";
   variants?: any[];
   brand?: string;
+  manufacturer?: string;
+  modelNumber?: string;
+  condition?: "New" | "Refurbished" | "Used";
+  countryOfOrigin?: string;
+  minOrderQuantity?: number;
+  maxOrderQuantity?: number;
+  costPrice?: number;
+  buyRate?: number;
+  dispatchLeadTime?: string;
+  warrantyType?: string;
+  isFragile?: boolean;
+  isBestseller?: boolean;
+  isTrending?: boolean;
+  isNewArrival?: boolean;
+  highlights?: string[];
+  keywords?: string[];
   hsnCode?: string;
   gstRate?: number;
   piecesPerBox?: number;
@@ -123,6 +140,21 @@ export async function updateVendorProduct(
     variants: any[];
     attributes: Array<{ key: string; value: string }>;
     status: "active" | "paused" | "draft";
+    manufacturer: string;
+    condition: "New" | "Refurbished" | "Used";
+    countryOfOrigin: string;
+    minOrderQuantity: number;
+    maxOrderQuantity: number;
+    costPrice: number;
+    buyRate: number;
+    dispatchLeadTime: string;
+    warrantyType: string;
+    isFragile: boolean;
+    isBestseller: boolean;
+    isTrending: boolean;
+    isNewArrival: boolean;
+    highlights: string[];
+    keywords: string[];
   }>
 ): Promise<{
   success: boolean;
@@ -131,6 +163,29 @@ export async function updateVendorProduct(
   error?: string;
 }> {
   const res = await apiClient.patch(`/api/mobile/vendor/products/${id}`, data);
+  return res.data;
+}
+
+export async function quickUpdateVendorProductRatesAndStock(data: {
+  productId: string;
+  mrp?: number;
+  saleRate?: number;
+  buyRate?: number;
+  stock?: number;
+  variants?: Array<{
+    id?: string;
+    mrp?: number;
+    price?: number;
+    pricePerBox?: number;
+    costPrice?: number;
+    stockBoxes?: number;
+  }>;
+}): Promise<{
+  success: boolean;
+  message?: string;
+  error?: string;
+}> {
+  const res = await apiClient.post("/api/mobile/vendor/products/quick-rate-stock", data);
   return res.data;
 }
 
@@ -239,6 +294,22 @@ export async function updateVendorProfile(data: {
   locationAccuracy?: number;
   autoAcceptOrders?: boolean;
   serviceAreaRadiusKm?: number;
+  // Bank Details
+  bankAccountHolder?: string;
+  bankName?: string;
+  bankAccountNumber?: string;
+  bankIfscCode?: string;
+  bankUpiId?: string;
+  // KYC Legal Documents & Shopfront
+  panNumber?: string;
+  panDocUrl?: string;
+  aadharNumber?: string;
+  aadharDocUrl?: string;
+  gstNumber?: string;
+  gstDocUrl?: string;
+  chequeDocUrl?: string;
+  tradeLicenseDocUrl?: string;
+  kycStatus?: string;
 }): Promise<{
   success: boolean;
   message?: string;

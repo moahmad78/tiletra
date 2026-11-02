@@ -23,11 +23,9 @@ import {
   Clock,
   CheckCircle2,
   AlertTriangle,
-  Plus,
   ChevronRight,
   ArrowUpRight,
   Bell,
-  Power,
 } from "lucide-react-native";
 import { fetchVendorDashboard, updateVendorStatus } from "../../src/api/vendor";
 import { COLORS, SPACING, RADIUS, SHADOWS } from "../../src/constants/theme";
@@ -150,32 +148,64 @@ export default function VendorDashboardScreen() {
         {vendor?.logo ? (
           <Image
             source={{ uri: vendor.logo }}
-            style={{ width: 42, height: 42, borderRadius: 21, borderWidth: 1, borderColor: "#E2E8F0" }}
+            style={{ width: 44, height: 44, borderRadius: 22, borderWidth: 1.5, borderColor: "#E2E8F0" }}
             contentFit="cover"
           />
         ) : (
-          <Image
-            source={require("../../assets/intri-icon.png")}
-            style={styles.vendorHeaderLogo}
-            contentFit="contain"
-          />
-        )}
-        <View style={{ flex: 1, marginLeft: 10 }}>
-          <View style={styles.storeBadge}>
-            <Building2 size={12} color={COLORS.accentOrange} />
-            <Text style={styles.storeBadgeText}>VENDOR CONSOLE</Text>
+          <View style={styles.webLogoBadge}>
+            <Image
+              source={require("../../assets/intri-web-logo.png")}
+              style={styles.webHeaderLogo}
+              contentFit="contain"
+            />
           </View>
-          <Text style={styles.storeName} numberOfLines={1}>{vendor?.businessName || "My Store"}</Text>
-        </View>
+        )}
+        <View style={{ flex: 1 }} />
 
-        <View style={{ flexDirection: "row", alignItems: "center", gap: 10 }}>
+        <View style={{ flexDirection: "row", alignItems: "center", gap: 8 }}>
+          {/* Small Store Online / Offline Toggle Pill */}
+          <View
+            style={[
+              styles.topBarTogglePill,
+              {
+                backgroundColor: isOnline ? "rgba(22, 163, 74, 0.22)" : "rgba(220, 38, 38, 0.22)",
+                borderColor: isOnline ? "#4ADE80" : "#F87171",
+              },
+            ]}
+          >
+            <View
+              style={[
+                styles.topBarToggleDot,
+                { backgroundColor: isOnline ? "#22C55E" : "#EF4444" },
+              ]}
+            />
+            <Text
+              style={[
+                styles.topBarToggleText,
+                { color: isOnline ? "#86EFAC" : "#FCA5A5" },
+              ]}
+            >
+              {isOnline ? "ONLINE" : "OFFLINE"}
+            </Text>
+            <Switch
+              value={isOnline}
+              onValueChange={handleToggleOnline}
+              disabled={isUpdatingOnline}
+              trackColor={{ false: "#475569", true: "#16A34A" }}
+              thumbColor={isOnline ? "#FFFFFF" : "#E2E8F0"}
+              ios_backgroundColor="#475569"
+              style={styles.topBarSwitch}
+            />
+          </View>
+
+          {/* Notifications Button */}
           <TouchableOpacity
             style={styles.notifHeaderBtn}
             onPress={() => router.push("/(vendor)/notifications" as any)}
             activeOpacity={0.85}
           >
             <Animated.View style={{ transform: [{ rotate: bellRotation }] }}>
-              <Bell size={20} color="#FFFFFF" />
+              <Bell size={19} color="#FFFFFF" />
             </Animated.View>
             {unreadCount > 0 && (
               <View style={styles.notifBadge}>
@@ -185,15 +215,6 @@ export default function VendorDashboardScreen() {
               </View>
             )}
           </TouchableOpacity>
-
-          <TouchableOpacity
-            style={styles.quickAddBtn}
-            onPress={() => router.push("/(vendor)/add-product" as any)}
-            activeOpacity={0.85}
-          >
-            <Plus size={16} color="#fff" />
-            <Text style={styles.quickAddBtnText}>Add</Text>
-          </TouchableOpacity>
         </View>
       </View>
 
@@ -202,98 +223,6 @@ export default function VendorDashboardScreen() {
         refreshControl={<RefreshControl refreshing={isRefetching} onRefresh={refetch} tintColor={COLORS.accentOrange} />}
         showsVerticalScrollIndicator={false}
       >
-        {/* Store Online / Offline Toggle Card */}
-        <View
-          style={[
-            styles.statusToggleCard,
-            {
-              backgroundColor: isOnline ? "#F0FDF4" : "#FEF2F2",
-              borderColor: isOnline ? "#BBF7D0" : "#FECACA",
-            },
-          ]}
-        >
-          <View style={styles.statusToggleLeft}>
-            <View
-              style={[
-                styles.statusIconBadge,
-                { backgroundColor: isOnline ? "#DCFCE7" : "#FEE2E2" },
-              ]}
-            >
-              <Power size={18} color={isOnline ? "#16A34A" : "#DC2626"} />
-            </View>
-            <View style={{ flex: 1 }}>
-              <View style={{ flexDirection: "row", alignItems: "center", gap: 6 }}>
-                <View
-                  style={[
-                    styles.statusPulsingDot,
-                    { backgroundColor: isOnline ? "#16A34A" : "#DC2626" },
-                  ]}
-                />
-                <Text
-                  style={[
-                    styles.statusCardTitle,
-                    { color: isOnline ? "#15803D" : "#B91C1C" },
-                  ]}
-                >
-                  {isOnline ? "Store is ONLINE" : "Store is OFFLINE"}
-                </Text>
-              </View>
-              <Text
-                style={[
-                  styles.statusCardSubtitle,
-                  { color: isOnline ? "#166534" : "#991B1B" },
-                ]}
-                numberOfLines={2}
-              >
-                {isOnline
-                  ? "Items visible on website & app • Accepting orders"
-                  : "Items hidden from catalog • Store closed"}
-              </Text>
-            </View>
-          </View>
-
-          <Switch
-            value={isOnline}
-            onValueChange={handleToggleOnline}
-            disabled={isUpdatingOnline}
-            trackColor={{ false: "#CBD5E1", true: "#86EFAC" }}
-            thumbColor={isOnline ? "#16A34A" : "#64748B"}
-            ios_backgroundColor="#CBD5E1"
-          />
-        </View>
-
-        {/* Revenue Highlight Card */}
-        <View style={styles.revenueCard}>
-          <View style={styles.revenueHeader}>
-            <View>
-              <Text style={styles.revenueSubtitle}>{t("vendor.earnings") || "Total Gross Sales"}</Text>
-              <Text style={styles.revenueAmount}>
-                ₹{(stats?.totalRevenue || 0).toLocaleString("en-IN")}
-              </Text>
-            </View>
-            <View style={styles.trendBadge}>
-              <TrendingUp size={14} color="#10B981" />
-              <Text style={styles.trendText}>Live</Text>
-            </View>
-          </View>
-
-          <View style={styles.payoutsRow}>
-            <View style={styles.payoutCol}>
-              <Text style={styles.payoutLabel}>{t("vendor.payouts") || "Pending Payout"}</Text>
-              <Text style={[styles.payoutValue, { color: COLORS.accentAmber }]}>
-                ₹{(stats?.pendingPayout || 0).toLocaleString("en-IN")}
-              </Text>
-            </View>
-            <View style={styles.payoutDivider} />
-            <View style={styles.payoutCol}>
-              <Text style={styles.payoutLabel}>{t("vendor.payouts") || "Completed Payouts"}</Text>
-              <Text style={[styles.payoutValue, { color: COLORS.accentGreen }]}>
-                ₹{(stats?.completedPayouts || 0).toLocaleString("en-IN")}
-              </Text>
-            </View>
-          </View>
-        </View>
-
         {/* 4-Grid Operational Stats */}
         <View style={styles.statsGrid}>
           <TouchableOpacity
@@ -370,13 +299,31 @@ export default function VendorDashboardScreen() {
               activeOpacity={0.85}
             >
               <View style={styles.orderCardHeader}>
-                <View>
-                  <Text style={styles.orderIdText}>Order #{order.orderId}</Text>
-                  <Text style={styles.customerName}>{order.customerName}</Text>
+                <View style={styles.orderCardHeaderLeft}>
+                  <Text style={styles.orderIdText} numberOfLines={1}>Order #{order.orderId}</Text>
+                  <Text style={styles.customerName} numberOfLines={1}>{order.customerName}</Text>
                 </View>
-                <View style={[styles.statusPill, getStatusStyle(order.fulfillmentStatus)]}>
-                  <Text style={styles.statusPillText}>{formatStatus(order.fulfillmentStatus)}</Text>
-                </View>
+                {(() => {
+                  const statusInfo = getFulfillmentStatusInfo(order.fulfillmentStatus);
+                  return (
+                    <View
+                      style={[
+                        styles.statusPill,
+                        {
+                          backgroundColor: statusInfo.bg,
+                          borderColor: statusInfo.border,
+                        },
+                      ]}
+                    >
+                      <Text
+                        style={[styles.statusPillText, { color: statusInfo.textColor }]}
+                        numberOfLines={1}
+                      >
+                        {statusInfo.label}
+                      </Text>
+                    </View>
+                  );
+                })()}
               </View>
 
               <View style={styles.orderCardFooter}>
@@ -395,23 +342,77 @@ export default function VendorDashboardScreen() {
   );
 }
 
-function formatStatus(status?: string) {
-  if (!status) return "Pending";
-  return status.replace(/_/g, " ").toUpperCase();
-}
+function getFulfillmentStatusInfo(status?: string) {
+  const s = (status || "").toLowerCase().trim();
 
-function getStatusStyle(status?: string) {
-  switch (status) {
-    case "confirmed":
-      return { backgroundColor: "rgba(37, 99, 235, 0.15)", color: "#2563EB" };
-    case "ready_for_pickup":
-    case "dispatched":
-      return { backgroundColor: "rgba(245, 158, 11, 0.15)", color: "#F59E0B" };
-    case "delivered":
-      return { backgroundColor: "rgba(16, 185, 129, 0.15)", color: "#10B981" };
-    default:
-      return { backgroundColor: "rgba(148, 163, 184, 0.2)", color: "#475569" };
+  // Ready for pickup -> Compact single word "READY"
+  if (s.includes("ready")) {
+    return {
+      label: "READY",
+      bg: "#FEF3C7",
+      textColor: "#B45309",
+      border: "#FDE68A",
+    };
   }
+
+  // Pending vendor approval / awaiting vendor -> Compact single word "PENDING"
+  if (s.includes("pending") || s.includes("awaiting")) {
+    return {
+      label: "PENDING",
+      bg: "#EFF6FF",
+      textColor: "#1D4ED8",
+      border: "#BFDBFE",
+    };
+  }
+
+  // Confirmed / accepted / processing
+  if (s === "confirmed" || s === "accepted" || s === "processing") {
+    return {
+      label: "CONFIRMED",
+      bg: "#F0FDF4",
+      textColor: "#15803D",
+      border: "#BBF7D0",
+    };
+  }
+
+  // Dispatched / out for delivery / picked up
+  if (s === "dispatched" || s === "picked_up" || s.includes("delivery") || s.includes("transit")) {
+    return {
+      label: "DISPATCHED",
+      bg: "#F5F3FF",
+      textColor: "#6D28D9",
+      border: "#DDD6FE",
+    };
+  }
+
+  // Delivered
+  if (s === "delivered") {
+    return {
+      label: "DELIVERED",
+      bg: "#DCFCE7",
+      textColor: "#166534",
+      border: "#86EFAC",
+    };
+  }
+
+  // Cancelled / rejected
+  if (s === "cancelled" || s === "rejected") {
+    return {
+      label: "CANCELLED",
+      bg: "#FEE2E2",
+      textColor: "#B91C1C",
+      border: "#FECACA",
+    };
+  }
+
+  // Safe fallback (single word, max 10 chars)
+  const cleanWord = (s.split("_")[0] || "PENDING").slice(0, 10).toUpperCase();
+  return {
+    label: cleanWord,
+    bg: "#F1F5F9",
+    textColor: "#475569",
+    border: "#E2E8F0",
+  };
 }
 
 const styles = StyleSheet.create({
@@ -439,6 +440,48 @@ const styles = StyleSheet.create({
     paddingTop: 50,
     paddingBottom: SPACING.lg,
     paddingHorizontal: SPACING.lg,
+  },
+  webLogoBadge: {
+    backgroundColor: "#FFFFFF",
+    paddingHorizontal: 4,
+    paddingVertical: 2,
+    borderRadius: 7,
+    alignItems: "center",
+    justifyContent: "center",
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.15,
+    shadowRadius: 2,
+    elevation: 2,
+  },
+  webHeaderLogo: {
+    width: 114,
+    height: 33,
+  },
+  topBarTogglePill: {
+    flexDirection: "row",
+    alignItems: "center",
+    paddingLeft: 8,
+    paddingRight: 1,
+    paddingVertical: 2,
+    borderRadius: RADIUS.full,
+    borderWidth: 1.2,
+    gap: 5,
+  },
+  topBarToggleDot: {
+    width: 6,
+    height: 6,
+    borderRadius: 3,
+  },
+  topBarToggleText: {
+    fontSize: 10,
+    fontWeight: "900",
+    letterSpacing: 0.5,
+  },
+  topBarSwitch: {
+    transform: [{ scaleX: 0.7 }, { scaleY: 0.7 }],
+    marginRight: -4,
+    marginLeft: 0,
   },
   vendorHeaderLogo: {
     width: 40,
@@ -487,20 +530,7 @@ const styles = StyleSheet.create({
     fontSize: 9,
     fontWeight: "900",
   },
-  quickAddBtn: {
-    flexDirection: "row",
-    alignItems: "center",
-    backgroundColor: COLORS.accentOrange,
-    paddingVertical: 8,
-    paddingHorizontal: 14,
-    borderRadius: RADIUS.full,
-    gap: 6,
-  },
-  quickAddBtnText: {
-    color: "#fff",
-    fontSize: 13,
-    fontWeight: "800",
-  },
+
   scrollContent: {
     padding: SPACING.lg,
     paddingBottom: 40,
@@ -649,15 +679,21 @@ const styles = StyleSheet.create({
     marginBottom: SPACING.md,
     borderWidth: 1,
     borderColor: COLORS.border,
+    overflow: "hidden",
     ...SHADOWS.sm,
   },
   orderCardHeader: {
     flexDirection: "row",
     justifyContent: "space-between",
-    alignItems: "flex-start",
+    alignItems: "center",
     borderBottomWidth: 1,
     borderBottomColor: COLORS.borderLight,
     paddingBottom: SPACING.sm,
+    gap: 8,
+  },
+  orderCardHeaderLeft: {
+    flex: 1,
+    paddingRight: 6,
   },
   orderIdText: {
     fontSize: 14,
@@ -671,12 +707,16 @@ const styles = StyleSheet.create({
   },
   statusPill: {
     paddingHorizontal: 8,
-    paddingVertical: 4,
-    borderRadius: RADIUS.sm,
+    paddingVertical: 3,
+    borderRadius: RADIUS.full,
+    borderWidth: 1,
+    flexShrink: 0,
+    alignSelf: "center",
   },
   statusPillText: {
     fontSize: 10,
     fontWeight: "800",
+    letterSpacing: 0.3,
   },
   orderCardFooter: {
     flexDirection: "row",
@@ -702,43 +742,5 @@ const styles = StyleSheet.create({
     fontWeight: "800",
     color: COLORS.accentOrange,
   },
-  statusToggleCard: {
-    borderRadius: RADIUS.xl,
-    padding: SPACING.md,
-    marginBottom: SPACING.md,
-    borderWidth: 1.5,
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "space-between",
-    ...SHADOWS.sm,
-  },
-  statusToggleLeft: {
-    flexDirection: "row",
-    alignItems: "center",
-    flex: 1,
-    marginRight: SPACING.sm,
-    gap: SPACING.sm,
-  },
-  statusIconBadge: {
-    width: 38,
-    height: 38,
-    borderRadius: 19,
-    alignItems: "center",
-    justifyContent: "center",
-  },
-  statusPulsingDot: {
-    width: 8,
-    height: 8,
-    borderRadius: 4,
-  },
-  statusCardTitle: {
-    fontSize: 14,
-    fontWeight: "900",
-  },
-  statusCardSubtitle: {
-    fontSize: 11,
-    fontWeight: "600",
-    marginTop: 2,
-    lineHeight: 15,
-  },
+
 });

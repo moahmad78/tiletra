@@ -1,10 +1,28 @@
 import { io, Socket } from "socket.io-client";
+import { AppState, AppStateStatus } from "react-native";
 import { API_BASE_URL } from "../api/client";
 
 class SocketService {
   private socket: Socket | null = null;
   private currentUserId: string | null = null;
   private listeners: Map<string, Set<(data: any) => void>> = new Map();
+  private appStateSub: any = null;
+
+  constructor() {
+    this.initAppStateListener();
+  }
+
+  private initAppStateListener() {
+    if (this.appStateSub) return;
+    this.appStateSub = AppState.addEventListener("change", (nextState: AppStateStatus) => {
+      if (nextState === "active" && this.currentUserId) {
+        if (!this.socket?.connected) {
+          console.log("⚡ [BIZ SOCKET] AppState became active -> reconnecting socket...");
+          this.connect(this.currentUserId);
+        }
+      }
+    });
+  }
 
   connect(userId?: string) {
     this.currentUserId = userId || null;
@@ -53,12 +71,14 @@ class SocketService {
             }
           });
 
-          // If new notification, order, or alert arrives, push to notification store to update unread badge and shake bell
-          if (evt === "new-order" || evt === "order-alert" || evt === "notification") {
+          // If new order or general notification arrives, push strictly ONCE to notification store
+          if (evt === "new-order" || (evt === "notification" && !data?.orderId)) {
             try {
+              const isOrderEvent = evt === "new-order" || Boolean(data?.orderId);
               const { addNotification } = require("./notificationStore").useNotificationStore.getState();
               addNotification({
-                title: data?.title || (evt === "new-order" ? "New Order Received! 🛍️" : "Store Notification"),
+                id: data?.orderId ? `order-${data.orderId}` : (data?.id ? `notif-${data.id}` : undefined),
+                title: data?.title || (isOrderEvent ? "New Order Received! 🛍️" : "Store Notification"),
                 body: data?.body || data?.message || (data?.orderId ? `Order #${data.orderId} received` : "You have a new update in your store."),
                 orderId: data?.orderId || data?.id,
                 amount: data?.amount || data?.totalAmount ? `₹${data.amount || data.totalAmount}` : undefined,
