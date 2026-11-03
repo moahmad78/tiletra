@@ -41,8 +41,12 @@ echo -e "${BLUE}▶ Current production commit:${NC} ${PREV_COMMIT}"
 echo -e "\n${BLUE}▶ Fetching target ref:${NC} ${TARGET_REF}..."
 git fetch origin main
 
-# Resolve target SHA
-TARGET_SHA=$(git rev-parse "$TARGET_REF")
+# Resolve target SHA (if "main" is given, resolve "origin/main")
+if [ "$TARGET_REF" = "main" ]; then
+  TARGET_REF="origin/main"
+fi
+
+TARGET_SHA=$(git rev-parse "$TARGET_REF" 2>/dev/null || git rev-parse "origin/$TARGET_REF" 2>/dev/null || git rev-parse FETCH_HEAD)
 echo -e "${BLUE}▶ Target commit:${NC} ${TARGET_SHA}"
 
 if [ "$PREV_COMMIT" = "$TARGET_SHA" ] && [ "${FORCE_DEPLOY:-0}" != "1" ]; then
@@ -51,7 +55,7 @@ if [ "$PREV_COMMIT" = "$TARGET_SHA" ] && [ "${FORCE_DEPLOY:-0}" != "1" ]; then
 fi
 
 # 3. Detect if socket-server/ changed between commits
-SOCKET_DIFF_COUNT=$(git diff --name-only "$PREV_COMMIT" "$TARGET_SHA" -- socket-server | wc -l)
+SOCKET_DIFF_COUNT=$(git diff --name-only "$PREV_COMMIT" "$TARGET_SHA" -- socket-server 2>/dev/null | wc -l || echo 0)
 if [ "$SOCKET_DIFF_COUNT" -gt 0 ]; then
   SHOULD_RESTART_SOCKET=1
   echo -e "${YELLOW}ℹ Changes detected in socket-server/ (${SOCKET_DIFF_COUNT} files). intrihub-socket will be restarted.${NC}"
@@ -62,7 +66,7 @@ fi
 
 # 4. Check out target commit (preserves untracked uploads and logs)
 echo -e "\n${BLUE}▶ Checking out commit:${NC} ${TARGET_SHA}..."
-git checkout "$TARGET_SHA"
+git checkout -B main "$TARGET_SHA"
 
 # 5. Install dependencies cleanly and generate Prisma client
 echo -e "\n${BLUE}▶ Installing dependencies (npm ci)...${NC}"

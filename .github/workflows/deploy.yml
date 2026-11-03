@@ -87,6 +87,9 @@ jobs:
           script: |
             set -e
             TARGET_SHA="${{ github.event.inputs.target_ref || github.sha }}"
+            if [ "$TARGET_SHA" = "main" ]; then
+              TARGET_SHA="origin/main"
+            fi
             echo "🚀 Connecting to VPS to deploy commit/ref: ${TARGET_SHA}"
             chmod +x /var/www/intrihub/scripts/deploy-app.sh
             bash /var/www/intrihub/scripts/deploy-app.sh "${TARGET_SHA}"
