@@ -87,13 +87,13 @@ jobs:
           script: |
             set -e
             cd /var/www/intrihub
-            git checkout -- scripts/deploy-app.sh 2>/dev/null || true
+            git config core.fileMode false
+            git reset --hard HEAD
             TARGET_SHA="${{ github.event.inputs.target_ref || github.sha }}"
             if [ "$TARGET_SHA" = "main" ]; then
               TARGET_SHA="origin/main"
             fi
             echo "🚀 Connecting to VPS to deploy commit/ref: ${TARGET_SHA}"
-            chmod +x /var/www/intrihub/scripts/deploy-app.sh
             bash /var/www/intrihub/scripts/deploy-app.sh "${TARGET_SHA}"
 
   # ── STEP 3: Manual Database Migration (Isolated & Explicitly Authorized) ──
