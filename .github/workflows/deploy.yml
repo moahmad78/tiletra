@@ -86,6 +86,8 @@ jobs:
           command_timeout: 600s
           script: |
             set -e
+            cd /var/www/intrihub
+            git checkout -- scripts/deploy-app.sh 2>/dev/null || true
             TARGET_SHA="${{ github.event.inputs.target_ref || github.sha }}"
             if [ "$TARGET_SHA" = "main" ]; then
               TARGET_SHA="origin/main"

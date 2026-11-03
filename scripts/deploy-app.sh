@@ -66,7 +66,7 @@ fi
 
 # 4. Check out target commit (preserves untracked uploads and logs)
 echo -e "\n${BLUE}▶ Checking out commit:${NC} ${TARGET_SHA}..."
-git checkout -B main "$TARGET_SHA"
+git checkout -f -B main "$TARGET_SHA"
 
 # 5. Install dependencies cleanly and generate Prisma client
 echo -e "\n${BLUE}▶ Installing dependencies (npm ci)...${NC}"
