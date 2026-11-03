@@ -24,6 +24,15 @@ export const DELIVERY_CONFIG = {
   /** Which 3rd-party provider to use as fallback ("porter" | "dunzo" | "shiprocket") */
   THIRD_PARTY_PROVIDER: "porter" as "porter" | "dunzo" | "shiprocket",
 
+  // ── Shiprocket Pan-India Logistics & Auto-Fallback ─────────────────────────
+  SHIPROCKET: {
+    ENABLED: true,
+    DEFAULT_COURIER_MODE: "surface" as "surface" | "air" | "cargo",
+    AUTO_ASSIGN_PAN_INDIA: true,
+    MAX_LOCAL_RADIUS_KM: 45,
+    BANGALORE_PINCODE_PREFIX: "560",
+  },
+
   // ── Geo-Fencing (F2) ────────────────────────────────────────────────────
   /**
    * When no vendor has GPS coordinates, fall back to the original

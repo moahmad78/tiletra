@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { X, Truck, Package, CheckCircle2, Clock, MapPin, Phone, ShieldCheck } from "lucide-react";
+import { X, Truck, Package, CheckCircle2, Clock, MapPin, Phone, ShieldCheck, ExternalLink } from "lucide-react";
 import { useSocket } from "@/lib/socket";
 
 interface OrderTrackingModalProps {
@@ -95,9 +95,20 @@ export default function OrderTrackingModal({
                 : `Estimated Delivery: ${order.estimatedDelivery || "Within 60 Minutes"}`}
             </p>
             {order.trackingNumber && (
-              <p className="text-xs text-white/70">
-                Courier: <strong>{order.courierName || "Intrihub Direct Freight"}</strong> · Tracking: <strong>{order.trackingNumber}</strong>
-              </p>
+              <div className="pt-1 flex items-center justify-between text-xs text-white/90 flex-wrap gap-2">
+                <p className="text-white/70">
+                  Courier: <strong>{order.courierName || "Shiprocket Partner"}</strong> · AWB: <strong>{order.trackingNumber}</strong>
+                </p>
+                <a
+                  href={`https://shiprocket.co/tracking/${order.trackingNumber}`}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="px-2 py-0.5 rounded bg-white/20 hover:bg-white/30 text-white font-bold text-[10px] inline-flex items-center gap-1 transition-colors"
+                >
+                  <span>Live Courier Tracking</span>
+                  <ExternalLink size={10} />
+                </a>
+              </div>
             )}
           </div>
 

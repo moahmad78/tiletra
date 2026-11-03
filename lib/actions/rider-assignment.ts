@@ -108,6 +108,29 @@ export async function autoAssignNearestRider(
 
     // ── F8: WEIGHT-BASED CARRIER ROUTING ENGINE ─────────────────────────────
 
+    // PAN-INDIA / OUTSIDE BENGALURU ROUTING:
+    // If delivery is outside Bengaluru local limits, route directly to Shiprocket Pan-India Logistics
+    const deliveryPin = (order.deliveryPostalCode || "").replace(/\D/g, "");
+    const deliveryCity = (order.deliveryCity || "").toLowerCase().trim();
+    const isLocalBangalore =
+      (!deliveryPin || deliveryPin.startsWith(DELIVERY_CONFIG.SHIPROCKET.BANGALORE_PINCODE_PREFIX)) &&
+      (!deliveryCity || deliveryCity.includes("bangalore") || deliveryCity.includes("bengaluru") || deliveryCity === "");
+
+    if (!isLocalBangalore && DELIVERY_CONFIG.SHIPROCKET.AUTO_ASSIGN_PAN_INDIA) {
+      console.info(
+        `[CarrierRouting] Order ${orderId} Split ${splitId}: Non-local destination (${order.deliveryCity} - ${order.deliveryPostalCode}) -> Routing to Shiprocket Pan-India Logistics`
+      );
+      const shiprocketResult = await routeToShiprocket(splitId);
+      return {
+        assigned: false,
+        carrier: "shiprocket",
+        vehicleType: isBulky ? "cargo" : "courier",
+        fallbackTriggered: true,
+        fallbackBookingId: shiprocketResult.awbCode || String(shiprocketResult.shipmentId || ""),
+        error: shiprocketResult.error,
+      };
+    }
+
     // TIER 3: Heavy / Bulky (> 300kg or isBulky) -> Porter Tata Ace / Mini-Truck
     if (isBulky || totalWeightKg > 300) {
       console.info(
@@ -498,6 +521,44 @@ async function routeToPorterVehicle(
     }
   } catch (error: any) {
     console.error(`[CarrierRouting] routeToPorterVehicle error:`, error);
+    return { error: error?.message };
+  }
+}
+
+/**
+ * Routes delivery to Shiprocket Pan-India & Surface Logistics.
+ */
+async function routeToShiprocket(
+  splitId: string
+): Promise<{ shipmentId?: number; awbCode?: string; courierName?: string; error?: string }> {
+  try {
+    const { createShiprocketOrderForSplit } = await import("@/lib/delivery/shiprocket");
+    const result = await createShiprocketOrderForSplit({
+      splitId,
+      autoAssignAwb: true,
+    });
+
+    if (result.success && result.shipmentId) {
+      try {
+        const { notifyAdminPush } = await import("@/lib/push-notifications");
+        await notifyAdminPush({
+          title: `📦 Shiprocket Shipment Booked`,
+          body: `Shipment #${result.shipmentId} created on Shiprocket. AWB: ${result.awbCode || "Pending"} (${result.courierName || "Courier"})`,
+          data: { splitId, type: "shiprocket_booked", shipmentId: result.shipmentId, awb: result.awbCode },
+        });
+      } catch {}
+
+      return {
+        shipmentId: result.shipmentId,
+        awbCode: result.awbCode,
+        courierName: result.courierName,
+      };
+    } else {
+      console.error("[CarrierRouting] Shiprocket booking failed:", result.error);
+      return { error: result.error };
+    }
+  } catch (error: any) {
+    console.error("[CarrierRouting] routeToShiprocket error:", error);
     return { error: error?.message };
   }
 }
