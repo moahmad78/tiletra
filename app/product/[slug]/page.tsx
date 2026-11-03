@@ -30,15 +30,34 @@ export async function generateMetadata({
 
   const isDiscontinued = product.status === "discontinued";
   const canonicalUrl = getCanonicalUrl(`/product/${product.slug}`);
-  let title = isDiscontinued
-    ? `${product.name} (Discontinued)`
-    : product.name;
-  if (title.length > 48) {
-    title = title.slice(0, 48).trim().replace(/[,\-:|—\s]+$/, "");
+  // Specific high-intent titles & descriptions for curated products
+  let title = product.name;
+  let description = "";
+
+  if (product.slug === "m-sand-50-kg-bag-1742") {
+    title = "M-Sand 50 kg Bag Price in Bangalore";
+    description = "Buy manufactured M-sand 50 kg bag in Bangalore at ₹249 on IntriHub. High-grade plastering and masonry sand with fast direct-to-site delivery.";
+  } else if (product.slug === "adani-acc-suraksha-power-ppc-cement-50-kg-bag-0862") {
+    title = "ACC Suraksha Cement 50kg Price Bangalore";
+    description = "Buy Adani ACC Suraksha Power PPC Cement 50 kg bag at ₹399 in Bangalore on IntriHub. Premium moisture-resistant cement with prompt site delivery.";
+  } else {
+    title = isDiscontinued
+      ? `${product.name} (Discontinued)`
+      : product.name.includes("Bangalore") || product.name.includes("Price")
+      ? product.name
+      : `${product.name} in Bangalore`;
+    if (title.length > 48) {
+      title = title.slice(0, 48).trim().replace(/[,\-:|—\s]+$/, "");
+    }
+    const cleanDesc = (product.description || "")
+      .replace(/#{1,6}\s+[^\n]+/g, "")
+      .replace(/[*_`~[\]]/g, "")
+      .replace(/\s+/g, " ")
+      .trim();
+    description = cleanDesc.length > 10
+      ? cleanDesc.slice(0, 150)
+      : `Buy ${product.name} online on IntriHub. Direct building & interior materials with rapid site delivery across Bangalore.`;
   }
-  const description =
-    product.description?.slice(0, 160) ||
-    `Buy ${product.name} online at IntriHub. Direct-from-factory building & interior materials with rapid delivery across Bangalore & Pan-India.`;
 
   const validImages = (product.images || [])
     .filter((img) => typeof img === "string" && !img.startsWith("data:"))

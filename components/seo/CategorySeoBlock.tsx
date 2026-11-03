@@ -66,11 +66,17 @@ const CATEGORY_HUBS_DATA: Record<
     ],
     priceGuides: [
       { label: "CPVC Pipe Price List Bangalore", href: "/cpvc-pipe-price-list" },
+      { label: "PVC Pipes & Plumbing Material Bengaluru", href: "/pvc-pipes-plumbing-material-bengaluru" },
+      { label: "Bathroom Fittings & Sanitaryware Bengaluru", href: "/bathroom-fittings-sanitaryware-bengaluru" },
     ],
   },
   "hardware-fittings": {
     subcategories: [
       { label: "Architectural Hardware & Door Fittings", href: "/hardware/door-fittings" },
+    ],
+    priceGuides: [
+      { label: "Building Material Delivery Bangalore", href: "/building-material-delivery-bangalore" },
+      { label: "Interior Material Supplier Bangalore", href: "/interior-material-supplier-bangalore" },
     ],
   },
 };

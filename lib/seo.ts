@@ -441,6 +441,10 @@ export function generateProductSchema(product: {
         product.inStock !== false
           ? "https://schema.org/InStock"
           : "https://schema.org/OutOfStock",
+      areaServed: {
+        "@type": "City",
+        name: "Bangalore",
+      },
       seller: {
         "@type": "Organization",
         name: "IntriHub",
@@ -456,6 +460,8 @@ export function generateProductSchema(product: {
         shippingDestination: {
           "@type": "DefinedRegion",
           addressCountry: "IN",
+          addressRegion: "Karnataka",
+          addressLocality: "Bangalore",
         },
         deliveryTime: {
           "@type": "ShippingDeliveryTime",

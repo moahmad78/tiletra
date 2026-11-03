@@ -1163,8 +1163,8 @@ IntriHub delivers premium building and interior materials to Koramangala's leadi
     category: "hardware",
     locality: "bengaluru",
     targetKeyword: "building material delivery Bangalore",
-    title: "Building Material Delivery Bangalore — 60-Min Fleet",
-    metaDescription: "Fast building material delivery across Bangalore. Fresh cement, vitrified tiles, electricals, plumbing & plywood delivered within 60 mins to your site.",
+    title: "Building Material Delivery in Bangalore",
+    metaDescription: "Fast building material delivery in Bangalore. Cement, tiles, plumbing, steel & plywood delivered directly to your construction site within 60 to 90 mins.",
     h1: "Building Material Delivery Bangalore — Rapid Quick-Commerce Logistics",
     introContent: `Construction site downtime represents one of the most substantial hidden costs in the Indian building sector: skilled carpenters, masons, and electricians sit idle whenever essential pipes, adhesive bags, or cables run short. IntriHub solves this chronic procurement bottleneck by operating Bangalore's premier quick-commerce delivery network for building and interior supplies, dispatching materials directly from our Begur hub.
 
@@ -1202,8 +1202,8 @@ Our specialized material delivery network across Bangalore is built to eliminate
     category: "plywood",
     locality: "bengaluru",
     targetKeyword: "interior material supplier Bangalore",
-    title: "Interior Material Supplier in Bangalore | IntriHub",
-    metaDescription: "Verified interior material supplier in Bangalore. Sourcing BWP plywood, modular hardware, tiles, sanitaryware & paints at factory rates with fast delivery.",
+    title: "Interior Material Supplier in Bangalore",
+    metaDescription: "Verified interior material supplier in Bangalore. Sourcing BWP plywood, hardware, tiles, sanitaryware & paints at trade prices with direct site delivery.",
     h1: "Interior Material Supplier in Bangalore — Complete Turnkey Sourcing",
     introContent: `Executing high-end residential and commercial interior projects across Bangalore requires seamless coordination across multiple material categories: calibrated plywood, high-pressure decorative laminates, architectural hardware, vitreous sanitaryware, designer tiles, and luxury paints. Sourcing through fragmented retail stores results in mismatched deliveries, variable quality grades, and administrative chaos. IntriHub serves as Bangalore's unified digital interior material supplier.
 
@@ -1244,8 +1244,8 @@ Transform your interior projects with IntriHub's extensive catalog of verified m
     pageType: SeoPageType.PRICE_INTENT,
     category: "tiles",
     targetKeyword: "vitrified tiles price Bangalore",
-    title: "Vitrified Tiles Price in Bangalore — 2026 Rate Guide",
-    metaDescription: "Explore the latest vitrified tiles price list in Bangalore. Factory-direct per sq.ft and per box rates for double charge, GVT & full body tiles.",
+    title: "Vitrified Tiles Price in Bangalore",
+    metaDescription: "Explore vitrified tiles price in Bangalore per sq ft. Direct rates for double charge, GVT & porcelain floor tiles with zero breakage transit guarantee.",
     h1: "Vitrified Tiles Price in Bangalore — Current Factory Sourcing Index",
     introContent: `Budgeting for residential or commercial flooring requires accurate, up-to-date knowledge of prevailing vitrified tile prices in the Bangalore market. Tile costs fluctuate based on size format, manufacturing technology (double charge vs. glazed vitrified), glaze finish (nano-polished, satin matte, carved), and freight logistics from production hubs in Morbi to Bangalore warehouses. IntriHub publishes verified factory-direct vitrified tile rates to bring complete transparency to material procurement.
 
@@ -1282,8 +1282,8 @@ Use our live price tracking and surface cost calculators to estimate your overal
     pageType: SeoPageType.PRICE_INTENT,
     category: "plywood",
     targetKeyword: "plywood price per sheet Bangalore",
-    title: "Plywood Price Per Sheet Bangalore — 2026 Rate Guide",
-    metaDescription: "Compare plywood prices per sheet in Bangalore for 19mm, 16mm, 12mm & 6mm. BWP 710 Marine and commercial MR grade rates with direct mill delivery.",
+    title: "Plywood Price Per Sheet in Bangalore",
+    metaDescription: "Check 2026 plywood price per sheet in Bangalore for 19mm, 16mm, 12mm & 6mm. Authentic BWP 710 marine and commercial MR ply with direct site delivery.",
     h1: "Plywood Price Per Sheet in Bangalore — Current 8x4 Panel Rate Card",
     introContent: `Estimating carpentry budgets for modular kitchens, wardrobes, and living room furniture requires transparent sheet-level plywood pricing. In Bangalore's timber markets, plywood prices vary widely based on core veneer species (100% hardwood vs. semi-hardwood), resin bonding class (IS:710 BWP vs. IS:303 MR), sheet thickness, and calibration precision. IntriHub publishes verified, mill-direct per-sheet price ranges for standard 8x4 feet panels.
 

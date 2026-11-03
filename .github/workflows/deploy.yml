@@ -1,0 +1,119 @@
+name: CI and VPS Production Deploy
+
+on:
+  push:
+    branches:
+      - main
+  schedule:
+    # 03:00 IST (Indian Standard Time = UTC+5:30) -> 21:30 UTC previous day
+    - cron: '30 21 * * *'
+  workflow_dispatch:
+    inputs:
+      deploy_now:
+        description: 'Deploy to VPS Production immediately (manual / emergency)?'
+        type: boolean
+        required: true
+        default: true
+      target_ref:
+        description: 'Target branch or commit SHA to deploy'
+        type: string
+        required: false
+        default: 'main'
+      run_migration:
+        description: 'Run Prisma migration (npx prisma migrate deploy)?'
+        type: boolean
+        required: false
+        default: false
+      migration_confirmation:
+        description: 'Type CONFIRM to authorize running database migrations'
+        type: string
+        required: false
+        default: ''
+
+concurrency:
+  group: production-deploy
+  cancel-in-progress: false
+
+jobs:
+  # ── STEP 1: Continuous Integration (Runs on every push & before deploy) ───
+  ci:
+    name: TypeCheck & Build Verification
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Generate Prisma Client
+        run: npx prisma generate
+
+      - name: Run TypeScript Typecheck
+        run: npx tsc --noEmit
+
+      - name: Test Production Build
+        run: npm run build
+        env:
+          NODE_ENV: production
+          NEXT_TELEMETRY_DISABLED: 1
+
+  # ── STEP 2: Safe VPS Deployment (Runs at 03:00 IST or manual dispatch) ────
+  deploy:
+    name: Deploy to Bluehost VPS
+    needs: ci
+    # Deploy executes on scheduled window (03:00 IST) OR when manually dispatched
+    if: |
+      always() &&
+      needs.ci.result == 'success' &&
+      (github.event_name == 'schedule' || (github.event_name == 'workflow_dispatch' && inputs.deploy_now == true))
+    runs-on: ubuntu-latest
+    steps:
+      - name: Execute Remote Deployment via SSH
+        uses: appleboy/ssh-action@v1.2.0
+        with:
+          host: ${{ secrets.VPS_HOST }}
+          username: ${{ secrets.VPS_USER }}
+          key: ${{ secrets.VPS_SSH_KEY }}
+          port: ${{ secrets.VPS_PORT || 22 }}
+          timeout: 600s
+          command_timeout: 600s
+          script: |
+            set -e
+            TARGET_SHA="${{ github.event.inputs.target_ref || github.sha }}"
+            echo "🚀 Connecting to VPS to deploy commit/ref: ${TARGET_SHA}"
+            chmod +x /var/www/intrihub/scripts/deploy-app.sh
+            bash /var/www/intrihub/scripts/deploy-app.sh "${TARGET_SHA}"
+
+  # ── STEP 3: Manual Database Migration (Isolated & Explicitly Authorized) ──
+  migrate:
+    name: Run Database Migration
+    if: |
+      github.event_name == 'workflow_dispatch' &&
+      inputs.run_migration == true &&
+      inputs.migration_confirmation == 'CONFIRM'
+    needs: ci
+    runs-on: ubuntu-latest
+    steps:
+      - name: Execute Prisma Migration on VPS
+        uses: appleboy/ssh-action@v1.2.0
+        with:
+          host: ${{ secrets.VPS_HOST }}
+          username: ${{ secrets.VPS_USER }}
+          key: ${{ secrets.VPS_SSH_KEY }}
+          port: ${{ secrets.VPS_PORT || 22 }}
+          timeout: 300s
+          command_timeout: 300s
+          script: |
+            set -e
+            echo "⚠️ Authorization confirmed. Running Prisma database migrations..."
+            cd /var/www/intrihub
+            npx prisma migrate deploy
+            echo "✓ Prisma migrations applied successfully."
+
