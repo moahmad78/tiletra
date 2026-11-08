@@ -292,6 +292,23 @@ j=d.createElement(s),dl=l!='dataLayer'?'&l='+l:'';j.async=true;j.src=
                     }, 'google_translate_element');
                   }
                 } catch (e) {}
+                try {
+                  var neutralize = function() {
+                    var el = document.getElementById('google_translate_element');
+                    if (!el) return;
+                    var focusables = el.querySelectorAll('select, a, button, input, [tabindex]');
+                    for (var i = 0; i < focusables.length; i++) {
+                      focusables[i].setAttribute('tabindex', '-1');
+                      focusables[i].setAttribute('aria-hidden', 'true');
+                    }
+                  };
+                  neutralize();
+                  var target = document.getElementById('google_translate_element');
+                  if (target && window.MutationObserver) {
+                    var obs = new MutationObserver(neutralize);
+                    obs.observe(target, { childList: true, subtree: true });
+                  }
+                } catch (e) {}
               };
             `,
           }}

@@ -160,6 +160,11 @@ export function driveGoogleCombo(langCode: string, retries = 0): Promise<boolean
       return resolve(false);
     }
 
+    // Ensure hidden Google Translate select never receives focus (WCAG 4.1.2 compliance)
+    combo.tabIndex = -1;
+    combo.setAttribute("tabindex", "-1");
+    combo.setAttribute("aria-hidden", "true");
+
     try {
       const targetVal = langCode === "en" ? "" : langCode;
       combo.value = targetVal;

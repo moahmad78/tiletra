@@ -233,4 +233,11 @@ body {
   visibility: visible !important;
 }
 
+#google_translate_element select,
+#google_translate_element a,
+#google_translate_element button,
+#google_translate_element input {
+  pointer-events: none !important;
+}
+
 
