@@ -12,12 +12,10 @@ interface DesktopCategoryRowProps {
 
 function SafeDesktopCategoryCard({
   cat,
-  priority = false,
 }: {
   cat: Category;
-  priority?: boolean;
 }) {
-  const categoryImage = cat.image && cat.image.trim() ? cat.image : `/images/categories/cat-${cat.slug}.jpg`;
+  const categoryImage = `/images/categories/cat-${cat.slug}.webp`;
 
   return (
     <Link
@@ -29,9 +27,9 @@ function SafeDesktopCategoryCard({
         <div className="relative w-full aspect-[4/3] rounded-xl overflow-hidden bg-gray-100 shrink-0">
           <SafeImage
             src={categoryImage}
+            fallbackSrc={`/images/categories/cat-${cat.slug}.jpg`}
             alt=""
             fill
-            priority={priority}
             className="object-cover group-hover:scale-108 transition-transform duration-300"
             sizes="175px"
           />
@@ -64,7 +62,8 @@ export default function DesktopCategoryRow({ categories }: DesktopCategoryRowPro
     const el = scrollContainerRef.current;
     if (!el || topCategories.length === 0) return;
 
-    let animId: number;
+    let animId: number | null = null;
+    let startTimer: ReturnType<typeof setTimeout> | null = null;
     let lastTime: number | null = null;
     let cachedHalfWidth = el.scrollWidth / 2;
     const speed = 36; // px per second - slow, elegant, smooth drift
@@ -126,10 +125,14 @@ export default function DesktopCategoryRow({ categories }: DesktopCategoryRowPro
       animId = requestAnimationFrame(step);
     };
 
-    animId = requestAnimationFrame(step);
+    // Defer rAF auto-scroll start by 1500ms to preserve main thread during critical initial render & LCP
+    startTimer = setTimeout(() => {
+      animId = requestAnimationFrame(step);
+    }, 1500);
 
     return () => {
-      cancelAnimationFrame(animId);
+      if (startTimer) clearTimeout(startTimer);
+      if (animId) cancelAnimationFrame(animId);
       window.removeEventListener("resize", updateMetrics);
       document.removeEventListener("visibilitychange", handleVisibility);
       el.removeEventListener("pointerdown", onUserInteractionStart);
@@ -208,7 +211,6 @@ export default function DesktopCategoryRow({ categories }: DesktopCategoryRowPro
               <SafeDesktopCategoryCard
                 key={`cat-${cat.slug}-${idx}`}
                 cat={cat}
-                priority={idx < 7}
               />
             ))}
           </div>

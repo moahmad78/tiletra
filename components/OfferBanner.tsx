@@ -68,15 +68,17 @@ function MobileBannerSlideItem({
     >
       <Link href={slide.href || "/shop"} className="block w-full h-full relative">
         {/* Background Image using first-party banner */}
-        <SafeImage
-          src={slideImage}
-          variantSize={750}
-          alt={slide.title}
-          fill
-          className="object-cover"
-          sizes="(max-width: 768px) 100vw, 50vw"
-          priority={index === 0}
-        />
+        {(isActive || index === 0) && (
+          <SafeImage
+            src={slideImage}
+            variantSize={750}
+            alt={slide.title}
+            fill
+            className="object-cover"
+            sizes="(max-width: 768px) 100vw, 50vw"
+            priority={index === 0}
+          />
+        )}
 
         {/* Gradient overlay */}
         <div className={`absolute inset-0 bg-gradient-to-r ${slide.bgGradient || "from-[#052a51]/95 via-[#052a51]/80 to-transparent"}`} />

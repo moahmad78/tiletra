@@ -19,26 +19,8 @@ export default function RealtimeGlobalSync() {
   useEffect(() => {
     if (typeof window === "undefined") return;
 
-    const socket = getSocket();
-    if (!socket) return;
-
-    const handleConnect = () => {
-      console.log("⚡ [REALTIME SYNC] Connected to socket gateway:", socket.id);
-      
-      // Auto-join user personal notification room if authenticated
-      if (user?.id) {
-        const userRoom = `user:${user.id}`;
-        socket.emit("join-room", userRoom);
-        joinedRoomsRef.current.add(userRoom);
-      }
-    };
-
-    // If socket is already connected
-    if (socket.connected && user?.id) {
-      const userRoom = `user:${user.id}`;
-      socket.emit("join-room", userRoom);
-      joinedRoomsRef.current.add(userRoom);
-    }
+    let socket: any = null;
+    let timer: NodeJS.Timeout | null = null;
 
     // 1. Live Order Status Updates (Customer Facing)
     const handleOrderStatusUpdated = (data: any) => {
@@ -71,23 +53,52 @@ export default function RealtimeGlobalSync() {
       console.log("⚡ [REALTIME] update-stats:", data);
     };
 
-    socket.on("connect", handleConnect);
-    socket.on("order-status-updated", handleOrderStatusUpdated);
-    socket.on("notification", handleNotification);
-    socket.on("update-stats", handleUpdateStats);
+    const initSync = () => {
+      socket = getSocket();
+      if (!socket) return;
+
+      const handleConnect = () => {
+        console.log("⚡ [REALTIME SYNC] Connected to socket gateway:", socket.id);
+        
+        // Auto-join user personal notification room if authenticated
+        if (user?.id) {
+          const userRoom = `user:${user.id}`;
+          socket.emit("join-room", userRoom);
+          joinedRoomsRef.current.add(userRoom);
+        }
+      };
+
+      // If socket is already connected
+      if (socket.connected && user?.id) {
+        const userRoom = `user:${user.id}`;
+        socket.emit("join-room", userRoom);
+        joinedRoomsRef.current.add(userRoom);
+      }
+
+      socket.on("connect", handleConnect);
+      socket.on("order-status-updated", handleOrderStatusUpdated);
+      socket.on("notification", handleNotification);
+      socket.on("update-stats", handleUpdateStats);
+    };
+
+    // Defer socket connection until after initial page load & LCP are completed
+    timer = setTimeout(initSync, 2000);
 
     return () => {
-      socket.off("connect", handleConnect);
-      socket.off("order-status-updated", handleOrderStatusUpdated);
-      socket.off("notification", handleNotification);
-      socket.off("update-stats", handleUpdateStats);
+      if (timer) clearTimeout(timer);
+      if (socket) {
+        socket.off("connect");
+        socket.off("order-status-updated", handleOrderStatusUpdated);
+        socket.off("notification", handleNotification);
+        socket.off("update-stats", handleUpdateStats);
 
-      // Clean up joined rooms on unmount
-      if (socket.connected) {
-        joinedRoomsRef.current.forEach((room) => {
-          socket.emit("leave-room", room);
-        });
-        joinedRoomsRef.current.clear();
+        // Clean up joined rooms on unmount
+        if (socket.connected) {
+          joinedRoomsRef.current.forEach((room: string) => {
+            socket.emit("leave-room", room);
+          });
+          joinedRoomsRef.current.clear();
+        }
       }
     };
   }, [user?.id, router]);

@@ -68,15 +68,17 @@ function BannerSlideItem({
       }`}
     >
       {/* Background Photo using first-party variant */}
-      <SafeImage
-        src={slideImage}
-        variantSize={1400}
-        alt={slide.headline}
-        fill
-        priority={index === 0}
-        className="object-cover"
-        sizes="(max-width: 1400px) 100vw, 1400px"
-      />
+      {(isActive || index === 0) && (
+        <SafeImage
+          src={slideImage}
+          variantSize={1400}
+          alt={slide.headline}
+          fill
+          priority={index === 0}
+          className="object-cover"
+          sizes="(max-width: 1400px) 100vw, 1400px"
+        />
+      )}
 
       {/* Gradient Scrim for Readability */}
       <div className="absolute inset-0 bg-gradient-to-r from-[#052a51]/95 via-[#052a51]/75 to-transparent w-full md:w-[65%]" />

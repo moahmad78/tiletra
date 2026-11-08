@@ -80,16 +80,20 @@ export function SafeImage({
     }
   };
 
+  const isPriority = priority === true;
+
   return (
     <Image
       src={currentSrc}
       alt={alt || "IntriHub Building Supplies"}
       onError={handleError}
       onLoad={() => setIsLoaded(true)}
-      priority={priority}
+      priority={isPriority}
+      fetchPriority={isPriority ? "high" : "auto"}
+      loading={isPriority ? "eager" : "lazy"}
+      decoding={isPriority ? "sync" : "async"}
       sizes={sizes || "(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 33vw"}
-      className={`${className} ${!isLoaded ? "bg-slate-100 dark:bg-slate-800/60 opacity-90" : "opacity-100"} transition-opacity duration-200`}
-      decoding="async"
+      className={`${className} ${isPriority || isLoaded ? "opacity-100" : "bg-slate-100 dark:bg-slate-800/60 opacity-90 transition-opacity duration-200"}`}
       unoptimized
       {...rest}
     />

@@ -248,14 +248,36 @@ j=d.createElement(s),dl=l!='dataLayer'?'&l='+l:'';j.async=true;j.src=
         {/* Preconnect to Required Services & Web Fonts */}
         <link rel="preconnect" href="https://fonts.googleapis.com" />
         <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
-        <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Noto+Sans+Kannada:wght@400;500;600;700&display=swap" />
+        <link
+          rel="preload"
+          href="https://fonts.googleapis.com/css2?family=Noto+Sans+Kannada:wght@400;500;600;700&display=swap"
+          as="style"
+        />
+        <link
+          rel="stylesheet"
+          href="https://fonts.googleapis.com/css2?family=Noto+Sans+Kannada:wght@400;500;600;700&display=swap"
+          media="print"
+          // @ts-ignore
+          onLoad="this.media='all'"
+        />
         <link rel="preconnect" href="https://www.googletagmanager.com" crossOrigin="anonymous" />
-        {/* Preload Hero Banner Image */}
+
+        {/* Preload Responsive Hero Banner Image for High-Speed LCP */}
         <link
           rel="preload"
           as="image"
           href="/images/banners/banner-slide-1-1400.webp"
           type="image/webp"
+          media="(min-width: 768px)"
+          // @ts-ignore
+          fetchpriority="high"
+        />
+        <link
+          rel="preload"
+          as="image"
+          href="/images/banners/banner-slide-1-750.webp"
+          type="image/webp"
+          media="(max-width: 767px)"
           // @ts-ignore
           fetchpriority="high"
         />
@@ -290,23 +312,6 @@ j=d.createElement(s),dl=l!='dataLayer'?'&l='+l:'';j.async=true;j.src=
                       pageLanguage: 'en',
                       autoDisplay: false
                     }, 'google_translate_element');
-                  }
-                } catch (e) {}
-                try {
-                  var neutralize = function() {
-                    var el = document.getElementById('google_translate_element');
-                    if (!el) return;
-                    var focusables = el.querySelectorAll('select, a, button, input, [tabindex]');
-                    for (var i = 0; i < focusables.length; i++) {
-                      focusables[i].setAttribute('tabindex', '-1');
-                      focusables[i].setAttribute('aria-hidden', 'true');
-                    }
-                  };
-                  neutralize();
-                  var target = document.getElementById('google_translate_element');
-                  if (target && window.MutationObserver) {
-                    var obs = new MutationObserver(neutralize);
-                    obs.observe(target, { childList: true, subtree: true });
                   }
                 } catch (e) {}
               };

@@ -32,7 +32,7 @@ function getCategoryShortName(name: string): string {
 
 function DistinctCategoryItem({ cat }: { cat: Category }) {
   const shortName = getCategoryShortName(cat.name);
-  const categoryImage = cat.image && cat.image.trim() ? cat.image : `/images/categories/cat-${cat.slug}.jpg`;
+  const categoryImage = `/images/categories/cat-${cat.slug}.webp`;
 
   return (
     <Link
@@ -43,6 +43,7 @@ function DistinctCategoryItem({ cat }: { cat: Category }) {
       <div className="w-[58px] h-[58px] sm:w-[64px] sm:h-[64px] rounded-2xl overflow-hidden relative border border-gray-200/90 bg-gray-100 shadow-2xs group-hover:border-[#F26522] transition-all">
         <SafeImage
           src={categoryImage}
+          fallbackSrc={`/images/categories/cat-${cat.slug}.jpg`}
           alt={cat.name}
           fill
           className="object-cover group-hover:scale-110 transition-transform duration-300 pointer-events-none"
