@@ -78,6 +78,9 @@ export default function HomeClient({
 
   return (
     <main className="min-h-screen bg-white">
+      <h1 className="sr-only">
+        IntriHub — Every Material. Every Space. | Buy Standard Tiles, Hardware Supplies &amp; Construction Items Online
+      </h1>
       <Header />
 
       {/* ========================================================================= */}

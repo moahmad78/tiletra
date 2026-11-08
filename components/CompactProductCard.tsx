@@ -68,12 +68,12 @@ export default function CompactProductCard({
           />
           {/* Badge */}
           {product.isBestseller && (
-            <span className="absolute top-1.5 left-1.5 px-1.5 py-0.5 bg-[#F26522] text-white text-[9px] font-extrabold rounded-md uppercase tracking-wider shadow-xs">
+            <span aria-hidden="true" className="absolute top-1.5 left-1.5 px-1.5 py-0.5 bg-[#F26522] text-white text-[9px] font-extrabold rounded-md uppercase tracking-wider shadow-xs">
               Top
             </span>
           )}
           {!product.isBestseller && product.isNew && (
-            <span className="absolute top-1.5 left-1.5 px-1.5 py-0.5 bg-[#052a51] text-white text-[9px] font-extrabold rounded-md uppercase tracking-wider shadow-xs">
+            <span aria-hidden="true" className="absolute top-1.5 left-1.5 px-1.5 py-0.5 bg-[#052a51] text-white text-[9px] font-extrabold rounded-md uppercase tracking-wider shadow-xs">
               New
             </span>
           )}

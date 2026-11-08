@@ -77,22 +77,7 @@ export default function GoogleTranslateBootstrap() {
   return (
     <div
       id="google_translate_element"
-      style={{
-        position: "fixed",
-        top: "-9999px",
-        left: "-9999px",
-        width: "1px",
-        height: "1px",
-        overflow: "hidden",
-        opacity: 0.01,
-        pointerEvents: "none",
-        zIndex: -9999,
-        display: "block",
-        visibility: "visible",
-      }}
-      aria-hidden="true"
-      tabIndex={-1}
-      inert
+      style={{ display: "none" }}
       className="notranslate"
     />
   );

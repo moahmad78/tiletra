@@ -167,7 +167,7 @@ export default function Header() {
                 <MapPin size={11} />
               </div>
               <div className="min-w-0">
-                <span className="text-[9px] uppercase tracking-wider text-slate-400 font-bold block leading-none">
+                <span className="text-[9px] uppercase tracking-wider text-slate-600 font-bold block leading-none">
                   Deliver To
                 </span>
                 <span className="text-[11px] font-bold text-slate-800 truncate block leading-tight mt-0.5">
@@ -314,7 +314,7 @@ export default function Header() {
               </div>
 
               <Link href="/vendor/apply" className="hidden sm:block">
-                <Button className="rounded-xl px-3.5 lg:px-4 h-[40px] font-bold text-white bg-[#F26522] hover:bg-[#d95a1e] active:scale-95 shadow-xs hover:shadow transition-all whitespace-nowrap text-xs md:text-sm flex items-center gap-1.5">
+                <Button className="rounded-xl px-3.5 lg:px-4 h-[40px] font-bold text-white bg-[#C84607] hover:bg-[#a83a06] active:scale-95 shadow-xs hover:shadow transition-all whitespace-nowrap text-xs md:text-sm flex items-center gap-1.5">
                   <Store size={15} />
                   <span>Become a Vendor</span>
                 </Button>

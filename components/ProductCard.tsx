@@ -64,7 +64,7 @@ export default function ProductCard({
               sizes={compact ? "160px" : "(max-width: 640px) 50vw, (max-width: 1024px) 33vw, 300px"}
             />
             {/* Badges */}
-            <div className={`absolute ${compact ? "top-1.5 left-1.5 gap-1" : "top-3 left-3 gap-1.5"} flex flex-col z-10 pointer-events-none`}>
+            <div aria-hidden="true" className={`absolute ${compact ? "top-1.5 left-1.5 gap-1" : "top-3 left-3 gap-1.5"} flex flex-col z-10 pointer-events-none`}>
               {product.isBestseller && (
                 <span className={`${compact ? "px-1.5 py-0.5 text-[9px]" : "px-2.5 py-1 text-[10px]"} bg-[#F26522] text-white font-bold rounded-full uppercase tracking-wide shadow-sm`}>
                   Bestseller
@@ -78,7 +78,7 @@ export default function ProductCard({
             </div>
 
             {/* Category tag */}
-            <div className={`absolute ${compact ? "bottom-1.5 left-1.5 max-w-[85%]" : "bottom-3 left-3"} z-10 pointer-events-none`}>
+            <div aria-hidden="true" className={`absolute ${compact ? "bottom-1.5 left-1.5 max-w-[85%]" : "bottom-3 left-3"} z-10 pointer-events-none`}>
               <span className={`${compact ? "px-1.5 py-0.5 text-[9px] truncate block" : "px-2.5 py-1 text-[11px]"} bg-white/90 backdrop-blur-sm text-[#052a51] font-bold rounded-full shadow-sm`}>
                 {product.categoryName}
               </span>

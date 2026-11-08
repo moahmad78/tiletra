@@ -102,7 +102,7 @@ function BannerSlideItem({
         <div className="flex items-center gap-4 mt-6">
           <Link
             href={slide.ctaHref || "/shop"}
-            className="inline-flex items-center gap-2 px-6 py-3 bg-[#F26522] hover:bg-[#d95a1e] text-white text-xs font-black rounded-xl shadow-md transition-all hover:scale-105 active:scale-95"
+            className="inline-flex items-center gap-2 px-6 py-3 bg-[#C84607] hover:bg-[#a83a06] text-white text-xs font-black rounded-xl shadow-md transition-all hover:scale-105 active:scale-95"
           >
             <span>{slide.ctaText || "Shop Now"}</span>
             <ArrowRight size={15} />

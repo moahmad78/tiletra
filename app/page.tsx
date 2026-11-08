@@ -56,9 +56,6 @@ export default async function HomePage() {
   return (
     <>
       <JsonLd data={faqSchema} id="homepage-faq-schema" />
-      <h1 className="sr-only">
-        IntriHub — Every Material. Every Space. | Buy Standard Tiles, Hardware Supplies &amp; Construction Items Online
-      </h1>
       <HomeClient
         categories={categories}
         trending={trending}
