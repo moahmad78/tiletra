@@ -68,7 +68,7 @@ export default function CompactProductCard({
           />
           {/* Badge */}
           {product.isBestseller && (
-            <span aria-hidden="true" className="absolute top-1.5 left-1.5 px-1.5 py-0.5 bg-[#F26522] text-white text-[9px] font-extrabold rounded-md uppercase tracking-wider shadow-xs">
+            <span aria-hidden="true" className="absolute top-1.5 left-1.5 px-1.5 py-0.5 bg-[#C84607] text-white text-[9px] font-extrabold rounded-md uppercase tracking-wider shadow-xs">
               Top
             </span>
           )}

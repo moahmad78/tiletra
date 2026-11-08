@@ -66,7 +66,7 @@ export default function ProductCard({
             {/* Badges */}
             <div aria-hidden="true" className={`absolute ${compact ? "top-1.5 left-1.5 gap-1" : "top-3 left-3 gap-1.5"} flex flex-col z-10 pointer-events-none`}>
               {product.isBestseller && (
-                <span className={`${compact ? "px-1.5 py-0.5 text-[9px]" : "px-2.5 py-1 text-[10px]"} bg-[#F26522] text-white font-bold rounded-full uppercase tracking-wide shadow-sm`}>
+                <span className={`${compact ? "px-1.5 py-0.5 text-[9px]" : "px-2.5 py-1 text-[10px]"} bg-[#C84607] text-white font-bold rounded-full uppercase tracking-wide shadow-sm`}>
                   Bestseller
                 </span>
               )}
