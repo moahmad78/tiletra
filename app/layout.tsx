@@ -223,21 +223,6 @@ export default async function RootLayout({
         <meta name="publisher" content="IntriHub Pvt Ltd" />
         <meta name="copyright" content="IntriHub Pvt Ltd" />
 
-        {/* Preconnect to Required Services & Web Fonts */}
-        <link rel="preconnect" href="https://fonts.googleapis.com" />
-        <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
-        <link
-          rel="preload"
-          href="https://fonts.googleapis.com/css2?family=Noto+Sans+Kannada:wght@400;500;600;700&display=swap"
-          as="style"
-        />
-        <link
-          rel="stylesheet"
-          href="https://fonts.googleapis.com/css2?family=Noto+Sans+Kannada:wght@400;500;600;700&display=swap"
-          media="print"
-          // @ts-ignore
-          onLoad="this.media='all'"
-        />
         <link rel="preconnect" href="https://www.googletagmanager.com" crossOrigin="anonymous" />
 
         {/* Preload Responsive Hero Banner Image for High-Speed LCP */}

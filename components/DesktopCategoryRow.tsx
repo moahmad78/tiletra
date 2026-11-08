@@ -1,6 +1,6 @@
 "use client";
 
-import { useRef, useEffect } from "react";
+import { useRef } from "react";
 import Link from "next/link";
 import { ChevronLeft, ChevronRight } from "lucide-react";
 import type { Category } from "@/lib/data/categories";
@@ -54,126 +54,20 @@ function SafeDesktopCategoryCard({
 export default function DesktopCategoryRow({ categories }: DesktopCategoryRowProps) {
   const topCategories = categories.filter((c) => !c.parentId);
   const scrollContainerRef = useRef<HTMLDivElement>(null);
-  const isPausedRef = useRef(false);
-  const manualPauseTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
-
-  // Gentle, slow infinite auto-scroll loop with 0 layout thrashing (INP optimized)
-  useEffect(() => {
-    const el = scrollContainerRef.current;
-    if (!el || topCategories.length === 0) return;
-
-    let animId: number | null = null;
-    let startTimer: ReturnType<typeof setTimeout> | null = null;
-    let lastTime: number | null = null;
-    let cachedHalfWidth = el.scrollWidth / 2;
-    const speed = 36; // px per second - slow, elegant, smooth drift
-
-    const updateMetrics = () => {
-      if (el) {
-        cachedHalfWidth = el.scrollWidth / 2;
-      }
-    };
-
-    window.addEventListener("resize", updateMetrics, { passive: true });
-
-    const handleVisibility = () => {
-      if (document.hidden) {
-        isPausedRef.current = true;
-      } else {
-        isPausedRef.current = false;
-        lastTime = null;
-      }
-    };
-    document.addEventListener("visibilitychange", handleVisibility, { passive: true });
-
-    // Pause immediately on user touch or pointer down so input events are 100% unblocked (INP protection)
-    const onUserInteractionStart = () => {
-      isPausedRef.current = true;
-    };
-    const onUserInteractionEnd = () => {
-      if (manualPauseTimerRef.current) clearTimeout(manualPauseTimerRef.current);
-      manualPauseTimerRef.current = setTimeout(() => {
-        isPausedRef.current = false;
-        lastTime = null;
-      }, 1500);
-    };
-
-    el.addEventListener("pointerdown", onUserInteractionStart, { passive: true });
-    el.addEventListener("pointerup", onUserInteractionEnd, { passive: true });
-    el.addEventListener("touchstart", onUserInteractionStart, { passive: true });
-    el.addEventListener("touchend", onUserInteractionEnd, { passive: true });
-    el.addEventListener("wheel", onUserInteractionStart, { passive: true });
-
-    const step = (time: number) => {
-      if (lastTime !== null && !isPausedRef.current && el) {
-        const delta = (time - lastTime) / 1000;
-        // Clamp to avoid jump if frame was delayed
-        const clampedDelta = Math.min(delta, 0.05);
-        const scrollAmount = speed * clampedDelta;
-
-        let nextScroll = el.scrollLeft + scrollAmount;
-        if (cachedHalfWidth > 0) {
-          if (nextScroll >= cachedHalfWidth) {
-            nextScroll -= cachedHalfWidth;
-          } else if (nextScroll <= 0) {
-            nextScroll += cachedHalfWidth;
-          }
-        }
-        el.scrollLeft = nextScroll;
-      }
-      lastTime = time;
-      animId = requestAnimationFrame(step);
-    };
-
-    // Defer rAF auto-scroll start by 1500ms to preserve main thread during critical initial render & LCP
-    startTimer = setTimeout(() => {
-      animId = requestAnimationFrame(step);
-    }, 1500);
-
-    return () => {
-      if (startTimer) clearTimeout(startTimer);
-      if (animId) cancelAnimationFrame(animId);
-      window.removeEventListener("resize", updateMetrics);
-      document.removeEventListener("visibilitychange", handleVisibility);
-      el.removeEventListener("pointerdown", onUserInteractionStart);
-      el.removeEventListener("pointerup", onUserInteractionEnd);
-      el.removeEventListener("touchstart", onUserInteractionStart);
-      el.removeEventListener("touchend", onUserInteractionEnd);
-      el.removeEventListener("wheel", onUserInteractionStart);
-      if (manualPauseTimerRef.current) {
-        clearTimeout(manualPauseTimerRef.current);
-      }
-    };
-  }, [topCategories.length]);
 
   const handleManualScroll = (direction: "left" | "right") => {
     if (!scrollContainerRef.current) return;
-    const shift = 380;
+    const shift = 420;
     scrollContainerRef.current.scrollBy({
       left: direction === "left" ? -shift : shift,
       behavior: "smooth",
     });
-
-    isPausedRef.current = true;
-    if (manualPauseTimerRef.current) clearTimeout(manualPauseTimerRef.current);
-    manualPauseTimerRef.current = setTimeout(() => {
-      isPausedRef.current = false;
-    }, 2000);
   };
-
-  // Duplicate categories to enable seamless infinite wrapping
-  const displayCategories = topCategories.concat(topCategories);
 
   return (
     <section
       id="categories"
       className="py-6 select-none relative group/row"
-      onMouseEnter={() => {
-        isPausedRef.current = true;
-      }}
-      onMouseLeave={() => {
-        isPausedRef.current = false;
-      }}
     >
       <div className="w-full max-w-[1400px] mx-auto px-4 md:px-6 lg:px-8">
         {/* Section Header */}
@@ -204,12 +98,12 @@ export default function DesktopCategoryRow({ categories }: DesktopCategoryRowPro
         {/* High-Performance Smooth Horizontal Track */}
         <div
           ref={scrollContainerRef}
-          className="overflow-x-auto scrollbar-none py-1"
+          className="overflow-x-auto scrollbar-none py-1 scroll-smooth"
         >
           <div className="flex items-center gap-3.5 pr-3.5 w-max">
-            {displayCategories.map((cat, idx) => (
+            {topCategories.map((cat) => (
               <SafeDesktopCategoryCard
-                key={`cat-${cat.slug}-${idx}`}
+                key={`cat-${cat.slug}`}
                 cat={cat}
               />
             ))}

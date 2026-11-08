@@ -25,7 +25,10 @@ export default function GoogleTranslateBootstrap() {
       focusables.forEach((el) => {
         el.tabIndex = -1;
         el.setAttribute("tabindex", "-1");
-        el.setAttribute("aria-hidden", "true");
+        if ("disabled" in el) {
+          (el as any).disabled = true;
+          el.setAttribute("disabled", "true");
+        }
       });
     };
 
