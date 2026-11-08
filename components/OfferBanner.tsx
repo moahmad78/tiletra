@@ -115,13 +115,18 @@ export default function OfferBanner({ slides }: { slides?: MobileBannerSlide[] }
   const [touchEnd, setTouchEnd] = useState<number | null>(null);
   const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
-  // Auto-advance
+  // Auto-advance with initial 8.5s delay to protect LCP candidate stability
   useEffect(() => {
-    timerRef.current = setInterval(() => {
-      setCurrent((prev) => (prev + 1) % bannerSlides.length);
-    }, 4500);
+    let interval: ReturnType<typeof setInterval> | null = null;
+    const startTimer = setTimeout(() => {
+      interval = setInterval(() => {
+        setCurrent((prev) => (prev + 1) % bannerSlides.length);
+      }, 7000);
+    }, 8500);
+
     return () => {
-      if (timerRef.current) clearInterval(timerRef.current);
+      clearTimeout(startTimer);
+      if (interval) clearInterval(interval);
     };
   }, [bannerSlides.length]);
 

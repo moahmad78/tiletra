@@ -126,10 +126,18 @@ export default function DesktopBannerCarousel({ slides }: { slides?: BannerSlide
 
   useEffect(() => {
     if (isPaused) return;
-    const interval = setInterval(() => {
-      setCurrent((prev) => (prev + 1) % bannerSlides.length);
-    }, 5000);
-    return () => clearInterval(interval);
+    let interval: ReturnType<typeof setInterval> | null = null;
+    // Delay first rotation by 8.5s so initial hero LCP settles without late slide candidate updates
+    const startTimer = setTimeout(() => {
+      interval = setInterval(() => {
+        setCurrent((prev) => (prev + 1) % bannerSlides.length);
+      }, 7000);
+    }, 8500);
+
+    return () => {
+      clearTimeout(startTimer);
+      if (interval) clearInterval(interval);
+    };
   }, [isPaused, bannerSlides.length]);
 
   const prevSlide = () => {

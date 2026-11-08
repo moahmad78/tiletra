@@ -15,7 +15,7 @@ function SafeDesktopCategoryCard({
 }: {
   cat: Category;
 }) {
-  const categoryImage = `/images/categories/cat-${cat.slug}.webp`;
+  const categoryImage = cat.image && cat.image.trim() ? cat.image : `/images/categories/cat-${cat.slug}.webp`;
 
   return (
     <Link
