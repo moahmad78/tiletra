@@ -189,7 +189,7 @@ export default function ProductCard({
             aria-label={`Add ${product.name} to cart`}
             className={`${
               compact ? "px-2 py-1 text-[11px] rounded-lg gap-1" : "px-3.5 py-2 text-xs rounded-xl gap-1.5"
-            } bg-[#F26522] text-white font-bold hover:bg-[#d95a1e] active:scale-95 transition-all flex items-center shadow-2xs whitespace-nowrap shrink-0 cursor-pointer`}
+            } bg-[#C84607] text-white font-bold hover:bg-[#a83a06] active:scale-95 transition-all flex items-center shadow-2xs whitespace-nowrap shrink-0 cursor-pointer`}
           >
             <ShoppingBag size={compact ? 11 : 13} className="shrink-0" />
             <span className="whitespace-nowrap">Add</span>

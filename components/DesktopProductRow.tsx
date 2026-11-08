@@ -81,7 +81,7 @@ export default function DesktopProductRow({
 
             <Link
               href={viewAllHref}
-              className="text-xs font-black text-[#D34E0E] hover:underline flex items-center gap-1 ml-1"
+              className="text-xs font-black text-[#C84607] hover:underline flex items-center gap-1 ml-1"
             >
               View All <ArrowRight size={14} />
             </Link>

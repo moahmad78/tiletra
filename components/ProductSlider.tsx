@@ -38,7 +38,7 @@ export default function ProductSlider({
         </div>
         <Link
           href={viewAllHref}
-          className="text-xs font-bold text-[#D34E0E] hover:text-[#b83e08] flex items-center gap-0.5 active:opacity-70 transition-opacity"
+          className="text-xs font-bold text-[#C84607] hover:text-[#9e3305] flex items-center gap-0.5 active:opacity-70 transition-opacity"
         >
           View All
           <ChevronRight size={14} />

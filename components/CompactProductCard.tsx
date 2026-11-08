@@ -146,7 +146,7 @@ export default function CompactProductCard({
             className={`w-7 h-7 rounded-lg flex items-center justify-center transition-all active:scale-90 shadow-xs cursor-pointer ${
               justAdded
                 ? "bg-green-600 text-white"
-                : "bg-[#F26522] text-white hover:bg-[#d95a1e]"
+                : "bg-[#C84607] text-white hover:bg-[#a83a06]"
             }`}
           >
             {justAdded ? <Check size={14} /> : <Plus size={15} strokeWidth={2.5} />}
