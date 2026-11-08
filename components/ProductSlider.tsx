@@ -31,14 +31,14 @@ export default function ProductSlider({
             {title}
           </h2>
           {tag && (
-            <span className="px-2 py-0.5 bg-[#F26522]/10 text-[#F26522] text-[10px] font-bold rounded-full">
+            <span className="px-2 py-0.5 bg-[#F26522]/10 text-[#C84607] text-[10px] font-bold rounded-full">
               {tag}
             </span>
           )}
         </div>
         <Link
           href={viewAllHref}
-          className="text-xs font-bold text-[#F26522] hover:text-[#d95a1e] flex items-center gap-0.5 active:opacity-70 transition-opacity"
+          className="text-xs font-bold text-[#D34E0E] hover:text-[#b83e08] flex items-center gap-0.5 active:opacity-70 transition-opacity"
         >
           View All
           <ChevronRight size={14} />

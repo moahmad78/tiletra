@@ -37,7 +37,7 @@ function DistinctCategoryItem({ cat }: { cat: Category }) {
   return (
     <Link
       href={`/shop/${cat.slug}`}
-      aria-label={`Browse ${cat.name}`}
+      aria-label={shortName}
       className="flex flex-col items-center shrink-0 w-[68px] sm:w-[74px] group active:scale-95 transition-transform scroll-snap-align-start"
     >
       <div className="w-[58px] h-[58px] sm:w-[64px] sm:h-[64px] rounded-2xl overflow-hidden relative border border-gray-200/90 bg-gray-100 shadow-2xs group-hover:border-[#F26522] transition-all">

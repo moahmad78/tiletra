@@ -56,7 +56,7 @@ export default function CompactProductCard({
     >
       {/* Top Image Container */}
       <div className="relative">
-        <Link href={`/product/${product.slug}`} aria-label={`View ${product.name} details`} className="block relative aspect-square w-full bg-gray-50 overflow-hidden" prefetch={false}>
+        <Link href={`/product/${product.slug}`} aria-label={product.name} className="block relative aspect-square w-full bg-gray-50 overflow-hidden" prefetch={false}>
           <SafeImage
             src={productImg}
             variantSize={400}
@@ -83,10 +83,10 @@ export default function CompactProductCard({
         <button
           onClick={handleToggleWishlist}
           aria-label={mounted && wishlisted ? "Remove from wishlist" : "Add to wishlist"}
-          className="absolute top-1.5 right-1.5 z-10 w-6 h-6 rounded-full bg-white/90 backdrop-blur-xs shadow-xs flex items-center justify-center transition-transform active:scale-75 cursor-pointer"
+          className="absolute top-1 right-1 z-10 w-7 h-7 rounded-full bg-white/95 backdrop-blur-xs shadow-xs flex items-center justify-center transition-transform active:scale-75 cursor-pointer"
         >
           <Heart
-            size={12}
+            size={13}
             className={
               mounted && wishlisted
                 ? "fill-red-500 text-red-500"
@@ -104,7 +104,7 @@ export default function CompactProductCard({
               {product.name}
             </h3>
           </Link>
-          <p className="text-[10px] text-gray-400 mt-0.5 truncate">
+          <p className="text-[10px] text-gray-600 mt-0.5 truncate font-medium">
             {Boolean(product.hasVariants) || (product.variants && product.variants.length > 1)
               ? `${(product.variants || []).filter((v) => v.active !== false).length} options available`
               : `${defaultVariant?.size || "Standard"} · ${defaultVariant?.finish || "Matte"}`}

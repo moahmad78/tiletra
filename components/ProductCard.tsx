@@ -52,7 +52,7 @@ export default function ProductCard({
       } overflow-hidden border border-gray-100 transition-[transform,box-shadow] duration-200 ease-out flex flex-col justify-between h-full`}
     >
       <div className="relative">
-        <Link href={`/product/${product.slug}`} aria-label={`View ${product.name} details`} className="block" prefetch={false}>
+        <Link href={`/product/${product.slug}`} aria-label={product.name} className="block" prefetch={false}>
           <div className="relative aspect-square w-full overflow-hidden bg-gray-100">
             <SafeImage
               src={productImg}
@@ -90,10 +90,10 @@ export default function ProductCard({
         <button
           onClick={handleToggleWishlist}
           aria-label={mounted && wishlisted ? "Remove from wishlist" : "Add to wishlist"}
-          className={`absolute ${compact ? "top-1.5 right-1.5 w-6 h-6" : "top-3 right-3 w-9 h-9"} z-10 rounded-full bg-white/90 backdrop-blur-sm shadow-md flex items-center justify-center transition-all duration-200 hover:scale-110 active:scale-90 cursor-pointer`}
+          className={`absolute ${compact ? "top-1.5 right-1.5 w-7 h-7" : "top-3 right-3 w-9 h-9"} z-10 rounded-full bg-white/95 backdrop-blur-sm shadow-md flex items-center justify-center transition-all duration-200 hover:scale-110 active:scale-90 cursor-pointer`}
         >
           <Heart
-            size={compact ? 12 : 18}
+            size={compact ? 13 : 18}
             className={
               mounted && wishlisted
                 ? "fill-red-500 text-red-500"
@@ -110,7 +110,7 @@ export default function ProductCard({
               {product.name}
             </h3>
           </Link>
-          <p className={`${compact ? "text-[10px] mt-0.5 truncate" : "text-xs mt-1"} text-gray-500`}>
+          <p className={`${compact ? "text-[10px] mt-0.5 truncate font-medium" : "text-xs mt-1"} text-gray-600`}>
             {Boolean(product.hasVariants) || (product.variants && product.variants.length > 1)
               ? `${(product.variants || []).filter((v) => v.active !== false).length} options available · ${product.material || "Quality"}`
               : `${defaultVariant?.size || "Standard"} · ${defaultVariant?.finish || "Matte"} · ${product.material}`}

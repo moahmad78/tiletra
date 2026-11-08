@@ -48,7 +48,7 @@ export default function DesktopProductRow({
         <div className="flex items-center justify-between mb-4">
           <div>
             {badge && (
-              <span className="text-[10px] font-black text-[#F26522] uppercase tracking-[2.5px] bg-[#F26522]/10 px-2.5 py-0.5 rounded-md inline-block mb-1">
+              <span className="text-[10px] font-black text-[#C84607] uppercase tracking-[2.5px] bg-[#F26522]/10 px-2.5 py-0.5 rounded-md inline-block mb-1">
                 {badge}
               </span>
             )}
@@ -81,7 +81,7 @@ export default function DesktopProductRow({
 
             <Link
               href={viewAllHref}
-              className="text-xs font-black text-[#F26522] hover:underline flex items-center gap-1 ml-1"
+              className="text-xs font-black text-[#D34E0E] hover:underline flex items-center gap-1 ml-1"
             >
               View All <ArrowRight size={14} />
             </Link>

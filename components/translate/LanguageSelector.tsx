@@ -246,7 +246,7 @@ export default function LanguageSelector({
       <button
         type="button"
         onClick={() => startTransition(() => setIsOpen(!isOpen))}
-        aria-label="Select Language"
+        aria-label={`${currentLanguageInfo.nativeName.split(" ")[0]} - Select Language`}
         className={cn(
           "flex items-center gap-1.5 rounded-xl transition-all cursor-pointer font-bold select-none notranslate",
           variant === "navbar" &&

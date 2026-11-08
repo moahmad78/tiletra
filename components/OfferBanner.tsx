@@ -171,7 +171,7 @@ export default function OfferBanner({ slides }: { slides?: MobileBannerSlide[] }
               key={i}
               onClick={() => setCurrent(i)}
               aria-label={`Slide ${i + 1}`}
-              className="p-1 flex items-center justify-center cursor-pointer group"
+              className="p-1.5 min-w-[28px] min-h-[28px] flex items-center justify-center cursor-pointer group"
             >
               <span
                 className={`h-1.5 rounded-full block transition-transform duration-300 ${

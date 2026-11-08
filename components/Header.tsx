@@ -183,7 +183,7 @@ export default function Header() {
                 <button
                   type="button"
                   onClick={() => setSearchOpen(true)}
-                  aria-label="Search products"
+                  aria-label="Search tiles, wires, pipes"
                   className="flex-1 flex items-center gap-2 min-w-0 text-left"
                 >
                   <Search size={14} className="text-[#F26522] shrink-0" />
@@ -200,7 +200,7 @@ export default function Header() {
                 <button
                   type="button"
                   onClick={() => setSearchOpen(true)}
-                  aria-label="Search catalog"
+                  aria-label="Search tiles, electrical, plumbing"
                   className="flex-1 flex items-center gap-2 text-gray-600 group-hover:text-gray-800 text-xs font-semibold mr-2 overflow-hidden"
                 >
                   <Search size={15} className="text-gray-500 group-hover:text-[#F26522] transition-colors shrink-0" />
@@ -271,7 +271,7 @@ export default function Header() {
                 <button
                   type="button"
                   onClick={() => openLoginModal()}
-                  aria-label="Sign in"
+                  aria-label="Login"
                   className="hidden md:flex items-center gap-1.5 px-3.5 h-[40px] rounded-xl text-xs font-bold text-[#052a51] hover:bg-gray-100 transition-colors"
                 >
                   <UserIcon size={16} />
