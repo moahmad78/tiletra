@@ -88,9 +88,9 @@ function MobileBannerSlideItem({
             <span>{slide.badge || "Special Offer"}</span>
           </div>
 
-          <h3 className="text-[15px] font-black text-white leading-tight tracking-tight drop-shadow-xs">
+          <h2 className="text-[15px] font-black text-white leading-tight tracking-tight drop-shadow-xs">
             {slide.title}
-          </h3>
+          </h2>
 
           <p className="text-[11px] text-white/80 mt-0.5 line-clamp-1">
             {slide.subtitle}

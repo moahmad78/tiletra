@@ -52,9 +52,9 @@ export default function DesktopProductRow({
                 {badge}
               </span>
             )}
-            <h3 className="text-xl lg:text-2xl font-black text-[#052a51] tracking-tight">
+            <h2 className="text-xl lg:text-2xl font-black text-[#052a51] tracking-tight">
               {title}
-            </h3>
+            </h2>
             {subtitle && <p className="text-xs text-gray-500 mt-0.5">{subtitle}</p>}
           </div>
 

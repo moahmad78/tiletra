@@ -29,9 +29,9 @@ export default function RecentlyViewedSlider({
       <div className="flex items-center gap-2">
         <Clock size={18} className="text-[#F26522]" />
         <div>
-          <h3 className="text-base sm:text-lg font-black text-[#052a51] leading-tight">
+          <h2 className="text-base sm:text-lg font-black text-[#052a51] leading-tight">
             {title}
-          </h3>
+          </h2>
           <p className="text-xs text-gray-400">Picks you recently explored</p>
         </div>
       </div>
