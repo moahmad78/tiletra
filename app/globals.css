@@ -230,4 +230,11 @@ body {
   pointer-events: none !important;
 }
 
+/* 7. Core Web Vitals & Speed Index Optimization: Content-Visibility */
+.content-visibility-auto {
+  content-visibility: auto;
+  contain-intrinsic-size: auto 550px;
+}
+
+
 

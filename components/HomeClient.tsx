@@ -95,7 +95,7 @@ export default function HomeClient({
 
         {/* 3. Product Row: Trending Products */}
         {hasTrending && (
-          <div className="bg-white my-1 py-1 shadow-2xs">
+          <div className="bg-white my-1 py-1 shadow-2xs content-visibility-auto">
             <ProductSlider
               title="Trending Products"
               subtitle="Most viewed and favored by builders & homeowners"
@@ -108,7 +108,7 @@ export default function HomeClient({
 
         {/* 6. Product Row: Bestsellers */}
         {hasBestsellers && (
-          <div className="bg-white my-1 py-1 shadow-2xs">
+          <div className="bg-white my-1 py-1 shadow-2xs content-visibility-auto">
             <ProductSlider
               title="Bestselling Products"
               subtitle="Highest rated materials with proven quality"
@@ -121,7 +121,7 @@ export default function HomeClient({
 
         {/* 7. Product Row: New Arrivals */}
         {hasNewArrivals && (
-          <div className="bg-white my-1 py-1 shadow-2xs">
+          <div className="bg-white my-1 py-1 shadow-2xs content-visibility-auto">
             <ProductSlider
               title="New Arrivals"
               subtitle="Fresh artisan patterns, zellige & marble textures"
@@ -133,7 +133,7 @@ export default function HomeClient({
         )}
 
         {/* Recently Viewed on Mobile */}
-        <div className="px-2 my-1">
+        <div className="px-2 my-1 content-visibility-auto">
           <RecentlyViewedSlider />
         </div>
       </div>
@@ -150,45 +150,53 @@ export default function HomeClient({
 
         {/* 3. Trending Products Row */}
         {hasTrending && (
-          <DesktopProductRow
-            title="Trending Products Collection"
-            products={trending}
-            viewAllHref="/shop"
-          />
+          <div className="content-visibility-auto">
+            <DesktopProductRow
+              title="Trending Products Collection"
+              products={trending}
+              viewAllHref="/shop"
+            />
+          </div>
         )}
 
         {/* 5. Bestselling Products Row */}
         {hasBestsellers && (
-          <DesktopProductRow
-            title="Top Rated Bestsellers"
-            badge="Most Popular"
-            subtitle="Consistently 5-star rated by verified builders & homeowners"
-            products={displayBestsellers}
-            viewAllHref="/shop"
-          />
+          <div className="content-visibility-auto">
+            <DesktopProductRow
+              title="Top Rated Bestsellers"
+              badge="Most Popular"
+              subtitle="Consistently 5-star rated by verified builders & homeowners"
+              products={displayBestsellers}
+              viewAllHref="/shop"
+            />
+          </div>
         )}
 
         {/* 6. New Arrivals Product Row */}
         {hasNewArrivals && (
-          <DesktopProductRow
-            title="Fresh Stock Arrivals"
-            badge="Fresh Stock"
-            subtitle="Freshly added electricals, sanitaryware, hardware, and designer surfaces"
-            products={displayNewArrivals}
-            viewAllHref="/shop"
-          />
+          <div className="content-visibility-auto">
+            <DesktopProductRow
+              title="Fresh Stock Arrivals"
+              badge="Fresh Stock"
+              subtitle="Freshly added electricals, sanitaryware, hardware, and designer surfaces"
+              products={displayNewArrivals}
+              viewAllHref="/shop"
+            />
+          </div>
         )}
       </div>
 
       {/* ========================================================================= */}
       {/* UNIFIED SITE-WIDE CATALOG & SEO FOUNDATION (Rendered Once)                */}
       {/* ========================================================================= */}
-      <InfiniteProductCatalog
-        categories={categories}
-        initialProducts={[...trending, ...displayBestsellers, ...displayNewArrivals].slice(0, 12)}
-      />
-      <IntrihubBrandSEOSection />
-      <Footer />
+      <div className="content-visibility-auto">
+        <InfiniteProductCatalog
+          categories={categories}
+          initialProducts={[...trending, ...displayBestsellers, ...displayNewArrivals].slice(0, 12)}
+        />
+        <IntrihubBrandSEOSection />
+        <Footer />
+      </div>
     </main>
   );
 }

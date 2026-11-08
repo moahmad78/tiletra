@@ -218,31 +218,10 @@ export default async function RootLayout({
             `,
           }}
         />
-        {/* Google Tag Manager - Loaded via lazyOnload to eliminate main-thread INP blocking during interaction */}
-        <Script
-          id="google-tag-manager"
-          strategy="lazyOnload"
-          dangerouslySetInnerHTML={{
-            __html: `(function(w,d,s,l,i){w[l]=w[l]||[];w[l].push({'gtm.start':
-new Date().getTime(),event:'gtm.js'});var f=d.getElementsByTagName(s)[0],
-j=d.createElement(s),dl=l!='dataLayer'?'&l='+l:'';j.async=true;j.src=
-'https://www.googletagmanager.com/gtm.js?id='+i+dl;f.parentNode.insertBefore(j,f);
-})(window,document,'script','dataLayer','GTM-PPTSVRKM');`,
-          }}
-        />
-        {/* End Google Tag Manager */}
-
         {/* IntriHub Pvt Ltd | Official Platform */}
         <meta name="author" content="IntriHub Pvt Ltd" />
         <meta name="publisher" content="IntriHub Pvt Ltd" />
         <meta name="copyright" content="IntriHub Pvt Ltd" />
-        <Script
-          id="brand-credit"
-          strategy="lazyOnload"
-          dangerouslySetInnerHTML={{
-            __html: `console.log("%c🚀 Intrihub — Every Material. Every Space.%c\\n🏢 IntriHub Pvt Ltd\\n📸 Instagram: https://instagram.com/intrihub_\\n💼 Every Material. Every Space.", "background: #052a51; color: #F26522; font-size: 14px; font-weight: 900; padding: 6px 12px; border-radius: 6px;", "color: #052a51; font-size: 12px; font-weight: 700; line-height: 1.6;");`,
-          }}
-        />
 
         {/* Preconnect to Required Services & Web Fonts */}
         <link rel="preconnect" href="https://fonts.googleapis.com" />
@@ -269,6 +248,8 @@ j=d.createElement(s),dl=l!='dataLayer'?'&l='+l:'';j.async=true;j.src=
           type="image/webp"
           media="(min-width: 768px)"
           // @ts-ignore
+          fetchPriority="high"
+          // @ts-ignore
           fetchpriority="high"
         />
         <link
@@ -278,29 +259,59 @@ j=d.createElement(s),dl=l!='dataLayer'?'&l='+l:'';j.async=true;j.src=
           type="image/webp"
           media="(max-width: 767px)"
           // @ts-ignore
+          fetchPriority="high"
+          // @ts-ignore
           fetchpriority="high"
         />
 
-        {/* Google Analytics 4 (gtag.js) - Defer to lazyOnload for zero interaction delay */}
+        {/* Deferred Google Tag Manager & Google Analytics (Zero TBT Impact) */}
         <Script
-          strategy="lazyOnload"
-          src={`https://www.googletagmanager.com/gtag/js?id=${gaMeasurementId}`}
-        />
-        <Script
-          id="google-analytics"
+          id="deferred-analytics-gtm"
           strategy="lazyOnload"
           dangerouslySetInnerHTML={{
             __html: `
-              window.dataLayer = window.dataLayer || [];
-              function gtag(){dataLayer.push(arguments);}
-              gtag('js', new Date());
-              gtag('config', '${gaMeasurementId}', {
-                page_path: window.location.pathname,
-              });
+              (function() {
+                var loaded = false;
+                function initAnalytics() {
+                  if (loaded) return;
+                  loaded = true;
+
+                  // 1. GTM
+                  (function(w,d,s,l,i){w[l]=w[l]||[];w[l].push({'gtm.start':
+                  new Date().getTime(),event:'gtm.js'});var f=d.getElementsByTagName(s)[0],
+                  j=d.createElement(s),dl=l!='dataLayer'?'&l='+l:'';j.async=true;j.src=
+                  'https://www.googletagmanager.com/gtm.js?id='+i+dl;f.parentNode.insertBefore(j,f);
+                  })(window,document,'script','dataLayer','GTM-PPTSVRKM');
+
+                  // 2. GA4
+                  var s = document.createElement('script');
+                  s.src = 'https://www.googletagmanager.com/gtag/js?id=${gaMeasurementId}';
+                  s.async = true;
+                  document.head.appendChild(s);
+                  window.dataLayer = window.dataLayer || [];
+                  function gtag(){dataLayer.push(arguments);}
+                  gtag('js', new Date());
+                  gtag('config', '${gaMeasurementId}', { page_path: window.location.pathname });
+                }
+
+                var events = ['pointerdown', 'touchstart', 'scroll', 'keydown'];
+                function onUserTouch() {
+                  events.forEach(function(e) { window.removeEventListener(e, onUserTouch); });
+                  initAnalytics();
+                }
+                events.forEach(function(e) { window.addEventListener(e, onUserTouch, { passive: true, once: true }); });
+
+                if ('requestIdleCallback' in window) {
+                  window.requestIdleCallback(function() { setTimeout(initAnalytics, 1500); });
+                } else {
+                  setTimeout(initAnalytics, 2500);
+                }
+              })();
             `,
           }}
         />
-        {/* Google Website Translator Engine */}
+
+        {/* On-Demand Google Website Translator Engine */}
         <script
           dangerouslySetInnerHTML={{
             __html: `
@@ -314,13 +325,51 @@ j=d.createElement(s),dl=l!='dataLayer'?'&l='+l:'';j.async=true;j.src=
                   }
                 } catch (e) {}
               };
+
+              (function() {
+                var hasNonEnglish = false;
+                try {
+                  var cookies = document.cookie.split(';');
+                  for (var i = 0; i < cookies.length; i++) {
+                    var c = cookies[i].trim();
+                    if (c.indexOf('googtrans=') === 0 && c !== 'googtrans=/en/en') {
+                      hasNonEnglish = true;
+                      break;
+                    }
+                  }
+                  if (!hasNonEnglish && localStorage.getItem('intrihub_user_lang') && localStorage.getItem('intrihub_user_lang') !== 'en') {
+                    hasNonEnglish = true;
+                  }
+                } catch (e) {}
+
+                var loaded = false;
+                function loadGTranslate() {
+                  if (loaded) return;
+                  loaded = true;
+                  var s = document.createElement('script');
+                  s.src = 'https://translate.google.com/translate_a/element.js?cb=googleTranslateElementInit';
+                  s.async = true;
+                  document.head.appendChild(s);
+                }
+
+                if (hasNonEnglish) {
+                  loadGTranslate();
+                } else {
+                  var events = ['pointerdown', 'touchstart', 'scroll', 'keydown'];
+                  function onInteraction() {
+                    events.forEach(function(e) { window.removeEventListener(e, onInteraction); });
+                    loadGTranslate();
+                  }
+                  events.forEach(function(e) { window.addEventListener(e, onInteraction, { passive: true, once: true }); });
+                  if ('requestIdleCallback' in window) {
+                    window.requestIdleCallback(function() { setTimeout(loadGTranslate, 3500); });
+                  } else {
+                    setTimeout(loadGTranslate, 5000);
+                  }
+                }
+              })();
             `,
           }}
-        />
-        <Script
-          id="google-translate-script"
-          strategy="lazyOnload"
-          src="https://translate.google.com/translate_a/element.js?cb=googleTranslateElementInit"
         />
       </head>
       <body className="min-h-full flex flex-col font-sans bg-white text-gray-900">
