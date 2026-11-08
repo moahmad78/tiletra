@@ -58,8 +58,7 @@ export default function AdminSettingsPage() {
   const [codMaxLimit, setCodMaxLimit] = useState(25000);
   const [codBlockedPincodes, setCodBlockedPincodes] = useState("560099, 560088");
 
-  // Mobile App Governance & Website Install Prompt
-  const [appInstallPromptEnabled, setAppInstallPromptEnabled] = useState(true);
+  // Mobile App Governance
   const [versionConfig, setVersionConfig] = useState<AppVersionSettings>(DEFAULT_APP_VERSION_SETTINGS);
 
   // Delivery Slots Management State (Default Morning Starts at 10:00 AM)
@@ -93,7 +92,6 @@ export default function AdminSettingsPage() {
           setCodEnabled(s.codEnabled);
           setCodMaxLimit(s.codMaxLimit);
           setCodBlockedPincodes((s.codBlockedPincodes || []).join(", "));
-          setAppInstallPromptEnabled(s.appInstallPromptEnabled !== false);
           if (s.appVersionConfig) {
             setVersionConfig({
               customer: {
@@ -355,13 +353,12 @@ export default function AdminSettingsPage() {
       codEnabled,
       codMaxLimit: Number(codMaxLimit),
       codBlockedPincodes: blockedPincodesArray,
-      appInstallPromptEnabled,
       appVersionConfig: cleanConfig,
     });
     setSaving(false);
 
     if (res.success) {
-      toast.success("Store settings, version policies & install prompt updated successfully!");
+      toast.success("Store settings & version policies updated successfully!");
     } else {
       toast.error(res.error || "Failed to update settings");
     }
@@ -952,33 +949,7 @@ export default function AdminSettingsPage() {
           </div>
         </div>
 
-        {/* ── Section 4: Website Smart App Install Prompt ── */}
-        <div className="bg-white p-6 rounded-2xl border border-gray-200/80 shadow-2xs space-y-4">
-          <div className="flex items-center justify-between pb-2 border-b border-gray-100">
-            <div className="flex items-center gap-2">
-              <DownloadCloud size={18} className="text-[#F26522]" />
-              <div>
-                <h3 className="text-base font-black text-[#052a51]">Smart App Install Prompt (Website Android)</h3>
-                <p className="text-xs text-gray-500 mt-0.5">
-                  Controls the bottom floating prompt on mobile Android browsers. Opens app via intent link or Google Play.
-                </p>
-              </div>
-            </div>
 
-            <label className="flex items-center gap-2 cursor-pointer">
-              <span className="text-xs font-bold text-gray-600">Enable Prompt</span>
-              <input
-                type="checkbox"
-                checked={appInstallPromptEnabled}
-                onChange={(e) => setAppInstallPromptEnabled(e.target.checked)}
-                className="w-4 h-4 accent-[#F26522] rounded cursor-pointer"
-              />
-            </label>
-          </div>
-          <p className="text-[11px] text-gray-500">
-            When enabled, mobile Android visitors without the app or PWA will see the prompt after a short delay or on second page view. Hides for 7 days when dismissed.
-          </p>
-        </div>
 
         {/* ── Section 5: Mobile App Version Policies (Customer & Vendor Apps) ── */}
         <div className="bg-white p-6 rounded-2xl border border-gray-200/80 shadow-2xs space-y-6">

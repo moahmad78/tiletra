@@ -48,7 +48,6 @@ export async function getStoreSettings() {
         freeDeliveryThreshold: 0,
         bikeDeliveryRate: 0,
         fourWheelerDeliveryRate: 0,
-        appInstallPromptEnabled: (settings as any).appInstallPromptEnabled !== false,
         appVersionConfig: ((settings as any).appVersionConfig as AppVersionSettings) || DEFAULT_APP_VERSION_SETTINGS,
       };
     }
@@ -83,7 +82,6 @@ export async function updateStoreSettings(data: {
   awaitingVendorTimeoutMinutes?: number;
   codAutoAcceptCap?: number;
   alertStepTimings?: any;
-  appInstallPromptEnabled?: boolean;
   appVersionConfig?: Partial<AppVersionSettings> | any;
 }) {
   try {
