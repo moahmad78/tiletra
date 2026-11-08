@@ -48,7 +48,7 @@ export default function DesktopProductRow({
         <div className="flex items-center justify-between mb-4">
           <div>
             {badge && (
-              <span className="text-[10px] font-black text-[#C84607] uppercase tracking-[2.5px] bg-[#F26522]/10 px-2.5 py-0.5 rounded-md inline-block mb-1">
+              <span className="text-[10px] font-black text-[#8E2C03] uppercase tracking-[2.5px] bg-[#F26522]/15 px-2.5 py-0.5 rounded-md inline-block mb-1">
                 {badge}
               </span>
             )}

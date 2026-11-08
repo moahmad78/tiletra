@@ -334,9 +334,9 @@ export default function Footer() {
               </span>
             </div>
             <div className="flex items-center gap-3 text-[11px] text-white/70">
-              <span>Support: <a href={`mailto:${EMAIL}`} className="text-[#F26522] hover:underline font-semibold">{EMAIL}</a></span>
+              <span>Support: <a href={`mailto:${EMAIL}`} className="text-[#FFA066] hover:underline font-semibold">{EMAIL}</a></span>
               <span>•</span>
-              <a href={PHONE_TEL} className="text-[#F26522] hover:underline font-semibold">{PHONE_DISPLAY}</a>
+              <a href={PHONE_TEL} className="text-[#FFA066] hover:underline font-semibold">{PHONE_DISPLAY}</a>
             </div>
           </div>
           <div className="flex items-start gap-2 text-[11px] sm:text-xs text-white/70 leading-relaxed">
