@@ -145,6 +145,24 @@ export async function POST(req: NextRequest) {
       },
     });
 
+    // Notify Vendor (V08: RETURN_REQUEST)
+    try {
+      const { notify } = await import("@/lib/notifications/service");
+      const splits = await prisma.vendorOrderSplit.findMany({
+        where: { orderId },
+        select: { vendorId: true },
+      });
+      for (const sp of splits) {
+        await notify({
+          type: "RETURN_REQUEST",
+          vendorId: sp.vendorId,
+          data: { orderId, returnId: newReturn.id, reason },
+        }).catch(() => {});
+      }
+    } catch (notifErr) {
+      console.warn("[returns/POST] Push notify error:", notifErr);
+    }
+
     return NextResponse.json({ success: true, returnRequest: newReturn });
   } catch (error: any) {
     console.error("Create return API error:", error);
@@ -219,6 +237,34 @@ export async function PATCH(req: NextRequest) {
           resolvedAt: new Date(),
         },
       });
+    }
+
+    // Notify Customer of Return Status Update (U11) / Refund Completed (U10)
+    try {
+      const { notify } = await import("@/lib/notifications/service");
+      if (updated.order?.userId) {
+        if (updateData.refundAmount) {
+          await notify({
+            type: "REFUND_COMPLETED",
+            userId: updated.order.userId,
+            data: {
+              orderId: updated.orderId,
+              amount: updateData.refundAmount,
+            },
+          }).catch(() => {});
+        } else {
+          await notify({
+            type: "RETURN_STATUS",
+            userId: updated.order.userId,
+            data: {
+              orderId: updated.orderId,
+              status: updated.status,
+            },
+          }).catch(() => {});
+        }
+      }
+    } catch (pushErr) {
+      console.warn("[returns/PATCH] Customer push error:", pushErr);
     }
 
     return NextResponse.json({ success: true, returnRequest: updated });

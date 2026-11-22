@@ -182,10 +182,9 @@ export function usePushNotifications() {
       }
     });
 
-    // 4. User tapped notification in system tray (from Lock Screen, Background, or Killed state)
-    responseListener.current = Notifications.addNotificationResponseReceivedListener((response) => {
-      console.log("Push notification tapped by user:", response);
-      const data = (response.notification.request.content.data || {}) as Record<string, any>;
+    const handleNotificationResponse = (response: any) => {
+      console.log("Push notification response handled:", response);
+      const data = (response?.notification?.request?.content?.data || {}) as Record<string, any>;
 
       // Handle App Update link
       if (data?.storeUrl || data?.type === "app_update") {
@@ -233,7 +232,20 @@ export function usePushNotifications() {
           console.error("Error deep-linking from push notification:", e);
         }
       }
-    });
+    };
+
+    // 4. User tapped notification in system tray (from Lock Screen, Background, or Killed state)
+    responseListener.current = Notifications.addNotificationResponseReceivedListener(handleNotificationResponse);
+
+    // 5. Handle cold-start tap when app was killed
+    Notifications.getLastNotificationResponseAsync()
+      .then((lastResponse) => {
+        if (lastResponse) {
+          console.log("⚡ [Push Notifications] Cold start notification tap detected:", lastResponse);
+          handleNotificationResponse(lastResponse);
+        }
+      })
+      .catch((err) => console.warn("Failed to check last notification response:", err));
 
     return () => {
       appStateSub.remove();
@@ -258,9 +270,73 @@ async function registerForPushNotificationsAsync(): Promise<string | null> {
 
   if (Platform.OS === "android") {
     try {
+      const importanceMax = (Notifications as any).AndroidImportance?.MAX ?? 5;
+      const importanceHigh = (Notifications as any).AndroidImportance?.HIGH ?? 4;
+      const importanceDefault = (Notifications as any).AndroidImportance?.DEFAULT ?? 3;
+      const visibilityPublic = (Notifications as any).AndroidNotificationVisibility?.PUBLIC ?? 1;
+
+      // PRD v1 Versioned Vendor Channels
+      await Notifications.setNotificationChannelAsync("new_order_ring_v1", {
+        name: "New Orders High Alert (Loud Ring)",
+        description: "Plays loud ringing siren for incoming new orders requiring acceptance",
+        importance: importanceMax,
+        vibrationPattern: [0, 800, 400, 800, 400, 800],
+        enableVibrate: true,
+        sound: "ring.mp3",
+        lockscreenVisibility: visibilityPublic,
+        bypassDnd: true,
+        lightColor: "#EF4444",
+        showBadge: true,
+      });
+
+      await Notifications.setNotificationChannelAsync("order_reminder_v1", {
+        name: "Order Reminders & Deadlines",
+        description: "Reminders for pending orders close to expiry or scheduled dispatch",
+        importance: importanceMax,
+        vibrationPattern: [0, 500, 250, 500],
+        enableVibrate: true,
+        sound: "default",
+        lockscreenVisibility: visibilityPublic,
+        lightColor: "#F59E0B",
+        showBadge: true,
+      });
+
+      await Notifications.setNotificationChannelAsync("order_warning_v1", {
+        name: "Order Warnings & Cancellations",
+        description: "Alerts for cancelled, expired, or delayed orders and return requests",
+        importance: importanceHigh,
+        vibrationPattern: [0, 400, 200, 400],
+        enableVibrate: true,
+        sound: "default",
+        lockscreenVisibility: visibilityPublic,
+        lightColor: "#EF4444",
+        showBadge: true,
+      });
+
+      await Notifications.setNotificationChannelAsync("money_success_v1", {
+        name: "Payouts & Settlements",
+        description: "Notifications when vendor payouts and settlements are processed",
+        importance: importanceDefault,
+        vibrationPattern: [0, 250, 250],
+        enableVibrate: true,
+        sound: "default",
+        lightColor: "#10B981",
+        showBadge: true,
+      });
+
+      await Notifications.setNotificationChannelAsync("default_chime_v1", {
+        name: "Store & System Updates",
+        description: "Catalog approvals, reviews, promotions, and system announcements",
+        importance: importanceDefault,
+        sound: "default",
+        lightColor: "#3B82F6",
+        showBadge: true,
+      });
+
+      // Legacy fallback channels
       await Notifications.setNotificationChannelAsync("default", {
         name: "Default Notifications",
-        importance: (Notifications as any).AndroidImportance?.MAX ?? 5,
+        importance: importanceMax,
         vibrationPattern: [0, 250, 250, 250],
         enableVibrate: true,
         sound: "default",
@@ -269,11 +345,11 @@ async function registerForPushNotificationsAsync(): Promise<string | null> {
 
       await Notifications.setNotificationChannelAsync("orders_high_importance", {
         name: "Incoming Orders High Alert",
-        importance: (Notifications as any).AndroidImportance?.MAX ?? 5,
+        importance: importanceMax,
         vibrationPattern: [0, 800, 400, 800, 400, 800],
         enableVibrate: true,
-        sound: "default",
-        lockscreenVisibility: (Notifications as any).AndroidNotificationVisibility?.PUBLIC ?? 1,
+        sound: "ring.mp3",
+        lockscreenVisibility: visibilityPublic,
         bypassDnd: true,
         lightColor: "#F26522",
         showBadge: true,

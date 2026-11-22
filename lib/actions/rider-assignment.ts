@@ -83,6 +83,7 @@ export async function autoAssignNearestRider(
       where: { id: orderId },
       select: {
         id: true,
+        userId: true,
         customerName: true,
         customerPhone: true,
         deliveryLatitude: true,
@@ -317,6 +318,38 @@ export async function autoAssignNearestRider(
       });
     } catch (socketErr) {
       console.warn("[RiderAssign] Socket emit failed:", socketErr);
+    }
+
+    // Push notifications for V06 DELIVERY_PARTNER_ASSIGNED and U05 ORDER_OUT_FOR_DELIVERY
+    try {
+      const { notify } = await import("@/lib/notifications/service");
+
+      // 1. Notify vendor (V06)
+      await notify({
+        type: "DELIVERY_PARTNER_ASSIGNED",
+        vendorId,
+        data: {
+          orderId,
+          splitId,
+          riderName: nearestRider.name,
+          riderPhone: nearestRider.phone,
+        },
+      }).catch(() => {});
+
+      // 2. Notify customer (U05)
+      if (order.userId) {
+        await notify({
+          type: "ORDER_OUT_FOR_DELIVERY",
+          userId: order.userId,
+          data: {
+            orderId,
+            riderName: nearestRider.name,
+            riderPhone: nearestRider.phone,
+          },
+        }).catch(() => {});
+      }
+    } catch (pushErr) {
+      console.warn("[RiderAssign] Status push dispatch error:", pushErr);
     }
 
     return {

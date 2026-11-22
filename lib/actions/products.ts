@@ -1480,6 +1480,24 @@ export async function updateProduct(id: string, input: Partial<CreateProductInpu
       }
     }
 
+    // Notify vendor on Product Approval / Rejection (V12 ITEM_APPROVED / ITEM_REJECTED)
+    if (input.approvalStatus && input.approvalStatus !== existing.approvalStatus && updated.vendorId) {
+      try {
+        const { notify } = await import("@/lib/notifications/service");
+        await notify({
+          type: input.approvalStatus === "approved" ? "ITEM_APPROVED" : "ITEM_REJECTED",
+          vendorId: updated.vendorId,
+          data: {
+            productId: updated.id,
+            productName: updated.name,
+            reason: input.rejectionReason || undefined,
+          },
+        }).catch(() => {});
+      } catch (approvalNotifErr) {
+        console.warn("[products] Approval push error:", approvalNotifErr);
+      }
+    }
+
     return { success: true, product: formatProduct(updated) };
   } catch (error: any) {
     console.error("Error updating product:", error);

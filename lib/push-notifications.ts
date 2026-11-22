@@ -231,6 +231,7 @@ export async function registerPushToken(params: {
   platform?: string;
   appVersion?: string;
   deviceId?: string;
+  appType?: string;
 }) {
   try {
     const { userId, role = "customer", token, platform = "android", appVersion, deviceId } = params;
@@ -265,21 +266,28 @@ export async function registerPushToken(params: {
     }
 
     // 3. Upsert into dedicated DeviceToken table
+    const appType =
+      params.appType || (role === "vendor" || role === "rider" ? "business" : "user");
+
     const deviceToken = await prisma.deviceToken.upsert({
       where: { token: cleanToken },
       update: {
         userId,
         role,
         platform,
+        appType,
         appVersion: appVersion || null,
+        isActive: true,
         lastSeenAt: new Date(),
       },
       create: {
         userId,
         role,
         platform,
+        appType,
         token: cleanToken,
         appVersion: appVersion || null,
+        isActive: true,
         lastSeenAt: new Date(),
       },
     });
@@ -434,8 +442,14 @@ export async function notifyVendorPush(params: {
     );
 
     if (tokens.length > 0) {
-      const sound = "default";
-      const channelId = "orders_high_importance";
+      const isLoudRing =
+        (params.isNewOrder && !params.isAutoAccepted) || params.requiresManualApproval;
+      const sound = isLoudRing ? "ring.mp3" : "default";
+      const channelId = isLoudRing
+        ? "new_order_ring_v1"
+        : params.isAutoAccepted
+        ? "default_chime_v1"
+        : params.data?.channelId || "orders_high_importance";
 
       await sendExpoPushNotification({
         to: tokens,
@@ -451,14 +465,39 @@ export async function notifyVendorPush(params: {
             ? "ORDER_AUTO_ACCEPTED"
             : params.requiresManualApproval
             ? "PENDING_VENDOR_APPROVAL"
-            : params.data?.type || "NEW_ORDER",
+            : params.data?.type || "ORDER_NEW",
           orderId: params.orderId || params.data?.orderId,
           isNewOrder: params.isNewOrder ?? true,
           isAutoAccepted: params.isAutoAccepted,
           requiresManualApproval: params.requiresManualApproval,
+          channelId,
+          sound,
           screen: "/(vendor)/orders",
+          deepLink: `intrihub-biz://order/${params.orderId || params.data?.orderId || ""}`,
         },
       });
+
+      // Audit tracking in NotificationLog
+      try {
+        await prisma.notificationLog.create({
+          data: {
+            userId: targetUserId,
+            recipient: tokens[0],
+            type: params.isAutoAccepted ? "ORDER_AUTO_ACCEPTED" : "ORDER_NEW",
+            platform: tokens.length > 1 ? "multiple" : "android",
+            status: "sent",
+            payload: {
+              title: params.title,
+              body: params.body,
+              channelId,
+              sound,
+              orderId: params.orderId || params.data?.orderId,
+            },
+          },
+        });
+      } catch (logErr) {
+        console.warn("[notifyVendorPush] Failed to write NotificationLog:", logErr);
+      }
     }
   } catch (e) {
     console.error("notifyVendorPush error:", e);
@@ -522,6 +561,26 @@ export async function sendPushToUser(
         channelId: payload.channelId || "orders_high_importance",
         priority: payload.priority || "high",
       });
+
+      try {
+        await prisma.notificationLog.create({
+          data: {
+            userId,
+            recipient: tokens[0],
+            type: payload.data?.type || "CUSTOMER_ALERT",
+            platform: tokens.length > 1 ? "multiple" : "android",
+            status: "sent",
+            payload: {
+              title: payload.title,
+              body: payload.body,
+              channelId: payload.channelId || "orders_high_importance",
+              orderId: payload.data?.orderId,
+            },
+          },
+        });
+      } catch (logErr) {
+        console.warn("[sendPushToUser] Failed to write NotificationLog:", logErr);
+      }
     }
   } catch (e) {
     console.error("sendPushToUser error:", e);
@@ -576,17 +635,34 @@ export async function sendCustomerOrderStatusPush(
       break;
   }
 
+  const channelId =
+    status === "CONFIRMED" || status === "DELIVERED"
+      ? "user_success_v1"
+      : status === "DISPATCHED"
+      ? "user_arrival_v1"
+      : "default_v1";
+
+  const catalogType =
+    status === "CONFIRMED"
+      ? "ORDER_PLACED"
+      : status === "PACKED"
+      ? "ORDER_PACKED"
+      : status === "DISPATCHED"
+      ? "ORDER_DISPATCHED"
+      : "ORDER_DELIVERED";
+
   await sendPushToUser(userId, {
     title,
     body,
     sound: "default",
-    channelId: "orders_high_importance",
+    channelId,
     priority: "high",
     data: {
       orderId,
       status,
-      type: "order_status_update",
+      type: catalogType,
       screen: `/order/${orderId}`,
+      deepLink: `intrihub://order/${orderId}`,
     },
   });
 }

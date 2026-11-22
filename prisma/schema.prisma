@@ -1191,8 +1191,10 @@ model DeviceToken {
   userId      String
   role        String    @default("customer") // customer | vendor | rider | admin
   platform    String    @default("android")  // android | ios | web
+  appType     String    @default("user")     // user | business
   token       String    @unique
   appVersion  String?
+  isActive    Boolean   @default(true)
   lastSeenAt  DateTime  @default(now())
   createdAt   DateTime  @default(now())
   updatedAt   DateTime  @updatedAt
@@ -1202,6 +1204,7 @@ model DeviceToken {
   @@index([userId])
   @@index([role])
   @@index([token])
+  @@index([appType])
 }
 
 model OrderAlert {
@@ -1634,12 +1637,16 @@ model Campaign {
 model NotificationLog {
   id            String    @id @default(cuid())
   userId        String
-  type          String    // cart_reminder | offer_campaign | price_drop | back_in_stock | direct_support
+  recipient     String?   // token or phone
+  type          String    // cart_reminder | offer_campaign | price_drop | back_in_stock | direct_support | order_update
   campaignId    String?
   cartVersion   Int?
-  platform      String?   // android | ios | web
+  platform      String?   // android | ios | web | multiple
   status        String    @default("sent") // sent | delivered | skipped | failed | opened
+  receiptStatus String?   // ok | error | DeviceNotRegistered | etc.
   skipReason    String?   // quiet_hours | daily_cap_reached | preferences_disabled | paused | invalid_cart | stale | no_tokens
+  payload       Json?
+  error         String?
   sentByAdminId String?
   createdAt     DateTime  @default(now())
   openedAt      DateTime?
