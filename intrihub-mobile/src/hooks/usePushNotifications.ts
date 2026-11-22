@@ -11,6 +11,7 @@ const isExpoGo =
   Constants.executionEnvironment === ExecutionEnvironment.StoreClient;
 
 let Notifications: typeof import("expo-notifications") | null = null;
+let cachedCustomerPushToken: string | null = null;
 
 if (!isExpoGo && Platform.OS !== "web") {
   try {
@@ -26,6 +27,23 @@ if (!isExpoGo && Platform.OS !== "web") {
     });
   } catch (err) {
     console.warn("[PushNotifications] Could not initialize notification handler:", err);
+  }
+}
+
+/**
+ * Unregister push token from backend upon user logout.
+ */
+export async function unregisterCustomerPushToken(): Promise<void> {
+  const token = cachedCustomerPushToken;
+  if (!token) return;
+
+  try {
+    const { unregisterPushToken } = await import("../api/push");
+    await unregisterPushToken(token);
+    cachedCustomerPushToken = null;
+    console.log("⚡ [PushNotifications] Customer push token unregistered successfully on logout");
+  } catch (err: any) {
+    console.warn("⚠️ [PushNotifications] Error unregistering customer push token on logout:", err?.message);
   }
 }
 
@@ -67,6 +85,7 @@ export async function registerCustomerPushToken(): Promise<string | null> {
     });
 
     if (tokenData?.data) {
+      cachedCustomerPushToken = tokenData.data;
       await registerPushToken(tokenData.data, Platform.OS);
       console.log("⚡ [PushNotifications] Customer push token registered:", tokenData.data.slice(-6));
       return tokenData.data;

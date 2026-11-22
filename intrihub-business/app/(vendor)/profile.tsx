@@ -56,6 +56,7 @@ import {
 import * as Location from "expo-location";
 import LanguageModal from "../../src/components/LanguageModal";
 import MapPickerModal, { PickedLocation } from "../../src/components/MapPickerModal";
+import NotificationPermissionsModal from "../../src/components/NotificationPermissionsModal";
 import { useTranslation } from "../../src/store/i18nStore";
 import { fetchVendorDashboard, updateVendorProfile } from "../../src/api/vendor";
 import { uploadBusinessImage, uploadBusinessDocument } from "../../src/api/auth";
@@ -70,6 +71,7 @@ export default function VendorProfileScreen() {
   const { user, setUser, logout } = useAuthStore();
   const { t, language, languages } = useTranslation();
   const [langModalOpen, setLangModalOpen] = useState(false);
+  const [notifModalOpen, setNotifModalOpen] = useState(false);
   const currentLangObj = languages.find((l) => l.code === language);
 
   const { data, refetch } = useQuery({
@@ -940,6 +942,21 @@ export default function VendorProfileScreen() {
 
         {/* Actions & Push Testing Menu */}
         <View style={styles.menuCard}>
+          <TouchableOpacity style={styles.menuItem} onPress={() => setNotifModalOpen(true)} activeOpacity={0.85}>
+            <View style={styles.menuLeft}>
+              <View style={[styles.menuIconBox, { backgroundColor: "#EFF6FF" }]}>
+                <ShieldCheck size={18} color={COLORS.primary} />
+              </View>
+              <View style={{ flex: 1 }}>
+                <Text style={styles.menuText}>Order Alert Permissions & Sound Test</Text>
+                <Text style={styles.menuSub}>Test loud siren, DND override & background checklist</Text>
+              </View>
+            </View>
+            <ChevronRight size={18} color={COLORS.textTertiary} />
+          </TouchableOpacity>
+
+          <View style={styles.menuDivider} />
+
           <TouchableOpacity style={styles.menuItem} onPress={handleTestPushNotification} disabled={testingPush}>
             <View style={styles.menuLeft}>
               <View style={[styles.menuIconBox, { backgroundColor: "#FEF3C7" }]}>
@@ -1845,6 +1862,12 @@ export default function VendorProfileScreen() {
       <LanguageModal
         visible={langModalOpen}
         onClose={() => setLangModalOpen(false)}
+      />
+
+      {/* Order Alert Permissions & Siren Test Modal */}
+      <NotificationPermissionsModal
+        visible={notifModalOpen}
+        onClose={() => setNotifModalOpen(false)}
       />
 
       {/* Map Picker Modal */}
