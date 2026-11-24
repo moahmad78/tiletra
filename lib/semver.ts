@@ -26,23 +26,24 @@ export interface AppVersionSettings {
 export const DEFAULT_APP_VERSION_SETTINGS: AppVersionSettings = {
   customer: {
     android: {
-      latestVersion: "1.2.19",
-      latestVersionCode: 38,
+      latestVersion: "1.2.20",
+      latestVersionCode: 39,
       minSupportedVersion: "1.2.0",
       minSupportedVersionCode: 30,
       forceUpdate: false,
       storeUrl: "https://play.google.com/store/apps/details?id=com.intrihub.app",
-      message: "A fresh update of IntriHub is available with instant order notifications, live delivery tracking, and performance fixes.",
+      message: "A fresh update of IntriHub is available with instant order notifications, language persistence, live delivery tracking, and performance fixes.",
       title: "New Update Available! 🚀",
       releaseNotes: [
         "Instant order status notifications & sound chimes",
+        "Language selection persistence fix",
         "Live tracking & delivery partner updates",
         "Performance & stability improvements",
       ],
     },
     ios: {
-      latestVersion: "1.2.19",
-      latestVersionCode: 38,
+      latestVersion: "1.2.20",
+      latestVersionCode: 39,
       minSupportedVersion: "1.2.0",
       minSupportedVersionCode: 30,
       forceUpdate: false,
@@ -54,8 +55,8 @@ export const DEFAULT_APP_VERSION_SETTINGS: AppVersionSettings = {
   },
   business: {
     android: {
-      latestVersion: "1.0.34",
-      latestVersionCode: 42,
+      latestVersion: "1.0.35",
+      latestVersionCode: 43,
       minSupportedVersion: "1.0.10",
       minSupportedVersionCode: 25,
       forceUpdate: false,
@@ -71,8 +72,8 @@ export const DEFAULT_APP_VERSION_SETTINGS: AppVersionSettings = {
       ],
     },
     ios: {
-      latestVersion: "1.0.34",
-      latestVersionCode: 42,
+      latestVersion: "1.0.35",
+      latestVersionCode: 43,
       minSupportedVersion: "1.0.10",
       minSupportedVersionCode: 25,
       forceUpdate: false,
