@@ -174,7 +174,10 @@ export default function RootLayout() {
           {/* Language Selection Modal on First Launch */}
           <LanguageModal
             visible={showFirstLaunchLang}
-            onClose={() => setShowFirstLaunchLang(false)}
+            onClose={() => {
+              useI18nStore.getState().setLanguage(useI18nStore.getState().language);
+              setShowFirstLaunchLang(false);
+            }}
             isFirstLaunch
           />
 
