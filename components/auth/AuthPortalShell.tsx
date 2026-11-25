@@ -83,9 +83,9 @@ export default function AuthPortalShell({
               <img
                 src="/logo/intri-web-logo.png"
                 alt="IntriHub Quickcommerce"
-                width={200}
-                height={52}
-                className="h-9 sm:h-11 w-auto object-contain transition-transform group-hover:scale-[1.02]"
+                width={220}
+                height={65}
+                className="h-10 sm:h-12 w-auto object-contain transition-transform group-hover:scale-[1.02]"
               />
             </Link>
 
@@ -136,29 +136,16 @@ export default function AuthPortalShell({
           <div className="relative z-10 w-full max-w-[420px] bg-white rounded-[28px] p-6 sm:p-8 shadow-[0_24px_60px_-15px_rgba(0,0,0,0.5)] border border-white/20">
             {/* Brand Emblem & Portal Title */}
             <div className="text-center mb-5">
-              <div className="w-14 h-14 mx-auto rounded-2xl bg-[#052a51] shadow-lg flex items-center justify-center border border-[#0b3e73]">
+              <div className="w-14 h-14 mx-auto rounded-2xl bg-[#052a51] shadow-lg flex items-center justify-center border border-[#0b3e73] p-2">
                 {badgeIcon || (
-                  <svg
-                    viewBox="0 0 48 36"
-                    className="w-9 h-7"
-                    fill="none"
-                    aria-hidden="true"
-                  >
-                    <path
-                      d="M4 7C4 5.34315 5.34315 4 7 4H26C27.6569 4 29 5.34315 29 7V11H35.5C37.5 11 39.2 12.1 40.2 13.8L43.4 19.3C43.8 20 44 20.8 44 21.6V25C44 26.6569 42.6569 28 41 28H39.5C39.2 30.8 36.8 33 34 33C31.2 33 28.8 30.8 28.5 28H17.5C17.2 30.8 14.8 33 12 33C9.2 33 6.8 30.8 6.5 28H6C4.89543 28 4 27.1046 4 26V7Z"
-                      fill="#ffffff"
-                    />
-                    <circle cx="12" cy="28" r="3" fill="#052a51" />
-                    <circle cx="34" cy="28" r="3" fill="#052a51" />
-                    <path
-                      d="M31 14H36.5L39.5 19.5H31V14Z"
-                      fill="#052a51"
-                    />
-                    <path
-                      d="M2 23C8 20.5 15 19.5 23 19.5V16L30 21.5L23 27V23.5C15 23.5 8 24 2 23Z"
-                      fill="#F26522"
-                    />
-                  </svg>
+                  /* eslint-disable-next-line @next/next/no-img-element */
+                  <img
+                    src="/logo/intri-mark-white.png"
+                    alt="IntriHub"
+                    width={42}
+                    height={34}
+                    className="w-10 h-8 object-contain"
+                  />
                 )}
               </div>
 
