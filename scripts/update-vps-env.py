@@ -19,9 +19,9 @@ def get_local_env_val(key):
 google_client_id = get_local_env_val("GOOGLE_CLIENT_ID") or ""
 google_client_secret = get_local_env_val("GOOGLE_CLIENT_SECRET") or ""
 
-# Enforce Titan Mail SMTP settings
-smtp_host = "smtp.titan.email"
-smtp_port = "465"
+# Enforce working SMTP relay settings (GoDaddy Secureserver, overridable via env SMTP_HOST)
+smtp_host = os.environ.get("SMTP_HOST") or "smtpout.secureserver.net"
+smtp_port = os.environ.get("SMTP_PORT") or "465"
 smtp_user = "info@intrihub.com"
 smtp_pass = os.environ.get("SMTP_PASS") or get_local_env_val("SMTP_PASS") or get_local_env_val("SMTP_PASSWORD") or get_local_env_val("EMAIL_SERVER_PASSWORD") or ""
 email_from = "IntriHub <info@intrihub.com>"
@@ -47,12 +47,7 @@ for line in lines:
         k, v = line_s.split('=', 1)
         env_dict[k.strip()] = v.strip()
 
-# Clean up any legacy secureserver references
-for k in list(env_dict.keys()):
-    if 'secureserver' in env_dict[k]:
-        env_dict[k] = env_dict[k].replace('smtpout.secureserver.net', 'smtp.titan.email')
-
-# Enforce Titan Mail credentials
+# Enforce verified SMTP relay credentials
 env_dict['SMTP_HOST'] = '"{smtp_host}"'
 env_dict['SMTP_PORT'] = '"{smtp_port}"'
 env_dict['SMTP_USER'] = '"{smtp_user}"'
