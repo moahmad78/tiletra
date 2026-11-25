@@ -44,6 +44,10 @@ export default function AuthPortalShell({
     { key: "vendor", label: "Vendor", href: "/vendor/login", icon: <Store size={13} /> },
     { key: "cpo", label: "CPO", href: "/vendor/login?portal=cpo", icon: <Briefcase size={13} /> },
   ];
+  const visibleTabs =
+    portalType === "admin"
+      ? switcherTabs
+      : switcherTabs.filter((tab) => tab.key !== "admin");
   return (
     <div className="min-h-screen flex flex-col bg-gradient-to-br from-[#063260] via-[#052a51] to-[#031b35] selection:bg-[#F26522] selection:text-white">
       {/* Main Split Stage */}
@@ -181,14 +185,16 @@ export default function AuthPortalShell({
               </p>
             </div>
 
-            {/* Unified Portal Switcher Tabs (Admin / Vendor / CPO) */}
+            {/* Unified Portal Switcher Tabs (Admin / Vendor / CPO on Admin page; Vendor / CPO on Partner login) */}
             {showPortalSwitcher && (
               <div
-                className="mb-5 grid grid-cols-3 gap-1 p-1 bg-slate-100 rounded-xl border border-slate-200/80"
+                className={`mb-5 grid ${
+                  visibleTabs.length === 3 ? "grid-cols-3" : "grid-cols-2"
+                } gap-1 p-1 bg-slate-100 rounded-xl border border-slate-200/80`}
                 role="tablist"
                 aria-label="Switch login portal"
               >
-                {switcherTabs.map((tab) => {
+                {visibleTabs.map((tab) => {
                   const isActive = activePortal === tab.key;
                   const tabClass = `flex items-center justify-center gap-1.5 py-2 px-2 rounded-lg text-xs font-extrabold transition-all cursor-pointer ${
                     isActive
@@ -196,7 +202,7 @@ export default function AuthPortalShell({
                       : "text-slate-600 hover:text-[#052a51] hover:bg-white/60"
                   }`;
 
-                  if (onSelectPortal && activePortal !== "admin" && tab.key !== "admin") {
+                  if (onSelectPortal) {
                     return (
                       <button
                         key={tab.key}
