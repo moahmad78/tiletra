@@ -168,56 +168,101 @@ export async function sendExpoPushNotification(payload: ExpoPushPayload): Promis
       headers["Authorization"] = `Bearer ${process.env.EXPO_ACCESS_TOKEN}`;
     }
 
-    const res = await fetch("https://exp.host/--/api/v2/push/send", {
-      method: "POST",
-      headers,
-      body: JSON.stringify(messages),
-      signal: AbortSignal.timeout(7000),
-    });
+    const dispatchChunk = async (
+      chunkMessages: Record<string, any>[],
+      chunkTokens: string[],
+      allowExperienceSplit: boolean
+    ): Promise<{ ok: boolean; ticket: any }> => {
+      const res = await fetch("https://exp.host/--/api/v2/push/send", {
+        method: "POST",
+        headers,
+        body: JSON.stringify(chunkMessages),
+        signal: AbortSignal.timeout(7000),
+      });
 
-    const responseData = await res.json().catch(() => ({}));
+      const responseData = await res.json().catch(() => ({}));
 
-    // Process tickets and handle error details
-    if (responseData && responseData.data) {
-      const tickets = Array.isArray(responseData.data) ? responseData.data : [responseData.data];
+      // Automatically split mixed-project batches (@owner/app vs @owner/app-business)
+      if (!res.ok && allowExperienceSplit && Array.isArray(responseData?.errors)) {
+        const expErr = responseData.errors.find(
+          (e: any) =>
+            e?.code === "PUSH_TOO_MANY_EXPERIENCE_IDS" &&
+            e?.details &&
+            typeof e.details === "object"
+        );
+        if (expErr) {
+          const msgByToken = new Map<string, Record<string, any>>();
+          chunkMessages.forEach((m, idx) => msgByToken.set(chunkTokens[idx], m));
 
-      for (let i = 0; i < tickets.length; i++) {
-        const ticket = tickets[i];
-        const targetToken = validTokens[i] || "";
-        const tokenSuffix = targetToken.slice(-6);
-
-        if (ticket.status === "ok") {
-          if (ticket.id && pendingReceiptsQueue.length < MAX_RECEIPTS_QUEUE) {
-            pendingReceiptsQueue.push({
-              ticketId: ticket.id,
-              tokenSuffix,
-              userId: payload.userId,
-              enqueuedAt: Date.now(),
-            });
+          let anySucceeded = false;
+          const groupTickets: any[] = [];
+          for (const groupTokens of Object.values(expErr.details)) {
+            if (!Array.isArray(groupTokens) || groupTokens.length === 0) continue;
+            const subMsgs = groupTokens
+              .map((t: string) => msgByToken.get(t))
+              .filter(Boolean) as Record<string, any>[];
+            if (subMsgs.length === 0) continue;
+            const subRes = await dispatchChunk(subMsgs, groupTokens, false);
+            if (subRes.ok) anySucceeded = true;
+            groupTickets.push(subRes.ticket);
           }
-        } else if (ticket.status === "error") {
-          const errorCode = ticket.details?.error || "UNKNOWN_ERROR";
-          console.error(
-            `[Expo Push Error] userId=${payload.userId || "unknown"} token=...${tokenSuffix} message=${ticket.message} details.error=${errorCode}`
-          );
+          return { ok: anySucceeded, ticket: groupTickets };
+        }
+      }
 
-          // Clean up unregistered device tokens immediately
-          if (errorCode === "DeviceNotRegistered" && targetToken) {
-            try {
-              await deleteDeadPushToken(targetToken);
-              console.log(`[Expo Push] Deleted unregistered token ending in ...${tokenSuffix}`);
-            } catch (delErr) {
-              console.warn("[Expo Push] Failed to delete dead token:", delErr);
+      if (!res.ok) {
+        console.error(
+          `[Expo Push HTTP Error] status=${res.status}`,
+          JSON.stringify(responseData?.errors || responseData)
+        );
+      }
+
+      // Process tickets and handle error details
+      if (responseData && responseData.data) {
+        const tickets = Array.isArray(responseData.data) ? responseData.data : [responseData.data];
+
+        for (let i = 0; i < tickets.length; i++) {
+          const ticket = tickets[i];
+          const targetToken = chunkTokens[i] || "";
+          const tokenSuffix = targetToken.slice(-6);
+
+          if (ticket.status === "ok") {
+            if (ticket.id && pendingReceiptsQueue.length < MAX_RECEIPTS_QUEUE) {
+              pendingReceiptsQueue.push({
+                ticketId: ticket.id,
+                tokenSuffix,
+                userId: payload.userId,
+                enqueuedAt: Date.now(),
+              });
+            }
+          } else if (ticket.status === "error") {
+            const errorCode = ticket.details?.error || "UNKNOWN_ERROR";
+            console.error(
+              `[Expo Push Error] userId=${payload.userId || "unknown"} token=...${tokenSuffix} message=${ticket.message} details.error=${errorCode}`
+            );
+
+            // Clean up unregistered device tokens immediately
+            if (errorCode === "DeviceNotRegistered" && targetToken) {
+              try {
+                await deleteDeadPushToken(targetToken);
+                console.log(`[Expo Push] Deleted unregistered token ending in ...${tokenSuffix}`);
+              } catch (delErr) {
+                console.warn("[Expo Push] Failed to delete dead token:", delErr);
+              }
             }
           }
         }
       }
-    }
+
+      return { ok: res.ok, ticket: responseData };
+    };
+
+    const result = await dispatchChunk(messages, validTokens, true);
 
     // Lazy check previous receipts
     checkPendingExpoReceipts().catch(() => {});
 
-    return { success: res.ok, ticket: responseData };
+    return { success: result.ok, ticket: result.ticket };
   } catch (error: any) {
     console.error("[Expo Push Notification Error]", error);
     return { success: false, error: error?.message || "Failed to send push notification" };

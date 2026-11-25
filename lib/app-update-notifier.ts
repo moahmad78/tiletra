@@ -51,9 +51,11 @@ function isExpoToken(token: string | null | undefined): token is string {
 }
 
 function inferTargetApp(role: string, appVersion: string | null): "customer" | "business" {
+  const normVersion = (appVersion || "").trim();
+  if (normVersion.startsWith("1.0.")) return "business";
+  if (normVersion.startsWith("1.2.")) return "customer";
   const normRole = (role || "").toLowerCase();
   if (normRole === "vendor") return "business";
-  if (appVersion && appVersion.trim().startsWith("1.0.")) return "business";
   return "customer";
 }
 
