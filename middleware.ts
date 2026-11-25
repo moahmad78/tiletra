@@ -34,7 +34,11 @@ export function middleware(request: NextRequest) {
     return NextResponse.next();
   }
 
-  // 1. Edge-Level Admin Route Guard
+  // 1. Edge-Level Admin Route Guard & CPO Login Alias
+  if (pathname === "/cpo/login") {
+    return NextResponse.redirect(new URL("/vendor/login?portal=cpo", request.url), { status: 307 });
+  }
+
   // Unauthorized requests to /admin/* are intercepted at the edge before any page bundle or HTML renders
   if (pathname.startsWith("/admin") && pathname !== "/admin/login") {
     const adminToken = request.cookies.get("intrihub_admin_token")?.value;

@@ -257,8 +257,12 @@ export function verifyTransporterStartup(): Promise<boolean> {
   return verifyPromise;
 }
 
-// Auto-trigger verify once when module is loaded in Node.js server environment (non-browser, non-test)
-if (typeof window === "undefined" && process.env.NODE_ENV !== "test") {
+// Auto-trigger verify once when module is loaded in Node.js server runtime (skip build & test)
+if (
+  typeof window === "undefined" &&
+  process.env.NODE_ENV !== "test" &&
+  process.env.NEXT_PHASE !== "phase-production-build"
+) {
   verifyTransporterStartup().catch(() => {});
 }
 

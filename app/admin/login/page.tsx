@@ -3,10 +3,8 @@
 import { useState, useRef, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import {
-  Lock,
   Mail,
   ArrowRight,
-  ShieldCheck,
   KeyRound,
   RefreshCw,
   ArrowLeft,
@@ -19,8 +17,7 @@ import {
   verifyAdminWebOtp,
 } from "@/lib/actions/web-portal-auth";
 import { toast } from "sonner";
-import Link from "next/link";
-import AuthSupportWidget from "@/components/auth/AuthSupportWidget";
+import AuthPortalShell from "@/components/auth/AuthPortalShell";
 
 export default function AdminLoginPage() {
   const router = useRouter();
@@ -51,7 +48,7 @@ export default function AdminLoginPage() {
 
   // Lockout countdown timer
   useEffect(() => {
-    let timer: any;
+    let timer: ReturnType<typeof setInterval> | undefined;
     if (isLockedOut && lockoutTimer > 0) {
       timer = setInterval(() => {
         setLockoutTimer((prev) => {
@@ -69,7 +66,7 @@ export default function AdminLoginPage() {
 
   // Resend OTP countdown timer
   useEffect(() => {
-    let timer: any;
+    let timer: ReturnType<typeof setInterval> | undefined;
     if (step === "otp" && resendCooldown > 0) {
       timer = setInterval(() => {
         setResendCooldown((prev) => prev - 1);
@@ -123,7 +120,7 @@ export default function AdminLoginPage() {
         setErrorMessage(res.message);
         toast.error(res.message);
       }
-    } catch (err: any) {
+    } catch (err: unknown) {
       console.error("Admin OTP request error:", err);
       setErrorMessage("Failed to connect to authentication service. Please check network logs.");
       toast.error("Failed to connect to authentication service.");
@@ -215,7 +212,7 @@ export default function AdminLoginPage() {
       if (res.success && res.user) {
         toast.success("Admin identity verified! Welcome to Super Admin Console.");
         setSession(res.user);
-        window.location.href = "/admin";
+        window.location.assign("/admin");
       } else {
         if (res.locked) {
           setIsLockedOut(true);
@@ -227,7 +224,7 @@ export default function AdminLoginPage() {
         setErrorMessage(res.message);
         toast.error(res.message);
       }
-    } catch (err: any) {
+    } catch (err: unknown) {
       console.error("Admin OTP verification error:", err);
       setErrorMessage("Verification failed. Please check network connection.");
       toast.error("Verification failed.");
@@ -262,211 +259,180 @@ export default function AdminLoginPage() {
   };
 
   return (
-    <div className="min-h-screen bg-[#052a51] flex flex-col justify-center items-center p-4 relative overflow-hidden selection:bg-[#F26522] selection:text-white">
-      {/* Background Decorative Blobs */}
-      <div className="absolute top-0 -left-20 w-96 h-96 bg-[#F26522]/10 rounded-full blur-3xl pointer-events-none" />
-      <div className="absolute bottom-0 -right-20 w-96 h-96 bg-blue-500/10 rounded-full blur-3xl pointer-events-none" />
-
-      {/* Main Glass Card */}
-      <div className="w-full max-w-md bg-white rounded-3xl shadow-2xl border border-gray-100 p-8 sm:p-10 relative z-10">
-        {/* Header Branding */}
-        <div className="text-center mb-6">
-          <div className="inline-flex items-center justify-center w-14 h-14 bg-gradient-to-br from-[#052a51] to-[#031d38] rounded-2xl text-white shadow-lg mb-4 ring-4 ring-orange-50">
-            <Lock size={26} className="text-[#F26522]" />
+    <AuthPortalShell
+      portalTitle="IntriHub Admin Portal"
+      portalSubtitle="Password-less Security OTP"
+      portalDescription={
+        step === "email"
+          ? "Restricted to authorized super admin personnel. Enter your registered email to receive a 6-digit access code."
+          : `Enter the 6-digit security code sent to ${email || "your email"}.`
+      }
+      portalType="admin"
+    >
+      {/* Lockout Alert */}
+      {isLockedOut && (
+        <div className="mb-5 p-4 bg-amber-50 border border-amber-200 rounded-2xl flex items-start gap-3 text-xs text-amber-900 animate-in fade-in">
+          <Clock size={18} className="shrink-0 text-amber-700 mt-0.5" />
+          <div>
+            <p className="font-extrabold text-amber-950">Security Lockout Active</p>
+            <p className="mt-0.5 text-amber-800 leading-relaxed">
+              Too many failed attempts recorded. For system security, access is temporarily locked.
+              {lockoutTimer > 0 ? (
+                <span className="block mt-1 font-bold text-amber-950">
+                  ⏱ Retry allowed in {formatLockoutTime(lockoutTimer)}
+                </span>
+              ) : (
+                <span className="block mt-1">Please wait for 15 minutes before retrying.</span>
+              )}
+            </p>
           </div>
-          <h1 className="text-2xl font-black text-[#052a51] tracking-tight">
-            Intrihub Admin Portal
-          </h1>
-          <div className="flex items-center justify-center gap-1.5 mt-1 text-xs font-semibold text-[#F26522]">
-            <ShieldCheck size={14} />
-            <span>Password-less Security OTP</span>
-          </div>
-
-          <p className="text-xs text-gray-500 max-w-xs mx-auto mt-2">
-            {step === "email"
-              ? "Restricted to authorized super admin personnel. Enter your registered email to receive a 6-digit access code."
-              : `Enter the 6-digit security code sent to ${email || "your email"}`}
-          </p>
         </div>
+      )}
 
-        {/* Lockout Alert */}
-        {isLockedOut && (
-          <div className="mb-5 p-4 bg-amber-50 border border-amber-200 rounded-2xl flex items-start gap-3 text-xs text-amber-900 animate-in fade-in">
-            <Clock size={18} className="shrink-0 text-amber-700 mt-0.5" />
-            <div>
-              <p className="font-extrabold text-amber-950">Security Lockout Active</p>
-              <p className="mt-0.5 text-amber-800 leading-relaxed">
-                Too many failed attempts recorded. For system security, access is temporarily locked.
-                {lockoutTimer > 0 ? (
-                  <span className="block mt-1 font-bold text-amber-950">
-                    ⏱ Retry allowed in {formatLockoutTime(lockoutTimer)}
-                  </span>
-                ) : (
-                  <span className="block mt-1">Please wait for 15 minutes before retrying.</span>
-                )}
-              </p>
+      {/* Error Alert Box */}
+      {errorMessage && !isLockedOut && (
+        <div className="mb-5 p-3.5 bg-red-50 border border-red-200 rounded-2xl flex items-start gap-2.5 text-xs text-red-700 animate-in fade-in duration-200">
+          <AlertCircle size={16} className="shrink-0 mt-0.5 text-red-600" />
+          <span className="font-semibold">{errorMessage}</span>
+        </div>
+      )}
+
+      {/* ── STEP 1: REQUEST OTP ── */}
+      {step === "email" ? (
+        <form onSubmit={handleEmailSubmit} className="space-y-4">
+          <div>
+            <label className="text-[11px] font-extrabold text-[#052a51] uppercase tracking-wider block mb-1.5">
+              Authorized Admin Email
+            </label>
+            <div className="relative">
+              <Mail
+                size={16}
+                className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400"
+              />
+              <input
+                type="email"
+                required
+                value={email}
+                disabled={isLockedOut}
+                onChange={(e) => setEmail(e.target.value)}
+                placeholder="admin@intrihub.com"
+                className="w-full pl-10 pr-4 py-3 bg-slate-50 border border-slate-200 rounded-xl text-sm font-semibold text-[#052a51] placeholder-slate-400 focus:outline-none focus:border-[#F26522] focus:bg-white transition-all shadow-2xs disabled:bg-slate-100 disabled:text-slate-400"
+              />
             </div>
+            <p className="text-[11px] text-slate-400 mt-1.5 pl-0.5 leading-snug">
+              Only whitelisted admin accounts can receive a login OTP (Max 3 failed attempts).
+            </p>
           </div>
-        )}
 
-        {/* Error Alert Box */}
-        {errorMessage && !isLockedOut && (
-          <div className="mb-5 p-3.5 bg-red-50 border border-red-200 rounded-2xl flex items-start gap-2.5 text-xs text-red-700 animate-in fade-in duration-200">
-            <AlertCircle size={16} className="shrink-0 mt-0.5 text-red-600" />
-            <span className="font-semibold">{errorMessage}</span>
-          </div>
-        )}
-
-        {/* ── STEP 1: REQUEST OTP ── */}
-        {step === "email" ? (
-          <form onSubmit={handleEmailSubmit} className="space-y-4">
-            <div>
-              <label className="text-xs font-bold text-[#052a51] uppercase tracking-wider block mb-1.5">
-                Authorized Admin Email
-              </label>
-              <div className="relative">
-                <Mail
+          <button
+            type="submit"
+            disabled={loading || isLockedOut}
+            className="w-full py-3.5 px-4 bg-[#052a51] hover:bg-[#031d38] disabled:bg-slate-300 text-white text-sm font-black rounded-xl shadow-md transition-all flex items-center justify-center gap-2 cursor-pointer disabled:cursor-not-allowed group mt-2"
+          >
+            {loading ? (
+              <>
+                <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                <span>Sending Verification Code...</span>
+              </>
+            ) : isLockedOut ? (
+              <>
+                <Clock size={16} />
+                <span>Locked ({formatLockoutTime(lockoutTimer)})</span>
+              </>
+            ) : (
+              <>
+                <span>Send Security OTP</span>
+                <ArrowRight
                   size={16}
-                  className="absolute left-3.5 top-1/2 -translate-y-1/2 text-gray-400"
+                  className="group-hover:translate-x-1 transition-transform"
                 />
-                <input
-                  type="email"
-                  required
-                  value={email}
-                  disabled={isLockedOut}
-                  onChange={(e) => setEmail(e.target.value)}
-                  placeholder="admin@intrihub.com"
-                  className="w-full pl-10 pr-4 py-3 bg-gray-50 border border-gray-200 rounded-xl text-sm font-semibold text-[#052a51] focus:outline-none focus:border-[#F26522] focus:bg-white transition-all shadow-2xs disabled:bg-gray-100 disabled:text-gray-400"
-                />
-              </div>
-              <p className="text-[10px] text-gray-400 mt-1 pl-1">
-                Only whitelisted admin accounts can receive a login OTP (Max 3 failed attempts).
-              </p>
-            </div>
-
-            <button
-              type="submit"
-              disabled={loading || isLockedOut}
-              className="w-full py-3.5 px-4 bg-[#052a51] hover:bg-[#031d38] disabled:bg-gray-300 text-white text-sm font-black rounded-xl shadow-md transition-all flex items-center justify-center gap-2 cursor-pointer disabled:cursor-not-allowed group mt-2"
-            >
-              {loading ? (
-                <>
-                  <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
-                  <span>Sending Verification Code...</span>
-                </>
-              ) : isLockedOut ? (
-                <>
-                  <Clock size={16} />
-                  <span>Locked ({formatLockoutTime(lockoutTimer)})</span>
-                </>
-              ) : (
-                <>
-                  <span>Send Security OTP</span>
-                  <ArrowRight
-                    size={16}
-                    className="group-hover:translate-x-1 transition-transform"
-                  />
-                </>
-              )}
-            </button>
-          </form>
-        ) : (
-          /* ── STEP 2: VERIFY CODE ── */
-          <form onSubmit={handleOtpSubmit} className="space-y-5">
-            <div>
-              <div className="flex items-center justify-between mb-2">
-                <label className="text-xs font-bold text-[#052a51] uppercase tracking-wider">
-                  6-Digit Verification Code
-                </label>
-                <button
-                  type="button"
-                  onClick={() => {
-                    setStep("email");
-                    setErrorMessage("");
-                  }}
-                  className="text-xs text-[#F26522] hover:underline font-bold flex items-center gap-1 cursor-pointer"
-                >
-                  <ArrowLeft size={12} />
-                  Change Email
-                </button>
-              </div>
-
-              {/* 6 Digit Input Boxes */}
-              <div className="flex justify-between gap-2 sm:gap-3 my-3">
-                {otpDigits.map((digit, idx) => (
-                  <input
-                    key={idx}
-                    ref={(el) => {
-                      inputRefs.current[idx] = el;
-                    }}
-                    type="text"
-                    inputMode="numeric"
-                    maxLength={1}
-                    value={digit}
-                    onChange={(e) => handleOtpChange(idx, e.target.value)}
-                    onKeyDown={(e) => handleOtpKeyDown(idx, e)}
-                    onPaste={idx === 0 ? handleOtpPaste : undefined}
-                    className={`w-11 h-13 sm:w-12 sm:h-14 text-center text-xl font-black rounded-xl border transition-all ${
-                      digit
-                        ? "border-[#052a51] bg-white text-[#052a51] shadow-xs"
-                        : "border-gray-200 bg-gray-50 text-gray-800"
-                    } focus:outline-none focus:border-[#F26522] focus:bg-white focus:ring-2 focus:ring-[#F26522]/20`}
-                  />
-                ))}
-              </div>
-            </div>
-
-            <button
-              type="submit"
-              disabled={otpLoading || isLockedOut}
-              className="w-full py-3.5 px-4 bg-[#052a51] hover:bg-[#031d38] disabled:bg-gray-300 text-white text-sm font-black rounded-xl shadow-md transition-all flex items-center justify-center gap-2 cursor-pointer disabled:cursor-not-allowed mt-2"
-            >
-              {otpLoading ? (
-                <>
-                  <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
-                  <span>Verifying Code...</span>
-                </>
-              ) : (
-                <>
-                  <KeyRound size={16} />
-                  <span>Verify & Access Admin Console</span>
-                </>
-              )}
-            </button>
-
-            {/* Resend Action */}
-            <div className="text-center pt-2">
+              </>
+            )}
+          </button>
+        </form>
+      ) : (
+        /* ── STEP 2: VERIFY CODE ── */
+        <form onSubmit={handleOtpSubmit} className="space-y-5">
+          <div>
+            <div className="flex items-center justify-between mb-2">
+              <label className="text-[11px] font-extrabold text-[#052a51] uppercase tracking-wider">
+                6-Digit Verification Code
+              </label>
               <button
                 type="button"
-                onClick={handleResendOtp}
-                disabled={resendCooldown > 0 || otpLoading || isLockedOut}
-                className="text-xs font-bold text-gray-500 hover:text-[#052a51] disabled:text-gray-400 inline-flex items-center gap-1.5 transition-colors disabled:cursor-not-allowed cursor-pointer"
+                onClick={() => {
+                  setStep("email");
+                  setErrorMessage("");
+                }}
+                className="text-xs text-[#F26522] hover:underline font-bold flex items-center gap-1 cursor-pointer"
               >
-                <RefreshCw
-                  size={13}
-                  className={otpLoading ? "animate-spin" : ""}
-                />
-                {resendCooldown > 0
-                  ? `Resend code in ${resendCooldown}s`
-                  : "Didn't receive code? Resend OTP"}
+                <ArrowLeft size={12} />
+                Change Email
               </button>
             </div>
-          </form>
-        )}
 
-        {/* Footer info */}
-        <div className="mt-8 pt-6 border-t border-gray-100 flex items-center justify-between text-xs text-gray-400">
-          <span>Intrihub Security Gateway</span>
-          <Link
-            href="/"
-            className="hover:text-[#052a51] font-bold transition-colors"
+            {/* 6 Digit Input Boxes */}
+            <div className="flex justify-between gap-2 sm:gap-2.5 my-3">
+              {otpDigits.map((digit, idx) => (
+                <input
+                  key={idx}
+                  ref={(el) => {
+                    inputRefs.current[idx] = el;
+                  }}
+                  type="text"
+                  inputMode="numeric"
+                  maxLength={1}
+                  value={digit}
+                  onChange={(e) => handleOtpChange(idx, e.target.value)}
+                  onKeyDown={(e) => handleOtpKeyDown(idx, e)}
+                  onPaste={idx === 0 ? handleOtpPaste : undefined}
+                  className={`w-11 h-12 sm:w-12 sm:h-13 text-center text-xl font-black rounded-xl border transition-all ${
+                    digit
+                      ? "border-[#052a51] bg-white text-[#052a51] shadow-xs"
+                      : "border-slate-200 bg-slate-50 text-slate-800"
+                  } focus:outline-none focus:border-[#F26522] focus:bg-white focus:ring-2 focus:ring-[#F26522]/20`}
+                />
+              ))}
+            </div>
+          </div>
+
+          <button
+            type="submit"
+            disabled={otpLoading || isLockedOut}
+            className="w-full py-3.5 px-4 bg-[#052a51] hover:bg-[#031d38] disabled:bg-slate-300 text-white text-sm font-black rounded-xl shadow-md transition-all flex items-center justify-center gap-2 cursor-pointer disabled:cursor-not-allowed mt-2"
           >
-            ← Return to Store
-          </Link>
-        </div>
-      </div>
+            {otpLoading ? (
+              <>
+                <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                <span>Verifying Code...</span>
+              </>
+            ) : (
+              <>
+                <KeyRound size={16} />
+                <span>Verify & Access Admin Console</span>
+              </>
+            )}
+          </button>
 
-      <AuthSupportWidget portalType="admin" />
-    </div>
+          {/* Resend Action */}
+          <div className="text-center pt-1">
+            <button
+              type="button"
+              onClick={handleResendOtp}
+              disabled={resendCooldown > 0 || otpLoading || isLockedOut}
+              className="text-xs font-bold text-slate-500 hover:text-[#052a51] disabled:text-slate-400 inline-flex items-center gap-1.5 transition-colors disabled:cursor-not-allowed cursor-pointer"
+            >
+              <RefreshCw
+                size={13}
+                className={otpLoading ? "animate-spin" : ""}
+              />
+              {resendCooldown > 0
+                ? `Resend code in ${resendCooldown}s`
+                : "Didn't receive code? Resend OTP"}
+            </button>
+          </div>
+        </form>
+      )}
+    </AuthPortalShell>
   );
 }

@@ -34,7 +34,6 @@ const devanagari = Noto_Sans_Devanagari({
   variable: "--font-devanagari",
   subsets: ["devanagari"],
   display: "swap",
-  weight: ["400", "500", "600", "700"],
 });
 
 
