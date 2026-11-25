@@ -268,6 +268,8 @@ export default function AdminLoginPage() {
           : `Enter the 6-digit security code sent to ${email || "your email"}.`
       }
       portalType="admin"
+      activePortal="admin"
+      showPortalSwitcher={step === "email"}
     >
       {/* Lockout Alert */}
       {isLockedOut && (
