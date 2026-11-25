@@ -3,6 +3,7 @@ import { getCpoSession } from "@/lib/cpo/auth";
 import CpoSidebar from "@/components/cpo/CpoSidebar";
 import CpoHeader from "@/components/cpo/CpoHeader";
 import CpoWorkspaceBanner from "@/components/cpo/CpoWorkspaceBanner";
+import AdminCpoTopBar from "@/components/admin/AdminCpoTopBar";
 
 import type { Metadata } from "next";
 
@@ -32,6 +33,9 @@ export default async function CpoLayout({
       className="h-screen h-[100dvh] max-h-screen bg-[#F3F4F5] text-slate-800 flex flex-col font-sans selection:bg-[#F26522] selection:text-white notranslate overflow-hidden"
       translate="no"
     >
+      {/* Admin-Only Switch Strip when accessed by Super Admin (hidden for regular CPOs) */}
+      {session.isAdminAccess && <AdminCpoTopBar adminEmail={session.email} />}
+
       {/* Persistent CPO Workspace Banner when acting on behalf of vendor */}
       <CpoWorkspaceBanner />
 

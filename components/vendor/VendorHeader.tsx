@@ -2,6 +2,8 @@
 
 import { useState, useEffect } from "react";
 import { useVendorAuth } from "@/lib/vendor-auth";
+import { useEffectiveVendor } from "@/hooks/useEffectiveVendor";
+import { endWorkspaceSession } from "@/lib/vendor-workspace-auth";
 import { useRouter } from "next/navigation";
 import { Menu, LogOut, Store, Bell, CheckCircle2, AlertCircle, Power } from "lucide-react";
 import Link from "next/link";
@@ -16,7 +18,9 @@ export default function VendorHeader({
 }: {
   onMobileMenuToggle: () => void;
 }) {
-  const { vendor, logout, setVendor } = useVendorAuth();
+  const { vendor: directVendor, logout, setVendor } = useVendorAuth();
+  const { vendor: effectiveVendor, isWorkspace } = useEffectiveVendor();
+  const vendor = effectiveVendor || directVendor;
   const router = useRouter();
   const [unreadCount, setUnreadCount] = useState(0);
   const [isOnline, setIsOnline] = useState<boolean>(vendor?.isOnline ?? true);
@@ -44,8 +48,8 @@ export default function VendorHeader({
       if (res.success) {
         const finalStatus = Boolean(res.isOnline);
         setIsOnline(finalStatus);
-        if (vendor && setVendor) {
-          setVendor({ ...vendor, isOnline: finalStatus });
+        if (directVendor && setVendor) {
+          setVendor({ ...directVendor, isOnline: finalStatus });
         }
         broadcastLiveEvent("vendor:status-changed", { vendorId: vendor.id, isOnline: finalStatus });
         if (finalStatus) {
@@ -122,7 +126,13 @@ export default function VendorHeader({
     },
   });
 
-  const handleLogout = () => {
+  const handleLogout = async () => {
+    if (isWorkspace) {
+      await endWorkspaceSession();
+      router.push("/admin");
+      router.refresh();
+      return;
+    }
     logout();
     router.push("/vendor/login");
   };
