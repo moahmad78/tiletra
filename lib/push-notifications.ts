@@ -2,10 +2,12 @@ import { prisma } from "@/lib/prisma";
 
 export interface ExpoPushPayload {
   to: string | string[];
-  title: string;
-  body: string;
+  title?: string;
+  body?: string;
+  dataOnly?: boolean;
+  _contentAvailable?: boolean;
   data?: Record<string, any>;
-  sound?: "default" | "order_alert" | string | null;
+  sound?: "default" | "order_alert" | "ring.mp3" | string | null;
   priority?: "default" | "normal" | "high";
   badge?: number;
   channelId?: string;
@@ -119,26 +121,42 @@ export async function sendExpoPushNotification(payload: ExpoPushPayload): Promis
       return { success: false, error: "No valid Expo push tokens provided" };
     }
 
-    // Standardized payload format for every push
-    const messages = validTokens.map((to) => ({
-      to,
-      title: payload.title,
-      body: payload.body,
-      sound: payload.sound || "default",
-      priority: payload.priority || "high",
-      channelId: payload.channelId || "orders_high_importance",
-      data: {
-        ...(payload.data || {}),
-        type: payload.data?.type || "GENERAL",
-        orderId: payload.data?.orderId,
-      },
-      ...(payload.image ? { image: payload.image } : {}),
-      ...(payload.mutableContent !== undefined
-        ? { mutableContent: payload.mutableContent }
-        : payload.image
-        ? { mutableContent: true }
-        : {}),
-    }));
+    // Standardized payload format (supports both standard pushes and high-priority dataOnly Android RemoteViews pushes)
+    const messages = validTokens.map((to) => {
+      const base: Record<string, any> = {
+        to,
+        priority: payload.priority || "high",
+        channelId: payload.channelId || "orders_high_importance",
+        data: {
+          ...(payload.data || {}),
+          type: payload.data?.type || "GENERAL",
+          ...(payload.data?.orderId !== undefined ? { orderId: payload.data.orderId } : {}),
+        },
+      };
+
+      if (payload.dataOnly) {
+        base._contentAvailable = payload._contentAvailable ?? true;
+      } else {
+        base.title = payload.title || "";
+        base.body = payload.body || "";
+        if (payload.sound !== null) {
+          base.sound = payload.sound || "default";
+        }
+        if (payload.badge !== undefined) {
+          base.badge = payload.badge;
+        }
+        if (payload.image) {
+          base.image = payload.image;
+        }
+        if (payload.mutableContent !== undefined) {
+          base.mutableContent = payload.mutableContent;
+        } else if (payload.image) {
+          base.mutableContent = true;
+        }
+      }
+
+      return base;
+    });
 
     const headers: Record<string, string> = {
       Accept: "application/json",

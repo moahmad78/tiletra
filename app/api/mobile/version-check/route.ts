@@ -1,7 +1,7 @@
 import { NextRequest } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { mobileApiResponse, handleMobileCorsOptions, getAuthenticatedAdmin } from "@/lib/mobile-auth";
-import { sendExpoPushNotification } from "@/lib/push-notifications";
+import { OFFICIAL_RINGTONE_SOUND, UPDATE_CHANNEL_ID, runHourlyAppUpdateReminder } from "@/lib/app-update-notifier";
 
 export const dynamic = "force-dynamic";
 
@@ -16,7 +16,7 @@ const DEFAULT_CONFIG = {
     latestVersionCode: 5,
     minSupportedVersionCode: 3,
     forceUpdate: false,
-    title: "New Update Available! 🚀",
+    title: "Update Available!",
     message: "A fresh update of IntriHub is here with faster loading, smooth checkout, and new features.",
     releaseNotes: [
       "Faster catalog & tiles browsing",
@@ -162,40 +162,12 @@ export async function POST(req: NextRequest) {
 
     let broadcastResult = null;
     if (broadcastPush) {
-      // Find push token settings
-      const tokenSettings = await prisma.setting.findMany({
-        where: { key: { startsWith: "push_tokens_" } },
+      broadcastResult = await runHourlyAppUpdateReminder({
+        force: true,
+        includeUpdated: true,
       });
-
-      const allTokens = new Set<string>();
-      for (const s of tokenSettings) {
-        if (!s.value) continue;
-        try {
-          const parsed = JSON.parse(s.value);
-          if (Array.isArray(parsed)) {
-            for (const item of parsed) {
-              const tokenStr = typeof item === "string" ? item : item.token;
-              if (tokenStr && (tokenStr.startsWith("ExponentPushToken[") || tokenStr.startsWith("ExpoPushToken["))) {
-                allTokens.add(tokenStr);
-              }
-            }
-          }
-        } catch {}
-      }
-
-      if (allTokens.size > 0) {
-        broadcastResult = await sendExpoPushNotification({
-          to: Array.from(allTokens),
-          title: currentData.title || `🚀 Update Available v${currentData.latestVersion}!`,
-          body: currentData.message || `A new update is available on Google Play. Tap to update now!`,
-          data: {
-            type: "app_update",
-            storeUrl: currentData.storeUrl,
-            webUrl: currentData.webUrl,
-            version: currentData.latestVersion,
-          },
-        });
-      }
+      void OFFICIAL_RINGTONE_SOUND;
+      void UPDATE_CHANNEL_ID;
     }
 
     return mobileApiResponse({

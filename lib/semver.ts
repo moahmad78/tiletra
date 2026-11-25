@@ -33,7 +33,7 @@ export const DEFAULT_APP_VERSION_SETTINGS: AppVersionSettings = {
       forceUpdate: false,
       storeUrl: "https://play.google.com/store/apps/details?id=com.intrihub.app",
       message: "A fresh update of IntriHub is available with faster catalog browsing, smooth checkout, and bug fixes.",
-      title: "New Update Available! 🚀",
+      title: "Update Available!",
       releaseNotes: [
         "Faster catalog & tiles browsing",
         "Smooth checkout and order tracking",
@@ -184,9 +184,10 @@ export async function resolveAppVersionPolicy({
       ? "https://apps.apple.com/app/id6470000000"
       : `https://play.google.com/store/apps/details?id=${normApp === "business" ? "com.intrihub.business" : "com.intrihub.app"}`);
 
-  const title =
+  const rawTitle =
     targetConfig.title ||
-    (normApp === "business" ? "Business Update Available! 📦" : "New Update Available! 🚀");
+    (normApp === "business" ? "Update Available!" : "Update Available!");
+  const title = rawTitle.replace(/\uD83D\uDE80/g, "").replace(/\s{2,}/g, " ").trim() || "Update Available!";
   const message =
     targetConfig.message ||
     (normApp === "business"
