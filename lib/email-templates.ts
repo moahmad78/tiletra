@@ -68,16 +68,30 @@ export function renderOtpEmailHtml({
 <html xmlns="http://www.w3.org/1999/xhtml">
 <head>
   <meta http-equiv="Content-Type" content="text/html; charset=UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+  <meta name="x-apple-disable-message-reformatting" />
   <meta name="format-detection" content="telephone=no" />
   <title>Your IntriHub Verification Code: ${otp}</title>
+  <style type="text/css">
+    /* Force mobile clients to respect viewport */
+    body, table, td, p, a { -webkit-text-size-adjust: 100%; -ms-text-size-adjust: 100%; }
+    table, td { mso-table-lspace: 0pt; mso-table-rspace: 0pt; }
+    img { -ms-interpolation-mode: bicubic; }
+    @media only screen and (max-width: 480px) {
+      .otp-digit { width: 36px !important; height: 52px !important; line-height: 52px !important; font-size: 26px !important; border-radius: 10px !important; }
+      .otp-cell { padding: 0 2px !important; }
+      .card-body { padding: 24px 16px 20px 16px !important; }
+      .badge-icon { width: 36px !important; height: 36px !important; border-radius: 18px !important; line-height: 36px !important; font-size: 16px !important; }
+      .footer-cell { padding: 18px 16px 16px 16px !important; }
+    }
+  </style>
 </head>
 <body style="margin: 0; padding: 0; background-color: #F1F5F9; -webkit-font-smoothing: antialiased; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;">
-  <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="background-color: #F1F5F9; padding: 28px 12px;">
+  <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="background-color: #F1F5F9; padding: 24px 8px;">
     <tr>
       <td align="center">
         <!-- Main Card Container -->
-        <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="max-width: 520px; width: 100%; background-color: #FFFFFF; border-radius: 20px; overflow: hidden; box-shadow: 0 10px 30px rgba(5, 42, 81, 0.12); border: 1px solid #E2E8F0;">
+        <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="max-width: 480px; width: 100%; background-color: #FFFFFF; border-radius: 20px; overflow: hidden; box-shadow: 0 10px 30px rgba(5, 42, 81, 0.12); border: 1px solid #E2E8F0;">
           
           <!-- 1. Hero Navy Header with 3D Visual Graphic Banner -->
           <tr>
@@ -85,24 +99,24 @@ export function renderOtpEmailHtml({
               <img
                 src="https://www.intrihub.com/images/email/otp-hero-banner.jpg"
                 alt="IntriHub QuickCommerce - Your Login Verification Code: Use the 6-digit code below to securely sign into your Intrihub account."
-                width="520"
-                style="display: block; width: 100%; max-width: 520px; height: auto; border: 0; outline: none; text-decoration: none; border-top-left-radius: 20px; border-top-right-radius: 20px; background-color: #08294D; color: #FFFFFF; font-size: 15px; font-weight: bold; text-align: center; line-height: 1.4;"
+                width="480"
+                style="display: block; width: 100%; max-width: 480px; height: auto; border: 0; outline: none; text-decoration: none; border-top-left-radius: 20px; border-top-right-radius: 20px; background-color: #08294D; color: #FFFFFF; font-size: 15px; font-weight: bold; text-align: center; line-height: 1.4;"
               />
             </td>
           </tr>
 
           <!-- 2. White Card Content Section -->
           <tr>
-            <td style="padding: 32px 24px 28px 24px; background-color: #FFFFFF;">
+            <td class="card-body" style="padding: 28px 20px 24px 20px; background-color: #FFFFFF;">
               
               <!-- 6 Discrete OTP Digit Boxes -->
-              <table role="presentation" cellpadding="0" cellspacing="0" border="0" align="center" style="margin: 0 auto 26px auto;">
+              <table role="presentation" cellpadding="0" cellspacing="0" border="0" align="center" style="margin: 0 auto 26px auto; width: auto;">
                 <tr>
                   ${digits
                     .map(
                       (d) => `
-                    <td align="center" style="padding: 0 4px;">
-                      <div style="background-color: #EBF4FC; border: 1.5px solid #D0E5F7; border-radius: 12px; width: 48px; height: 68px; line-height: 68px; text-align: center; font-size: 36px; font-weight: 800; color: #052A51; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; box-shadow: 0 2px 5px rgba(5,42,81,0.06);">
+                    <td align="center" class="otp-cell" style="padding: 0 3px;">
+                      <div class="otp-digit" style="background-color: #EBF4FC; border: 1.5px solid #D0E5F7; border-radius: 12px; width: 42px; height: 58px; line-height: 58px; text-align: center; font-size: 30px; font-weight: 800; color: #052A51; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; box-shadow: 0 2px 5px rgba(5,42,81,0.06);">
                         ${d}
                       </div>
                     </td>
@@ -135,31 +149,31 @@ export function renderOtpEmailHtml({
               <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="margin-bottom: 8px;">
                 <tr>
                   <!-- Badge 1: Keep safe -->
-                  <td align="center" style="width: 33.33%; padding: 8px 6px; border-right: 1px solid #E2E8F0; vertical-align: top;">
-                    <div style="width: 44px; height: 44px; border-radius: 22px; background-color: #E0F2FE; color: #0284C7; font-size: 20px; line-height: 44px; text-align: center; margin: 0 auto 10px auto;">
+                  <td align="center" style="width: 33.33%; padding: 8px 4px; border-right: 1px solid #E2E8F0; vertical-align: top;">
+                    <div class="badge-icon" style="width: 40px; height: 40px; border-radius: 20px; background-color: #E0F2FE; color: #0284C7; font-size: 18px; line-height: 40px; text-align: center; margin: 0 auto 8px auto;">
                       🔒
                     </div>
-                    <div style="font-size: 12px; font-weight: 700; color: #1E293B; line-height: 1.35;">
+                    <div style="font-size: 11px; font-weight: 700; color: #1E293B; line-height: 1.35;">
                       ${badge1}
                     </div>
                   </td>
 
                   <!-- Badge 2: Do not share -->
-                  <td align="center" style="width: 33.33%; padding: 8px 6px; border-right: 1px solid #E2E8F0; vertical-align: top;">
-                    <div style="width: 44px; height: 44px; border-radius: 22px; background-color: #E0F2FE; color: #0284C7; font-size: 20px; line-height: 44px; text-align: center; margin: 0 auto 10px auto;">
+                  <td align="center" style="width: 33.33%; padding: 8px 4px; border-right: 1px solid #E2E8F0; vertical-align: top;">
+                    <div class="badge-icon" style="width: 40px; height: 40px; border-radius: 20px; background-color: #E0F2FE; color: #0284C7; font-size: 18px; line-height: 40px; text-align: center; margin: 0 auto 8px auto;">
                       👁️
                     </div>
-                    <div style="font-size: 12px; font-weight: 700; color: #1E293B; line-height: 1.35;">
+                    <div style="font-size: 11px; font-weight: 700; color: #1E293B; line-height: 1.35;">
                       ${badge2}
                     </div>
                   </td>
 
                   <!-- Badge 3: For your use only -->
-                  <td align="center" style="width: 33.33%; padding: 8px 6px; vertical-align: top;">
-                    <div style="width: 44px; height: 44px; border-radius: 22px; background-color: #E0F2FE; color: #0284C7; font-size: 20px; line-height: 44px; text-align: center; margin: 0 auto 10px auto;">
+                  <td align="center" style="width: 33.33%; padding: 8px 4px; vertical-align: top;">
+                    <div class="badge-icon" style="width: 40px; height: 40px; border-radius: 20px; background-color: #E0F2FE; color: #0284C7; font-size: 18px; line-height: 40px; text-align: center; margin: 0 auto 8px auto;">
                       🛡️
                     </div>
-                    <div style="font-size: 12px; font-weight: 700; color: #1E293B; line-height: 1.35;">
+                    <div style="font-size: 11px; font-weight: 700; color: #1E293B; line-height: 1.35;">
                       ${badge3}
                     </div>
                   </td>
@@ -171,7 +185,7 @@ export function renderOtpEmailHtml({
 
           <!-- 3. Bottom Dark Navy Footer -->
           <tr>
-            <td style="background-color: #05203C; padding: 24px 24px 22px 24px; text-align: center;">
+            <td class="footer-cell" style="background-color: #05203C; padding: 22px 20px 18px 20px; text-align: center;">
               <p style="margin: 0 0 10px 0; font-size: 12px; line-height: 1.5; color: #94A3B8;">
                 ${footerOfficial}
               </p>
