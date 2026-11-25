@@ -45,9 +45,9 @@ export default function AuthPortalShell({
             aria-hidden="true"
           />
 
-          {/* Soft sky gradient wash at top for razor-sharp typography legibility */}
+          {/* Soft sky gradient wash strictly across upper headline area so warehouse logo stays sharp */}
           <div
-            className="absolute inset-0 bg-gradient-to-b from-[#f4f8fc]/95 via-[#f4f8fc]/78 to-transparent lg:to-[#eef4fb]/10 pointer-events-none"
+            className="absolute inset-0 bg-[linear-gradient(180deg,rgba(244,248,252,0.97)_0%,rgba(244,248,252,0.82)_30%,rgba(244,248,252,0)_52%)] pointer-events-none"
             aria-hidden="true"
           />
 
@@ -136,15 +136,15 @@ export default function AuthPortalShell({
           <div className="relative z-10 w-full max-w-[420px] bg-white rounded-[28px] p-6 sm:p-8 shadow-[0_24px_60px_-15px_rgba(0,0,0,0.5)] border border-white/20">
             {/* Brand Emblem & Portal Title */}
             <div className="text-center mb-5">
-              <div className="w-14 h-14 mx-auto rounded-2xl bg-[#052a51] shadow-lg flex items-center justify-center border border-[#0b3e73] p-2">
+              <div className="w-16 h-16 mx-auto rounded-2xl bg-white shadow-md flex items-center justify-center border border-slate-200/90 ring-4 ring-slate-100/80 overflow-hidden p-1.5">
                 {badgeIcon || (
                   /* eslint-disable-next-line @next/next/no-img-element */
                   <img
-                    src="/logo/intri-mark-white.png"
-                    alt="IntriHub"
-                    width={42}
-                    height={34}
-                    className="w-10 h-8 object-contain"
+                    src="/logo/intri-app-badge.png"
+                    alt="IntriHub App"
+                    width={64}
+                    height={64}
+                    className="w-full h-full object-contain"
                   />
                 )}
               </div>
