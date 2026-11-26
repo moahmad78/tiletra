@@ -715,7 +715,7 @@ class IntriHubFirebaseMessagingService : ExpoFirebaseMessagingService() {
 
   private fun ensureNotificationChannel(channelId: String, soundUri: Uri, lightColorInt: Int) {
     if (Build.VERSION.SDK_INT < Build.VERSION_CODES.O) return
-    val manager = getSystemService(Context.NOTIFICATION_SERVICE) as? NotificationManager ?: return
+    val manager = ContextCompat.getSystemService(this, NotificationManager::class.java) ?: return
 
     val existing = manager.getNotificationChannel(channelId)
     if (existing != null) return
