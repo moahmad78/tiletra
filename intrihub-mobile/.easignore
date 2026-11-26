@@ -17,3 +17,5 @@ ios/
 .env.*.local
 keystore/
 *.log
+!google-services.json
+

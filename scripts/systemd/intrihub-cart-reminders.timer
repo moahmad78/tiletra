@@ -1,0 +1,11 @@
+[Unit]
+Description=Run IntriHub Cart Reminders Every 15 Minutes
+
+[Timer]
+OnCalendar=*:0/15
+AccuracySec=10s
+Persistent=true
+Unit=intrihub-cart-reminders.service
+
+[Install]
+WantedBy=timers.target

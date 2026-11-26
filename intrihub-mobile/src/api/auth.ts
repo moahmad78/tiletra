@@ -103,6 +103,10 @@ export async function loginWithGoogle(params: {
 }
 
 export async function logout(): Promise<void> {
+  try {
+    const { unregisterCustomerPushToken } = await import("../hooks/usePushNotifications");
+    await unregisterCustomerPushToken().catch(() => {});
+  } catch {}
   await clearStoredTokens();
 }
 

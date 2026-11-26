@@ -36,6 +36,7 @@ export interface CustomerUser {
   name?: string;
   email?: string;
   avatar?: string;
+  birthday?: string | null;
   addresses: CustomerAddress[];
   defaultAddressId?: string;
   phoneVerified: boolean;
@@ -73,7 +74,7 @@ interface AuthState {
     phoneVerified?: boolean;
     createdAt?: string;
   }) => Promise<void>;
-  updateProfile: (data: { name?: string | null; email?: string | null; avatar?: string | null }) => Promise<{ success: boolean; message?: string }>;
+  updateProfile: (data: { name?: string | null; email?: string | null; avatar?: string | null; birthday?: string | null }) => Promise<{ success: boolean; message?: string }>;
   updateUserPhone: (phone: string) => Promise<{ success: boolean; message?: string }>;
   syncUserWithDb: () => Promise<void>;
   logout: () => void;
@@ -407,6 +408,7 @@ export const useAuthStore = create<AuthState>()(
         const targetName = data.name !== undefined ? (data.name?.trim() || "") : currentUser.name;
         const targetEmail = data.email !== undefined ? (data.email?.trim().toLowerCase() || "") : currentUser.email;
         const targetAvatar = data.avatar !== undefined ? (data.avatar || undefined) : currentUser.avatar;
+        const targetBirthday = data.birthday !== undefined ? (data.birthday || null) : currentUser.birthday;
 
         try {
           const { updateUserProfile } = await import("@/lib/actions/auth");
@@ -414,6 +416,7 @@ export const useAuthStore = create<AuthState>()(
             name: targetName,
             email: targetEmail,
             avatar: targetAvatar,
+            birthday: targetBirthday,
           });
 
           if (res.success && res.user) {
@@ -425,6 +428,7 @@ export const useAuthStore = create<AuthState>()(
                     name: res.user.name || targetName,
                     email: res.user.email || targetEmail,
                     avatar: res.user.avatar !== undefined ? (res.user.avatar || undefined) : targetAvatar,
+                    birthday: res.user.birthday !== undefined ? res.user.birthday : targetBirthday,
                     phone: res.user.phone || state.user.phone,
                   }
                 : null,
@@ -443,6 +447,7 @@ export const useAuthStore = create<AuthState>()(
                 name: targetName,
                 email: targetEmail,
                 avatar: targetAvatar,
+                birthday: targetBirthday,
               }
             : null,
         }));
@@ -507,6 +512,7 @@ export const useAuthStore = create<AuthState>()(
                   avatar: resolvedAvatar,
                   phone: dbPhone,
                   phoneVerified: dbUser.phoneVerified,
+                  birthday: dbUser.birthday ? new Date(dbUser.birthday).toISOString().slice(0, 10) : (state.user.birthday || null),
                 },
               };
             });

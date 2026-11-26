@@ -12,85 +12,23 @@ import {
   Clock,
 } from "lucide-react";
 import { useAdminAuth } from "@/lib/admin-auth";
-import { useVendorAuth } from "@/lib/vendor-auth";
 import {
   sendAdminWebOtp,
   verifyAdminWebOtp,
-  sendVendorWebOtp,
-  verifyVendorWebOtp,
 } from "@/lib/actions/web-portal-auth";
 import { toast } from "sonner";
-import AuthPortalShell, { type AuthPortalKey } from "@/components/auth/AuthPortalShell";
-
-const PORTAL_COPY: Record<
-  AuthPortalKey,
-  {
-    title: string;
-    description: string;
-    emailLabel: string;
-    placeholder: string;
-    helperText: string;
-    emptyEmailError: string;
-    verifyButtonLabel: string;
-  }
-> = {
-  admin: {
-    title: "IntriHub Admin Portal",
-    description:
-      "Restricted to authorized super admin personnel. Enter your registered email to receive a 6-digit access code.",
-    emailLabel: "Authorized Admin Email",
-    placeholder: "admin@intrihub.com",
-    helperText:
-      "Only whitelisted admin accounts can receive a login OTP (Max 3 failed attempts).",
-    emptyEmailError: "Please enter your authorized admin email address.",
-    verifyButtonLabel: "Verify & Access Admin Console",
-  },
-  vendor: {
-    title: "IntriHub Vendor Portal",
-    description:
-      "Seller & store operations gateway. Enter your registered vendor email to receive a 6-digit access code.",
-    emailLabel: "Registered Vendor Email",
-    placeholder: "vendor@yourbusiness.com",
-    helperText:
-      "Approved vendor accounts receive an instant 6-digit OTP (Max 3 failed attempts).",
-    emptyEmailError: "Please enter your registered vendor email address.",
-    verifyButtonLabel: "Verify & Enter Vendor Panel",
-  },
-  cpo: {
-    title: "IntriHub CPO Portal",
-    description:
-      "Chief Product Officer & catalog operations gateway. Enter your registered CPO email to receive a 6-digit OTP.",
-    emailLabel: "Registered CPO Email",
-    placeholder: "cpo@intrihub.com",
-    helperText:
-      "Restricted to authorized CPO personnel (Max 3 failed attempts).",
-    emptyEmailError: "Please enter your registered CPO email address.",
-    verifyButtonLabel: "Verify & Enter CPO Panel",
-  },
-};
+import AuthPortalShell from "@/components/auth/AuthPortalShell";
 
 export default function AdminLoginPage() {
   const router = useRouter();
   const { setSession, isAuthenticated } = useAdminAuth();
-  const { setVendor } = useVendorAuth();
 
-  // If already authenticated as admin, redirect to /admin
+  // If already authenticated, redirect to /admin
   useEffect(() => {
     if (isAuthenticated) {
       router.push("/admin");
     }
   }, [isAuthenticated, router]);
-
-  // Role switcher state on Admin login page (switches in-place with zero reload)
-  const [portalMode, setPortalMode] = useState<AuthPortalKey>("admin");
-  const activeCopy = PORTAL_COPY[portalMode];
-
-  const handleSelectPortal = (nextPortal: AuthPortalKey) => {
-    setPortalMode(nextPortal);
-    setErrorMessage("");
-    setIsLockedOut(false);
-    setLockoutTimer(0);
-  };
 
   // Auth Step: "email" (Step 1) | "otp" (Step 2)
   const [step, setStep] = useState<"email" | "otp">("email");
@@ -159,23 +97,19 @@ export default function AdminLoginPage() {
 
     const cleanEmail = email.trim().toLowerCase();
     if (!cleanEmail) {
-      setErrorMessage(activeCopy.emptyEmailError);
+      setErrorMessage("Please enter your authorized admin email address.");
       return;
     }
 
     setLoading(true);
 
     try {
-      const res =
-        portalMode === "admin"
-          ? await sendAdminWebOtp(cleanEmail)
-          : await sendVendorWebOtp(cleanEmail);
+      const res = await sendAdminWebOtp(cleanEmail);
 
       if (res.success) {
         toast.success(res.message);
         setStep("otp");
         setResendCooldown(60);
-        setOtpDigits(["", "", "", "", "", ""]);
       } else {
         if (res.locked) {
           setIsLockedOut(true);
@@ -187,7 +121,7 @@ export default function AdminLoginPage() {
         toast.error(res.message);
       }
     } catch (err: unknown) {
-      console.error("Portal OTP request error:", err);
+      console.error("Admin OTP request error:", err);
       setErrorMessage("Failed to connect to authentication service. Please check network logs.");
       toast.error("Failed to connect to authentication service.");
     } finally {
@@ -273,43 +207,13 @@ export default function AdminLoginPage() {
 
     try {
       const cleanEmail = email.trim().toLowerCase();
+      const res = await verifyAdminWebOtp(cleanEmail, fullOtp);
 
-      if (portalMode === "admin") {
-        const res = await verifyAdminWebOtp(cleanEmail, fullOtp);
-
-        if (res.success && res.user) {
-          toast.success("Admin identity verified! Welcome to Super Admin Console.");
-          setSession(res.user);
-          window.location.assign("/admin");
-          return;
-        }
-        if (res.locked) {
-          setIsLockedOut(true);
-          setLockoutTimer(res.retryAfterSeconds || 900);
-          setStep("email");
-        } else {
-          setIsLockedOut(false);
-        }
-        setErrorMessage(res.message);
-        toast.error(res.message);
+      if (res.success && res.user) {
+        toast.success("Admin identity verified! Welcome to Super Admin Console.");
+        setSession(res.user);
+        window.location.assign("/admin");
       } else {
-        const res = await verifyVendorWebOtp(cleanEmail, fullOtp);
-
-        if (res.success) {
-          if (res.redirectTo === "/cpo" || res.role === "cpo") {
-            toast.success("Welcome back, Chief Product Officer!");
-            window.location.assign("/cpo");
-            return;
-          }
-          if (res.vendor) {
-            toast.success("Welcome to your Vendor Panel!");
-            setVendor(res.vendor);
-            window.location.assign("/vendor");
-            return;
-          }
-          window.location.assign(portalMode === "cpo" ? "/cpo" : "/vendor");
-          return;
-        }
         if (res.locked) {
           setIsLockedOut(true);
           setLockoutTimer(res.retryAfterSeconds || 900);
@@ -321,7 +225,7 @@ export default function AdminLoginPage() {
         toast.error(res.message);
       }
     } catch (err: unknown) {
-      console.error("Portal OTP verification error:", err);
+      console.error("Admin OTP verification error:", err);
       setErrorMessage("Verification failed. Please check network connection.");
       toast.error("Verification failed.");
     } finally {
@@ -339,12 +243,9 @@ export default function AdminLoginPage() {
     setOtpLoading(true);
 
     try {
-      const res =
-        portalMode === "admin"
-          ? await sendAdminWebOtp(cleanEmail)
-          : await sendVendorWebOtp(cleanEmail);
+      const res = await sendAdminWebOtp(cleanEmail);
       if (res.success) {
-        toast.success("New verification code dispatched to your registered email.");
+        toast.success("New verification code dispatched to your admin email.");
         setResendCooldown(60);
       } else {
         toast.error(res.message);
@@ -359,17 +260,14 @@ export default function AdminLoginPage() {
 
   return (
     <AuthPortalShell
-      portalTitle={activeCopy.title}
+      portalTitle="IntriHub Admin Portal"
       portalSubtitle="Password-less Security OTP"
       portalDescription={
         step === "email"
-          ? activeCopy.description
+          ? "Restricted to authorized super admin personnel. Enter your registered email to receive a 6-digit access code."
           : `Enter the 6-digit security code sent to ${email || "your email"}.`
       }
       portalType="admin"
-      activePortal={portalMode}
-      showPortalSwitcher={step === "email"}
-      onSelectPortal={handleSelectPortal}
     >
       {/* Lockout Alert */}
       {isLockedOut && (
@@ -404,7 +302,7 @@ export default function AdminLoginPage() {
         <form onSubmit={handleEmailSubmit} className="space-y-4">
           <div>
             <label className="text-[11px] font-extrabold text-[#052a51] uppercase tracking-wider block mb-1.5">
-              {activeCopy.emailLabel}
+              Authorized Admin Email
             </label>
             <div className="relative">
               <Mail
@@ -417,12 +315,12 @@ export default function AdminLoginPage() {
                 value={email}
                 disabled={isLockedOut}
                 onChange={(e) => setEmail(e.target.value)}
-                placeholder={activeCopy.placeholder}
+                placeholder="admin@intrihub.com"
                 className="w-full pl-10 pr-4 py-3 bg-slate-50 border border-slate-200 rounded-xl text-sm font-semibold text-[#052a51] placeholder-slate-400 focus:outline-none focus:border-[#F26522] focus:bg-white transition-all shadow-2xs disabled:bg-slate-100 disabled:text-slate-400"
               />
             </div>
             <p className="text-[11px] text-slate-400 mt-1.5 pl-0.5 leading-snug">
-              {activeCopy.helperText}
+              Only whitelisted admin accounts can receive a login OTP (Max 3 failed attempts).
             </p>
           </div>
 
@@ -511,7 +409,7 @@ export default function AdminLoginPage() {
             ) : (
               <>
                 <KeyRound size={16} />
-                <span>{activeCopy.verifyButtonLabel}</span>
+                <span>Verify & Access Admin Console</span>
               </>
             )}
           </button>

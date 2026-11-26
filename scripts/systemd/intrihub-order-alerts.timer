@@ -1,0 +1,11 @@
+[Unit]
+Description=Run IntriHub Order Alerts Cron Every 1 Minute
+
+[Timer]
+OnCalendar=*:0/1
+AccuracySec=1s
+Persistent=true
+Unit=intrihub-order-alerts.service
+
+[Install]
+WantedBy=timers.target

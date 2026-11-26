@@ -1,7 +1,7 @@
 {
   "cli": {
     "version": ">= 12.0.0",
-    "appVersionSource": "local"
+    "appVersionSource": "remote"
   },
   "build": {
     "development": {
@@ -16,6 +16,7 @@
     },
     "production": {
       "autoIncrement": true,
+      "channel": "production",
       "env": {
         "EXPO_PUBLIC_API_URL": "https://www.intrihub.com/api"
       },
@@ -29,10 +30,6 @@
   },
   "submit": {
     "production": {
-      "android": {
-        "serviceAccountKeyPath": "./google-service-account.json",
-        "track": "internal"
-      },
       "ios": {
         "appleId": "apple-developer@intrihub.com"
       }

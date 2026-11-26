@@ -47,7 +47,7 @@ export const useI18nStore = create<I18nState>((set, get) => ({
         language: resolved,
         isRTL,
         isReady: true,
-        hasSelectedLanguage: hasSelected === "true",
+        hasSelectedLanguage: hasSelected === "true" || Boolean(stored),
       });
     } catch {
       const isRTL = handleRtlDirection("en");

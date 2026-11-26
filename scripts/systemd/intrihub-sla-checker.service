@@ -1,0 +1,9 @@
+[Unit]
+Description=IntriHub Vendor Packing SLA Checker Cron Service
+After=network-online.target
+
+[Service]
+Type=oneshot
+ExecStart=/usr/local/bin/intrihub-cron-sla-checker.sh
+StandardOutput=append:/var/log/intrihub-sla-checker.log
+StandardError=append:/var/log/intrihub-sla-checker.log

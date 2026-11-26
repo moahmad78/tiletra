@@ -2,19 +2,14 @@
 
 import React from "react";
 import Link from "next/link";
-import { Box, ShieldCheck, Truck, ArrowLeft, Lock, Store, Briefcase } from "lucide-react";
+import { Box, ShieldCheck, Truck, ArrowLeft } from "lucide-react";
 import AuthSupportWidget from "@/components/auth/AuthSupportWidget";
-
-export type AuthPortalKey = "admin" | "vendor" | "cpo";
 
 interface AuthPortalShellProps {
   portalTitle: string;
   portalSubtitle: string;
   portalDescription: string;
   portalType: "admin" | "vendor";
-  activePortal: AuthPortalKey;
-  showPortalSwitcher?: boolean;
-  onSelectPortal?: (portal: AuthPortalKey) => void;
   badgeIcon?: React.ReactNode;
   children: React.ReactNode;
 }
@@ -28,26 +23,9 @@ export default function AuthPortalShell({
   portalSubtitle,
   portalDescription,
   portalType,
-  activePortal,
-  showPortalSwitcher = true,
-  onSelectPortal,
   badgeIcon,
   children,
 }: AuthPortalShellProps) {
-  const switcherTabs: Array<{
-    key: AuthPortalKey;
-    label: string;
-    href: string;
-    icon: React.ReactNode;
-  }> = [
-    { key: "admin", label: "Admin", href: "/admin/login", icon: <Lock size={13} /> },
-    { key: "vendor", label: "Vendor", href: "/vendor/login", icon: <Store size={13} /> },
-    { key: "cpo", label: "CPO", href: "/vendor/login?portal=cpo", icon: <Briefcase size={13} /> },
-  ];
-  const visibleTabs =
-    portalType === "admin"
-      ? switcherTabs
-      : switcherTabs.filter((tab) => tab.key !== "admin");
   return (
     <div className="min-h-screen flex flex-col bg-gradient-to-br from-[#063260] via-[#052a51] to-[#031b35] selection:bg-[#F26522] selection:text-white">
       {/* Main Split Stage */}
@@ -184,55 +162,6 @@ export default function AuthPortalShell({
                 {portalDescription}
               </p>
             </div>
-
-            {/* Unified Portal Switcher Tabs (Admin / Vendor / CPO on Admin page; Vendor / CPO on Partner login) */}
-            {showPortalSwitcher && (
-              <div
-                className={`mb-5 grid ${
-                  visibleTabs.length === 3 ? "grid-cols-3" : "grid-cols-2"
-                } gap-1 p-1 bg-slate-100 rounded-xl border border-slate-200/80`}
-                role="tablist"
-                aria-label="Switch login portal"
-              >
-                {visibleTabs.map((tab) => {
-                  const isActive = activePortal === tab.key;
-                  const tabClass = `flex items-center justify-center gap-1.5 py-2 px-2 rounded-lg text-xs font-extrabold transition-all cursor-pointer ${
-                    isActive
-                      ? "bg-[#052a51] text-white shadow-xs"
-                      : "text-slate-600 hover:text-[#052a51] hover:bg-white/60"
-                  }`;
-
-                  if (onSelectPortal) {
-                    return (
-                      <button
-                        key={tab.key}
-                        type="button"
-                        role="tab"
-                        aria-selected={isActive}
-                        onClick={() => onSelectPortal(tab.key)}
-                        className={tabClass}
-                      >
-                        {tab.icon}
-                        <span>{tab.label}</span>
-                      </button>
-                    );
-                  }
-
-                  return (
-                    <Link
-                      key={tab.key}
-                      href={tab.href}
-                      role="tab"
-                      aria-selected={isActive}
-                      className={tabClass}
-                    >
-                      {tab.icon}
-                      <span>{tab.label}</span>
-                    </Link>
-                  );
-                })}
-              </div>
-            )}
 
             {/* Active Auth Form / Status Views */}
             {children}

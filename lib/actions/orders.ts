@@ -1796,6 +1796,46 @@ export async function cancelOrder(input: CancelOrderInput) {
       });
     } catch {}
 
+    // Dispatch Push Notifications (V05 ORDER_CANCELLED_BY_CUSTOMER + U08/U10 to Customer)
+    try {
+      const { notify } = await import("@/lib/notifications/service");
+
+      // 1. Notify vendor(s) if customer or system cancelled
+      if (cancelledBy !== "vendor") {
+        const splits = await prisma.vendorOrderSplit.findMany({
+          where: { orderId: order.id },
+          select: { vendorId: true },
+        });
+        for (const sp of splits) {
+          await notify({
+            type: "ORDER_CANCELLED_BY_CUSTOMER",
+            vendorId: sp.vendorId,
+            data: { orderId: order.id, reason },
+          }).catch(() => {});
+        }
+      }
+
+      // 2. Notify customer with U08 ORDER_CANCELLED
+      if (order.userId) {
+        await notify({
+          type: "ORDER_CANCELLED",
+          userId: order.userId,
+          data: { orderId: order.id, reason },
+        }).catch(() => {});
+
+        // 3. Notify customer with U10 REFUND_INITIATED if applicable
+        if (refundStatus === "processed" || refundStatus === "pending") {
+          await notify({
+            type: "REFUND_INITIATED",
+            userId: order.userId,
+            data: { orderId: order.id, amount: order.total },
+          }).catch(() => {});
+        }
+      }
+    } catch (notifErr) {
+      console.warn("[cancelOrder] Push dispatch error:", notifErr);
+    }
+
     safeRevalidate("/admin/orders");
     safeRevalidate("/account/orders");
     safeRevalidate("/vendor/orders");
@@ -1911,6 +1951,21 @@ export async function rejectVendorOrderSplit(input: RejectVendorSplitInput) {
         });
       }
     });
+
+    // Notify customer that vendor could not fulfill item
+    try {
+      const { notify } = await import("@/lib/notifications/service");
+      if (parentOrder.userId) {
+        await notify({
+          type: "ORDER_CANCELLED",
+          userId: parentOrder.userId,
+          data: {
+            orderId: parentOrder.id,
+            reason: `Vendor could not fulfill: ${reason.trim()}`,
+          },
+        }).catch(() => {});
+      }
+    } catch {}
 
     safeRevalidate("/vendor/orders");
     safeRevalidate("/admin/orders");

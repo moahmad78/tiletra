@@ -5,7 +5,12 @@ import {
   compareSemver,
   isValidSemver,
 } from "@/lib/semver";
-import { sendExpoPushNotification } from "@/lib/push-notifications";
+import {
+  sendExpoPushNotification,
+  deactivateStaleDeviceTokens,
+  resolveTokenAppType,
+  isTokenActive,
+} from "@/lib/push-notifications";
 
 export const UPDATE_NOTIFICATION_TYPE = "app_update";
 export const UPDATE_CHANNEL_ID = "app_update_ring_v1";
@@ -29,6 +34,7 @@ export interface AppUpdateReminderResult {
   dispatchedLegacy: number;
   failedBatches: number;
   dryRun: boolean;
+  staleTokensDeactivated: number;
   latestVersions: {
     customerAndroid: string;
     businessAndroid: string;
@@ -41,6 +47,7 @@ interface CandidateToken {
   role: string;
   platform: string;
   appVersion: string | null;
+  appType: "user" | "business";
 }
 
 function isExpoToken(token: string | null | undefined): token is string {
@@ -48,15 +55,6 @@ function isExpoToken(token: string | null | undefined): token is string {
     typeof token === "string" &&
     (token.startsWith("ExponentPushToken[") || token.startsWith("ExpoPushToken["))
   );
-}
-
-function inferTargetApp(role: string, appVersion: string | null): "customer" | "business" {
-  const normVersion = (appVersion || "").trim();
-  if (normVersion.startsWith("1.0.")) return "business";
-  if (normVersion.startsWith("1.2.")) return "customer";
-  const normRole = (role || "").toLowerCase();
-  if (normRole === "vendor") return "business";
-  return "customer";
 }
 
 function stripRocket(text: string): string {
@@ -67,6 +65,8 @@ function stripRocket(text: string): string {
  * Hourly recurring notifier: sends Play Store update push with IntriHub's official ringtone
  * (`ring.mp3`) to users whose registered app version is missing or older than the latest release.
  * Stops automatically once a device registers the latest app version via `/api/mobile/push-token`.
+ *
+ * Strictly targets by DeviceToken.appType (user vs business) and applies distinct titles/configs.
  */
 export async function runHourlyAppUpdateReminder(options?: {
   force?: boolean;
@@ -76,6 +76,12 @@ export async function runHourlyAppUpdateReminder(options?: {
   const force = Boolean(options?.force);
   const dryRun = Boolean(options?.dryRun);
   const includeUpdated = Boolean(options?.includeUpdated);
+
+  // 1. Automatic 60-day token cleanup sweep
+  let staleTokensDeactivated = 0;
+  if (!dryRun) {
+    staleTokensDeactivated = await deactivateStaleDeviceTokens(60);
+  }
 
   const settingsRow = await prisma.storeSettings.findFirst({
     select: { appVersionConfig: true },
@@ -91,17 +97,20 @@ export async function runHourlyAppUpdateReminder(options?: {
     ...(storedConfig.business?.android || {}),
   };
 
-  // Collect all registered tokens across DeviceToken (primary), MobilePushToken, and User.pushToken
+  // Collect registered tokens across DeviceToken (primary), MobilePushToken, and User.pushToken
   const [deviceTokens, mobileTokens, usersWithToken] = await Promise.all([
     prisma.deviceToken.findMany({
-      where: { platform: { notIn: ["web", "ios_voip"] } },
-      select: { userId: true, role: true, platform: true, token: true, appVersion: true },
+      where: {
+        platform: { notIn: ["web", "ios_voip"] },
+      },
+      select: { userId: true, role: true, platform: true, token: true, appVersion: true, lastSeenAt: true },
     }),
     prisma.mobilePushToken.findMany({
       select: {
         userId: true,
         platform: true,
         token: true,
+        updatedAt: true,
         user: { select: { role: true } },
       },
     }),
@@ -115,23 +124,28 @@ export async function runHourlyAppUpdateReminder(options?: {
 
   for (const row of deviceTokens) {
     if (!isExpoToken(row.token)) continue;
+    if (!isTokenActive(row)) continue;
     tokenMap.set(row.token, {
       userId: row.userId,
       token: row.token,
       role: row.role,
       platform: row.platform || "android",
       appVersion: row.appVersion || null,
+      appType: resolveTokenAppType(row),
     });
   }
 
+  // Fallback migration reads (only added if token not already registered in DeviceToken)
   for (const row of mobileTokens) {
     if (!isExpoToken(row.token) || tokenMap.has(row.token)) continue;
+    if (!isTokenActive({ lastSeenAt: (row as any).updatedAt })) continue;
     tokenMap.set(row.token, {
       userId: row.userId,
       token: row.token,
       role: row.user?.role || "customer",
       platform: row.platform || "android",
       appVersion: null,
+      appType: resolveTokenAppType({ role: row.user?.role }),
     });
   }
 
@@ -143,6 +157,7 @@ export async function runHourlyAppUpdateReminder(options?: {
       role: row.role || "customer",
       platform: "android",
       appVersion: null,
+      appType: resolveTokenAppType({ role: row.role }),
     });
   }
 
@@ -151,6 +166,7 @@ export async function runHourlyAppUpdateReminder(options?: {
 
   interface DispatchTarget extends CandidateToken {
     targetApp: "customer" | "business";
+    appName: "IntriHub" | "IntriHub Business";
     latestVersion: string;
     supportsCustomRemoteViews: boolean;
     packageName: string;
@@ -164,7 +180,7 @@ export async function runHourlyAppUpdateReminder(options?: {
   const updatedDeviceUsersByApp = new Set<string>();
 
   for (const candidate of allCandidates) {
-    const targetApp = inferTargetApp(candidate.role, candidate.appVersion);
+    const targetApp: "customer" | "business" = candidate.appType === "business" ? "business" : "customer";
     const platformConfig = targetApp === "business" ? businessAndroid : customerAndroid;
     const latestVersion = (platformConfig.latestVersion || "").trim();
     if (
@@ -178,7 +194,8 @@ export async function runHourlyAppUpdateReminder(options?: {
   }
 
   for (const candidate of allCandidates) {
-    const targetApp = inferTargetApp(candidate.role, candidate.appVersion);
+    const targetApp: "customer" | "business" = candidate.appType === "business" ? "business" : "customer";
+    const appName: "IntriHub" | "IntriHub Business" = targetApp === "business" ? "IntriHub Business" : "IntriHub";
     const platformConfig = targetApp === "business" ? businessAndroid : customerAndroid;
     const latestVersion = (platformConfig.latestVersion || "").trim();
 
@@ -206,22 +223,28 @@ export async function runHourlyAppUpdateReminder(options?: {
           compareSemver(candidate.appVersion, MIN_CUSTOM_UI_VERSION[targetApp]) >= 0
       );
 
-    const rawTitle = stripRocket(platformConfig.title || "Update Available!") || "Update Available!";
+    const defaultTitle = targetApp === "business" ? "IntriHub Business - Update Available!" : "IntriHub - Update Available!";
+    const rawConfigTitle = stripRocket(platformConfig.title || "") || defaultTitle;
+    const title = targetApp === "business"
+      ? (rawConfigTitle.toLowerCase().includes("business") ? rawConfigTitle : `IntriHub Business - ${rawConfigTitle}`)
+      : (rawConfigTitle.toLowerCase().includes("business") ? "IntriHub - Update Available!" : (rawConfigTitle.startsWith("IntriHub") ? rawConfigTitle : `IntriHub - ${rawConfigTitle}`));
+
     const body =
       platformConfig.message ||
       (targetApp === "business"
-        ? "Update IntriHub Business on Play Store for the latest features and order alerts."
+        ? "Update IntriHub Business on Play Store for the latest order alerts and features."
         : "Update IntriHub on Play Store for faster performance and new features.");
 
     outdatedTargets.push({
       ...candidate,
       targetApp,
+      appName,
       latestVersion,
       supportsCustomRemoteViews,
       packageName,
       storeUrl,
       webUrl,
-      title: rawTitle === "New Update Available!" ? "Update Available!" : rawTitle,
+      title,
       body,
     });
   }
@@ -274,49 +297,29 @@ export async function runHourlyAppUpdateReminder(options?: {
         const chunk = groupTargets.slice(i, i + PUSH_BATCH_SIZE);
         const tokens = chunk.map((c) => c.token);
 
-        const pushRes = sample.supportsCustomRemoteViews
-          ? await sendExpoPushNotification({
-              to: tokens,
-              dataOnly: true,
-              _contentAvailable: true,
-              priority: "high",
-              channelId: UPDATE_CHANNEL_ID,
-              sound: OFFICIAL_RINGTONE_SOUND,
-              data: {
-                type: UPDATE_NOTIFICATION_TYPE,
-                customLayout: "update_banner_v1",
-                appName: "IntriHub",
-                title: "Update Available!",
-                ctaLabel: "Update Now",
-                timestampLabel: "now",
-                storeUrl: sample.storeUrl,
-                webUrl: sample.webUrl,
-                version: sample.latestVersion,
-                channelId: UPDATE_CHANNEL_ID,
-                sound: OFFICIAL_RINGTONE_SOUND,
-              },
-            })
-          : await sendExpoPushNotification({
-              to: tokens,
-              title: "Update Available!",
-              body: sample.body,
-              priority: "high",
-              // Existing vendor builds already map `orders_high_importance` to `ring.mp3`
-              channelId:
-                sample.targetApp === "business" ? "orders_high_importance" : UPDATE_CHANNEL_ID,
-              sound: OFFICIAL_RINGTONE_SOUND,
-              data: {
-                type: UPDATE_NOTIFICATION_TYPE,
-                appName: "IntriHub",
-                ctaLabel: "Update Now",
-                storeUrl: sample.storeUrl,
-                webUrl: sample.webUrl,
-                version: sample.latestVersion,
-                channelId:
-                  sample.targetApp === "business" ? "orders_high_importance" : UPDATE_CHANNEL_ID,
-                sound: OFFICIAL_RINGTONE_SOUND,
-              },
-            });
+        const targetChannel = sample.targetApp === "business" ? "orders_high_importance" : UPDATE_CHANNEL_ID;
+        const pushRes = await sendExpoPushNotification({
+          to: tokens,
+          title: sample.title,
+          body: sample.body,
+          priority: "high",
+          channelId: targetChannel,
+          sound: OFFICIAL_RINGTONE_SOUND,
+          data: {
+            type: UPDATE_NOTIFICATION_TYPE,
+            customLayout: "update_banner_v1",
+            appName: sample.appName,
+            title: sample.title,
+            body: sample.body,
+            ctaLabel: "Update Now",
+            timestampLabel: "now",
+            storeUrl: sample.storeUrl,
+            webUrl: sample.webUrl,
+            version: sample.latestVersion,
+            channelId: targetChannel,
+            sound: OFFICIAL_RINGTONE_SOUND,
+          },
+        });
 
         if (pushRes.success) {
           if (sample.supportsCustomRemoteViews) {
@@ -356,6 +359,7 @@ export async function runHourlyAppUpdateReminder(options?: {
     dispatchedLegacy,
     failedBatches,
     dryRun,
+    staleTokensDeactivated,
     latestVersions: {
       customerAndroid: customerAndroid.latestVersion,
       businessAndroid: businessAndroid.latestVersion,

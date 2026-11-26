@@ -329,9 +329,9 @@ export async function sendNotification(
 
   // 9. Dispatch to Expo Push API in batches
   const tokensList = deviceTokens.map((t: any) => t.token);
-  let channelId = "offers_default";
-  if (type === "cart_reminder") channelId = "reminders_default";
-  if (type === "order_update" || type === "direct_support") channelId = "orders_high_importance";
+  let channelId = "user_promo_v1";
+  if (type === "cart_reminder") channelId = "user_promo_v1";
+  if (type === "order_update" || type === "direct_support") channelId = "user_success_v1";
 
   const payloadData = {
     ...data,

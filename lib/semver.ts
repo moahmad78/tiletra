@@ -26,23 +26,24 @@ export interface AppVersionSettings {
 export const DEFAULT_APP_VERSION_SETTINGS: AppVersionSettings = {
   customer: {
     android: {
-      latestVersion: "1.2.17",
-      latestVersionCode: 36,
+      latestVersion: "1.2.20",
+      latestVersionCode: 39,
       minSupportedVersion: "1.2.0",
       minSupportedVersionCode: 30,
       forceUpdate: false,
       storeUrl: "https://play.google.com/store/apps/details?id=com.intrihub.app",
-      message: "A fresh update of IntriHub is available with faster catalog browsing, smooth checkout, and bug fixes.",
-      title: "Update Available!",
+      message: "A fresh update of IntriHub is available with instant order notifications, language persistence, live delivery tracking, and performance fixes.",
+      title: "New Update Available! 🚀",
       releaseNotes: [
-        "Faster catalog & tiles browsing",
-        "Smooth checkout and order tracking",
+        "Instant order status notifications & sound chimes",
+        "Language selection persistence fix",
+        "Live tracking & delivery partner updates",
         "Performance & stability improvements",
       ],
     },
     ios: {
-      latestVersion: "1.2.17",
-      latestVersionCode: 36,
+      latestVersion: "1.2.20",
+      latestVersionCode: 39,
       minSupportedVersion: "1.2.0",
       minSupportedVersionCode: 30,
       forceUpdate: false,
@@ -54,23 +55,25 @@ export const DEFAULT_APP_VERSION_SETTINGS: AppVersionSettings = {
   },
   business: {
     android: {
-      latestVersion: "1.0.27",
-      latestVersionCode: 35,
+      latestVersion: "1.0.35",
+      latestVersionCode: 43,
       minSupportedVersion: "1.0.10",
       minSupportedVersionCode: 25,
       forceUpdate: false,
       storeUrl: "https://play.google.com/store/apps/details?id=com.intrihub.business",
-      message: "Update Intrihub Business for instant order alerts, real-time stock sync, and vendor performance enhancements.",
+      message: "Update Intrihub Business for instant loud order sirens, live 10-minute SLA countdown, and background notification stability.",
       title: "Business Update Available! 📦",
       releaseNotes: [
-        "Instant sound alerts for incoming customer orders",
-        "Enhanced catalog & stock management",
-        "Android 15 launch crash fix & performance stability",
+        "Loud looping siren alert for incoming customer orders",
+        "10-minute countdown SLA acceptance timer",
+        "Multi-device alert auto-dismissal",
+        "Background battery & DND permission checklist",
+        "High-priority FCM notification channels",
       ],
     },
     ios: {
-      latestVersion: "1.0.27",
-      latestVersionCode: 35,
+      latestVersion: "1.0.35",
+      latestVersionCode: 43,
       minSupportedVersion: "1.0.10",
       minSupportedVersionCode: 25,
       forceUpdate: false,
@@ -184,10 +187,9 @@ export async function resolveAppVersionPolicy({
       ? "https://apps.apple.com/app/id6470000000"
       : `https://play.google.com/store/apps/details?id=${normApp === "business" ? "com.intrihub.business" : "com.intrihub.app"}`);
 
-  const rawTitle =
+  const title =
     targetConfig.title ||
-    (normApp === "business" ? "Update Available!" : "Update Available!");
-  const title = rawTitle.replace(/\uD83D\uDE80/g, "").replace(/\s{2,}/g, " ").trim() || "Update Available!";
+    (normApp === "business" ? "Business Update Available! 📦" : "New Update Available! 🚀");
   const message =
     targetConfig.message ||
     (normApp === "business"

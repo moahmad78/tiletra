@@ -166,6 +166,23 @@ export async function updatePayoutStatus(
       },
     });
 
+    // Notify Vendor (V11: PAYOUT_SETTLED)
+    if (status === "completed") {
+      try {
+        const { notify } = await import("@/lib/notifications/service");
+        await notify({
+          type: "PAYOUT_SETTLED",
+          vendorId: updated.vendorId,
+          data: {
+            payoutId: updated.id,
+            amount: updated.amount,
+          },
+        }).catch(() => {});
+      } catch (payoutNotifErr) {
+        console.warn("[payouts] Notify error:", payoutNotifErr);
+      }
+    }
+
     safeRevalidate("/vendor/payouts");
     safeRevalidate(`/admin/vendors/${updated.vendorId}`);
 

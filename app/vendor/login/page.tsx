@@ -19,9 +19,10 @@ import {
   RefreshCw,
   ArrowLeft,
   Headphones,
+  Briefcase,
 } from "lucide-react";
 import { toast } from "sonner";
-import AuthPortalShell, { type AuthPortalKey } from "@/components/auth/AuthPortalShell";
+import AuthPortalShell from "@/components/auth/AuthPortalShell";
 
 export default function VendorLoginPage() {
   const router = useRouter();
@@ -326,30 +327,56 @@ export default function VendorLoginPage() {
         ? "Chief Product Officer & catalog operations gateway. Enter your registered CPO email to receive a 6-digit OTP."
         : "Seller & CPO operations workspace. Enter your registered vendor or partner email to receive a 6-digit code.";
 
-  const handleSelectPortal = (next: AuthPortalKey) => {
-    if (next === "vendor" || next === "cpo") {
-      setPortalMode(next);
-      setErrorMessage("");
-      if (typeof window !== "undefined") {
-        window.history.replaceState(
-          null,
-          "",
-          next === "cpo" ? "/vendor/login?portal=cpo" : "/vendor/login"
-        );
-      }
-    }
-  };
-
   return (
     <AuthPortalShell
       portalTitle={portalTitle}
       portalSubtitle="Password-less Security OTP"
       portalDescription={portalDescription}
       portalType="vendor"
-      activePortal={portalMode}
-      showPortalSwitcher={step === "email"}
-      onSelectPortal={handleSelectPortal}
     >
+      {/* Portal Role Switcher (Vendor Partner / CPO Portal) */}
+      {step === "email" && (
+        <div
+          className="mb-5 grid grid-cols-2 gap-1.5 p-1 bg-slate-100 rounded-xl border border-slate-200/80"
+          role="tablist"
+          aria-label="Select partner portal role"
+        >
+          <button
+            type="button"
+            role="tab"
+            aria-selected={portalMode === "vendor"}
+            onClick={() => {
+              setPortalMode("vendor");
+              setErrorMessage("");
+            }}
+            className={`flex items-center justify-center gap-1.5 py-2 px-3 rounded-lg text-xs font-extrabold transition-all cursor-pointer ${
+              portalMode === "vendor"
+                ? "bg-[#052a51] text-white shadow-xs"
+                : "text-slate-600 hover:text-[#052a51]"
+            }`}
+          >
+            <Store size={14} />
+            <span>Vendor Portal</span>
+          </button>
+          <button
+            type="button"
+            role="tab"
+            aria-selected={portalMode === "cpo"}
+            onClick={() => {
+              setPortalMode("cpo");
+              setErrorMessage("");
+            }}
+            className={`flex items-center justify-center gap-1.5 py-2 px-3 rounded-lg text-xs font-extrabold transition-all cursor-pointer ${
+              portalMode === "cpo"
+                ? "bg-[#052a51] text-white shadow-xs"
+                : "text-slate-600 hover:text-[#052a51]"
+            }`}
+          >
+            <Briefcase size={14} />
+            <span>CPO Portal</span>
+          </button>
+        </div>
+      )}
 
       {/* Lockout Warning */}
       {isLockedOut && (

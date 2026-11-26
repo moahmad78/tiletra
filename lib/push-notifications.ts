@@ -2,18 +2,68 @@ import { prisma } from "@/lib/prisma";
 
 export interface ExpoPushPayload {
   to: string | string[];
-  title?: string;
-  body?: string;
-  dataOnly?: boolean;
-  _contentAvailable?: boolean;
+  title: string;
+  body: string;
   data?: Record<string, any>;
-  sound?: "default" | "order_alert" | "ring.mp3" | string | null;
+  sound?: "default" | "order_alert" | string | null;
   priority?: "default" | "normal" | "high";
   badge?: number;
   channelId?: string;
   image?: string | null;
   mutableContent?: boolean;
   userId?: string;
+}
+
+/**
+ * Resolves any relative or insecure URL to an absolute public HTTPS URL for push payloads.
+ * Expo and mobile notification services reject relative URLs (e.g. /uploads/image.webp).
+ */
+export function toAbsoluteHttpsUrl(url: string | null | undefined): string | undefined {
+  if (!url || typeof url !== "string") return undefined;
+  const trimmed = url.trim();
+  if (!trimmed) return undefined;
+  if (trimmed.startsWith("https://")) return trimmed;
+  if (trimmed.startsWith("http://")) {
+    return trimmed.replace(/^http:\/\//, "https://");
+  }
+  const origin = (
+    process.env.NEXT_PUBLIC_APP_URL ||
+    process.env.NEXTAUTH_URL ||
+    "https://intrihub.com"
+  ).replace(/\/$/, "");
+  const path = trimmed.startsWith("/") ? trimmed : `/${trimmed}`;
+  const absolute = `${origin}${path}`;
+  return absolute.replace(/^http:\/\//, "https://");
+}
+
+/**
+ * Resolves a device token's application target ('user' vs 'business')
+ * using explicit appType if available, or reliably falling back to role and semver appVersion prefix.
+ * Customer app: 'user' (version 1.2.x, customer role)
+ * Vendor/Business app: 'business' (version 1.0.x, vendor/rider/admin role)
+ */
+export function resolveTokenAppType(tokenRecord: {
+  appType?: string | null;
+  role?: string | null;
+  appVersion?: string | null;
+}): "user" | "business" {
+  if (tokenRecord.appType === "business") return "business";
+  if (tokenRecord.appType === "user") return "user";
+  const version = (tokenRecord.appVersion || "").trim();
+  if (version.startsWith("1.0.")) return "business";
+  if (version.startsWith("1.2.")) return "user";
+  const role = (tokenRecord.role || "").toLowerCase();
+  if (role === "vendor" || role === "rider" || role === "admin" || role === "cpo") return "business";
+  return "user";
+}
+
+/**
+ * Checks if a token record is active and not stale (> 60 days since last seen).
+ */
+export function isTokenActive(tokenRecord: { lastSeenAt?: Date | string | null }): boolean {
+  if (!tokenRecord.lastSeenAt) return true;
+  const ageMs = Date.now() - new Date(tokenRecord.lastSeenAt).getTime();
+  return ageMs < 60 * 24 * 60 * 60 * 1000; // 60 days
 }
 
 // Queue for asynchronous Expo receipt checks
@@ -121,42 +171,34 @@ export async function sendExpoPushNotification(payload: ExpoPushPayload): Promis
       return { success: false, error: "No valid Expo push tokens provided" };
     }
 
-    // Standardized payload format (supports both standard pushes and high-priority dataOnly Android RemoteViews pushes)
-    const messages = validTokens.map((to) => {
-      const base: Record<string, any> = {
-        to,
-        priority: payload.priority || "high",
-        channelId: payload.channelId || "orders_high_importance",
-        data: {
-          ...(payload.data || {}),
-          type: payload.data?.type || "GENERAL",
-          ...(payload.data?.orderId !== undefined ? { orderId: payload.data.orderId } : {}),
-        },
-      };
+    // Resolve image to absolute HTTPS URL if present in payload or data
+    const rawImage =
+      payload.image ||
+      (payload.data?.imageUrl as string | undefined) ||
+      (payload.data?.bannerUrl as string | undefined);
+    const resolvedImage = toAbsoluteHttpsUrl(rawImage);
 
-      if (payload.dataOnly) {
-        base._contentAvailable = payload._contentAvailable ?? true;
-      } else {
-        base.title = payload.title || "";
-        base.body = payload.body || "";
-        if (payload.sound !== null) {
-          base.sound = payload.sound || "default";
-        }
-        if (payload.badge !== undefined) {
-          base.badge = payload.badge;
-        }
-        if (payload.image) {
-          base.image = payload.image;
-        }
-        if (payload.mutableContent !== undefined) {
-          base.mutableContent = payload.mutableContent;
-        } else if (payload.image) {
-          base.mutableContent = true;
-        }
-      }
-
-      return base;
-    });
+    // Standardized payload format for every push
+    const messages = validTokens.map((to) => ({
+      to,
+      title: payload.title,
+      body: payload.body,
+      sound: payload.sound || "default",
+      priority: payload.priority || "high",
+      channelId: payload.channelId || "orders_high_importance",
+      data: {
+        ...(payload.data || {}),
+        type: payload.data?.type || "GENERAL",
+        orderId: payload.data?.orderId,
+        ...(resolvedImage ? { imageUrl: resolvedImage } : {}),
+      },
+      ...(resolvedImage ? { image: resolvedImage } : {}),
+      ...(payload.mutableContent !== undefined
+        ? { mutableContent: payload.mutableContent }
+        : resolvedImage
+        ? { mutableContent: true }
+        : {}),
+    }));
 
     const headers: Record<string, string> = {
       Accept: "application/json",
@@ -168,101 +210,56 @@ export async function sendExpoPushNotification(payload: ExpoPushPayload): Promis
       headers["Authorization"] = `Bearer ${process.env.EXPO_ACCESS_TOKEN}`;
     }
 
-    const dispatchChunk = async (
-      chunkMessages: Record<string, any>[],
-      chunkTokens: string[],
-      allowExperienceSplit: boolean
-    ): Promise<{ ok: boolean; ticket: any }> => {
-      const res = await fetch("https://exp.host/--/api/v2/push/send", {
-        method: "POST",
-        headers,
-        body: JSON.stringify(chunkMessages),
-        signal: AbortSignal.timeout(7000),
-      });
+    const res = await fetch("https://exp.host/--/api/v2/push/send", {
+      method: "POST",
+      headers,
+      body: JSON.stringify(messages),
+      signal: AbortSignal.timeout(7000),
+    });
 
-      const responseData = await res.json().catch(() => ({}));
+    const responseData = await res.json().catch(() => ({}));
 
-      // Automatically split mixed-project batches (@owner/app vs @owner/app-business)
-      if (!res.ok && allowExperienceSplit && Array.isArray(responseData?.errors)) {
-        const expErr = responseData.errors.find(
-          (e: any) =>
-            e?.code === "PUSH_TOO_MANY_EXPERIENCE_IDS" &&
-            e?.details &&
-            typeof e.details === "object"
-        );
-        if (expErr) {
-          const msgByToken = new Map<string, Record<string, any>>();
-          chunkMessages.forEach((m, idx) => msgByToken.set(chunkTokens[idx], m));
+    // Process tickets and handle error details
+    if (responseData && responseData.data) {
+      const tickets = Array.isArray(responseData.data) ? responseData.data : [responseData.data];
 
-          let anySucceeded = false;
-          const groupTickets: any[] = [];
-          for (const groupTokens of Object.values(expErr.details)) {
-            if (!Array.isArray(groupTokens) || groupTokens.length === 0) continue;
-            const subMsgs = groupTokens
-              .map((t: string) => msgByToken.get(t))
-              .filter(Boolean) as Record<string, any>[];
-            if (subMsgs.length === 0) continue;
-            const subRes = await dispatchChunk(subMsgs, groupTokens, false);
-            if (subRes.ok) anySucceeded = true;
-            groupTickets.push(subRes.ticket);
+      for (let i = 0; i < tickets.length; i++) {
+        const ticket = tickets[i];
+        const targetToken = validTokens[i] || "";
+        const tokenSuffix = targetToken.slice(-6);
+
+        if (ticket.status === "ok") {
+          if (ticket.id && pendingReceiptsQueue.length < MAX_RECEIPTS_QUEUE) {
+            pendingReceiptsQueue.push({
+              ticketId: ticket.id,
+              tokenSuffix,
+              userId: payload.userId,
+              enqueuedAt: Date.now(),
+            });
           }
-          return { ok: anySucceeded, ticket: groupTickets };
-        }
-      }
+        } else if (ticket.status === "error") {
+          const errorCode = ticket.details?.error || "UNKNOWN_ERROR";
+          console.error(
+            `[Expo Push Error] userId=${payload.userId || "unknown"} token=...${tokenSuffix} message=${ticket.message} details.error=${errorCode}`
+          );
 
-      if (!res.ok) {
-        console.error(
-          `[Expo Push HTTP Error] status=${res.status}`,
-          JSON.stringify(responseData?.errors || responseData)
-        );
-      }
-
-      // Process tickets and handle error details
-      if (responseData && responseData.data) {
-        const tickets = Array.isArray(responseData.data) ? responseData.data : [responseData.data];
-
-        for (let i = 0; i < tickets.length; i++) {
-          const ticket = tickets[i];
-          const targetToken = chunkTokens[i] || "";
-          const tokenSuffix = targetToken.slice(-6);
-
-          if (ticket.status === "ok") {
-            if (ticket.id && pendingReceiptsQueue.length < MAX_RECEIPTS_QUEUE) {
-              pendingReceiptsQueue.push({
-                ticketId: ticket.id,
-                tokenSuffix,
-                userId: payload.userId,
-                enqueuedAt: Date.now(),
-              });
-            }
-          } else if (ticket.status === "error") {
-            const errorCode = ticket.details?.error || "UNKNOWN_ERROR";
-            console.error(
-              `[Expo Push Error] userId=${payload.userId || "unknown"} token=...${tokenSuffix} message=${ticket.message} details.error=${errorCode}`
-            );
-
-            // Clean up unregistered device tokens immediately
-            if (errorCode === "DeviceNotRegistered" && targetToken) {
-              try {
-                await deleteDeadPushToken(targetToken);
-                console.log(`[Expo Push] Deleted unregistered token ending in ...${tokenSuffix}`);
-              } catch (delErr) {
-                console.warn("[Expo Push] Failed to delete dead token:", delErr);
-              }
+          // Clean up unregistered device tokens immediately
+          if (errorCode === "DeviceNotRegistered" && targetToken) {
+            try {
+              await deleteDeadPushToken(targetToken);
+              console.log(`[Expo Push] Deleted unregistered token ending in ...${tokenSuffix}`);
+            } catch (delErr) {
+              console.warn("[Expo Push] Failed to delete dead token:", delErr);
             }
           }
         }
       }
-
-      return { ok: res.ok, ticket: responseData };
-    };
-
-    const result = await dispatchChunk(messages, validTokens, true);
+    }
 
     // Lazy check previous receipts
     checkPendingExpoReceipts().catch(() => {});
 
-    return { success: result.ok, ticket: result.ticket };
+    return { success: res.ok, ticket: responseData };
   } catch (error: any) {
     console.error("[Expo Push Notification Error]", error);
     return { success: false, error: error?.message || "Failed to send push notification" };
@@ -294,6 +291,7 @@ export async function registerPushToken(params: {
   platform?: string;
   appVersion?: string;
   deviceId?: string;
+  appType?: string;
 }) {
   try {
     const { userId, role = "customer", token, platform = "android", appVersion, deviceId } = params;
@@ -306,43 +304,31 @@ export async function registerPushToken(params: {
       return { success: false, error: "Invalid Expo push token format" };
     }
 
-    // 1. Save directly into User table
-    try {
-      await (prisma as any).user.update({
-        where: { id: userId },
-        data: { pushToken: cleanToken },
-      });
-    } catch (userErr) {
-      console.warn("[Register Push Token] Could not update User.pushToken directly:", userErr);
-    }
+    // 1. DeviceToken is the single source of truth for all push tokens.
+    // Writes to legacy tables (MobilePushToken and User.pushToken) are stopped.
+    // Legacy tables remain strictly read-only for fallback / migration purposes.
+    const appType =
+      params.appType || (role === "vendor" || role === "rider" || role === "admin" || role === "cpo" ? "business" : "user");
 
-    // 2. Upsert into MobilePushToken table
-    try {
-      await (prisma as any).mobilePushToken.upsert({
-        where: { token: cleanToken },
-        update: { userId, platform, deviceId: deviceId || undefined, updatedAt: new Date() },
-        create: { userId, token: cleanToken, platform, deviceId: deviceId || undefined },
-      });
-    } catch (mobileErr) {
-      console.warn("[Register Push Token] MobilePushToken upsert warning:", mobileErr);
-    }
-
-    // 3. Upsert into dedicated DeviceToken table
     const deviceToken = await prisma.deviceToken.upsert({
       where: { token: cleanToken },
       update: {
         userId,
         role,
         platform,
+        appType,
         appVersion: appVersion || null,
+        isActive: true,
         lastSeenAt: new Date(),
       },
       create: {
         userId,
         role,
         platform,
+        appType,
         token: cleanToken,
         appVersion: appVersion || null,
+        isActive: true,
         lastSeenAt: new Date(),
       },
     });
@@ -393,7 +379,10 @@ export async function notifyAdminPush(params: {
 }) {
   try {
     const records = await prisma.deviceToken.findMany({
-      where: { role: { in: ["admin", "superadmin", "cpo"] } },
+      where: {
+        role: { in: ["admin", "superadmin", "cpo"] },
+        isActive: true,
+      },
       select: { token: true, userId: true },
     });
 
@@ -470,35 +459,55 @@ export async function notifyVendorPush(params: {
       }
     }
 
-    // 2. Fetch all registered tokens for vendor
-    const [deviceTokens, mobilePushTokens, userRecord] = await Promise.all([
-      prisma.deviceToken.findMany({
-        where: { userId: targetUserId, platform: { not: "ios_voip" } },
-        select: { token: true },
-      }),
-      (prisma as any).mobilePushToken.findMany({
-        where: { userId: targetUserId },
-        select: { token: true },
-      }),
-      (prisma as any).user.findUnique({
-        where: { id: targetUserId },
-        select: { pushToken: true },
-      }),
-    ]);
+    // 2. Fetch registered tokens for vendor (Primary: DeviceToken with appType: 'business' & active)
+    const deviceTokens = await prisma.deviceToken.findMany({
+      where: {
+        userId: targetUserId,
+        platform: { not: "ios_voip" },
+      },
+      select: { token: true, role: true, appVersion: true, lastSeenAt: true },
+    });
 
-    const rawTokens: string[] = [
-      ...(userRecord?.pushToken ? [userRecord.pushToken] : []),
-      ...deviceTokens.map((r: { token: string }) => r.token),
-      ...mobilePushTokens.map((r: { token: string }) => r.token),
-    ];
+    // Filter strictly for business appType and non-stale (<60 days)
+    const activeBusinessTokens = deviceTokens.filter((r: any) => {
+      const isBiz = resolveTokenAppType(r) === "business";
+      const active = isTokenActive(r);
+      return isBiz && active;
+    });
+
+    let rawTokens: string[] = activeBusinessTokens.map((r: { token: string }) => r.token);
+
+    // Fallback migration read: If no active business tokens found in DeviceToken, check legacy tables
+    if (rawTokens.length === 0) {
+      const [mobilePushTokens, userRecord] = await Promise.all([
+        (prisma as any).mobilePushToken.findMany({
+          where: { userId: targetUserId },
+          select: { token: true },
+        }),
+        (prisma as any).user.findUnique({
+          where: { id: targetUserId },
+          select: { pushToken: true },
+        }),
+      ]);
+      rawTokens = [
+        ...(userRecord?.pushToken ? [userRecord.pushToken] : []),
+        ...mobilePushTokens.map((r: { token: string }) => r.token),
+      ];
+    }
 
     const tokens = Array.from(new Set(rawTokens)).filter(
       (t) => typeof t === "string" && (t.startsWith("ExponentPushToken[") || t.startsWith("ExpoPushToken["))
     );
 
     if (tokens.length > 0) {
-      const sound = "default";
-      const channelId = "orders_high_importance";
+      const isLoudRing =
+        (params.isNewOrder && !params.isAutoAccepted) || params.requiresManualApproval;
+      const sound = isLoudRing ? "ring.mp3" : "default";
+      const channelId = isLoudRing
+        ? "new_order_ring_v1"
+        : params.isAutoAccepted
+        ? "default_chime_v1"
+        : params.data?.channelId || "orders_high_importance";
 
       await sendExpoPushNotification({
         to: tokens,
@@ -514,14 +523,39 @@ export async function notifyVendorPush(params: {
             ? "ORDER_AUTO_ACCEPTED"
             : params.requiresManualApproval
             ? "PENDING_VENDOR_APPROVAL"
-            : params.data?.type || "NEW_ORDER",
+            : params.data?.type || "ORDER_NEW",
           orderId: params.orderId || params.data?.orderId,
           isNewOrder: params.isNewOrder ?? true,
           isAutoAccepted: params.isAutoAccepted,
           requiresManualApproval: params.requiresManualApproval,
+          channelId,
+          sound,
           screen: "/(vendor)/orders",
+          deepLink: `intrihub-biz://order/${params.orderId || params.data?.orderId || ""}`,
         },
       });
+
+      // Audit tracking in NotificationLog
+      try {
+        await prisma.notificationLog.create({
+          data: {
+            userId: targetUserId,
+            recipient: tokens[0],
+            type: params.isAutoAccepted ? "ORDER_AUTO_ACCEPTED" : "ORDER_NEW",
+            platform: tokens.length > 1 ? "multiple" : "android",
+            status: "sent",
+            payload: {
+              title: params.title,
+              body: params.body,
+              channelId,
+              sound,
+              orderId: params.orderId || params.data?.orderId,
+            },
+          },
+        });
+      } catch (logErr) {
+        console.warn("[notifyVendorPush] Failed to write NotificationLog:", logErr);
+      }
     }
   } catch (e) {
     console.error("notifyVendorPush error:", e);
@@ -545,26 +579,38 @@ export async function sendPushToUser(
   try {
     if (!userId) return;
 
-    const [deviceTokens, mobilePushTokens, userRecord] = await Promise.all([
-      prisma.deviceToken.findMany({
-        where: { userId },
-        select: { token: true },
-      }),
-      (prisma as any).mobilePushToken.findMany({
-        where: { userId },
-        select: { token: true },
-      }),
-      (prisma as any).user.findUnique({
-        where: { id: userId },
-        select: { pushToken: true },
-      }),
-    ]);
+    // 1. Fetch customer tokens (Primary: DeviceToken with appType: 'user' & active)
+    const deviceTokens = await prisma.deviceToken.findMany({
+      where: { userId },
+      select: { token: true, role: true, appVersion: true, lastSeenAt: true },
+    });
 
-    const rawTokens: string[] = [
-      ...(userRecord?.pushToken ? [userRecord.pushToken] : []),
-      ...deviceTokens.map((r: { token: string }) => r.token),
-      ...mobilePushTokens.map((r: { token: string }) => r.token),
-    ];
+    // Filter strictly for customer user appType and non-stale (<60 days)
+    const activeUserTokens = deviceTokens.filter((r: any) => {
+      const isUser = resolveTokenAppType(r) === "user";
+      const active = isTokenActive(r);
+      return isUser && active;
+    });
+
+    let rawTokens: string[] = activeUserTokens.map((r: { token: string }) => r.token);
+
+    // Fallback migration read: If no active user tokens found in DeviceToken, check legacy tables
+    if (rawTokens.length === 0) {
+      const [mobilePushTokens, userRecord] = await Promise.all([
+        (prisma as any).mobilePushToken.findMany({
+          where: { userId },
+          select: { token: true },
+        }),
+        (prisma as any).user.findUnique({
+          where: { id: userId },
+          select: { pushToken: true },
+        }),
+      ]);
+      rawTokens = [
+        ...(userRecord?.pushToken ? [userRecord.pushToken] : []),
+        ...mobilePushTokens.map((r: { token: string }) => r.token),
+      ];
+    }
 
     const tokens = Array.from(new Set(rawTokens)).filter(
       (t) => typeof t === "string" && (t.startsWith("ExponentPushToken[") || t.startsWith("ExpoPushToken["))
@@ -585,6 +631,26 @@ export async function sendPushToUser(
         channelId: payload.channelId || "orders_high_importance",
         priority: payload.priority || "high",
       });
+
+      try {
+        await prisma.notificationLog.create({
+          data: {
+            userId,
+            recipient: tokens[0],
+            type: payload.data?.type || "CUSTOMER_ALERT",
+            platform: tokens.length > 1 ? "multiple" : "android",
+            status: "sent",
+            payload: {
+              title: payload.title,
+              body: payload.body,
+              channelId: payload.channelId || "orders_high_importance",
+              orderId: payload.data?.orderId,
+            },
+          },
+        });
+      } catch (logErr) {
+        console.warn("[sendPushToUser] Failed to write NotificationLog:", logErr);
+      }
     }
   } catch (e) {
     console.error("sendPushToUser error:", e);
@@ -592,11 +658,88 @@ export async function sendPushToUser(
 }
 
 /**
+ * Multilingual order lifecycle push templates.
+ * Supports en (English), hi (Hindi), and kn (Kannada) with automatic English fallback.
+ */
+const ORDER_STATUS_I18N = {
+  CONFIRMED: {
+    en: {
+      title: "Order Auto-Confirmed ⚡",
+      getBody: (c: { orderId: string; totalFormatted: string; courierInfo: string; trackingInfo: string }) =>
+        `Order #${c.orderId}${c.totalFormatted} has been automatically confirmed and sent to fulfillment!`,
+    },
+    hi: {
+      title: "ऑर्डर कन्फर्म हो गया ⚡",
+      getBody: (c: { orderId: string; totalFormatted: string; courierInfo: string; trackingInfo: string }) =>
+        `ऑर्डर #${c.orderId}${c.totalFormatted} कन्फर्म हो गया है और तैयारी शुरू हो चुकी है!`,
+    },
+    kn: {
+      title: "ಆರ್ಡರ್ ದೃಢೀಕರಿಸಲಾಗಿದೆ ⚡",
+      getBody: (c: { orderId: string; totalFormatted: string; courierInfo: string; trackingInfo: string }) =>
+        `ಆರ್ಡರ್ #${c.orderId}${c.totalFormatted} ಯಶಸ್ವಿಯಾಗಿ ದೃಢೀಕರಿಸಲಾಗಿದೆ ಮತ್ತು ಪ್ರಕ್ರಿಯೆ ಆರಂಭವಾಗಿದೆ!`,
+    },
+  },
+  PACKED: {
+    en: {
+      title: "Order Packed 📦",
+      getBody: (c: { orderId: string; totalFormatted: string; courierInfo: string; trackingInfo: string }) =>
+        `Your order #${c.orderId} is packed and ready for courier pickup!`,
+    },
+    hi: {
+      title: "ऑर्डर पैक हो गया 📦",
+      getBody: (c: { orderId: string; totalFormatted: string; courierInfo: string; trackingInfo: string }) =>
+        `आपका ऑर्डर #${c.orderId} पैक हो चुका है और कूरियर पिकअप के लिए तैयार है!`,
+    },
+    kn: {
+      title: "ಆರ್ಡರ್ ಪ್ಯಾಕ್ ಮಾಡಲಾಗಿದೆ 📦",
+      getBody: (c: { orderId: string; totalFormatted: string; courierInfo: string; trackingInfo: string }) =>
+        `ನಿಮ್ಮ ಆರ್ಡರ್ #${c.orderId} ಪ್ಯಾಕ್ ಮಾಡಲಾಗಿದ್ದು, ಕೊರಿಯರ್ ಪಿಕಪ್‌ಗೆ ಸಿದ್ಧವಾಗಿದೆ!`,
+    },
+  },
+  DISPATCHED: {
+    en: {
+      title: "Out for Delivery 🚚",
+      getBody: (c: { orderId: string; totalFormatted: string; courierInfo: string; trackingInfo: string }) =>
+        `Order #${c.orderId} is on the way to your delivery address${c.courierInfo}${c.trackingInfo}.`,
+    },
+    hi: {
+      title: "डिलीवरी के लिए निकल चुका है 🚚",
+      getBody: (c: { orderId: string; totalFormatted: string; courierInfo: string; trackingInfo: string }) =>
+        `ऑर्डर #${c.orderId} आपके पते पर डिलीवरी के लिए रास्ते में है${c.courierInfo}${c.trackingInfo}।`,
+    },
+    kn: {
+      title: "ಡೆಲಿವರಿಗೆ ಹೊರಟಿದೆ 🚚",
+      getBody: (c: { orderId: string; totalFormatted: string; courierInfo: string; trackingInfo: string }) =>
+        `ಆರ್ಡರ್ #${c.orderId} ನಿಮ್ಮ ವಿಳಾಸಕ್ಕೆ ತಲುಪಿಸಲು ಹೊರಟಿದೆ${c.courierInfo}${c.trackingInfo}.`,
+    },
+  },
+  DELIVERED: {
+    en: {
+      title: "Order Delivered 🎉",
+      getBody: (c: { orderId: string; totalFormatted: string; courierInfo: string; trackingInfo: string }) =>
+        `Order #${c.orderId} has been successfully delivered. Thank you for choosing IntriHub!`,
+    },
+    hi: {
+      title: "ऑर्डर डिलीवर हो गया 🎉",
+      getBody: (c: { orderId: string; totalFormatted: string; courierInfo: string; trackingInfo: string }) =>
+        `ऑर्डर #${c.orderId} सफलतापूर्वक डिलीवर हो चुका है। IntriHub चुनने के लिए धन्यवाद!`,
+    },
+    kn: {
+      title: "ಆರ್ಡರ್ ಡೆಲಿವರಿ ಮಾಡಲಾಗಿದೆ 🎉",
+      getBody: (c: { orderId: string; totalFormatted: string; courierInfo: string; trackingInfo: string }) =>
+        `ಆರ್ಡರ್ #${c.orderId} ಯಶಸ್ವಿಯಾಗಿ ತಲುಪಿಸಲಾಗಿದೆ. IntriHub ಆಯ್ಕೆ ಮಾಡಿದ್ದಕ್ಕಾಗಿ ಧನ್ಯವಾದಗಳು!`,
+    },
+  },
+};
+
+/**
  * Flipkart/Zomato style Real-Time Status Push Notifications dispatched to Customer:
  * 1. "Order Auto-Confirmed"
  * 2. "Order Packed"
  * 3. "Out for Delivery"
  * 4. "Delivered"
+ *
+ * Localized dynamically using User.language (en / hi / kn) with English fallback.
  */
 export async function sendCustomerOrderStatusPush(
   userId: string | null | undefined,
@@ -611,45 +754,93 @@ export async function sendCustomerOrderStatusPush(
 ) {
   if (!userId) return;
 
-  const totalFormatted = extra?.total ? ` (₹${extra.total.toLocaleString("en-IN")})` : "";
-  let title = "";
-  let body = "";
-
-  switch (status) {
-    case "CONFIRMED":
-      title = "Order Auto-Confirmed ⚡";
-      body = `Order #${orderId}${totalFormatted} has been automatically confirmed and sent to fulfillment!`;
-      break;
-
-    case "PACKED":
-      title = "Order Packed 📦";
-      body = `Your order #${orderId} is packed and ready for courier pickup!`;
-      break;
-
-    case "DISPATCHED":
-      title = "Out for Delivery 🚚";
-      const courierInfo = extra?.courierName ? ` via ${extra.courierName}` : "";
-      const trackingInfo = extra?.trackingNumber ? ` (LR: ${extra.trackingNumber})` : "";
-      body = `Order #${orderId} is on the way to your delivery address${courierInfo}${trackingInfo}.`;
-      break;
-
-    case "DELIVERED":
-      title = "Order Delivered 🎉";
-      body = `Order #${orderId} has been successfully delivered. Thank you for choosing IntriHub!`;
-      break;
+  // 1. Fetch user language preference with English fallback
+  let userLang: "en" | "hi" | "kn" = "en";
+  try {
+    const user = await prisma.user.findUnique({
+      where: { id: userId },
+      select: { language: true },
+    });
+    const rawLang = (user?.language || "en").toLowerCase();
+    if (rawLang === "hi" || rawLang === "kn") {
+      userLang = rawLang;
+    }
+  } catch (err) {
+    console.warn("[sendCustomerOrderStatusPush] Could not read user language, defaulting to en:", err);
   }
+
+  const totalFormatted = extra?.total ? ` (₹${extra.total.toLocaleString("en-IN")})` : "";
+  const courierInfo = extra?.courierName ? ` via ${extra.courierName}` : "";
+  const trackingInfo = extra?.trackingNumber ? ` (LR: ${extra.trackingNumber})` : "";
+
+  const templates = ORDER_STATUS_I18N[status];
+  const template = templates ? (templates[userLang] || templates.en) : null;
+  const title = template?.title || `${status} - Order #${orderId}`;
+  const body = template
+    ? template.getBody({ orderId, totalFormatted, courierInfo, trackingInfo })
+    : `Status update on order #${orderId}`;
+
+  const channelId =
+    status === "CONFIRMED" || status === "DELIVERED"
+      ? "user_success_v1"
+      : status === "DISPATCHED"
+      ? "user_arrival_v1"
+      : "default_v1";
+
+  const catalogType =
+    status === "CONFIRMED"
+      ? "ORDER_PLACED"
+      : status === "PACKED"
+      ? "ORDER_PACKED"
+      : status === "DISPATCHED"
+      ? "ORDER_DISPATCHED"
+      : "ORDER_DELIVERED";
 
   await sendPushToUser(userId, {
     title,
     body,
     sound: "default",
-    channelId: "orders_high_importance",
+    channelId,
     priority: "high",
     data: {
       orderId,
       status,
-      type: "order_status_update",
+      type: catalogType,
       screen: `/order/${orderId}`,
+      deepLink: `intrihub://order/${orderId}`,
     },
   });
+}
+
+/**
+ * Maintenance sweep: deactivates registered device tokens that have not been seen
+ * or active in the last `daysThreshold` days (default 60 days).
+ */
+export async function deactivateStaleDeviceTokens(daysThreshold = 60): Promise<number> {
+  try {
+    const cutoff = new Date(Date.now() - daysThreshold * 24 * 60 * 60 * 1000);
+    // Execute safe update if isActive column exists in PostgreSQL
+    const updatedCount = await prisma
+      .$executeRawUnsafe(
+        `UPDATE "DeviceToken" SET "isActive" = false WHERE "lastSeenAt" < $1`,
+        cutoff
+      )
+      .catch(() => 0);
+
+    if (updatedCount > 0) {
+      console.log(`[DeviceToken Sweep] Deactivated ${updatedCount} stale tokens older than ${daysThreshold} days.`);
+      return updatedCount;
+    }
+
+    // Return count of stale tokens in database
+    const staleCount = await prisma.deviceToken.count({
+      where: {
+        lastSeenAt: { lt: cutoff },
+      },
+    });
+    return staleCount;
+  } catch (err) {
+    console.warn("[DeviceToken Sweep] Error deactivating stale tokens:", err);
+    return 0;
+  }
 }

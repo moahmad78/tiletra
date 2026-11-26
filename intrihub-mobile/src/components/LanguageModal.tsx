@@ -44,6 +44,8 @@ export default function LanguageModal({
   };
 
   const handleConfirmAndClose = () => {
+    // Ensure the selected or default language is persisted to AsyncStorage & marked selected
+    setLanguage(language);
     onClose();
   };
 
@@ -52,7 +54,7 @@ export default function LanguageModal({
       visible={visible}
       transparent
       animationType="fade"
-      onRequestClose={isFirstLaunch ? undefined : onClose}
+      onRequestClose={handleConfirmAndClose}
     >
       <Pressable
         style={styles.backdrop}

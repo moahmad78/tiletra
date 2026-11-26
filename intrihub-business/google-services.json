@@ -1,0 +1,48 @@
+{
+  "project_info": {
+    "project_number": "756813427613",
+    "project_id": "intrihub78",
+    "storage_bucket": "intrihub78.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:756813427613:android:77ea6be4947b204c0ef574",
+        "android_client_info": {
+          "package_name": "com.intrihub.app"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyBa9BWiGI40xRI6s8h4LEbGUsFttX-1K_M"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    },
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:756813427613:android:b71eb4780a4880ca0ef574",
+        "android_client_info": {
+          "package_name": "com.intrihub.business"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyBa9BWiGI40xRI6s8h4LEbGUsFttX-1K_M"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

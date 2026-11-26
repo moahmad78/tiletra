@@ -83,10 +83,53 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
     if (thickness !== undefined) data.thickness = thickness;
     if (specifications !== undefined) data.specifications = specifications;
 
+    const existing = await prisma.product.findUnique({
+      where: { id },
+      include: { variants: true },
+    });
+
     const updated = await prisma.product.update({
       where: { id },
       data,
+      include: { variants: true },
     });
+
+    if (existing && updated) {
+      try {
+        const prevInStock = Boolean(
+          existing.inStock &&
+            (existing.variants?.length ? existing.variants.some((v) => v.stockBoxes > 0 && v.inStock && v.active) : true)
+        );
+        const prevPrices = (existing.variants || [])
+          .map((v) => v.pricePerBox || v.price || 0)
+          .filter((p) => p > 0);
+        const prevMinPrice = prevPrices.length > 0 ? Math.min(...prevPrices) : (existing.pricePerSqft || 0);
+
+        const newInStock = Boolean(
+          updated.inStock &&
+            (updated.variants?.length ? updated.variants.some((v) => v.stockBoxes > 0 && v.inStock && v.active) : true)
+        );
+        const newPrices = (updated.variants || [])
+          .map((v) => v.pricePerBox || v.price || 0)
+          .filter((p) => p > 0);
+        const newMinPrice = newPrices.length > 0 ? Math.min(...newPrices) : (updated.pricePerSqft || 0);
+
+        const { checkAndDispatchProductAutomations } = await import("@/lib/product-automation-triggers");
+        checkAndDispatchProductAutomations({
+          productId: updated.id,
+          productName: updated.name,
+          productSlug: updated.slug,
+          productImage: updated.images?.[0] || null,
+          vendorId: updated.vendorId,
+          previousInStock: prevInStock,
+          previousPrice: prevMinPrice,
+          newInStock,
+          newPrice: newMinPrice,
+        }).catch((err) => console.error("[AutomationTrigger mobile admin error]:", err));
+      } catch (autoErr) {
+        console.warn("[mobile-admin] Error initiating product automations:", autoErr);
+      }
+    }
 
     return mobileApiResponse({
       success: true,

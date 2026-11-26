@@ -1,4 +1,4 @@
-import React, { useEffect, useRef } from "react";
+import React, { useEffect, useRef, useState } from "react";
 import {
   View,
   Text,
@@ -12,10 +12,13 @@ import {
 import * as Haptics from "expo-haptics";
 import { useRouter } from "expo-router";
 import { useQueryClient } from "@tanstack/react-query";
-import { Bell, X, Package } from "lucide-react-native";
+import { Bell, X, Package, Clock } from "lucide-react-native";
 import { WebView } from "react-native-webview";
 import { useOrderAlertStore } from "../store/orderAlertStore";
 import { updateVendorOrderStatus, rejectVendorOrder } from "../api/vendor";
+import { dismissOrderAlarm } from "../utils/orderAlarm";
+import { socketService } from "../store/socketStore";
+import { apiClient } from "../api/client";
 import RotatingOrderItemImage from "./RotatingOrderItemImage";
 
 export default function IncomingOrderAlertModal() {
@@ -23,11 +26,67 @@ export default function IncomingOrderAlertModal() {
   const queryClient = useQueryClient();
   const { alert, isOpen, isRinging, closeAlert, stopRinging } = useOrderAlertStore();
   const [isSubmitting, setIsSubmitting] = React.useState(false);
+  const [countdownSeconds, setCountdownSeconds] = useState(600); // 10 minutes SLA timer
   const pulseAnim = useRef(new Animated.Value(1)).current;
   const ringingIntervalRef = useRef<any>(null);
+  const countdownIntervalRef = useRef<any>(null);
   const webAudioRef = useRef<any>(null);
 
-  // Ringing / Haptics loop + Web audio fallback
+  // 1. Countdown timer effect (10 min acceptance SLA)
+  useEffect(() => {
+    if (isOpen && alert) {
+      setCountdownSeconds(600);
+      countdownIntervalRef.current = setInterval(() => {
+        setCountdownSeconds((prev) => {
+          if (prev <= 1) {
+            clearInterval(countdownIntervalRef.current);
+            stopRinging();
+            dismissOrderAlarm();
+            closeAlert();
+            return 0;
+          }
+          return prev - 1;
+        });
+      }, 1000);
+
+      // Auto-send ACK heartbeat to backend to acknowledge alarm received (skip simulated test alerts)
+      if (alert.orderId && !String(alert.orderId).startsWith("TEST-")) {
+        apiClient.post(`/api/mobile/vendor/orders/${alert.orderId}/ack`).catch(() => {});
+      }
+    }
+
+    return () => {
+      if (countdownIntervalRef.current) {
+        clearInterval(countdownIntervalRef.current);
+        countdownIntervalRef.current = null;
+      }
+    };
+  }, [isOpen, alert?.orderId]);
+
+  // 2. Multi-device dismissal via Socket
+  useEffect(() => {
+    if (!isOpen || !alert?.orderId) return;
+
+    const handleDismissFromOtherDevice = (data: any) => {
+      const targetOrderId = String(data?.orderId || data?.id || "");
+      if (targetOrderId === String(alert.orderId)) {
+        console.log(`[OrderAlert] Order #${alert.orderId} action taken on another device. Dismissing.`);
+        stopRinging();
+        dismissOrderAlarm();
+        closeAlert();
+      }
+    };
+
+    const unsubStatus = socketService.subscribe("order-status-updated", handleDismissFromOtherDevice);
+    const unsubAck = socketService.subscribe("order-alert-acknowledged", handleDismissFromOtherDevice);
+
+    return () => {
+      unsubStatus();
+      unsubAck();
+    };
+  }, [isOpen, alert?.orderId]);
+
+  // 3. Ringing / Haptics loop + Web audio fallback
   useEffect(() => {
     if (isOpen) {
       if (Platform.OS === "web") {
@@ -87,8 +146,21 @@ export default function IncomingOrderAlertModal() {
 
   if (!isOpen || !alert) return null;
 
+  const isTestAlert = String(alert.orderId || "").startsWith("TEST-");
+
+  const handleDismissModal = () => {
+    stopRinging();
+    dismissOrderAlarm();
+    closeAlert();
+  };
+
   const handleAccept = async () => {
     stopRinging();
+    dismissOrderAlarm();
+    if (isTestAlert) {
+      closeAlert();
+      return;
+    }
     setIsSubmitting(true);
     try {
       const splitOrOrderId = alert.splitId || alert.orderId;
@@ -114,6 +186,11 @@ export default function IncomingOrderAlertModal() {
 
   const handleReject = async () => {
     stopRinging();
+    dismissOrderAlarm();
+    if (isTestAlert) {
+      closeAlert();
+      return;
+    }
     setIsSubmitting(true);
     try {
       const splitOrOrderId = alert.splitId || alert.orderId;
@@ -129,12 +206,17 @@ export default function IncomingOrderAlertModal() {
     }
   };
 
+  const minutesLeft = Math.floor(countdownSeconds / 60);
+  const secondsMod = countdownSeconds % 60;
+  const timerDisplay = `${minutesLeft.toString().padStart(2, "0")}:${secondsMod.toString().padStart(2, "0")}`;
+  const isUrgentTimer = countdownSeconds <= 120; // 2 min warning
+
   return (
     <Modal
       visible={isOpen}
       transparent
       animationType="slide"
-      onRequestClose={closeAlert}
+      onRequestClose={handleDismissModal}
       statusBarTranslucent
     >
       {Platform.OS !== "web" && isOpen && (
@@ -149,8 +231,42 @@ export default function IncomingOrderAlertModal() {
                     <audio id="ring" src="https://www.intrihub.com/sounds/ring.mp3" autoplay loop playsinline></audio>
                     <script>
                       var el = document.getElementById('ring');
+                      var fallbackTimer = null;
+                      function startFallbackChime() {
+                        if (fallbackTimer) return;
+                        try {
+                          var AudioCtx = window.AudioContext || window.webkitAudioContext;
+                          if (!AudioCtx) return;
+                          var ctx = new AudioCtx();
+                          function playPulse() {
+                            try {
+                              if (ctx.state === 'suspended') ctx.resume();
+                              var now = ctx.currentTime;
+                              var osc = ctx.createOscillator();
+                              var gain = ctx.createGain();
+                              osc.type = 'triangle';
+                              osc.frequency.setValueAtTime(880, now);
+                              osc.frequency.exponentialRampToValueAtTime(1760, now + 0.14);
+                              gain.gain.setValueAtTime(0.9, now);
+                              gain.gain.exponentialRampToValueAtTime(0.01, now + 0.45);
+                              osc.connect(gain);
+                              gain.connect(ctx.destination);
+                              osc.start(now);
+                              osc.stop(now + 0.45);
+                            } catch (e) {}
+                          }
+                          playPulse();
+                          fallbackTimer = setInterval(playPulse, 1300);
+                        } catch (e) {}
+                      }
+                      function stopFallbackChime() {
+                        if (fallbackTimer) { clearInterval(fallbackTimer); fallbackTimer = null; }
+                      }
+                      el.addEventListener('playing', stopFallbackChime);
+                      el.addEventListener('error', startFallbackChime);
                       el.play().catch(function() {
-                        window.addEventListener('touchstart', function() { el.play(); }, { once: true });
+                        startFallbackChime();
+                        window.addEventListener('touchstart', function() { el.play().catch(function() {}); }, { once: true });
                       });
                     </script>
                   </body>
@@ -168,7 +284,7 @@ export default function IncomingOrderAlertModal() {
         <TouchableOpacity
           style={styles.backdrop}
           activeOpacity={1}
-          onPress={closeAlert}
+          onPress={handleDismissModal}
         />
 
         {/* Bottom Sheet Card */}
@@ -179,7 +295,7 @@ export default function IncomingOrderAlertModal() {
           {/* Close button (top right) */}
           <TouchableOpacity
             style={styles.closeBtn}
-            onPress={closeAlert}
+            onPress={handleDismissModal}
             activeOpacity={0.7}
             hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}
           >
@@ -202,6 +318,14 @@ export default function IncomingOrderAlertModal() {
           <Text style={styles.orderIdSubtitle} numberOfLines={1}>
             Order #{alert.orderId}
           </Text>
+
+          {/* 10-Minute SLA Expiry Countdown Badge */}
+          <View style={[styles.timerBadge, isUrgentTimer && styles.timerBadgeUrgent]}>
+            <Clock size={15} color={isUrgentTimer ? "#DC2626" : "#EA580C"} />
+            <Text style={[styles.timerText, isUrgentTimer && styles.timerTextUrgent]}>
+              {timerDisplay} remaining to accept
+            </Text>
+          </View>
 
           {/* Soft Cream Order Details Box */}
           <View style={styles.orderInfoBox}>
@@ -332,7 +456,31 @@ const styles = StyleSheet.create({
     color: "#64748B",
     fontWeight: "500",
     textAlign: "center",
-    marginBottom: 18,
+    marginBottom: 8,
+  },
+  timerBadge: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 6,
+    backgroundColor: "#FFF7ED",
+    borderWidth: 1,
+    borderColor: "#FED7AA",
+    paddingHorizontal: 12,
+    paddingVertical: 5,
+    borderRadius: 20,
+    marginBottom: 16,
+  },
+  timerBadgeUrgent: {
+    backgroundColor: "#FEF2F2",
+    borderColor: "#FECACA",
+  },
+  timerText: {
+    fontSize: 12,
+    fontWeight: "700",
+    color: "#EA580C",
+  },
+  timerTextUrgent: {
+    color: "#DC2626",
   },
   orderInfoBox: {
     width: "100%",

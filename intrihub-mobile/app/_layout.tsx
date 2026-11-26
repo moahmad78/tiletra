@@ -25,6 +25,7 @@ import AppUpdateModal from "../src/components/AppUpdateModal";
 import CustomAlertModal from "../src/components/CustomAlertModal";
 import { COLORS } from "../src/constants/theme";
 import LanguageModal from "../src/components/LanguageModal";
+import ServerCampaignPopup from "../src/components/ServerCampaignPopup";
 import { useI18nStore } from "../src/store/i18nStore";
 
 // Suppress non-fatal dev CLI connection warning from popping up on screen
@@ -174,7 +175,10 @@ export default function RootLayout() {
           {/* Language Selection Modal on First Launch */}
           <LanguageModal
             visible={showFirstLaunchLang}
-            onClose={() => setShowFirstLaunchLang(false)}
+            onClose={() => {
+              useI18nStore.getState().setLanguage(useI18nStore.getState().language);
+              setShowFirstLaunchLang(false);
+            }}
             isFirstLaunch
           />
 
@@ -183,6 +187,9 @@ export default function RootLayout() {
 
           {/* Branded Themed Alert & Confirmation Modal */}
           <CustomAlertModal />
+
+          {/* Server-Driven In-App Campaign Popup & Banner */}
+          <ServerCampaignPopup />
 
           {/* Animated Quick-Commerce Splash Screen Layer */}
           {splashMounted && (

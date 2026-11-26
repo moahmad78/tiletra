@@ -1,0 +1,11 @@
+[Unit]
+Description=Run IntriHub Campaign Sender Every 1 Minute
+
+[Timer]
+OnCalendar=*:0/1
+AccuracySec=1s
+Persistent=true
+Unit=intrihub-campaign-sender.service
+
+[Install]
+WantedBy=timers.target

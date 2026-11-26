@@ -1,0 +1,9 @@
+[Unit]
+Description=IntriHub Campaign Sender Cron Service
+After=network-online.target
+
+[Service]
+Type=oneshot
+ExecStart=/usr/local/bin/intrihub-cron-campaign-sender.sh
+StandardOutput=append:/var/log/intrihub-campaign-sender.log
+StandardError=append:/var/log/intrihub-campaign-sender.log
