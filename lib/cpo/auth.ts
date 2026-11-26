@@ -108,35 +108,96 @@ async function getClientMetadata(): Promise<{ ip: string; userAgent: string }> {
 }
 
 /**
- * Retrieve verified CPO session. Ensures user still has CPO role in DB.
+ * Resolve a valid DB User ID for an authenticated Super Admin so FK relations
+ * (ImpersonationSession / AdminAuditLog) always reference an existing User row.
+ */
+async function resolveVerifiedAdminUserForCpo(): Promise<{
+  id: string;
+  email: string;
+  name: string;
+} | null> {
+  const isAdmin = await checkIsAdmin();
+  if (!isAdmin) return null;
+
+  const adminSession = await getAdminSession();
+  if (!adminSession) return null;
+
+  const cleanEmail = adminSession.email.toLowerCase().trim();
+  const userById =
+    adminSession.adminId && adminSession.adminId !== "admin-root"
+      ? await prisma.user.findUnique({
+          where: { id: adminSession.adminId },
+          select: { id: true, email: true, name: true, role: true },
+        })
+      : null;
+
+  const user =
+    userById ||
+    (await prisma.user.findFirst({
+      where: {
+        email: { equals: cleanEmail, mode: "insensitive" },
+        role: { in: ["admin", "ADMIN", "superadmin"] },
+      },
+      select: { id: true, email: true, name: true, role: true },
+    }));
+
+  if (!user || !["admin", "superadmin"].includes(user.role.toLowerCase())) {
+    return null;
+  }
+
+  return {
+    id: user.id,
+    email: user.email || cleanEmail,
+    name: user.name || "Super Admin",
+  };
+}
+
+/**
+ * Retrieve verified CPO session. Supports direct CPO users (`role === "cpo"`)
+ * as well as authenticated Super Admins switching into `/cpo` from the Admin Panel.
  */
 export async function getCpoSession(): Promise<CpoSession | null> {
   try {
     const cookieStore = await cookies();
     const token = cookieStore.get(CPO_SESSION_COOKIE)?.value;
-    if (!token) return null;
 
-    const verified = await verifyCpoSessionToken(token);
-    if (!verified.valid || !verified.userId) return null;
+    if (token) {
+      const verified = await verifyCpoSessionToken(token);
+      if (verified.valid && verified.userId) {
+        // Verify user exists and maintains CPO role in DB
+        const user = await prisma.user.findUnique({
+          where: { id: verified.userId },
+          select: { id: true, email: true, name: true, role: true },
+        });
 
-    // Verify user exists and maintains role in DB
-    const user = await prisma.user.findUnique({
-      where: { id: verified.userId },
-      select: { id: true, email: true, name: true, role: true },
-    });
+        if (user && user.role.toLowerCase() === "cpo") {
+          return {
+            userId: user.id,
+            email: user.email || verified.email || "cpo@intrihub.com",
+            name: user.name || "Chief Product Officer",
+            role: "cpo",
+            isAdminAccess: false,
+          };
+        }
 
-    if (!user || user.role.toLowerCase() !== "cpo") {
-      cookieStore.delete(CPO_SESSION_COOKIE);
-      cookieStore.delete(CPO_WORKSPACE_COOKIE);
-      return null;
+        cookieStore.delete(CPO_SESSION_COOKIE);
+        cookieStore.delete(CPO_WORKSPACE_COOKIE);
+      }
     }
 
-    return {
-      userId: user.id,
-      email: user.email || verified.email || "cpo@intrihub.com",
-      name: user.name || "Chief Product Officer",
-      role: "cpo",
-    };
+    // Fallback: Authenticated Super Admin accessing CPO Panel via Admin Switch Tab
+    const adminUser = await resolveVerifiedAdminUserForCpo();
+    if (adminUser) {
+      return {
+        userId: adminUser.id,
+        email: adminUser.email,
+        name: adminUser.name,
+        role: "cpo",
+        isAdminAccess: true,
+      };
+    }
+
+    return null;
   } catch (error) {
     console.error("getCpoSession error:", error);
     return null;
@@ -231,10 +292,11 @@ export async function selectCpoVendor(params: {
     const now = new Date();
     const expiresAt = new Date(now.getTime() + WORKSPACE_TTL_MS);
 
-    // End any existing active CPO sessions for this user
+    // End any existing active CPO sessions for this user without disturbing Admin Vendor Workspaces
     await prisma.impersonationSession.updateMany({
       where: {
         adminId: cpo.userId,
+        actorRole: "CPO",
         endedAt: null,
       },
       data: { endedAt: now },

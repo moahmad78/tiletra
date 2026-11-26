@@ -14,12 +14,10 @@ async function run() {
 
   const sample = await prisma.deviceToken.findMany({
     orderBy: { updatedAt: 'desc' },
-    take: 5
+    take: 1
   });
-  console.log('Recent 5 deviceTokens in DB:');
-  for (const s of sample) {
-    console.log(' - User:', s.userId, 'Platform:', s.platform, 'Updated:', s.updatedAt, 'Token:', s.token ? s.token.slice(0, 20) + '...' : null);
-  }
+  console.log('DeviceToken keys in DB:', sample[0] ? Object.keys(sample[0]) : 'None');
+  if (sample[0]) console.log('Sample record:', sample[0]);
 }
 
 run().catch(console.error).finally(() => prisma.$disconnect());

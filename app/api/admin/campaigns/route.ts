@@ -3,6 +3,9 @@ import { prisma as rawPrisma } from "@/lib/prisma";
 import { dispatchCampaign } from "@/lib/campaign-runner";
 import { isKolkataQuietHours } from "@/lib/notification-service";
 import { getNextKolkataActiveTime } from "@/lib/cart-reminder-runner";
+import { validateCampaignDeepLink } from "@/lib/deep-link-validator";
+import { toAbsoluteHttpsUrl } from "@/lib/push-notifications";
+import { getAudiencePreview } from "@/lib/campaign-audience";
 
 const prisma = rawPrisma as any;
 
@@ -66,12 +69,29 @@ export async function POST(req: NextRequest) {
       body: messageBody,
       imageUrl,
       target = "offers",
+      type = "OFFER",
+      accentColor,
+      ctaLabel,
+      countdownEndsAt,
+      recurrence = "none",
+      expiresAt,
+      appTarget = "both",
+      popup,
       audience = { type: "all" },
       platforms = "all",
-      action = "draft", // "draft" | "schedule" | "send_now"
+      action = "draft", // "draft" | "schedule" | "send_now" | "estimate_audience"
       scheduledAt,
       adminId,
     } = body;
+
+    // Action: Estimate Audience Count for pre-flight confirmation
+    if (action === "estimate_audience") {
+      const preview = await getAudiencePreview(audience, platforms);
+      return NextResponse.json({
+        success: true,
+        audience: preview,
+      });
+    }
 
     if (!title || title.trim().length === 0) {
       return NextResponse.json({ success: false, error: "Title is required" }, { status: 400 });
@@ -90,6 +110,36 @@ export async function POST(req: NextRequest) {
         { success: false, error: "Message body cannot exceed 90 characters" },
         { status: 400 }
       );
+    }
+
+    // Server-side Deep-Link Whitelist Validation
+    const linkValidation = validateCampaignDeepLink(target);
+    if (!linkValidation.valid) {
+      return NextResponse.json(
+        { success: false, error: linkValidation.error || "Invalid target deep link" },
+        { status: 400 }
+      );
+    }
+
+    // Validate popup deepLink if popup enabled
+    let sanitizedPopup: any = null;
+    if (popup && typeof popup === "object" && popup.enabled) {
+      const popupDeepLink = popup.deepLink || target;
+      const popupValidation = validateCampaignDeepLink(popupDeepLink);
+      if (!popupValidation.valid) {
+        return NextResponse.json(
+          { success: false, error: `Invalid popup deep-link: ${popupValidation.error}` },
+          { status: 400 }
+        );
+      }
+      sanitizedPopup = {
+        enabled: Boolean(popup.enabled),
+        layout: String(popup.layout || "center_modal"),
+        bgColor: String(popup.bgColor || "#1E293B"),
+        imageUrl: toAbsoluteHttpsUrl(popup.imageUrl) || null,
+        ctaLabel: String(popup.ctaLabel || ctaLabel || "Shop Now"),
+        deepLink: popupValidation.normalizedDeepLink,
+      };
     }
 
     const settings = await prisma.storeSettings.findFirst({
@@ -119,7 +169,7 @@ export async function POST(req: NextRequest) {
       initialStatus = "scheduled";
     } else if (action === "send_now") {
       if (isQuiet) {
-        // Rule R-4: Inside quiet hours, the only choice is to schedule for 08:00 IST
+        // Rule R-4: Inside quiet hours, schedule for next active morning IST
         effectiveScheduledAt = getNextKolkataActiveTime(settings?.quietHoursEnd ?? "08:00");
         initialStatus = "scheduled";
       } else {
@@ -127,12 +177,23 @@ export async function POST(req: NextRequest) {
       }
     }
 
+    const resolvedImageUrl = toAbsoluteHttpsUrl(imageUrl) || null;
+
     const campaign = await prisma.campaign.create({
       data: {
         title: title.trim(),
         body: messageBody.trim(),
-        imageUrl: imageUrl || null,
-        target,
+        imageUrl: resolvedImageUrl,
+        target: linkValidation.sanitizedTarget,
+        type: String(type || "OFFER").toUpperCase(),
+        accentColor: accentColor ? String(accentColor).trim() : null,
+        ctaLabel: ctaLabel ? String(ctaLabel).trim() : null,
+        countdownEndsAt: countdownEndsAt ? new Date(countdownEndsAt) : null,
+        recurrence: String(recurrence || "none").toLowerCase(),
+        expiresAt: expiresAt ? new Date(expiresAt) : null,
+        appTarget: String(appTarget || "both").toLowerCase(),
+        popup: sanitizedPopup,
+        schemaVersion: 1,
         audience: audience || { type: "all" },
         platforms,
         sendMode: action === "send_now" ? "manual" : "scheduled",
@@ -143,7 +204,6 @@ export async function POST(req: NextRequest) {
     });
 
     if (action === "send_now" && !isQuiet) {
-      // Execute dispatch asynchronously or synchronously
       const stats = await dispatchCampaign(campaign.id, { sentByAdminId: adminId });
       return NextResponse.json({
         success: true,

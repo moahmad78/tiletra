@@ -84,6 +84,7 @@ function AccountPageContent() {
   const [editPhone, setEditPhone] = useState("");
   const [editGender, setEditGender] = useState<"Male" | "Female" | "Other">("Male");
   const [editAvatar, setEditAvatar] = useState<string | null>(null);
+  const [editBirthday, setEditBirthday] = useState<string>("");
   const [isSaving, setIsSaving] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
@@ -176,6 +177,7 @@ function AccountPageContent() {
         ? user.phone.replace(/\D/g, "").slice(-10)
         : "";
       setEditPhone(realPhone);
+      setEditBirthday(user.birthday ? user.birthday.slice(0, 10) : "");
     }
   }, [user]);
 
@@ -210,11 +212,12 @@ function AccountPageContent() {
     try {
       setIsSaving(true);
 
-      // Save name / email / avatar
+      // Save name / email / avatar / birthday
       const res = await updateProfile({
         name: editName.trim(),
         email: editEmail.trim() || undefined,
         avatar: editAvatar,
+        birthday: editBirthday || null,
       });
 
       if (!res.success) {
@@ -527,6 +530,27 @@ function AccountPageContent() {
                     className="w-full h-11 pl-12 pr-3.5 bg-gray-50 border border-gray-200 rounded-xl text-sm font-bold text-[#052a51] focus:bg-white focus:outline-none focus:border-[#F26522]"
                   />
                 </div>
+              </div>
+
+              {/* Birthday (Optional with consent note) */}
+              <div>
+                <label className="block text-xs font-bold text-gray-600 mb-1.5 flex items-center justify-between">
+                  <span className="flex items-center gap-1.5">
+                    <Sparkles size={13} className="text-[#F26522]" />
+                    Date of Birth
+                  </span>
+                  <span className="text-[10px] font-semibold text-gray-400">Optional</span>
+                </label>
+                <input
+                  type="date"
+                  value={editBirthday}
+                  onChange={(e) => setEditBirthday(e.target.value)}
+                  max={new Date().toISOString().split("T")[0]}
+                  className="w-full h-11 px-3.5 bg-gray-50 border border-gray-200 rounded-xl text-sm font-bold text-[#052a51] focus:bg-white focus:outline-none focus:border-[#F26522]"
+                />
+                <p className="mt-1 text-[11px] text-gray-500 leading-tight">
+                  Used exclusively to celebrate your special day with exclusive birthday discounts and rewards.
+                </p>
               </div>
 
               {/* Save everything together */}
@@ -943,6 +967,27 @@ function AccountPageContent() {
                         </div>
                       </div>
 
+                      {/* Birthday Field (Optional with consent note) */}
+                      <div className="pt-1 max-w-md">
+                        <label className="block text-xs font-bold text-gray-600 mb-1.5 flex items-center justify-between">
+                          <span className="flex items-center gap-1.5">
+                            <Sparkles size={13} className="text-[#F26522]" />
+                            Date of Birth
+                          </span>
+                          <span className="text-[10px] font-semibold text-gray-400">Optional</span>
+                        </label>
+                        <input
+                          type="date"
+                          value={editBirthday}
+                          onChange={(e) => setEditBirthday(e.target.value)}
+                          max={new Date().toISOString().split("T")[0]}
+                          className="w-full h-11 px-3.5 bg-gray-50 border border-gray-200 rounded-xl text-sm font-bold text-[#052a51] focus:bg-white focus:outline-none focus:border-[#F26522]"
+                        />
+                        <p className="mt-1 text-[11px] text-gray-500 leading-tight">
+                          Used exclusively to celebrate your special day with exclusive birthday discounts and rewards.
+                        </p>
+                      </div>
+
                       {/* Action Buttons */}
                       <div className="flex gap-3 pt-2">
                         <button
@@ -1020,6 +1065,26 @@ function AccountPageContent() {
                           ) : (
                             <p className="text-xs text-amber-600 font-semibold">
                               No mobile number linked — click <span className="text-[#F26522] font-black">Edit</span> above to add your number
+                            </p>
+                          )}
+                        </div>
+                      </div>
+
+                      {/* Birthday Display */}
+                      <div className="pt-5 border-t border-gray-100">
+                        <span className="text-xs font-semibold text-gray-400 block mb-1">Date of Birth</span>
+                        <div className="max-w-md">
+                          {user?.birthday ? (
+                            <p className="text-sm font-bold text-[#052a51]">
+                              {new Date(user.birthday).toLocaleDateString("en-IN", {
+                                day: "numeric",
+                                month: "long",
+                                year: "numeric",
+                              })}
+                            </p>
+                          ) : (
+                            <p className="text-xs text-gray-400">
+                              Not set — add your birthday to receive exclusive celebrations & coupons!
                             </p>
                           )}
                         </div>

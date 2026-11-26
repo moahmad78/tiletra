@@ -1,0 +1,9 @@
+[Unit]
+Description=IntriHub Abandoned Cart Reminders Cron Service
+After=network-online.target
+
+[Service]
+Type=oneshot
+ExecStart=/usr/local/bin/intrihub-cron-cart-reminders.sh
+StandardOutput=append:/var/log/intrihub-cart-reminders.log
+StandardError=append:/var/log/intrihub-cart-reminders.log

@@ -1,11 +1,22 @@
+import * as Application from "expo-application";
+import Constants from "expo-constants";
 import { apiClient } from "./client";
 
 export async function registerPushToken(token: string, platform = "android"): Promise<{ success: boolean; error?: string }> {
   try {
+    const appVersion =
+      Application.nativeApplicationVersion ||
+      Constants.expoConfig?.version ||
+      "1.2.21";
+    const rawBuild = Application.nativeBuildVersion;
+    const appVersionCode = rawBuild ? parseInt(rawBuild, 10) || undefined : undefined;
+
     const res = await apiClient.post("/api/mobile/push-token", {
       token,
       platform,
       appType: "user",
+      appVersion,
+      ...(appVersionCode ? { appVersionCode } : {}),
     });
     return res.data;
   } catch (err: any) {

@@ -1,14 +1,17 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { useRouter } from "next/navigation";
+import { useRouter, usePathname } from "next/navigation";
 import { getActiveWorkspaceStatus, endWorkspaceSession } from "@/lib/vendor-workspace-auth";
-import { AlertTriangle, LogOut, Clock, ShieldAlert, Store, ExternalLink } from "lucide-react";
+import { LogOut, Clock, ShieldAlert } from "lucide-react";
 import { toast } from "sonner";
 import Link from "next/link";
+import AdminPortalSwitchTabs from "@/components/admin/AdminPortalSwitchTabs";
 
 export default function VendorWorkspaceBanner() {
   const router = useRouter();
+  const pathname = usePathname();
+  const isOnVendorPanel = pathname?.startsWith("/vendor");
   const [workspace, setWorkspace] = useState<{
     active: boolean;
     vendorId?: string;
@@ -116,8 +119,12 @@ export default function VendorWorkspaceBanner() {
             </div>
           </div>
 
-          {/* Right: Timer & Exit Action */}
-          <div className="flex items-center gap-3 shrink-0">
+          {/* Right: Admin Switch Tabs + Timer + Exit Action */}
+          <div className="flex items-center gap-2 sm:gap-3 shrink-0 flex-wrap">
+            {isOnVendorPanel && (
+              <AdminPortalSwitchTabs activePortal="vendor" variant="banner" />
+            )}
+
             <div
               className={`flex items-center gap-1.5 px-2.5 py-1 rounded-lg font-mono font-bold text-xs ${
                 isLowTime
@@ -127,7 +134,7 @@ export default function VendorWorkspaceBanner() {
               title="Session expires after 60 min or 20 min idle"
             >
               <Clock size={13} className={isLowTime ? "text-rose-400" : "text-amber-300"} />
-              <span>Time left: {formatTimer(timeLeft)}</span>
+              <span>{formatTimer(timeLeft)}</span>
             </div>
 
             <Link
@@ -135,13 +142,6 @@ export default function VendorWorkspaceBanner() {
               className="hidden md:inline-flex items-center gap-1 px-2.5 py-1 rounded-lg bg-white/10 hover:bg-white/20 text-white font-bold text-[11px] transition-colors border border-white/20"
             >
               + Quick Add Item
-            </Link>
-
-            <Link
-              href="/admin/workspace-activity"
-              className="hidden lg:inline-flex items-center gap-1 px-2.5 py-1 rounded-lg bg-black/20 hover:bg-black/40 text-amber-200 font-bold text-[11px] transition-colors"
-            >
-              Activity Log
             </Link>
 
             <button

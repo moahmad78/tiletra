@@ -23,6 +23,8 @@ import {
   TrendingUp,
   ShoppingCart,
   Users,
+  Zap,
+  CheckCheck,
 } from "lucide-react";
 
 interface CampaignItem {
@@ -60,7 +62,7 @@ interface StorePushSettings {
 }
 
 export default function AdminCampaignsPage() {
-  const [activeTab, setActiveTab] = useState<"campaigns" | "results">("campaigns");
+  const [activeTab, setActiveTab] = useState<"campaigns" | "results" | "automations">("campaigns");
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
@@ -72,6 +74,34 @@ export default function AdminCampaignsPage() {
     quietHoursStart: "21:00",
     quietHoursEnd: "08:00",
   });
+
+  // Product Automations State (Phase 2)
+  const [automationSettings, setAutomationSettings] = useState<{
+    backInStockEnabled: boolean;
+    priceDropEnabled: boolean;
+    automationTemplates: {
+      BACK_IN_STOCK: { enabled: boolean; title: string; body: string };
+      WISHLIST_PRICE_DROP: { enabled: boolean; title: string; body: string };
+    };
+  }>({
+    backInStockEnabled: true,
+    priceDropEnabled: true,
+    automationTemplates: {
+      BACK_IN_STOCK: {
+        enabled: true,
+        title: "Back in Stock: {{productName}}! 📦",
+        body: "{{productName}} is back in stock. Order now before stock runs out!",
+      },
+      WISHLIST_PRICE_DROP: {
+        enabled: true,
+        title: "Price Drop on {{productName}}! 📉",
+        body: "Good news! Price dropped from ₹{{oldPrice}} to ₹{{newPrice}}. Grab it today!",
+      },
+    },
+  });
+  const [loadingAutomations, setLoadingAutomations] = useState(false);
+  const [savingAutomations, setSavingAutomations] = useState(false);
+  const [automationSavedMsg, setAutomationSavedMsg] = useState(false);
 
   // Modal states
   const [showCreateModal, setShowCreateModal] = useState(false);
@@ -151,6 +181,36 @@ export default function AdminCampaignsPage() {
     }
   }, []);
 
+  const fetchAutomationSettings = useCallback(async () => {
+    try {
+      setLoadingAutomations(true);
+      const res = await fetch("/api/admin/automation-settings");
+      const data = await res.json();
+      if (data.success && data.settings) {
+        setAutomationSettings({
+          backInStockEnabled: data.settings.backInStockEnabled ?? true,
+          priceDropEnabled: data.settings.priceDropEnabled ?? true,
+          automationTemplates: {
+            BACK_IN_STOCK: data.settings.automationTemplates?.BACK_IN_STOCK || {
+              enabled: true,
+              title: "Back in Stock: {{productName}}! 📦",
+              body: "{{productName}} is back in stock. Order now before stock runs out!",
+            },
+            WISHLIST_PRICE_DROP: data.settings.automationTemplates?.WISHLIST_PRICE_DROP || {
+              enabled: true,
+              title: "Price Drop on {{productName}}! 📉",
+              body: "Good news! Price dropped from ₹{{oldPrice}} to ₹{{newPrice}}. Grab it today!",
+            },
+          },
+        });
+      }
+    } catch (err) {
+      console.error("Failed to load automation settings:", err);
+    } finally {
+      setLoadingAutomations(false);
+    }
+  }, []);
+
   useEffect(() => {
     fetchCampaigns();
   }, [fetchCampaigns]);
@@ -158,8 +218,10 @@ export default function AdminCampaignsPage() {
   useEffect(() => {
     if (activeTab === "results") {
       fetchResults();
+    } else if (activeTab === "automations") {
+      fetchAutomationSettings();
     }
-  }, [activeTab, fetchResults]);
+  }, [activeTab, fetchResults, fetchAutomationSettings]);
 
   // Update audience preview when audience inputs change
   useEffect(() => {
@@ -393,7 +455,7 @@ export default function AdminCampaignsPage() {
       if (data.success) {
         setUserSearchResults(data.users || []);
       }
-    } catch {}
+    } catch { }
   };
 
   // Send Direct Message to User (Rule R-14)
@@ -442,6 +504,30 @@ export default function AdminCampaignsPage() {
       }
     } catch (err: any) {
       alert("Error cancelling campaign: " + err?.message);
+    }
+  };
+
+  // Save Product Automation Settings (Phase 2)
+  const handleSaveAutomationSettings = async () => {
+    try {
+      setSavingAutomations(true);
+      setAutomationSavedMsg(false);
+      const res = await fetch("/api/admin/automation-settings", {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(automationSettings),
+      });
+      const data = await res.json();
+      if (data.success) {
+        setAutomationSavedMsg(true);
+        setTimeout(() => setAutomationSavedMsg(false), 3500);
+      } else {
+        alert(data.error || "Failed to save automation settings");
+      }
+    } catch (err: any) {
+      alert("Error saving settings: " + (err?.message || "Unknown error"));
+    } finally {
+      setSavingAutomations(false);
     }
   };
 
@@ -510,18 +596,16 @@ export default function AdminCampaignsPage() {
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
         {/* Offers Pause Switch */}
         <div
-          className={`p-4 rounded-xl border transition-all ${
-            settings.offersPaused
-              ? "bg-amber-50 border-amber-200"
-              : "bg-white border-gray-200 shadow-xs"
-          }`}
+          className={`p-4 rounded-xl border transition-all ${settings.offersPaused
+            ? "bg-amber-50 border-amber-200"
+            : "bg-white border-gray-200 shadow-xs"
+            }`}
         >
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-3">
               <div
-                className={`w-10 h-10 rounded-lg flex items-center justify-center ${
-                  settings.offersPaused ? "bg-amber-100 text-amber-700" : "bg-blue-50 text-[#052a51]"
-                }`}
+                className={`w-10 h-10 rounded-lg flex items-center justify-center ${settings.offersPaused ? "bg-amber-100 text-amber-700" : "bg-blue-50 text-[#052a51]"
+                  }`}
               >
                 {settings.offersPaused ? <PauseCircle className="w-6 h-6" /> : <PlayCircle className="w-6 h-6" />}
               </div>
@@ -536,11 +620,10 @@ export default function AdminCampaignsPage() {
             </div>
             <button
               onClick={() => handleTogglePause("offers")}
-              className={`px-3 py-1.5 text-xs font-semibold rounded-lg border transition-all ${
-                settings.offersPaused
-                  ? "bg-amber-600 text-white border-transparent hover:bg-amber-700"
-                  : "bg-gray-100 text-gray-700 border-gray-300 hover:bg-gray-200"
-              }`}
+              className={`px-3 py-1.5 text-xs font-semibold rounded-lg border transition-all ${settings.offersPaused
+                ? "bg-amber-600 text-white border-transparent hover:bg-amber-700"
+                : "bg-gray-100 text-gray-700 border-gray-300 hover:bg-gray-200"
+                }`}
             >
               {settings.offersPaused ? "Resume Offers" : "Pause All Offers"}
             </button>
@@ -549,20 +632,18 @@ export default function AdminCampaignsPage() {
 
         {/* Cart Reminders Pause Switch */}
         <div
-          className={`p-4 rounded-xl border transition-all ${
-            settings.cartRemindersPaused
-              ? "bg-amber-50 border-amber-200"
-              : "bg-white border-gray-200 shadow-xs"
-          }`}
+          className={`p-4 rounded-xl border transition-all ${settings.cartRemindersPaused
+            ? "bg-amber-50 border-amber-200"
+            : "bg-white border-gray-200 shadow-xs"
+            }`}
         >
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-3">
               <div
-                className={`w-10 h-10 rounded-lg flex items-center justify-center ${
-                  settings.cartRemindersPaused
-                    ? "bg-amber-100 text-amber-700"
-                    : "bg-emerald-50 text-emerald-700"
-                }`}
+                className={`w-10 h-10 rounded-lg flex items-center justify-center ${settings.cartRemindersPaused
+                  ? "bg-amber-100 text-amber-700"
+                  : "bg-emerald-50 text-emerald-700"
+                  }`}
               >
                 {settings.cartRemindersPaused ? (
                   <PauseCircle className="w-6 h-6" />
@@ -581,11 +662,10 @@ export default function AdminCampaignsPage() {
             </div>
             <button
               onClick={() => handleTogglePause("cart_reminders")}
-              className={`px-3 py-1.5 text-xs font-semibold rounded-lg border transition-all ${
-                settings.cartRemindersPaused
-                  ? "bg-amber-600 text-white border-transparent hover:bg-amber-700"
-                  : "bg-gray-100 text-gray-700 border-gray-300 hover:bg-gray-200"
-              }`}
+              className={`px-3 py-1.5 text-xs font-semibold rounded-lg border transition-all ${settings.cartRemindersPaused
+                ? "bg-amber-600 text-white border-transparent hover:bg-amber-700"
+                : "bg-gray-100 text-gray-700 border-gray-300 hover:bg-gray-200"
+                }`}
             >
               {settings.cartRemindersPaused ? "Resume Cart Reminders" : "Pause Cart Reminders"}
             </button>
@@ -598,23 +678,31 @@ export default function AdminCampaignsPage() {
         <nav className="flex space-x-8">
           <button
             onClick={() => setActiveTab("campaigns")}
-            className={`py-3 px-1 border-b-2 font-medium text-sm transition-colors ${
-              activeTab === "campaigns"
-                ? "border-[#052a51] text-[#052a51]"
-                : "border-transparent text-gray-500 hover:text-gray-700"
-            }`}
+            className={`py-3 px-1 border-b-2 font-medium text-sm transition-colors cursor-pointer ${activeTab === "campaigns"
+              ? "border-[#052a51] text-[#052a51]"
+              : "border-transparent text-gray-500 hover:text-gray-700"
+              }`}
           >
             Campaigns ({campaigns.length})
           </button>
           <button
             onClick={() => setActiveTab("results")}
-            className={`py-3 px-1 border-b-2 font-medium text-sm transition-colors ${
-              activeTab === "results"
-                ? "border-[#052a51] text-[#052a51]"
-                : "border-transparent text-gray-500 hover:text-gray-700"
-            }`}
+            className={`py-3 px-1 border-b-2 font-medium text-sm transition-colors cursor-pointer ${activeTab === "results"
+              ? "border-[#052a51] text-[#052a51]"
+              : "border-transparent text-gray-500 hover:text-gray-700"
+              }`}
           >
-            Analytics & Delivery Results (T10)
+            Analytics & Delivery Results
+          </button>
+          <button
+            onClick={() => setActiveTab("automations")}
+            className={`py-3 px-1 border-b-2 font-medium text-sm transition-colors cursor-pointer flex items-center gap-1.5 ${activeTab === "automations"
+              ? "border-[#052a51] text-[#052a51]"
+              : "border-transparent text-gray-500 hover:text-gray-700"
+              }`}
+          >
+            <Zap className="w-4 h-4 text-amber-500" />
+            <span>Product Automations (Phase 2)</span>
           </button>
         </nav>
       </div>
@@ -698,8 +786,8 @@ export default function AdminCampaignsPage() {
                             {camp.platforms === "android"
                               ? "Android"
                               : camp.platforms === "ios"
-                              ? "iPhone"
-                              : "All Devices"}
+                                ? "iPhone"
+                                : "All Devices"}
                           </span>
                         </td>
 
@@ -711,17 +799,16 @@ export default function AdminCampaignsPage() {
 
                         <td className="px-6 py-4">
                           <span
-                            className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-semibold ${
-                              camp.status === "sent"
-                                ? "bg-emerald-100 text-emerald-800"
-                                : camp.status === "scheduled"
+                            className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-semibold ${camp.status === "sent"
+                              ? "bg-emerald-100 text-emerald-800"
+                              : camp.status === "scheduled"
                                 ? "bg-blue-100 text-blue-800"
                                 : camp.status === "sending"
-                                ? "bg-amber-100 text-amber-800"
-                                : camp.status === "cancelled"
-                                ? "bg-red-100 text-red-800"
-                                : "bg-gray-100 text-gray-800"
-                            }`}
+                                  ? "bg-amber-100 text-amber-800"
+                                  : camp.status === "cancelled"
+                                    ? "bg-red-100 text-red-800"
+                                    : "bg-gray-100 text-gray-800"
+                              }`}
                           >
                             {camp.status.toUpperCase()}
                           </span>
@@ -821,10 +908,10 @@ export default function AdminCampaignsPage() {
                     Open Rate:{" "}
                     {resultsData.platformTotals?.all?.sent > 0
                       ? (
-                          (resultsData.platformTotals.all.opened /
-                            resultsData.platformTotals.all.sent) *
-                          100
-                        ).toFixed(1)
+                        (resultsData.platformTotals.all.opened /
+                          resultsData.platformTotals.all.sent) *
+                        100
+                      ).toFixed(1)
                       : 0}
                     %
                   </div>
@@ -900,6 +987,398 @@ export default function AdminCampaignsPage() {
         </div>
       )}
 
+      {/* Tab 3: Product Automations (Phase 2) */}
+      {activeTab === "automations" && (
+        <div className="space-y-6">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 bg-gradient-to-r from-amber-50 to-orange-50 p-5 rounded-2xl border border-amber-200">
+            <div>
+              <div className="flex items-center gap-2">
+                <Zap className="w-5 h-5 text-amber-600" />
+                <h2 className="text-lg font-bold text-gray-900">Product Event Automations (Backend Triggers)</h2>
+                <span className="px-2 py-0.5 text-[10px] font-bold uppercase rounded-full bg-amber-100 text-amber-800 border border-amber-300">
+                  Zero App Release Required
+                </span>
+              </div>
+              <p className="text-xs text-gray-600 mt-1 max-w-2xl">
+                Automatically notify customers who wishlisted or carted a product when it comes back in stock or drops in price.
+                All notifications enforce Kolkata quiet hours (21:00 - 08:00 IST), daily push caps (max 2/day), and are debounced to at most once per 24 hours per product per user.
+              </p>
+            </div>
+            <div className="flex items-center gap-3">
+              {automationSavedMsg && (
+                <span className="text-xs font-semibold text-emerald-700 bg-emerald-100 px-3 py-1.5 rounded-lg flex items-center gap-1.5 animate-fade-in">
+                  <CheckCircle2 className="w-4 h-4 text-emerald-600" />
+                  Saved to database!
+                </span>
+              )}
+              <button
+                onClick={handleSaveAutomationSettings}
+                disabled={savingAutomations}
+                className="inline-flex items-center gap-2 px-4 py-2.5 text-xs font-bold text-white bg-[#052a51] rounded-xl hover:bg-[#07386c] transition-all shadow-xs cursor-pointer disabled:opacity-50"
+              >
+                {savingAutomations ? (
+                  <>
+                    <RotateCw className="w-4 h-4 animate-spin" />
+                    <span>Saving...</span>
+                  </>
+                ) : (
+                  <>
+                    <CheckCheck className="w-4 h-4" />
+                    <span>Save Automation Settings</span>
+                  </>
+                )}
+              </button>
+            </div>
+          </div>
+
+          {loadingAutomations ? (
+            <div className="p-12 text-center text-gray-500 bg-white rounded-xl border border-gray-200">
+              <RotateCw className="w-8 h-8 animate-spin mx-auto text-gray-400 mb-2" />
+              <p className="text-sm font-semibold">Loading automation rules & templates...</p>
+            </div>
+          ) : (
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+              {/* Back in Stock Automation */}
+              <div className="bg-white rounded-2xl shadow-xs border border-gray-200 p-6 space-y-5">
+                <div className="flex items-center justify-between border-b pb-4">
+                  <div className="flex items-center gap-2.5">
+                    <div className="w-9 h-9 rounded-xl bg-emerald-50 border border-emerald-200 flex items-center justify-center text-emerald-700 font-bold">
+                      📦
+                    </div>
+                    <div>
+                      <h3 className="text-sm font-bold text-gray-900">Back In Stock Alert</h3>
+                      <p className="text-xs text-gray-500">Triggered when product inventory changes from 0 to &gt;0</p>
+                    </div>
+                  </div>
+                  <label className="relative inline-flex items-center cursor-pointer">
+                    <input
+                      type="checkbox"
+                      checked={automationSettings.backInStockEnabled && automationSettings.automationTemplates.BACK_IN_STOCK.enabled}
+                      onChange={(e) => {
+                        const val = e.target.checked;
+                        setAutomationSettings({
+                          ...automationSettings,
+                          backInStockEnabled: val,
+                          automationTemplates: {
+                            ...automationSettings.automationTemplates,
+                            BACK_IN_STOCK: {
+                              ...automationSettings.automationTemplates.BACK_IN_STOCK,
+                              enabled: val,
+                            },
+                          },
+                        });
+                      }}
+                      className="sr-only peer"
+                    />
+                    <div className="w-11 h-6 bg-gray-200 peer-focus:outline-hidden rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-emerald-600"></div>
+                  </label>
+                </div>
+
+                <div className="space-y-4">
+                  <div>
+                    <div className="flex items-center justify-between mb-1">
+                      <label className="text-xs font-semibold text-gray-700">Notification Title Template</label>
+                      <span className="text-[10px] text-gray-400 font-mono">Placeholder enabled</span>
+                    </div>
+                    <input
+                      type="text"
+                      value={automationSettings.automationTemplates.BACK_IN_STOCK.title}
+                      onChange={(e) =>
+                        setAutomationSettings({
+                          ...automationSettings,
+                          automationTemplates: {
+                            ...automationSettings.automationTemplates,
+                            BACK_IN_STOCK: {
+                              ...automationSettings.automationTemplates.BACK_IN_STOCK,
+                              title: e.target.value,
+                            },
+                          },
+                        })
+                      }
+                      className="w-full text-xs px-3 py-2 border rounded-lg focus:ring-2 focus:ring-[#052a51] focus:border-transparent font-medium"
+                    />
+                  </div>
+
+                  <div>
+                    <div className="flex items-center justify-between mb-1">
+                      <label className="text-xs font-semibold text-gray-700">Notification Body Template</label>
+                      <span className="text-[10px] text-gray-400 font-mono">Supports variables</span>
+                    </div>
+                    <textarea
+                      rows={3}
+                      value={automationSettings.automationTemplates.BACK_IN_STOCK.body}
+                      onChange={(e) =>
+                        setAutomationSettings({
+                          ...automationSettings,
+                          automationTemplates: {
+                            ...automationSettings.automationTemplates,
+                            BACK_IN_STOCK: {
+                              ...automationSettings.automationTemplates.BACK_IN_STOCK,
+                              body: e.target.value,
+                            },
+                          },
+                        })
+                      }
+                      className="w-full text-xs px-3 py-2 border rounded-lg focus:ring-2 focus:ring-[#052a51] focus:border-transparent"
+                    />
+                  </div>
+
+                  <div>
+                    <p className="text-[11px] font-semibold text-gray-500 mb-1.5">Available Placeholder Chips:</p>
+                    <div className="flex flex-wrap gap-1.5">
+                      {["{{productName}}", "{{oldPrice}}", "{{newPrice}}"].map((tag) => (
+                        <button
+                          key={tag}
+                          type="button"
+                          onClick={() => {
+                            setAutomationSettings({
+                              ...automationSettings,
+                              automationTemplates: {
+                                ...automationSettings.automationTemplates,
+                                BACK_IN_STOCK: {
+                                  ...automationSettings.automationTemplates.BACK_IN_STOCK,
+                                  body: automationSettings.automationTemplates.BACK_IN_STOCK.body + " " + tag,
+                                },
+                              },
+                            });
+                          }}
+                          className="px-2 py-0.5 text-[10px] font-mono bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-md border border-gray-300 transition-colors cursor-pointer"
+                        >
+                          + {tag}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+
+                  {/* Device Notification Preview */}
+                  <div className="pt-2 border-t">
+                    <p className="text-[11px] font-bold text-gray-600 mb-2 flex items-center gap-1.5">
+                      <Smartphone className="w-3.5 h-3.5 text-gray-500" />
+                      Live Android Lockscreen Preview
+                    </p>
+                    <div className="bg-[#2d3238] rounded-2xl p-3 text-white shadow-md border border-gray-700">
+                      <div className="flex items-center justify-between mb-1.5">
+                        <div className="flex items-center gap-1.5">
+                          <div className="w-4 h-4 rounded-full bg-[#f26522] flex items-center justify-center text-[9px] font-bold">
+                            📦
+                          </div>
+                          <span className="text-[11px] font-semibold text-gray-200">Intrihub</span>
+                          <span className="text-[9px] text-gray-400">• now</span>
+                        </div>
+                        <span className="text-[9px] bg-emerald-500/20 text-emerald-300 px-1.5 py-0.5 rounded-full font-mono">
+                          user_promo.mp3
+                        </span>
+                      </div>
+                      <div className="text-xs font-bold text-white">
+                        {automationSettings.automationTemplates.BACK_IN_STOCK.title.replace(
+                          "{{productName}}",
+                          "Ultratech Super Cement (50kg)"
+                        )}
+                      </div>
+                      <div className="text-[11px] text-gray-300 mt-0.5 leading-snug">
+                        {automationSettings.automationTemplates.BACK_IN_STOCK.body
+                          .replace(/\{\{productName\}\}/g, "Ultratech Super Cement (50kg)")
+                          .replace(/\{\{oldPrice\}\}/g, "420")
+                          .replace(/\{\{newPrice\}\}/g, "395")}
+                      </div>
+                      <div className="mt-2 pt-1.5 border-t border-gray-600/50 flex items-center justify-between text-[10px] text-gray-400 font-mono">
+                        <span>Target: intrihub://product/ultratech-super-cement</span>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              {/* Wishlist Price Drop Automation */}
+              <div className="bg-white rounded-2xl shadow-xs border border-gray-200 p-6 space-y-5">
+                <div className="flex items-center justify-between border-b pb-4">
+                  <div className="flex items-center gap-2.5">
+                    <div className="w-9 h-9 rounded-xl bg-blue-50 border border-blue-200 flex items-center justify-center text-blue-700 font-bold">
+                      📉
+                    </div>
+                    <div>
+                      <h3 className="text-sm font-bold text-gray-900">Price Drop Alert</h3>
+                      <p className="text-xs text-gray-500">Triggered when product price is updated to a lower value</p>
+                    </div>
+                  </div>
+                  <label className="relative inline-flex items-center cursor-pointer">
+                    <input
+                      type="checkbox"
+                      checked={automationSettings.priceDropEnabled && automationSettings.automationTemplates.WISHLIST_PRICE_DROP.enabled}
+                      onChange={(e) => {
+                        const val = e.target.checked;
+                        setAutomationSettings({
+                          ...automationSettings,
+                          priceDropEnabled: val,
+                          automationTemplates: {
+                            ...automationSettings.automationTemplates,
+                            WISHLIST_PRICE_DROP: {
+                              ...automationSettings.automationTemplates.WISHLIST_PRICE_DROP,
+                              enabled: val,
+                            },
+                          },
+                        });
+                      }}
+                      className="sr-only peer"
+                    />
+                    <div className="w-11 h-6 bg-gray-200 peer-focus:outline-hidden rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-blue-600"></div>
+                  </label>
+                </div>
+
+                <div className="space-y-4">
+                  <div>
+                    <div className="flex items-center justify-between mb-1">
+                      <label className="text-xs font-semibold text-gray-700">Notification Title Template</label>
+                      <span className="text-[10px] text-gray-400 font-mono">Placeholder enabled</span>
+                    </div>
+                    <input
+                      type="text"
+                      value={automationSettings.automationTemplates.WISHLIST_PRICE_DROP.title}
+                      onChange={(e) =>
+                        setAutomationSettings({
+                          ...automationSettings,
+                          automationTemplates: {
+                            ...automationSettings.automationTemplates,
+                            WISHLIST_PRICE_DROP: {
+                              ...automationSettings.automationTemplates.WISHLIST_PRICE_DROP,
+                              title: e.target.value,
+                            },
+                          },
+                        })
+                      }
+                      className="w-full text-xs px-3 py-2 border rounded-lg focus:ring-2 focus:ring-[#052a51] focus:border-transparent font-medium"
+                    />
+                  </div>
+
+                  <div>
+                    <div className="flex items-center justify-between mb-1">
+                      <label className="text-xs font-semibold text-gray-700">Notification Body Template</label>
+                      <span className="text-[10px] text-gray-400 font-mono">Supports variables</span>
+                    </div>
+                    <textarea
+                      rows={3}
+                      value={automationSettings.automationTemplates.WISHLIST_PRICE_DROP.body}
+                      onChange={(e) =>
+                        setAutomationSettings({
+                          ...automationSettings,
+                          automationTemplates: {
+                            ...automationSettings.automationTemplates,
+                            WISHLIST_PRICE_DROP: {
+                              ...automationSettings.automationTemplates.WISHLIST_PRICE_DROP,
+                              body: e.target.value,
+                            },
+                          },
+                        })
+                      }
+                      className="w-full text-xs px-3 py-2 border rounded-lg focus:ring-2 focus:ring-[#052a51] focus:border-transparent"
+                    />
+                  </div>
+
+                  <div>
+                    <p className="text-[11px] font-semibold text-gray-500 mb-1.5">Available Placeholder Chips:</p>
+                    <div className="flex flex-wrap gap-1.5">
+                      {["{{productName}}", "{{oldPrice}}", "{{newPrice}}", "{{discountPercent}}"].map((tag) => (
+                        <button
+                          key={tag}
+                          type="button"
+                          onClick={() => {
+                            setAutomationSettings({
+                              ...automationSettings,
+                              automationTemplates: {
+                                ...automationSettings.automationTemplates,
+                                WISHLIST_PRICE_DROP: {
+                                  ...automationSettings.automationTemplates.WISHLIST_PRICE_DROP,
+                                  body: automationSettings.automationTemplates.WISHLIST_PRICE_DROP.body + " " + tag,
+                                },
+                              },
+                            });
+                          }}
+                          className="px-2 py-0.5 text-[10px] font-mono bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-md border border-gray-300 transition-colors cursor-pointer"
+                        >
+                          + {tag}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+
+                  {/* Device Notification Preview */}
+                  <div className="pt-2 border-t">
+                    <p className="text-[11px] font-bold text-gray-600 mb-2 flex items-center gap-1.5">
+                      <Smartphone className="w-3.5 h-3.5 text-gray-500" />
+                      Live Android Lockscreen Preview
+                    </p>
+                    <div className="bg-[#2d3238] rounded-2xl p-3 text-white shadow-md border border-gray-700">
+                      <div className="flex items-center justify-between mb-1.5">
+                        <div className="flex items-center gap-1.5">
+                          <div className="w-4 h-4 rounded-full bg-[#f26522] flex items-center justify-center text-[9px] font-bold">
+                            📉
+                          </div>
+                          <span className="text-[11px] font-semibold text-gray-200">Intrihub</span>
+                          <span className="text-[9px] text-gray-400">• now</span>
+                        </div>
+                        <span className="text-[9px] bg-blue-500/20 text-blue-300 px-1.5 py-0.5 rounded-full font-mono">
+                          user_promo.mp3
+                        </span>
+                      </div>
+                      <div className="text-xs font-bold text-white">
+                        {automationSettings.automationTemplates.WISHLIST_PRICE_DROP.title.replace(
+                          "{{productName}}",
+                          "Asian Paints Royale 20L"
+                        )}
+                      </div>
+                      <div className="text-[11px] text-gray-300 mt-0.5 leading-snug">
+                        {automationSettings.automationTemplates.WISHLIST_PRICE_DROP.body
+                          .replace(/\{\{productName\}\}/g, "Asian Paints Royale 20L")
+                          .replace(/\{\{oldPrice\}\}/g, "5,400")
+                          .replace(/\{\{newPrice\}\}/g, "4,850")
+                          .replace(/\{\{discountPercent\}\}/g, "10")}
+                      </div>
+                      <div className="mt-2 pt-1.5 border-t border-gray-600/50 flex items-center justify-between text-[10px] text-gray-400 font-mono">
+                        <span>Target: intrihub://product/asian-paints-royale-20l</span>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* Policy & Safety Guardrails Info Banner */}
+          <div className="bg-gray-50 rounded-2xl border border-gray-200 p-5 space-y-3">
+            <h4 className="text-xs font-bold text-gray-900 uppercase tracking-wider flex items-center gap-1.5">
+              <CheckCircle2 className="w-4 h-4 text-emerald-600" />
+              Automated Safety & Anti-Spam Guardrails
+            </h4>
+            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4 text-xs">
+              <div className="bg-white p-3.5 rounded-xl border border-gray-200">
+                <p className="font-bold text-gray-800">24h Debounce</p>
+                <p className="text-gray-500 text-[11px] mt-0.5">
+                  A user will never receive more than one back-in-stock or price-drop alert for the same product within a 24-hour window.
+                </p>
+              </div>
+              <div className="bg-white p-3.5 rounded-xl border border-gray-200">
+                <p className="font-bold text-gray-800">Quiet Hours Lock</p>
+                <p className="text-gray-500 text-[11px] mt-0.5">
+                  Between 21:00 and 08:00 IST, promotional automated push notifications are suppressed so customers are never disturbed.
+                </p>
+              </div>
+              <div className="bg-white p-3.5 rounded-xl border border-gray-200">
+                <p className="font-bold text-gray-800">Max 2 Promo/Day Cap</p>
+                <p className="text-gray-500 text-[11px] mt-0.5">
+                  Users receive a maximum of 2 promotional notifications across all sources per calendar day.
+                </p>
+              </div>
+              <div className="bg-white p-3.5 rounded-xl border border-gray-200">
+                <p className="font-bold text-gray-800">Smart Deduplication</p>
+                <p className="text-gray-500 text-[11px] mt-0.5">
+                  If an item comes back in stock and drops in price in the same update, only the Back-in-Stock alert is sent.
+                </p>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* ── CREATE / EDIT CAMPAIGN MODAL ── */}
       {showCreateModal && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-xs">
@@ -910,8 +1389,8 @@ export default function AdminCampaignsPage() {
                   {editingCampaign && editingCampaign.status === "draft"
                     ? "Edit Campaign"
                     : editingCampaign
-                    ? "Duplicate Campaign"
-                    : "Create Push Campaign"}
+                      ? "Duplicate Campaign"
+                      : "Create Push Campaign"}
                 </h3>
                 <p className="text-xs text-gray-500">
                   Compose push message, configure target audience, and select device platform.
@@ -1024,11 +1503,10 @@ export default function AdminCampaignsPage() {
                         key={p.id}
                         type="button"
                         onClick={() => setFormPlatforms(p.id as any)}
-                        className={`flex items-center justify-center gap-2 py-2 px-3 rounded-lg border text-xs font-semibold transition-all ${
-                          formPlatforms === p.id
-                            ? "bg-[#052a51] text-white border-[#052a51]"
-                            : "bg-white text-gray-700 border-gray-300 hover:bg-gray-50"
-                        }`}
+                        className={`flex items-center justify-center gap-2 py-2 px-3 rounded-lg border text-xs font-semibold transition-all ${formPlatforms === p.id
+                          ? "bg-[#052a51] text-white border-[#052a51]"
+                          : "bg-white text-gray-700 border-gray-300 hover:bg-gray-50"
+                          }`}
                       >
                         <Icon className="w-4 h-4" />
                         {p.label}

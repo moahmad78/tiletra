@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef, useCallback } from "react";
 import {
   Modal,
   View,
@@ -34,18 +34,51 @@ interface Props {
 export default function NotificationPermissionsModal({ visible, onClose }: Props) {
   const [notifGranted, setNotifGranted] = useState<boolean | null>(null);
   const [testingAlarm, setTestingAlarm] = useState(false);
-  const { triggerAlert } = useOrderAlertStore();
+  const { triggerAlert, closeAlert, isOpen: alertModalOpen } = useOrderAlertStore();
+  const testTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const wasAlertOpenRef = useRef(false);
+
+  const stopTestSiren = useCallback(() => {
+    if (testTimeoutRef.current) {
+      clearTimeout(testTimeoutRef.current);
+      testTimeoutRef.current = null;
+    }
+    wasAlertOpenRef.current = false;
+    dismissOrderAlarm();
+    const activeOrderId = useOrderAlertStore.getState().alert?.orderId;
+    if (!activeOrderId || activeOrderId === "TEST-9999") {
+      closeAlert();
+    }
+    setTestingAlarm(false);
+  }, [closeAlert]);
 
   useEffect(() => {
     if (visible) {
       checkPermissions();
-    } else {
+    } else if (testingAlarm) {
+      stopTestSiren();
+    }
+  }, [visible, testingAlarm, stopTestSiren]);
+
+  useEffect(() => {
+    if (alertModalOpen) {
+      wasAlertOpenRef.current = true;
+    } else if (wasAlertOpenRef.current) {
+      wasAlertOpenRef.current = false;
       if (testingAlarm) {
-        dismissOrderAlarm();
-        setTestingAlarm(false);
+        stopTestSiren();
       }
     }
-  }, [visible]);
+  }, [alertModalOpen, testingAlarm, stopTestSiren]);
+
+  useEffect(() => {
+    return () => {
+      if (testTimeoutRef.current) {
+        clearTimeout(testTimeoutRef.current);
+        testTimeoutRef.current = null;
+      }
+    };
+  }, []);
 
   const checkPermissions = async () => {
     try {
@@ -78,34 +111,36 @@ export default function NotificationPermissionsModal({ visible, onClose }: Props
 
   const handleTestSiren = async () => {
     if (testingAlarm) {
-      dismissOrderAlarm();
-      setTestingAlarm(false);
+      stopTestSiren();
       return;
     }
 
-    setTestingAlarm(true);
-    // Play loud order alarm loop
-    playOrderAlarm();
+    if (testTimeoutRef.current) {
+      clearTimeout(testTimeoutRef.current);
+      testTimeoutRef.current = null;
+    }
 
-    // Trigger preview alert popup
+    // Trigger preview alert popup and loud alarm
     triggerAlert({
       orderId: "TEST-9999",
       customerName: "Siren Audio Test (10s)",
       totalAmount: 4999,
       itemsCount: 3,
       isAutoAccepted: false,
+      requiresManualApproval: true,
       warning: "Audio Siren Test — Accept to stop ring",
     });
+    setTestingAlarm(true);
+    playOrderAlarm();
 
     // Auto-stop after 10 seconds if not dismissed
-    setTimeout(() => {
-      dismissOrderAlarm();
-      setTestingAlarm(false);
+    testTimeoutRef.current = setTimeout(() => {
+      stopTestSiren();
     }, 10000);
   };
 
   return (
-    <Modal visible={visible} animationType="slide" transparent onRequestClose={onClose}>
+    <Modal visible={visible && !alertModalOpen} animationType="slide" transparent onRequestClose={onClose}>
       <View style={styles.backdrop}>
         <View style={styles.sheetContainer}>
           {/* Header */}

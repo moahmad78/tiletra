@@ -131,7 +131,7 @@ export async function upsertCustomerUser(data: {
 
 export async function updateUserProfile(
   userId: string,
-  data: { name?: string | null; email?: string | null; avatar?: string | null }
+  data: { name?: string | null; email?: string | null; avatar?: string | null; birthday?: string | Date | null }
 ) {
   try {
     const cleanEmail = data.email?.trim().toLowerCase() || undefined;
@@ -164,6 +164,7 @@ export async function updateUserProfile(
     }
 
     const cleanName = data.name !== undefined ? (data.name?.trim() || null) : undefined;
+    const cleanBirthday = data.birthday !== undefined ? (data.birthday ? new Date(data.birthday) : null) : undefined;
 
     let updated;
     if (userToUpdate) {
@@ -173,6 +174,7 @@ export async function updateUserProfile(
           name: cleanName !== undefined ? cleanName : undefined,
           email: cleanEmail || undefined,
           avatar: data.avatar !== undefined ? data.avatar : undefined,
+          birthday: cleanBirthday,
         },
       });
     } else if (cleanEmail) {
@@ -183,12 +185,14 @@ export async function updateUserProfile(
         update: {
           name: cleanName !== undefined ? cleanName : undefined,
           avatar: data.avatar !== undefined ? data.avatar : undefined,
+          birthday: cleanBirthday,
         },
         create: {
           email: cleanEmail,
           phone: syntheticPhone,
           name: cleanName || cleanEmail.split("@")[0],
           avatar: data.avatar || null,
+          birthday: cleanBirthday || null,
           role: "customer",
           emailVerified: true,
           authProvider: "email",
@@ -209,6 +213,7 @@ export async function updateUserProfile(
         email: updated.email,
         avatar: updated.avatar,
         phone: updated.phone,
+        birthday: updated.birthday ? updated.birthday.toISOString() : null,
       },
     };
   } catch (error: any) {

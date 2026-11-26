@@ -52,7 +52,7 @@ export function captureMailError(
     const globalSentry = (globalThis as any).Sentry;
     if (globalSentry && typeof globalSentry.captureException === "function") {
       globalSentry.captureException(errorObj, {
-        tags: { service: "titan-smtp", event: context.event },
+        tags: { service: "smtp", event: context.event },
         extra: {
           host: context.host,
           port: context.port,
@@ -75,7 +75,7 @@ export function captureMailError(
         const sentry = req ? req(sentryPkgName) : null;
         if (sentry && typeof sentry.captureException === "function") {
           sentry.captureException(errorObj, {
-            tags: { service: "titan-smtp", event: context.event },
+            tags: { service: "smtp", event: context.event },
             extra: {
               host: context.host,
               port: context.port,
@@ -97,33 +97,99 @@ export function captureMailError(
   }
 }
 
+export interface SmtpCandidate {
+  host: string;
+  port: number;
+}
+
 /**
- * Creates and returns configured Nodemailer SMTP transporter for Titan Mail.
+ * Builds an ordered, deduplicated list of SMTP endpoints to attempt,
+ * covering implicit TLS (465), STARTTLS (587), and alternate GoDaddy/Titan relays.
+ */
+export function getSmtpCandidates(primaryHost: string, primaryPort: number): SmtpCandidate[] {
+  const cleanHost = primaryHost.trim();
+  const normalizedPort = Number.isFinite(primaryPort) && primaryPort > 0 ? primaryPort : 465;
+  const altPort = normalizedPort === 465 ? 587 : 465;
+
+  const raw: SmtpCandidate[] = [
+    { host: cleanHost, port: normalizedPort },
+    { host: cleanHost, port: altPort },
+  ];
+
+  if (cleanHost.includes("titan")) {
+    raw.push(
+      { host: "smtpout.secureserver.net", port: 465 },
+      { host: "smtpout.secureserver.net", port: 587 },
+      { host: "smtpout.asia.secureserver.net", port: 465 },
+      { host: "smtpout.europe.secureserver.net", port: 587 }
+    );
+  } else {
+    raw.push(
+      { host: "smtpout.secureserver.net", port: 465 },
+      { host: "smtpout.secureserver.net", port: 587 },
+      { host: "smtpout.asia.secureserver.net", port: 465 },
+      { host: "smtpout.europe.secureserver.net", port: 587 },
+      { host: "smtp.titan.email", port: 465 },
+      { host: "smtp.titan.email", port: 587 }
+    );
+  }
+
+  const seen = new Set<string>();
+  return raw.filter((candidate) => {
+    const key = `${candidate.host.toLowerCase()}:${candidate.port}`;
+    if (!candidate.host || seen.has(key)) return false;
+    seen.add(key);
+    return true;
+  });
+}
+
+function getSmtpAuthGroup(host: string): string {
+  const lower = host.toLowerCase();
+  if (lower.endsWith("secureserver.net")) return "secureserver.net";
+  if (lower.endsWith("titan.email")) return "titan.email";
+  return lower;
+}
+
+function isSmtpAuthError(err: unknown): boolean {
+  if (!err || typeof err !== "object") return false;
+  const e = err as { code?: string; responseCode?: number; message?: string; response?: string };
+  if (e.code === "EAUTH" || e.responseCode === 535) return true;
+  const text = `${e.message || ""} ${e.response || ""}`;
+  return /\b535\b|invalid login|authentication failed/i.test(text);
+}
+
+/**
+ * Creates and returns configured Nodemailer SMTP transporter.
  */
 export function getMailTransporter(overrideHost?: string, overridePort?: number) {
-  const defaultHost = "smtp.titan.email";
+  const defaultHost = "smtpout.secureserver.net";
   const host = overrideHost || getSanitizedEnv("SMTP_HOST", getSanitizedEnv("EMAIL_SERVER_HOST", defaultHost));
   const portStr = overridePort ? String(overridePort) : getSanitizedEnv("SMTP_PORT", getSanitizedEnv("EMAIL_SERVER_PORT", "465"));
-  const port = parseInt(portStr, 10);
+  const port = parseInt(portStr, 10) || 465;
   const user = getSanitizedEnv("SMTP_USER", getSanitizedEnv("EMAIL_SERVER_USER", "info@intrihub.com"));
   const pass = getSanitizedEnv(
     "SMTP_PASS",
     getSanitizedEnv("SMTP_PASSWORD", getSanitizedEnv("EMAIL_SERVER_PASSWORD"))
   );
-  const isSecure = port === 465 || process.env.SMTP_SECURE === "true";
+  const isSecure = overridePort !== undefined ? overridePort === 465 : port === 465 || process.env.SMTP_SECURE === "true";
 
   return {
     transporter: nodemailer.createTransport({
       host,
       port,
       secure: isSecure,
+      requireTLS: !isSecure && port === 587,
       auth: {
         user,
         pass,
       },
+      tls: {
+        minVersion: "TLSv1.2",
+      },
       connectionTimeout: 10000,
       greetingTimeout: 10000,
-      socketTimeout: 10000,
+      socketTimeout: 15000,
+      dnsTimeout: 5000,
     }),
     host,
     port,
@@ -136,14 +202,13 @@ export function getMailTransporter(overrideHost?: string, overridePort?: number)
 let verifyPromise: Promise<boolean> | null = null;
 
 /**
- * Runs transporter.verify() at startup.
+ * Runs transporter.verify() at startup across primary and fallback SMTP endpoints.
  * Logs host, port, user and connection status without exposing secrets.
- * Dispatches to Sentry if verification fails.
  */
 export function verifyTransporterStartup(): Promise<boolean> {
   if (verifyPromise) return verifyPromise;
 
-  const { transporter, host, port, user, configured } = getMailTransporter();
+  const { host, port, user, configured } = getMailTransporter();
   if (!configured) {
     console.log(
       `[email] startup_verify: skipped (SMTP credentials incomplete: host=${host} user=${user} pass=${configured ? "configured" : "missing"})`
@@ -152,49 +217,57 @@ export function verifyTransporterStartup(): Promise<boolean> {
     return verifyPromise;
   }
 
-  verifyPromise = new Promise<boolean>((resolve) => {
-    transporter.verify(async (error, success) => {
-      if (error) {
-        const errorMsg = error.message || "SMTP verification failed";
-        console.warn(`[email] startup_verify: fail host=${host}:${port} user=${user} error=${errorMsg}`);
+  verifyPromise = (async () => {
+    const candidates = getSmtpCandidates(host, port);
+    const authFailedGroups = new Set<string>();
+    let lastError: unknown = null;
 
-        // If primary host failed, try alternate fallback host
-        const fallbackHost = host.includes("titan") ? "smtpout.secureserver.net" : "smtp.titan.email";
-        try {
-          const fallback = getMailTransporter(fallbackHost, 465);
-          await fallback.transporter.verify();
-          console.log(`[email] startup_verify: fallback_success host=${fallbackHost}:465 user=${user} ready=true`);
-          resolve(true);
-          return;
-        } catch {
-          // Both failed
-        }
+    for (let i = 0; i < candidates.length; i++) {
+      const candidate = candidates[i];
+      const authGroup = getSmtpAuthGroup(candidate.host);
+      if (authFailedGroups.has(authGroup)) continue;
 
-        captureMailError(error, {
-          event: "startup_verify",
-          host,
-          port,
-          user,
-          errorDetails: errorMsg,
-        });
-        resolve(false);
-      } else {
-        console.log(`[email] startup_verify: success host=${host}:${port} user=${user} ready=${Boolean(success)}`);
-        resolve(true);
+      try {
+        const { transporter } = getMailTransporter(candidate.host, candidate.port);
+        const success = await transporter.verify();
+        const label = i === 0 ? "success" : "fallback_success";
+        console.log(
+          `[email] startup_verify: ${label} host=${candidate.host}:${candidate.port} user=${user} ready=${Boolean(success)}`
+        );
+        return true;
+      } catch (err) {
+        lastError = err;
+        const errorMsg = (err as { message?: string })?.message || "SMTP verification failed";
+        if (isSmtpAuthError(err)) authFailedGroups.add(authGroup);
+        console.warn(`[email] startup_verify: fail host=${candidate.host}:${candidate.port} user=${user} error=${errorMsg}`);
       }
+    }
+
+    const lastMsg = (lastError as { message?: string })?.message || "All SMTP candidates failed verification";
+    captureMailError(lastError, {
+      event: "startup_verify",
+      host,
+      port,
+      user,
+      errorDetails: lastMsg,
     });
-  });
+    return false;
+  })();
 
   return verifyPromise;
 }
 
-// Auto-trigger verify once when module is loaded in Node.js server environment (non-browser, non-test)
-if (typeof window === "undefined" && process.env.NODE_ENV !== "test") {
+// Auto-trigger verify once when module is loaded in Node.js server runtime (skip build & test)
+if (
+  typeof window === "undefined" &&
+  process.env.NODE_ENV !== "test" &&
+  process.env.NEXT_PHASE !== "phase-production-build"
+) {
   verifyTransporterStartup().catch(() => {});
 }
 
 /**
- * Universal Titan Mail SMTP Email Dispatcher with auto-fallback
+ * Universal SMTP Email Dispatcher with multi-port & relay auto-fallback
  */
 export async function sendEmail({
   to,
@@ -216,19 +289,14 @@ export async function sendEmail({
   const primaryConfig = getMailTransporter();
 
   if (primaryConfig.configured) {
-    const candidateHosts: Array<{ host: string; port: number }> = [
-      { host: primaryConfig.host, port: primaryConfig.port },
-    ];
-    // Seamless fallback between Titan Mail and GoDaddy Secureserver
-    if (primaryConfig.host.includes("titan")) {
-      candidateHosts.push({ host: "smtpout.secureserver.net", port: 465 });
-    } else {
-      candidateHosts.push({ host: "smtp.titan.email", port: 465 });
-    }
-
+    const candidateHosts = getSmtpCandidates(primaryConfig.host, primaryConfig.port);
+    const authFailedGroups = new Set<string>();
     let lastErrorReason = "";
 
     for (const candidate of candidateHosts) {
+      const authGroup = getSmtpAuthGroup(candidate.host);
+      if (authFailedGroups.has(authGroup)) continue;
+
       try {
         console.log(`[email] provider=smtp status=attempt host=${candidate.host}:${candidate.port} to=${maskEmail(cleanTo)}`);
         const { transporter } = getMailTransporter(candidate.host, candidate.port);
@@ -242,12 +310,13 @@ export async function sendEmail({
           text: plainTextBody,
         });
 
-        console.log(`[email] provider=smtp status=ok host=${candidate.host} messageId=${info?.messageId || "ok"}`);
+        console.log(`[email] provider=smtp status=ok host=${candidate.host}:${candidate.port} messageId=${info?.messageId || "ok"}`);
         return { success: true, provider: "smtp", messageId: info?.messageId };
       } catch (smtpErr: unknown) {
         const err = smtpErr as { name?: string; message?: string } | null;
         lastErrorReason = `${err?.name || "SMTPError"}: ${err?.message || "Connection failed"}`;
-        console.warn(`[email] provider=smtp host=${candidate.host} status=fail reason=${lastErrorReason}`);
+        if (isSmtpAuthError(smtpErr)) authFailedGroups.add(authGroup);
+        console.warn(`[email] provider=smtp host=${candidate.host}:${candidate.port} status=fail reason=${lastErrorReason}`);
       }
     }
 

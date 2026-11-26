@@ -1163,8 +1163,20 @@ export async function bulkCreateProducts(inputs: CreateProductInput[]) {
 
 export async function updateProduct(id: string, input: Partial<CreateProductInput>) {
   try {
-    const existing = await prisma.product.findUnique({ where: { id } });
+    const existing = await prisma.product.findUnique({
+      where: { id },
+      include: { variants: true },
+    });
     if (!existing) return { success: false, error: "Product not found" };
+
+    const prevInStock = Boolean(
+      existing.inStock &&
+        (existing.variants?.length ? existing.variants.some((v) => v.stockBoxes > 0 && v.inStock && v.active) : true)
+    );
+    const prevPrices = (existing.variants || [])
+      .map((v) => v.pricePerBox || v.price || 0)
+      .filter((p) => p > 0);
+    const prevMinPrice = prevPrices.length > 0 ? Math.min(...prevPrices) : (existing.pricePerSqft || 0);
 
     const { resolveVendorContext } = await import("@/lib/vendor-workspace-auth");
     let workspaceContext = await resolveVendorContext();
@@ -1496,6 +1508,33 @@ export async function updateProduct(id: string, input: Partial<CreateProductInpu
       } catch (approvalNotifErr) {
         console.warn("[products] Approval push error:", approvalNotifErr);
       }
+    }
+
+    // Phase 2 Automation: Back in Stock / Price Drop trigger for wishlisted & carted users
+    try {
+      const newInStock = Boolean(
+        updated.inStock &&
+          (updated.variants?.length ? updated.variants.some((v) => v.stockBoxes > 0 && v.inStock && v.active) : true)
+      );
+      const newPrices = (updated.variants || [])
+        .map((v) => v.pricePerBox || v.price || 0)
+        .filter((p) => p > 0);
+      const newMinPrice = newPrices.length > 0 ? Math.min(...newPrices) : (updated.pricePerSqft || 0);
+
+      const { checkAndDispatchProductAutomations } = await import("@/lib/product-automation-triggers");
+      checkAndDispatchProductAutomations({
+        productId: updated.id,
+        productName: updated.name,
+        productSlug: updated.slug,
+        productImage: updated.images?.[0] || null,
+        vendorId: updated.vendorId,
+        previousInStock: prevInStock,
+        previousPrice: prevMinPrice,
+        newInStock,
+        newPrice: newMinPrice,
+      }).catch((triggerErr) => console.error("[AutomationTrigger updateProduct error]:", triggerErr));
+    } catch (autoErr) {
+      console.warn("[products] Error initiating product automations:", autoErr);
     }
 
     return { success: true, product: formatProduct(updated) };
@@ -2174,6 +2213,15 @@ export async function quickUpdateProductRatesAndStock(input: QuickUpdateRatesAnd
     });
     if (!product) return { success: false, error: "Product not found" };
 
+    const prevInStock = Boolean(
+      product.inStock &&
+        (product.variants?.length ? product.variants.some((v) => v.stockBoxes > 0 && v.inStock && v.active) : true)
+    );
+    const prevPrices = (product.variants || [])
+      .map((v) => v.pricePerBox || v.price || 0)
+      .filter((p) => p > 0);
+    const prevMinPrice = prevPrices.length > 0 ? Math.min(...prevPrices) : (product.pricePerSqft || 0);
+
     const existingSpecs = (product.specs as Record<string, any>) || {};
     const newSpecs = {
       ...existingSpecs,
@@ -2263,6 +2311,39 @@ export async function quickUpdateProductRatesAndStock(input: QuickUpdateRatesAnd
       where: { id: productId },
       data: productUpdateData,
     });
+
+    // Phase 2 Automation Trigger: Back in Stock / Price Drop for wishlisted & carted users
+    try {
+      const updatedFull = await prisma.product.findUnique({
+        where: { id: productId },
+        include: { variants: true },
+      });
+      if (updatedFull) {
+        const newInStock = Boolean(
+          updatedFull.inStock &&
+            (updatedFull.variants?.length ? updatedFull.variants.some((v) => v.stockBoxes > 0 && v.inStock && v.active) : true)
+        );
+        const newPrices = (updatedFull.variants || [])
+          .map((v) => v.pricePerBox || v.price || 0)
+          .filter((p) => p > 0);
+        const newMinPrice = newPrices.length > 0 ? Math.min(...newPrices) : (updatedFull.pricePerSqft || 0);
+
+        const { checkAndDispatchProductAutomations } = await import("@/lib/product-automation-triggers");
+        checkAndDispatchProductAutomations({
+          productId: updatedFull.id,
+          productName: updatedFull.name,
+          productSlug: updatedFull.slug,
+          productImage: updatedFull.images?.[0] || null,
+          vendorId: updatedFull.vendorId,
+          previousInStock: prevInStock,
+          previousPrice: prevMinPrice,
+          newInStock,
+          newPrice: newMinPrice,
+        }).catch((triggerErr) => console.error("[AutomationTrigger quickUpdate error]:", triggerErr));
+      }
+    } catch (autoErr) {
+      console.warn("[products] Error initiating quickUpdate product automations:", autoErr);
+    }
 
     safeRevalidate("/admin/products");
     safeRevalidate("/vendor/products");

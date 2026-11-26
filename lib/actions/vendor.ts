@@ -711,6 +711,37 @@ export async function toggleVendorProductStatus(
       });
     }
 
+    // Phase 2 Automation: If product was unpaused and is in stock, trigger Back in Stock
+    if (existing.status === "paused" && newStatus === "active") {
+      try {
+        const newInStock = Boolean(
+          updated.inStock &&
+            (updated.variants?.length ? updated.variants.some((v) => v.stockBoxes > 0 && v.inStock && v.active) : true)
+        );
+        const newPrices = (updated.variants || [])
+          .map((v) => v.pricePerBox || v.price || 0)
+          .filter((p) => p > 0);
+        const minPrice = newPrices.length > 0 ? Math.min(...newPrices) : (updated.pricePerSqft || 0);
+
+        if (newInStock) {
+          const { checkAndDispatchProductAutomations } = await import("@/lib/product-automation-triggers");
+          checkAndDispatchProductAutomations({
+            productId: updated.id,
+            productName: updated.name,
+            productSlug: updated.slug,
+            productImage: updated.images?.[0] || null,
+            vendorId: updated.vendorId,
+            previousInStock: false,
+            previousPrice: minPrice,
+            newInStock: true,
+            newPrice: minPrice,
+          }).catch((triggerErr) => console.error("[AutomationTrigger toggleStatus error]:", triggerErr));
+        }
+      } catch (autoErr) {
+        console.warn("[vendor] Error initiating unpause product automations:", autoErr);
+      }
+    }
+
     safeRevalidate("/shop");
     safeRevalidate(`/shop/${updated.categorySlug}`);
     safeRevalidate(`/product/${updated.slug}`);

@@ -591,6 +591,7 @@ export default function VendorProfileScreen() {
               totalAmount: 18450,
               itemsCount: 24,
               isAutoAccepted: true,
+              requiresManualApproval: false,
               warning: "Test Order Notification",
             });
           } catch (modalErr) {

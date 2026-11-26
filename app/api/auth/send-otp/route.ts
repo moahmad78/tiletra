@@ -19,7 +19,7 @@ export async function GET() {
   return NextResponse.json({
     status: "ok",
     endpoint: "/api/auth/send-otp",
-    provider: process.env.SMTP_HOST || process.env.EMAIL_SERVER_HOST || "smtp.titan.email",
+    provider: process.env.SMTP_HOST || process.env.EMAIL_SERVER_HOST || "smtpout.secureserver.net",
     port: process.env.SMTP_PORT || process.env.EMAIL_SERVER_PORT || "465",
     secure: true,
   });

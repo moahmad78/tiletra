@@ -4,6 +4,7 @@ import {
   getNotificationMeta,
 } from "./catalog";
 import { isKolkataQuietHours, getKolkataStartOfDay } from "@/lib/notification-service";
+import { toAbsoluteHttpsUrl } from "@/lib/push-notifications";
 import * as crypto from "crypto";
 
 const prisma = rawPrisma as any;
@@ -264,6 +265,8 @@ export async function notify(params: NotifyParams): Promise<NotifyResult> {
     ...data,
   };
 
+  const resolvedImageUrl = toAbsoluteHttpsUrl(params.imageUrl);
+
   const messages = validTokens.map((to) => ({
     to,
     title,
@@ -272,8 +275,11 @@ export async function notify(params: NotifyParams): Promise<NotifyResult> {
     priority: meta.priority || "high",
     channelId: meta.channelId || "default_v1",
     ttl,
-    data: standardPayload,
-    ...(params.imageUrl ? { image: params.imageUrl, mutableContent: true } : {}),
+    data: {
+      ...standardPayload,
+      ...(resolvedImageUrl ? { imageUrl: resolvedImageUrl } : {}),
+    },
+    ...(resolvedImageUrl ? { image: resolvedImageUrl, mutableContent: true } : {}),
   }));
 
   // 6. Dispatch to Expo Push API in batches of 100
@@ -379,3 +385,6 @@ async function logSkip(
     tokensCount: 0,
   };
 }
+
+export const sendNotification = notify;
+

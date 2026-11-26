@@ -14,6 +14,58 @@ export interface ExpoPushPayload {
   userId?: string;
 }
 
+/**
+ * Resolves any relative or insecure URL to an absolute public HTTPS URL for push payloads.
+ * Expo and mobile notification services reject relative URLs (e.g. /uploads/image.webp).
+ */
+export function toAbsoluteHttpsUrl(url: string | null | undefined): string | undefined {
+  if (!url || typeof url !== "string") return undefined;
+  const trimmed = url.trim();
+  if (!trimmed) return undefined;
+  if (trimmed.startsWith("https://")) return trimmed;
+  if (trimmed.startsWith("http://")) {
+    return trimmed.replace(/^http:\/\//, "https://");
+  }
+  const origin = (
+    process.env.NEXT_PUBLIC_APP_URL ||
+    process.env.NEXTAUTH_URL ||
+    "https://intrihub.com"
+  ).replace(/\/$/, "");
+  const path = trimmed.startsWith("/") ? trimmed : `/${trimmed}`;
+  const absolute = `${origin}${path}`;
+  return absolute.replace(/^http:\/\//, "https://");
+}
+
+/**
+ * Resolves a device token's application target ('user' vs 'business')
+ * using explicit appType if available, or reliably falling back to role and semver appVersion prefix.
+ * Customer app: 'user' (version 1.2.x, customer role)
+ * Vendor/Business app: 'business' (version 1.0.x, vendor/rider/admin role)
+ */
+export function resolveTokenAppType(tokenRecord: {
+  appType?: string | null;
+  role?: string | null;
+  appVersion?: string | null;
+}): "user" | "business" {
+  if (tokenRecord.appType === "business") return "business";
+  if (tokenRecord.appType === "user") return "user";
+  const version = (tokenRecord.appVersion || "").trim();
+  if (version.startsWith("1.0.")) return "business";
+  if (version.startsWith("1.2.")) return "user";
+  const role = (tokenRecord.role || "").toLowerCase();
+  if (role === "vendor" || role === "rider" || role === "admin" || role === "cpo") return "business";
+  return "user";
+}
+
+/**
+ * Checks if a token record is active and not stale (> 60 days since last seen).
+ */
+export function isTokenActive(tokenRecord: { lastSeenAt?: Date | string | null }): boolean {
+  if (!tokenRecord.lastSeenAt) return true;
+  const ageMs = Date.now() - new Date(tokenRecord.lastSeenAt).getTime();
+  return ageMs < 60 * 24 * 60 * 60 * 1000; // 60 days
+}
+
 // Queue for asynchronous Expo receipt checks
 interface PendingReceipt {
   ticketId: string;
@@ -119,6 +171,13 @@ export async function sendExpoPushNotification(payload: ExpoPushPayload): Promis
       return { success: false, error: "No valid Expo push tokens provided" };
     }
 
+    // Resolve image to absolute HTTPS URL if present in payload or data
+    const rawImage =
+      payload.image ||
+      (payload.data?.imageUrl as string | undefined) ||
+      (payload.data?.bannerUrl as string | undefined);
+    const resolvedImage = toAbsoluteHttpsUrl(rawImage);
+
     // Standardized payload format for every push
     const messages = validTokens.map((to) => ({
       to,
@@ -131,11 +190,12 @@ export async function sendExpoPushNotification(payload: ExpoPushPayload): Promis
         ...(payload.data || {}),
         type: payload.data?.type || "GENERAL",
         orderId: payload.data?.orderId,
+        ...(resolvedImage ? { imageUrl: resolvedImage } : {}),
       },
-      ...(payload.image ? { image: payload.image } : {}),
+      ...(resolvedImage ? { image: resolvedImage } : {}),
       ...(payload.mutableContent !== undefined
         ? { mutableContent: payload.mutableContent }
-        : payload.image
+        : resolvedImage
         ? { mutableContent: true }
         : {}),
     }));
@@ -244,30 +304,11 @@ export async function registerPushToken(params: {
       return { success: false, error: "Invalid Expo push token format" };
     }
 
-    // 1. Save directly into User table
-    try {
-      await (prisma as any).user.update({
-        where: { id: userId },
-        data: { pushToken: cleanToken },
-      });
-    } catch (userErr) {
-      console.warn("[Register Push Token] Could not update User.pushToken directly:", userErr);
-    }
-
-    // 2. Upsert into MobilePushToken table
-    try {
-      await (prisma as any).mobilePushToken.upsert({
-        where: { token: cleanToken },
-        update: { userId, platform, deviceId: deviceId || undefined, updatedAt: new Date() },
-        create: { userId, token: cleanToken, platform, deviceId: deviceId || undefined },
-      });
-    } catch (mobileErr) {
-      console.warn("[Register Push Token] MobilePushToken upsert warning:", mobileErr);
-    }
-
-    // 3. Upsert into dedicated DeviceToken table
+    // 1. DeviceToken is the single source of truth for all push tokens.
+    // Writes to legacy tables (MobilePushToken and User.pushToken) are stopped.
+    // Legacy tables remain strictly read-only for fallback / migration purposes.
     const appType =
-      params.appType || (role === "vendor" || role === "rider" ? "business" : "user");
+      params.appType || (role === "vendor" || role === "rider" || role === "admin" || role === "cpo" ? "business" : "user");
 
     const deviceToken = await prisma.deviceToken.upsert({
       where: { token: cleanToken },
@@ -338,7 +379,10 @@ export async function notifyAdminPush(params: {
 }) {
   try {
     const records = await prisma.deviceToken.findMany({
-      where: { role: { in: ["admin", "superadmin", "cpo"] } },
+      where: {
+        role: { in: ["admin", "superadmin", "cpo"] },
+        isActive: true,
+      },
       select: { token: true, userId: true },
     });
 
@@ -415,27 +459,41 @@ export async function notifyVendorPush(params: {
       }
     }
 
-    // 2. Fetch all registered tokens for vendor
-    const [deviceTokens, mobilePushTokens, userRecord] = await Promise.all([
-      prisma.deviceToken.findMany({
-        where: { userId: targetUserId, platform: { not: "ios_voip" } },
-        select: { token: true },
-      }),
-      (prisma as any).mobilePushToken.findMany({
-        where: { userId: targetUserId },
-        select: { token: true },
-      }),
-      (prisma as any).user.findUnique({
-        where: { id: targetUserId },
-        select: { pushToken: true },
-      }),
-    ]);
+    // 2. Fetch registered tokens for vendor (Primary: DeviceToken with appType: 'business' & active)
+    const deviceTokens = await prisma.deviceToken.findMany({
+      where: {
+        userId: targetUserId,
+        platform: { not: "ios_voip" },
+      },
+      select: { token: true, role: true, appVersion: true, lastSeenAt: true },
+    });
 
-    const rawTokens: string[] = [
-      ...(userRecord?.pushToken ? [userRecord.pushToken] : []),
-      ...deviceTokens.map((r: { token: string }) => r.token),
-      ...mobilePushTokens.map((r: { token: string }) => r.token),
-    ];
+    // Filter strictly for business appType and non-stale (<60 days)
+    const activeBusinessTokens = deviceTokens.filter((r: any) => {
+      const isBiz = resolveTokenAppType(r) === "business";
+      const active = isTokenActive(r);
+      return isBiz && active;
+    });
+
+    let rawTokens: string[] = activeBusinessTokens.map((r: { token: string }) => r.token);
+
+    // Fallback migration read: If no active business tokens found in DeviceToken, check legacy tables
+    if (rawTokens.length === 0) {
+      const [mobilePushTokens, userRecord] = await Promise.all([
+        (prisma as any).mobilePushToken.findMany({
+          where: { userId: targetUserId },
+          select: { token: true },
+        }),
+        (prisma as any).user.findUnique({
+          where: { id: targetUserId },
+          select: { pushToken: true },
+        }),
+      ]);
+      rawTokens = [
+        ...(userRecord?.pushToken ? [userRecord.pushToken] : []),
+        ...mobilePushTokens.map((r: { token: string }) => r.token),
+      ];
+    }
 
     const tokens = Array.from(new Set(rawTokens)).filter(
       (t) => typeof t === "string" && (t.startsWith("ExponentPushToken[") || t.startsWith("ExpoPushToken["))
@@ -521,26 +579,38 @@ export async function sendPushToUser(
   try {
     if (!userId) return;
 
-    const [deviceTokens, mobilePushTokens, userRecord] = await Promise.all([
-      prisma.deviceToken.findMany({
-        where: { userId },
-        select: { token: true },
-      }),
-      (prisma as any).mobilePushToken.findMany({
-        where: { userId },
-        select: { token: true },
-      }),
-      (prisma as any).user.findUnique({
-        where: { id: userId },
-        select: { pushToken: true },
-      }),
-    ]);
+    // 1. Fetch customer tokens (Primary: DeviceToken with appType: 'user' & active)
+    const deviceTokens = await prisma.deviceToken.findMany({
+      where: { userId },
+      select: { token: true, role: true, appVersion: true, lastSeenAt: true },
+    });
 
-    const rawTokens: string[] = [
-      ...(userRecord?.pushToken ? [userRecord.pushToken] : []),
-      ...deviceTokens.map((r: { token: string }) => r.token),
-      ...mobilePushTokens.map((r: { token: string }) => r.token),
-    ];
+    // Filter strictly for customer user appType and non-stale (<60 days)
+    const activeUserTokens = deviceTokens.filter((r: any) => {
+      const isUser = resolveTokenAppType(r) === "user";
+      const active = isTokenActive(r);
+      return isUser && active;
+    });
+
+    let rawTokens: string[] = activeUserTokens.map((r: { token: string }) => r.token);
+
+    // Fallback migration read: If no active user tokens found in DeviceToken, check legacy tables
+    if (rawTokens.length === 0) {
+      const [mobilePushTokens, userRecord] = await Promise.all([
+        (prisma as any).mobilePushToken.findMany({
+          where: { userId },
+          select: { token: true },
+        }),
+        (prisma as any).user.findUnique({
+          where: { id: userId },
+          select: { pushToken: true },
+        }),
+      ]);
+      rawTokens = [
+        ...(userRecord?.pushToken ? [userRecord.pushToken] : []),
+        ...mobilePushTokens.map((r: { token: string }) => r.token),
+      ];
+    }
 
     const tokens = Array.from(new Set(rawTokens)).filter(
       (t) => typeof t === "string" && (t.startsWith("ExponentPushToken[") || t.startsWith("ExpoPushToken["))
@@ -588,11 +658,88 @@ export async function sendPushToUser(
 }
 
 /**
+ * Multilingual order lifecycle push templates.
+ * Supports en (English), hi (Hindi), and kn (Kannada) with automatic English fallback.
+ */
+const ORDER_STATUS_I18N = {
+  CONFIRMED: {
+    en: {
+      title: "Order Auto-Confirmed ⚡",
+      getBody: (c: { orderId: string; totalFormatted: string; courierInfo: string; trackingInfo: string }) =>
+        `Order #${c.orderId}${c.totalFormatted} has been automatically confirmed and sent to fulfillment!`,
+    },
+    hi: {
+      title: "ऑर्डर कन्फर्म हो गया ⚡",
+      getBody: (c: { orderId: string; totalFormatted: string; courierInfo: string; trackingInfo: string }) =>
+        `ऑर्डर #${c.orderId}${c.totalFormatted} कन्फर्म हो गया है और तैयारी शुरू हो चुकी है!`,
+    },
+    kn: {
+      title: "ಆರ್ಡರ್ ದೃಢೀಕರಿಸಲಾಗಿದೆ ⚡",
+      getBody: (c: { orderId: string; totalFormatted: string; courierInfo: string; trackingInfo: string }) =>
+        `ಆರ್ಡರ್ #${c.orderId}${c.totalFormatted} ಯಶಸ್ವಿಯಾಗಿ ದೃಢೀಕರಿಸಲಾಗಿದೆ ಮತ್ತು ಪ್ರಕ್ರಿಯೆ ಆರಂಭವಾಗಿದೆ!`,
+    },
+  },
+  PACKED: {
+    en: {
+      title: "Order Packed 📦",
+      getBody: (c: { orderId: string; totalFormatted: string; courierInfo: string; trackingInfo: string }) =>
+        `Your order #${c.orderId} is packed and ready for courier pickup!`,
+    },
+    hi: {
+      title: "ऑर्डर पैक हो गया 📦",
+      getBody: (c: { orderId: string; totalFormatted: string; courierInfo: string; trackingInfo: string }) =>
+        `आपका ऑर्डर #${c.orderId} पैक हो चुका है और कूरियर पिकअप के लिए तैयार है!`,
+    },
+    kn: {
+      title: "ಆರ್ಡರ್ ಪ್ಯಾಕ್ ಮಾಡಲಾಗಿದೆ 📦",
+      getBody: (c: { orderId: string; totalFormatted: string; courierInfo: string; trackingInfo: string }) =>
+        `ನಿಮ್ಮ ಆರ್ಡರ್ #${c.orderId} ಪ್ಯಾಕ್ ಮಾಡಲಾಗಿದ್ದು, ಕೊರಿಯರ್ ಪಿಕಪ್‌ಗೆ ಸಿದ್ಧವಾಗಿದೆ!`,
+    },
+  },
+  DISPATCHED: {
+    en: {
+      title: "Out for Delivery 🚚",
+      getBody: (c: { orderId: string; totalFormatted: string; courierInfo: string; trackingInfo: string }) =>
+        `Order #${c.orderId} is on the way to your delivery address${c.courierInfo}${c.trackingInfo}.`,
+    },
+    hi: {
+      title: "डिलीवरी के लिए निकल चुका है 🚚",
+      getBody: (c: { orderId: string; totalFormatted: string; courierInfo: string; trackingInfo: string }) =>
+        `ऑर्डर #${c.orderId} आपके पते पर डिलीवरी के लिए रास्ते में है${c.courierInfo}${c.trackingInfo}।`,
+    },
+    kn: {
+      title: "ಡೆಲಿವರಿಗೆ ಹೊರಟಿದೆ 🚚",
+      getBody: (c: { orderId: string; totalFormatted: string; courierInfo: string; trackingInfo: string }) =>
+        `ಆರ್ಡರ್ #${c.orderId} ನಿಮ್ಮ ವಿಳಾಸಕ್ಕೆ ತಲುಪಿಸಲು ಹೊರಟಿದೆ${c.courierInfo}${c.trackingInfo}.`,
+    },
+  },
+  DELIVERED: {
+    en: {
+      title: "Order Delivered 🎉",
+      getBody: (c: { orderId: string; totalFormatted: string; courierInfo: string; trackingInfo: string }) =>
+        `Order #${c.orderId} has been successfully delivered. Thank you for choosing IntriHub!`,
+    },
+    hi: {
+      title: "ऑर्डर डिलीवर हो गया 🎉",
+      getBody: (c: { orderId: string; totalFormatted: string; courierInfo: string; trackingInfo: string }) =>
+        `ऑर्डर #${c.orderId} सफलतापूर्वक डिलीवर हो चुका है। IntriHub चुनने के लिए धन्यवाद!`,
+    },
+    kn: {
+      title: "ಆರ್ಡರ್ ಡೆಲಿವರಿ ಮಾಡಲಾಗಿದೆ 🎉",
+      getBody: (c: { orderId: string; totalFormatted: string; courierInfo: string; trackingInfo: string }) =>
+        `ಆರ್ಡರ್ #${c.orderId} ಯಶಸ್ವಿಯಾಗಿ ತಲುಪಿಸಲಾಗಿದೆ. IntriHub ಆಯ್ಕೆ ಮಾಡಿದ್ದಕ್ಕಾಗಿ ಧನ್ಯವಾದಗಳು!`,
+    },
+  },
+};
+
+/**
  * Flipkart/Zomato style Real-Time Status Push Notifications dispatched to Customer:
  * 1. "Order Auto-Confirmed"
  * 2. "Order Packed"
  * 3. "Out for Delivery"
  * 4. "Delivered"
+ *
+ * Localized dynamically using User.language (en / hi / kn) with English fallback.
  */
 export async function sendCustomerOrderStatusPush(
   userId: string | null | undefined,
@@ -607,33 +754,31 @@ export async function sendCustomerOrderStatusPush(
 ) {
   if (!userId) return;
 
-  const totalFormatted = extra?.total ? ` (₹${extra.total.toLocaleString("en-IN")})` : "";
-  let title = "";
-  let body = "";
-
-  switch (status) {
-    case "CONFIRMED":
-      title = "Order Auto-Confirmed ⚡";
-      body = `Order #${orderId}${totalFormatted} has been automatically confirmed and sent to fulfillment!`;
-      break;
-
-    case "PACKED":
-      title = "Order Packed 📦";
-      body = `Your order #${orderId} is packed and ready for courier pickup!`;
-      break;
-
-    case "DISPATCHED":
-      title = "Out for Delivery 🚚";
-      const courierInfo = extra?.courierName ? ` via ${extra.courierName}` : "";
-      const trackingInfo = extra?.trackingNumber ? ` (LR: ${extra.trackingNumber})` : "";
-      body = `Order #${orderId} is on the way to your delivery address${courierInfo}${trackingInfo}.`;
-      break;
-
-    case "DELIVERED":
-      title = "Order Delivered 🎉";
-      body = `Order #${orderId} has been successfully delivered. Thank you for choosing IntriHub!`;
-      break;
+  // 1. Fetch user language preference with English fallback
+  let userLang: "en" | "hi" | "kn" = "en";
+  try {
+    const user = await prisma.user.findUnique({
+      where: { id: userId },
+      select: { language: true },
+    });
+    const rawLang = (user?.language || "en").toLowerCase();
+    if (rawLang === "hi" || rawLang === "kn") {
+      userLang = rawLang;
+    }
+  } catch (err) {
+    console.warn("[sendCustomerOrderStatusPush] Could not read user language, defaulting to en:", err);
   }
+
+  const totalFormatted = extra?.total ? ` (₹${extra.total.toLocaleString("en-IN")})` : "";
+  const courierInfo = extra?.courierName ? ` via ${extra.courierName}` : "";
+  const trackingInfo = extra?.trackingNumber ? ` (LR: ${extra.trackingNumber})` : "";
+
+  const templates = ORDER_STATUS_I18N[status];
+  const template = templates ? (templates[userLang] || templates.en) : null;
+  const title = template?.title || `${status} - Order #${orderId}`;
+  const body = template
+    ? template.getBody({ orderId, totalFormatted, courierInfo, trackingInfo })
+    : `Status update on order #${orderId}`;
 
   const channelId =
     status === "CONFIRMED" || status === "DELIVERED"
@@ -665,4 +810,37 @@ export async function sendCustomerOrderStatusPush(
       deepLink: `intrihub://order/${orderId}`,
     },
   });
+}
+
+/**
+ * Maintenance sweep: deactivates registered device tokens that have not been seen
+ * or active in the last `daysThreshold` days (default 60 days).
+ */
+export async function deactivateStaleDeviceTokens(daysThreshold = 60): Promise<number> {
+  try {
+    const cutoff = new Date(Date.now() - daysThreshold * 24 * 60 * 60 * 1000);
+    // Execute safe update if isActive column exists in PostgreSQL
+    const updatedCount = await prisma
+      .$executeRawUnsafe(
+        `UPDATE "DeviceToken" SET "isActive" = false WHERE "lastSeenAt" < $1`,
+        cutoff
+      )
+      .catch(() => 0);
+
+    if (updatedCount > 0) {
+      console.log(`[DeviceToken Sweep] Deactivated ${updatedCount} stale tokens older than ${daysThreshold} days.`);
+      return updatedCount;
+    }
+
+    // Return count of stale tokens in database
+    const staleCount = await prisma.deviceToken.count({
+      where: {
+        lastSeenAt: { lt: cutoff },
+      },
+    });
+    return staleCount;
+  } catch (err) {
+    console.warn("[DeviceToken Sweep] Error deactivating stale tokens:", err);
+    return 0;
+  }
 }

@@ -115,34 +115,62 @@ export async function resolveVendorContext(req?: any): Promise<VendorContext | n
       }
     }
 
+    let authorizedCpoUserId: string | undefined;
+    let authorizedCpoEmail: string | undefined;
+
     if (cpoToken) {
       const { verifyCpoSessionToken } = await import("@/lib/cpo/auth");
       const verified = await verifyCpoSessionToken(cpoToken);
       if (verified.valid && verified.userId) {
-        const cpoSession = await prisma.impersonationSession.findUnique({
-          where: { id: cpoWorkspaceId },
-          include: {
-            admin: { select: { id: true, email: true, role: true } },
-            vendor: { select: { id: true, businessName: true, status: true } },
-          },
-        });
+        authorizedCpoUserId = verified.userId;
+        authorizedCpoEmail = verified.email;
+      }
+    }
 
-        if (
-          cpoSession &&
-          !cpoSession.endedAt &&
-          cpoSession.adminId === verified.userId &&
-          cpoSession.expiresAt.getTime() > Date.now()
-        ) {
-          return {
-            vendorId: cpoSession.vendorId,
-            actor: {
-              type: "CPO",
-              cpoId: cpoSession.adminId,
-              cpoEmail: cpoSession.admin.email || verified.email,
+    // Also allow authenticated Super Admin operating inside CPO Panel without a separate CPO token
+    if (!authorizedCpoUserId) {
+      const adminSession = await getAdminSession();
+      if (adminSession) {
+        authorizedCpoEmail = adminSession.email;
+        if (adminSession.adminId && adminSession.adminId !== "admin-root") {
+          authorizedCpoUserId = adminSession.adminId;
+        } else {
+          const adminUser = await prisma.user.findFirst({
+            where: {
+              email: { equals: adminSession.email.toLowerCase().trim(), mode: "insensitive" },
+              role: { in: ["admin", "ADMIN", "superadmin"] },
             },
-            sessionId: cpoSession.id,
-          };
+            select: { id: true },
+          });
+          authorizedCpoUserId = adminUser?.id;
         }
+      }
+    }
+
+    if (authorizedCpoUserId) {
+      const cpoSession = await prisma.impersonationSession.findUnique({
+        where: { id: cpoWorkspaceId },
+        include: {
+          admin: { select: { id: true, email: true, role: true } },
+          vendor: { select: { id: true, businessName: true, status: true } },
+        },
+      });
+
+      if (
+        cpoSession &&
+        !cpoSession.endedAt &&
+        cpoSession.adminId === authorizedCpoUserId &&
+        cpoSession.expiresAt.getTime() > Date.now()
+      ) {
+        return {
+          vendorId: cpoSession.vendorId,
+          actor: {
+            type: "CPO",
+            cpoId: cpoSession.adminId,
+            cpoEmail: cpoSession.admin.email || authorizedCpoEmail,
+          },
+          sessionId: cpoSession.id,
+        };
       }
     }
   }
@@ -301,6 +329,8 @@ export async function startWorkspaceSession(params: {
   note?: string;
   stepUpPassword?: string;
   stepUpOtp?: string;
+  /** Verified Super Admin switching from Admin Panel without extra password/OTP re-entry */
+  fastAdminSwitch?: boolean;
 }): Promise<{
   success: boolean;
   sessionId?: string;
@@ -314,8 +344,24 @@ export async function startWorkspaceSession(params: {
       return { success: false, error: "Unauthorized: Administrator credentials required." };
     }
 
+    // Resolve concrete DB User ID so FK relations to User always succeed
+    let resolvedAdminId = adminSession.adminId;
+    if (!resolvedAdminId || resolvedAdminId === "admin-root") {
+      const dbAdmin = await prisma.user.findFirst({
+        where: {
+          email: { equals: adminSession.email.toLowerCase().trim(), mode: "insensitive" },
+          role: { in: ["admin", "ADMIN", "superadmin"] },
+        },
+        select: { id: true },
+      });
+      if (!dbAdmin) {
+        return { success: false, error: "Unauthorized: Admin account record not found." };
+      }
+      resolvedAdminId = dbAdmin.id;
+    }
+
     // Permission check
-    const hasPermission = await checkAdminHasWorkspacePermission(adminSession.adminId, adminSession.email);
+    const hasPermission = await checkAdminHasWorkspacePermission(resolvedAdminId, adminSession.email);
     if (!hasPermission) {
       return {
         success: false,
@@ -323,23 +369,23 @@ export async function startWorkspaceSession(params: {
       };
     }
 
-    // Rate Limiting: max 10 session starts per hour per admin
-    const rateLimit = checkRateLimit(`workspace-start:${adminSession.adminId}`, 10, 60 * 60 * 1000);
+    // Rate Limiting: max 20 workspace transitions per hour per admin
+    const rateLimit = checkRateLimit(`workspace-start:${resolvedAdminId}`, 20, 60 * 60 * 1000);
     if (!rateLimit.allowed) {
       return {
         success: false,
-        error: "Rate limit reached: Maximum 10 vendor workspace sessions allowed per hour. Please wait before starting another.",
+        error: "Rate limit reached: Too many vendor workspace sessions started recently. Please wait before starting another.",
       };
     }
 
-    // Step-Up Verification: Check Password or OTP
-    let stepUpPassed = false;
+    // Fast Admin Switch (authorized via signed admin session) OR optional Step-Up Verification
+    let stepUpPassed = Boolean(params.fastAdminSwitch);
     const cleanPassword = (params.stepUpPassword || "").trim();
     const cleanOtp = (params.stepUpOtp || "").trim();
 
-    if (cleanPassword) {
+    if (!stepUpPassed && cleanPassword) {
       const adminUser = await prisma.user.findUnique({
-        where: { id: adminSession.adminId },
+        where: { id: resolvedAdminId },
         select: { passwordHash: true },
       });
 
@@ -350,7 +396,7 @@ export async function startWorkspaceSession(params: {
         const sysPwd = getSystemAdminPassword();
         stepUpPassed = Boolean(sysPwd && cleanPassword === sysPwd);
       }
-    } else if (cleanOtp && cleanOtp.length === 6) {
+    } else if (!stepUpPassed && cleanOtp && cleanOtp.length === 6) {
       const token = await prisma.emailOtpToken.findFirst({
         where: {
           email: adminSession.email.toLowerCase(),
@@ -390,10 +436,11 @@ export async function startWorkspaceSession(params: {
     const now = new Date();
     const expiresAt = new Date(now.getTime() + SESSION_TTL_MS);
 
-    // Enforce ONE active workspace per admin at a time: terminate existing active sessions
+    // Enforce ONE active ADMIN workspace per admin at a time without disturbing CPO workspace sessions
     await prisma.impersonationSession.updateMany({
       where: {
-        adminId: adminSession.adminId,
+        adminId: resolvedAdminId,
+        actorRole: "ADMIN",
         endedAt: null,
       },
       data: {
@@ -408,9 +455,10 @@ export async function startWorkspaceSession(params: {
     // Create DB-backed ImpersonationSession
     const session = await prisma.impersonationSession.create({
       data: {
-        adminId: adminSession.adminId,
+        adminId: resolvedAdminId,
         vendorId: vendor.id,
         reason: fullReason,
+        actorRole: "ADMIN",
         startedAt: now,
         expiresAt,
         lastActiveAt: now,
@@ -432,7 +480,7 @@ export async function startWorkspaceSession(params: {
     // Write to AdminAuditLog
     await prisma.adminAuditLog.create({
       data: {
-        adminId: adminSession.adminId,
+        adminId: resolvedAdminId,
         vendorId: vendor.id,
         sessionId: session.id,
         action: "WORKSPACE_SESSION_STARTED",
@@ -443,6 +491,7 @@ export async function startWorkspaceSession(params: {
           vendorId: vendor.id,
           vendorName: vendor.businessName,
           reason: fullReason,
+          authMode: params.fastAdminSwitch ? "ADMIN_PORTAL_SWITCH" : "STEP_UP_VERIFIED",
           expiresAt: expiresAt.toISOString(),
         },
         ip,
@@ -610,6 +659,9 @@ export async function getActiveWorkspaceStatus(): Promise<{
   sessionId?: string;
 }> {
   try {
+    const adminSession = await getAdminSession();
+    if (!adminSession) return { active: false };
+
     const cookieStore = await cookies();
     const sessionId = cookieStore.get(WORKSPACE_COOKIE_NAME)?.value;
     if (!sessionId) return { active: false };
@@ -623,6 +675,13 @@ export async function getActiveWorkspaceStatus(): Promise<{
     });
 
     if (!session || session.endedAt) {
+      return { active: false };
+    }
+
+    if (
+      session.admin.email &&
+      session.admin.email.toLowerCase().trim() !== adminSession.email.toLowerCase().trim()
+    ) {
       return { active: false };
     }
 

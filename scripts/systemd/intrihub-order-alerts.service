@@ -1,0 +1,9 @@
+[Unit]
+Description=IntriHub Order Alerts & Escalation Cron Service
+After=network-online.target
+
+[Service]
+Type=oneshot
+ExecStart=/usr/local/bin/intrihub-cron-order-alerts.sh
+StandardOutput=append:/var/log/intrihub-order-alerts.log
+StandardError=append:/var/log/intrihub-order-alerts.log

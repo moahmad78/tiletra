@@ -3,7 +3,7 @@
     "name": "Intrihub Business",
     "slug": "intrihub-business",
     "owner": "sahil_sheikh78",
-    "version": "1.0.35",
+    "version": "1.1.0",
     "orientation": "portrait",
     "icon": "./assets/icon.png",
     "scheme": "intrihub-biz",
@@ -17,7 +17,7 @@
     "ios": {
       "supportsTablet": false,
       "bundleIdentifier": "com.intrihub.business",
-      "buildNumber": "39",
+      "buildNumber": "40",
       "config": {
         "usesNonExemptEncryption": false
       },
@@ -37,7 +37,7 @@
     },
     "android": {
       "package": "com.intrihub.business",
-      "versionCode": 42,
+      "versionCode": 45,
       "blockedPermissions": [
         "android.permission.READ_MEDIA_IMAGES",
         "android.permission.READ_MEDIA_VIDEO",
@@ -107,7 +107,8 @@
       "expo-splash-screen",
       "expo-status-bar",
       "expo-web-browser",
-      "./plugins/withCallKitVoIP"
+      "./plugins/withCallKitVoIP",
+      "./plugins/withCustomUpdateNotification"
     ],
     "extra": {
       "router": {},
@@ -119,7 +120,10 @@
       "policy": "appVersion"
     },
     "updates": {
-      "url": "https://u.expo.dev/107f8b28-48ac-4c6a-b065-8d24f2427724"
+      "url": "https://u.expo.dev/107f8b28-48ac-4c6a-b065-8d24f2427724",
+      "enabled": true,
+      "checkAutomatically": "ON_LOAD",
+      "fallbackToCacheTimeout": 0
     }
   }
 }

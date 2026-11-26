@@ -18,7 +18,7 @@ import {
   Clock,
   Headphones,
 } from "lucide-react";
-import { useVendorAuth } from "@/lib/vendor-auth";
+import { useEffectiveVendor } from "@/hooks/useEffectiveVendor";
 
 type VendorNavItem = {
   name: string;
@@ -47,7 +47,7 @@ export default function VendorSidebar({
   setCollapsed: (v: boolean) => void;
 }) {
   const pathname = usePathname();
-  const { vendor } = useVendorAuth();
+  const { vendor } = useEffectiveVendor();
 
   const getStatusBadge = () => {
     if (!vendor) return null;

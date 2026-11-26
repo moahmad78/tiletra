@@ -22,6 +22,7 @@ model User {
   passwordHash          String?
   mustChangePassword    Boolean                 @default(false)
   avatar                String?
+  birthday              DateTime?
   language              String                  @default("en") // "en" | "hi" | "kn"
   pushToken             String?
   createdAt             DateTime                @default(now())
@@ -785,6 +786,10 @@ model StoreSettings {
   maxCartReminders             Int      @default(3)
   offersPaused                 Boolean  @default(false)
   cartRemindersPaused          Boolean  @default(false)
+  // Product Automations (Back in Stock & Price Drop)
+  backInStockEnabled           Boolean  @default(true)
+  priceDropEnabled             Boolean  @default(true)
+  automationTemplates          Json?
   updatedAt             DateTime @updatedAt
 }
 
@@ -1614,24 +1619,48 @@ model CartReminderState {
 }
 
 model Campaign {
-  id          String            @id @default(cuid())
-  title       String            // max 40 chars
-  body        String            // max 90 chars
-  imageUrl    String?
-  target      String            @default("offers") // cart, item:ID, category:ID, offers, order:ID
-  audience    Json?             // { type: "all" | "no_orders_days" | "ordered_days" | "cart_has_items" | "city", days?: number, city?: string }
-  scheduledAt DateTime?
-  status      String            @default("draft") // draft | scheduled | sending | sent | cancelled
-  platforms   String            @default("all") // all | android | ios
-  sendMode    String            @default("scheduled") // scheduled | manual
-  createdBy   String?
-  sentAt      DateTime?
-  stats       Json?             // { totalAudience: number, sent: number, skipped: number, failed: number, androidSent: number, iosSent: number }
-  createdAt   DateTime          @default(now())
-  updatedAt   DateTime          @updatedAt
-  logs        NotificationLog[]
+  id              String            @id @default(cuid())
+  title           String            // max 40 chars
+  body            String            // max 90 chars
+  imageUrl        String?
+  target          String            @default("offers") // cart, item:ID, category:ID, offers, order:ID
+  type            String            @default("OFFER")  // OFFER, SALE, WISH, APP_UPDATE, COUNTDOWN, STOCK_ALERT, CUSTOM
+  accentColor     String?           // e.g. #F97316
+  ctaLabel        String?           // e.g. "Shop Now", "Update Now"
+  countdownEndsAt DateTime?
+  recurrence      String            @default("none")   // none | daily | weekly | yearly
+  expiresAt       DateTime?
+  appTarget       String            @default("both")   // customer | business | both
+  popup           Json?             // { enabled, layout, bgColor, imageUrl, ctaLabel, deepLink }
+  schemaVersion   Int               @default(1)
+  audience        Json?             // { type, days, city, cartProductId, wishlistProductId, versionBelow, language, appType }
+  scheduledAt     DateTime?
+  status          String            @default("draft")  // draft | scheduled | sending | sent | cancelled
+  platforms       String            @default("all")    // all | android | ios
+  sendMode        String            @default("scheduled") // scheduled | manual
+  createdBy       String?
+  sentAt          DateTime?
+  stats           Json?             // { totalAudience, sent, delivered, opened, clicks, skipped, failed, androidSent, iosSent, skipReasons }
+  createdAt       DateTime          @default(now())
+  updatedAt       DateTime          @updatedAt
+  logs            NotificationLog[]
 
   @@index([status, scheduledAt])
+  @@index([type])
+  @@index([appTarget])
+}
+
+model FestivalEvent {
+  id           String   @id @default(cuid())
+  name         String
+  date         DateTime
+  template     Json     // { title, body, imageUrl, accentColor, deepLink, ctaLabel }
+  autoSend     Boolean  @default(true)
+  lastSentYear Int?
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  @@index([date])
 }
 
 model NotificationLog {

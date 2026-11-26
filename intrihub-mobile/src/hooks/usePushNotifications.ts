@@ -1,7 +1,7 @@
 import { useEffect, useRef } from "react";
 import { Platform, Linking, AppState, AppStateStatus } from "react-native";
 import Constants, { ExecutionEnvironment } from "expo-constants";
-import { useRouter } from "expo-router";
+import { handleWhitelistedDeepLink } from "../utils/deepLinkRouter";
 import { registerPushToken } from "../api/push";
 import { useAuthStore } from "../store/authStore";
 
@@ -98,7 +98,6 @@ export async function registerCustomerPushToken(): Promise<string | null> {
 }
 
 export function usePushNotifications() {
-  const router = useRouter();
   const { user } = useAuthStore();
   const notificationListener = useRef<any>(null);
   const responseListener = useRef<any>(null);
@@ -115,6 +114,19 @@ export function usePushNotifications() {
         try {
           const importanceMax = notif.AndroidImportance.MAX;
           const importanceDefault = notif.AndroidImportance.DEFAULT;
+          const visibilityPublic = notif.AndroidNotificationVisibility?.PUBLIC ?? 1;
+
+          // Dedicated App Update Channel with official company ringtone
+          await notif.setNotificationChannelAsync("app_update_ring_v1", {
+            name: "App Updates & Releases",
+            description: "IntriHub app update reminders with official ringtone",
+            importance: importanceMax,
+            vibrationPattern: [0, 350, 200, 350],
+            enableVibrate: true,
+            lightColor: "#003478",
+            sound: "ring.mp3",
+            lockscreenVisibility: visibilityPublic,
+          });
 
           // PRD v1 Versioned User Channels
           await notif.setNotificationChannelAsync("user_success_v1", {
@@ -215,39 +227,18 @@ export function usePushNotifications() {
           }).catch(() => {});
         }
 
-        if (data?.storeUrl || data?.type === "app_update") {
-          const targetUrl = data.storeUrl || data.webUrl || "market://details?id=com.intrihub.app";
-          Linking.openURL(String(targetUrl)).catch(() => {
-            if (data?.webUrl) {
-              Linking.openURL(String(data.webUrl)).catch(() => {});
-            }
-          });
-          return;
-        }
+        const deepLinkTarget =
+          data?.target ||
+          data?.deepLink ||
+          data?.ctaUrl ||
+          (data?.storeUrl ? data.storeUrl : null) ||
+          (data?.type === "app_update" ? "market://details?id=com.intrihub.app" : null) ||
+          (data?.orderId ? `order:${data.orderId}` : null) ||
+          (data?.productId ? `product:${data.productId}` : null) ||
+          data?.screen ||
+          "/";
 
-        const target = data?.target || "";
-        if (target === "cart") {
-          router.push("/cart" as Parameters<typeof router.push>[0]);
-        } else if (target.startsWith("item:")) {
-          const itemId = target.replace(/^item:/, "").trim();
-          router.push(`/product/${itemId}` as Parameters<typeof router.push>[0]);
-        } else if (target.startsWith("category:")) {
-          const catId = target.replace(/^category:/, "").trim();
-          router.push(`/category/${catId}` as Parameters<typeof router.push>[0]);
-        } else if (target.startsWith("order:")) {
-          const ordId = target.replace(/^order:/, "").trim();
-          router.push(`/order/${ordId}` as Parameters<typeof router.push>[0]);
-        } else if (data?.orderId || data?.id) {
-          const rawOrderId = data.orderId || data.id;
-          const cleanOrderId = String(rawOrderId).replace(/^[#\s]+/, "").trim();
-          router.push(`/order/${cleanOrderId}` as Parameters<typeof router.push>[0]);
-        } else if (data?.productId) {
-          router.push(`/product/${String(data.productId).trim()}` as Parameters<typeof router.push>[0]);
-        } else if (data?.screen) {
-          router.push(String(data.screen) as Parameters<typeof router.push>[0]);
-        } else {
-          router.push("/" as Parameters<typeof router.push>[0]);
-        }
+        handleWhitelistedDeepLink(deepLinkTarget);
       } catch (e) {
         console.warn("[PushNotifications] Error handling notification response:", e);
       }
@@ -282,5 +273,5 @@ export function usePushNotifications() {
         responseListener.current.remove();
       }
     };
-  }, [user?.id, router]);
+  }, [user?.id]);
 }

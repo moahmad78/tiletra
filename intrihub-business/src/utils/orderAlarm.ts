@@ -17,7 +17,7 @@ if (!isExpoGo && Platform.OS !== "web") {
   }
 }
 
-export const URGENT_ORDER_CHANNEL_ID = "urgent_order_alarm_v3";
+export const URGENT_ORDER_CHANNEL_ID = "urgent_order_alarm_v4";
 
 /**
  * Initializes the high-importance Android ALARM notification channel.
@@ -33,7 +33,7 @@ export async function initOrderAlarmChannel(): Promise<void> {
       importance: (Notifications as any).AndroidImportance?.MAX ?? 7,
       vibrationPattern: [0, 800, 300, 800, 300, 800],
       enableVibrate: true,
-      sound: "default",
+      sound: "ring.mp3",
       lockscreenVisibility: (Notifications as any).AndroidNotificationVisibility?.PUBLIC ?? 1,
       bypassDnd: true,
       audioAttributes: {
@@ -68,7 +68,7 @@ export async function fireSystemAlarmNotification(
       content: {
         title: "🚨 NEW ORDER ALERT!",
         body: `Order #${orderId} ${formattedAmount ? `• ${formattedAmount}` : ""} - Tap to accept & dispatch immediately!`,
-        sound: "default",
+        sound: "ring.mp3",
         data: {
           screen: "/(vendor)/orders",
           orderId,
@@ -81,6 +81,19 @@ export async function fireSystemAlarmNotification(
   } catch (e) {
     console.warn("Could not fire system alarm notification:", e);
   }
+}
+
+/**
+ * Plays the urgent order alarm notification and heavy haptic alert (used by Test Siren & order alerts).
+ */
+export async function playOrderAlarm(
+  orderId = "TEST-9999",
+  amount = 4999
+): Promise<void> {
+  await Promise.allSettled([
+    triggerAlertHaptics(),
+    fireSystemAlarmNotification(orderId, amount),
+  ]);
 }
 
 /**

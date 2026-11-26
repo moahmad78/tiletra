@@ -49,8 +49,8 @@ export default function IncomingOrderAlertModal() {
         });
       }, 1000);
 
-      // Auto-send ACK heartbeat to backend to acknowledge alarm received
-      if (alert.orderId) {
+      // Auto-send ACK heartbeat to backend to acknowledge alarm received (skip simulated test alerts)
+      if (alert.orderId && !String(alert.orderId).startsWith("TEST-")) {
         apiClient.post(`/api/mobile/vendor/orders/${alert.orderId}/ack`).catch(() => {});
       }
     }
@@ -146,6 +146,8 @@ export default function IncomingOrderAlertModal() {
 
   if (!isOpen || !alert) return null;
 
+  const isTestAlert = String(alert.orderId || "").startsWith("TEST-");
+
   const handleDismissModal = () => {
     stopRinging();
     dismissOrderAlarm();
@@ -155,6 +157,10 @@ export default function IncomingOrderAlertModal() {
   const handleAccept = async () => {
     stopRinging();
     dismissOrderAlarm();
+    if (isTestAlert) {
+      closeAlert();
+      return;
+    }
     setIsSubmitting(true);
     try {
       const splitOrOrderId = alert.splitId || alert.orderId;
@@ -181,6 +187,10 @@ export default function IncomingOrderAlertModal() {
   const handleReject = async () => {
     stopRinging();
     dismissOrderAlarm();
+    if (isTestAlert) {
+      closeAlert();
+      return;
+    }
     setIsSubmitting(true);
     try {
       const splitOrOrderId = alert.splitId || alert.orderId;
@@ -206,7 +216,7 @@ export default function IncomingOrderAlertModal() {
       visible={isOpen}
       transparent
       animationType="slide"
-      onRequestClose={closeAlert}
+      onRequestClose={handleDismissModal}
       statusBarTranslucent
     >
       {Platform.OS !== "web" && isOpen && (
@@ -221,8 +231,42 @@ export default function IncomingOrderAlertModal() {
                     <audio id="ring" src="https://www.intrihub.com/sounds/ring.mp3" autoplay loop playsinline></audio>
                     <script>
                       var el = document.getElementById('ring');
+                      var fallbackTimer = null;
+                      function startFallbackChime() {
+                        if (fallbackTimer) return;
+                        try {
+                          var AudioCtx = window.AudioContext || window.webkitAudioContext;
+                          if (!AudioCtx) return;
+                          var ctx = new AudioCtx();
+                          function playPulse() {
+                            try {
+                              if (ctx.state === 'suspended') ctx.resume();
+                              var now = ctx.currentTime;
+                              var osc = ctx.createOscillator();
+                              var gain = ctx.createGain();
+                              osc.type = 'triangle';
+                              osc.frequency.setValueAtTime(880, now);
+                              osc.frequency.exponentialRampToValueAtTime(1760, now + 0.14);
+                              gain.gain.setValueAtTime(0.9, now);
+                              gain.gain.exponentialRampToValueAtTime(0.01, now + 0.45);
+                              osc.connect(gain);
+                              gain.connect(ctx.destination);
+                              osc.start(now);
+                              osc.stop(now + 0.45);
+                            } catch (e) {}
+                          }
+                          playPulse();
+                          fallbackTimer = setInterval(playPulse, 1300);
+                        } catch (e) {}
+                      }
+                      function stopFallbackChime() {
+                        if (fallbackTimer) { clearInterval(fallbackTimer); fallbackTimer = null; }
+                      }
+                      el.addEventListener('playing', stopFallbackChime);
+                      el.addEventListener('error', startFallbackChime);
                       el.play().catch(function() {
-                        window.addEventListener('touchstart', function() { el.play(); }, { once: true });
+                        startFallbackChime();
+                        window.addEventListener('touchstart', function() { el.play().catch(function() {}); }, { once: true });
                       });
                     </script>
                   </body>

@@ -1,22 +1,19 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { startWorkspaceSession } from "@/lib/vendor-workspace-auth";
+import { getAdminVendors } from "@/lib/actions/admin-vendor";
 import { WORKSPACE_REASONS } from "@/lib/config/vendor-workspace-permissions";
 import {
-  ShieldAlert,
   Search,
-  Lock,
   Store,
-  KeyRound,
-  AlertCircle,
-  Clock,
-  ChevronRight,
   X,
   Loader2,
   CheckCircle2,
   FileText,
+  ShieldCheck,
+  ArrowRight,
 } from "lucide-react";
 import { toast } from "sonner";
 
@@ -32,7 +29,7 @@ export interface VendorOption {
 interface VendorWorkspaceModalProps {
   isOpen: boolean;
   onClose: () => void;
-  vendors: VendorOption[];
+  vendors?: VendorOption[];
   preSelectedVendor?: VendorOption | null;
   directTo?: string; // e.g. "products/new"
 }
@@ -40,25 +37,52 @@ interface VendorWorkspaceModalProps {
 export default function VendorWorkspaceModal({
   isOpen,
   onClose,
-  vendors,
+  vendors: initialVendors,
   preSelectedVendor,
   directTo,
 }: VendorWorkspaceModalProps) {
   const router = useRouter();
+  const [fetchedVendors, setFetchedVendors] = useState<VendorOption[]>([]);
+  const [loadingVendors, setLoadingVendors] = useState(false);
   const [selectedVendorId, setSelectedVendorId] = useState<string>(preSelectedVendor?.id || "");
   const [searchQuery, setSearchQuery] = useState("");
   const [reason, setReason] = useState<string>(WORKSPACE_REASONS[0].value);
   const [note, setNote] = useState("");
-  const [authMethod, setAuthMethod] = useState<"password" | "otp">("password");
-  const [password, setPassword] = useState("");
-  const [otp, setOtp] = useState("");
   const [loading, setLoading] = useState(false);
-  const [otpRequested, setOtpRequested] = useState(false);
-  const [sendingOtp, setSendingOtp] = useState(false);
+
+  const hasInitialVendors = Boolean(initialVendors && initialVendors.length > 0);
+  const vendors = hasInitialVendors ? (initialVendors as VendorOption[]) : fetchedVendors;
+
+  useEffect(() => {
+    if (hasInitialVendors || !isOpen || preSelectedVendor) {
+      return;
+    }
+    let mounted = true;
+    queueMicrotask(() => {
+      if (mounted) setLoadingVendors(true);
+    });
+    getAdminVendors()
+      .then((list) => {
+        if (mounted) setFetchedVendors((list || []) as VendorOption[]);
+      })
+      .catch(() => {})
+      .finally(() => {
+        if (mounted) setLoadingVendors(false);
+      });
+    return () => {
+      mounted = false;
+    };
+  }, [isOpen, hasInitialVendors, preSelectedVendor]);
 
   if (!isOpen) return null;
 
-  const filteredVendors = vendors.filter((v) => {
+  const sortedVendors = [...vendors].sort((a, b) => {
+    if (a.status === "approved" && b.status !== "approved") return -1;
+    if (a.status !== "approved" && b.status === "approved") return 1;
+    return a.businessName.localeCompare(b.businessName);
+  });
+
+  const filteredVendors = sortedVendors.filter((v) => {
     const q = searchQuery.toLowerCase().trim();
     if (!q) return true;
     return (
@@ -69,48 +93,15 @@ export default function VendorWorkspaceModal({
     );
   });
 
-  const selectedVendor = vendors.find((v) => v.id === (selectedVendorId || preSelectedVendor?.id));
-
-  const handleRequestOtp = async () => {
-    try {
-      setSendingOtp(true);
-      const { validateAdminCredentialsAndSendOtp } = await import("@/lib/actions/admin-auth-2fa");
-      const { STRICT_ADMIN_EMAIL } = await import("@/lib/admin-constants");
-      // Request 2FA OTP for the admin session
-      const res = await validateAdminCredentialsAndSendOtp({
-        email: STRICT_ADMIN_EMAIL,
-        password: password || undefined,
-      });
-
-      if (res.success || res.step === "otp_required") {
-        setOtpRequested(true);
-        toast.success(res.message || "2FA verification code sent to your registered admin email!");
-      } else {
-        toast.error(res.message || "Failed to send 2FA code");
-      }
-    } catch (err: any) {
-      toast.error(err?.message || "Failed to request 2FA OTP");
-    } finally {
-      setSendingOtp(false);
-    }
-  };
+  const selectedVendor =
+    preSelectedVendor || vendors.find((v) => v.id === selectedVendorId);
 
   const handleStartSession = async (e: React.FormEvent) => {
     e.preventDefault();
 
     const targetVendorId = selectedVendorId || preSelectedVendor?.id;
     if (!targetVendorId) {
-      toast.error("Please select a target vendor to open their workspace.");
-      return;
-    }
-
-    if (authMethod === "password" && !password) {
-      toast.error("Please enter your admin password for step-up verification.");
-      return;
-    }
-
-    if (authMethod === "otp" && (!otp || otp.length !== 6)) {
-      toast.error("Please enter the 6-digit 2FA code.");
+      toast.error("Please select a vendor store to open their panel.");
       return;
     }
 
@@ -120,66 +111,86 @@ export default function VendorWorkspaceModal({
         vendorId: targetVendorId,
         reason,
         note: note.trim() || undefined,
-        stepUpPassword: authMethod === "password" ? password : undefined,
-        stepUpOtp: authMethod === "otp" ? otp : undefined,
+        fastAdminSwitch: true,
       });
 
       if (res.success) {
-        toast.success(`Vendor Workspace activated for ${res.vendor?.businessName}!`);
+        toast.success(`Switched to Vendor Panel: ${res.vendor?.businessName}`);
         onClose();
-
-        // Redirect to vendor panel in workspace mode
-        if (directTo === "products/new") {
-          router.push("/vendor/products/new");
-        } else {
-          router.push("/vendor");
+        if (typeof window !== "undefined") {
+          window.dispatchEvent(new Event("vendor-workspace-changed"));
         }
-        router.refresh();
+
+        const targetUrl =
+          directTo === "products/new" ? "/vendor/products/new" : "/vendor";
+
+        if (typeof window !== "undefined" && window.location.pathname.startsWith("/vendor")) {
+          window.location.assign(targetUrl);
+        } else {
+          router.push(targetUrl);
+          router.refresh();
+        }
       } else {
-        toast.error(res.error || "Failed to start workspace session.");
+        toast.error(res.error || "Failed to open vendor panel.");
       }
-    } catch (err: any) {
-      toast.error(err?.message || "An unexpected error occurred.");
+    } catch (err: unknown) {
+      const msg = err instanceof Error ? err.message : "An unexpected error occurred.";
+      toast.error(msg);
     } finally {
       setLoading(false);
     }
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/70 backdrop-blur-xs animate-in fade-in duration-200">
-      <div className="bg-white rounded-3xl max-w-lg w-full shadow-2xl border border-gray-100 overflow-hidden flex flex-col max-h-[90vh]">
+    <div
+      className="fixed inset-0 z-[9999] flex items-center justify-center p-4 bg-black/65 backdrop-blur-xs animate-in fade-in duration-150"
+      onClick={onClose}
+    >
+      <div
+        className="bg-white rounded-3xl max-w-lg w-full shadow-2xl border border-gray-100 overflow-hidden flex flex-col max-h-[88vh]"
+        onClick={(e) => e.stopPropagation()}
+      >
         {/* Header */}
-        <div className="p-6 bg-gradient-to-r from-[#991b1b] to-[#c2410c] text-white flex items-start justify-between">
+        <div className="p-5 sm:p-6 bg-gradient-to-r from-[#052a51] to-[#0a437e] text-white flex items-start justify-between">
           <div className="flex items-center gap-3">
             <div className="w-10 h-10 rounded-2xl bg-white/10 flex items-center justify-center shrink-0 border border-white/20">
-              <ShieldAlert size={22} className="text-amber-300" />
+              <Store size={20} className="text-[#F26522]" />
             </div>
             <div>
-              <h2 className="text-base font-extrabold tracking-tight">Open Vendor Workspace</h2>
-              <p className="text-xs text-white/80 mt-0.5">
-                Work inside a vendor account on their behalf with full audit logging.
+              <h2 className="text-base font-extrabold tracking-tight">Switch to Vendor Panel</h2>
+              <p className="text-xs text-white/75 mt-0.5">
+                Pick any vendor store for instant Admin access (fully audit-logged).
               </p>
             </div>
           </div>
           <button
+            type="button"
             onClick={onClose}
-            className="p-1 rounded-xl text-white/70 hover:text-white hover:bg-white/10 transition-colors"
+            className="p-1.5 rounded-xl text-white/70 hover:text-white hover:bg-white/10 transition-colors cursor-pointer"
+            aria-label="Close modal"
           >
             <X size={18} />
           </button>
         </div>
 
         {/* Form Body */}
-        <form onSubmit={handleStartSession} className="p-6 overflow-y-auto space-y-5 text-xs text-gray-700">
+        <form onSubmit={handleStartSession} className="p-5 sm:p-6 overflow-y-auto space-y-4 text-xs text-gray-700">
           {/* 1. Target Vendor Selection */}
           <div>
-            <label className="block font-bold text-gray-900 mb-1.5 flex items-center gap-1.5">
-              <Store size={14} className="text-amber-600" />
-              Target Vendor Store
+            <label className="font-bold text-gray-900 mb-1.5 flex items-center justify-between gap-2">
+              <span className="flex items-center gap-1.5">
+                <Store size={14} className="text-emerald-600" />
+                Select Vendor Store
+              </span>
+              {!preSelectedVendor && vendors.length > 0 && (
+                <span className="text-[10px] font-semibold text-gray-400">
+                  {filteredVendors.length} store{filteredVendors.length === 1 ? "" : "s"}
+                </span>
+              )}
             </label>
 
             {preSelectedVendor ? (
-              <div className="p-3 rounded-2xl bg-amber-50 border border-amber-200/80 flex items-center justify-between">
+              <div className="p-3 rounded-2xl bg-emerald-50 border border-emerald-200/80 flex items-center justify-between">
                 <div>
                   <p className="font-extrabold text-gray-900">{preSelectedVendor.businessName}</p>
                   <p className="text-[11px] text-gray-500 font-mono">ID: {preSelectedVendor.id}</p>
@@ -196,149 +207,99 @@ export default function VendorWorkspaceModal({
                     type="text"
                     value={searchQuery}
                     onChange={(e) => setSearchQuery(e.target.value)}
-                    placeholder="Search by vendor name, ID, phone..."
-                    className="w-full pl-9 pr-3 py-2.5 rounded-xl border border-gray-200 focus:outline-hidden focus:ring-2 focus:ring-amber-500 text-xs"
+                    placeholder="Search shop name, ID, phone, or category..."
+                    className="w-full pl-9 pr-3 py-2.5 rounded-xl border border-gray-200 focus:outline-hidden focus:ring-2 focus:ring-[#052a51] text-xs"
                   />
                 </div>
 
-                <div className="max-h-36 overflow-y-auto rounded-xl border border-gray-100 divide-y divide-gray-50 bg-gray-50/50">
-                  {filteredVendors.length === 0 ? (
-                    <p className="p-3 text-center text-gray-400">No matching vendors found</p>
+                <div className="max-h-52 overflow-y-auto rounded-xl border border-gray-200 divide-y divide-gray-100 bg-gray-50/40">
+                  {loadingVendors ? (
+                    <div className="p-6 flex items-center justify-center gap-2 text-gray-400">
+                      <Loader2 size={15} className="animate-spin" />
+                      <span>Loading vendor stores...</span>
+                    </div>
+                  ) : filteredVendors.length === 0 ? (
+                    <p className="p-4 text-center text-gray-400">No matching vendors found</p>
                   ) : (
-                    filteredVendors.map((v) => (
-                      <button
-                        key={v.id}
-                        type="button"
-                        onClick={() => setSelectedVendorId(v.id)}
-                        className={`w-full p-2.5 text-left flex items-center justify-between hover:bg-amber-50 transition-colors ${
-                          selectedVendorId === v.id ? "bg-amber-100/60 font-bold border-l-4 border-amber-600" : ""
-                        }`}
-                      >
-                        <div className="truncate pr-2">
-                          <p className="text-xs text-gray-900 truncate">{v.businessName}</p>
-                          <p className="text-[10px] text-gray-400 font-mono">{v.id}</p>
-                        </div>
-                        <span className="text-[9px] uppercase px-1.5 py-0.5 rounded bg-white text-gray-600 border border-gray-200 shrink-0">
-                          {v.status}
-                        </span>
-                      </button>
-                    ))
+                    filteredVendors.map((v) => {
+                      const isSelected = selectedVendorId === v.id;
+                      return (
+                        <button
+                          key={v.id}
+                          type="button"
+                          onClick={() => setSelectedVendorId(v.id)}
+                          className={`w-full p-2.5 text-left flex items-center justify-between hover:bg-emerald-50/70 transition-colors cursor-pointer ${
+                            isSelected ? "bg-emerald-50 font-bold border-l-4 border-emerald-600" : ""
+                          }`}
+                        >
+                          <div className="truncate pr-2">
+                            <p className="text-xs font-bold text-gray-900 truncate flex items-center gap-1.5">
+                              {isSelected && <CheckCircle2 size={13} className="text-emerald-600 shrink-0" />}
+                              <span className="truncate">{v.businessName}</span>
+                            </p>
+                            <p className="text-[10px] text-gray-400 font-mono truncate">
+                              {v.category || "General"} • {v.id}
+                            </p>
+                          </div>
+                          <span
+                            className={`text-[9px] uppercase px-2 py-0.5 rounded-full font-bold shrink-0 ${
+                              v.status === "approved"
+                                ? "bg-emerald-100 text-emerald-700"
+                                : "bg-amber-100 text-amber-700"
+                            }`}
+                          >
+                            {v.status}
+                          </span>
+                        </button>
+                      );
+                    })
                   )}
                 </div>
               </div>
             )}
           </div>
 
-          {/* 2. Reason Selection */}
-          <div>
-            <label className="block font-bold text-gray-900 mb-1.5 flex items-center gap-1.5">
-              <FileText size={14} className="text-amber-600" />
-              Reason for Workspace Access
-            </label>
-            <select
-              value={reason}
-              onChange={(e) => setReason(e.target.value)}
-              className="w-full px-3 py-2.5 rounded-xl border border-gray-200 bg-white focus:outline-hidden focus:ring-2 focus:ring-amber-500 font-medium"
-            >
-              {WORKSPACE_REASONS.map((r) => (
-                <option key={r.value} value={r.value}>
-                  {r.label}
-                </option>
-              ))}
-            </select>
-          </div>
-
-          {/* Optional Note */}
-          <div>
-            <label className="block font-medium text-gray-700 mb-1">
-              Internal Note / Ticket Reference (Optional)
-            </label>
-            <textarea
-              value={note}
-              onChange={(e) => setNote(e.target.value)}
-              placeholder="e.g. Ticket #4928 - Vendor requested assistance uploading 20 new vitrified tile SKUs"
-              rows={2}
-              className="w-full p-2.5 rounded-xl border border-gray-200 focus:outline-hidden focus:ring-2 focus:ring-amber-500 text-xs"
-            />
-          </div>
-
-          {/* 3. Step-Up Verification */}
-          <div className="p-4 rounded-2xl bg-gray-50 border border-gray-200 space-y-3">
-            <div className="flex items-center justify-between">
-              <span className="font-extrabold text-gray-900 flex items-center gap-1.5">
-                <Lock size={14} className="text-rose-600" />
-                Step-Up Verification
-              </span>
-              <div className="flex items-center gap-2">
-                <button
-                  type="button"
-                  onClick={() => setAuthMethod("password")}
-                  className={`text-[10px] font-bold px-2 py-0.5 rounded-md ${
-                    authMethod === "password" ? "bg-amber-600 text-white" : "text-gray-500 hover:text-gray-900"
-                  }`}
-                >
-                  Admin Password
-                </button>
-                <button
-                  type="button"
-                  onClick={() => setAuthMethod("otp")}
-                  className={`text-[10px] font-bold px-2 py-0.5 rounded-md ${
-                    authMethod === "otp" ? "bg-amber-600 text-white" : "text-gray-500 hover:text-gray-900"
-                  }`}
-                >
-                  2FA Email OTP
-                </button>
-              </div>
+          {/* 2. Reason & Optional Note */}
+          <div className="grid grid-cols-1 gap-3">
+            <div>
+              <label className="font-bold text-gray-900 mb-1 flex items-center gap-1.5">
+                <FileText size={14} className="text-[#052a51]" />
+                Purpose
+              </label>
+              <select
+                value={reason}
+                onChange={(e) => setReason(e.target.value)}
+                className="w-full px-3 py-2 rounded-xl border border-gray-200 bg-white focus:outline-hidden focus:ring-2 focus:ring-[#052a51] font-medium"
+              >
+                {WORKSPACE_REASONS.map((r) => (
+                  <option key={r.value} value={r.value}>
+                    {r.label}
+                  </option>
+                ))}
+              </select>
             </div>
 
-            {authMethod === "password" ? (
-              <div>
-                <input
-                  type="password"
-                  value={password}
-                  onChange={(e) => setPassword(e.target.value)}
-                  placeholder="Enter your Super Admin password"
-                  autoComplete="current-password"
-                  className="w-full px-3 py-2.5 rounded-xl border border-gray-200 bg-white focus:outline-hidden focus:ring-2 focus:ring-amber-500 text-xs"
-                />
-              </div>
-            ) : (
-              <div className="space-y-2">
-                <div className="flex gap-2">
-                  <input
-                    type="text"
-                    value={otp}
-                    onChange={(e) => setOtp(e.target.value.replace(/\D/g, "").slice(0, 6))}
-                    placeholder="Enter 6-digit OTP code"
-                    maxLength={6}
-                    className="flex-1 px-3 py-2.5 rounded-xl border border-gray-200 bg-white font-mono tracking-widest text-center text-sm focus:outline-hidden focus:ring-2 focus:ring-amber-500"
-                  />
-                  <button
-                    type="button"
-                    onClick={handleRequestOtp}
-                    disabled={sendingOtp}
-                    className="px-3 py-2.5 rounded-xl bg-gray-900 text-white font-bold text-xs hover:bg-black disabled:opacity-50 shrink-0"
-                  >
-                    {sendingOtp ? <Loader2 className="animate-spin" size={14} /> : otpRequested ? "Resend" : "Send OTP"}
-                  </button>
-                </div>
-                {otpRequested && (
-                  <p className="text-[10px] text-emerald-600 font-bold">
-                    ✓ Security code sent to your registered admin email.
-                  </p>
-                )}
-              </div>
-            )}
-
-            <div className="text-[10px] text-gray-500 space-y-0.5 pt-1 border-t border-gray-200">
-              <p>• Session automatically expires after <strong>60 minutes</strong> (idle timeout: 20 min).</p>
-              <p>• Sensitive banking, payout, and password updates are <strong>restricted</strong>.</p>
-              <p>• All actions are permanently stamped in <strong>AdminAuditLog</strong>.</p>
+            <div>
+              <input
+                type="text"
+                value={note}
+                onChange={(e) => setNote(e.target.value)}
+                placeholder="Optional note / reference (e.g. Updating catalog prices)"
+                className="w-full px-3 py-2 rounded-xl border border-gray-200 focus:outline-hidden focus:ring-2 focus:ring-[#052a51] text-xs"
+              />
             </div>
+          </div>
+
+          {/* Verified Admin Notice */}
+          <div className="px-3.5 py-2.5 rounded-2xl bg-slate-50 border border-slate-200/80 flex items-center gap-2.5 text-[11px] text-slate-600">
+            <ShieldCheck size={16} className="text-emerald-600 shrink-0" />
+            <span>
+              <strong>Verified Admin Session:</strong> Direct access without password/OTP re-entry (auto-logged in audit trail, 60m session).
+            </span>
           </div>
 
           {/* Action Buttons */}
-          <div className="flex items-center gap-3 pt-2">
+          <div className="flex items-center gap-3 pt-1">
             <button
               type="button"
               onClick={onClose}
@@ -349,17 +310,17 @@ export default function VendorWorkspaceModal({
             <button
               type="submit"
               disabled={loading || !selectedVendor}
-              className="flex-2 py-2.5 rounded-xl bg-gradient-to-r from-[#991b1b] to-[#c2410c] hover:from-[#7f1d1d] hover:to-[#9a3412] text-white font-extrabold shadow-md flex items-center justify-center gap-2 transition-all disabled:opacity-50 cursor-pointer"
+              className="flex-[2] py-2.5 px-4 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-extrabold shadow-md flex items-center justify-center gap-2 transition-all disabled:opacity-50 cursor-pointer"
             >
               {loading ? (
                 <>
-                  <Loader2 size={16} className="animate-spin" />
-                  Verifying & Launching...
+                  <Loader2 size={15} className="animate-spin" />
+                  Opening Vendor Panel...
                 </>
               ) : (
                 <>
-                  <ShieldAlert size={16} />
-                  Open Workspace Now
+                  <span>Open Vendor Panel</span>
+                  <ArrowRight size={15} />
                 </>
               )}
             </button>

@@ -19,6 +19,7 @@ import Link from "next/link";
 
 interface AuthSupportWidgetProps {
   portalType?: "admin" | "vendor" | "general";
+  inlineFooter?: boolean;
 }
 
 const FAQS = [
@@ -44,7 +45,10 @@ const FAQS = [
   },
 ];
 
-export default function AuthSupportWidget({ portalType = "general" }: AuthSupportWidgetProps) {
+export default function AuthSupportWidget({
+  portalType = "general",
+  inlineFooter = false,
+}: AuthSupportWidgetProps) {
   const [isOpen, setIsOpen] = useState(false);
   const [openFaqIndex, setOpenFaqIndex] = useState<number | null>(0);
 
@@ -54,12 +58,14 @@ export default function AuthSupportWidget({ portalType = "general" }: AuthSuppor
 
   return (
     <>
-      {/* ── FLOATING CORNER BUTTON ────────────────────────────────────────── */}
-      <div className="fixed bottom-5 right-5 z-40">
+      {/* ── SUPPORT TRIGGER BUTTON ────────────────────────────────────────── */}
+      <div className={inlineFooter ? "relative z-30" : "fixed bottom-5 right-5 z-40"}>
         <button
           type="button"
           onClick={() => setIsOpen(true)}
-          className="group flex items-center gap-2.5 px-4 py-3 bg-[#052a51] hover:bg-[#031d38] text-white rounded-full shadow-2xl border border-white/20 transition-all hover:scale-105 active:scale-95 cursor-pointer"
+          className={`group flex items-center gap-2.5 bg-[#052a51] hover:bg-[#083868] text-white rounded-full border border-white/20 transition-all hover:scale-[1.03] active:scale-95 cursor-pointer ${
+            inlineFooter ? "px-4 py-2 shadow-lg" : "px-4 py-3 shadow-2xl"
+          }`}
           aria-label="Customer & Partner Support"
         >
           <div className="relative">

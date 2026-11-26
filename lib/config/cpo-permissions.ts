@@ -92,6 +92,8 @@ export interface CpoSession {
   email: string;
   name: string;
   role: "cpo";
+  /** True when accessed by an authenticated Super Admin via the Admin Panel switch tab */
+  isAdminAccess?: boolean;
 }
 
 export interface CpoWorkspaceStatus {

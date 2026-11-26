@@ -1,6 +1,7 @@
 import { useEffect, useRef } from "react";
 import { Platform, AppState, AppStateStatus, Linking } from "react-native";
 import Constants, { ExecutionEnvironment } from "expo-constants";
+import * as Application from "expo-application";
 import { isRunningInExpoGo } from "expo";
 import { useRouter } from "expo-router";
 import { apiClient } from "../api/client";
@@ -70,10 +71,15 @@ export async function registerDevicePushToken(attempt = 1): Promise<string | nul
   cachedPushToken = token;
 
   try {
+    const appVersion =
+      Application.nativeApplicationVersion ||
+      Constants.expoConfig?.version ||
+      "1.0.36";
+
     const res = await apiClient.post("/api/mobile/push-token", {
       token,
       platform: Platform.OS,
-      appVersion: Constants.expoConfig?.version || "1.0.31",
+      appVersion,
     });
 
     if (res.data?.success) {
@@ -274,6 +280,19 @@ async function registerForPushNotificationsAsync(): Promise<string | null> {
       const importanceHigh = (Notifications as any).AndroidImportance?.HIGH ?? 4;
       const importanceDefault = (Notifications as any).AndroidImportance?.DEFAULT ?? 3;
       const visibilityPublic = (Notifications as any).AndroidNotificationVisibility?.PUBLIC ?? 1;
+
+      // Dedicated App Update Channel with official company ringtone
+      await Notifications.setNotificationChannelAsync("app_update_ring_v1", {
+        name: "App Updates & Releases",
+        description: "IntriHub Business app update reminders with official ringtone",
+        importance: importanceMax,
+        vibrationPattern: [0, 350, 200, 350],
+        enableVibrate: true,
+        sound: "ring.mp3",
+        lockscreenVisibility: visibilityPublic,
+        lightColor: "#003478",
+        showBadge: true,
+      });
 
       // PRD v1 Versioned Vendor Channels
       await Notifications.setNotificationChannelAsync("new_order_ring_v1", {
