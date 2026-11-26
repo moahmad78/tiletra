@@ -73,10 +73,27 @@ async function runTests() {
     select: { id: true },
   });
   const sampleProduct = await prisma.product.findFirst({
-    select: { id: true, name: true, slug: true, price: true },
+    select: { id: true, name: true, slug: true, mrp: true },
   });
 
   if (sampleUser && sampleProduct) {
+    const testToken = "ExponentPushToken[TestVerifyDebounceToken999]";
+    await prisma.deviceToken.upsert({
+      where: { token: testToken },
+      create: {
+        userId: sampleUser.id,
+        token: testToken,
+        appType: "user",
+        platform: "android",
+        appVersion: "1.0.30",
+        isActive: true,
+      },
+      update: {
+        userId: sampleUser.id,
+        isActive: true,
+      },
+    });
+
     // Ensure user has this item in wishlist for test
     await prisma.wishlistItem.upsert({
       where: { userId_productId: { userId: sampleUser.id, productId: sampleProduct.id } },
@@ -86,16 +103,16 @@ async function runTests() {
 
     console.log(`User ${sampleUser.id} wishlisted product "${sampleProduct.name}" (${sampleProduct.id}).`);
     
-    // Simulate Run 1: Stock 0 -> 25
-    console.log("Triggering Product Stock 0 -> 25 (Run 1)...");
+    // Simulate Run 1: Out of Stock -> In Stock
+    console.log("Triggering Product Stock Out-of-Stock -> In-Stock (Run 1)...");
     const trigger1 = await checkAndDispatchProductAutomations({
       productId: sampleProduct.id,
       productName: sampleProduct.name,
       productSlug: sampleProduct.slug,
-      previousStock: 0,
-      newStock: 25,
-      previousPrice: Number(sampleProduct.price),
-      newPrice: Number(sampleProduct.price),
+      previousInStock: false,
+      newInStock: true,
+      previousPrice: Number(sampleProduct.mrp || 420),
+      newPrice: Number(sampleProduct.mrp || 420),
     });
     console.log("Trigger Run 1 Result:", trigger1);
 
@@ -105,20 +122,22 @@ async function runTests() {
       productId: sampleProduct.id,
       productName: sampleProduct.name,
       productSlug: sampleProduct.slug,
-      previousStock: 0,
-      newStock: 30,
-      previousPrice: Number(sampleProduct.price),
-      newPrice: Number(sampleProduct.price),
+      previousInStock: false,
+      newInStock: true,
+      previousPrice: Number(sampleProduct.mrp || 420),
+      newPrice: Number(sampleProduct.mrp || 420),
     });
     console.log("Trigger Run 2 Result (Debounce Verification):", trigger2);
 
-    // Cleanup test wishlist item
+    // Cleanup test records
     await prisma.wishlistItem.deleteMany({
       where: { userId: sampleUser.id, productId: sampleProduct.id },
     });
-    // Cleanup test notification logs
+    await prisma.deviceToken.deleteMany({
+      where: { token: testToken },
+    });
     await prisma.notificationLog.deleteMany({
-      where: { userId: sampleUser.id, title: { contains: sampleProduct.name } },
+      where: { userId: sampleUser.id, payload: { path: ["data", "productId"], equals: sampleProduct.id } },
     });
     console.log("Cleaned up Test B records.");
   } else {
