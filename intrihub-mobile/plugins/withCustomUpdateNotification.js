@@ -1,6 +1,7 @@
 const {
   withAndroidManifest,
   withDangerousMod,
+  withAppBuildGradle,
 } = require("@expo/config-plugins");
 const fs = require("fs");
 const path = require("path");
@@ -530,11 +531,11 @@ class IntriHubFirebaseMessagingService : ExpoFirebaseMessagingService() {
     }
 
     val storeUrl = if (isAppUpdate) {
-      payload.optString("storeUrl", "").ifBlank { "market://details?id=$packageName" }
+      payload.optString("storeUrl", "").ifBlank { "market://details?id=${packageName}" }
     } else null
 
     val webUrl = if (isAppUpdate) {
-      payload.optString("webUrl", "").ifBlank { "https://play.google.com/store/apps/details?id=$packageName" }
+      payload.optString("webUrl", "").ifBlank { "https://play.google.com/store/apps/details?id=${packageName}" }
     } else null
 
     val accentHex = payload.optString("accentColor", "").ifBlank {
@@ -547,9 +548,9 @@ class IntriHubFirebaseMessagingService : ExpoFirebaseMessagingService() {
     }
 
     val soundUri = if (isAppUpdate) {
-      Uri.parse("\${ContentResolver.SCHEME_ANDROID_RESOURCE}://$packageName/\${R.raw.ring}")
+      Uri.parse("\${ContentResolver.SCHEME_ANDROID_RESOURCE}://${packageName}/\${R.raw.ring}")
     } else {
-      Uri.parse("\${ContentResolver.SCHEME_ANDROID_RESOURCE}://$packageName/\${R.raw.user_promo}")
+      Uri.parse("\${ContentResolver.SCHEME_ANDROID_RESOURCE}://${packageName}/\${R.raw.user_promo}")
     }
     val defaultChannel = if (isAppUpdate) DEFAULT_UPDATE_CHANNEL_ID else DEFAULT_PROMO_CHANNEL_ID
     val channelId = payload.optString("channelId", "").ifBlank { defaultChannel }
@@ -903,6 +904,19 @@ const withCustomUpdateNotification = (config) => {
       }
     }
 
+    return cfg;
+  });
+
+  config = withAppBuildGradle(config, (cfg) => {
+    if (!cfg.modResults.contents.includes("com.google.firebase:firebase-messaging")) {
+      cfg.modResults.contents += `
+dependencies {
+    implementation platform('com.google.firebase:firebase-bom:33.10.0')
+    implementation 'com.google.firebase:firebase-analytics'
+    implementation 'com.google.firebase:firebase-messaging'
+}
+`;
+    }
     return cfg;
   });
 
